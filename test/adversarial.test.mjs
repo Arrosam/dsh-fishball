@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, existsSync, copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -610,6 +610,160 @@ test('independent: supported schema1 migration preserves actual acknowledged tas
   assert.equal(sql(backupPath, 'PRAGMA integrity_check')[0].integrity_check, 'ok');
   assert.equal(sql(backupPath, 'PRAGMA user_version')[0].user_version, 1);
   assert.equal(sql(backupPath, 'SELECT count(*) AS count FROM tasks')[0].count, 1);
+});
+
+test('independent: unsupported crash-left WAL rejects without changing main, WAL or SHM bytes or committed facts', { timeout: 15000 }, async t => {
+  for (const version of [99, 1, 2]) await t.test(`schema ${version}; abrupt exit73 with uncheckpointed WAL`, t => {
+    const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-wal-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const databasePath = join(directory, 'ledger.sqlite');
+    const keys = [digest(scope.ownerId), digest(scope.workspaceId), digest('wal-task')];
+    if (version === 2) {
+      const initial = new Foundation({ databasePath, clock: () => 1000 });
+      initial.intake(scope, ingress('wal-task', 'wal-event'));
+      initial.close();
+    }
+    const writer = `
+      import { DatabaseSync } from 'node:sqlite';
+      const db=new DatabaseSync(process.argv[1]);
+      const version=${version}, keys=${JSON.stringify(keys)};
+      if(version===99){db.exec('CREATE TABLE future(reference TEXT NOT NULL); PRAGMA user_version=99');}
+      if(version===1){db.exec(${JSON.stringify(legacySchemaSql)});}
+      db.exec('PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0');
+      if(version===99){db.prepare('INSERT INTO future VALUES(?)').run('synthetic-committed-only-in-WAL');}
+      if(version===1){
+        db.exec('BEGIN IMMEDIATE');
+        db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(...keys,'queued',1,0,1000,2000);
+        db.prepare('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)').run(...keys.slice(0,2),${JSON.stringify(digest('fixture'))},${JSON.stringify(digest('independent-source'))},${JSON.stringify(digest('wal-event'))},keys[2],1000);
+        db.prepare('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)').run(...keys,1,1,'queued','intake',1000);
+        db.exec('COMMIT');
+      }
+      if(version===2){db.prepare('UPDATE tasks SET updated_at=2000 WHERE owner=? AND workspace=? AND id=?').run(...keys);}
+      process.exit(73);
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', writer, databasePath], { encoding: 'utf8', timeout: 5000 });
+    assert.equal(child.status, 73, child.stderr);
+    const files = [databasePath, `${databasePath}-wal`, `${databasePath}-shm`];
+    for (const file of files) assert.equal(existsSync(file), true, file);
+    const original = files.map(file => readFileSync(file));
+    assert.ok(original[1].length > 32, 'actual committed WAL contains frames');
+    code(() => new Foundation({ databasePath }), version === 99 ? 'SCHEMA_FUTURE' : 'SCHEMA_UNSUPPORTED');
+    for (const [index, file] of files.entries()) {
+      assert.equal(existsSync(file), true, 'rejection cannot delete a sidecar');
+      assert.deepEqual(readFileSync(file), original[index], 'rejection cannot checkpoint, rewrite or mark original files');
+    }
+    assert.equal(existsSync(`${databasePath}.schema-1.backup`), false);
+    // Logical readability is checked on an exact copy. SQLite reader marks or
+    // checkpoint-on-close in the oracle must not modify the rejected originals.
+    const copiedDirectory = join(directory, 'logical-copy');
+    mkdirSync(copiedDirectory);
+    const copiedPath = join(copiedDirectory, 'ledger.sqlite');
+    for (const [index, suffix] of ['', '-wal', '-shm'].entries()) copyFileSync(files[index], `${copiedPath}${suffix}`);
+    const logical = new DatabaseSync(copiedPath);
+    try {
+      assert.equal(logical.prepare('PRAGMA user_version').get().user_version, version);
+      assert.equal(logical.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
+      if (version === 99) assert.equal(logical.prepare('SELECT reference FROM future').get().reference, 'synthetic-committed-only-in-WAL');
+      else assert.equal(logical.prepare('SELECT updated_at FROM tasks WHERE owner=? AND workspace=? AND id=?').get(...keys).updated_at, 2000);
+    } finally { logical.close(); }
+    for (const [index, file] of files.entries()) assert.deepEqual(readFileSync(file), original[index], 'separate logical verification also leaves originals unchanged');
+  });
+});
+
+test('independent: WAL header without sidecars and opaque sidecars beside DELETE header reject before SQLite open', async t => {
+  await t.test('WAL header only', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-wal-header-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const databasePath = join(directory, 'ledger.sqlite');
+    const db = new DatabaseSync(databasePath);
+    db.exec(legacySchemaSql);
+    db.exec('PRAGMA journal_mode=WAL');
+    db.close();
+    assert.equal(existsSync(`${databasePath}-wal`), false);
+    assert.equal(existsSync(`${databasePath}-shm`), false);
+    const original = readFileSync(databasePath);
+    assert.equal(original[18], 2); assert.equal(original[19], 2);
+    code(() => new Foundation({ databasePath }), 'SCHEMA_UNSUPPORTED');
+    assert.deepEqual(readFileSync(databasePath), original);
+    assert.equal(existsSync(`${databasePath}-wal`), false);
+    assert.equal(existsSync(`${databasePath}-shm`), false);
+  });
+  for (const suffix of ['-wal', '-shm']) await t.test(`opaque ${suffix} beside healthy DELETE schema2`, t => {
+    const f = fixture(t);
+    f.core.intake(scope, ingress()); f.core.close();
+    writeFileSync(`${f.databasePath}${suffix}`, `synthetic-opaque${suffix}-preserve`);
+    const original = [readFileSync(f.databasePath), readFileSync(`${f.databasePath}${suffix}`)];
+    assert.equal(original[0][18], 1); assert.equal(original[0][19], 1);
+    code(() => new Foundation({ databasePath: f.databasePath }), 'SCHEMA_UNSUPPORTED');
+    assert.deepEqual(readFileSync(f.databasePath), original[0]);
+    assert.deepEqual(readFileSync(`${f.databasePath}${suffix}`), original[1]);
+    assert.equal(existsSync(`${f.databasePath}.schema-1.backup`), false);
+  });
+});
+
+test('independent: supported DELETE hot journal rolls back spilled uncommitted progress and retains acknowledged tasks', t => {
+  const f = fixture(t);
+  for (let index = 0; index < 16; index++) f.core.intake(scope, ingress(`hot-${index}`));
+  f.core.close();
+  const source = `
+    import { DatabaseSync } from 'node:sqlite';
+    const db=new DatabaseSync(process.argv[1]);
+    db.exec("PRAGMA journal_mode=DELETE; PRAGMA cache_size=1; PRAGMA cache_spill=ON; BEGIN IMMEDIATE; UPDATE tasks SET version=2,status='waiting',updated_at=2000; UPDATE events SET version=2,status='waiting'");
+    process.exit(74);
+  `;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', source, f.databasePath], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(child.status, 74, child.stderr);
+  const journalPath = `${f.databasePath}-journal`;
+  assert.equal(existsSync(journalPath), true);
+  const hotJournal = readFileSync(journalPath);
+  assert.ok(hotJournal.length > 28);
+  assert.notDeepEqual(hotJournal.subarray(0, 8), Buffer.alloc(8), 'actual spilled hot journal has a persisted nonzero magic/header');
+  const reopened = new Foundation({ databasePath: f.databasePath, clock: () => 1500 });
+  t.after(() => reopened.close());
+  const tasks = reopened.listTasks(scope);
+  assert.equal(tasks.length, 16);
+  assert.equal(tasks.every(task => task.version === 1 && task.status === 'queued' && task.updatedAt === 1000), true);
+  const exported = reopened.exportTask(scope, 'hot-0');
+  assert.equal(exported.history.length, 1);
+  assert.equal(exported.history[0].version, 1);
+  assert.equal(exported.history[0].status, 'queued');
+  assert.equal(existsSync(journalPath), false);
+  assert.equal(sql(f.databasePath, 'PRAGMA integrity_check')[0].integrity_check, 'ok');
+});
+
+test('independent: a concurrent future schema commit between version read and lock cannot be migrated or downgraded', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-future-race-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const databasePath = join(directory, 'legacy.sqlite');
+  const seed = new DatabaseSync(databasePath);
+  seed.exec(legacySchemaSql); seed.close();
+  const writer = new DatabaseSync(databasePath);
+  t.after(() => writer.close());
+  const originalPrepare = DatabaseSync.prototype.prepare;
+  let changed = false, futureSnapshot;
+  DatabaseSync.prototype.prepare = function(statementSql) {
+    const statement = originalPrepare.call(this, statementSql);
+    if (statementSql.trim().toLowerCase() === 'pragma user_version') {
+      const originalGet = statement.get;
+      statement.get = function(...parameters) {
+        const result = originalGet.call(this, ...parameters);
+        if (!changed && result.user_version === 1) {
+          changed = true;
+          writer.exec('PRAGMA user_version=99');
+          futureSnapshot = readFileSync(databasePath);
+        }
+        return result;
+      };
+    }
+    return statement;
+  };
+  try { code(() => new Foundation({ databasePath }), 'SCHEMA_FUTURE'); }
+  finally { DatabaseSync.prototype.prepare = originalPrepare; }
+  assert.equal(changed, true, 'real second connection commits after the stale version read');
+  assert.deepEqual(readFileSync(databasePath), futureSnapshot, 'constructor must preserve the newer writer state');
+  assert.equal(writer.prepare('PRAGMA user_version').get().user_version, 99);
+  assert.equal(writer.prepare("SELECT count(*) AS count FROM sqlite_schema WHERE type='table'").get().count, 3);
+  assert.equal(existsSync(`${databasePath}.schema-1.backup`), false);
 });
 
 test('independent: stale versions and terminal progress preserve authoritative history', t => {
