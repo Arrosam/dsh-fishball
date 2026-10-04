@@ -1,0 +1,7 @@
+# NI4 trusted constant identifier correction
+
+The first authored module run `/tmp/df-ni4-author-first.tap` recorded2/12 PASS and10 failures at factory construction. The held NI4 contract used reference('df.native-owner-ingress/v1') and corresponding schedule/adapter labels. Actual runtime-security.reference validates raw caller IDs against `[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}` before SHA256 and correctly rejects the slash in these fixed product labels.
+
+For the product-owned constants only, derive providerRef with hash('df.native-owner-ingress/v1') or hash('df.native-schedule/v1'), and adapterRef with hash('df.native-owner-adapter/v1') or hash('df.native-schedule-adapter/v1'). Hash is the existing runtime-security SHA256 helper. This preserves the intended digest of the exact literal; it does not introduce new source labels, broaden reference(), normalize caller IDs or change any existing persisted identity. Caller eventId/taskId still use reference() with its original closed raw-ID rules. Source/subscription/scoped namespace/recipe digests remain canonicalDigest.
+
+This small finding-driven addendum preserves original held contract/design bytes. Author fixes only the authorized new module, retains the first failure, and adds direct expected-digest assertions. Independent review/design must bind the correction before source hold. No shared source/core/helper/Git/native changes or actual store/package acceptance are claimed.
