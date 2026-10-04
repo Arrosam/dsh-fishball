@@ -73,13 +73,14 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
           limits: { ...config.limits, ...runtimeLimits }, hostPermission, forbiddenSecrets });
       } finally { key.fill(0); }
       let active = true, bridge, manager, preview, reviewerDisposer, automationDisposer, router, schedules;
-      const chats = new Set();
+      const chats = new Set(), scheduleTokens = new Map();
       const alive = () => active && ctx.fiber.state === 2 && ctx.fiber.uid !== null;
       const assertAlive = () => { if (!alive()) throw new BootstrapError('SERVICE_DISPOSED'); };
       yield async () => {
         active = false; bridge?.deactivate(); preview?.dispose();
         let failed = false;
         try { schedules?.dispose(); } catch { failed = true; }
+        scheduleTokens.clear();
         for (const chat of chats) { try { chat.dispose(); } catch { failed = true; } }
         chats.clear();
         try { router?.dispose(); } catch { failed = true; }
@@ -133,7 +134,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         const installation = Object.freeze({ ...sourceOperations,
           registerEvent: value => { assertAlive(); return router.register(value); },
           ingestEvent: (token, value) => { assertAlive(); return router.ingest(token, value); },
-          registerSchedule: value => { assertAlive(); return schedules.register(value); },
+          registerSchedule: value => { assertAlive(); const token = schedules.register(value); scheduleTokens.set(token, Object.freeze({ sourceRef: value.sourceRef, subscriptionRef: value.subscriptionRef, spec: structuredClone(value.spec), goal: value.goal, externalEffect: value.externalEffect, startAfter: value.startAfter })); return token; },
           tickSchedule: token => { assertAlive(); return schedules.tick(token); },
           statusSchedule: token => { assertAlive(); return schedules.status(token); },
           startSchedule: (token, value) => { assertAlive(); return schedules.start(token, value); },
@@ -184,6 +185,13 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         listSubscriptions: value => router ? sourceOperations.listSubscriptions(value) : unavailable(),
         eventReceipt: value => router ? sourceOperations.eventReceipt(value) : unavailable(),
         listEventReceipts: value => router ? sourceOperations.listEventReceipts(value) : unavailable(),
+        listSchedulePlans: value => {
+          record(value, [], 'INPUT_INVALID'); if (!schedules) return unavailable();
+          return Object.freeze([...scheduleTokens].map(([token, registration]) => {
+            try { return Object.freeze({ ...schedules.status(token), registration }); }
+            catch { return Object.freeze({ sourceRef: registration.sourceRef, subscriptionRef: registration.subscriptionRef, state: 'unavailable' }); }
+          }));
+        },
         approveSchedule: value => router ? store.approveEventClock(owner, value) : unavailable(),
         configureNotifications: value => notifier ? notifier.configure(owner, value) : unavailable(),
         notificationPolicy: value => { record(value, [], 'INPUT_INVALID'); return notifier ? notifier.policy(owner) : unavailable(); },
@@ -203,6 +211,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         dispatch: value => manager ? manager.dispatch(owner, value) : unavailable(),
         execute: value => manager ? manager.executeContext(owner, value) : unavailable(),
         query: value => manager ? manager.query(owner, value) : unavailable(),
+        sessionLink: value => manager ? manager.sessionLink(owner, value) : unavailable(),
         handoff: value => manager ? manager.handoff(owner, value) : unavailable(),
         captureResult: value => manager ? manager.captureResult(owner, value) : unavailable(),
         writeArtifact: value => {

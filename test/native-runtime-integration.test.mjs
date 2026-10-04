@@ -83,6 +83,10 @@ async function productFlow(cancelBeforeQuit) {
     const preview = await good('preview', { ...previewBinding, actionRef: plan.actionRef, actionDigest: plan.actionDigest, recordRef: context.recordRef }); assert.equal(preview.description.data.content, scoped.data.content);
     await good('grant', { ...await cas('grant'), actionRef: plan.actionRef, actionDigest: plan.actionDigest, previewRef: preview.previewRef, expiresAt: Date.now() + 60000 });
     const worker = await good('dispatch', { ...await cas('dispatch'), actionRef: plan.actionRef, actionDigest: plan.actionDigest }); assert.equal(worker.phase, 'ready'); assert.equal(streams, 0);
+    const linkCas = await cas('session-link'), linkInput = { taskRef, actionRef: plan.actionRef, actionDigest: plan.actionDigest, claimRef: worker.claimRef, generationRef: worker.generationRef, sessionRef: worker.sessionRef, expectedTaskVersion: linkCas.expectedTaskVersion, expectedAuthEpoch: linkCas.expectedAuthEpoch };
+    const link = await good('sessionLink', linkInput); assert.equal(d(link.sessionId), worker.sessionRef); assert.equal(link.taskRef, taskRef); assert.equal(streams, 0);
+    assert.equal((await send('sessionLink', { ...linkInput, sessionRef: d('foreign-session') })).ok, false);
+    assert.equal((await send('sessionLink', { ...linkInput, taskRef: d('foreign-task') })).ok, false);
     const executeInput = { ...await cas('execute'), actionRef: plan.actionRef, actionDigest: plan.actionDigest, claimRef: worker.claimRef, generationRef: worker.generationRef, contextRecordRef: context.recordRef, timeoutMs: 2000 };
     const execution = await good('execute', executeInput); assert.equal(execution.state, 'committed'); assert.equal(streams, 1); assert.deepEqual(providerInputs.flat(), [{ id: d(execution.executionRef), digest: context.digest }]);
     assert.equal((await good('execute', executeInput)).admitted, false); assert.equal(streams, 1);
@@ -186,6 +190,7 @@ test('trusted native automation installer admits deduplicated ingress and only e
   api.stopSchedule(schedule); assert.equal(api.statusSchedule(schedule).polling, false);
   api.startSchedule(schedule, { pollMs: 60000, onStatus: () => { notifications++; } });
   assert.equal(f.ctx.sessions.list().length, 0);
+  const plans = await f.good('listSchedulePlans'); assert.equal(plans.length, 1); assert.equal(plans[0].registration.goal, 'Synthetic missed schedule creates a task only; no effects'); assert.equal(plans[0].registration.externalEffect, true); assert.equal(plans[0].clockRef, pending.clockRef); assert.equal(Object.hasOwn(plans[0], 'token'), false);
   const disposing = f.plugin.dispose(); assert.throws(() => api.statusSchedule(schedule), { code: 'SERVICE_DISPOSED' }); assert.throws(() => api.listSources(), { code: 'SERVICE_DISPOSED' });
   await disposing; assert.equal(cleanup, 1); assert.equal(notifications, 0); assert.equal(f.routes.has('/df-rpc'), false);
   assert.throws(() => api.ingestEvent(token, request), { code: 'SERVICE_DISPOSED' });

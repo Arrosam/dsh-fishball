@@ -15,7 +15,7 @@ Installed sources are beneath `.runtime/dsh-web/node_modules/@deepseek-ai/`. The
 | dsh-client-ui-layout/lib/types/client/index.d.ts | de04ea7bb5e1c0d44dc87c31eb6565786c4cc629f4eefd92064e1b3142817260 |
 | dsh-client-ui-sidebar/lib/types/client/index.d.ts | 924baa712881de5a9c499cd49117718654ebb56cf8242768cda512382202fb49 |
 
-The client requests `connection`, `slots`, `layout` and adds keyed `main/df` plus list `sidebar.panellist/df`, using the native sidebar label/panel mechanism. It does not replace the native root/sidebar, inject a DOM subtree, build another application or expose a host/operator/store handle. Slot/event/subscription/model lifetime belongs to the plugin fiber.
+The historical initial client requested `connection`, `slots`, `layout` and added keyed `main/df` plus list `sidebar.panellist/df`, using the native sidebar label/panel mechanism. It does not replace the native root/sidebar, inject a DOM subtree, build another application or expose a host/operator/store handle. Slot/event/subscription/model lifetime belongs to the plugin fiber.
 
 Root owns package metadata: `exports["./client"]="./lib/client.js"`, `dsh.client.platform="web"`, and client inject package names `@deepseek-ai/dsh-client-connection`, `@deepseek-ai/dsh-client-ui-renderer`, `@deepseek-ai/dsh-client-ui-layout`, `@deepseek-ai/dsh-client-ui-sidebar`. The module ID equals package name `dsh-fishball`. The exact tracked bundle and metadata are to be independently reviewed together.
 
@@ -58,3 +58,40 @@ Final author command `node --test test/native-adapter.test.mjs test/worker.test.
 | lib/client.js | def14844f565a465c396d3b3efd7530b39476220566717dd04f2b57462b9e7c6 |
 | test/client.test.mjs | 1743d439ea7d3b260471b3dfc18737edcfeb05057dd043c7711ad9aea5312b1e |
 | test/client-build.test.mjs | 98e1b61d1ddd9ee52631edbd6f65e34258a39ec89782a4a00c8af4f426445a40 |
+
+
+## Extended native task UI development checkpoint
+
+The later owner-authorized UI unit extends the current panel through the same native lazy module and slots. `dsh.client.inject` now additionally requests the pinned installed `@deepseek-ai/dsh-client-ui-workspace`; the module's service injection includes `uiWorkspace`. No dependency was installed, host bundle copied, alternate application created, or DOM injected.
+
+The actual public `uiWorkspace.openSession(SessionTarget)` opens an existing session via native SessionController retain and selection, then reveals the native conversation panel. The inspected implementation invokes no create/resume/send. Provenance beneath `.runtime/dsh-web/node_modules/@deepseek-ai`, version0.2.1-alpha.1:
+
+| Public source | SHA256 |
+| --- | --- |
+| dsh-client-ui-workspace/lib/types/client/navigation.d.ts | 5d33eae8e88beecdd3ca63102ea467ef34017a7dfc0c3a19869bd62a092ea68b |
+| dsh-client-ui-workspace/lib/client.js | 09a298e8e7766d223c9e61ce61564e6f72c997eb6b7e6f9b048f727908211bef |
+| dsh-client-ui-layout/lib/types/client/service.d.ts | 5a7ba6db633eeda6792179fd13be316dcc06fd640b5413e2267068f70db7424e |
+
+The owner selects a displayed worker claim. The client sends only exact task/action/digest/claim/generation/session reference plus task/auth CAS to `v1/sessionLink`. The server resolves a privately owned live native mapping; payload native IDs, roles or scope fields do not authenticate. The client compares every echoed binding, hashes the returned native ID against sessionRef, rechecks connection epoch/selection/current snapshot after the asynchronous hash, reads the current mapping a second time, then synchronously calls the verified public navigation method. Double-clicks are fenced. Missing navigation, stopped incarnations, reopened/unowned mappings, stale CAS, foreign task/generation/native ID or disconnect cannot navigate or recreate. Read access to an owned live mapping is independent of dispatch approval/control; the native adapter test proves denial of work permission does not deny that read. No handle or dispatch capability is returned. This is live owned-session navigation only: historical transcript-only navigation after native teardown/reopen remains unavailable, with an explicit reason. Actual browser navigation remains a final oracle.
+
+Goal/constraint revision forms submit explicit new prose with current task/auth CAS and reason=operator. Complete clarification answers bind the exact current encrypted batch and decision set; stale epochs, missing/duplicate/foreign decisions and empty answers reject. Revisions and answers never grant or execute. Inputs are captured before awaiting command digest; disconnect/stale selection disables later writes. Native task mutations still require authoritative refresh after success.
+
+Artifact cards display exact version/digest/immutable record and independent verification; delivery cards separately show original artifact version/digest, transmission state and current permission/openability. Unknown or unobserved access stays unknown. Audit cards show exact required material, material digest, blocking severities, repair round and separately loaded report coverage/unexamined refs/findings. Report loading verifies the original audit/material binding and re-reads task/auth CAS before publication. No owner button writes a pass/report or infers task completion from artifacts, delivery or idle.
+
+Event/source/clock data is a separate explicitly loaded bounded owner snapshot:32sources,128subscriptions,32registered schedules and4096receipt readback entries. Source/subscription enable controls copy their exact original explicit spec and revision, selecting no rate/permission/route defaults. Clock cards show registered goal, complete explicit schedule spec/timezone/start, external-effect intent, source/subscription revisions, UTC cursor, polling and pending plan digest/through/approval. The exact pending missed plan requires an explicit owner click with source/sub revisions and expected cursor. It grants only that recorded occurrence-plan admission, never an effect or worker. Disabled/revision-stale/forged plans and disconnect during command digest send0writes. Receipts expose authoritative registration/processing/unknown/held facts. Registration metadata is not provider-connectivity evidence. No timer, ingress, registration callback or private token is exposed to the browser.
+
+Stable client errors now use a finite allowlist. Unexpected uppercase callback canaries are redacted as RESULT_UNCONFIRMED, busy clears and no automatic retry occurs. Model lifetime/connection fences remain on all new reads/mutations and owned native slots dispose with the client fiber.
+
+Author checks on Node22.22.2: **73/73** owned native/worker/runtime/bridge/client tests passed,0failed/skipped; **157/157** including current event/schedule/chat/notification module tests passed. Exact command/output is recorded in [native-ui-owned.tap](native-ui-owned.tap) and [native-ui-modules.tap](native-ui-modules.tap). `node scripts/check.mjs` checked68ESMfiles; `node scripts/build-client.mjs --check` passed. The first extended run passed17existing client checks, followed by50targeted checks and the full checkpoint; no failing oracle was suppressed. The final source manifest is [native-ui.sha256](native-ui.sha256). Earlier17/48/59/146 checkpoints remain historical.
+
+React element doubles verify labels/text/buttons and native SlotCore fixture verifies registration lifetime; neither proves actual rendered focus, contrast, keyboard, long Chinese text, resize or browser SessionController navigation. No Web/browser/listener, new model call beyond previously authorized local deterministic native fixture, external inference/network, tool effect, profile/credential access or installation occurred. Full functional/visual acceptance remains held. Independent ISTQB review is pending on this exact unit; the independent code-review session is failed/stopped, and these tests are not a substitute final code verdict.
+
+
+Reproducible author commands for this frozen UI unit:
+
+```sh
+node --test test/native-adapter.test.mjs test/native-runtime-integration.test.mjs test/runtime-plugin.test.mjs test/operator-bridge.test.mjs test/worker.test.mjs test/client.test.mjs test/client-features.test.mjs test/client-build.test.mjs
+node --test test/native-adapter.test.mjs test/native-runtime-integration.test.mjs test/runtime-plugin.test.mjs test/operator-bridge.test.mjs test/worker.test.mjs test/client.test.mjs test/client-features.test.mjs test/client-build.test.mjs test/events.test.mjs test/scheduler.test.mjs test/chat.test.mjs test/notifications.test.mjs
+node scripts/check.mjs
+node scripts/build-client.mjs --check
+```

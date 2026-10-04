@@ -285,6 +285,13 @@ export class NativeAdapter {
     if (!result || result.executionRef !== executionRef || result.claimRef !== entry.claim?.claimRef || result.generationRef !== entry.generationRef || result.actionDigest !== entry.actionDigest || result.sessionRef !== entry.sessionRef) workerFail('WORKER_RESULT_UNAVAILABLE');
     return result;
   }
+  sessionLink(ticket) {
+    const entry = this.#get(ticket), agent = this.#ctx.agents.get(entry.id);
+    // Authorized owner navigation reads an already owned live mapping. It is
+    // independent of dispatch grant/current-control admission and wakes nothing.
+    if (!entry.claim || !entry.handle || entry.state === 'stopped' || agent !== entry.handle.agent || this.#ctx.sessions.get(entry.id) !== agent.session || agent.session.id !== entry.id || createHash('sha256').update(entry.id).digest('hex') !== entry.sessionRef) workerFail('WORKER_SESSION_UNAVAILABLE');
+    return Object.freeze({ taskRef: entry.taskRef, actionDigest: entry.actionDigest, claimRef: entry.claim.claimRef, generationRef: entry.generationRef, sessionRef: entry.sessionRef, sessionId: entry.id });
+  }
   async shutdown(ticket) {
     // Trusted teardown can close an already-owned handle after the plugin
     // fiber becomes inactive. It admits no create, input, provider or retry.

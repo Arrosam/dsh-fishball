@@ -484,3 +484,18 @@ test('actual scoped monotonic guard vetoes late tools after extensible policy; c
     assert.equal(bodies, 0);
   } finally { removePreExecute?.(); removeTool?.(); await f.close(); }
 });
+
+test('public owned-session navigation reads survive permission denial but disappear after native teardown', async () => {
+  const f = await fixture();
+  try {
+    const ticket = await f.adapter.prepare(f.spec, f.task, d('digest'));
+    f.adapter.bindClaim(ticket, {actionRef:d('action'),claimRef:d('claim'),reservationRef:d('reservation'),actionDigest:d('digest'),generationRef:d('gen')},()=>true);
+    await f.adapter.create(ticket); f.deny();
+    const link = f.adapter.sessionLink(ticket);
+    assert.equal(createHash('sha256').update(link.sessionId).digest('hex'), link.sessionRef);
+    assert.equal(link.taskRef, f.task.taskRef); assert.equal(link.claimRef, d('claim')); assert.equal(link.generationRef, d('gen'));
+    assert.equal(Object.hasOwn(link, 'agent'), false); assert.equal(Object.hasOwn(link, 'handle'), false); assert.equal(f.stats().streams, 0);
+    await f.adapter.shutdown(ticket); assert.throws(() => f.adapter.sessionLink(ticket), {code:'WORKER_SESSION_UNAVAILABLE'});
+    assert.deepEqual(f.stats(), {creates:1,resumes:0,streams:0});
+  } finally { await f.close(); }
+});

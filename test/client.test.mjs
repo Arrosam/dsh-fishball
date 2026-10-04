@@ -86,9 +86,9 @@ test('native SlotCore registrations are additive and release with the owning fix
   const { Context } = await import(`${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/cordis/lib/index.js`);
   const core = new SlotCore(), ctx = new Context(); ctx.logger.exporters?.clear?.();
   const removeRoot = core.register({ name: 'root', children: { main: { kind: 'keyed', scope: 'root' }, 'sidebar.panellist': { kind: 'list', scope: 'root' } } }, () => {});
-  ctx.provide('connection', { rpc: { call: async () => success([]) }, state: { subscribe: () => () => {} } }); ctx.provide('layout', {});
+  ctx.provide('connection', { rpc: { call: async () => success([]) }, state: { subscribe: () => () => {} } }); ctx.provide('layout', {}); ctx.provide('uiWorkspace', { openSession() {} });
   ctx.provide('slots', { inject: (_key, fn) => ctx.effect(fn), register: (spec, component) => core.register(spec, component) });
-  const fiber = ctx.plugin({ inject: client.inject, apply(ownerCtx) { client.apply({ connection: ownerCtx.connection, layout: ownerCtx.layout, slots: { inject: (_key, fn) => ownerCtx.effect(fn), register: (spec, component) => core.register(spec, component) }, effect: ownerCtx.effect.bind(ownerCtx), on: ownerCtx.on.bind(ownerCtx) }); } }); await fiber;
+  const fiber = ctx.plugin({ inject: client.inject, apply(ownerCtx) { client.apply({ connection: ownerCtx.connection, layout: ownerCtx.layout, uiWorkspace: ownerCtx.uiWorkspace, slots: { inject: (_key, fn) => ownerCtx.effect(fn), register: (spec, component) => core.register(spec, component) }, effect: ownerCtx.effect.bind(ownerCtx), on: ownerCtx.on.bind(ownerCtx) }); } }); await fiber;
   assert.equal(core.entries('main').length, 1); assert.equal(core.entries('main')[0].options.key, 'df'); assert.equal(core.entries('sidebar.panellist').length, 1);
   await fiber.dispose(); assert.equal(core.entries('main').length, 0); assert.equal(core.entries('sidebar.panellist').length, 0); assert.equal(core.entries('root').length, 1);
   removeRoot(); await ctx.fiber.dispose();

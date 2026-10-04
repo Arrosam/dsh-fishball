@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { WorkerError, workerFail, workerDigest, workerRecord, workerRef, workerInteger } from './environment.mjs';
 
 // Process-private orchestration. The store supplies identity, approval and
@@ -102,6 +103,23 @@ export class WorkerManager {
     try { this.#observation(entry, this.#adapter.query(entry.ticket)); }
     catch { this.#unknown(entry); }
     return this.#view(entry);
+  }
+  sessionLink(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'sessionRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    for (const key of ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'sessionRef']) workerRef(input[key]);
+    workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
+    const snapshot = this.#snapshot(caller, input.taskRef), task = snapshot.task;
+    if (task.version !== input.expectedTaskVersion || task.authEpoch !== input.expectedAuthEpoch) workerFail('STALE_VERSION');
+    const action = snapshot.actions.find(value => value.actionRef === input.actionRef), mapping = snapshot.workers.find(value => value.claimRef === input.claimRef);
+    const entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!action || action.actionDigest !== input.actionDigest || action.claimRef !== input.claimRef || action.spec.executor.generationRef !== input.generationRef || !mapping || mapping.actionRef !== input.actionRef || mapping.generationRef !== input.generationRef || mapping.sessionRef !== input.sessionRef || !entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || entry.sessionRef !== input.sessionRef || typeof this.#adapter.sessionLink !== 'function') workerFail('WORKER_SESSION_UNAVAILABLE');
+    const link = this.#adapter.sessionLink(entry.ticket);
+    for (const key of ['taskRef', 'actionDigest', 'claimRef', 'generationRef', 'sessionRef']) if (link[key] !== input[key]) workerFail('WORKER_RECEIPT_INVALID');
+    if (typeof link.sessionId !== 'string' || link.sessionId.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(link.sessionId) || createHash('sha256').update(link.sessionId).digest('hex') !== input.sessionRef) workerFail('WORKER_RECEIPT_INVALID');
+    const current = this.#snapshot(caller, input.taskRef).task;
+    if (current.version !== task.version || current.authEpoch !== task.authEpoch) workerFail('STALE_VERSION');
+    return Object.freeze({ taskRef: input.taskRef, actionRef: input.actionRef, actionDigest: input.actionDigest, claimRef: input.claimRef, generationRef: input.generationRef, sessionRef: input.sessionRef, sessionId: link.sessionId, taskVersion: task.version, authEpoch: task.authEpoch });
   }
   async executeContext(caller, input) {
     this.#alive();

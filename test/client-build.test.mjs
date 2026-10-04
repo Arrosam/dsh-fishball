@@ -10,6 +10,6 @@ test('reproducible native bundle registers one lazy dsh-fishball module and impo
   const context = createContext({ window: { __ModuleLoader__: { load(value) { assert.equal(registration, undefined); registration = value; } } } });
   new Script(bundle).runInContext(context); assert.equal(registration.id, 'dsh-fishball'); assert.equal(imports, 0);
   const exports = registration.factory(name => { imports++; assert.equal(name, 'react'); return {}; });
-  assert.equal(imports, 1); assert.equal(typeof exports.apply, 'function'); assert.deepEqual(Array.from(exports.inject), ['connection', 'slots', 'layout']);
+  assert.equal(imports, 1); assert.equal(typeof exports.apply, 'function'); assert.deepEqual(Array.from(exports.inject), ['connection', 'slots', 'layout', 'uiWorkspace']);
   assert.equal(bundle.includes('document.'), false); assert.equal(bundle.includes('process.env'), false);
 });
