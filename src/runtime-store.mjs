@@ -1739,6 +1739,21 @@ export class RuntimeStore {
       };
     });
   }
+  assertNativeRequestCurrent(handle,input){
+    exact(input,['taskRef','claimRef','generationRef','actionDigest','executionRef']);
+    const c=this.#ctx(handle,input.taskRef,HOST);
+    return this.#ledger.transaction(()=>{
+      const record=this.#auto(c,'execution',ref(input.claimRef));
+      if(!record||record.taskRef!==input.taskRef||record.claimRef!==input.claimRef||record.generationRef!==input.generationRef||record.actionDigest!==input.actionDigest||record.executionRef!==input.executionRef||record.state!=='dispatch_intent')fail('SPEC_MISMATCH');
+      const {a}=this.#executionAdmission(c,input);
+      if(a.metadata.executionRef!==record.executionRef||a.action!==record.actionRef)fail('SPEC_MISMATCH');
+      const context=this.#executionContext(c,{...input,contextRecordRef:record.contextRecordRef},a);
+      if(context.digest!==record.dataDigest||context.semanticRevision!==record.semanticRevision)fail('SPEC_MISMATCH');
+      // A late native fence reads the already-consumed signed intent. It never
+      // consumes again, renews consent, changes a row or mints a stream permit.
+      return JSON.parse(canonical(record));
+    });
+  }
   #auditCurrent(c,req){
     const artifact=this.#artifact(c,req.taskRef,req.artifactRef);
     if(!artifact||artifact.version!==req.artifactVersion||artifact.digest!==req.digest||req.semanticRevision!==this.#semantic(c,req.taskRef))fail('AUDIT_STALE');
