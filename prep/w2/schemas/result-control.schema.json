@@ -1,0 +1,1008 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:bubbles:w2-prep:result-control:v1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/snapshot"
+    },
+    {
+      "$ref": "#/$defs/command"
+    },
+    {
+      "$ref": "#/$defs/outcome"
+    }
+  ],
+  "$defs": {
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "scope",
+        "taskVersion",
+        "authEpoch",
+        "snapshotRef",
+        "observedAt",
+        "isSnapshot",
+        "ledgerEvidence",
+        "taskStatus",
+        "dispatchPaused",
+        "report",
+        "artifacts",
+        "sessions",
+        "permissions"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "result_snapshot"
+        },
+        "scope": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/scope"
+        },
+        "taskVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "authEpoch": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+        },
+        "snapshotRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "observedAt": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+        },
+        "isSnapshot": {
+          "const": true
+        },
+        "ledgerEvidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "taskStatus": {
+          "enum": [
+            "queued",
+            "running",
+            "waiting",
+            "blocked",
+            "recovery_required",
+            "cancel_requested",
+            "completed",
+            "failed",
+            "cancelled",
+            "deleted"
+          ]
+        },
+        "dispatchPaused": {
+          "type": "boolean"
+        },
+        "report": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "originalGoalRef",
+            "completedScopeRef",
+            "unfinishedRef",
+            "nextStepRef",
+            "verificationState",
+            "verificationEvidence",
+            "blockerRefs",
+            "progressDigest",
+            "notificationDisposition"
+          ],
+          "properties": {
+            "originalGoalRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "completedScopeRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "unfinishedRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "nextStepRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "verificationState": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_run",
+                "stale"
+              ]
+            },
+            "verificationEvidence": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 16,
+              "items": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+              }
+            },
+            "blockerRefs": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 16,
+              "items": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              }
+            },
+            "progressDigest": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "notificationDisposition": {
+              "enum": [
+                "changed",
+                "coalesced",
+                "unchanged_suppressed",
+                "blocked_policy"
+              ]
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifactRef",
+              "version",
+              "digest",
+              "contentRef",
+              "productionEvidence",
+              "review",
+              "deliveries"
+            ],
+            "properties": {
+              "artifactRef": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              },
+              "version": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+              },
+              "digest": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              },
+              "contentRef": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              },
+              "productionEvidence": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+              },
+              "review": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "taskVersion",
+                  "artifactVersion",
+                  "digest",
+                  "reviewer"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "passed",
+                      "failed",
+                      "not_run",
+                      "stale"
+                    ]
+                  },
+                  "taskVersion": {
+                    "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+                  },
+                  "artifactVersion": {
+                    "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+                  },
+                  "digest": {
+                    "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                  },
+                  "reviewer": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sessionRef",
+                      "generationRef"
+                    ],
+                    "properties": {
+                      "sessionRef": {
+                        "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                      },
+                      "generationRef": {
+                        "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                      }
+                    }
+                  },
+                  "evidence": {
+                    "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "state": {
+                          "const": "passed"
+                        }
+                      },
+                      "required": [
+                        "state"
+                      ],
+                      "type": "object"
+                    },
+                    "then": {
+                      "required": [
+                        "evidence"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "state": {
+                          "const": "failed"
+                        }
+                      },
+                      "required": [
+                        "state"
+                      ],
+                      "type": "object"
+                    },
+                    "then": {
+                      "required": [
+                        "evidence"
+                      ],
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              "deliveries": {
+                "type": "array",
+                "minItems": 0,
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "deliveryRef",
+                    "batchRef",
+                    "itemRef",
+                    "attemptRef",
+                    "commandRef",
+                    "taskVersion",
+                    "recipientRef",
+                    "channelRef",
+                    "artifactVersion",
+                    "digest",
+                    "state",
+                    "permissionState",
+                    "openability",
+                    "retryDisposition",
+                    "actionDigest",
+                    "accessObservedAt"
+                  ],
+                  "properties": {
+                    "deliveryRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "batchRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "itemRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "attemptRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "commandRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "taskVersion": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+                    },
+                    "claimRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "reservationRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "recipientRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "channelRef": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "artifactVersion": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+                    },
+                    "digest": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "state": {
+                      "enum": [
+                        "pending",
+                        "accepted",
+                        "sent",
+                        "delivered",
+                        "failed",
+                        "unknown"
+                      ]
+                    },
+                    "permissionState": {
+                      "enum": [
+                        "granted",
+                        "revoked",
+                        "unknown"
+                      ]
+                    },
+                    "openability": {
+                      "enum": [
+                        "verified",
+                        "not_verified",
+                        "failed",
+                        "stale"
+                      ]
+                    },
+                    "retryDisposition": {
+                      "enum": [
+                        "query_required",
+                        "retry_confirmed_failed_item",
+                        "none"
+                      ]
+                    },
+                    "recipientEvidence": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+                    },
+                    "failureCode": {
+                      "enum": [
+                        "permission_denied",
+                        "unopenable",
+                        "wrong_version",
+                        "channel_failed"
+                      ]
+                    },
+                    "channelEvidence": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+                    },
+                    "actionDigest": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                    },
+                    "accessObservedAt": {
+                      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+                    },
+                    "receiptAccess": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "permissionState",
+                        "openability",
+                        "observedAt"
+                      ],
+                      "properties": {
+                        "permissionState": {
+                          "const": "granted"
+                        },
+                        "openability": {
+                          "const": "verified"
+                        },
+                        "observedAt": {
+                          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+                        }
+                      }
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "state": {
+                            "const": "sent"
+                          }
+                        },
+                        "required": [
+                          "state"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "required": [
+                          "claimRef",
+                          "reservationRef"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "state": {
+                            "const": "delivered"
+                          }
+                        },
+                        "required": [
+                          "state"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "properties": {
+                          "retryDisposition": {
+                            "const": "none"
+                          }
+                        },
+                        "required": [
+                          "recipientEvidence",
+                          "receiptAccess"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "state": {
+                            "const": "unknown"
+                          }
+                        },
+                        "required": [
+                          "state"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "required": [
+                          "claimRef",
+                          "reservationRef"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "state": {
+                            "const": "delivered"
+                          }
+                        },
+                        "required": [
+                          "state"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "properties": {
+                          "retryDisposition": {
+                            "const": "none"
+                          }
+                        },
+                        "required": [
+                          "recipientEvidence",
+                          "receiptAccess"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "state": {
+                            "const": "unknown"
+                          }
+                        },
+                        "required": [
+                          "state"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "properties": {
+                          "retryDisposition": {
+                            "const": "query_required"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "state": {
+                            "const": "failed"
+                          }
+                        },
+                        "required": [
+                          "state"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "required": [
+                          "failureCode",
+                          "channelEvidence"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "retryDisposition": {
+                            "const": "retry_confirmed_failed_item"
+                          }
+                        },
+                        "required": [
+                          "retryDisposition"
+                        ],
+                        "type": "object"
+                      },
+                      "then": {
+                        "properties": {
+                          "state": {
+                            "const": "failed"
+                          }
+                        },
+                        "required": [
+                          "channelEvidence"
+                        ],
+                        "type": "object"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "sessions": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sessionRef",
+              "generationRef"
+            ],
+            "properties": {
+              "sessionRef": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              },
+              "generationRef": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              }
+            }
+          }
+        },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "permissionSnapshotRef",
+            "authEpoch",
+            "allowedCommands",
+            "grantRefs"
+          ],
+          "properties": {
+            "permissionSnapshotRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "authEpoch": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+            },
+            "allowedCommands": {
+              "type": "array",
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "pause",
+                  "resume",
+                  "cancel"
+                ]
+              }
+            },
+            "grantRefs": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 16,
+              "items": {
+                "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "report": {
+                "properties": {
+                  "verificationState": {
+                    "enum": [
+                      "passed",
+                      "failed"
+                    ]
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "report": {
+                "properties": {
+                  "verificationEvidence": {
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "taskStatus": {
+                "enum": [
+                  "completed",
+                  "failed",
+                  "cancelled",
+                  "deleted"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "permissions": {
+                "properties": {
+                  "allowedCommands": {
+                    "maxItems": 0,
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ]
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "binding",
+        "command",
+        "actionDigest",
+        "displayedSnapshotRef",
+        "permissionSnapshotRef",
+        "operatorContextRef"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "control_command"
+        },
+        "binding": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+        },
+        "command": {
+          "enum": [
+            "pause",
+            "resume",
+            "cancel"
+          ]
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "displayedSnapshotRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "permissionSnapshotRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "operatorContextRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "binding",
+        "actionDigest",
+        "command",
+        "outcome",
+        "taskVersion",
+        "authEpoch",
+        "snapshotRef",
+        "evidence",
+        "dispatchState",
+        "terminationState",
+        "existingEffect",
+        "reconciliation",
+        "reasonCode"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "control_outcome"
+        },
+        "binding": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "command": {
+          "enum": [
+            "pause",
+            "resume",
+            "cancel"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "applied",
+            "rejected",
+            "stale",
+            "unknown",
+            "partial"
+          ]
+        },
+        "taskVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "authEpoch": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+        },
+        "snapshotRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "evidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "dispatchState": {
+          "enum": [
+            "blocked",
+            "open",
+            "unknown"
+          ]
+        },
+        "terminationState": {
+          "enum": [
+            "not_requested",
+            "requested",
+            "observed_stopped",
+            "unknown"
+          ]
+        },
+        "existingEffect": {
+          "enum": [
+            "none",
+            "completed",
+            "unknown"
+          ]
+        },
+        "reconciliation": {
+          "enum": [
+            "read_current",
+            "query_effect",
+            "none"
+          ]
+        },
+        "reasonCode": {
+          "enum": [
+            "applied",
+            "capability_unavailable",
+            "permission_denied",
+            "terminal",
+            "illegal_transition",
+            "stale_version",
+            "stale_authority",
+            "transport_unknown",
+            "in_flight",
+            "effect_completed"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "stale"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "reasonCode": {
+                "enum": [
+                  "stale_version",
+                  "stale_authority"
+                ]
+              },
+              "reconciliation": {
+                "const": "read_current"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "reconciliation": {
+                "const": "query_effect"
+              },
+              "reasonCode": {
+                "const": "transport_unknown"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "partial"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "reasonCode": {
+                "enum": [
+                  "in_flight",
+                  "effect_completed"
+                ]
+              },
+              "reconciliation": {
+                "const": "query_effect"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "applied"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "reasonCode": {
+                "const": "applied"
+              },
+              "reconciliation": {
+                "const": "none"
+              },
+              "dispatchState": {
+                "enum": [
+                  "blocked",
+                  "open"
+                ]
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "rejected"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "reasonCode": {
+                "enum": [
+                  "capability_unavailable",
+                  "permission_denied",
+                  "terminal",
+                  "illegal_transition"
+                ]
+              },
+              "reconciliation": {
+                "const": "read_current"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "applied",
+                  "partial"
+                ]
+              },
+              "command": {
+                "enum": [
+                  "pause",
+                  "cancel"
+                ]
+              }
+            },
+            "required": [
+              "outcome",
+              "command"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "dispatchState": {
+                "const": "blocked"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ]
+    }
+  }
+}
