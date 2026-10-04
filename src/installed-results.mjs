@@ -1,3 +1,4 @@
+import { types } from 'node:util';
 import { exact, canonical, canonicalDigest, hash, ref, integer, normalizedSpec } from './runtime-security.mjs';
 import { contextText } from './context.mjs';
 import { normalizeNotificationPolicy } from './notifications.mjs';
@@ -162,6 +163,7 @@ function classification(spec, progress, at, window) {
 const METHODS = ['isAlive', 'snapshotOwner', 'readLocalActionFacts', 'subscribeRuntimeReceipts', 'planOwnerAction', 'artifact', 'readArtifact', 'writeArtifact', 'acceptDelivery', 'getDelivery', 'listLocalDeliveries', 'publishLocalDelivery', 'recordLocalDeliveryAccess', 'configureLocalNotificationPolicy', 'getNotificationPolicy', 'writeLocalProgress', 'readLocalProgress'];
 export function createInstalledResults(input) {
   exact(input, ['selection', 'identity', 'profile']); const selection = validateInstalledResults(input.selection);
+  const notificationsEnabled = selection.enabled && selection.notifications.enabled;
   exact(input.identity, ['ownerId', 'workspaceId']); exact(input.profile, ['dir', 'name']);
   for (const value of [...Object.values(input.identity), ...Object.values(input.profile)]) { contextText(value, [], 4096); if (!value.trim()) fail('INVALID_INPUT'); }
   const expectedScope = capture({ ownerRef: hash(input.identity.ownerId), workspaceRef: hash(input.identity.workspaceId) });
@@ -178,8 +180,8 @@ export function createInstalledResults(input) {
       let admitted = false; try { admitted = active && api.isAlive() === true && ctx.connection === connection && connection.operator === peer && ctx.profileContext.dir === profile.dir && ctx.profileContext.name === profile.name; } catch {}
       if (!admitted) { active = false; permits.clear(); } return admitted;
     };
-    const check = () => { if (!live()) fail('SERVICE_DISPOSED'); if (!selection.enabled) fail('RESULTS_DISABLED'); };
-    const notificationCheck = () => { check(); if (!selection.notifications.enabled) fail('NOTIFICATIONS_DISABLED'); };
+    const check = () => { if (!selection.enabled) fail('RESULTS_DISABLED'); if (!live()) fail('SERVICE_DISPOSED'); };
+    const notificationCheck = () => { check(); if (!notificationsEnabled) fail('NOTIFICATIONS_DISABLED'); };
     const snapshot = taskRef => { check(); ref(taskRef); const s = capture(api.snapshotOwner({ taskRef }));
       if (!s || !s.task || s.task.taskRef !== taskRef) fail('SCOPE_MISMATCH'); ref(s.task.ownerRef); ref(s.task.workspaceRef); if (s.task.ownerRef !== expectedScope.ownerRef || s.task.workspaceRef !== expectedScope.workspaceRef) fail('SCOPE_MISMATCH'); integer(s.task.version, 1); integer(s.task.authEpoch); integer(s.observedAt, 0, TIME); check(); return s; };
     const freshCas = (s, input) => { if (s.task.version !== input.expectedTaskVersion || s.task.authEpoch !== input.expectedAuthEpoch) fail('STALE_VERSION'); };
@@ -265,14 +267,14 @@ export function createInstalledResults(input) {
     const localAdmission = record => {
       try {
         record = fields(record, ['ownerRef', 'workspaceRef', 'taskRef', 'actionRef', 'actionDigest', 'taskVersion', 'authEpoch', 'spec']);
-        if (!live() || !selection.enabled) return false; const p = permits.get(record.actionRef);
+        if (!selection.enabled || !live()) return false; const p = permits.get(record.actionRef);
         return !!p && canonical(p.record) === canonical(record) && Date.now() < p.expiresAt;
       } catch { return false; }
     };
     const invalidate = taskRef => { for (const [id, p] of permits) if (!taskRef || p.record.taskRef === taskRef) permits.delete(id); };
     const unsubscribe = api.subscribeRuntimeReceipts(event => {
       try {
-        if (!live()) return;
+        if (!selection.enabled || !live()) return;
         event = fields(event, ['operation', 'input', 'receipt']); const t = event.input.taskRef;
         if (['policy', 'revise', 'control', 'revoke', 'configureLocalNotificationPolicy'].includes(event.operation)) invalidate(t);
         if (event.operation === 'grant') {
@@ -408,8 +410,11 @@ export function createInstalledResults(input) {
       catch (error) {
         // Only an actual scoped read authorization refusal is a denied fact.
         // Storage/ciphertext/binding failures remain errors, never revocation.
-        const descriptor = error && Object.getOwnPropertyDescriptor(error, 'code');
-        if (!descriptor || !Object.hasOwn(descriptor, 'value') || !['UNAUTHORIZED', 'PERMISSION_DENIED'].includes(descriptor.value)) throw error;
+        // A Proxy's descriptor trap can forge a trusted-looking code. Reject
+        // it before any reflection; inspect only inert own string data.
+        if (types.isProxy(error)) fail('LOCAL_ACCESS_UNKNOWN');
+        const descriptor = error !== null && ['object', 'function'].includes(typeof error) ? Object.getOwnPropertyDescriptor(error, 'code') : undefined;
+        if (!descriptor || !Object.hasOwn(descriptor, 'value') || typeof descriptor.value !== 'string' || !['UNAUTHORIZED', 'PERMISSION_DENIED'].includes(descriptor.value)) throw error;
         permissionState = 'denied';
       }
       check();
@@ -429,12 +434,12 @@ export function createInstalledResults(input) {
       }
       return TIME;
     }
-    const progressPolicy = selection.notifications.enabled ? value => {
+    const progressPolicy = notificationsEnabled ? value => {
       value = capture(value); choose(value.kind, KINDS); integer(value.observedAt, 0, TIME); const p = policy(), emergency = p.spec.emergencyKinds.includes(value.kind);
       const state = classification(p.spec, [{ kind: value.kind, at: value.observedAt }], value.observedAt, null);
       return capture({ quietUntil: state === 'quiet' ? quietUntil(p.spec, value.observedAt) : 0, coalesceUntil: !emergency && p.spec.mergeKinds.includes(value.kind) ? Math.min(TIME, value.observedAt + p.spec.mergeWindowMs) : 0, allowObstaclesDuringQuiet: p.spec.emergencyKinds.includes('obstacle') });
     } : null;
-    return Object.freeze({ recipientAdapter, progressPolicy, notifications: selection.notifications.enabled ? route : null,
+    return Object.freeze({ recipientAdapter, progressPolicy, notifications: notificationsEnabled ? route : null,
       resolveLocalDelivery, localAdmission, planLocalDelivery, writeLocalReport, configureLocalNotifications, pendingLocalNotifications, prepareLocalNotification, acceptLocalNotification,
       localResultsStatus, readLocalResult, localDeliveryQuery, localDeliveryAccess,
       dispose() { if (disposed) return; disposed = true; active = false; permits.clear(); plans.clear(); unsubscribe(); } });

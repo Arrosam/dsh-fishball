@@ -16,7 +16,7 @@ function fixture(options = {}) {
   const calls = [], peer = {}, ctx = { connection: { operator: peer }, profileContext: { ...profile } };
   const N = canonicalDigest(['df.installed-results/v1', identity.ownerId, identity.workspaceId, profile.dir, profile.name]);
   const route = { recipientRef: canonicalDigest([N, 'df.native-owner/v1']), channelRef: canonicalDigest([N, 'df.local-results/v1']), policyRef: canonicalDigest([N, 'notification-policy']), mergeKeyRef: canonicalDigest([N, 'progress-group']) };
-  const artifacts = new Map(), data = new Map(), deliveries = new Map(), progress = new Map(); let listener, alive = true, service;
+  const artifacts = new Map(), data = new Map(), deliveries = new Map(), progress = new Map(); let listener, alive = true, service, subscribeCalls = 0;
   const state = { observedAt: Date.now(), task: { taskRef: T, ownerRef: H(identity.ownerId), workspaceRef: H(identity.workspaceId), version: 1, authEpoch: 0, status: 'running' }, control: 'active', actions: [], progress: [], artifacts: [], notifications: [], notificationFacts: [],
     policy: { version: 1, limits: { maxActive: 2, maxRuntimeMs: 100000, maxUsageUnits: 1000000, maxAttempts: 3, maxTotalAttempts: 12 }, modelPolicy: { version: 1, catalogEvidenceRef: H('catalog'), presetRefs: [H('preset')] } } };
   const facts = { resourcePolicyVersion: 1, modelPolicyVersion: 1, model: { presetRef: H('preset'), modelRef: H('model'), reasoningRef: H('reasoning'), catalogEvidenceRef: H('catalog') },
@@ -41,7 +41,7 @@ function fixture(options = {}) {
   const api = { ctx, isAlive: () => alive,
     snapshotOwner: input => read('snapshot', input, () => ({ ...state, deliveries: [...deliveries.values()] })),
     readLocalActionFacts: input => read('facts', input, () => facts),
-    subscribeRuntimeReceipts: fn => { listener = fn; return () => { calls.push(['unsubscribe']); listener = undefined; }; },
+    subscribeRuntimeReceipts: fn => { subscribeCalls++; listener = fn; return () => { calls.push(['unsubscribe']); listener = undefined; }; },
     planOwnerAction: input => { calls.push(['plan', copy(input)]); const actionDigest = canonicalDigest({ ownerRef: state.task.ownerRef, workspaceRef: state.task.workspaceRef, taskRef: input.taskRef, taskVersion: input.expectedTaskVersion, authEpoch: input.expectedAuthEpoch, spec: input.spec }); state.actions.push({ actionRef: input.spec.actionRef, actionDigest, spec: copy(input.spec), state: 'requested', claimRef: null }); return { actionRef: input.spec.actionRef, actionDigest, taskVersion: state.task.version, authEpoch: state.task.authEpoch }; },
     artifact: input => read('artifact', input, () => artifacts.get(input.artifactRef)),
     readArtifact: input => read('readArtifact', input, () => { const a = artifacts.get(input.artifactRef); return { artifact: a, data: data.get(a.recordRef) }; }),
@@ -66,7 +66,7 @@ function fixture(options = {}) {
   function install(value = options.selection ?? selection(options.notifications)) { service = createInstalledResults(config(value)).installedResultsInstaller(api); return service; }
   install();
   const f = { api, service, state, calls, ctx, route, artifacts, data, deliveries, progress, facts, artifact, delivery, install,
-    setAlive(value) { alive = value; }, emit(operation, input, receipt) { listener?.({ operation, input, receipt }); }, policy() { return policy; } };
+    subscriptions() { return subscribeCalls; }, setAlive(value) { alive = value; }, emit(operation, input, receipt) { listener?.({ operation, input, receipt }); }, policy() { return policy; } };
   f.plan = () => { const r = service.planLocalDelivery(command(f, 'plan', { deliveryRef: D })); return r; };
   f.grant = () => { const a = state.actions.at(-1); state.task.authEpoch++; const r = { actionRef: a.actionRef, actionDigest: a.actionDigest, task: copy(state.task), taskVersion: state.task.version, authEpoch: state.task.authEpoch, expiresAt: 8640000000000000 }; f.emit('grant', { taskRef: T, actionRef: a.actionRef }, r); return a; };
   f.claim = () => { const a = state.actions.at(-1), d = deliveries.get(D); a.claimRef = H('claim'); a.state = 'dispatch_intent'; d.state = 'outbox_committed'; d.claimRef = a.claimRef; d.reservationRef = H('reservation'); d.generationRef = a.spec.executor.generationRef; state.task.version++; return copy(d); };
@@ -320,4 +320,40 @@ test('sent echo without actual durable publication cannot produce sent receipt',
 test('full-day configured quiet has bounded permanent hint and grants no emergency authority', () => {
   const f = fixture({ notifications: true }); f.policy().spec.quietWindows = [{ startMinute: 0, endMinute: 1440 }];
   const r = f.service.progressPolicy({ kind: 'milestone', observedAt: f.state.observedAt }); assert.equal(r.quietUntil, 8640000000000000); assert.ok(!f.calls.some(c => ['plan', 'publish'].includes(c[0])));
+});
+
+test('F1 exact detached disabled selection installs null optional contributions and rejects all operations without source work', async () => {
+  const f = fixture({ selection: { enabled: false } }); assert.deepEqual(validateInstalledResults({ enabled: false }), { enabled: false });
+  assert.equal(f.service.progressPolicy, null); assert.equal(f.service.notifications, null); assert.deepEqual(f.calls, []); assert.equal(f.subscriptions(), 1);
+  const a = f.artifacts.get(A), names = {
+    planLocalDelivery: command(f, 'disabled-plan', { deliveryRef: D }),
+    writeLocalReport: command(f, 'disabled-report', { progressRef: H('disabled-progress'), kind: 'final', artifactRef: A, artifactVersion: 1, digest: a.digest, completedScopeRef: H('scope'), unfinishedRef: H('unfinished'), nextStepRef: H('next'), blockerRefs: [] }),
+    configureLocalNotifications: { commandRef: H('disabled-policy'), expectedRevision: 0, spec: policySpec() },
+    pendingLocalNotifications: { taskRef: T },
+    prepareLocalNotification: command(f, 'disabled-prepare', { artifactRef: A, version: 1, progressRefs: [H('progress')] }),
+    acceptLocalNotification: command(f, 'disabled-accept', { deliveryRef: D, artifactRef: A, artifactVersion: 1, digest: a.digest, policyRevision: 1, progressRefs: [H('progress')] }),
+    localResultsStatus: { taskRef: T }, readLocalResult: { taskRef: T, artifactRef: A, version: 1, digest: a.digest }, localDeliveryAccess: { taskRef: T, deliveryRef: D },
+  };
+  for (const [name, input] of Object.entries(names)) assert.throws(() => f.service[name](input), code('RESULTS_DISABLED'));
+  await assert.rejects(f.service.localDeliveryQuery({ taskRef: T, deliveryRef: D }), code('RESULTS_DISABLED'));
+  assert.equal(f.service.localAdmission({ ownerRef: H(identity.ownerId), workspaceRef: H(identity.workspaceId), taskRef: T, actionRef: H('never-planned'), actionDigest: H('never-granted'), taskVersion: 1, authEpoch: 0, spec: {} }), false);
+  assert.deepEqual(f.calls, []); assert.equal(f.state.actions.length, 0); assert.equal(f.deliveries.get(D).state, 'accepted');
+  f.service.dispose(); f.service.dispose(); assert.equal(f.calls.filter(c => c[0] === 'unsubscribe').length, 1);
+});
+test('F2 thrown Proxy cannot reflect a forged authorization code or create denied access evidence', () => {
+  const f = fixture(), d = f.deliveries.get(D); d.state = 'sent'; d.observations.push({ state: 'sent', permissionState: 'allowed', openability: 'unknown', observedAt: f.state.observedAt, evidenceRef: H('original-published') });
+  let traps = 0; const thrown = new Proxy({}, { getOwnPropertyDescriptor() { traps++; return { value: 'UNAUTHORIZED', enumerable: true, configurable: true }; }, get() { traps++; throw new Error('CANARY'); } });
+  f.api.readArtifact = () => { throw thrown; }; f.service.dispose(); const replacement = f.install();
+  const before = structuredClone(d); assert.throws(() => replacement.localDeliveryAccess({ taskRef: T, deliveryRef: D }), code('LOCAL_ACCESS_UNKNOWN'));
+  assert.equal(traps, 0); assert.equal(f.calls.filter(c => c[0] === 'access').length, 0); assert.deepEqual(d, before);
+});
+test('F2 accessor/inherited/coercible error codes confer no permission-denial fact', () => {
+  let traps = 0; const getter = Object.defineProperty({}, 'code', { get() { traps++; return 'UNAUTHORIZED'; } });
+  const coercible = { code: { toString() { traps++; return 'UNAUTHORIZED'; } } };
+  for (const error of [getter, Object.create({ code: 'UNAUTHORIZED' }), coercible]) {
+    const f = fixture(), d = f.deliveries.get(D); d.state = 'sent'; d.observations.push({ state: 'sent', permissionState: 'allowed', openability: 'unknown', observedAt: f.state.observedAt, evidenceRef: H('original-published') });
+    f.api.readArtifact = () => { throw error; }; f.service.dispose(); const replacement = f.install();
+    assert.throws(() => replacement.localDeliveryAccess({ taskRef: T, deliveryRef: D })); assert.equal(f.calls.filter(c => c[0] === 'access').length, 0); assert.equal(d.state, 'sent');
+  }
+  assert.equal(traps, 0);
 });

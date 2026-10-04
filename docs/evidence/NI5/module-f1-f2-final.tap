@@ -1,0 +1,270 @@
+TAP version 13
+# (node:78114) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: disabled defaults and explicit detached admission selections
+ok 1 - disabled defaults and explicit detached admission selections
+  ---
+  duration_ms: 2.764459
+  type: 'test'
+  ...
+# Subtest: closed config rejects callbacks, proof fields, bounds, holes and descriptor traps
+ok 2 - closed config rejects callbacks, proof fields, bounds, holes and descriptor traps
+  ---
+  duration_ms: 13.546834
+  type: 'test'
+  ...
+# Subtest: composer/installation performs no ledger reads, writes, plans, grants or sends
+ok 3 - composer/installation performs no ledger reads, writes, plans, grants or sends
+  ---
+  duration_ms: 1.934541
+  type: 'test'
+  ...
+# Subtest: all public operations reject getters/proxies before any callback
+ok 4 - all public operations reject getters/proxies before any callback
+  ---
+  duration_ms: 1.511667
+  type: 'test'
+  ...
+# Subtest: scope, captured peer/profile and disposal are current fences
+ok 5 - scope, captured peer/profile and disposal are current fences
+  ---
+  duration_ms: 1.53775
+  type: 'test'
+  ...
+# Subtest: artifact hash/version/record integrity are checked; read never verifies or publishes
+ok 6 - artifact hash/version/record integrity are checked; read never verifies or publishes
+  ---
+  duration_ms: 1.272083
+  type: 'test'
+  ...
+# Subtest: planning derives complete exact spec, explicit bytes/resource bounds and no tool/inference
+ok 7 - planning derives complete exact spec, explicit bytes/resource bounds and no tool/inference
+  ---
+  duration_ms: 2.182208
+  type: 'test'
+  ...
+# Subtest: missing/shared insufficient policy and UTF8 envelope budget refuse without plan
+ok 8 - missing/shared insufficient policy and UTF8 envelope budget refuse without plan
+  ---
+  duration_ms: 3.431208
+  type: 'test'
+  ...
+# Subtest: original accepted route/CAS/version binding refuses changed recipient and passed guesses
+ok 9 - original accepted route/CAS/version binding refuses changed recipient and passed guesses
+  ---
+  duration_ms: 1.235875
+  type: 'test'
+  ...
+# Subtest: claim admission needs private original grant receipt; unknown/worker action denied
+ok 10 - claim admission needs private original grant receipt; unknown/worker action denied
+  ---
+  duration_ms: 1.791
+  type: 'test'
+  ...
+# Subtest: atomic publication returns sent only after durable source association
+ok 11 - atomic publication returns sent only after durable source association
+  ---
+  duration_ms: 3.435958
+  type: 'test'
+  ...
+# Subtest: lost acknowledgement remains query-only and cannot blindly resend
+ok 12 - lost acknowledgement remains query-only and cannot blindly resend
+  ---
+  duration_ms: 2.284708
+  type: 'test'
+  ...
+# Subtest: cancel/revoke/profile drift before publish denies, late async completion cannot represent new peer
+ok 13 - cancel/revoke/profile drift before publish denies, late async completion cannot represent new peer
+  ---
+  duration_ms: 4.168584
+  type: 'test'
+  ...
+# Subtest: access updates current access separately, never creates publication or opening
+ok 14 - access updates current access separately, never creates publication or opening
+  ---
+  duration_ms: 2.077417
+  type: 'test'
+  ...
+# Subtest: writeLocalReport selects only statement refs, cannot supply trusted verification/time/original goal
+ok 15 - writeLocalReport selects only statement refs, cannot supply trusted verification/time/original goal
+  ---
+  duration_ms: 0.602792
+  type: 'test'
+  ...
+# Subtest: raw progress labels and stale normal associations are suppressed; factual dedup ignores new refs
+ok 16 - raw progress labels and stale normal associations are suppressed; factual dedup ignores new refs
+  ---
+  duration_ms: 2.992917
+  type: 'test'
+  ...
+# Subtest: stripped report/pointer, malformed passed source and source overflow fail rather than downgrade
+ok 17 - stripped report/pointer, malformed passed source and source overflow fail rather than downgrade
+  ---
+  duration_ms: 2.556
+  type: 'test'
+  ...
+# Subtest: procedural task CAS does not stale actual current normal report
+ok 18 - procedural task CAS does not stale actual current normal report
+  ---
+  duration_ms: 0.809792
+  type: 'test'
+  ...
+# Subtest: quiet half-open/emergency/merge/frequency hints use configured actual kinds and trusted time
+ok 19 - quiet half-open/emergency/merge/frequency hints use configured actual kinds and trusted time
+  ---
+  duration_ms: 3.669625
+  type: 'test'
+  ...
+# Subtest: held unknown group survives changed policy; only known failed released item reports retry
+ok 20 - held unknown group survives changed policy; only known failed released item reports retry
+  ---
+  duration_ms: 1.221542
+  type: 'test'
+  ...
+# Subtest: normal preparation canonicalizes sorted complete provenance; raw and changed manifest cannot accept
+ok 21 - normal preparation canonicalizes sorted complete provenance; raw and changed manifest cannot accept
+  ---
+  duration_ms: 2.150541
+  type: 'test'
+  ...
+# Subtest: configured normal policy writes only derived policy ref and explicit spec; no drain
+ok 22 - configured normal policy writes only derived policy ref and explicit spec; no drain
+  ---
+  duration_ms: 0.44775
+  type: 'test'
+  ...
+# Subtest: complete typed native chain can display passed; self-review/mismatched material/coverage refuse
+ok 23 - complete typed native chain can display passed; self-review/mismatched material/coverage refuse
+  ---
+  duration_ms: 6.217416
+  type: 'test'
+  ...
+# Subtest: all eight normal states remain explicit while advanced/unavailable verification cannot become passed
+ok 24 - all eight normal states remain explicit while advanced/unavailable verification cannot become passed
+  ---
+  duration_ms: 5.515459
+  type: 'test'
+  ...
+# Subtest: artifact declared byte length is enforced against exact UTF8 bytes
+ok 25 - artifact declared byte length is enforced against exact UTF8 bytes
+  ---
+  duration_ms: 0.368625
+  type: 'test'
+  ...
+# Subtest: historical actual delivery remains delivered after actual current read permission denial
+ok 26 - historical actual delivery remains delivered after actual current read permission denial
+  ---
+  duration_ms: 3.2265
+  type: 'test'
+  ...
+# Subtest: restart-like replacement reconstructs pending facts/unknown hold without restoring private grants
+ok 27 - restart-like replacement reconstructs pending facts/unknown hold without restoring private grants
+  ---
+  duration_ms: 1.758791
+  type: 'test'
+  ...
+# Subtest: policy changes invalidate a prior private permit; no store recursion from localAdmission
+ok 28 - policy changes invalidate a prior private permit; no store recursion from localAdmission
+  ---
+  duration_ms: 1.130334
+  type: 'test'
+  ...
+# Subtest: quiet end display hint is an exact boundary and emergency cannot bypass frequency
+ok 29 - quiet end display hint is an exact boundary and emergency cannot bypass frequency
+  ---
+  duration_ms: 1.171333
+  type: 'test'
+  ...
+# Subtest: later unknown acknowledgement preserves signed source publication for read-only reconciliation
+ok 30 - later unknown acknowledgement preserves signed source publication for read-only reconciliation
+  ---
+  duration_ms: 1.830667
+  type: 'test'
+  ...
+# Subtest: current artifact mutation invalidates publication plan while historical authenticated bytes remain readable
+ok 31 - current artifact mutation invalidates publication plan while historical authenticated bytes remain readable
+  ---
+  duration_ms: 1.018875
+  type: 'test'
+  ...
+# Subtest: once observed peer/lifetime drift seals old callbacks even if original object is restored
+ok 32 - once observed peer/lifetime drift seals old callbacks even if original object is restored
+  ---
+  duration_ms: 1.230083
+  type: 'test'
+  ...
+# Subtest: private closure misrouting across owner/workspace and changed immutable intent fail closed
+ok 33 - private closure misrouting across owner/workspace and changed immutable intent fail closed
+  ---
+  duration_ms: 0.737583
+  type: 'test'
+  ...
+# Subtest: normal native readiness rejects legacy accepted, unavailable and caller-looking proof bodies
+ok 34 - normal native readiness rejects legacy accepted, unavailable and caller-looking proof bodies
+  ---
+  duration_ms: 1.817125
+  type: 'test'
+  ...
+# Subtest: native projection binding must match original verification and independent producer generation
+ok 35 - native projection binding must match original verification and independent producer generation
+  ---
+  duration_ms: 2.85925
+  type: 'test'
+  ...
+# Subtest: native verification currentness is rechecked at preview and immediately before atomic publication
+ok 36 - native verification currentness is rechecked at preview and immediately before atomic publication
+  ---
+  duration_ms: 1.920167
+  type: 'test'
+  ...
+# Subtest: normal notification acceptance requires its own native verification, not raw source labels
+ok 37 - normal notification acceptance requires its own native verification, not raw source labels
+  ---
+  duration_ms: 1.147125
+  type: 'test'
+  ...
+# Subtest: actual access denial is distinct from corrupt/missing/digest/lifetime source failures
+ok 38 - actual access denial is distinct from corrupt/missing/digest/lifetime source failures
+  ---
+  duration_ms: 2.0285
+  type: 'test'
+  ...
+# Subtest: sent echo without actual durable publication cannot produce sent receipt
+ok 39 - sent echo without actual durable publication cannot produce sent receipt
+  ---
+  duration_ms: 1.308625
+  type: 'test'
+  ...
+# Subtest: full-day configured quiet has bounded permanent hint and grants no emergency authority
+ok 40 - full-day configured quiet has bounded permanent hint and grants no emergency authority
+  ---
+  duration_ms: 0.6805
+  type: 'test'
+  ...
+# Subtest: F1 exact detached disabled selection installs null optional contributions and rejects all operations without source work
+ok 41 - F1 exact detached disabled selection installs null optional contributions and rejects all operations without source work
+  ---
+  duration_ms: 0.442791
+  type: 'test'
+  ...
+# Subtest: F2 thrown Proxy cannot reflect a forged authorization code or create denied access evidence
+ok 42 - F2 thrown Proxy cannot reflect a forged authorization code or create denied access evidence
+  ---
+  duration_ms: 0.374541
+  type: 'test'
+  ...
+# Subtest: F2 accessor/inherited/coercible error codes confer no permission-denial fact
+ok 43 - F2 accessor/inherited/coercible error codes confer no permission-denial fact
+  ---
+  duration_ms: 1.395625
+  type: 'test'
+  ...
+1..43
+# tests 43
+# suites 0
+# pass 43
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 209.188333
