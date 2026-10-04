@@ -1,0 +1,15 @@
+{
+  "result": "passed",
+  "originalSourceByteIdentical": true,
+  "originalSourceCommit": "abb28b7",
+  "sourceLines": 529,
+  "sourceSha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+  "originalACs": 82,
+  "currentProviderNeutralACs": 5,
+  "traceRows": 87,
+  "duplicateRows": 0,
+  "missingOrAddedOriginalACs": 0,
+  "missingLocalLinks": 0,
+  "fullTicketMvpAcceptance": "HOLD",
+  "captureTime": "2026-10-04T15:14:05.811Z"
+}

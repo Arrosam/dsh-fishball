@@ -1,0 +1,41 @@
+{
+  "sourceCommit": "6c830ca",
+  "phase": "active",
+  "pid": 50587,
+  "loads": 3,
+  "unloads": 2,
+  "cleanupCalls": 4,
+  "runtimeExport": "src/runtime-plugin.mjs:createRuntimePlugin",
+  "target": "dsh-web-0.2.1-alpha.1",
+  "schemaVersion": 4,
+  "hostSupported": true,
+  "modelProviders": 0,
+  "sessions": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "recipientAttempts": 0,
+  "capabilities": {
+    "memory": true,
+    "preview": true,
+    "worker": true,
+    "delivery": true,
+    "reviewer": true,
+    "automation": true,
+    "notifications": true
+  },
+  "loopback": true,
+  "port": 3080,
+  "credentialBacking": {
+    "provider": "FixtureCredentialProvider",
+    "configured": true,
+    "kind": "grant",
+    "nativeBrowserAuth": "unchanged"
+  },
+  "modelReadiness": "unavailable; no provider/catalog configured",
+  "keyUnchanged": true,
+  "authBackingMetadataUnchanged": true,
+  "nativeSyntheticYamlMetadataUnchanged": true,
+  "nativeSyntheticYamlContentsRead": false,
+  "ephemeralAccessPresent": true,
+  "captureTime": "2026-10-04T15:01:58.337Z"
+}

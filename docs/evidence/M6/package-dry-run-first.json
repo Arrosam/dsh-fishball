@@ -1,0 +1,17 @@
+{
+  "result": "passed",
+  "mode": "offline dry-run; no package emitted/published",
+  "name": "dsh-fishball",
+  "version": "0.1.0-preview.1",
+  "private": true,
+  "license": "MIT",
+  "files": 372,
+  "unpackedSize": 5564222,
+  "forbiddenRuntimeCredentialDatabaseCacheFiles": 0,
+  "lifecycleScripts": false,
+  "requiredRuntimeAndNoticePathsPresent": true,
+  "fileListSha256": "4db51a53db8f2551742a1f2cde4cff78896e1556257e435b1f12ac385ad9d6ba",
+  "snapshot": "working files before final evidence/test-fixture close; final manifest/source archive follow",
+  "portableInstalledHostResolution": "HOLD; source probe requires separately installed colocated pinned host",
+  "captureTime": "2026-10-04T15:10:38.783Z"
+}
