@@ -181,3 +181,42 @@ test('a disconnect triggered synchronously by pending-state publication prevents
 test('preview lifetime upper bound uses response time while preserving request-time rollback fencing', async () => {
   const f = fixture({ handle: endpoint => { if (endpoint === 'v1/prepare') { f.setTime(1200); return ok(plan({ expiresAt: 61200 })); } } }); await f.model.refresh(); assert.equal(await f.model.prepare(), true); f.model.setAccepted(true); assert.equal(await f.model.confirm(), true); f.model.dispose();
 });
+
+test('exact pinned Web status405 requires a fresh valid original list and never setup consent', async () => {
+  const calls = [], gate = deferred(); let delay = false;
+  const app = application({ async call(channel, endpoint, input) {
+    calls.push({ channel, endpoint, input });
+    if (channel === '/df-setup') throw new Error('transport failure for /df-setup/v1/status: HTTP 405');
+    assert.equal(endpoint, 'v1/list'); return delay ? gate.promise : ok([]);
+  } }); await settle();
+  assert.equal(app.setupModel.getSnapshot().routeMissing, true); assert.equal(app.model.getSnapshot().phase, 'ready');
+  assert.equal(text(client.Panel(app)).includes('Create task'), true);
+  assert.deepEqual(calls.map(value => [value.channel, value.endpoint, value.input]), [['/df-setup', 'v1/status', {}], ['/df-rpc', 'v1/list', {}]]);
+  delay = true; app.reset(); await settle(); assert.equal(text(client.Panel(app)).includes('Create task'), false);
+  gate.resolve(ok([])); await settle(); assert.equal(text(client.Panel(app)).includes('Create task'), true);
+  assert.equal(calls.some(value => /confirm|prepare|grant|dispatch|execute/.test(value.endpoint)), false); app.close();
+});
+
+test('near405, authentication failures, malformed status and malformed original lists cannot enable fallback', async () => {
+  const exact = 'transport failure for /df-setup/v1/status: HTTP 405';
+  const faults = [new Error(exact + ' extra'), new Error('prefix ' + exact), new Error(exact + '\n'), new Error('transport failure for /df-setup/v1/prepare: HTTP 405'), new Error('transport failure for /df-rpc/v1/status: HTTP 405'), new Error('transport failure for /df-setup/v1/status: HTTP 401'), new Error('transport failure for /df-setup/v1/status: HTTP 403'), new Error('transport failure for /df-setup/v1/status: HTTP 500'), new Error('network unavailable'), { ok: false, error: { code: 'OPERATOR_REQUIRED', message: exact } }, ok({ ...status('ready'), unexpected: 'SYNTHETIC_405_CANARY' }), ok([])];
+  for (const fault of faults) {
+    const calls = [], app = application({ async call(channel, endpoint) { calls.push({ channel, endpoint }); if (channel === '/df-setup') { if (fault instanceof Error) throw fault; return fault; } return ok([]); } }); await settle();
+    assert.equal(app.setupModel.getSnapshot().routeMissing, false); assert.equal(calls.some(value => value.channel === '/df-rpc'), false); assert.equal(text(client.Panel(app)).includes('Create task'), false); assert.equal(text(client.Panel(app)).includes('SYNTHETIC_405_CANARY'), false); app.close();
+  }
+  for (const result of [ok(null), ok('ready'), ok({ tasks: [] }), ok([{}]), { ok: false, error: { code: 'OPERATOR_REQUIRED' } }]) {
+    const calls = [], app = application({ async call(channel, endpoint) { calls.push({ channel, endpoint }); if (channel === '/df-setup') throw new Error(exact); return result; } }); await settle();
+    assert.equal(app.setupModel.getSnapshot().routeMissing, true); assert.equal(app.model.getSnapshot().phase, 'error'); assert.equal(text(client.Panel(app)).includes('Create task'), false);
+    assert.deepEqual(calls.map(value => [value.channel, value.endpoint]), [['/df-setup', 'v1/status'], ['/df-rpc', 'v1/list']]); app.close();
+  }
+});
+
+test('exact405 fallback cannot publish a pending list after disconnect or unload', async () => {
+  for (const boundary of ['disconnect', 'unload']) {
+    const gate = deferred(), calls = [];
+    const app = application({ async call(channel, endpoint, input, signal) { calls.push({ channel, endpoint, signal }); if (channel === '/df-setup') throw new Error('transport failure for /df-setup/v1/status: HTTP 405'); return gate.promise; } }); await settle();
+    assert.equal(app.model.getSnapshot().phase, 'loading'); assert.equal(text(client.Panel(app)).includes('Create task'), false);
+    if (boundary === 'disconnect') { app.setupModel.disconnected(); app.model.disconnected(); } else app.close();
+    assert.equal(calls.at(-1).signal.aborted, true); gate.resolve(ok([])); await settle(); assert.equal(app.model.getSnapshot().phase === 'ready', false); assert.equal(text(client.Panel(app)).includes('Create task'), false); app.close();
+  }
+});
