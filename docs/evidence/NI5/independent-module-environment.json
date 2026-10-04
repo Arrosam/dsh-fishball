@@ -1,0 +1,27 @@
+{
+  "level": "T only",
+  "timestampUTC": "2026-10-04T22:11:30.996670+00:00",
+  "node": {
+    "version": "v22.22.2",
+    "execPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "python": "Python 3.14.5",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "leasedSource": "89feb0bcc9f97cdeecbeb43d27e39caabd7c1b6014110688e401bf03a37e61fa",
+  "leasedAuthorTest": "6cf4e496bd3e276c475eaa7446389ecfe19bf95b3bb3025c9773d7633b5c1d69",
+  "heldPins": 19,
+  "staticLocalImportClosure": [
+    "src/installed-results.mjs",
+    "src/runtime-security.mjs",
+    "src/context.mjs",
+    "src/notifications.mjs",
+    "src/messages.mjs",
+    "src/results.mjs",
+    "src/ledger.mjs"
+  ],
+  "noRuntimeStoreImport": true,
+  "noStoreConstruction": true,
+  "scope": "new independent functional closure tests; actual source projections are typed carriers, not cryptographic/native/durable proof"
+}

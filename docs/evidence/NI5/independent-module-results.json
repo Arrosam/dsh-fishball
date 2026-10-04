@@ -1,0 +1,715 @@
+{
+  "contractVersion": "df.ni5-independent-module-evidence/v1",
+  "owner": "normal_integrations_istqb",
+  "scope": "Independent functional T only, not CODE/D/N/P/U acceptance",
+  "source": {
+    "independentTest": "test/installed-results-adversarial.test.mjs",
+    "sha256": "2f219886a99c96d49319ab158cc4e1a974f72be7927bcd97b4dda2c82be244ae",
+    "snapshot": "docs/evidence/NI5/independent-module-first-source.txt",
+    "unchangedThroughout": true,
+    "fixtureRepairs": []
+  },
+  "firstRun": {
+    "moduleSHA256": "89feb0bcc9f97cdeecbeb43d27e39caabd7c1b6014110688e401bf03a37e61fa",
+    "authorTestSHA256": "6cf4e496bd3e276c475eaa7446389ecfe19bf95b3bb3025c9773d7633b5c1d69",
+    "tap": "docs/evidence/NI5/independent-module-first.tap",
+    "tapSHA256": "d7d3f26f7c5da10890ba6da61c4e5db7a7d094ba80f3273b2b655b693102f931",
+    "command": "node --test --test-reporter=tap test/installed-results-adversarial.test.mjs",
+    "exitCode": 1,
+    "counts": {
+      "tests": 130,
+      "pass": 128,
+      "fail": 2,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "failedCaseNumbers": [
+      1,
+      104
+    ],
+    "caseNames": [
+      "T N5-01/N5R-01: disabled/enabled construction and observational reads have zero mutation",
+      "T N5-01/20: selected units boundary 0",
+      "T N5-01/20: selected units boundary 1",
+      "T N5-01/20: selected units boundary 32",
+      "T N5-01/20: selected units boundary 33",
+      "T N5-01/20: selected runtimeMs boundary 0",
+      "T N5-01/20: selected runtimeMs boundary 1",
+      "T N5-01/20: selected runtimeMs boundary 60000",
+      "T N5-01/20: selected runtimeMs boundary 60001",
+      "T N5-01/20: selected usageUnits boundary 0",
+      "T N5-01/20: selected usageUnits boundary 1",
+      "T N5-01/20: selected usageUnits boundary 100000000",
+      "T N5-01/20: selected usageUnits boundary 100000001",
+      "T N5-01/02/19: closed hostile config and wire values invoke zero caller traps/effects",
+      "T N5-01/02: installation exact fields, one-use, no generic fallback and detached recipe",
+      "T N5-02/08: recipient/channel/policy/group identities and action charge recipe use independent canonical expectations",
+      "T N5-02/N5R-02: foreign owner read scope refuses before material",
+      "T N5-02/N5R-02: foreign workspace read scope refuses before material",
+      "T N5-02/N5R-02: foreign task read scope refuses before material",
+      "T N5-02/18/N5R-10: captured peer lifetime seals old callbacks",
+      "T N5-02/18/N5R-10: captured connection lifetime seals old callbacks",
+      "T N5-02/18/N5R-10: captured profile dir lifetime seals old callbacks",
+      "T N5-02/18/N5R-10: captured profile name lifetime seals old callbacks",
+      "T N5-02/18/N5R-10: captured alive false lifetime seals old callbacks",
+      "T N5-02/18/N5R-10: captured alive promise lifetime seals old callbacks",
+      "T N5-02/18/N5R-10: captured dispose lifetime seals old callbacks",
+      "T N5-04/N5R-02: exact stored-source projection rejects null artifact",
+      "T N5-04/N5R-02: exact stored-source projection rejects null data",
+      "T N5-04/N5R-02: exact stored-source projection rejects record",
+      "T N5-04/N5R-02: exact stored-source projection rejects kind",
+      "T N5-04/N5R-02: exact stored-source projection rejects digest",
+      "T N5-04/N5R-02: exact stored-source projection rejects content",
+      "T N5-04/N5R-02: exact stored-source projection rejects byteLength",
+      "T N5-04/N5R-02: exact stored-source projection rejects version",
+      "T N5-04/N5R-02: exact stored-source projection rejects extra top",
+      "T N5-04/N5R-02: historical scoped version bytes survive latest-version replacement without readiness",
+      "T N5-03/07/N5R-03: no verification can be read but never unlocks normal readiness",
+      "T N5-03/07/N5R-03: raw accepted can be read but never unlocks normal readiness",
+      "T N5-03/07/N5R-03: unavailable accepted can be read but never unlocks normal readiness",
+      "T N5-03/07/N5R-03: native rejected can be read but never unlocks normal readiness",
+      "T N5-03/07/N5R-03: native unknown can be read but never unlocks normal readiness",
+      "T N5-03/07/N5R-03: body embedded native-looking pass/delivery flags are only readable bytes",
+      "T N5-07/N5R-04: native projection mismatched producer cannot authorize plan",
+      "T N5-07/N5R-04: native projection mismatched generation cannot authorize plan",
+      "T N5-07/N5R-04: native projection mismatched evidence cannot authorize plan",
+      "T N5-07/N5R-04: native projection mismatched reviewer cannot authorize plan",
+      "T N5-07/N5R-04: native projection mismatched review generation cannot authorize plan",
+      "T N5-07/N5R-04: native projection mismatched verdict cannot authorize plan",
+      "T N5-05/06: manifest preserves actual typed source report state stale",
+      "T N5-05/06: manifest preserves actual typed source report state blocked",
+      "T N5-05/06: manifest preserves actual typed source report state budget_limited",
+      "T N5-05/06: manifest preserves actual typed source report state unexamined",
+      "T N5-05/06: manifest preserves actual typed source report state unknown",
+      "T N5-05/06: manifest preserves actual typed source report state failed",
+      "T N5-05/06: manifest preserves actual typed source report state not_run",
+      "T N5-05/06: manifest preserves actual typed source report state passed",
+      "T N5-05/06: actual passed report native source coverage/repair axes survive canonical sorted manifest",
+      "T N5-05/06/07: normal report unverified raw refuses before manifest write",
+      "T N5-05/06/07: normal report stale refuses before manifest write",
+      "T N5-05/06/07: normal report raw pointer retained refuses before manifest write",
+      "T N5-05/06/07: normal report normal pointer missing refuses before manifest write",
+      "T N5-05/06/07: normal report foreign owner refuses before manifest write",
+      "T N5-05/06/07: normal report source statement refuses before manifest write",
+      "T N5-05/06/07: normal report coverage hole refuses before manifest write",
+      "T N5-05/06/07: normal report fatal even resolved refuses before manifest write",
+      "T N5-05/06/07: normal report unknown source refuses before manifest write",
+      "T N5-05/06/07: normal report stale source refuses before manifest write",
+      "T N5-05/06/07: normal report mixed native report refuses before manifest write",
+      "T N5-05/06/07: normal report same reviewer producer refuses before manifest write",
+      "T N5-05/19: writeLocalReport selects exact refs/CAS and never accepts caller verdict/proof",
+      "T N5-06/07/08: manifest needs its own typed accepted native association before notification acceptance",
+      "T N5-08/19: plan rejects full spec body without mutation",
+      "T N5-08/19: plan rejects wrong task CAS without mutation",
+      "T N5-08/19: plan rejects wrong auth CAS without mutation",
+      "T N5-08/N5R-05: exact retained delivery recipient binding refuses",
+      "T N5-08/N5R-05: exact retained delivery channel binding refuses",
+      "T N5-08/N5R-05: exact retained delivery target digest binding refuses",
+      "T N5-08/N5R-05: exact retained delivery intent task binding refuses",
+      "T N5-08/N5R-05: exact retained delivery outbox binding refuses",
+      "T N5-08: localAdmission is exact receipt narrowing, synchronous and performs zero source reads",
+      "T N5-08/18: malformed private receipt seals contribution rather than manufacturing admission",
+      "T N5-09/10/N5R-05: original getDelivery publication shape, exact source association and unknown opening",
+      "T N5-10/N5R-05: callback sent echo without retained publication cannot establish sent",
+      "T N5-10/N5R-05: publication callback malformed delivered flag gives no success receipt",
+      "T N5-10/N5R-05: publication callback malformed opened flag gives no success receipt",
+      "T N5-10/N5R-05: publication callback malformed denied access gives no success receipt",
+      "T N5-10/N5R-05: publication callback malformed claim gives no success receipt",
+      "T N5-10/N5R-05: publication callback malformed artifact version gives no success receipt",
+      "T N5-10/N5R-05: publication callback malformed extra authority gives no success receipt",
+      "T N5-09/18/N5R-06: committed await then peer loss keeps source fact and forbids stale success",
+      "T N5-09/18/N5R-06: committed await then profile loss keeps source fact and forbids stale success",
+      "T N5-09/18/N5R-06: committed await then dispose loss keeps source fact and forbids stale success",
+      "T N5-09/18/N5R-06: committed await then lifetime loss keeps source fact and forbids stale success",
+      "T N5-11/N5R-07: committed loss query and uncertain query never resend or restore a private permit",
+      "T N5-12/N5R-08: actual typed source UNAUTHORIZED records denied access without altering sent history",
+      "T N5-12/N5R-08: actual typed source PERMISSION_DENIED records denied access without altering sent history",
+      "T N5-12/N5R-08: source STORAGE_INVALID is never reclassified as denial",
+      "T N5-12/N5R-08: source CRYPTO_FAILED is never reclassified as denial",
+      "T N5-12/N5R-08: source DIGEST_MISMATCH is never reclassified as denial",
+      "T N5-12/N5R-08: source RECORD_NOT_FOUND is never reclassified as denial",
+      "T N5-12/N5R-08: source ARTIFACT_BINDING_INVALID is never reclassified as denial",
+      "T N5-12/N5R-08: source SERVICE_DISPOSED is never reclassified as denial",
+      "T N5-12/N5R-08: source T_UNKNOWN is never reclassified as denial",
+      "T N5-12/20/N5R-08: hostile error Proxy cannot execute reflection or invent denied evidence",
+      "T N5-12/20/N5R-08: hostile error code getter never executes and remains uncertainty",
+      "T N5-10/12/13: per-item historical delivered/query stays distinct from current access and unknown sibling",
+      "T N5-14: factual dedup ignores new progress identity/date and unknown group holds across policy revision",
+      "T N5-14: delivered facts suppress, confirmed failed released requires explicit retry, unknown remains held",
+      "T N5-14: merge16/17 chunks retain all exact facts and no automatic publication",
+      "T N5-15/16: advisory policy boundary quiet start-1",
+      "T N5-15/16: advisory policy boundary quiet start",
+      "T N5-15/16: advisory policy boundary quiet end",
+      "T N5-15/16: advisory policy boundary wrapping midnight",
+      "T N5-15/16: advisory policy boundary emergency quiet bypass",
+      "T N5-15/16: advisory policy boundary emergency frequency stays",
+      "T N5-15/16: advisory policy boundary merge wait-1",
+      "T N5-15/16: advisory policy boundary merge equality",
+      "T N5-15/16: advisory policy boundary interval wait-1",
+      "T N5-15/16: advisory policy boundary interval equality",
+      "T N5-15/16: advisory policy boundary frequency full",
+      "T N5-15/16: advisory policy boundary frequency reset equality",
+      "T N5-15/16: advisory policy boundary clock rollback",
+      "T N5-15/16: advisory policy boundary disabled policy",
+      "T N5-15: actual Intl repeated/missing DST minute classification remains an advisory typed hint",
+      "T N5-15/20: full-day quiet sentinel and saturating merge hint create no timer or write",
+      "T N5-08/16: full canonical escaped CJK/astral publication bytes N-1",
+      "T N5-08/16: full canonical escaped CJK/astral publication bytes N+0",
+      "T N5-08/16: full canonical escaped CJK/astral publication bytes N+1",
+      "T N5-06/20: complete manifest overflow refuses before creating artifact, never truncates report states",
+      "T N5-08/20: private plan128/129 refuses growth before another source mutation"
+    ]
+  },
+  "focusedFinalRetest": {
+    "moduleSHA256": "f98296928737a7f8a2feb7c487fe8ff06af17a4d5fed631b561a5ece7d5c77d8",
+    "authorTestSHA256": "f6e3feb834521e847a77587b4b0276fd60db34125ad8c6be51bfe38a5978a24e",
+    "tap": "docs/evidence/NI5/independent-module-retest.tap",
+    "tapSHA256": "5cc9a65100bc405ddab59cb48d25df5d78d7b3dfbcfe9f721874eda5de8c542c",
+    "commandArguments": [
+      "node",
+      "--test",
+      "--test-reporter=tap",
+      "--test-name-pattern=^T N5-01/N5R-01:|^T N5-12(/20)?/N5R-08:",
+      "test/installed-results-adversarial.test.mjs"
+    ],
+    "exitCode": 0,
+    "counts": {
+      "tests": 12,
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "selectedFirstCaseNumbersAndNames": [
+      [
+        1,
+        "T N5-01/N5R-01: disabled/enabled construction and observational reads have zero mutation"
+      ],
+      [
+        95,
+        "T N5-12/N5R-08: actual typed source UNAUTHORIZED records denied access without altering sent history"
+      ],
+      [
+        96,
+        "T N5-12/N5R-08: actual typed source PERMISSION_DENIED records denied access without altering sent history"
+      ],
+      [
+        97,
+        "T N5-12/N5R-08: source STORAGE_INVALID is never reclassified as denial"
+      ],
+      [
+        98,
+        "T N5-12/N5R-08: source CRYPTO_FAILED is never reclassified as denial"
+      ],
+      [
+        99,
+        "T N5-12/N5R-08: source DIGEST_MISMATCH is never reclassified as denial"
+      ],
+      [
+        100,
+        "T N5-12/N5R-08: source RECORD_NOT_FOUND is never reclassified as denial"
+      ],
+      [
+        101,
+        "T N5-12/N5R-08: source ARTIFACT_BINDING_INVALID is never reclassified as denial"
+      ],
+      [
+        102,
+        "T N5-12/N5R-08: source SERVICE_DISPOSED is never reclassified as denial"
+      ],
+      [
+        103,
+        "T N5-12/N5R-08: source T_UNKNOWN is never reclassified as denial"
+      ],
+      [
+        104,
+        "T N5-12/20/N5R-08: hostile error Proxy cannot execute reflection or invent denied evidence"
+      ],
+      [
+        105,
+        "T N5-12/20/N5R-08: hostile error code getter never executes and remains uncertainty"
+      ]
+    ],
+    "omittedByFilter": 118,
+    "freshFull130Result": false,
+    "repeatedUnchangedSuccess": false
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "first": "exact disabled installer dereferences absent notifications and throws raw TypeError",
+      "repair": "derived notificationsEnabled short-circuits exact disabled shape; same single private subscription/disposer, null optional contributions, disabled/no effect",
+      "final": "resolved in independent selected original case1"
+    },
+    {
+      "id": "F2",
+      "first": "thrown Proxy descriptor trap invents UNAUTHORIZED and denied access fact",
+      "repair": "types.isProxy before reflection; only own inert string source denial code; Proxy remains LOCAL_ACCESS_UNKNOWN",
+      "final": "resolved in original case104 plus affected denial/crypto/missing/lifetime/getter table"
+    }
+  ],
+  "authorEvidence": {
+    "firstModuleReport": {
+      "path": "docs/evidence/NI5/module-author.md",
+      "sha256": "7da286c82fd7c40cbcd5a1f7e3fe60f00e3d85dfa7d8692d55232fef4d7b813a",
+      "authorFinalCount": 40
+    },
+    "repairReport": {
+      "path": "docs/evidence/NI5/module-f1-f2-repair.md",
+      "sha256": "f1d1ae8ab1b711c99bc93053fdac0a2c321889bbd32530dcc53ff341094f6557",
+      "authorFinalCount": 43
+    },
+    "independentFullAuthorBatchRun": false,
+    "reason": "root narrowed subsequent execution to failed and actually affected cases; authored40/43 remain separately labeled author evidence"
+  },
+  "guards": {
+    "initialPins": 19,
+    "matchedImmediatelyAfterFirstRun": 19,
+    "rootAuthorizedChangedPins": [
+      "src/installed-results.mjs",
+      "test/installed-results.test.mjs"
+    ],
+    "protectedPinsUnchanged": 17,
+    "focusedBeforeAfterPins": 20,
+    "focusedBeforeAfterIdentical": true,
+    "localImportClosure": [
+      "src/installed-results.mjs",
+      "src/runtime-security.mjs",
+      "src/context.mjs",
+      "src/notifications.mjs",
+      "src/messages.mjs",
+      "src/results.mjs",
+      "src/ledger.mjs"
+    ],
+    "runtimeStoreImport": false,
+    "databaseConstruction": false,
+    "nativeProcess": false
+  },
+  "designFamilyDispositions": [
+    {
+      "id": "N5-01",
+      "boundedDisposition": "T: config/installation/no-boot branches; disabled install F1 failed first; exact original case passed focused repaired-source retest. D/N/P remaining."
+    },
+    {
+      "id": "N5-02",
+      "boundedDisposition": "T: independent scoped route/recipient hashes and captured carrier peer/profile/lifetime; authentic public classes/permission N/P remaining."
+    },
+    {
+      "id": "N5-03",
+      "boundedDisposition": "T: typed native/null/unavailable/raw accepted/body flags. Actual captured native result/signed association D/N/P NOT RUN."
+    },
+    {
+      "id": "N5-04",
+      "boundedDisposition": "T: exact typed immutable version/record/kind/digest/bytes/historical read and status counters. Actual encrypted scope reads D/N/P remaining."
+    },
+    {
+      "id": "N5-05",
+      "boundedDisposition": "T: all eight retained aggregate states and per-audit source/coverage/fatal/repair axes survive manifest. Actual source derivation and every precedence pair D NOT RUN."
+    },
+    {
+      "id": "N5-06",
+      "boundedDisposition": "T: independently sorted complete manifest, mismatched/raw/stale association rejection, manifest overflow. Signed actual body/association/atomic writes D remaining."
+    },
+    {
+      "id": "N5-07",
+      "boundedDisposition": "T: typed independence/evidence/generation/verdict/report/result/coverage/fatal guards. Actual fresh signed reviewer/input/captured result D/N NOT RUN."
+    },
+    {
+      "id": "N5-08",
+      "boundedDisposition": "T: exact action/CAS/target/charge recipe, synchronous private receipt narrowing, no recursive reads, 128-plan cap. Actual original preview/grant/receipt N/D remaining."
+    },
+    {
+      "id": "N5-09",
+      "boundedDisposition": "T: original getDelivery/publish shape, source reread, async disposal after fake commit. Actual atomic two-connection races/group claims D/N/P NOT RUN."
+    },
+    {
+      "id": "N5-10",
+      "boundedDisposition": "T: callback echo refused, sent and historical synthetic delivered distinct from current access/opening unknown. Actual committed publication N/D/P remaining."
+    },
+    {
+      "id": "N5-11",
+      "boundedDisposition": "T: retained Map commit/lost-return query/unknown counters with zero resend. Real process reopen/recovery D/N/P NOT RUN."
+    },
+    {
+      "id": "N5-12",
+      "boundedDisposition": "T: explicit access update, source denial vs storage/crypto/lifetime/error partitions and per-item preservation. Proxy error F2 failed first; exact original case passed focused repaired-source retest. Actual monotonic/core persistence D/N/P remaining."
+    },
+    {
+      "id": "N5-13",
+      "boundedDisposition": "T: synthetic sibling states and failed-released retry hint only. Actual failed-only fresh lineage/mixed batch atomicity D NOT RUN."
+    },
+    {
+      "id": "N5-14",
+      "boundedDisposition": "T: stable fact digest dedup across new IDs/dates, unknown group/policy revision hold, 16/17 batches. Durable fact/group ownership/charge/restart D remaining."
+    },
+    {
+      "id": "N5-15",
+      "boundedDisposition": "T: quiet half-open/wrapping/full-day, emergency/frequency, coalescing equality and selected actual Intl DST hints. Atomic/native/complete calendar and rendered matrix pending."
+    },
+    {
+      "id": "N5-16",
+      "boundedDisposition": "T: complete canonical escaped CJK/astral publication envelope bytes N-1/N/N+1 and typed charge recipe/frequency hints. Actual locked claim/publication/shared resources D NOT RUN."
+    },
+    {
+      "id": "N5-17",
+      "boundedDisposition": "NOT RUN D/P: real process/storage crash cuts, migration/IO/fsync/FULL recovery. Injected typed error branches are separate T only."
+    },
+    {
+      "id": "N5-18",
+      "boundedDisposition": "T: captured peer/connection/profile/child retirement, dispose idempotence, old callbacks sealed after await. Ten actual native reloads/full quit N/P remaining."
+    },
+    {
+      "id": "N5-19",
+      "boundedDisposition": "T: closed owner operation data/status/reply shapes and observational counters. Native RPC/rendered Chinese/focus/keyboard/opening U/N HOLD."
+    },
+    {
+      "id": "N5-20",
+      "boundedDisposition": "T: closed hostile config/input, raw byte/digest/request/plans/manifest bounds, errors/counters. Protected storage headroom/privacy/export/native growth D/N/P remaining."
+    },
+    {
+      "id": "N5-21",
+      "boundedDisposition": "NOT RUN D/P: authentic held schema5->6 migration/backups/old-reader refusal, signed registry inverse and crash preservation. No raw rows, schemas or DB touched."
+    },
+    {
+      "id": "N5R-01",
+      "boundedDisposition": "T: exact private module closure and zero boot/read mutation; actual normal-only core binding N/D/P remaining."
+    },
+    {
+      "id": "N5R-02",
+      "boundedDisposition": "T: independently hashed exact permitted-carrier bytes/version/record/kind/byteLength plus malformed/historical cases; actual decryption D remaining."
+    },
+    {
+      "id": "N5R-03",
+      "boundedDisposition": "T: readable bytes distinct from native readiness; null/unavailable/raw/body flags cannot unlock. Actual authenticated normal projection D/N remaining."
+    },
+    {
+      "id": "N5R-04",
+      "boundedDisposition": "T: typed producer/reviewer/generation/evidence/source/report/coverage drift guards; exact actual core signature/current report/locked repeat D/N remaining."
+    },
+    {
+      "id": "N5R-05",
+      "boundedDisposition": "T: exact original getDelivery return/intent/sent/currentAccess and echo-vs-retained-fact cases; actual durable association D/N remaining."
+    },
+    {
+      "id": "N5R-06",
+      "boundedDisposition": "T: manual await with fake committed sent, then captured peer/profile/lifetime/dispose failure; actual store/publication-first order D/N/P remaining."
+    },
+    {
+      "id": "N5R-07",
+      "boundedDisposition": "T: fake committed-loss and unknown read-only query/no resend counters; real crash/reopen N/D/P remaining."
+    },
+    {
+      "id": "N5R-08",
+      "boundedDisposition": "T: actual-typed denial codes vs crypto/storage/lifetime/error; hostile Proxy F2 failed first; exact original case passed focused repaired-source retest. Actual native/core permission/corruption D/N remaining."
+    },
+    {
+      "id": "N5R-09",
+      "boundedDisposition": "T: explicit current access preserves synthetic history/state and unknown opening. Actual monotonic/dedup/time/headroom core D/N/P NOT RUN."
+    },
+    {
+      "id": "N5R-10",
+      "boundedDisposition": "T: source/detachment/current carrier/lifecycle/no boot/no effect. Actual public class/package/current native/rendered oracles N/P/U pending."
+    }
+  ],
+  "sourceAC": {
+    "retainedOriginal": 82,
+    "retainedDF010": 5,
+    "mappedNI5": 48,
+    "originalSourceSHA256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+    "traceabilitySHA256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64",
+    "dispositions": [
+      {
+        "id": "BUB013-01",
+        "originalDesignMapping": "N5-03/04/05/06/19 actual native source plus complete goal/scope/artifact/evidence/unrun/unfinished/next report.",
+        "observedContribution": "T partial: all eight report states and exact original-goal/scope/unfinished/next/evidence/source/repair material retained in canonical manifests.",
+        "remaining": "Actual native result, source-derived encrypted report and complete source facts D/N pending."
+      },
+      {
+        "id": "BUB013-02",
+        "originalDesignMapping": "N5-02/04/07/08/10/12 exact version/digest/current recipient/access; actual supported opening remains HOLD.",
+        "observedContribution": "T partial: version/record/digest/complete bytes, scoped historical reads and separate current allowed/denied access.",
+        "remaining": "Actual encrypted/native permitted read and supported rendered opening D/N/U pending."
+      },
+      {
+        "id": "BUB013-03",
+        "originalDesignMapping": "N5-09/10/11/13 separate per-item accepted/outbox/sent/unknown/known receipt/retry; local adapter does not invent delivered.",
+        "observedContribution": "T partial: original getDelivery/sent/currentAccess tuples, synthetic historical delivery and unknown sibling remain distinct.",
+        "remaining": "Actual per-item outbox/publication/receipts and failed-only fresh retry D/N pending."
+      },
+      {
+        "id": "BUB013-04",
+        "originalDesignMapping": "N5-05/14/15/16 immutable progress, block/emergency classification, quiet/merge/frequency.",
+        "observedContribution": "T partial: stable fact digest dedup, current kinds, quiet/emergency/merge/frequency advisory boundaries.",
+        "remaining": "Actual report classification, atomic fact ownership/counters and notification effects D/N pending."
+      },
+      {
+        "id": "BUB013-05",
+        "originalDesignMapping": "N5-09/11/12/13/17 unknown hold, observational query, same item lineage and no blind resend.",
+        "observedContribution": "T partial: fake committed-loss query reads sent/unknown without another publish; held group survives policy revision.",
+        "remaining": "Real durable unknown/reopen/lineage/query-before-retry D/N/P pending."
+      },
+      {
+        "id": "BUB014-01",
+        "originalDesignMapping": "N5-04/19 current truthful material/audit/task/delivery snapshots; actual rendered UI HOLD.",
+        "observedContribution": "T partial: material/native/null/unavailable/raw states and closed observable local status.",
+        "remaining": "Actual rendered panel/audit/task/delivery/access presentation U HOLD."
+      },
+      {
+        "id": "BUB014-02",
+        "originalDesignMapping": "N5-08/19 distinct state-specific explicit controls and concrete preview/grant.",
+        "observedContribution": "T partial: separate explicit plan/read/report/accept/access and closed denied calls.",
+        "remaining": "Actual state controls, preview/grant, positive policy update/runtime wiring N/D/U pending."
+      },
+      {
+        "id": "BUB014-03",
+        "originalDesignMapping": "N5-08/09/11/19 stale/double-click/CAS/race cannot repeat publication.",
+        "observedContribution": "T partial: wrong CAS, receipt invalidation, exact target and after-await replacement refusal.",
+        "remaining": "Actual double-click/atomic race/late reply original host and renderer D/N/U pending."
+      },
+      {
+        "id": "BUB014-04",
+        "originalDesignMapping": "Actual resizing/long Chinese/keyboard/focus/loading/error/recipient opening remains HOLD without substitution.",
+        "observedContribution": "NOT RUN U: no rendered browser/Chinese/resize/keyboard/focus/loading/error/opening observation.",
+        "remaining": "Supported native/browser observation HOLD; metadata counters are not visual evidence."
+      },
+      {
+        "id": "BUB014-05",
+        "originalDesignMapping": "N5-02/03/04/19 exact related artifact/session/approval mapping; actual Web navigation HOLD.",
+        "observedContribution": "T partial: scoped artifact/version/record/intent/recipient refs and exact bytes.",
+        "remaining": "Actual original native navigation, session/approval links and rendered access N/U pending."
+      },
+      {
+        "id": "BUB015-01",
+        "originalDesignMapping": "N5-06/07 actual manifest/material input and exact coverage; useful review quality HOLD.",
+        "observedContribution": "T partial: canonical material/source coverage and complete passed-report binding shape.",
+        "remaining": "Authentic admitted exact native review input/result and useful review quality D/N/M pending."
+      },
+      {
+        "id": "BUB015-02",
+        "originalDesignMapping": "N5-07 independent producer/reviewer/generation/claim; runtime review does not resolve blocked development CODE.",
+        "observedContribution": "T partial: same producer/reviewer or generation and mixed source/report refs refuse.",
+        "remaining": "Actual fresh independent native reviewer/generation/claim D/N pending; development CODE HOLD."
+      },
+      {
+        "id": "BUB015-03",
+        "originalDesignMapping": "N5-05/07/08 failed/unknown/unexamined/fatal/stale cannot certify completion/publication.",
+        "observedContribution": "T partial: raw/unavailable/rejected/unknown readiness refusal; typed passed requires coverage/current source/no fatal findings.",
+        "remaining": "Actual signed aggregate precedence/material currentness and no false accepted completion D/N pending."
+      },
+      {
+        "id": "BUB015-04",
+        "originalDesignMapping": "N5-07/16 charged bounded review/repair prerequisite from NI3; no notification retry becomes free repair.",
+        "observedContribution": "T partial: selected action charge/attempt recipe is explicit; no fixture review/repair work is performed.",
+        "remaining": "Actual charged bounded NI3 review/repair/retry/shared reservations D/N pending."
+      },
+      {
+        "id": "BUB015-05",
+        "originalDesignMapping": "N5-05/07/08 model/report text cannot grant or enlarge delivery/approval scope.",
+        "observedContribution": "T partial: body native-looking/pass/delivered flags and supplied report verdict/time/proof do not grant readiness.",
+        "remaining": "Actual model/native proof exclusion and original final permission/core authority D/N pending."
+      },
+      {
+        "id": "BUB006-01",
+        "originalDesignMapping": "N5-02/04/12 original native peer/private recipient/profile/task isolation.",
+        "observedContribution": "T partial: independently hashed owner/workspace/profile route and captured peer/connection/profile/lifetime fences.",
+        "remaining": "Authentic public classes/OperatorPeer/RPC/owner/source/permission N/P NOT RUN."
+      },
+      {
+        "id": "BUB006-02",
+        "originalDesignMapping": "N5-07/08/09 current exact bytes/target/review/policy/auth/expiry/revoke.",
+        "observedContribution": "T partial: exact target/CAS/material/reviewer/action-digest/private receipt narrowing and after-await lifetime refusal.",
+        "remaining": "Actual grant/auth/expiry/revoke/core locked source policy/native permission D/N pending."
+      },
+      {
+        "id": "BUB006-03",
+        "originalDesignMapping": "N5-01/06/20 closed secret-safe diagnostics/config and encrypted durable material.",
+        "observedContribution": "T partial: closed hostile config/wire/errors and exact canonical bounded material; F2 reflection/false denial fixed.",
+        "remaining": "Real encryption/registered secret scans/generic export/storage/privacy D/N pending."
+      },
+      {
+        "id": "BUB006-04",
+        "originalDesignMapping": "N5-03/06/08/09 actual local published bytes equal exact approved necessary content.",
+        "observedContribution": "T partial: read/publish request bytes and association refs equal independently computed selected data.",
+        "remaining": "Actual admitted necessary exact published material and native recipient D/N pending."
+      },
+      {
+        "id": "BUB006-05",
+        "originalDesignMapping": "N5-02/07/08/11 denied/unknown native permission stops effect, query is safe and reviewer never grants.",
+        "observedContribution": "T partial: typed true denial versus crypto/storage/missing/lifetime/Proxy uncertainty; no alternate effect.",
+        "remaining": "Actual current native permission/unknown safety and final original core authority D/N pending."
+      },
+      {
+        "id": "BUB009-01",
+        "originalDesignMapping": "N5-14 complete persistent immutable notification facts, no ID/revision replay; event intake NI4.",
+        "observedContribution": "T partial: notification factual digest remains identity-independent; duplicates suppress and unknown facts hold.",
+        "remaining": "Persistent origin/fact identity, full-content conflicts/retention/intake dedup D pending; NI4 separate."
+      },
+      {
+        "id": "BUB009-02",
+        "originalDesignMapping": "N5-09/11/17 outbox/publication/result-unknown crash/reconcile; no arbitrary effect replay.",
+        "observedContribution": "T partial: fake commit/lost return retains sent/unknown, query invokes zero mutation.",
+        "remaining": "Actual outbox/publication/result crash cuts and durable query-before-effect-retry D/P pending."
+      },
+      {
+        "id": "BUB009-03",
+        "originalDesignMapping": "N5-11/18 full-stop/restart no delivery drain; missed local schedules NI4.",
+        "observedContribution": "T partial: boot invokes no data/effect calls; captured old lifetime seals after fake commit.",
+        "remaining": "Actual full quit/restart, durable reconciliation/no drain and missed schedule NI4 N/P/D pending."
+      },
+      {
+        "id": "BUB009-04",
+        "originalDesignMapping": "N5-15 notification timezone/DST/midnight; schedule occurrence display NI4/U HOLD.",
+        "observedContribution": "T partial: UTC half-open/wrapping boundaries and selected actual Intl repeated/missing DST minute hints.",
+        "remaining": "Complete actual schedule/notification timezone/date/rendering U/D/N pending."
+      },
+      {
+        "id": "BUB009-05",
+        "originalDesignMapping": "N5-14/15/16 quiet/merge/emergency/frequency/pause and independent background work.",
+        "observedContribution": "T partial: quiet/merge/emergency/frequency/disabled advisory state and no auto publication.",
+        "remaining": "Actual atomic pause/quiet/coalescing/frequency/emergency policy, intake/work independence D/N pending."
+      },
+      {
+        "id": "BUB012-01",
+        "originalDesignMapping": "N5-09/16 held sent/unknown reservation occupies exact shared capacity.",
+        "observedContribution": "T partial: explicit selected units/current bounds and narrow local-none action recipe.",
+        "remaining": "Actual held sent/unknown shared reservation/last-slot/queue/weight races D pending."
+      },
+      {
+        "id": "BUB012-02",
+        "originalDesignMapping": "N5-07/08 actual accepted role/model/resource policy used; production selections not fabricated.",
+        "observedContribution": "T partial: exact model/resource versions and route/model/environment/tool-empty facts are in derived spec.",
+        "remaining": "Actual accepted native catalog/policy/reasoning/role/source and selected-model quality N/D/M pending."
+      },
+      {
+        "id": "BUB012-03",
+        "originalDesignMapping": "N5-07/13/16 review and explicitly retried publication charge same bounded total.",
+        "observedContribution": "T partial: explicit attempt1/group/charges and no automatic fake resend/review.",
+        "remaining": "Actual cumulative charged publication retry/review/repair budgets and unknown holds D pending."
+      },
+      {
+        "id": "BUB012-04",
+        "originalDesignMapping": "N5-08/16 estimated/actual/unknown charges separate; absent provider/billing evidence never invented.",
+        "observedContribution": "T partial: source-local estimated monetary0 recipe and complete UTF-8 usage charges labelled explicitly.",
+        "remaining": "Actual measured usage/unknown billing/generic unknown-cost refusal/provider tokens D/N/M pending."
+      },
+      {
+        "id": "BUB012-05",
+        "originalDesignMapping": "N5-06/12/14/16/20 exact bytes/counts/observations/headroom/frequency/growth bounds.",
+        "observedContribution": "T partial: selected N\u00b11 caps, full escaped CJK/astral envelope bytes, manifest overflow, batch16/17 and plan128/129.",
+        "remaining": "Actual protected terminal/storage/registry/history/rate/resource growth headroom D/N/P pending."
+      },
+      {
+        "id": "BUB003-01",
+        "originalDesignMapping": "N5-09/11/17 real report/outbox/publication/ack cuts and retained durable receipt.",
+        "observedContribution": "T partial: fake committed result/readback and lost-return observation preserve source map fact.",
+        "remaining": "Actual transaction/receipt/outbox/publication/ack crash and storage durability D/P NOT RUN."
+      },
+      {
+        "id": "BUB003-02",
+        "originalDesignMapping": "N5-07/08/09/12 exact immutable artifact/version/CAS/current-access history.",
+        "observedContribution": "T partial: immutable scoped artifact/version/digest/intent/current-access and CAS.",
+        "remaining": "Actual signed immutable associations, final locked races and chronological access history D pending."
+      },
+      {
+        "id": "BUB003-03",
+        "originalDesignMapping": "N5-06/17/20/21 storage/crypto/limits/inverse corruption fail closed without trusted partial acknowledgement.",
+        "observedContribution": "T partial: typed source crypto/storage/missing errors and overflow refuse without fake trusted effect.",
+        "remaining": "Real SQL/IO/FULL/crypto/registry inverse/capacity atomic refusal D NOT RUN."
+      },
+      {
+        "id": "BUB003-04",
+        "originalDesignMapping": "N5-21 authentic held5\u21926/fsynced backup/old5 refusal/process cuts; held NI3 genuine4\u21925 remains unchanged.",
+        "observedContribution": "NOT RUN D/P: no schema/migration/backup/fsync/old-reader/database/raw-row work occurs.",
+        "remaining": "Authentic held5\u21926 preservation/old5 refusal and unchanged NI3 held4\u21925 D/P pending."
+      },
+      {
+        "id": "BUB004-03",
+        "originalDesignMapping": "N5-03 actual committed native result source; initial local publication runs no model.",
+        "observedContribution": "T partial: body claimed native output/accepted/delivered flags cannot substitute for private projection.",
+        "remaining": "Actual source-captured native output/execution/result association D/N NOT RUN."
+      },
+      {
+        "id": "BUB004-04",
+        "originalDesignMapping": "N5-09/11/18 cancel/late publication preserves committed effect and uncertainty.",
+        "observedContribution": "T partial: fake committed publication survives post-await peer/profile/dispose/lifetime loss.",
+        "remaining": "Actual cancel/revoke/publication-first outcome and held reservations D/N/P pending."
+      },
+      {
+        "id": "BUB004-05",
+        "originalDesignMapping": "N5-03/11/18 current exact source/cursor/native lifetime and no historical replay.",
+        "observedContribution": "T partial: exact query/material refs and old callback/lifetime cannot replay into replacement.",
+        "remaining": "Actual native cursor/owned session/source reconcile/restart D/N/P pending."
+      },
+      {
+        "id": "BUB001-02",
+        "originalDesignMapping": "N5-18 ten owned reloads with one panel/route/current recipient and zero stale effects.",
+        "observedContribution": "T partial: captured original closure fences, one owned subscription/disposer and idempotent disposal.",
+        "remaining": "Ten actual native reloads and one original panel/route/recipient N/P NOT RUN."
+      },
+      {
+        "id": "BUB001-04",
+        "originalDesignMapping": "N5-11/17/18 actual full-stop/reopen holds; window/browser distinction HOLD.",
+        "observedContribution": "T partial: fake committed-before-retirement facts retained with no stale success.",
+        "remaining": "Actual full-stop/reopen/window-close limitation and native restart D/N/P/U pending."
+      },
+      {
+        "id": "BUB016-01",
+        "originalDesignMapping": "Exact held design/contract/source/test/native evidence and each residual; all82+5 retained.",
+        "observedContribution": "Bounded T evidence: exact first failures/source, authorized two-pin repair, focused retest and individual48 AC/31-family residuals.",
+        "remaining": "No full AC or CODE acceptance; all82+5 and future source/aggregate/oracles retained."
+      },
+      {
+        "id": "BUB016-02",
+        "originalDesignMapping": "N/P bounded normal native result/review/local publication chain; UI/useful-model/aggregate NI6 HOLD, live chat OUT.",
+        "observedContribution": "T partial: standalone installed module with data-only same-ledger closure shapes.",
+        "remaining": "Actual normal encrypted/native review/local publication chain, UI/model/aggregate NI6 HOLD."
+      },
+      {
+        "id": "BUB016-03",
+        "originalDesignMapping": "N5-09/11/16/17/18/21 bounded revoke/limits/storage/migration/crash/restart/quit; full aggregate matrix NI6.",
+        "observedContribution": "T partial: typed fault/currentness/async/caps and first failure/repair counters.",
+        "remaining": "Actual migration/storage/cancel/revoke/crash/restart/quit/full regression D/N/P pending."
+      },
+      {
+        "id": "BUB016-04",
+        "originalDesignMapping": "P actual package/bare installed/current public peers/local preview reproducibility, no release claim.",
+        "observedContribution": "NOT RUN P: no packed artifact/install/CLI/native-profile/host lifecycle command.",
+        "remaining": "Genuine bare installed package/original public peers and preview reproduction pending; no release."
+      },
+      {
+        "id": "DF010-C01",
+        "originalDesignMapping": "N5-02/08 private current recipient/scope/revoke; paired external contract retained, no account setup.",
+        "observedContribution": "T contribution: private current local recipient/scope/receipt/lifetime boundaries.",
+        "remaining": "Original provider-neutral paired identity/revoke criteria retained; live chat/accounts OUT."
+      },
+      {
+        "id": "DF010-C02",
+        "originalDesignMapping": "N5-03/06/14 immutable source/bytes/fact identity; original edit/delete/order contract unchanged.",
+        "observedContribution": "T contribution: immutable selected artifact/manifest/fact digest identity.",
+        "remaining": "Original edit/delete/order/complete event identity criteria retained; live chat OUT."
+      },
+      {
+        "id": "DF010-C03",
+        "originalDesignMapping": "N5-02/08 exact original local recipient/channel; forwarded/group/window claims carry no authority.",
+        "observedContribution": "T contribution: original scoped local recipient/channel/intent refs; no caller target authority.",
+        "remaining": "Original conversation/thread/forward/group contract retained; native/provider proof pending, live chat OUT."
+      },
+      {
+        "id": "DF010-C04",
+        "originalDesignMapping": "N5-03/04/06/10 exact scoped digest/bytes/access; attachment contract retained, local path never delivery proof.",
+        "observedContribution": "T contribution: exact permitted-carrier digest/version/UTF-8 bytes and distinct access/opening states.",
+        "remaining": "Original attachment descriptor/access/receipt criteria retained; actual opening and delivery pending."
+      },
+      {
+        "id": "DF010-C05",
+        "originalDesignMapping": "N5-10/11/12/13/16 truthful sent/delivered/current-access, rate/disconnect/unknown and query-before-retry.",
+        "observedContribution": "T contribution: sent/query/unknown/historical delivered/current access/rate hints remain separate without resend.",
+        "remaining": "Actual source-backed transport/rate/disconnect/outcome/core query proof pending; live chat OUT."
+      }
+    ]
+  },
+  "evidenceParserCorrection": "Only derived first-observation JSON name parsing was corrected from a DOTALL greedy capture; its original output remains preserved. Independent test, first TAP and assertions were unchanged.",
+  "remaining": "Actual SQLite/schema6/authentic native review/core permission/atomic admission/publication/access/crash/restart/physical packaging NOT RUN. CODE/browser/model/full82+5 acceptance and release HOLD."
+}
