@@ -2,7 +2,7 @@
 
 Current alias: **DF007A**. Historical BUB IDs and approved source text below remain preserved. The [owner amendment](../owner-amendment-2026-10-04.md) controls current naming, MIT and chat-provider applicability.
 
-Status: planned.
+Status: Pinned owner-authored ESM memory subset/provenance/notices implemented and bounded portability reviewed; final native/package acceptance HOLD. MIT explicitly selected.
 Wave: W3 gated by license/source choice.
 Source AC IDs retained: BUB007-01..02.
 Planning source: Library libfile_13cd8b7e548881919b22d9e99bfddaf2; [complete approved text](../reference/approved-ticket-review.zh.txt).
@@ -47,4 +47,7 @@ BUB007-06 007B 任务终态与批准仅从账本读取。冲突记忆只能触�
 统一待决项 D7 抽取路线与许可证处理；D4 记忆保留、导入及删除策略。
 
 ## Milestone evidence
-Not implemented; no tests/audits/runtime validation claimed.
+
+Pinned owner-authored ESM memory subset/provenance/notices implemented and bounded portability reviewed; final native/package acceptance HOLD. MIT explicitly selected.
+
+Evidence: [fishball-portability.md](../evidence/S3/fishball-portability.md); [fishball-code-review.md](../evidence/S3/fishball-code-review.md); [fishball-test-review.md](../evidence/S3/fishball-test-review.md). Every original criterion maps to a row in [current acceptance traceability](../acceptance-traceability.md). Module coverage establishes only the stated oracle; no complete source AC/ticket is marked accepted by this card. Historical reviewed checkpoints retain their exact scope/hashes. The [independent code-review session failure](../evidence/S3/review-session-blocker.md) leaves final Stage3 review pending; tests cannot substitute for that verdict.

@@ -28,7 +28,7 @@ DF016 current aggregate acceptance covers every otherwise applicable planned cri
 
 ## Ticket aliases and future ambition
 
-Existing ticket files and BUB acceptance IDs are immutable historical aliases. DF001..DF016 map one-to-one to BUB001..BUB016; DF007A/DF007B and DF010A map to their same-suffix BUB subtask. Source BUB007-01..09 keeps its original parent AC numbering. Keeping the existing filenames avoids broken links and preserves all requirements; active reports may use both names.
+Existing ticket files and BUB acceptance IDs are immutable historical aliases. DF001..DF016 map one-to-one to BUB001..BUB016; DF007A/DF007B and DF010A map to their same-suffix BUB subtask. Source BUB007-01..06 keeps its original parent AC numbering. Keeping the existing filenames avoids broken links and preserves all requirements; active reports may use both names.
 
 Mobile fishball controlling the user's DSH through Hydrogen server-side tools is a much later ambition. No mobile remote-control, Hydrogen integration, server bridge, additional harness or daemon is implemented in this phase. Native DSH execution remains independent.
 

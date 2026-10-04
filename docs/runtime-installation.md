@@ -1,0 +1,30 @@
+# Runtime installation and validation boundaries
+
+Pinned host: official DSH Web0.2.1-alpha.1, Node22.22.2. This repository is local preview development and is not an accepted ready-to-install assistant. Its package is private, has no lifecycle scripts, and uses built-in JavaScript/SQLite/build APIs plus separately installed exact public host peer packages. No SDK runtime, second harness or daemon is introduced.
+
+| Entry | What it loads | Required interpretation |
+| --- | --- | --- |
+| `dsh-fishball` / `src/index.mjs` | Bounded M1 foundation plugin/config/capability/ledger diagnostics | Current synthetic Web Cordis patch selects this entry. Its load/reload smoke does not validate Stage3. |
+| `dsh-fishball/runtime` / `src/runtime-plugin.mjs` | `createRuntimePlugin` factory and an unconfigured default runtime | Default identity/key are absent: fail unavailable before storage/work. A trusted process must select and configure the factory. |
+| `dsh-fishball/client` / `lib/client.js` | Generated native Web task-panel module | Browser module registration alone does not supply owner identity, encryption key, production adapters or permission. Actual rendered validation remains required. |
+
+The trusted process composition supplies private identity and encryption-key callbacks before opening storage, plus a host permission callback which defaults to deny. Raw owner/workspace/principal/role fields in RPC cannot authenticate. Native authenticated OperatorPeer access is independently required on `/df-rpc`. `ctx.df` exposes diagnostics; it does not expose store, keys, operator/reviewer handles, native agent handles or settlement/report authority.
+
+Each enabled feature needs explicit installation inputs:
+
+- Memory namespace, tokenizer, byte/token bounds and independent owned database path. No personal fishball files are imported or inspected.
+- Preview resolver for concrete current content/target/model/tools/environment/limits and explicit TTL1..60000ms; owner separately chooses exact grant expiry.
+- Worker environment registry, current permission callback, tool guard and trusted original-session resolver when resume is needed. Create/context-inject remain idle; execute needs its separate atomic one-use current claim. Nonempty actual tool usage is not yet accepted.
+- Independent reviewer installation bound to a separately charged scoped review worker and exact material. Reviewer output cannot grant authority; synthetic reports do not establish actual model review quality.
+- Optional result recipient adapter and explicitly chosen notification route/policy. Accepted, sent, delivered and current access remain separate.
+- Optional private event/schedule/chat installation and owner source/subscription/policy configuration. Tokens/callbacks never come from JSON. Receiving an event admits task ingress only; it does not automatically grant or execute effects. No chat software/account is chosen this phase.
+
+The complete supported **synthetic module composition** is executable in [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs). It creates disposable actual public Cordis/HostConnection/AgentLoop/SessionStore/JSONL services and a deterministic local provider, supplies a random untracked private key, and exercises admitted synthetic operator requests. It uses no HTTP listener, Web profile, personal settings, external inference or paid calls. Run its Node test command after existing dependencies are available; test/launch does not download them. The [native report](evidence/S3/native-runtime.md) includes a composition outline, but unresolved callback variables are not production defaults.
+
+For an actual Web validation, the project-local synthetic profile must select the runtime factory through a verified trusted composition and establish the original owner/control carrier, configured feature capabilities and actual native panel. A foundation-only patch, unconfigured runtime export or generated module bundle cannot be represented as that validation. Actual Web composition/visual validation is currently blocked/unverified; [acceptance debt](evidence/acceptance-debt.md) records the precise oracle. The previously blocked browser route is not bypassed.
+
+Teardown seals owner admission/previews first, disposes owned chat/timers/router/installations and workers, unregisters RPC, then closes the store. Full DSH quit stops df; restarting first reconciles held/unknown facts. A browser window close alone does not imply host exit. Uninstall disposes the plugin/module using public host lifecycle; deleting durable owner data is a separate explicit retention decision. Keep recovery backups and unsupported/unverifiable old bytes. Actual profile install/uninstall/window-close remains an acceptance gate.
+
+Only the existing explicit `host:setup` downloader may obtain pinned host dependencies under the recorded runtime policy; do not run it again merely to test. `host:web`/`host:profile-smoke` use the project-owned synthetic state at loopback3080 and must not inspect personal profiles. No host is left running after validation. Unknown or denied actions stop without alternate-tool or transport workarounds.
+
+Full acceptance still needs supported independent final CODE review, consolidated test/fault evidence, actual Web/UI oracles, explicit production policy/retention/model/environment inputs and bounded owner authorization before any real model invocation. No remote, push, OAuth expansion, live provider/account or publication is authorized. Default release channel stays preview; stable requires an explicit owner request.
