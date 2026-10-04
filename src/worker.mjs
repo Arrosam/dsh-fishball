@@ -103,11 +103,59 @@ export class WorkerManager {
     catch { this.#unknown(entry); }
     return this.#view(entry);
   }
+  async executeContext(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'contextRecordRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'timeoutMs'], ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'contextRecordRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    for (const key of ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'contextRecordRef', 'commandRef']) workerRef(input[key]);
+    workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
+    const timeoutMs = input.timeoutMs ?? 10000; workerInteger(timeoutMs, 1, 60000); input = Object.freeze({ ...input });
+    if (!['readData', 'beginContextExecution', 'assertExecutionCurrent'].every(key => typeof this.#store[key] === 'function') || typeof this.#adapter.executeContext !== 'function') workerFail('WORKER_EXECUTION_UNAVAILABLE');
+    const snapshot = this.#snapshot(caller, input.taskRef), action = snapshot.actions.find(value => value.actionRef === input.actionRef);
+    const entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || entry.actionDigest !== input.actionDigest || !action || action.claimRef !== input.claimRef || action.actionDigest !== input.actionDigest || action.spec.executor.generationRef !== input.generationRef) workerFail('WORKER_MAPPING_MISMATCH');
+    const data = this.#store.readData(caller, { taskRef: input.taskRef, recordRef: input.contextRecordRef });
+    const body = Object.freeze({ recordRef: data.recordRef, kind: data.kind, content: data.content, digest: data.digest, byteLength: data.byteLength });
+    if (body.kind !== 'context' || body.digest !== action.spec.dataDigest) workerFail('WORKER_CONTEXT_INVALID');
+    const { timeoutMs: ignored, ...intentInput } = input;
+    const intent = this.#store.beginContextExecution(this.#host, intentInput);
+    const binding = Object.freeze({ executionRef: workerRef(intent.executionRef), taskRef: input.taskRef, claimRef: input.claimRef, generationRef: input.generationRef, contextRecordRef: input.contextRecordRef, actionDigest: input.actionDigest, dataDigest: body.digest });
+    if (Object.keys(binding).some(key => intent[key] !== binding[key])) workerFail('WORKER_EXECUTION_INVALID');
+    if (intent.deduplicated === true || intent.state !== 'intent_committed') return Object.freeze({ executionRef: binding.executionRef, state: intent.state, admitted: false, worker: this.#view(entry) });
+    const completion = this.#adapter.executeContext(entry.ticket, binding, body, () => {
+      this.#alive();
+      return this.#store.assertExecutionCurrent(this.#host, { taskRef: input.taskRef, claimRef: input.claimRef, generationRef: input.generationRef, actionDigest: input.actionDigest, executionRef: binding.executionRef });
+    }).then(result => {
+      if (result.executionRef !== binding.executionRef || !['committed', 'unknown'].includes(result.state)) workerFail('WORKER_EXECUTION_INVALID');
+      this.#observation(entry, result.worker);
+      return Object.freeze({ ...result, worker: this.#view(entry) });
+    }).catch(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } return Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) }); });
+    let timer;
+    const deadline = new Promise(resolve => { timer = setTimeout(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } resolve(Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) })); }, timeoutMs); });
+    try { return await Promise.race([completion, deadline]); } finally { clearTimeout(timer); }
+  }
   async cancel(caller, input) {
     this.#alive(); workerRecord(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
     this.#snapshot(caller, workerRef(input.taskRef));
     const receipt = this.#store.control(caller, { ...input, kind: 'cancel' });
     return Object.freeze({ receipt, workers: await this.cancelAfterControl(input.taskRef) });
+  }
+  captureResult(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'artifactRef', 'version']);
+    for (const key of ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef', 'artifactRef']) workerRef(input[key]);
+    workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch); workerInteger(input.version, 1);
+    this.#snapshot(caller, input.taskRef);
+    const entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || typeof this.#adapter.readResult !== 'function') workerFail('WORKER_RESULT_UNAVAILABLE');
+    const result = this.#adapter.readResult(entry.ticket, input.executionRef);
+    if (result.taskRef !== entry.taskRef || result.claimRef !== entry.claimRef || result.generationRef !== entry.generationRef || result.actionDigest !== entry.actionDigest || result.sessionRef !== entry.sessionRef || result.executionRef !== input.executionRef) workerFail('WORKER_RECEIPT_INVALID');
+    const { actionRef, claimRef, executionRef, ...artifact } = input;
+    const content = JSON.stringify({ contractVersion: 'df.native-result/v1', source: {
+      taskRef: entry.taskRef, actionRef: entry.actionRef, actionDigest: entry.actionDigest,
+      claimRef: entry.claimRef, generationRef: entry.generationRef, sessionRef: entry.sessionRef,
+      executionRef, inputDigest: result.dataDigest, cursor: result.cursor, resultDigest: result.digest,
+    }, content: result.content });
+    return this.#store.writeArtifact(caller, { ...artifact, producerClaimRef: claimRef, content });
   }
   handoff(caller, input) {
     this.#alive();
@@ -145,7 +193,7 @@ export class WorkerManager {
     if (!this.#active) return; this.#active = false;
     for (const entry of this.#entries.values()) {
       entry.detach?.();
-      try { this.#observation(entry, await this.#adapter.dispose(entry.ticket)); }
+      try { this.#observation(entry, await (this.#adapter.shutdown ? this.#adapter.shutdown(entry.ticket) : this.#adapter.dispose(entry.ticket))); }
       catch { try { this.#unknown(entry); } catch { /* storage failure stays held */ } }
     }
   }

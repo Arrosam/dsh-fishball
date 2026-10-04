@@ -1,0 +1,392 @@
+TAP version 13
+# Subtest: reproducible native bundle registers one lazy dsh-fishball module and imports host React only on materialization
+ok 1 - reproducible native bundle registers one lazy dsh-fishball module and imports host React only on materialization
+  ---
+  duration_ms: 79.594333
+  type: 'test'
+  ...
+# (node:43065) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: native RPC list and scoped immutable detail paint one current CAS snapshot
+ok 2 - native RPC list and scoped immutable detail paint one current CAS snapshot
+  ---
+  duration_ms: 8.620792
+  type: 'test'
+  ...
+# Subtest: cancel double-click admits one exact CAS request; authoritative readback remains cancellation requested
+ok 3 - cancel double-click admits one exact CAS request; authoritative readback remains cancellation requested
+  ---
+  duration_ms: 0.648333
+  type: 'test'
+  ...
+# Subtest: native CAS rejection does not retry mutation or expose arbitrary error prose
+ok 4 - native CAS rejection does not retry mutation or expose arbitrary error prose
+  ---
+  duration_ms: 0.277792
+  type: 'test'
+  ...
+# Subtest: disconnect invalidates a pending mutation and aborts its native request without a false readback
+ok 5 - disconnect invalidates a pending mutation and aborts its native request without a false readback
+  ---
+  duration_ms: 0.209166
+  type: 'test'
+  ...
+# Subtest: late selected task details cannot replace a newer task or a disposed panel
+ok 6 - late selected task details cannot replace a newer task or a disposed panel
+  ---
+  duration_ms: 0.436083
+  type: 'test'
+  ...
+# Subtest: terminal, recovery, stale and offline controls stay disabled; action hashes cannot grant informed approval
+ok 7 - terminal, recovery, stale and offline controls stay disabled; action hashes cannot grant informed approval
+  ---
+  duration_ms: 0.487458
+  type: 'test'
+  ...
+# Subtest: native SlotCore registrations are additive and release with the owning fixture context
+ok 8 - native SlotCore registrations are additive and release with the owning fixture context
+  ---
+  duration_ms: 4.050958
+  type: 'test'
+  ...
+# Subtest: client model crosses genuine public native owner RPC framing into encrypted runtime and controls
+ok 9 - client model crosses genuine public native owner RPC framing into encrypted runtime and controls
+  ---
+  duration_ms: 68.763
+  type: 'test'
+  ...
+# Subtest: connection loss during async command digest cannot submit control or intake under a new epoch
+ok 10 - connection loss during async command digest cannot submit control or intake under a new epoch
+  ---
+  duration_ms: 0.953917
+  type: 'test'
+  ...
+# Subtest: client rejects trailing newline references before task selection or mutation
+ok 11 - client rejects trailing newline references before task selection or mutation
+  ---
+  duration_ms: 0.409708
+  type: 'test'
+  ...
+# Subtest: throwing intake command source is redacted and clears busy for a later explicit attempt
+ok 12 - throwing intake command source is redacted and clears busy for a later explicit attempt
+  ---
+  duration_ms: 0.235791
+  type: 'test'
+  ...
+# Subtest: client displays exact trusted preview before one explicit expiry grant; grant does not start work
+ok 13 - client displays exact trusted preview before one explicit expiry grant; grant does not start work
+  ---
+  duration_ms: 0.957
+  type: 'test'
+  ...
+# Subtest: wrong preview scope, data, concrete environment, limit or token never enables client grant
+ok 14 - wrong preview scope, data, concrete environment, limit or token never enables client grant
+  ---
+  duration_ms: 0.959167
+  type: 'test'
+  ...
+# Subtest: expired, disconnected or superseded preview cannot grant or paint newer owner material
+ok 15 - expired, disconnected or superseded preview cannot grant or paint newer owner material
+  ---
+  duration_ms: 0.308917
+  type: 'test'
+  ...
+# Subtest: client concrete preview and explicit grant cross genuine native RPC into scoped encrypted store; forged token cannot grant
+ok 16 - client concrete preview and explicit grant cross genuine native RPC into scoped encrypted store; forged token cannot grant
+  ---
+  duration_ms: 30.343125
+  type: 'test'
+  ...
+# Subtest: preview grant digest failure is redacted, clears busy and performs no native mutation
+ok 17 - preview grant digest failure is redacted, clears busy and performs no native mutation
+  ---
+  duration_ms: 0.259125
+  type: 'test'
+  ...
+# (node:43066) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+ok 18 - exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+  ---
+  duration_ms: 23.74275
+  type: 'test'
+  ...
+# Subtest: explicit context execution requires exact final consume and observes its own committed native result once
+ok 19 - explicit context execution requires exact final consume and observes its own committed native result once
+  ---
+  duration_ms: 19.3375
+  type: 'test'
+  ...
+# Subtest: denied or forged execution consume, changed environment and wrong immutable context never wake a native provider
+ok 20 - denied or forged execution consume, changed environment and wrong immutable context never wake a native provider
+  ---
+  duration_ms: 41.7725
+  type: 'test'
+  ...
+# Subtest: actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay
+ok 21 - actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay
+  ---
+  duration_ms: 200.885625
+  type: 'test'
+  ...
+# Subtest: native default permission, changed environment, exact model effort and session binding fail before create
+ok 22 - native default permission, changed environment, exact model effort and session binding fail before create
+  ---
+  duration_ms: 6.948208
+  type: 'test'
+  ...
+# Subtest: resume requires trusted original session binding and unload closes borrowed adapter immediately
+ok 23 - resume requires trusted original session binding and unload closes borrowed adapter immediately
+  ---
+  duration_ms: 5.399375
+  type: 'test'
+  ...
+# Subtest: native creation requires opaque claimed ticket and fresh synchronous publication guard
+ok 24 - native creation requires opaque claimed ticket and fresh synchronous publication guard
+  ---
+  duration_ms: 4.656208
+  type: 'test'
+  ...
+# Subtest: actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+ok 25 - actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+  ---
+  duration_ms: 8.530583
+  type: 'test'
+  ...
+# Subtest: native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+ok 26 - native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+  ---
+  duration_ms: 5.810834
+  type: 'test'
+  ...
+# Subtest: resume uses exact trusted original ID on genuine public registry API with mock persistence
+ok 27 - resume uses exact trusted original ID on genuine public registry API with mock persistence
+  ---
+  duration_ms: 8.178041
+  type: 'test'
+  ...
+# Subtest: genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+ok 28 - genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+  ---
+  duration_ms: 7.43725
+  type: 'test'
+  ...
+# Subtest: native handoff retains bound original claim and safe context; no permission or environment switch is minted
+ok 29 - native handoff retains bound original claim and safe context; no permission or environment switch is minted
+  ---
+  duration_ms: 6.190709
+  type: 'test'
+  ...
+# Subtest: actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+ok 30 - actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+  ---
+  duration_ms: 35.360084
+  type: 'test'
+  ...
+# Subtest: actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+ok 31 - actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+  ---
+  duration_ms: 67.928
+  type: 'test'
+  ...
+# Subtest: message native admission defaults deny even for a live owned worker and well-formed queued body
+ok 32 - message native admission defaults deny even for a live owned worker and well-formed queued body
+  ---
+  duration_ms: 8.375042
+  type: 'test'
+  ...
+# Subtest: genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+ok 33 - genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+  ---
+  duration_ms: 40.416958
+  type: 'test'
+  ...
+# Subtest: genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+ok 34 - genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+  ---
+  duration_ms: 50.097791
+  type: 'test'
+  ...
+# Subtest: actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard
+ok 35 - actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard
+  ---
+  duration_ms: 8.991125
+  type: 'test'
+  ...
+# (node:43067) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: native authenticated owner prepares, previews, grants and explicitly executes one real local loop; private reviewer and cancel preserve holds
+ok 36 - native authenticated owner prepares, previews, grants and explicitly executes one real local loop; private reviewer and cancel preserve holds
+  ---
+  duration_ms: 262.019
+  type: 'test'
+  ...
+# Subtest: actual native plugin quit closes active owned workers after fiber deactivation and reopening retains accountable holds
+ok 37 - actual native plugin quit closes active owned workers after fiber deactivation and reopening retains accountable holds
+  ---
+  duration_ms: 153.540375
+  type: 'test'
+  ...
+# Subtest: trusted native automation installer admits deduplicated ingress and only exact owner approval resolves missed schedule; timers and tokens stop with plugin
+ok 38 - trusted native automation installer admits deduplicated ingress and only exact owner approval resolves missed schedule; timers and tokens stop with plugin
+  ---
+  duration_ms: 44.73775
+  type: 'test'
+  ...
+# Subtest: private paired chat contract and explicit notification policy are native installation features; asynchronous ingress cannot outlive quit
+ok 39 - private paired chat contract and explicit notification policy are native installation features; asynchronous ingress cannot outlive quit
+  ---
+  duration_ms: 29.545042
+  type: 'test'
+  ...
+# Subtest: only the DSH admitted operator can reach trusted closures
+ok 40 - only the DSH admitted operator can reach trusted closures
+  ---
+  duration_ms: 1.082667
+  type: 'test'
+  ...
+# Subtest: payload accessors, proxies, sparse arrays and authority prototypes never run
+ok 41 - payload accessors, proxies, sparse arrays and authority prototypes never run
+  ---
+  duration_ms: 0.437042
+  type: 'test'
+  ...
+# Subtest: capture disconnects mutable input and abort fences only new admission
+ok 42 - capture disconnects mutable input and abort fences only new admission
+  ---
+  duration_ms: 0.836875
+  type: 'test'
+  ...
+# Subtest: disposal closes captured handlers immediately and secret errors stay redacted
+ok 43 - disposal closes captured handlers immediately and secret errors stay redacted
+  ---
+  duration_ms: 0.342667
+  type: 'test'
+  ...
+# (node:43069) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+ok 44 - actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+  ---
+  duration_ms: 62.915458
+  type: 'test'
+  ...
+# Subtest: native runtime reload preserves encrypted intake and missing key/identity fails before storage
+ok 45 - native runtime reload preserves encrypted intake and missing key/identity fails before storage
+  ---
+  duration_ms: 19.061083
+  type: 'test'
+  ...
+# Subtest: unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+ok 46 - unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+  ---
+  duration_ms: 20.200042
+  type: 'test'
+  ...
+# Subtest: partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+ok 47 - partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+  ---
+  duration_ms: 7.835625
+  type: 'test'
+  ...
+# Subtest: trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+ok 48 - trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+  ---
+  duration_ms: 14.553542
+  type: 'test'
+  ...
+# (node:43070) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: durable submitted boundary precedes native create; creation does not prove running or complete task
+ok 49 - durable submitted boundary precedes native create; creation does not prove running or complete task
+  ---
+  duration_ms: 3.716708
+  type: 'test'
+  ...
+# Subtest: create timeout holds original claim; late receipt reconciles same generation without recreation
+ok 50 - create timeout holds original claim; late receipt reconciles same generation without recreation
+  ---
+  duration_ms: 4.439917
+  type: 'test'
+  ...
+# Subtest: restart cannot recover ownership by JSON or create again; wrong mapping cannot query
+ok 51 - restart cannot recover ownership by JSON or create again; wrong mapping cannot query
+  ---
+  duration_ms: 0.459875
+  type: 'test'
+  ...
+# Subtest: cancel commits control first; native stop retains reservation and needs separate effect settlement
+ok 52 - cancel commits control first; native stop retains reservation and needs separate effect settlement
+  ---
+  duration_ms: 0.53175
+  type: 'test'
+  ...
+# Subtest: cancel during unresolved create stops late publication without releasing held outcomes
+ok 53 - cancel during unresolved create stops late publication without releasing held outcomes
+  ---
+  duration_ms: 3.592834
+  type: 'test'
+  ...
+# Subtest: preparation denial and payload spoof reject before any durable claim or native effect
+ok 54 - preparation denial and payload spoof reject before any durable claim or native effect
+  ---
+  duration_ms: 0.659958
+  type: 'test'
+  ...
+# Subtest: actual SQLite runtime preserves original complete intent, owned mapping and accountable stop until settlement
+ok 55 - actual SQLite runtime preserves original complete intent, owned mapping and accountable stop until settlement
+  ---
+  duration_ms: 32.920833
+  type: 'test'
+  ...
+# Subtest: actual SQLite restart retains uncertain executor and rejects repeated dispatch
+ok 56 - actual SQLite restart retains uncertain executor and rejects repeated dispatch
+  ---
+  duration_ms: 25.018875
+  type: 'test'
+  ...
+# Subtest: dispatch snapshots complete input before awaiting preparation and rejects forged cross-action receipt
+ok 57 - dispatch snapshots complete input before awaiting preparation and rejects forged cross-action receipt
+  ---
+  duration_ms: 1.80375
+  type: 'test'
+  ...
+# Subtest: actual SQLite same task/action/generation refs in another owner scope cannot retrieve or control cached worker
+ok 58 - actual SQLite same task/action/generation refs in another owner scope cannot retrieve or control cached worker
+  ---
+  duration_ms: 25.248583
+  type: 'test'
+  ...
+# Subtest: execution persists one intent and final consume before native send; duplicate command cannot wake again
+ok 59 - execution persists one intent and final consume before native send; duplicate command cannot wake again
+  ---
+  duration_ms: 0.774125
+  type: 'test'
+  ...
+# Subtest: execution denial and foreign completion are redacted unknowns retaining exact reservation
+ok 60 - execution denial and foreign completion are redacted unknowns retaining exact reservation
+  ---
+  duration_ms: 0.490375
+  type: 'test'
+  ...
+# Subtest: execution timeout holds ownership; late final consume denial prevents send and duplicate replay
+ok 61 - execution timeout holds ownership; late final consume denial prevents send and duplicate replay
+  ---
+  duration_ms: 1.667791
+  type: 'test'
+  ...
+# Subtest: execution immutable context and scoped claim mismatch reject before durable intent
+ok 62 - execution immutable context and scoped claim mismatch reject before durable intent
+  ---
+  duration_ms: 0.516959
+  type: 'test'
+  ...
+1..62
+# tests 62
+# suites 0
+# pass 62
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 752.100542

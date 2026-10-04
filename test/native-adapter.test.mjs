@@ -5,13 +5,16 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
-import { NativeAdapter, probeWorkerHost } from '../src/native-adapter.mjs';
+import { NativeAdapter, probeWorkerHost, probePersistenceHost } from '../src/native-adapter.mjs';
 import { WorkerManager } from '../src/worker.mjs';
 import { RuntimeStore } from '../src/runtime-store.mjs';
 import { MessageBroker } from '../src/messages.mjs';
+import { MemoryAdapter } from '../src/memory.mjs';
+import { ContextAssembler } from '../src/context.mjs';
 import { EnvironmentRegistry, workerDigest as d } from '../src/environment.mjs';
 const root = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
-const { Context } = await import(`${root}/cordis/lib/index.js`);
+const { Context, Service } = await import(`${root}/cordis/lib/index.js`);
+const { createScope } = await import(`${root}/dsh-scope/lib/index.js`);
 const { default: SessionStore, Session } = await import(`${root}/dsh-session/lib/index.js`);
 const { default: ApprovalService } = await import(`${root}/dsh-user-approval/lib/index.js`);
 const { AgentRegistry } = await import(`${root}/dsh-agent/lib/index.js`);
@@ -20,13 +23,15 @@ const { default: SessionProjectionRegistry } = await import(`${root}/dsh-session
 const { default: SystemPrompt } = await import(`${root}/dsh-system-prompt/lib/index.js`);
 const { default: ToolRuntime } = await import(`${root}/dsh-tools/lib/index.js`);
 const { default: AgentLoop } = await import(`${root}/dsh-agent-loop/lib/index.js`);
+const { default: JsonlSessionPersistence } = await import(`${root}/dsh-session-persistence-jsonl/lib/index.js`);
 
-async function fixture({ actualLoop = false, deterministicStream = false, messageAdmission = () => true } = {}) {
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-native-')));
+async function fixture({ actualLoop = false, deterministicStream = false, messageAdmission = () => true, workspaceRoot, persistenceRoot, resolveSession } = {}) {
+  const directory = workspaceRoot ?? realpathSync(mkdtempSync(join(tmpdir(), 'df-native-')));
   const ctx = new Context(); ctx.logger.exporters?.clear?.();
   if (actualLoop) await ctx.plugin(SessionProjectionRegistry);
   await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
-  await ctx.plugin(AgentRegistry); await ctx.plugin(LlmRuntime);
+  if (persistenceRoot) await ctx.plugin(JsonlSessionPersistence, { root: persistenceRoot, compression: 'none' });
+  await ctx.plugin(AgentRegistry); await ctx.plugin(LlmRuntime); await ctx.plugin(SystemPrompt, {}); await ctx.plugin(ToolRuntime, {});
   let streams = 0, creates = 0, resumes = 0, allowed = true, state = d('state'), injects = 0; const requests = [];
   class MockProvider extends LlmAdapter {
     async resolveModel(provider, model) { return { provider, id: model, name: model, reasoning: { efforts: [{ id: 'fixture-effort', name: 'Fixture' }] } }; }
@@ -42,36 +47,37 @@ async function fixture({ actualLoop = false, deterministicStream = false, messag
     }
   }
   ctx.llm.registerAdapter(['synthetic-provider'], new MockProvider());
-  const factory = {
+  class FixtureFactory extends Service {
+    static inject = ['agents', 'sessions', 'tools'];
+    constructor(serviceCtx) { super(serviceCtx, 'fixtureFactory'); this.runtime = { ctx: serviceCtx }; serviceCtx.agents.setFactory(this); }
     async createAgent(ownerCtx, options) {
       creates++;
       const session = Session.create(options.sessionId);
       const agent = { id: options.sessionId, session, status: 'idle', ctx: ownerCtx, options: options.agentOptions, inject() { injects++; }, cancel() { agent.status = 'idle'; }, whenIdle: async () => {} };
-      const commit = await options.setup?.(ownerCtx, agent); commit?.commit();
+      const scope = createScope(this.runtime.ctx, agent); agent.ctx = scope.ctx;
+      const commit = await options.setup?.(scope.ctx, agent); commit?.commit();
       const detachSession = ownerCtx.sessions.enter(session), detachAgent = ownerCtx.agents.enter(agent, undefined);
       ownerCtx.sessions.announce(session, 'startup'); await ownerCtx.agents.announce(agent, 'startup');
       let disposed = false;
-      const dispose = async () => { if (disposed) return; disposed = true; detachAgent(); detachSession(); };
+      const dispose = async () => { if (disposed) return; disposed = true; detachAgent(); detachSession(); await scope.dispose(); };
       ownerCtx.effect(() => dispose);
       return { agent, dispose };
-    },
+    }
     async resume(ownerCtx, options) {
       resumes++;
       // Mock persistence is deliberately separate from real AgentLoop proof.
       return this.createAgent(ownerCtx, { ...options, sessionId: options.resumeSessionId });
-    },
-  };
+    }
+  }
   if (actualLoop) {
-    await ctx.plugin(SystemPrompt, {});
-    await ctx.plugin(ToolRuntime, {});
     await ctx.plugin(AgentLoop, { agents: [], maxParallelToolCalls: 1 });
-  } else ctx.agents.setFactory(factory);
+  } else await ctx.plugin(FixtureFactory);
   const entry = { environmentRef: d('env'), workspaceRef: createHash('sha256').update('synthetic-workspace').digest('hex'), bindingDigest: d('binding'), toolsDigest: d('tools'), permissionPolicyDigest: d('permission'), root: directory, cwd: directory, provider: 'synthetic-provider', model: 'synthetic-model', reasoningEffort: 'fixture-effort', modelRef: d('model'), reasoningRef: d('reasoning'), presetRef: d('preset') };
   const environments = new EnvironmentRegistry({ entries: [entry], currentState: () => state });
   const task = { taskRef: d('task'), workspaceRef: entry.workspaceRef, version: 1, authEpoch: 0 };
   const spec = { actionRef: d('action'), kind: 'write', role: 'worker', targetDigest: d('target'), dataDigest: d('data'), units: 1, charges: {runtimeMs: 1, usageUnits: 0, costEstimateMicros: 0}, attemptGroupRef: d('group'), attemptIndex: 1, resourcePolicyVersion: 2, modelPolicyVersion: 1, executor: { mode: 'create', generationRef: d('gen'), environmentRef: entry.environmentRef, bindingDigest: entry.bindingDigest, toolsDigest: entry.toolsDigest, permissionPolicyDigest: entry.permissionPolicyDigest }, model: { catalogEvidenceRef: d('catalog'), modelRef: entry.modelRef, reasoningRef: entry.reasoningRef, presetRef: entry.presetRef } };
-  const adapter = new NativeAdapter(ctx, { environments, permission: () => allowed, messageAdmission });
-  return { ctx, adapter, environments, task, spec, requests: () => structuredClone(requests), injected: () => injects, stats: () => ({ creates, resumes, streams }), deny: () => { allowed = false; }, change: () => { state = d('changed'); }, close: async () => { await ctx.fiber.dispose(); rmSync(directory, { recursive: true }); } };
+  const adapter = new NativeAdapter(ctx, { environments, toolGuard: ({schemas}) => schemas.length === 0, permission: () => allowed, messageAdmission, resolveSession });
+  return { ctx, adapter, environments, task, spec, requests: () => structuredClone(requests), injected: () => injects, stats: () => ({ creates, resumes, streams }), deny: () => { allowed = false; }, change: () => { state = d('changed'); }, close: async () => { await ctx.fiber.dispose(); if (!workspaceRoot) rmSync(directory, { recursive: true }); } };
 }
 
 test('exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls', async () => {
@@ -93,10 +99,107 @@ test('exact public services create owned session; created/ready/running/cancel/s
     await assert.rejects(f.adapter.create(ticket), { code: 'WORKER_ALREADY_SUBMITTED' });
   } finally { await f.close(); }
 });
+
+async function preparedExecution(f) {
+  const content = 'Exact synthetic immutable execution context';
+  const context = { recordRef: d('execution-context'), kind: 'context', content, digest: createHash('sha256').update(content).digest('hex'), byteLength: Buffer.byteLength(content) };
+  const spec = { ...f.spec, dataDigest: context.digest }, actionDigest = d('execution-action');
+  const ticket = await f.adapter.prepare(spec, f.task, actionDigest);
+  f.adapter.bindClaim(ticket, { actionRef: spec.actionRef, claimRef: d('execution-claim'), reservationRef: d('execution-reservation'), actionDigest, generationRef: spec.executor.generationRef }, () => true);
+  await f.adapter.create(ticket);
+  const execution = { executionRef: d('execution-intent'), taskRef: f.task.taskRef, claimRef: d('execution-claim'), generationRef: spec.executor.generationRef, contextRecordRef: context.recordRef, actionDigest, dataDigest: context.digest };
+  return { ticket, execution, context };
+}
+test('explicit context execution requires exact final consume and observes its own committed native result once', { timeout: 5000 }, async () => {
+  const f = await fixture({ actualLoop: true, deterministicStream: true });
+  try {
+    const e = await preparedExecution(f); let consumes = 0;
+    const result = await f.adapter.executeContext(e.ticket, e.execution, e.context, () => { consumes++; assert.equal(f.stats().streams, 0); return { ...e.execution, admitted: true, state: 'dispatch_intent' }; });
+    assert.equal(consumes, 1); assert.equal(result.state, 'committed'); assert.equal(result.result.eventType, 'assistant/message');
+    assert.equal(f.stats().streams, 1); assert.deepEqual(f.requests().flat().filter(input => input.messageRef === d(e.execution.executionRef)), [{ messageRef: d(e.execution.executionRef), sourceKind: 'df-context', sourceForm: 'local', bodyDigest: e.context.digest }]);
+    await assert.rejects(f.adapter.executeContext(e.ticket, e.execution, e.context, () => { consumes++; }), { code: 'WORKER_EXECUTION_ALREADY_SUBMITTED' });
+    assert.equal(consumes, 1); assert.equal(f.stats().streams, 1);
+  } finally { await f.close(); }
+});
+test('denied or forged execution consume, changed environment and wrong immutable context never wake a native provider', async () => {
+  for (const fault of ['denied', 'forged', 'environment', 'context', 'generation']) {
+    const f = await fixture({ actualLoop: true, deterministicStream: true });
+    try {
+      const e = await preparedExecution(f); let consumes = 0;
+      if (fault === 'environment') f.change();
+      const context = fault === 'context' ? { ...e.context, content: 'Changed content' } : e.context;
+      const execution = fault === 'generation' ? { ...e.execution, generationRef: d('other-incarnation') } : e.execution;
+      await assert.rejects(f.adapter.executeContext(e.ticket, execution, context, () => { consumes++; return { ...e.execution, admitted: fault !== 'denied', state: 'dispatch_intent', ...(fault === 'forged' ? { claimRef: d('foreign-claim') } : {}) }; }));
+      assert.equal(f.stats().streams, 0); assert.equal(f.requests().length, 0);
+      if (['environment', 'context', 'generation'].includes(fault)) assert.equal(consumes, 0);
+    } finally { await f.close(); }
+  }
+});
+
+test('actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay', { timeout: 15000 }, async () => {
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-persistent-native-'))), owner = {}, host = {};
+  const nativeId = 'synthetic-df-persisted-session', sessionRef = createHash('sha256').update(nativeId).digest('hex');
+  const store = new RuntimeStore({ databasePath: join(directory, 'ledger.sqlite'), encryptionKey: Buffer.alloc(32, 6), principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }], hostPermission: () => true });
+  let f, manager;
+  try {
+    const task = store.intake(owner, { taskId: 'synthetic-persistent-task', provider: 'fixture', source: 'source', eventId: 'event', commandRef: d('persistent-intake') }).task;
+    const bind = command => { const current = store.task(owner, task.taskRef); return { taskRef: task.taskRef, commandRef: d(command), expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch }; };
+    store.policy(owner, { commandRef: d('persistent-policy'), expectedVersion: 1, limits: {}, modelPolicy: { version: 1, presetRefs: [d('preset')], catalogEvidenceRef: d('catalog') } });
+    store.putData(owner, { ...bind('persistent-goal'), kind: 'goal', content: 'Produce a synthetic local result; no tools or external calls', sourceRef: d('persistent-source') });
+    const tokenize = text => Math.ceil(text.length / 4), assembler = new ContextAssembler({ store, tokenize });
+    const memory = new MemoryAdapter({ store, handle: owner, namespaceRef: d('persistent-memory'), contextAssembler: assembler, tokenize });
+    const prepared = await memory.prepareExecutionContext({ ...bind('persistent-context'), terms: [], now: Date.now() });
+    const content = store.readData(owner, { taskRef: task.taskRef, recordRef: prepared.recordRef }).content;
+    f = await fixture({ actualLoop: true, deterministicStream: true, workspaceRoot: directory, persistenceRoot: join(directory, 'sessions'), resolveSession: () => nativeId });
+    assert.equal(probePersistenceHost(f.ctx).durability, 'explicit-flush-required');
+    manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter });
+    const spec = { ...f.spec, dataDigest: prepared.digest, executor: { ...f.spec.executor, sessionRef } };
+    const action = store.planAction(owner, { ...bind('persistent-plan'), spec });
+    store.grantAction(owner, { ...bind('persistent-grant'), actionRef: action.actionRef, actionDigest: action.actionDigest, expiresAt: Date.now() + 60000 });
+    const worker = await manager.dispatch(owner, { ...bind('persistent-dispatch'), actionRef: action.actionRef, actionDigest: action.actionDigest });
+    assert.equal(worker.phase, 'ready'); assert.equal(worker.sessionRef, sessionRef); assert.equal(f.stats().streams, 0);
+    const input = { ...bind('persistent-execute'), actionRef: action.actionRef, actionDigest: action.actionDigest, claimRef: worker.claimRef, generationRef: worker.generationRef, contextRecordRef: prepared.recordRef, timeoutMs: 2000 };
+    const executed = await manager.executeContext(owner, input);
+    assert.equal(executed.state, 'committed'); assert.equal(executed.worker.sessionRef, sessionRef); assert.equal(f.stats().streams, 1);
+    assert.equal(f.requests().flat().filter(message => message.bodyDigest === prepared.digest).length, 1);
+    assert.equal((await manager.executeContext(owner, input)).admitted, false); assert.equal(f.stats().streams, 1);
+    await f.ctx.sessionPersistence.flush();
+    let reader = await f.ctx.sessionPersistence.open(nativeId, 'read'), events;
+    try { assert.equal(reader.header.id, nativeId); events = (await reader.read()).events; } finally { await reader.close(); }
+    assert.equal(events.filter(event => event.type === 'user/message' && event.data.id === executed.executionRef && event.data.content[0]?.text === content).length, 1);
+    assert.ok(events.some(event => event.type === 'assistant/message'));
+    const first = store.snapshot(owner, { taskRef: task.taskRef }); assert.notEqual(first.task.status, 'completed'); assert.equal(first.actions[0].releaseEvidenceRef, null);
+    await manager.close(); manager = undefined; await f.close(); f = undefined;
+    const stopped = store.snapshot(owner, { taskRef: task.taskRef }), oldWorker = stopped.workers.find(value => value.claimRef === worker.claimRef);
+    assert.equal(oldWorker.phase, 'stopped'); assert.equal(stopped.actions[0].releaseEvidenceRef, null, 'native close does not reconcile effects');
+    store.settleAction(host, { taskRef: task.taskRef, claimRef: worker.claimRef, generationRef: worker.generationRef, commandRef: d('persistent-settle'), outcome: 'terminated', evidenceRef: d('persistent-known-local-effects'), terminalEvidenceRef: oldWorker.terminalEvidenceRef });
+    const resumeContext = await memory.prepareExecutionContext({ ...bind('persistent-resume-context'), terms: [], now: Date.now() });
+    assert.notEqual(resumeContext.digest, prepared.digest, 'fresh context reflects the current stopped/settled ledger');
+    f = await fixture({ actualLoop: true, deterministicStream: true, workspaceRoot: directory, persistenceRoot: join(directory, 'sessions'), resolveSession: () => nativeId });
+    assert.equal(probePersistenceHost(f.ctx).version, '0.2.1-alpha.1');
+    manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter });
+    const resumedSpec = { ...spec, dataDigest: resumeContext.digest, actionRef: d('persistent-resume-action'), attemptGroupRef: d('persistent-resume-group'), executor: { ...spec.executor, mode: 'resume', generationRef: d('persistent-resume-generation') } };
+    const resumedAction = store.planAction(owner, { ...bind('persistent-resume-plan'), spec: resumedSpec });
+    store.grantAction(owner, { ...bind('persistent-resume-grant'), actionRef: resumedAction.actionRef, actionDigest: resumedAction.actionDigest, expiresAt: Date.now() + 60000 });
+    const resumed = await manager.dispatch(owner, { ...bind('persistent-resume-dispatch'), actionRef: resumedAction.actionRef, actionDigest: resumedAction.actionDigest });
+    assert.equal(resumed.phase, 'ready'); assert.equal(resumed.sessionRef, worker.sessionRef); assert.notEqual(resumed.generationRef, worker.generationRef); assert.notEqual(resumed.claimRef, worker.claimRef); assert.equal(f.stats().streams, 0);
+    const current = store.snapshot(owner, { taskRef: task.taskRef }); assert.equal(current.workers.find(value => value.claimRef === worker.claimRef).phase, 'stopped'); assert.equal(current.actions.find(value => value.actionRef === action.actionRef).actionDigest, action.actionDigest); assert.equal(current.actions.find(value => value.actionRef === resumedAction.actionRef).releaseEvidenceRef, null);
+    await f.ctx.sessionPersistence.flush(); reader = await f.ctx.sessionPersistence.open(nativeId, 'read');
+    try { const restored = (await reader.read()).events; assert.equal(restored.filter(event => event.type === 'user/message' && event.data.id === executed.executionRef).length, 1); assert.equal(restored.filter(event => event.type === 'assistant/message').length, events.filter(event => event.type === 'assistant/message').length); } finally { await reader.close(); }
+    const resumeInput = { ...bind('persistent-resume-execute'), actionRef: resumedAction.actionRef, actionDigest: resumedAction.actionDigest, claimRef: resumed.claimRef, generationRef: resumed.generationRef, contextRecordRef: resumeContext.recordRef, timeoutMs: 2000 };
+    const resumedResult = await manager.executeContext(owner, resumeInput);
+    assert.equal(resumedResult.state, 'committed'); assert.notEqual(resumedResult.executionRef, executed.executionRef); assert.equal(f.stats().streams, 1);
+    assert.equal(f.requests().flat().filter(input => input.bodyDigest === resumeContext.digest).length, 1);
+    assert.equal((await manager.executeContext(owner, resumeInput)).admitted, false); assert.equal(f.stats().streams, 1);
+    await f.ctx.sessionPersistence.flush(); reader = await f.ctx.sessionPersistence.open(nativeId, 'read');
+    try { const final = (await reader.read()).events; assert.equal(final.filter(event => event.type === 'user/message' && event.data.id === executed.executionRef).length, 1); assert.equal(final.filter(event => event.type === 'user/message' && event.data.id === resumedResult.executionRef).length, 1); assert.equal(final.filter(event => event.type === 'assistant/message').length, events.filter(event => event.type === 'assistant/message').length + 1); } finally { await reader.close(); }
+    const final = store.snapshot(owner, { taskRef: task.taskRef }); assert.notEqual(final.task.status, 'completed'); assert.equal(final.actions.find(value => value.actionRef === resumedAction.actionRef).releaseEvidenceRef, null);
+  } finally { await manager?.close(); await f?.close(); store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
 test('native default permission, changed environment, exact model effort and session binding fail before create', async () => {
   const f = await fixture();
   try {
-    const denied = new NativeAdapter(f.ctx, { environments: f.environments });
+    const denied = new NativeAdapter(f.ctx, { toolGuard: ({schemas}) => schemas.length === 0, environments: f.environments });
     await assert.rejects(denied.prepare(f.spec, f.task, d('digest')), { code: 'HOST_PERMISSION_DENIED' });
     await assert.rejects(f.adapter.prepare({ ...f.spec, executor: { ...f.spec.executor, sessionRef: d('wrong-session') } }, f.task, d('digest')), { code: 'SESSION_MISMATCH' });
     const ticket = await f.adapter.prepare(f.spec, f.task, d('digest')); f.change();
@@ -170,7 +273,7 @@ test('resume uses exact trusted original ID on genuine public registry API with 
   const f = await fixture();
   try {
     const nativeId = 'synthetic-original-session';
-    const adapter = new NativeAdapter(f.ctx, { environments: f.environments, permission: () => true, resolveSession: () => nativeId });
+    const adapter = new NativeAdapter(f.ctx, { toolGuard: ({schemas}) => schemas.length === 0, environments: f.environments, permission: () => true, resolveSession: () => nativeId });
     const spec = { ...f.spec, executor: { ...f.spec.executor, mode: 'resume', sessionRef: createHash('sha256').update(nativeId).digest('hex') } };
     const ticket = await adapter.prepare(spec, f.task, d('digest'));
     adapter.bindClaim(ticket, { actionRef: d('action'), claimRef: d('claim'), reservationRef: d('reservation'), actionDigest: d('digest'), generationRef: d('gen') }, () => true);
@@ -276,7 +379,7 @@ test('actual store→worker→broker→native inject uses current message grant 
 test('message native admission defaults deny even for a live owned worker and well-formed queued body', async () => {
   const f = await fixture();
   try {
-    const adapter = new NativeAdapter(f.ctx, { environments: f.environments, permission: () => true });
+    const adapter = new NativeAdapter(f.ctx, { toolGuard: ({schemas}) => schemas.length === 0, environments: f.environments, permission: () => true });
     const ticket = await adapter.prepare(f.spec, f.task, d('digest'));
     adapter.bindClaim(ticket, { actionRef: d('action'), claimRef: d('claim'), reservationRef: d('reservation'), actionDigest: d('digest'), generationRef: d('gen') }, () => true);
     const created = await adapter.create(ticket), content = 'Synthetic denied message', digest = createHash('sha256').update(content).digest('hex');
@@ -356,4 +459,28 @@ test('genuine store→worker→broker→AgentLoop consumes exact approved scoped
     assert.equal(consumed.state, 'consumed'); assert.equal((await broker.dispatch(owner, dispatch)).dispatched, false); assert.equal(f.stats().streams, 1);
     const snapshot = store.snapshot(owner, { taskRef: task.taskRef }); assert.equal(snapshot.actions.find(a => a.actionRef === planned.actionRef).actionDigest, planned.actionDigest); assert.equal(snapshot.workers.find(w => w.claimRef === worker.claimRef).generationRef, worker.generationRef); assert.notEqual(snapshot.task.status, 'completed'); assert.equal(snapshot.actions.every(a => a.releaseEvidenceRef === null), true);
   } finally { clearTimeout(timer); await manager.close(); store.close(); rmSync(directory, { recursive: true }); await f.close(); }
+});
+
+
+test('actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard', async () => {
+  const f = await fixture({ actualLoop: true, deterministicStream: true });
+  let removeTool, removePreExecute;
+  try {
+    const e = await preparedExecution(f), agent = f.ctx.agents.get(`df-${f.spec.executor.generationRef}`);
+    assert.deepEqual(f.ctx.tools.schemas(agent), []);
+    let bodies = 0, consumes = 0;
+    removeTool = f.ctx.tools.register({ name: 'synthetic_unexpected_tool', description: 'Synthetic veto fixture; body must never run', parameters: { type: 'object', properties: {}, additionalProperties: false }, output: { schema: { type: 'object', properties: {}, additionalProperties: false }, render: () => [] }, async execute() { bodies++; return {}; } });
+    removePreExecute = f.ctx.on('tools/pre-execute', async () => ({ kind: 'allow' }));
+    assert.equal(f.ctx.tools.schemas(agent).length, 1);
+    const input = { callId: 'synthetic-veto', name: 'synthetic_unexpected_tool', arguments: {}, agent, signal: new AbortController().signal };
+    const result = await f.ctx.tools.execute(input);
+    assert.equal(result.isError, true); assert.equal(result.error.message, 'DF_TOOL_DISPATCH_UNAVAILABLE');
+    assert.equal(bodies, 0);
+    await assert.rejects(f.adapter.executeContext(e.ticket, e.execution, e.context, () => { consumes++; return { ...e.execution, admitted: true, state: 'dispatch_intent' }; }), { code: 'WORKER_TOOLS_UNAVAILABLE' });
+    assert.equal(consumes, 0); assert.equal(f.stats().streams, 0);
+    await f.adapter.dispose(e.ticket);
+    assert.equal(f.ctx.tools.guardReason(input), undefined, 'scope disposal removes this agent guard');
+    assert.equal(f.ctx.tools.get('synthetic_unexpected_tool', agent).name, 'synthetic_unexpected_tool', 'owned guard cleanup does not delete an independent global definition');
+    assert.equal(bodies, 0);
+  } finally { removePreExecute?.(); removeTool?.(); await f.close(); }
 });

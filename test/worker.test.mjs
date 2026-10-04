@@ -161,3 +161,61 @@ test('actual SQLite same task/action/generation refs in another owner scope cann
     assert.equal(f.creates(), 1);
   } finally { f.close(); }
 });
+
+async function executionFixture({ deferred = false, deny = false, forged = false } = {}) {
+  const f = fixture(); await f.manager.dispatch(f.owner, f.input);
+  const body = { recordRef: d('context'), kind: 'context', content: 'Immutable synthetic context', digest: d('context-data'), byteLength: 27 };
+  f.action.spec.dataDigest = body.digest;
+  let intent, effects = 0, finish;
+  f.store.readData = (caller, input) => { assert.equal(caller, f.owner); assert.equal(input.recordRef, body.recordRef); return { ...body }; };
+  f.store.beginContextExecution = (handle, input) => {
+    assert.equal(handle, f.host);
+    if (intent) return { ...intent, deduplicated: true };
+    intent = { executionRef: d('execution'), taskRef: input.taskRef, claimRef: input.claimRef, generationRef: input.generationRef, contextRecordRef: input.contextRecordRef, actionDigest: input.actionDigest, dataDigest: body.digest, state: 'intent_committed' };
+    f.effects.push('execution-intent'); return { ...intent, deduplicated: false };
+  };
+  f.store.assertExecutionCurrent = (handle, input) => {
+    assert.equal(handle, f.host); assert.equal(input.executionRef, intent.executionRef);
+    if (deny) throw new Error('SYNTHETIC_EXECUTION_CANARY');
+    const admitted = intent.state === 'intent_committed'; intent.state = 'dispatch_intent'; f.effects.push('execution-consume');
+    return { ...intent, admitted };
+  };
+  f.adapter.executeContext = async (_ticket, binding, context, consume) => {
+    assert.equal(binding.actionDigest, f.input.actionDigest); assert.equal(context.content, body.content);
+    if (deferred) await new Promise(resolve => { finish = resolve; });
+    const admitted = consume(); assert.equal(admitted.admitted, true); effects++; f.effects.push('native-send');
+    return { executionRef: forged ? d('foreign-execution') : binding.executionRef, state: 'committed', worker: f.adapter.query() };
+  };
+  const input = { ...f.mapping(), actionDigest: f.input.actionDigest, contextRecordRef: body.recordRef, commandRef: d('execute-command'), expectedTaskVersion: 1, expectedAuthEpoch: 0, timeoutMs: deferred ? 2 : 1000 };
+  return { ...f, body, executionInput: input, effectsCount: () => effects, finish: () => finish?.(), intent: () => ({ ...intent }) };
+}
+test('execution persists one intent and final consume before native send; duplicate command cannot wake again', async () => {
+  const f = await executionFixture(), result = await f.manager.executeContext(f.owner, f.executionInput);
+  assert.equal(result.state, 'committed'); assert.equal(f.effectsCount(), 1);
+  assert.deepEqual(f.effects.slice(-3), ['execution-consume', 'native-send', 'ready']);
+  assert.equal((await f.manager.executeContext(f.owner, f.executionInput)).admitted, false);
+  assert.equal(f.effectsCount(), 1); assert.equal(f.task.status, 'active');
+});
+test('execution denial and foreign completion are redacted unknowns retaining exact reservation', async () => {
+  for (const options of [{ deny: true }, { forged: true }]) {
+    const f = await executionFixture(options), result = await f.manager.executeContext(f.owner, f.executionInput);
+    assert.equal(result.state, 'unknown'); assert.equal(result.worker.claimRef, d('claim')); assert.equal(result.worker.reservationRef, d('reservation'));
+    assert.equal(JSON.stringify(result).includes('SYNTHETIC_EXECUTION_CANARY'), false);
+    assert.equal((await f.manager.executeContext(f.owner, f.executionInput)).admitted, false);
+    assert.equal(f.effectsCount(), options.deny ? 0 : 1);
+  }
+});
+test('execution timeout holds ownership; late final consume denial prevents send and duplicate replay', async () => {
+  const f = await executionFixture({ deferred: true });
+  const result = await f.manager.executeContext(f.owner, f.executionInput);
+  assert.equal(result.state, 'unknown'); assert.equal(result.worker.reservationRef, d('reservation'));
+  f.store.assertExecutionCurrent = () => { throw new Error('REVOKED_OR_UNKNOWN'); };
+  f.finish(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.effectsCount(), 0); assert.equal((await f.manager.executeContext(f.owner, f.executionInput)).admitted, false);
+});
+test('execution immutable context and scoped claim mismatch reject before durable intent', async () => {
+  const f = await executionFixture();
+  for (const input of [{ ...f.executionInput, generationRef: d('foreign') }, { ...f.executionInput, claimRef: d('foreign') }, { ...f.executionInput, principal: {} }]) await assert.rejects(f.manager.executeContext(f.owner, input));
+  f.body.digest = d('changed'); await assert.rejects(f.manager.executeContext(f.owner, f.executionInput), { code: 'WORKER_CONTEXT_INVALID' });
+  assert.equal(f.effects.includes('execution-intent'), false); assert.equal(f.effectsCount(), 0);
+});

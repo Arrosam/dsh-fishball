@@ -8,7 +8,26 @@ import { normalizedSpec } from './runtime-security.mjs';
 const root = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const agentModule = await import(pathToFileURL(`${root}/dsh-agent/lib/index.js`).href);
 const llmModule = await import(pathToFileURL(`${root}/dsh-llm/lib/index.js`).href);
+const scopeModule = await import(pathToFileURL(`${root}/dsh-scope/lib/index.js`).href);
+const toolsModule = await import(pathToFileURL(`${root}/dsh-tools/lib/index.js`).href);
+const persistenceModule = await import(pathToFileURL(`${root}/dsh-session-persistence-jsonl/lib/index.js`).href);
+const persistencePins = Object.freeze({
+  'dsh-session-persistence-jsonl/lib/index.js': '0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b',
+  'node-addon-system/lib/flock.js': 'e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646',
+  'node-addon-system-darwin-arm64/bin/system.node': '9534cde445a865250eb7bc8cfe5e231f3f91d0fda3f4aaa694e81f3531ad1130',
+});
+export function probePersistenceHost(ctx) {
+  try {
+    if (process.platform !== 'darwin' || process.arch !== 'arm64' || Number(process.versions.napi) < 8 || !(ctx.sessionPersistence instanceof persistenceModule.default)) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    for (const [path, hash] of Object.entries(persistencePins)) if (createHash('sha256').update(readFileSync(`${root}/${path}`)).digest('hex') !== hash) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    for (const pkg of ['dsh-session-persistence', 'dsh-session-persistence-jsonl']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-alpha.1') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    for (const pkg of ['node-addon-system', 'node-addon-system-darwin-arm64']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.1.2') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    for (const method of ['create', 'open', 'flush', 'stat', 'list']) if (typeof ctx.sessionPersistence[method] !== 'function') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+  } catch { workerFail('WORKER_PERSISTENCE_UNSUPPORTED'); }
+  return Object.freeze({ target: 'public-jsonl-darwin-arm64', version: '0.2.1-alpha.1', hashes: persistencePins, durability: 'explicit-flush-required' });
+}
 const pins = Object.freeze({
+  'dsh-scope/lib/index.js': '2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca',
   'dsh-agent/lib/index.js': '7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93',
   'dsh-agent/lib/types/index.js': '7e7c47fc0b82f0718b73e1705c07ad9496cfdbc21598db94de858f718cd23490',
   'dsh-llm/lib/index.js': 'a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e',
@@ -30,18 +49,28 @@ export function probeWorkerHost(ctx) {
 // Tickets and owned AgentHandles never cross the model-facing facade. Public
 // registry lookup supplies factual visibility, never a new disposal capability.
 export class NativeAdapter {
-  #ctx; #env; #permission; #messageAdmission; #resolve; #tickets = new WeakMap(); #entries = new Set(); #active = true;
-  constructor(ctx, { environments, permission = () => false, messageAdmission = () => false, resolveSession } = {}) {
+  #ctx; #env; #permission; #messageAdmission; #toolGuard; #resolve; #tickets = new WeakMap(); #entries = new Set(); #active = true;
+  constructor(ctx, { environments, permission = () => false, messageAdmission = () => false, toolGuard, resolveSession } = {}) {
     probeWorkerHost(ctx);
-    if (!environments || !['bind', 'inspect', 'assertCurrent'].every(key => typeof environments[key] === 'function') || typeof permission !== 'function' || typeof messageAdmission !== 'function' || resolveSession !== undefined && typeof resolveSession !== 'function') workerFail('WORKER_CONFIG');
-    this.#ctx = ctx; this.#env = environments; this.#permission = permission; this.#messageAdmission = messageAdmission; this.#resolve = resolveSession;
+    if (!environments || !['bind', 'inspect', 'assertCurrent'].every(key => typeof environments[key] === 'function') || typeof permission !== 'function' || typeof messageAdmission !== 'function' || typeof toolGuard !== 'function' || resolveSession !== undefined && typeof resolveSession !== 'function') workerFail('WORKER_CONFIG');
+    this.#ctx = ctx; this.#env = environments; this.#permission = permission; this.#messageAdmission = messageAdmission; this.#toolGuard = toolGuard; this.#resolve = resolveSession;
     ctx.on('agent/status', ({ agent }) => this.#event(agent));
     ctx.on('agent/disposed', ({ agent }) => {
       for (const entry of this.#entries) if (entry.handle?.agent === agent) { entry.state = 'stopped'; this.#notify(entry, 'stopped'); }
     });
     ctx.on('agent/assistant-stream', ({ agent, frame }) => this.#stream(agent, frame));
     ctx.on('session/event', (session, event) => {
-      for (const entry of this.#entries) if (entry.handle?.agent.session === session && Number.isSafeInteger(event.seq)) this.#event(entry.handle.agent, event.seq, event.type);
+      for (const entry of this.#entries) if (entry.handle?.agent.session === session && Number.isSafeInteger(event.seq)) {
+        if (entry.execution && event.type === 'user/message' && event.data.id === entry.execution.executionRef && event.data.source?.kind === 'df-context' && event.data.content?.length === 1 && event.data.content[0].type === 'text' && typeof event.data.content[0].text === 'string' && createHash('sha256').update(event.data.content[0].text).digest('hex') === entry.execution.dataDigest) entry.executionInputSeq = event.seq;
+        if (entry.execution && Number.isSafeInteger(entry.executionInputSeq) && event.seq > entry.executionInputSeq && event.type === 'assistant/message') {
+          const blocks = event.data?.message?.content;
+          if (Array.isArray(blocks) && blocks.length > 0 && blocks.length <= 128 && blocks.every(block => block.type === 'text' && typeof block.text === 'string' && block.text.isWellFormed())) {
+            const content = blocks.map(block => block.text).join('');
+            if (Buffer.byteLength(content) <= 65536) entry.resultCandidate = Object.freeze({ cursor: event.seq, content, digest: createHash('sha256').update(content).digest('hex') });
+          }
+        }
+        this.#event(entry.handle.agent, event.seq, event.type);
+      }
     });
     ctx.effect(() => () => { this.#active = false; }, 'df.native-adapter');
   }
@@ -60,6 +89,16 @@ export class NativeAdapter {
     if (entry.claim || entry.state !== 'prepared' || typeof assertCurrent !== 'function' || claim.generationRef !== entry.generationRef || claim.actionRef !== entry.spec.actionRef || claim.actionDigest !== entry.actionDigest || claim.task && (claim.task.taskRef !== entry.taskRef || claim.task.workspaceRef !== entry.workspaceRef || claim.task.ownerRef !== entry.ownerRef)) workerFail('WORKER_MAPPING_MISMATCH');
     entry.claim = Object.freeze({ claimRef: workerRef(claim.claimRef), reservationRef: workerRef(claim.reservationRef), actionDigest: workerRef(claim.actionDigest), generationRef: entry.generationRef });
     entry.assertClaim = assertCurrent;
+  }
+  #tools(entry, agent) {
+    try {
+      if (!(this.#ctx.tools instanceof toolsModule.default) || typeof this.#ctx.tools.schemas !== 'function' || typeof this.#ctx.tools.guard !== 'function') workerFail('WORKER_TOOLS_UNAVAILABLE');
+      if (createHash('sha256').update(readFileSync(`${root}/dsh-tools/lib/index.js`)).digest('hex') !== '2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7') workerFail('WORKER_TOOLS_UNAVAILABLE');
+      const schemas = this.#ctx.tools.schemas(agent);
+      // Actual nonempty tool dispatch remains unaccepted in this phase. The
+      // private installation guard must attest the empty scoped surface too.
+      if (schemas.length !== 0 || this.#toolGuard(Object.freeze({ agent, taskRef: entry.taskRef, generationRef: entry.generationRef, claimRef: entry.claim?.claimRef, toolsDigest: entry.spec.executor.toolsDigest, permissionPolicyDigest: entry.spec.executor.permissionPolicyDigest, schemas: Object.freeze([...schemas]) })) !== true) workerFail('WORKER_TOOLS_UNAVAILABLE');
+    } catch { workerFail('WORKER_TOOLS_UNAVAILABLE'); }
   }
   async prepare(spec, task, actionDigest) {
     this.#alive();
@@ -186,7 +225,15 @@ export class NativeAdapter {
     if (entry.spec.executor.mode !== mode || entry.state !== 'prepared') workerFail('WORKER_ALREADY_SUBMITTED');
     if (this.#ctx.agents.get(entry.id)) workerFail('SESSION_ALREADY_LIVE');
     entry.state = 'submitted';
-    const setup = () => ({ commit: () => this.#permit(entry) });
+    const setup = (agentCtx, agent) => {
+      if (scopeModule.scopeOf(agentCtx) !== agent || agent.ctx !== agentCtx) workerFail('WORKER_TOOLS_UNAVAILABLE');
+      this.#tools(entry, agent);
+      // Public scoped monotonic guard runs after extensible pre-execute and
+      // before every body. Even a late-added tool cannot obtain authority.
+      const remove = agentCtx.tools.guard(() => 'DF_TOOL_DISPATCH_UNAVAILABLE');
+      if (typeof remove !== 'function') workerFail('WORKER_TOOLS_UNAVAILABLE');
+      return { commit: () => { this.#permit(entry); this.#tools(entry, agent); } };
+    };
     try {
       const options = { agentOptions: entry.options, setup };
       const handle = await (mode === 'create' ? this.#ctx.agents.create({ ...options, sessionId: entry.id, meta: { cwd: entry.cwd } }) : this.#ctx.agents.resume({ ...options, resumeSessionId: entry.id }));
@@ -199,6 +246,53 @@ export class NativeAdapter {
   }
   create(ticket) { return this.#start(ticket, 'create'); }
   resume(ticket) { return this.#start(ticket, 'resume'); }
+  async executeContext(ticket, execution, context, authorizeDispatch) {
+    const entry = this.#get(ticket);
+    workerRecord(execution, ['executionRef', 'taskRef', 'claimRef', 'generationRef', 'contextRecordRef', 'actionDigest', 'dataDigest']);
+    for (const value of Object.values(execution)) workerRef(value);
+    workerRecord(context, ['recordRef', 'kind', 'content', 'digest', 'byteLength']);
+    if (!entry.claim || execution.taskRef !== entry.taskRef || execution.claimRef !== entry.claim.claimRef || execution.generationRef !== entry.generationRef || execution.actionDigest !== entry.actionDigest || execution.contextRecordRef !== context.recordRef || execution.dataDigest !== entry.spec.dataDigest || context.digest !== execution.dataDigest || context.kind !== 'context' || typeof context.content !== 'string' || !context.content.isWellFormed() || Buffer.byteLength(context.content) !== context.byteLength || context.byteLength > 65536 || createHash('sha256').update(context.content).digest('hex') !== execution.dataDigest || typeof authorizeDispatch !== 'function') workerFail('WORKER_CONTEXT_INVALID');
+    const binding = Object.freeze({ ...execution }), body = Object.freeze({ ...context });
+    if (entry.execution) workerFail('WORKER_EXECUTION_ALREADY_SUBMITTED');
+    const idle = () => {
+      this.#permit(entry);
+      const agent = this.#ctx.agents.get(entry.id);
+      if (!entry.handle || agent !== entry.handle.agent || entry.state === 'stopped' || agent.status !== 'idle' || typeof agent.send !== 'function' || typeof agent.whenIdle !== 'function') workerFail('WORKER_EXECUTION_UNAVAILABLE');
+      if (agent.options?.provider !== entry.options.provider || agent.options?.model !== entry.options.model || agent.options?.reasoningEffort !== entry.options.reasoningEffort) workerFail('MODEL_CONFIGURATION_MISMATCH');
+      this.#tools(entry, agent);
+      return agent;
+    };
+    idle(); const previousRevision = entry.stream.revision; entry.execution = binding;
+    try {
+      const resolved = await this.#ctx.llm.resolveCallConfig(entry.options);
+      if (resolved.provider !== entry.options.provider || resolved.model !== entry.options.model || resolved.reasoningEffort !== entry.options.reasoningEffort) workerFail('MODEL_CONFIGURATION_MISMATCH');
+      const agent = idle();
+      const admission = authorizeDispatch();
+      if (admission?.admitted !== true || admission.state !== 'dispatch_intent' || Object.keys(binding).some(key => admission[key] !== binding[key])) workerFail('WORKER_EXECUTION_DENIED');
+      // The durable consume is the linearization point. No await, fallback or
+      // second send separates it from this exact owned public native wakeup.
+      agent.send({ id: binding.executionRef, role: 'user', content: [{ type: 'text', text: body.content }], source: { kind: 'df-context', form: 'local' } }, 'next-turn', true);
+      await agent.whenIdle();
+      this.#alive();
+      const committed = entry.stream.state === 'committed' && entry.stream.revision > previousRevision && Number.isSafeInteger(entry.executionInputSeq) && entry.stream.cursor > entry.executionInputSeq;
+      if (committed && entry.stream.eventType === 'assistant/message' && entry.resultCandidate?.cursor === entry.stream.cursor) entry.committedResult = Object.freeze({ ...entry.resultCandidate, ...binding, sessionRef: entry.sessionRef });
+      return Object.freeze({ executionRef: binding.executionRef, state: committed ? 'committed' : 'unknown', worker: this.query(ticket), ...(committed ? { result: Object.freeze({ cursor: entry.stream.cursor, eventType: entry.stream.eventType, evidenceRef: workerDigest('context-result', binding.executionRef, entry.stream.cursor, entry.stream.eventType) }) } : {}) });
+    } catch (error) { if (error instanceof WorkerError) throw error; workerFail('WORKER_EXECUTION_UNKNOWN'); }
+  }
+  readResult(ticket, executionRef) {
+    const entry = this.#get(ticket), result = entry.committedResult;
+    workerRef(executionRef);
+    if (!result || result.executionRef !== executionRef || result.claimRef !== entry.claim?.claimRef || result.generationRef !== entry.generationRef || result.actionDigest !== entry.actionDigest || result.sessionRef !== entry.sessionRef) workerFail('WORKER_RESULT_UNAVAILABLE');
+    return result;
+  }
+  async shutdown(ticket) {
+    // Trusted teardown can close an already-owned handle after the plugin
+    // fiber becomes inactive. It admits no create, input, provider or retry.
+    const entry = this.#tickets.get(ticket); if (!entry) workerFail('WORKER_INVALID');
+    if (!entry.handle) return this.#receipt(entry, 'unknown');
+    try { await entry.handle.dispose(); if (this.#ctx.agents.get(entry.id) === entry.handle.agent) return this.#receipt(entry, 'unknown'); entry.state = 'stopped'; return this.#receipt(entry, 'stopped'); }
+    catch { entry.state = 'unknown'; return this.#receipt(entry, 'unknown'); }
+  }
   query(ticket) {
     const entry = this.#get(ticket);
     if (entry.state === 'stopped') return this.#receipt(entry, 'stopped');

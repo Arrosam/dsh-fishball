@@ -99,3 +99,36 @@ test('native runtime reload preserves encrypted intake and missing key/identity 
   await assert.rejects(Promise.resolve(disabled), /RUNTIME_ADAPTER_UNAVAILABLE/);
   await disabled.dispose(); assert.equal(existsSync(absent), false);
 });
+
+test('unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants', async t => {
+  const f = await fixture(t), fiber = f.ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => Buffer.alloc(32, 19) }), { databasePath: join(f.directory, 'unconfigured.sqlite') }); await fiber;
+  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
+  for (const operation of ['prepareContext', 'memoryRead', 'preview', 'grant', 'dispatch', 'execute', 'query', 'handoff', 'captureResult', 'acceptDelivery', 'dispatchDelivery', 'configureSource', 'configureSubscription', 'source', 'subscription', 'listSources', 'listSubscriptions', 'eventReceipt', 'listEventReceipts', 'approveSchedule', 'configureNotifications', 'notificationPolicy', 'pendingNotifications', 'prepareNotification', 'acceptNotification', 'dispatchNotification', 'reconcileNotification']) {
+    const result = (await f.send(operation, {})).result;
+    assert.equal(result.ok, false); assert.equal(result.error.code, 'CAPABILITY_UNAVAILABLE');
+  }
+  for (const operation of ['verify', 'report', 'workerObservation', 'settleAction', 'bindReviewer', 'mintOwner']) assert.equal((await f.send(operation, { role: 'reviewer', verified: true })).result.error.code, 'ENDPOINT_NOT_FOUND');
+  assert.equal(f.ctx.sessions.list().length, 0); await fiber.dispose();
+});
+
+test('partial settings and throwing private reviewer installer reject with stable errors rather than callback prose', async t => {
+  const f = await fixture(t);
+  for (const options of [{ previewTtlMs: 30000 }, { previewResolver: () => ({}) }, { previewResolver: () => ({}), previewTtlMs: 60001 }, { memory: { namespaceRef: reference('memory'), tokenize: () => 1 } }, { worker: { environments: {} } }]) assert.throws(() => createRuntimePlugin(options), { code: 'RUNTIME_ADAPTER_INVALID' });
+  const messages = []; f.ctx.logger.exporters?.add?.(entry => { messages.push(JSON.stringify(entry)); });
+  const fiber = f.ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => Buffer.alloc(32, 23), reviewerInstaller: () => { throw new Error('SYNTHETIC_REVIEW_INSTALLER_CANARY'); } }), { databasePath: join(f.directory, 'review-installer.sqlite') });
+  await assert.rejects(Promise.resolve(fiber), { code: 'RUNTIME_ADAPTER_INVALID' }); await fiber.dispose();
+  assert.equal(JSON.stringify(messages).includes('SYNTHETIC_REVIEW_INSTALLER_CANARY'), false); assert.equal(f.routes.has('/df-rpc'), false);
+});
+
+
+test('trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose', async t => {
+  const f = await fixture(t);
+  assert.throws(() => createRuntimePlugin({ automationInstaller: {} }), { code: 'RUNTIME_ADAPTER_INVALID' });
+  assert.throws(() => createRuntimePlugin({ notifications: { policyRef: reference('policy'), recipientRef: reference('recipient'), channelRef: reference('channel'), mergeKeyRef: reference('merge') } }), { code: 'RUNTIME_ADAPTER_INVALID' });
+  for (const [label, installer] of [['invalid-return', () => ({ dispose() {} })], ['throwing', () => { throw new Error('SYNTHETIC_AUTOMATION_INSTALLER_CANARY'); }]]) {
+    const messages = []; const exporter = entry => { messages.push(JSON.stringify(entry)); }; f.ctx.logger.exporters?.add?.(exporter);
+    const fiber = f.ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => Buffer.alloc(32, 13), automationInstaller: installer }), { databasePath: join(f.directory, `${label}.sqlite`) });
+    await assert.rejects(Promise.resolve(fiber), { code: 'RUNTIME_ADAPTER_INVALID' }); await fiber.dispose();
+    assert.equal(f.routes.has('/df-rpc'), false); assert.equal(JSON.stringify(messages).includes('SYNTHETIC_AUTOMATION_INSTALLER_CANARY'), false); f.ctx.logger.exporters?.delete?.(exporter);
+  }
+});
