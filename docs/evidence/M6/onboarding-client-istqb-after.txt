@@ -1,0 +1,5 @@
+src/client-entry.cjs: OK
+lib/client.js: OK
+test/onboarding-client.test.mjs: OK
+docs/onboarding-contract.md: OK
+docs/evidence/M6/installation-test-design.md: OK

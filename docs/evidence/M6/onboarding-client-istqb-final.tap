@@ -1,0 +1,286 @@
+TAP version 13
+# Subtest: independent onboarding source public location UTF8 N-1/N/N+1 and well-formed text partitions
+ok 1 - independent onboarding source public location UTF8 N-1/N/N+1 and well-formed text partitions
+  ---
+  duration_ms: 3.655
+  type: 'test'
+  ...
+# Subtest: independent onboarding source closed RPC envelope/error partitions never publish secrets or acquire fallback
+ok 2 - independent onboarding source closed RPC envelope/error partitions never publish secrets or acquire fallback
+  ---
+  duration_ms: 1.990125
+  type: 'test'
+  ...
+# Subtest: independent onboarding source primitive snapshots stay immutable after reply objects change
+ok 3 - independent onboarding source primitive snapshots stay immutable after reply objects change
+  ---
+  duration_ms: 1.596083
+  type: 'test'
+  ...
+# Subtest: independent onboarding source delayed prepare expiry and response-clock lifetime boundaries fence consent
+ok 4 - independent onboarding source delayed prepare expiry and response-clock lifetime boundaries fence consent
+  ---
+  duration_ms: 1.799792
+  type: 'test'
+  ...
+# Subtest: independent onboarding source an acknowledged commit arriving after local expiry remains an observed fact
+ok 5 - independent onboarding source an acknowledged commit arriving after local expiry remains an observed fact
+  ---
+  duration_ms: 0.230916
+  type: 'test'
+  ...
+# Subtest: independent onboarding source known non-ready acknowledgements cannot infer initialization or retry
+ok 6 - independent onboarding source known non-ready acknowledgements cannot infer initialization or retry
+  ---
+  duration_ms: 0.414125
+  type: 'test'
+  ...
+# Subtest: independent onboarding source uncertain readback disconnect preserves no-automatic-confirm rule
+ok 7 - independent onboarding source uncertain readback disconnect preserves no-automatic-confirm rule
+  ---
+  duration_ms: 4.073708
+  type: 'test'
+  ...
+# Subtest: independent onboarding source stale current-target change discards checked plan and delayed prepare
+ok 8 - independent onboarding source stale current-target change discards checked plan and delayed prepare
+  ---
+  duration_ms: 0.519834
+  type: 'test'
+  ...
+# Subtest: independent onboarding source post-ready service error prevents the task panel accepting old data
+ok 9 - independent onboarding source post-ready service error prevents the task panel accepting old data
+  ---
+  duration_ms: 14.077167
+  type: 'test'
+  ...
+# Subtest: independent onboarding source a stale advanced list cannot bypass newer setup-required status
+ok 10 - independent onboarding source a stale advanced list cannot bypass newer setup-required status
+  ---
+  duration_ms: 1.008833
+  type: 'test'
+  ...
+# Subtest: independent onboarding source exact-route fallback also requires structurally valid fresh original list
+ok 11 - independent onboarding source exact-route fallback also requires structurally valid fresh original list
+  ---
+  duration_ms: 1.906959
+  type: 'test'
+  ...
+# Subtest: independent onboarding source synchronous closed/refresh listeners fence captured consent before RPC
+ok 12 - independent onboarding source synchronous closed/refresh listeners fence captured consent before RPC
+  ---
+  duration_ms: 0.956
+  type: 'test'
+  ...
+# Subtest: independent onboarding source declared setup reason/output never renders raw structured or thrown callback secrets
+ok 13 - independent onboarding source declared setup reason/output never renders raw structured or thrown callback secrets
+  ---
+  duration_ms: 0.883916
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated public location UTF8 N-1/N/N+1 and well-formed text partitions
+ok 14 - independent onboarding generated public location UTF8 N-1/N/N+1 and well-formed text partitions
+  ---
+  duration_ms: 1.219
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated closed RPC envelope/error partitions never publish secrets or acquire fallback
+ok 15 - independent onboarding generated closed RPC envelope/error partitions never publish secrets or acquire fallback
+  ---
+  duration_ms: 1.413708
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated primitive snapshots stay immutable after reply objects change
+ok 16 - independent onboarding generated primitive snapshots stay immutable after reply objects change
+  ---
+  duration_ms: 0.41375
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated delayed prepare expiry and response-clock lifetime boundaries fence consent
+ok 17 - independent onboarding generated delayed prepare expiry and response-clock lifetime boundaries fence consent
+  ---
+  duration_ms: 0.682084
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated an acknowledged commit arriving after local expiry remains an observed fact
+ok 18 - independent onboarding generated an acknowledged commit arriving after local expiry remains an observed fact
+  ---
+  duration_ms: 0.110208
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated known non-ready acknowledgements cannot infer initialization or retry
+ok 19 - independent onboarding generated known non-ready acknowledgements cannot infer initialization or retry
+  ---
+  duration_ms: 0.222042
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated uncertain readback disconnect preserves no-automatic-confirm rule
+ok 20 - independent onboarding generated uncertain readback disconnect preserves no-automatic-confirm rule
+  ---
+  duration_ms: 1.208
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated stale current-target change discards checked plan and delayed prepare
+ok 21 - independent onboarding generated stale current-target change discards checked plan and delayed prepare
+  ---
+  duration_ms: 0.158292
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated post-ready service error prevents the task panel accepting old data
+ok 22 - independent onboarding generated post-ready service error prevents the task panel accepting old data
+  ---
+  duration_ms: 0.982209
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated a stale advanced list cannot bypass newer setup-required status
+ok 23 - independent onboarding generated a stale advanced list cannot bypass newer setup-required status
+  ---
+  duration_ms: 0.703709
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated exact-route fallback also requires structurally valid fresh original list
+ok 24 - independent onboarding generated exact-route fallback also requires structurally valid fresh original list
+  ---
+  duration_ms: 1.427625
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated synchronous closed/refresh listeners fence captured consent before RPC
+ok 25 - independent onboarding generated synchronous closed/refresh listeners fence captured consent before RPC
+  ---
+  duration_ms: 0.712875
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated declared setup reason/output never renders raw structured or thrown callback secrets
+ok 26 - independent onboarding generated declared setup reason/output never renders raw structured or thrown callback secrets
+  ---
+  duration_ms: 0.730375
+  type: 'test'
+  ...
+# Subtest: setup first load and preview only read exact setup RPC; unchecked consent cannot confirm
+ok 27 - setup first load and preview only read exact setup RPC; unchecked consent cannot confirm
+  ---
+  duration_ms: 16.727667
+  type: 'test'
+  ...
+# Subtest: checkbox and separate confirmation control submit only the immutable displayed plan once
+ok 28 - checkbox and separate confirmation control submit only the immutable displayed plan once
+  ---
+  duration_ms: 0.556
+  type: 'test'
+  ...
+# Subtest: literal checkbox values and expiry boundaries fence confirmation locally
+ok 29 - literal checkbox values and expiry boundaries fence confirmation locally
+  ---
+  duration_ms: 1.773791
+  type: 'test'
+  ...
+# Subtest: refresh, new preview and reconnect always erase prior acceptance without confirmation
+ok 30 - refresh, new preview and reconnect always erase prior acceptance without confirmation
+  ---
+  duration_ms: 0.451709
+  type: 'test'
+  ...
+# Subtest: disconnection aborts pending prepare and late replies cannot publish an earlier plan
+ok 31 - disconnection aborts pending prepare and late replies cannot publish an earlier plan
+  ---
+  duration_ms: 0.189083
+  type: 'test'
+  ...
+# Subtest: superseded status and confirmation results cannot replace a new connection snapshot
+ok 32 - superseded status and confirmation results cannot replace a new connection snapshot
+  ---
+  duration_ms: 0.368209
+  type: 'test'
+  ...
+# Subtest: uncertain confirm performs status reconciliation only and never repeats initialization
+ok 33 - uncertain confirm performs status reconciliation only and never repeats initialization
+  ---
+  duration_ms: 0.874583
+  type: 'test'
+  ...
+# Subtest: unload aborts all setup requests and closed references perform no calls
+ok 34 - unload aborts all setup requests and closed references perform no calls
+  ---
+  duration_ms: 0.162167
+  type: 'test'
+  ...
+# Subtest: closed status projection rejects hostile fields, unexpected semantics and accessors without rendering them
+ok 35 - closed status projection rejects hostile fields, unexpected semantics and accessors without rendering them
+  ---
+  duration_ms: 0.5675
+  type: 'test'
+  ...
+# Subtest: closed previews reject different targets, authority, TTL, references, unknown secret fields and accessors
+ok 36 - closed previews reject different targets, authority, TTL, references, unknown secret fields and accessors
+  ---
+  duration_ms: 1.160875
+  type: 'test'
+  ...
+# Subtest: confirmation extra fields or a changed target are unconfirmed and followed by status only
+ok 37 - confirmation extra fields or a changed target are unconfirmed and followed by status only
+  ---
+  duration_ms: 0.807625
+  type: 'test'
+  ...
+# Subtest: clock and transport error accessors cannot leak callback prose or wedge pending state
+ok 38 - clock and transport error accessors cannot leak callback prose or wedge pending state
+  ---
+  duration_ms: 0.341667
+  type: 'test'
+  ...
+# Subtest: recovery, unavailable, loading, disconnected and ready phases do not expose setup confirmation
+ok 39 - recovery, unavailable, loading, disconnected and ready phases do not expose setup confirmation
+  ---
+  duration_ms: 0.529458
+  type: 'test'
+  ...
+# Subtest: native application mount and reconnect perform only setup status until actual ready
+ok 40 - native application mount and reconnect perform only setup status until actual ready
+  ---
+  duration_ms: 5.768208
+  type: 'test'
+  ...
+# Subtest: advanced compatibility requires exact pinned status404 signature and a successful original list
+ok 41 - advanced compatibility requires exact pinned status404 signature and a successful original list
+  ---
+  duration_ms: 2.241167
+  type: 'test'
+  ...
+# Subtest: manual setup status refresh fences an earlier advanced list until a fresh successful list
+ok 42 - manual setup status refresh fences an earlier advanced list until a fresh successful list
+  ---
+  duration_ms: 0.57
+  type: 'test'
+  ...
+# Subtest: captured old checkbox and confirm handlers cannot accept or confirm a replacement preview
+ok 43 - captured old checkbox and confirm handlers cannot accept or confirm a replacement preview
+  ---
+  duration_ms: 0.348792
+  type: 'test'
+  ...
+# Subtest: observed expiry followed by clock rollback cannot resurrect checked consent
+ok 44 - observed expiry followed by clock rollback cannot resurrect checked consent
+  ---
+  duration_ms: 0.133791
+  type: 'test'
+  ...
+# Subtest: a disconnect triggered synchronously by pending-state publication prevents confirmation admission
+ok 45 - a disconnect triggered synchronously by pending-state publication prevents confirmation admission
+  ---
+  duration_ms: 0.098625
+  type: 'test'
+  ...
+# Subtest: preview lifetime upper bound uses response time while preserving request-time rollback fencing
+ok 46 - preview lifetime upper bound uses response time while preserving request-time rollback fencing
+  ---
+  duration_ms: 0.180542
+  type: 'test'
+  ...
+1..46
+# tests 46
+# suites 0
+# pass 46
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 146.930166
