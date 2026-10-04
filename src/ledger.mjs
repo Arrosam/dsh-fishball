@@ -92,12 +92,12 @@ export class Ledger {
           for (const sql of Object.values(version===1 ? {...EXTRA,...RUNTIME} : RUNTIME)) this.db.exec(sql);
           if (migrationFault) { try { migrationFault(); } catch { fail('STORAGE_UNAVAILABLE'); } }
           this.verify({ ...BASE, ...EXTRA, ...RUNTIME });
-          this.validateRows(true);
+          this.validateRows(true,true); this.validateRuntimeRows();
           this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`);
         } catch (error) { this.db.exec('ROLLBACK'); throw error; }
       } else if (version !== SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
       this.db.exec('BEGIN IMMEDIATE');
-      try { this.version(SCHEMA_VERSION); this.verify({ ...BASE, ...EXTRA, ...RUNTIME }); this.validateRows(true); this.db.exec('COMMIT'); }
+      try { this.version(SCHEMA_VERSION); this.verify({ ...BASE, ...EXTRA, ...RUNTIME }); this.validateRows(true,true); this.validateRuntimeRows(); this.db.exec('COMMIT'); }
       catch(error) { this.db.exec('ROLLBACK'); throw error; }
       if (maxPageCount !== undefined) this.db.exec(`PRAGMA max_page_count=${maxPageCount}`);
     } catch (error) {
@@ -117,7 +117,7 @@ export class Ledger {
     if (tables.length !== Object.keys(expected).length || tables.some(row => !expected[row.name] || normalize(row.sql) !== normalize(expected[row.name]))) fail('SCHEMA_UNSUPPORTED');
     if (this.db.prepare("SELECT name FROM sqlite_schema WHERE type IN ('trigger','view') OR (type='index' AND name NOT LIKE 'sqlite_autoindex_%')").all().length) fail('SCHEMA_UNSUPPORTED');
   }
-  validateRows(withActions) {
+  validateRows(withActions,withRuntime=false) {
     if (this.db.prepare('SELECT 1 FROM pragma_foreign_key_check LIMIT 1').get()) fail('STORAGE_INVALID');
     const invalid = (table, conditions) => {
       if (this.db.prepare(`SELECT 1 FROM ${table} WHERE ${conditions.join(' OR ')} LIMIT 1`).get()) fail('STORAGE_INVALID');
@@ -128,7 +128,7 @@ export class Ledger {
     invalid('tasks',[...refs(['owner','workspace','id']),...integers(['version'],1),...integers(['auth_epoch','created_at','updated_at']),`status NOT IN (${states})`]);
     invalid('ingress',[...refs(['owner','workspace','provider','source','event','task']),...integers(['received_at'])]);
     invalid('events',[...refs(['owner','workspace','task']),...integers(['sequence','version'],1),...integers(['at']),`status NOT IN (${states})`,"reason NOT IN ('intake','progress','operator','recovery','fixture','delete','action_requested','grant','revoke','dispatch','cancel','settlement')"]);
-    if (this.db.prepare('SELECT 1 FROM tasks t WHERE (SELECT count(*) FROM ingress i WHERE i.owner=t.owner AND i.workspace=t.workspace AND i.task=t.id)<1 OR NOT EXISTS (SELECT 1 FROM events e WHERE e.owner=t.owner AND e.workspace=t.workspace AND e.task=t.id AND e.sequence=(SELECT max(sequence) FROM events x WHERE x.owner=t.owner AND x.workspace=t.workspace AND x.task=t.id) AND e.version=t.version AND e.status=t.status) LIMIT 1').get()) fail('STORAGE_INVALID');
+    if (this.db.prepare(`SELECT 1 FROM tasks t WHERE (SELECT count(*) FROM ingress i WHERE i.owner=t.owner AND i.workspace=t.workspace AND i.task=t.id)${withRuntime?'<1':'!=1'} OR NOT EXISTS (SELECT 1 FROM events e WHERE e.owner=t.owner AND e.workspace=t.workspace AND e.task=t.id AND e.sequence=(SELECT max(sequence) FROM events x WHERE x.owner=t.owner AND x.workspace=t.workspace AND x.task=t.id) AND e.version=t.version AND e.status=t.status) LIMIT 1`).get()) fail('STORAGE_INVALID');
     if (this.db.prepare('SELECT 1 FROM events GROUP BY owner,workspace,task HAVING min(sequence)!=1 OR max(sequence)!=count(*) LIMIT 1').get()) fail('STORAGE_INVALID');
     if (!withActions) return;
     const kinds="'fixture','read','write','review','repair'";
@@ -140,7 +140,17 @@ export class Ledger {
     if(this.db.prepare('SELECT 1 FROM grants g JOIN tasks t ON t.owner=g.owner AND t.workspace=g.workspace AND t.id=g.task WHERE g.auth_epoch>t.auth_epoch OR g.task_version>t.version LIMIT 1').get()) fail('STORAGE_INVALID');
     if(this.db.prepare("SELECT 1 FROM reservations r JOIN tasks t ON t.owner=r.owner AND t.workspace=r.workspace AND t.id=r.task WHERE t.status IN ('completed','failed','cancelled','deleted') LIMIT 1").get()) fail('STORAGE_INVALID');
   }
-  runtimeManaged(keys) { return !!this.one('SELECT 1 FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys); }
+  validateRuntimeRows() {
+    if(this.db.prepare("SELECT 1 FROM runtime_tasks WHERE control NOT IN ('active','paused','cancel_requested') LIMIT 1").get()) fail('STORAGE_INVALID');
+    for(const [table,columns] of Object.entries({runtime_commands:['receipt'],runtime_data:['metadata'],runtime_policy:['payload'],runtime_actions:['spec','metadata'],runtime_workers:['payload'],runtime_records:['payload']})) {
+      for(const column of columns) if(this.db.prepare(`SELECT 1 FROM ${table} WHERE NOT json_valid(${column}) LIMIT 1`).get()) fail('STORAGE_INVALID');
+    }
+    for(const table of ['runtime_data','runtime_actions','runtime_workers','runtime_records']) {
+      if(this.db.prepare(`SELECT 1 FROM ${table} x WHERE NOT EXISTS (SELECT 1 FROM runtime_tasks t WHERE t.owner=x.owner AND t.workspace=x.workspace AND t.task=x.task) LIMIT 1`).get()) fail('STORAGE_INVALID');
+    }
+    if(this.db.prepare("SELECT 1 FROM runtime_workers w LEFT JOIN runtime_actions a ON a.owner=w.owner AND a.workspace=w.workspace AND a.task=w.task AND a.action=json_extract(w.payload,'$.actionRef') WHERE a.action IS NULL OR json_extract(a.metadata,'$.claimRef')!=w.claim OR json_extract(w.payload,'$.claimRef')!=w.claim LIMIT 1").get()) fail('STORAGE_INVALID');
+  }
+  runtimeManaged(keys) { const managed=!!this.one('SELECT 1 FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys);if(!managed){for(const table of ['runtime_data','runtime_actions','runtime_workers','runtime_records'])if(this.one(`SELECT 1 FROM ${table} WHERE owner=? AND workspace=? AND task=? LIMIT 1`,...keys))fail('STORAGE_INVALID');}return managed; }
   query(sql, ...params) { return this.guarded(() => this.db.prepare(sql).all(...params)); }
   one(sql, ...params) { return this.guarded(() => this.db.prepare(sql).get(...params)); }
   run(sql, ...params) { return this.guarded(() => this.db.prepare(sql).run(...params)); }

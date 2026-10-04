@@ -13,6 +13,7 @@ export function exact(value,allowed,required=allowed) {
  return value;
 }
 export function canonical(value,depth=0) {
+ if(types.isProxy(value))fail('INVALID_INPUT');
  if(depth>12) fail('INPUT_TOO_LARGE');
  if(value===null||typeof value==='boolean') return JSON.stringify(value);
  if(typeof value==='number') { integer(value); return String(value); }

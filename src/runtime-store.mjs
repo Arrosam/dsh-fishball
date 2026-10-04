@@ -65,9 +65,8 @@ export class RuntimeStore {
       databasePath,encryptionKey,principals,clock=Date.now,hostPermission=()=>false,forbiddenSecrets=[],fixtureMode=false,fixtureFaults,migrationFault,fixtureMaxPageCount
     }
     =options;
-    if(!Buffer.isBuffer(encryptionKey)||encryptionKey.length!==32||typeof clock!=='function'||typeof hostPermission!=='function'||typeof fixtureMode!=='boolean'||(!fixtureMode&&(fixtureFaults||migrationFault||fixtureMaxPageCount!==undefined))||(fixtureFaults!==undefined&&typeof fixtureFaults!=='function'))fail('INVALID_CONFIG');
-    this.#limits=Object.freeze(limits(options.limits||{
-    }));
+    if(types.isProxy(encryptionKey)||!Buffer.isBuffer(encryptionKey)||encryptionKey.length!==32||typeof clock!=='function'||typeof hostPermission!=='function'||typeof fixtureMode!=='boolean'||(!fixtureMode&&(fixtureFaults||migrationFault||fixtureMaxPageCount!==undefined))||(fixtureFaults!==undefined&&typeof fixtureFaults!=='function'))fail('INVALID_CONFIG');
+    this.#limits=Object.freeze(limits(options.limits===undefined?{}:options.limits));
     this.#key=Buffer.from(encryptionKey);
     this.#clock=clock;
     this.#permission=hostPermission;
@@ -215,13 +214,35 @@ export class RuntimeStore {
         return parse(old.receipt);
       }
       const count=this.#ledger.one('SELECT count(*) AS n FROM runtime_commands').n,held=this.#ledger.one('SELECT count(*) AS n FROM reservations').n;
-      if(count>=this.#limits.maxCommands-(protectedOp?0:12*held+this.#limits.maxControlCommands))fail('COMMAND_LIMIT');
+      const terminalProgress=protectedOp==='terminal'&&this.#terminalProgress(c,input,operation);
+      const invalidationProgress=protectedOp===true&&this.#invalidationProgress(c,input,operation);
+      if(count>=this.#limits.maxCommands-(terminalProgress?0:invalidationProgress?4*held+1:12*held+this.#limits.maxControlCommands))fail('COMMAND_LIMIT');
       const result=fn(c);
       const receipt=this.#check(result);
       this.#cut('before_commit');
       this.#ledger.run('INSERT INTO runtime_commands VALUES(?,?,?,?,?,?,?)',c.ownerRef,c.workspaceRef,input.commandRef,input.taskRef||c.workspaceRef,digest,operation,receipt);
       return result;
     });
+  }
+  #invalidationProgress(c,input,operation){
+    const task=this.#task(c,input.taskRef);
+    if(operation==='control')return input.kind==='cancel'&&task.status!=='cancel_requested';
+    if(operation==='revokeAction'){const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,input.taskRef),input.actionRef);return !!grant&&!grant.revoked&&grant.auth_epoch===task.auth_epoch;}
+    return false;
+  }
+  #terminalProgress(c,input,operation){
+    if(operation==='control')return input.kind==='confirm_cancel';
+    if(operation==='messageObservation'){const message=this.#record(c,input.taskRef,'message',input.messageRef);return !['consumed','rejected'].includes(message.state);}
+    if(operation==='deliveryObservation'){const delivery=this.#record(c,input.taskRef,'delivery',input.deliveryRef);return !['delivered','failed'].includes(delivery.state);}
+    const {w,a}=this.#claim(c,input);
+    if(operation==='workerObservation')return !w.terminalEvidenceRef;
+    if(operation==='markHandoff')return w.handoff?.state!=='resolved';
+    if(operation==='settleAction'){
+      if(!a.metadata.outcome||a.metadata.outcome==='unknown')return true;
+      if(!w.terminalEvidenceRef||w.handoff?.state==='pending')return false;
+      return !this.#ledger.query("SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind IN ('message','delivery')",...this.#keys(c,input.taskRef)).map(row=>parse(row.payload)).some(record=>record.claimRef===w.claimRef&&!['consumed','rejected','delivered','failed'].includes(record.state));
+    }
+    return operation==='control'&&input.kind==='confirm_cancel';
   }
   #cut(point){
     if(this.#fixture&&this.#fault){
@@ -234,6 +255,7 @@ export class RuntimeStore {
     }
   }
   #managed(t){
+    if(!this.#ledger.runtimeManaged([t.owner,t.workspace,t.id])&&this.#ledger.one('SELECT 1 FROM actions WHERE owner=? AND workspace=? AND task=?',t.owner,t.workspace,t.id))fail('RUNTIME_ADOPTION_BLOCKED');
     this.#ledger.run("INSERT OR IGNORE INTO runtime_tasks VALUES(?,?,?,'active')",t.owner,t.workspace,t.id);
   }
   intake(handle,input){
@@ -305,7 +327,7 @@ export class RuntimeStore {
   }
   #readAllowed(c,m){
     if(c.role==='reviewer'){
-      if(!c.readRecordRefs.includes(m.recordRef))fail('UNAUTHORIZED');
+      if(!c.readRecordRefs.includes(m.recordRef)&&!(m.generationRef===c.generationRef&&['verification','progress'].includes(m.kind)))fail('UNAUTHORIZED');
     }
     else if(c.role==='worker'&&!(['goal','constraints','context'].includes(m.kind)||m.generationRef===c.generationRef&&['message','artifact','progress'].includes(m.kind)))fail('UNAUTHORIZED');
   }
@@ -370,14 +392,13 @@ export class RuntimeStore {
   }
   #getPolicy(c){
     const row=this.#ledger.one('SELECT * FROM runtime_policy WHERE owner=? AND workspace=?',c.ownerRef,c.workspaceRef);
-    return row?{
-      version:row.version,...parse(row.payload)
-    }
-    :{
-      version:1,limits:{
-        ...this.#limits
-      },modelPolicy:null
-    };
+    if(!row)return{version:1,limits:{...this.#limits},modelPolicy:null};
+    try{
+      integer(row.version,1);
+      const payload=parse(row.payload);
+      exact(payload,['limits','modelPolicy']);
+      return{version:row.version,limits:limits(payload.limits,this.#limits,true),modelPolicy:modelPolicy(payload.modelPolicy)};
+    }catch{fail('STORAGE_INVALID');}
   }
   getPolicy(handle){
     return this.#getPolicy(this.#ctx(handle));
@@ -387,6 +408,7 @@ export class RuntimeStore {
     return this.#mut(handle,input,['owner'],'policy',c=>{
       const old=this.#getPolicy(c);
       if(old.version!==integer(input.expectedVersion,1))fail('STALE_POLICY');
+      exact(input.limits,['queueCapacity','maxActive','maxAttempts','maxTotalAttempts','maxRuntimeMs','maxUsageUnits','maxCostEstimateMicros'],[]);
       const payload={
         limits:limits(input.limits,this.#limits,true),modelPolicy:modelPolicy(input.modelPolicy)
       };
@@ -399,11 +421,11 @@ export class RuntimeStore {
   }
   #action(c,task,action){
     ref(action);
-    const row=this.#ledger.one('SELECT r.*,a.state,a.claim_id,a.attempts,a.claim_epoch FROM runtime_actions r JOIN actions a ON a.owner=r.owner AND a.workspace=r.workspace AND a.task=r.task AND a.id=r.action WHERE r.owner=? AND r.workspace=? AND r.task=? AND r.action=?',...this.#keys(c,task),action);
+    const row=this.#ledger.one('SELECT r.*,a.state,a.claim_id,a.attempts,a.claim_epoch,a.units AS base_units,a.kind AS base_kind,a.target_digest AS base_target,a.data_digest AS base_data FROM runtime_actions r JOIN actions a ON a.owner=r.owner AND a.workspace=r.workspace AND a.task=r.task AND a.id=r.action WHERE r.owner=? AND r.workspace=? AND r.task=? AND r.action=?',...this.#keys(c,task),action);
     if(!row)fail('ACTION_NOT_FOUND');
-    return{
-      ...row,spec:parse(row.spec),metadata:parse(row.metadata)
-    };
+    const spec=normalizedSpec(parse(row.spec)),metadata=parse(row.metadata);
+    if(spec.actionRef!==row.action||spec.units!==row.base_units||spec.kind!==row.base_kind||spec.targetDigest!==row.base_target||spec.dataDigest!==row.base_data||row.digest!==canonicalDigest({ownerRef:row.owner,workspaceRef:row.workspace,taskRef:row.task,taskVersion:metadata.plannedTaskVersion,authEpoch:metadata.plannedAuthEpoch,spec}))fail('STORAGE_INVALID');
+    return{...row,spec,metadata};
   }
   planAction(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','spec']);
@@ -489,11 +511,11 @@ export class RuntimeStore {
         if(r.spec){
           const s=parse(r.spec);
           runtime+=s.charges.runtimeMs;
-          usage+=s.charges.usageUnits;
+          const actual=parse(r.metadata);usage+=Math.max(s.charges.usageUnits,actual.usageState==='actual'?actual.usageUnits||0:0);
           if(s.charges.costState==='unknown')fail('COST_UNKNOWN');
           cost+=s.charges.costEstimateMicros;
           const m=parse(r.metadata);
-          if(m.usageState==='unknown'&&a.spec.charges.usageUnits>0)fail('USAGE_UNKNOWN');
+          if(m.usageState==='unknown'&&(a.spec.charges.usageUnits>0||a.spec.charges.costEstimateMicros>0))fail('USAGE_UNKNOWN');
         }
       }
       const lim=policy.limits;
@@ -569,6 +591,14 @@ export class RuntimeStore {
       };
     });
   }
+  assertMessageCurrent(handle,input){
+    exact(input,['taskRef','messageRef','claimRef','reservationRef','generationRef']);const c=this.#ctx(handle,input.taskRef,HOST);
+    return this.#ledger.transaction(()=>{const {a,t,w}=this.#claim(c,input),m=this.#record(c,input.taskRef,'message',input.messageRef);if(m.state!=='outbox_committed'||m.claimRef!==input.claimRef||m.reservationRef!==ref(input.reservationRef)||m.generationRef!==input.generationRef||m.targetDigest!==a.spec.targetDigest||m.bodyDigest!==a.spec.dataDigest||a.claim_epoch!==t.auth_epoch||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active'||['cancel_requested','recovery_required'].includes(t.status))fail('CLAIM_REVOKED');const g=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);if(!g||g.revoked||g.auth_epoch!==t.auth_epoch||this.#now()>=g.expires_at)fail('APPROVAL_INVALID');return{messageRef:m.messageRef,claimRef:w.claimRef,actionDigest:a.digest,reservationRef:w.reservationRef,task:taskRecord(t)};});
+  }
+  assertWorkerOwned(handle,input){
+    exact(input,['taskRef','workerClaimRef','generationRef','sessionRef']);ref(input.sessionRef);const c=this.#ctx(handle,input.taskRef,HOST);
+    return this.#ledger.transaction(()=>{const {a,t,w}=this.#claim(c,{...input,claimRef:input.workerClaimRef});if(w.sessionRef!==input.sessionRef||!['created','ready','running'].includes(w.phase)||!['running','blocked','waiting'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active')fail('WORKER_UNAVAILABLE');const grant=this.#ledger.one('SELECT revoked FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);if(!grant||grant.revoked)fail('CLAIM_REVOKED');return{task:taskRecord(t),claimRef:w.claimRef,generationRef:w.generationRef,sessionRef:w.sessionRef,actionDigest:a.digest};});
+  }
   #saveAction(c,task,action,metadata){
     this.#ledger.run('UPDATE runtime_actions SET metadata=? WHERE owner=? AND workspace=? AND task=? AND action=?',this.#check(metadata),...this.#keys(c,task),action);
   }
@@ -601,16 +631,26 @@ export class RuntimeStore {
       if(w.sessionRef&&input.sessionRef&&w.sessionRef!==input.sessionRef)fail('SESSION_MISMATCH');
       if(['created','ready','running'].includes(input.phase)&&!input.sessionRef&&!w.sessionRef)fail('SESSION_REQUIRED');
       if(input.phase==='not_created'&&['created','ready','running','stopped'].includes(w.phase))fail('STALE_OBSERVATION');
+      if(w.terminalEvidenceRef&&['stopped','not_created'].includes(input.phase)){if(w.phase!==input.phase||w.terminalEvidenceRef!==input.evidenceRef)fail('STALE_OBSERVATION');if((input.cursor??w.cursor)===w.cursor)return w;}
       const next={
         ...w,phase:input.phase,sessionRef:input.sessionRef||w.sessionRef,cursor:input.cursor??w.cursor,evidenceRef:input.evidenceRef,terminalEvidenceRef:['stopped','not_created'].includes(input.phase)?input.evidenceRef:w.terminalEvidenceRef
       };
       this.#ledger.run('UPDATE runtime_workers SET payload=? WHERE owner=? AND workspace=? AND task=? AND claim=?',this.#check(next),...this.#keys(c,t.id),w.claimRef);
       if(input.phase==='unknown'){
+        this.#saveAction(c,t.id,a.action,{...a.metadata,usageState:'unknown'});
         this.#ledger.run("UPDATE actions SET state='unknown' WHERE owner=? AND workspace=? AND task=? AND id=?",...this.#keys(c,t.id),a.action);
         if(!['cancel_requested','recovery_required'].includes(t.status))this.#update(t,'recovery_required','recovery',t.auth_epoch,true);
       }
       return next;
-    },['stopped','not_created'].includes(input.phase));
+    },['stopped','not_created'].includes(input.phase)?'terminal':false);
+  }
+  putHandoff(handle,input){
+    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','claimRef','generationRef','actionDigest','content','sourceRef']);ref(input.actionDigest);ref(input.sourceRef);
+    return this.#mut(handle,input,DISPATCH,'putHandoff',c=>{const task=this.#cas(c,input),{w,a}=this.#claim(c,input);if(a.digest!==input.actionDigest||input.sourceRef!==a.action)fail('SPEC_MISMATCH');if(w.handoff?.state==='pending')fail('HANDOFF_PENDING');const t=this.#update(task,task.status,'progress');const data=this.#data({...c,generationRef:input.generationRef},t,{kind:'branch',content:input.content,sourceRef:input.sourceRef,commandRef:input.commandRef});const handoff={handoffRef:data.recordRef,state:'pending',evidenceRef:canonicalDigest({recordRef:data.recordRef,digest:data.digest,claimRef:w.claimRef,actionDigest:a.digest})};this.#ledger.run('UPDATE runtime_workers SET payload=? WHERE owner=? AND workspace=? AND task=? AND claim=?',this.#check({...w,handoff}),...this.#keys(c,t.id),w.claimRef);return{recordRef:data.recordRef,digest:data.digest,task:taskRecord(t),handoffRef:data.recordRef,claimRef:w.claimRef,generationRef:w.generationRef};});
+  }
+  markHandoff(handle,input){
+    exact(input,['taskRef','claimRef','generationRef','commandRef','handoffRef','state','evidenceRef']);ref(input.handoffRef);ref(input.evidenceRef);if(!['pending','resolved'].includes(input.state))fail('INVALID_INPUT');
+    return this.#mut(handle,input,HOST,'markHandoff',c=>{const {w}=this.#claim(c,input);if(w.handoff&&w.handoff.handoffRef!==input.handoffRef)fail('HANDOFF_MISMATCH');if(input.state==='resolved'&&!w.handoff)fail('HANDOFF_MISMATCH');if(w.handoff?.state==='resolved'){if(input.state!=='resolved'||input.evidenceRef!==w.handoff.evidenceRef)fail('STALE_OBSERVATION');return w;}const next={...w,handoff:{handoffRef:input.handoffRef,state:input.state,evidenceRef:input.evidenceRef}};this.#ledger.run('UPDATE runtime_workers SET payload=? WHERE owner=? AND workspace=? AND task=? AND claim=?',this.#check(next),...this.#keys(c,input.taskRef),input.claimRef);return next;},input.state==='resolved'?'terminal':false);
   }
   settleAction(handle,input){
     exact(input,['taskRef','claimRef','generationRef','commandRef','outcome','evidenceRef','terminalEvidenceRef','usage'],['taskRef','claimRef','generationRef','commandRef','outcome','evidenceRef']);
@@ -629,11 +669,12 @@ export class RuntimeStore {
       }
       =this.#claim(c,input);
       if(input.terminalEvidenceRef&&input.terminalEvidenceRef!==w.terminalEvidenceRef)fail('TERMINAL_EVIDENCE_MISMATCH');
+      if(a.metadata.outcome&&a.metadata.outcome!=='unknown'&&a.metadata.outcome!==input.outcome)fail('STALE_OUTCOME');
       const metadata={
-        ...a.metadata,outcome:input.outcome,outcomeEvidenceRef:input.evidenceRef,usageState:input.usage?.state||a.metadata.usageState,usageUnits:input.usage?.units??null
+        ...a.metadata,outcome:input.outcome,outcomeEvidenceRef:input.evidenceRef,usageState:input.usage?.state||(input.outcome==='unknown'?'unknown':a.metadata.usageState),usageUnits:input.usage?.units??null
       };
       const obligations=this.#ledger.query("SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind IN ('message','delivery')",...this.#keys(c,t.id)).map(r=>parse(r.payload)).filter(r=>r.claimRef===w.claimRef&&!['consumed','rejected','delivered','failed'].includes(r.state));
-      const release=input.outcome!=='unknown'&&!!w.terminalEvidenceRef&&obligations.length===0;
+      const release=input.outcome!=='unknown'&&!!w.terminalEvidenceRef&&obligations.length===0&&w.handoff?.state!=='pending';
       if(release){
         metadata.terminalEvidenceRef=w.terminalEvidenceRef;
         metadata.releaseEvidenceRef=canonicalDigest({
@@ -650,7 +691,7 @@ export class RuntimeStore {
       return{
         task:taskRecord(updated),claimRef:w.claimRef,reservationRef:w.reservationRef,reservationHeld:!release,outcome:input.outcome,terminalEvidenceRef:metadata.terminalEvidenceRef,releaseEvidenceRef:metadata.releaseEvidenceRef
       };
-    },input.outcome!=='unknown');
+    },input.outcome!=='unknown'?'terminal':false);
   }
   control(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','kind','actionRef','actionDigest'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','kind']);
@@ -676,21 +717,29 @@ export class RuntimeStore {
           task:taskRecord(t),cancellation:'confirmed'
         };
       }
+      const previousControl=this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id)).control;
+      if(input.kind==='pause'&&previousControl==='paused'||input.kind==='resume'&&previousControl==='active'||input.kind==='cancel'&&t.status==='cancel_requested')return{task:taskRecord(t),control:previousControl,cancellation:t.status==='cancel_requested'?'requested':null,reservationsHeld:this.#held(c,t.id)};
       if(input.kind==='resume'&&['cancel_requested','recovery_required'].includes(t.status))fail('TASK_BLOCKED');
       const state=input.kind==='pause'?'paused':input.kind==='cancel'?'cancel_requested':'active';
       this.#ledger.run('UPDATE runtime_tasks SET control=? WHERE owner=? AND workspace=? AND task=?',state,...this.#keys(c,t.id));
       if(input.kind!=='resume')this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id));
-      t=this.#update(t,input.kind==='cancel'?'cancel_requested':t.status,'cancel',t.auth_epoch+1,true);
+      t=this.#update(t,input.kind==='cancel'?'cancel_requested':t.status,'cancel',t.auth_epoch+1,input.kind==='cancel');
       return{
         task:taskRecord(t),control:state,cancellation:input.kind==='cancel'?'requested':null,reservationsHeld:this.#held(c,t.id)
       };
-    },true);
+    },input.kind==='confirm_cancel'?'terminal':['cancel','revoke'].includes(input.kind));
   }
   #record(c,task,kind,id){
     ref(id);
-    const row=this.#ledger.one('SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind=? AND id=?',...this.#keys(c,task),kind,id);
+    if(!['message','artifact','delivery','progress','review'].includes(kind))fail('STORAGE_INVALID');
+    const row=this.#ledger.one('SELECT payload,digest FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind=? AND id=?',...this.#keys(c,task),kind,id);
     if(!row)fail('RECORD_NOT_FOUND');
-    return parse(row.payload);
+    const payload=parse(row.payload);let original;
+    if(kind==='message'){const {evidenceRef,...rest}=payload;original={...rest,state:'accepted',claimRef:null,reservationRef:null,generationRef:null};if(payload.targetDigest!==canonicalDigest(payload.immutableMetadata))fail('STORAGE_INVALID');}
+    else if(kind==='delivery'){const {currentAccess,...rest}=payload;original={...rest,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]};if(payload.targetDigest!==canonicalDigest({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,...payload.intent}))fail('STORAGE_INVALID');}
+    else if(kind==='artifact')original={...payload,verification:null};
+    else original=payload;
+    if(row.digest!==canonicalDigest(original))fail('STORAGE_INVALID');return payload;
   }
   #saveRecord(c,task,kind,id,payload){
     this.#ledger.run('UPDATE runtime_records SET payload=? WHERE owner=? AND workspace=? AND task=? AND kind=? AND id=?',this.#check(payload),...this.#keys(c,task),kind,id);
@@ -740,19 +789,19 @@ export class RuntimeStore {
         if(!row)fail('RECORD_NOT_FOUND');
         body=parse(row.metadata);
       }
-      if(body.kind!=='message')fail('INVALID_INPUT');
+      if(c.role==='reviewer'&&(m.category!=='review_result'||body.kind!=='verification'||body.generationRef!==c.generationRef))fail('UNAUTHORIZED');if(c.role!=='reviewer'&&body.kind!=='message')fail('INVALID_INPUT');
       if(m.originalMessageRef){
         const parent=this.#record(c,input.taskRef,'message',m.originalMessageRef);
-        if(parent.state!=='consumed'||parent.immutableMetadata.purposeRef!==m.purposeRef||m.hopLimit!==parent.immutableMetadata.hopLimit||parent.immutableMetadata.recipientGenerationRef!==m.senderGenerationRef||parent.immutableMetadata.recipientSessionRef!==m.senderSessionRef||parent.immutableMetadata.sourceRef!==m.sourceRef||parent.immutableMetadata.eventRef!==m.eventRef)fail('ROUTE_INVALID');
+        if(parent.state!=='consumed'||parent.immutableMetadata.purposeRef!==m.purposeRef||m.hopLimit!==parent.immutableMetadata.hopLimit||parent.immutableMetadata.recipientGenerationRef!==m.senderGenerationRef||parent.immutableMetadata.recipientSessionRef!==m.senderSessionRef||parent.immutableMetadata.sourceRef!==m.sourceRef||parent.immutableMetadata.eventRef!==m.eventRef||parent.bodyRecordRef!==input.bodyRecordRef||parent.bodyDigest!==input.bodyDigest)fail('ROUTE_INVALID');
         const visited=[...(parent.route||[]),m.senderGenerationRef];
         if(visited.includes(m.recipientGenerationRef))fail('ROUTE_LOOP');
-        if(visited.length>m.hopLimit)fail('ROUTE_LIMIT');
+        if(visited.length>m.hopLimit+1)fail('ROUTE_LIMIT');
         return this.#newRecord(c,input.taskRef,'message',input.messageRef,{
-          messageRef:input.messageRef,immutableMetadata:JSON.parse(canonical(m)),recipientRef:input.recipientRef,bodyRecordRef:input.bodyRecordRef,bodyDigest:input.bodyDigest,byteLength:body.byteLength,targetDigest:canonicalDigest(m),state:'accepted',route:visited,claimRef:null,reservationRef:null,generationRef:null
+          taskRef:input.taskRef,messageRef:input.messageRef,immutableMetadata:JSON.parse(canonical(m)),recipientRef:input.recipientRef,bodyRecordRef:input.bodyRecordRef,bodyDigest:input.bodyDigest,byteLength:body.byteLength,targetDigest:canonicalDigest(m),state:'accepted',route:visited,claimRef:null,reservationRef:null,generationRef:null
         });
       }
       return this.#newRecord(c,input.taskRef,'message',input.messageRef,{
-        messageRef:input.messageRef,immutableMetadata:JSON.parse(canonical(m)),recipientRef:input.recipientRef,bodyRecordRef:input.bodyRecordRef,bodyDigest:input.bodyDigest,byteLength:body.byteLength,targetDigest:canonicalDigest(m),state:'accepted',route:[m.senderGenerationRef],claimRef:null,reservationRef:null,generationRef:null
+        taskRef:input.taskRef,messageRef:input.messageRef,immutableMetadata:JSON.parse(canonical(m)),recipientRef:input.recipientRef,bodyRecordRef:input.bodyRecordRef,bodyDigest:input.bodyDigest,byteLength:body.byteLength,targetDigest:canonicalDigest(m),state:'accepted',route:[m.senderGenerationRef],claimRef:null,reservationRef:null,generationRef:null
       });
     });
   }
@@ -771,13 +820,17 @@ export class RuntimeStore {
       this.#claim(c,input);
       const m=this.#record(c,input.taskRef,'message',input.messageRef);
       if(m.claimRef!==input.claimRef||m.generationRef!==input.generationRef||m.state==='accepted')fail('STALE_CLAIM');
-      if(['consumed','rejected'].includes(m.state)&&m.state!==input.state)fail('STALE_OBSERVATION');
+      if(['consumed','rejected'].includes(m.state)){if(m.state!==input.state||m.evidenceRef!==input.evidenceRef)fail('STALE_OBSERVATION');return m;}
       const next={
         ...m,state:input.state,evidenceRef:input.evidenceRef
       };
       this.#saveRecord(c,input.taskRef,'message',input.messageRef,next);
       return next;
-    },['consumed','rejected'].includes(input.state));
+    },['consumed','rejected'].includes(input.state)?'terminal':false);
+  }
+  writeArtifact(handle,input){
+    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','content','producerClaimRef','generationRef'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','content']);ref(input.artifactRef);integer(input.version,1);
+    return this.#mut(handle,input,['owner','coordinator','worker'],'writeArtifact',c=>{const task=this.#cas(c,input),current=this.#artifact(c,input.taskRef,input.artifactRef);if(input.version!==(current?current.version+1:1))fail('STALE_ARTIFACT');if(c.role==='worker'&&(input.generationRef!==c.generationRef||!input.producerClaimRef))fail('UNAUTHORIZED');if(input.producerClaimRef)this.#claim(c,{...input,claimRef:input.producerClaimRef});const t=this.#update(task,task.status,'progress');this.#managed(t);const data=this.#data(c,t,{kind:'artifact',content:input.content,sourceRef:input.artifactRef,commandRef:input.commandRef});const result=this.#newRecord(c,t.id,'artifact',canonicalDigest({artifactRef:input.artifactRef,version:input.version}),{artifactRef:input.artifactRef,version:input.version,recordRef:data.recordRef,digest:data.digest,producerClaimRef:input.producerClaimRef||null,generationRef:input.generationRef||null,producerRef:c.principalRef,verification:null});return{...result,task:taskRecord(t)};});
   }
   recordArtifact(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','recordRef','digest','producerClaimRef','generationRef'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','recordRef','digest']);
@@ -802,7 +855,7 @@ export class RuntimeStore {
   }
   #artifact(c,task,id,version){
     ref(id);
-    return this.#ledger.query("SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind='artifact'",...this.#keys(c,task)).map(r=>parse(r.payload)).filter(r=>r.artifactRef===id&&(version===undefined||r.version===version)).sort((a,b)=>b.version-a.version)[0]||null;
+    return this.#ledger.query("SELECT id,payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind='artifact'",...this.#keys(c,task)).map(r=>this.#record(c,task,'artifact',r.id)).filter(r=>r.artifactRef===id&&(version===undefined||r.version===version)).sort((a,b)=>b.version-a.version)[0]||null;
   }
   artifact(handle,input){
     exact(input,['taskRef','artifactRef','version'],['taskRef','artifactRef']);
@@ -844,6 +897,7 @@ export class RuntimeStore {
     integer(input.artifactVersion,1);
     return this.#mut(handle,input,OWNER,'recordDelivery',c=>{
       this.#cas(c,input);
+      const {targetDigest,...intent}=input;if(targetDigest!==canonicalDigest({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,...intent}))fail('DIGEST_MISMATCH');
       if(input.previousDeliveryRef){
         const prev=this.#record(c,input.taskRef,'delivery',input.previousDeliveryRef);
         if(prev.state!=='failed'||prev.artifactRef!==input.artifactRef||prev.artifactVersion!==input.artifactVersion||prev.digest!==input.digest||prev.recipientRef!==input.recipientRef||prev.channelRef!==input.channelRef)fail('RETRY_UNCONFIRMED');
@@ -853,7 +907,7 @@ export class RuntimeStore {
       const a=this.#artifact(c,input.taskRef,input.artifactRef);
       if(!a||a.version!==input.artifactVersion||a.digest!==input.digest||a.verification?.verdict!=='accepted')fail('ARTIFACT_UNVERIFIED');
       const payload={
-        deliveryRef:input.deliveryRef,artifactRef:input.artifactRef,artifactVersion:input.artifactVersion,digest:input.digest,recipientRef:input.recipientRef,channelRef:input.channelRef,targetDigest:input.targetDigest,previousDeliveryRef:input.previousDeliveryRef||null,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]
+        deliveryRef:input.deliveryRef,artifactRef:input.artifactRef,artifactVersion:input.artifactVersion,digest:input.digest,recipientRef:input.recipientRef,channelRef:input.channelRef,targetDigest:input.targetDigest,intent:JSON.parse(canonical(intent)),previousDeliveryRef:input.previousDeliveryRef||null,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]
       };
       return this.#newRecord(c,input.taskRef,'delivery',input.deliveryRef,payload);
     });
@@ -867,11 +921,12 @@ export class RuntimeStore {
       const d=this.#record(c,input.taskRef,'delivery',input.deliveryRef);
       if(d.state!=='delivered')this.#claim(c,input);
       if(d.claimRef!==input.claimRef||d.generationRef!==input.generationRef||d.state==='accepted')fail('STALE_CLAIM');
-      if(d.observations.length>=16)fail('RECORD_LIMIT');
       if(input.state==='delivered'&&d.state!=='delivered'&&(input.permissionState!=='allowed'||input.openability!=='openable'))fail('DELIVERY_UNCONFIRMED');
       const observation={
         state:input.state,evidenceRef:input.evidenceRef,permissionState:input.permissionState,openability:input.openability,observedAt:input.observedAt
       };
+      const prior=d.observations.at(-1);if(prior){if(input.observedAt<prior.observedAt||input.observedAt===prior.observedAt&&canonical(observation)!==canonical(prior))fail('STALE_OBSERVATION');if(canonical(observation)===canonical(prior))return d;}
+      if(d.observations.length>=16||['sent','unknown'].includes(input.state)&&(d.observations.length>=15||Buffer.byteLength(canonical({...d,observations:[...d.observations,observation],currentAccess:{permissionState:input.permissionState,openability:input.openability}}))+512>this.#limits.maxMetadataBytes))fail('RECORD_LIMIT');
       const next={
         ...d,state:d.state==='delivered'?'delivered':input.state,observations:[...d.observations,observation],currentAccess:{
           permissionState:input.permissionState,openability:input.openability
@@ -879,12 +934,16 @@ export class RuntimeStore {
       };
       this.#saveRecord(c,input.taskRef,'delivery',input.deliveryRef,next);
       return next;
-    },['delivered','failed'].includes(input.state));
+    },['delivered','failed'].includes(input.state)?'terminal':false);
   }
   getDelivery(handle,input){
     exact(input,['taskRef','deliveryRef']);
     const c=this.#ctx(handle,input.taskRef,['owner','coordinator','host']);
     return this.#record(c,input.taskRef,'delivery',input.deliveryRef);
+  }
+  writeProgress(handle,input){
+    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','progressRef','kind','content']);ref(input.progressRef);if(!['milestone','obstacle','question','final'].includes(input.kind))fail('INVALID_INPUT');
+    return this.#mut(handle,input,['owner','coordinator','worker'],'writeProgress',c=>{const task=this.#cas(c,input),t=this.#update(task,task.status,'progress');this.#managed(t);const data=this.#data(c,t,{kind:'progress',content:input.content,sourceRef:input.progressRef,commandRef:input.commandRef});const result=this.#newRecord(c,t.id,'progress',input.progressRef,{progressRef:input.progressRef,recordRef:data.recordRef,digest:data.digest,kind:input.kind,generationRef:c.generationRef||null,at:this.#now()});return{...result,task:taskRecord(t)};});
   }
   recordProgress(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','progressRef','recordRef','digest','kind']);
@@ -907,12 +966,12 @@ export class RuntimeStore {
         return{
           actionRef:a.action,actionDigest:a.digest,spec:a.spec,state:a.state,attempts:a.attempts,...a.metadata
         };
-      }),workers=this.#ledger.query('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=?',...keys).map(r=>parse(r.payload)),records=this.#ledger.query('SELECT kind,payload FROM runtime_records WHERE owner=? AND workspace=? AND task=?',...keys);
+      }),workers=this.#ledger.query('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=?',...keys).map(r=>parse(r.payload)),records=this.#ledger.query('SELECT kind,id,payload FROM runtime_records WHERE owner=? AND workspace=? AND task=?',...keys);
       const result={
         schemaVersion:SCHEMA_VERSION,observedAt:this.#now(),task:taskRecord(t),data,actions,workers,policy:this.#getPolicy(c),messages:[],artifacts:[],deliveries:[],progress:[],reviews:[],control:this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys)?.control||'active'
       };
       for(const r of records){
-        const p=parse(r.payload);
+        const p=this.#record(c,t.id,r.kind,r.id);
         if(['worker','reviewer'].includes(c.role)){
           if(r.kind==='message'&&p.immutableMetadata.senderGenerationRef!==c.generationRef&&p.immutableMetadata.recipientGenerationRef!==c.generationRef)continue;
           if(r.kind==='artifact'&&!data.some(d=>d.recordRef===p.recordRef))continue;
@@ -949,6 +1008,8 @@ export class RuntimeStore {
         }
       }
     }
+    for(const policyRow of this.#ledger.query('SELECT * FROM runtime_policy'))this.#getPolicy({ownerRef:policyRow.owner,workspaceRef:policyRow.workspace});
+    for(const r of this.#ledger.query('SELECT * FROM runtime_records'))this.#record({ownerRef:r.owner,workspaceRef:r.workspace},r.task,r.kind,r.id);
     for(const r of this.#ledger.query('SELECT * FROM runtime_actions')){
       const spec=normalizedSpec(parse(r.spec)),m=parse(r.metadata),action=this.#ledger.one('SELECT * FROM actions WHERE owner=? AND workspace=? AND task=? AND id=?',r.owner,r.workspace,r.task,r.action);
       if(!action||spec.actionRef!==r.action||spec.kind!==action.kind||spec.units!==action.units||spec.targetDigest!==action.target_digest||spec.dataDigest!==action.data_digest||r.digest!==canonicalDigest({ownerRef:r.owner,workspaceRef:r.workspace,taskRef:r.task,taskVersion:m.plannedTaskVersion,authEpoch:m.plannedAuthEpoch,spec}))fail('STORAGE_INVALID');
@@ -979,6 +1040,7 @@ export class RuntimeStore {
       const c={
         ownerRef:r.owner,workspaceRef:r.workspace
       },t=this.#task(c,r.task),a=this.#action(c,r.task,r.id);
+      this.#saveAction(c,r.task,r.id,{...a.metadata,usageState:'unknown'});
       this.#ledger.run("UPDATE actions SET state='unknown' WHERE owner=? AND workspace=? AND task=? AND id=?",...this.#keys(c,r.task),r.id);
       if(!['cancel_requested','recovery_required'].includes(t.status))this.#update(t,'recovery_required','recovery',t.auth_epoch,true);
       const w=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,r.task),a.metadata.claimRef);
