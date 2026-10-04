@@ -1,6 +1,6 @@
 # M1 independent ISTQB test-design review
 
-Status: **reopened; prior Desktop PASS is historical and superseded as the current baseline**. CR-10 crash-left WAL rejection can checkpoint the original main file and delete WAL/SHM. Owner now requires the latest official DSH Web npm target, loopback-only fixtures, no old Desktop shim/Electron acceptance, credentials or live models. Fresh source/test review and acceptance remain pending the remediated Web snapshot. The historical de1097e results below are retained for provenance and are not current acceptance.
+Status: **reopened; prior Desktop PASS is historical and superseded as the current baseline**. CR-10's former crash-left WAL rejection changed original main/WAL/SHM files; the remediated boundary passes the independent ten-case local storage checks. The newest official published preview Web public-service fixture also passes, with all81 independent adversarial cases green on Node22.22.2. Current acceptance remains pending actual controlled loopback Web profile/lifecycle and separate visual evidence, the frozen Web snapshot, and final full-suite commands. No old Desktop shim/Electron fixture, credentials or live models establish current acceptance. Historical de1097e results below are retained solely for provenance.
 
 Reviewer: `/root/istqb_review`, independent of `/root/host_bootstrap` and `/root/ledger_core`; delegated by `/root`. Requested model/reasoning: gpt-6.1-sol / max. This development review is separate from BUB015 runtime product behavior. Root is the only Git writer.
 
@@ -8,7 +8,7 @@ Reviewed planning baseline: `abb28b7e3962fa46c492b077c6cce5a8613a843b`, branch `
 
 ## Review scope and exit evidence
 
-Review every bounded M1 AC against the final executable behavior. Author mocks are useful for branch/fault coverage, while actual installed public Cordis lifecycle and real local SQLite/file/process checks are needed for the supported functional subset. A fake `ctx` is not Desktop profile, UI, host permission, or provider evidence. All source full-ticket profile/UI/live-identity/model/provider criteria remain pending. Visual validation is not applicable to the M1 implementation, which has no UI; BUB014 retains that gate.
+Review every bounded M1 AC against the final executable behavior. Author mocks are useful for branch/fault coverage, while actual installed public Cordis lifecycle and real local SQLite/file/process checks are required for the supported functional subset. A fake `ctx` or public-library fixture is not actual Web profile, browser shell, host permission or provider evidence. Current M1-01/09 additionally require the isolated loopback Web profile and xhigh visual review of its shell. Bubbles has no task UI; BUB014 and all broader source full-ticket worker/UI/live-identity/model/provider criteria remain pending.
 
 The final matrix below ties each bounded AC to exact commands/test names, expected behavior, observed result and limitations. Findings returned to the relevant author and changed code was retested without weakening security/state assertions. Passing suites alone do not establish release or full-MVP evidence.
 
@@ -22,14 +22,14 @@ Root handed off, and reviewer independently read with `git rev-parse`, feature S
 
 Reviewer read all final runtime modules, author suites/smoke, independent suite and source contracts. `git diff --stat -- src test scripts package.json` was empty before final retest. After freezing tests, reviewer changed only this evidence file. Documentation-only convergence changes the repository HEAD without changing the accepted executable tree; any further executable change requires review/retest.
 
-Environment: macOS27.0 arm64 (root observation), system Node22.22.2 / SQLite3.53.2, installed bundled Node24.9.0 / SQLite3.50.4; exact public package/runtime provenance is in [host-interface.md](host-interface.md). No dependency installation or installed DSH modification occurred.
+Historical environment: macOS27.0 arm64 (root observation), system Node22.22.2 / SQLite3.53.2, installed bundled Node24.9.0 / SQLite3.50.4; former public package/runtime provenance is in [historical host interface](host-interface.desktop-historical.md). No dependency installation or installed DSH modification occurred during that historical review.
 
 | Command ID | Exact command, run from bubbles repository | Expected | Actual final result |
 | --- | --- | --- | --- |
-| R1 | `npm run check` | All tracked executable ESM syntax valid. | Root:10 ESM files checked, exit0; [raw log](runs/check.txt). |
-| R2 | `npm test` | Entire suite green under system Node22.22.2, native fixtures under bundled Node. | Root:93 tests,93 pass,0 fail,0 skip,exit0;1.635s; [raw log](runs/test-node22.txt). |
-| R3 | `npm run test:host` | Entire suite green under pinned bundled Node24.9.0. | Root:93 tests,93 pass,0 fail,0 skip,exit0;1.407s; [raw log](runs/test-node24.txt). |
-| R4 | `npm run host:smoke` | Installed public native lifecycle/probe and explicit permission denial, no inference/profile access. | Root:loads11/reloads10/entries11,permission rejected,inferenceCalls0,profileAccess=false; all version/hash/capability checks true,exit0; [raw log](runs/host-smoke.txt). |
+| R1 | `npm run check` | All tracked executable ESM syntax valid. | Root:10 ESM files checked, exit0; [raw log](runs/desktop-de1097e/check.txt). |
+| R2 | `npm test` | Entire suite green under system Node22.22.2, native fixtures under bundled Node. | Root:93 tests,93 pass,0 fail,0 skip,exit0;1.635s; [raw log](runs/desktop-de1097e/test-node22.txt). |
+| R3 | `npm run test:host` | Entire suite green under pinned bundled Node24.9.0. | Root:93 tests,93 pass,0 fail,0 skip,exit0;1.407s; [raw log](runs/desktop-de1097e/test-node24.txt). |
+| R4 | `npm run host:smoke` | Installed public native lifecycle/probe and explicit permission denial, no inference/profile access. | Root:loads11/reloads10/entries11,permission rejected,inferenceCalls0,profileAccess=false; all version/hash/capability checks true,exit0; [raw log](runs/desktop-de1097e/host-smoke.txt). |
 | I1 | `node --test --test-reporter=spec test/*.test.mjs` | Independent final entire-suite retest of frozen files on system runtime. | Reviewer:93 tests,93 pass,0 fail,0 skip,exit0;1.686s. |
 | I2 | `"/Applications/DSH Desktop.app/Contents/Resources/app/node_modules/node/bin/node" --test --test-reporter=spec test/*.test.mjs` | Independent final entire-suite retest on pinned native runtime. | Reviewer:93 tests,93 pass,0 fail,0 skip,exit0;1.359s. |
 
@@ -154,7 +154,7 @@ Independent CR-10 oracle: a child creates and commits synthetic future99/WAL or 
 
 Web host design: record authoritative official npm dist-tag/exact pin/integrity and public lifecycle exports before adapting tests. Exercise only genuine current Cordis/service/bootstrap interfaces, malformed config/capabilities/identity, ten load/unload/reload cycles, stale borrowed API rejection and uncertainty-preserving reopen. Run the actual owner-authorized Web surface on loopback only without credential/model/provider setup; fixtures do not infer live identity/provider support. Map to M1-01/05/06/08/09 and BUB001 baseline/lifecycle/capability/source05 scope. No old Desktop fallback, shim or Electron fixture may establish current acceptance.
 
-Current verdict: pending new code, targeted CR-10 results, genuine latest Web host functional evidence, exact final source/test tree and root's final commands. Test edits are reopened only in the reviewer's assigned file; no production/Git/shared-doc changes are permitted.
+Current verdict: independent targeted CR-10 and genuine latest Web public-service checks pass on the working tree. Actual controlled Web profile/browser lifecycle and visual evidence, exact frozen source/test tree, full author-suite review and final commands remain pending. Reviewer test edits are frozen for root's commit; only this evidence file may still change. No production/Git/shared-doc changes are permitted.
 
 ### CR-10 targeted actual results (working tree, final snapshot pending)
 
@@ -165,6 +165,18 @@ Current verdict: pending new code, targeted CR-10 results, genuine latest Web ho
 - Real child exit74 with cache-spilled supported DELETE hot rollback journal: expected rollback uncommitted version2/waiting progress while retaining16 acknowledged tasks; actual all16 queued/version1/updatedAt1000, original version1 history, hot journal consumed, integrity `ok`. Persisted nonzero journal magic/header was checked, so this is not only an empty unflushed journal.
 - Actual second SQLite connection commits schema99 after the constructor's cached schema1 read and before its migration lock: expected `SCHEMA_FUTURE`, no backup/downgrade; actual new writer bytes preserved, version99 and original three-table topology retained. The constructor rechecks version/journal mode after acquiring the transaction lock.
 
-These are actual local storage/process operations, not mocks or Desktop/provider evidence. Original four abrupt-process crash cuts remain in the author suite. Old Desktop native adversarial execution is not being used for current acceptance; it will be retargeted to the verified official Web public APIs.
+These are actual local storage/process operations, not mocks or provider evidence. Original four abrupt-process crash cuts remain in the author suite. Old Desktop native adversarial execution is not being used for current acceptance; the independent native test now uses the verified official Web public APIs.
 
-Latest Web prerequisite: host's initial normal-sandbox registry lookup failed DNS/log access. Root then reported a narrow public metadata request automatically approved and successful, with sanitized project npm configuration/cache; newest official published preview `@deepseek-ai/dsh@0.2.1-alpha.1` is deliberately pinned rather than the older rc latest dist-tag. Host is reviewing/installing the official tarball. This reviewer performed no network escalation or install. Genuine new public interfaces, loopback validation and final tree remain pending.
+Latest Web prerequisite: host's initial normal-sandbox registry lookup failed DNS/log access. Root then reported a narrow public metadata request automatically approved and successful, with sanitized project npm configuration/cache; newest official published preview `@deepseek-ai/dsh@0.2.1-alpha.1` is deliberately pinned rather than the older rc latest dist-tag. The official packages are now installed in `.runtime/dsh-web`; their genuine public interfaces are exercised below. This reviewer performed no network escalation or install. Controlled loopback validation and the frozen tree remain pending.
+
+### Latest Web public-service targeted results (working tree, final snapshot pending)
+
+`node --test --test-reporter=spec --test-name-pattern='actual public Web Cordis' test/adversarial.test.mjs`: **1 passed,0 failed,0 skipped,exit0**, about0.289seconds. Child runs `process.execPath` with only `PATH=/opt/homebrew/bin:/usr/bin:/bin`; imports the actual isolated `Context`, `SessionStore` and `ApprovalService`, with approval policy `never`. No compatibility wrapper, fake context, installed Desktop binary or personal profile is used.
+
+Expected exact `dsh-web-0.2.1-alpha.1`, Node22.22.2, DSH/session/approval/Web/server0.2.1-alpha.1 and Cordis4.0.5-alpha.1, genuine service provenance, pinned source/lock hashes and all required capabilities. Actual `probeHost` reports that exact target/runtime/version set, all checks true and no failures. Supplied undefined/throwing/async/extra-field/accessor identities reject activation with redacted `IDENTITY_UNAVAILABLE`, no service and no ledger. A valid identity is copied once per activation; mutating its original scope does not change authority. Payload identity flags reject; no grant/revoke/private Foundation is exposed and native delete returns `OPERATOR_UNAVAILABLE`.
+
+Expected ten genuine native load/unload cycles preserve uncertainty and reject borrowed authority. Actual ten cycles keep one `unknown` action, one attempt and one held reservation; no sessions, inference or fixture registry leak. Every captured method rejects `SERVICE_DISPOSED` immediately after disposal starts and again after it completes. A separately reopened fixture cannot claim a new action while the unknown reservation occupies the sole slot.
+
+`node --test --test-reporter=spec test/adversarial.test.mjs`: **81 passed,0 failed,0 skipped,exit0**, about2.002seconds on Node22.22.2 after Web retargeting. This directly rechecks the independent scope/consent/expiry/race/dedup/limits/secrets/migration/crash matrix together with the ten CR-10 cases. `rg -n 'Desktop|desktopRoot|/Applications|0\\.9\\.1|0\\.1\\.5|24\\.9\\.0' test/adversarial.test.mjs` returns no matches (exit1); no former Desktop path or binary remains in this executable test.
+
+These results support M1-01's public API/lifecycle subset, M1-03/04 storage preservation and M1-05/06/08 identity/uncertainty/limits behavior. They do not establish actual Web profile/browser-close/host-stop/restart or M1-09 visual acceptance. Those gates remain explicit before a new final recommendation.

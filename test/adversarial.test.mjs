@@ -4,7 +4,6 @@ import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, existsSync, copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { Foundation, FoundationError } from '../src/foundation.mjs';
@@ -835,25 +834,36 @@ test('independent: grant expiry is rechecked after acquiring a real contended SQ
   assert.equal(f.core.getTask(scope, 'task').status, 'queued');
 });
 
-test('independent: actual public Cordis rejects malicious identity adapters and keeps uncertainty through ten reloads', { timeout: 30000 }, () => {
-  const desktopRoot = '/Applications/DSH Desktop.app/Contents/Resources/app';
+test('independent: actual public Web Cordis rejects malicious identity adapters and keeps uncertainty through ten reloads', { timeout: 30000 }, () => {
   const indexUrl = new URL('../src/index.mjs', import.meta.url).href;
+  const probeUrl = new URL('../src/host-probe.mjs', import.meta.url).href;
   const source = `
     import assert from 'node:assert/strict';
     import { mkdtempSync, rmSync, existsSync } from 'node:fs';
     import { tmpdir } from 'node:os';
     import { join } from 'node:path';
+    import { pathToFileURL } from 'node:url';
     import { createPlugin } from ${JSON.stringify(indexUrl)};
     import { Foundation } from ${JSON.stringify(moduleUrl)};
-    const { Context } = await import(${JSON.stringify(pathToFileURL(`${desktopRoot}/node_modules/@deepseek-ai/cordis/lib/index.js`).href)});
-    const { default: SessionStore } = await import(${JSON.stringify(pathToFileURL(`${desktopRoot}/node_modules/@deepseek-ai/dsh-session/lib/index.js`).href)});
-    const { default: ApprovalService } = await import(${JSON.stringify(pathToFileURL(`${desktopRoot}/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js`).href)});
+    import { DSH_WEB_RUNTIME_ROOT, probeHost } from ${JSON.stringify(probeUrl)};
+    const packagesRoot = join(DSH_WEB_RUNTIME_ROOT, 'node_modules', '@deepseek-ai');
+    const { Context } = await import(pathToFileURL(join(packagesRoot, 'cordis/lib/index.js')).href);
+    const { default: SessionStore } = await import(pathToFileURL(join(packagesRoot, 'dsh-session/lib/index.js')).href);
+    const { default: ApprovalService } = await import(pathToFileURL(join(packagesRoot, 'dsh-user-approval/lib/index.js')).href);
     const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-host-'));
     const ctx = new Context();
-    ctx.logger.exporters.clear?.();
+    ctx.logger.exporters?.clear?.();
     const scope = ${JSON.stringify(scope)};
     try {
       await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
+      const host = probeHost(ctx);
+      assert.equal(host.target, 'dsh-web-0.2.1-alpha.1');
+      assert.equal(host.supported, true);
+      assert.equal(host.runtime.node, 'v22.22.2');
+      assert.deepEqual(host.versions, { harness: '0.2.1-alpha.1', cordis: '4.0.5-alpha.1',
+        sessions: '0.2.1-alpha.1', approval: '0.2.1-alpha.1', web: '0.2.1-alpha.1', webServer: '0.2.1-alpha.1' });
+      assert.ok(Object.values(host.checks).every(value => value === true));
+      assert.deepEqual(host.failures, []);
       let invalidIndex = 0;
       for (const identity of [() => undefined, () => { throw Error('synthetic-identity-secret'); }, async () => scope,
         () => ({ ...scope, verified: true }), () => Object.defineProperty({ workspaceId: 'w' }, 'ownerId', { get() { throw Error('synthetic-getter-secret'); } })]) {
@@ -892,7 +902,9 @@ test('independent: actual public Cordis rejects malicious identity adapters and 
         assert.throws(() => held.deleteTask('task', { expectedVersion: held.getTask('task').version }), { code: 'OPERATOR_UNAVAILABLE' });
         assert.equal(identityCalls, 1, 'activation identity is validated and copied once');
         assert.equal(ctx.sessions.list().length, 0);
-        await fiber.dispose();
+        const disposing = fiber.dispose();
+        for (const fn of Object.values(held)) assert.throws(() => fn(), { code: 'SERVICE_DISPOSED' });
+        await disposing;
         for (const fn of Object.values(held)) assert.throws(() => fn(), { code: 'SERVICE_DISPOSED' });
         assert.equal(ctx.bubbles, undefined); assert.equal(ctx.registry.size, baseline);
       }
@@ -903,10 +915,14 @@ test('independent: actual public Cordis rejects malicious identity adapters and 
         reopened.grant(capability, scope, 'second', 'second-action', { expectedVersion: 1, expectedAuthEpoch: 0, expiresAt: Date.now() + 60000 });
         assert.throws(() => reopened.claim(scope, 'second', 'second-action', { expectedVersion: 1 }), { code: 'ACTIVE_FULL' });
       } finally { reopened.close(); }
-      console.log(JSON.stringify({ passed: true, reloads: 10, heldReservations: 1, inferenceCalls: 0 }));
+      console.log(JSON.stringify({ passed: true, target: host.target, node: host.runtime.node,
+        reloads: 10, heldReservations: 1, inferenceCalls: 0 }));
     } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }); }
   `;
-  const result = spawnSync(`${desktopRoot}/node_modules/node/bin/node`, ['--input-type=module', '-e', source], { encoding: 'utf8', timeout: 25000 });
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+    encoding: 'utf8', timeout: 25000, env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin' },
+  });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  assert.deepEqual(JSON.parse(result.stdout.trim().split('\n').at(-1)), { passed: true, reloads: 10, heldReservations: 1, inferenceCalls: 0 });
+  assert.deepEqual(JSON.parse(result.stdout.trim().split('\n').at(-1)), { passed: true,
+    target: 'dsh-web-0.2.1-alpha.1', node: 'v22.22.2', reloads: 10, heldReservations: 1, inferenceCalls: 0 });
 });
