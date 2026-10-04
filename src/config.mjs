@@ -1,7 +1,7 @@
 import { isAbsolute } from 'node:path';
 import { types } from 'node:util';
 
-export const HOST_TARGET = 'desktop-0.9.1-harness-0.1.5-rc.2';
+export const HOST_TARGET = 'dsh-web-0.2.1-alpha.1';
 export const DEFAULT_LIMITS = Object.freeze({
   queueCapacity: 32, maxActive: 2, maxAttempts: 3, maxTasks: 1000,
   maxActionsPerTask: 16, maxEventsPerTask: 128, maxMetadataBytes: 1024,
@@ -46,7 +46,7 @@ export function validateConfig(input) {
   }
 }
 
-// Cordis 4.0.2 consumes a synchronous Standard Schema interface.
+// Cordis consumes a synchronous Standard Schema interface.
 export const Config = Object.freeze({ '~standard': Object.freeze({
   version: 1, vendor: 'bubbles',
   validate(value) {

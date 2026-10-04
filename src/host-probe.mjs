@@ -1,17 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { BootstrapError, HOST_TARGET } from './config.mjs';
 
-export const DESKTOP_APP_ROOT = '/Applications/DSH Desktop.app/Contents/Resources/app';
-const packagesRoot = `${DESKTOP_APP_ROOT}/node_modules/@deepseek-ai`;
+export const DSH_WEB_RUNTIME_ROOT = fileURLToPath(new URL('../.runtime/dsh-web', import.meta.url));
+const packagesRoot = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const definitions = Object.freeze({
-  desktop: { package: 'package.json', root: DESKTOP_APP_ROOT, version: '0.9.1', hash: 'fc1389b7779ce658572760f9b304e1e9f01b0b551959861cb79869b6428887db' },
-  harness: { root: `${packagesRoot}/dsh`, package: 'package.json', version: '0.1.5-rc.2' },
-  cordis: { root: `${packagesRoot}/cordis`, package: 'package.json', version: '4.0.2', source: 'lib/index.js', hash: '1729cdbf8ee40b17c8839e06bf96491490548559e11ef7e411271e0754e751c5' },
-  sessions: { root: `${packagesRoot}/dsh-session`, package: 'package.json', version: '0.1.5-rc.2', source: 'lib/index.js', hash: '05e94f57d96e7979670a5b51024c8591572eb0051ce793613dbdec35cf2c47bf' },
-  approval: { root: `${packagesRoot}/dsh-user-approval`, package: 'package.json', version: '0.1.5-rc.2', source: 'lib/index.js', hash: 'fbd3f2e348358d27234739f8cbc4bdb2d6450b0a6b1b207572463977b14a5ecb' },
+  harness: { root: `${packagesRoot}/dsh`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/bin.js', hash: '1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f' },
+  cordis: { root: `${packagesRoot}/cordis`, package: 'package.json', version: '4.0.5-alpha.1', source: 'lib/index.js', hash: '6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e' },
+  sessions: { root: `${packagesRoot}/dsh-session`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: 'b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b' },
+  approval: { root: `${packagesRoot}/dsh-user-approval`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: '6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b' },
+  web: { root: `${packagesRoot}/dsh-web-app`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: 'c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85' },
+  webServer: { root: `${packagesRoot}/dsh-host-webserver`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: '6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5' },
 });
 let installed;
 try {
@@ -46,7 +47,12 @@ export function probeHost(ctx) {
     for (const method of ['create', 'get', 'list']) checks[`sessions.${method}`] = typeof ctx?.sessions?.[method] === 'function';
     for (const method of ['request', 'effectivePolicy']) checks[`approval.${method}`] = typeof ctx?.approval?.[method] === 'function';
   } catch { checks.nativeContext = false; }
-  checks.runtimeVersion = process.version === 'v24.9.0';
+  checks.runtimeVersion = process.version === 'v22.22.2';
+  try {
+    const digest = value => createHash('sha256').update(value).digest('hex');
+    hashes.runtimeLock = digest(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`));
+    checks.runtimeLock = hashes.runtimeLock === digest(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url)));
+  } catch { checks.runtimeLock = false; }
   let sqliteVersion;
   try {
     const db = new DatabaseSync(':memory:');

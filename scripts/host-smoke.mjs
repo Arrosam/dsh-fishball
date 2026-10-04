@@ -4,11 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import plugin, { createPlugin, probeHost } from '../src/index.mjs';
-import { DESKTOP_APP_ROOT } from '../src/host-probe.mjs';
+import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
 
-// Review scope: import only public installed libraries. This is not the DSH
+// Review scope: import only exact project-local official public libraries. This is not the DSH
 // app launcher and does not load profiles, settings, credentials or providers.
-const packages = `${DESKTOP_APP_ROOT}/node_modules/@deepseek-ai`;
+const packages = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const { Context } = await import(pathToFileURL(`${packages}/cordis/lib/index.js`).href);
 const { default: SessionStore } = await import(pathToFileURL(`${packages}/dsh-session/lib/index.js`).href);
 const { default: ApprovalService } = await import(pathToFileURL(`${packages}/dsh-user-approval/lib/index.js`).href);

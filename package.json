@@ -5,16 +5,20 @@
   "type": "module",
   "description": "Bounded native DSH foundation preview",
   "exports": "./src/index.mjs",
-  "engines": { "node": "22.22.2 || 24.9.0" },
+  "engines": { "node": "22.22.2" },
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test test/*.test.mjs",
-    "test:host": "\"/Applications/DSH Desktop.app/Contents/Resources/app/node_modules/node/bin/node\" --test test/*.test.mjs",
-    "host:smoke": "\"/Applications/DSH Desktop.app/Contents/Resources/app/node_modules/node/bin/node\" scripts/host-smoke.mjs"
+    "test:host": "node --test test/*.test.mjs",
+    "host:smoke": "node scripts/host-smoke.mjs",
+    "host:setup": "node scripts/dsh-web-setup.mjs",
+    "host:web": "node scripts/dsh-web.mjs",
+    "host:profile-smoke": "node scripts/web-profile-smoke.mjs"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-session": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-user-approval": "0.1.5-rc.2"
+    "@deepseek-ai/dsh": "0.2.1-alpha.1",
+    "@deepseek-ai/cordis": "4.0.5-alpha.1",
+    "@deepseek-ai/dsh-session": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-user-approval": "0.2.1-alpha.1"
   }
 }

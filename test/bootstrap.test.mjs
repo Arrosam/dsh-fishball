@@ -3,7 +3,46 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { Config, DEFAULT_LIMITS, HOST_TARGET, record, validateConfig } from '../src/config.mjs';
-import { DESKTOP_APP_ROOT, probeHost } from '../src/host-probe.mjs';
+import { probeHost } from '../src/host-probe.mjs';
+import { createSafeOutput, paths, webEnvironment } from '../scripts/dsh-web.mjs';
+import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
+
+test('sanitized Web environment confines actual filesystem provider default roots', () => {
+  const environment = webEnvironment();
+  assert.deepEqual(Object.keys(environment).sort(), ['DSH_AGENTS_HOME', 'DSH_HOME', 'DSH_PERMISSION_MODE', 'DSH_TELEMETRY_DISABLED', 'PATH']);
+  assert.equal(environment.DSH_AGENTS_HOME, paths.agents);
+  assert.equal(environment.DSH_HOME, paths.home);
+  const script = `
+    const {FileSystemSkillProvider}=await import(${JSON.stringify(`${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/dsh-skill-filesystem/lib/index.js`)});
+    const provider=new FileSystemSkillProvider({}, {invalidate(){}, signal:new AbortController().signal}, {watch:false});
+    console.log(JSON.stringify((await provider.roots(undefined)).map(root=>root.path)));
+    await provider.dispose();
+  `;
+  const result = spawnSync(process.execPath, ['--input-type=module', '--eval', script], { encoding: 'utf8', env: environment });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), [`${paths.home}/skills`, `${paths.agents}/skills`]);
+});
+
+test('host output masks URL credentials across chunks and suppresses oversized lines', () => {
+  const output = [];
+  const stream = createSafeOutput(value => output.push(value));
+  const sentinel = 'SYNTHETIC_STREAM_SECRET';
+  stream.write('http://127.0.0.1:3080?token=');
+  assert.deepEqual(output, []);
+  stream.write(sentinel + '\nordinary ');
+  stream.write('tail');
+  stream.end();
+  assert.equal(output.join(''), 'http://127.0.0.1:3080?[redacted]\nordinary tail');
+  const overflow = createSafeOutput(value => output.push(value));
+  overflow.write('x'.repeat(32768));
+  overflow.write(sentinel);
+  overflow.write('\nhttp://127.0.0.1:3080?token=');
+  overflow.write(sentinel);
+  overflow.end();
+  assert.equal(output.join('').includes(sentinel), false);
+  assert.equal(output.at(-2), 'HOST_LOG_LINE_SUPPRESSED\n');
+  assert.equal(output.at(-1), 'http://127.0.0.1:3080?[redacted]');
+});
 
 test('configuration defaults are immutable and input remains unchanged', () => {
   const input = { databasePath: '/tmp/synthetic-ledger.sqlite', limits: { maxActive: 1 } };
@@ -97,8 +136,8 @@ test('version strings and handmade capability lookalikes cannot pass native prov
 
 test('installed public Cordis host fixture validates lifecycle and ten reloads', () => {
   const script = fileURLToPath(new URL('../scripts/host-smoke.mjs', import.meta.url));
-  const result = spawnSync(`${DESKTOP_APP_ROOT}/node_modules/node/bin/node`, [script], {
-    encoding: 'utf8', timeout: 20000,
+  const result = spawnSync(process.execPath, [script], {
+    encoding: 'utf8', timeout: 20000, env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin' },
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   const report = JSON.parse(result.stdout.trim().split('\n').at(-1));
