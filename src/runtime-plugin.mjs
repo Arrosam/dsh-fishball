@@ -1,3 +1,4 @@
+import { types } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { BootstrapError, Config, record, validateConfig } from './config.mjs';
 import { requireHost, resolveHostSource } from './host-probe.mjs';
@@ -23,12 +24,13 @@ const { HostConnectionService } = await import(pathToFileURL(
 // RPC JSON never contain the key, raw identity or authority-bearing handles.
 export function createRuntimePlugin({ identity, encryptionKey, hostPermission = () => false,
   runtimeLimits = {}, forbiddenSecrets = [], previewResolver, previewTtlMs,
-  memory, worker, reviewerInstaller, results, automationInstaller, notifications } = {}) {
+  memory, worker, installedWorkerInstaller, reviewerInstaller, results, automationInstaller, notifications } = {}) {
   if (identity !== undefined && typeof identity !== 'function' ||
       encryptionKey !== undefined && typeof encryptionKey !== 'function' || typeof hostPermission !== 'function') {
     throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
   }
   if ((previewResolver === undefined) !== (previewTtlMs === undefined) || previewResolver !== undefined && (typeof previewResolver !== 'function' || !Number.isSafeInteger(previewTtlMs) || previewTtlMs < 1 || previewTtlMs > 60000) || reviewerInstaller !== undefined && typeof reviewerInstaller !== 'function') throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+  if (installedWorkerInstaller !== undefined && (typeof installedWorkerInstaller !== 'function' || worker !== undefined || previewResolver !== undefined || previewTtlMs !== undefined || !memory)) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
   if (memory !== undefined) {
     record(memory, ['namespaceRef', 'tokenize', 'byteLimit', 'tokenLimit'], 'RUNTIME_ADAPTER_INVALID');
     referenceCheck(memory.namespaceRef);
@@ -65,19 +67,39 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
     } catch { throw new BootstrapError('RUNTIME_ADAPTER_UNAVAILABLE'); }
     ctx.effect(function* () {
       const owner = Object.freeze({}), coordinatorHandle = Object.freeze({}), hostHandle = Object.freeze({});
-      let store;
+      let store, installed, installedSealed = false;
+      const effectivePermission = value => {
+        if (!installedWorkerInstaller) return hostPermission(value);
+        if (!installed || installedSealed) return false;
+        try { return installed.hostPermission(value) === true; } catch { installedSealed = true; return false; }
+      };
       try {
         store = new RuntimeStore({ databasePath: config.databasePath, encryptionKey: key,
           principals: [{ handle: owner, role: 'owner', scope },
             { handle: coordinatorHandle, role: 'coordinator', scope }, { handle: hostHandle, role: 'host', scope }],
-          limits: { ...config.limits, ...runtimeLimits }, hostPermission, forbiddenSecrets });
+          limits: { ...config.limits, ...runtimeLimits }, hostPermission: effectivePermission, forbiddenSecrets });
       } finally { key.fill(0); }
       let active = true, bridge, manager, preview, reviewerDisposer, automationDisposer, router, schedules;
       const chats = new Set(), scheduleTokens = new Map();
       const alive = () => active && ctx.fiber.state === 2 && ctx.fiber.uid !== null;
       const assertAlive = () => { if (!alive()) throw new BootstrapError('SERVICE_DISPOSED'); };
+      let receiptListener, receiptSubscriptionUsed = false, nativeCompositionAttempted = false;
+      const frozenCopy = value => { const copy = structuredClone(value); const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; }; return freeze(copy); };
+      const observe = (operation, input, invoke) => {
+        const captured = frozenCopy(input);
+        const publish = receipt => {
+          if (receiptListener) {
+            try { const result = receiptListener(frozenCopy({ operation, input: captured, receipt })); if (types.isPromise(result)) { result.catch(() => {}); throw new Error(); } }
+            catch { installedSealed = true; throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); }
+          }
+          return receipt;
+        };
+        const receipt = invoke();
+        return receipt instanceof Promise ? receipt.then(publish) : publish(receipt);
+      };
+      const installedAlive = () => alive() && !installedSealed;
       yield async () => {
-        active = false; bridge?.deactivate(); preview?.dispose();
+        active = false; installedSealed = true; receiptListener = undefined; bridge?.deactivate(); preview?.dispose();
         let failed = false;
         try { schedules?.dispose(); } catch { failed = true; }
         scheduleTokens.clear();
@@ -86,6 +108,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         try { router?.dispose(); } catch { failed = true; }
         try { await automationDisposer?.(); } catch { failed = true; }
         try { await reviewerDisposer?.(); } catch { failed = true; }
+        try { await installed?.dispose(); } catch { failed = true; }
         try { await manager?.close(); } catch { failed = true; }
         try { await bridge?.dispose(); } catch { failed = true; }
         try { store.close(); } catch { failed = true; }
@@ -101,7 +124,65 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         } });
         manager = new WorkerManager({ store, hostHandle, adapter });
       }
-      if (previewResolver) preview = new ApprovalPreview({ store, ownerHandle: owner, resolve: previewResolver, ttlMs: previewTtlMs, isAlive: alive, knownSecrets: forbiddenSecrets });
+      const composeNativeWorker = value => {
+        assertAlive();
+        if (!installedAlive() || nativeCompositionAttempted || manager) throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');
+        record(value, ['worker', 'nativeHooks'], 'RUNTIME_ADAPTER_INVALID');
+        if (!value.worker || !value.nativeHooks) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+        record(value.worker, ['environments', 'permission', 'toolGuard', 'resolveSession'], 'RUNTIME_ADAPTER_INVALID');
+        record(value.nativeHooks, ['setupAgent', 'commitAgent', 'bindExecution', 'validateResult'], 'RUNTIME_ADAPTER_INVALID');
+        if (!value.worker.environments || typeof value.worker.permission !== 'function' || typeof value.worker.toolGuard !== 'function' || value.worker.resolveSession !== undefined && typeof value.worker.resolveSession !== 'function' || ['setupAgent', 'commitAgent', 'bindExecution', 'validateResult'].some(key => typeof value.nativeHooks[key] !== 'function')) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+        nativeCompositionAttempted = true;
+        try {
+          const adapter = new NativeAdapter(ctx, { ...value.worker, nativeHooks: value.nativeHooks, messageAdmission: () => false });
+          manager = new WorkerManager({ store, hostHandle, adapter });
+          return Object.freeze({
+            dispatch: input => observe('dispatch', input, () => manager.dispatch(owner, input)),
+            executeContext: input => observe('execute', input, () => manager.executeContext(owner, input)),
+            query: input => manager.query(owner, input),
+            sessionLink: input => manager.sessionLink(owner, input),
+            captureResult: input => observe('captureResult', input, () => manager.captureValidatedResult(owner, input)),
+            finishExecution: input => observe('finishExecution', input, () => manager.finishExecution(owner, input)),
+          });
+        } catch { installedSealed = true; throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); }
+      };
+      const prepareOwnerPreview = input => {
+        if (!preview) throw new BootstrapError('PREVIEW_UNAVAILABLE');
+        assertAlive(); if (!installedAlive()) throw new BootstrapError('PREVIEW_UNAVAILABLE');
+        return preview.prepare(input);
+      };
+      const grantOwnerPreview = input => {
+        if (!preview) throw new BootstrapError('PREVIEW_UNAVAILABLE');
+        assertAlive(); if (!installedAlive()) throw new BootstrapError('PREVIEW_UNAVAILABLE');
+        return preview.grant(input);
+      };
+      if (installedWorkerInstaller) {
+        try {
+          installed = installedWorkerInstaller(Object.freeze({
+            ctx, snapshotOwner: value => { assertAlive(); return store.snapshot(owner, value); },
+            readOwnerData: value => { assertAlive(); return store.readData(owner, value); },
+            currentPolicy: () => { assertAlive(); return store.getPolicy(owner); },
+            installOwnerPolicy: value => { assertAlive(); return observe('policy', value, () => store.policy(owner, value)); },
+            planOwnerAction: value => { assertAlive(); return observe('plan', value, () => store.planAction(owner, value)); },
+            assertNativeRequestCurrent: value => { assertAlive(); if (!installedAlive()) throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); return store.assertNativeRequestCurrent(hostHandle, value); },
+            composeNativeWorker, prepareOwnerPreview, grantOwnerPreview,
+            subscribeRuntimeReceipts: listener => {
+              if (typeof listener !== 'function' || receiptSubscriptionUsed) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+              receiptSubscriptionUsed = true; receiptListener = listener;
+              return () => { if (receiptListener === listener) receiptListener = undefined; };
+            }, isAlive: installedAlive,
+          }));
+          record(installed, ['hostPermission', 'previewResolver', 'previewTtlMs', 'operations', 'status', 'dispose'], 'RUNTIME_ADAPTER_INVALID');
+          if (['hostPermission', 'previewResolver', 'status', 'dispose'].some(key => typeof installed[key] !== 'function') || !Number.isSafeInteger(installed.previewTtlMs) || installed.previewTtlMs < 1 || installed.previewTtlMs > 60000) throw new Error();
+          const names = ['workerCatalog','workerPolicyPreview','workerPolicyConfirm','workerPlan','workerPreview','workerGrant','workerCreate','workerExecute','workerQuery','workerCapture','workerResult','workerFinish'];
+          record(installed.operations, names, 'RUNTIME_ADAPTER_INVALID');
+          if (names.some(key => typeof installed.operations[key] !== 'function')) throw new Error();
+          // This facade forwards to the one original authoritative store. Only
+          // the actual original grantAction success creates an observer event.
+          const previewStore = Object.freeze({ snapshot: (...args) => store.snapshot(...args), readData: (...args) => store.readData(...args), grantAction: (handle, input) => observe('grant', input, () => store.grantAction(handle, input)) });
+          preview = new ApprovalPreview({ store: previewStore, ownerHandle: owner, resolve: installed.previewResolver, ttlMs: installed.previewTtlMs, isAlive: installedAlive, knownSecrets: forbiddenSecrets });
+        } catch { installedSealed = true; throw new BootstrapError('RUNTIME_ADAPTER_INVALID'); }
+      } else if (previewResolver) preview = new ApprovalPreview({ store, ownerHandle: owner, resolve: previewResolver, ttlMs: previewTtlMs, isAlive: alive, knownSecrets: forbiddenSecrets });
       const pipeline = results && new ResultPipeline(store, { ...results, hostHandle });
       const notifier = notifications && new NotificationService(store, { ...notifications, resultPipeline: pipeline });
       const unavailable = () => { throw new BootstrapError('CAPABILITY_UNAVAILABLE'); };
@@ -237,6 +318,15 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         },
         export: value => store.exportTask(owner, { taskRef: singleRef(value) }),
       };
+      if (installed) {
+        // Successful original mutations notify the single private observer.
+        // Grant already observes its actual store mutation inside Preview.
+        for (const name of ['prepareContext','policy','plan','revoke','revise','control','dispatch','execute','captureResult']) {
+          const original = operations[name];
+          operations[name] = input => observe(name, input, () => original(input));
+        }
+        Object.assign(operations, installed.operations);
+      }
       bridge = installOperatorBridge({ connection: ctx.connection, operations, isAlive: alive });
       // Trusted Cordis consumers see diagnostics only. Neither a worker nor a
       // model-facing tool can borrow an owner command closure from the service.
@@ -244,6 +334,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         if (!alive()) throw new BootstrapError('SERVICE_DISPOSED');
         return Object.freeze({ target: host.target, supported: host.supported,
           schemaVersion: store.diagnostics().schemaVersion, channel: '/df-rpc',
+          ...(installed ? { installedWorkerStatus: frozenCopy(installed.status()) } : {}),
           identityBridge: 'connection-operator', permissionBridge: 'trusted-policy-required',
           automationBridge: router ? 'private-installed-adapters' : 'unavailable',
           scheduleBridge: schedules ? 'owner-approved-ingress-only' : 'unavailable',
@@ -251,7 +342,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
           notificationBridge: notifier ? 'explicit-policy-review-grant' : 'unavailable',
           capabilities: Object.freeze({ memory: !!projection, preview: !!preview, worker: !!manager, delivery: !!pipeline, reviewer: !!reviewerInstaller, automation: !!router, notifications: !!notifier }) });
       } }));
-      yield () => { active = false; bridge?.deactivate(); };
+      yield () => { active = false; installedSealed = true; bridge?.deactivate(); };
     }, 'df.runtime.lifecycle');
   }
   return Object.freeze({ name: 'dsh-fishball', inject: Object.freeze(['connection', 'sessions', 'approval', 'webServer', ...(worker ? ['agents', 'llm', 'tools'] : [])]), Config, apply });

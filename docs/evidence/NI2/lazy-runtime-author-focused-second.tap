@@ -1,0 +1,80 @@
+TAP version 13
+# (node:73978) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: lazy installed runtime receives only closed private seams and boots without optional native services or resolver work
+ok 1 - lazy installed runtime receives only closed private seams and boots without optional native services or resolver work
+  ---
+  duration_ms: 27.803958
+  type: 'test'
+  ...
+# Subtest: original module-prepared context receipt is detached, frozen and synchronously observed exactly once before owner reply
+ok 2 - original module-prepared context receipt is detached, frozen and synchronously observed exactly once before owner reply
+  ---
+  duration_ms: 22.667625
+  type: 'test'
+  ...
+# Subtest: receipt observer failure preserves actual policy commit, exposes bounded uncertainty and seals installed admission
+ok 3 - receipt observer failure preserves actual policy commit, exposes bounded uncertainty and seals installed admission
+  ---
+  duration_ms: 10.818
+  type: 'test'
+  ...
+# Subtest: lazy original preview closures refuse before construction and never mint caller accept or a boot grant
+ok 4 - lazy original preview closures refuse before construction and never mint caller accept or a boot grant
+  ---
+  duration_ms: 9.977292
+  type: 'test'
+  ...
+# Subtest: closed installer rejects authority-bearing extras, missing operations and mixed advanced worker/preview composition
+ok 5 - closed installer rejects authority-bearing extras, missing operations and mixed advanced worker/preview composition
+  ---
+  duration_ms: 25.047916
+  type: 'test'
+  ...
+# (node:73979) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+ok 6 - actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+  ---
+  duration_ms: 40.567791
+  type: 'test'
+  ...
+# Subtest: native runtime reload preserves encrypted intake and missing key/identity fails before storage
+ok 7 - native runtime reload preserves encrypted intake and missing key/identity fails before storage
+  ---
+  duration_ms: 21.15825
+  type: 'test'
+  ...
+# Subtest: unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+ok 8 - unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+  ---
+  duration_ms: 18.732166
+  type: 'test'
+  ...
+# Subtest: partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+ok 9 - partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+  ---
+  duration_ms: 8.728375
+  type: 'test'
+  ...
+# Subtest: trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+ok 10 - trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+  ---
+  duration_ms: 16.72075
+  type: 'test'
+  ...
+# Subtest: scoped Web runtime requires real public WebServer registration and seals old scopes on service loss
+ok 11 - scoped Web runtime requires real public WebServer registration and seals old scopes on service loss
+  ---
+  duration_ms: 19.64
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 350.912833
