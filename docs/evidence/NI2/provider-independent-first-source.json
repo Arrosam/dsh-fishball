@@ -1,0 +1,9 @@
+{
+  "test": "test/testing-provider-adversarial.test.mjs",
+  "sha256": "3ab4368cfb472627bf032a280e3e11efa1348b2a065f9a013e68f2470cfabeaf",
+  "bytes": 23255,
+  "node": "v22.22.2",
+  "purpose": "Preserved complete independent source before first functional test execution",
+  "callback_authority": "explicit synthetic doubles; no normal ledger/CLI authority",
+  "baseline": "provider-independent-before.json"
+}

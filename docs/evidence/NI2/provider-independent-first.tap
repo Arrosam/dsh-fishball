@@ -1,0 +1,368 @@
+TAP version 13
+# (node:74976) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P01 independent provider rejects hidden/symbol/revoked config without executing its descriptors
+ok 1 - P01 independent provider rejects hidden/symbol/revoked config without executing its descriptors
+  ---
+  duration_ms: 1.8485
+  type: 'test'
+  ...
+# Subtest: P02 independent original Loader and idle genuine AgentLoop do not enter a provider iterator
+ok 2 - P02 independent original Loader and idle genuine AgentLoop do not enter a provider iterator
+  ---
+  duration_ms: 45.189375
+  type: 'test'
+  ...
+# Subtest: P03 independent prepared iterator rechecks the private callback only when first next is requested
+ok 3 - P03 independent prepared iterator rechecks the private callback only when first next is requested
+  ---
+  duration_ms: 23.202667
+  type: 'test'
+  ...
+# Subtest: P04 independent UTF8 whole serialized request reaches the actual minimum request cap at N-1/N/N+1
+    # Subtest: messages bytes 511
+    ok 1 - messages bytes 511
+      ---
+      duration_ms: 10.877709
+      type: 'test'
+      ...
+    # Subtest: messages bytes 512
+    ok 2 - messages bytes 512
+      ---
+      duration_ms: 9.10875
+      type: 'test'
+      ...
+    # Subtest: messages bytes 513
+    ok 3 - messages bytes 513
+      ---
+      duration_ms: 6.58375
+      type: 'test'
+      ...
+    1..3
+ok 4 - P04 independent UTF8 whole serialized request reaches the actual minimum request cap at N-1/N/N+1
+  ---
+  duration_ms: 39.667875
+  type: 'test'
+  ...
+# Subtest: P05 independent escaped UTF8 input reaches the actual upper request cap at N-1/N/N+1
+    # Subtest: messages bytes 131071
+    ok 1 - messages bytes 131071
+      ---
+      duration_ms: 14.414792
+      type: 'test'
+      ...
+    # Subtest: messages bytes 131072
+    ok 2 - messages bytes 131072
+      ---
+      duration_ms: 13.59925
+      type: 'test'
+      ...
+    # Subtest: messages bytes 131073
+    ok 3 - messages bytes 131073
+      ---
+      duration_ms: 11.035666
+      type: 'test'
+      ...
+    1..3
+ok 5 - P05 independent escaped UTF8 input reaches the actual upper request cap at N-1/N/N+1
+  ---
+  duration_ms: 52.522166
+  type: 'test'
+  ...
+# Subtest: P06 independent total usage reservation is input JSON plus exact fixed output at N-1/N/N+1
+    # Subtest: reservation difference -1
+    ok 1 - reservation difference -1
+      ---
+      duration_ms: 8.134625
+      type: 'test'
+      ...
+    # Subtest: reservation difference 0
+    ok 2 - reservation difference 0
+      ---
+      duration_ms: 9.36325
+      type: 'test'
+      ...
+    # Subtest: reservation difference 1
+    ok 3 - reservation difference 1
+      ---
+      duration_ms: 8.521042
+      type: 'test'
+      ...
+    1..3
+ok 6 - P06 independent total usage reservation is input JSON plus exact fixed output at N-1/N/N+1
+  ---
+  duration_ms: 38.84425
+  type: 'test'
+  ...
+# Subtest: P07 independent exact content UTF8 boundary and malformed Unicode are checked before permits are minted
+    # Subtest: content bytes 65535
+    ok 1 - content bytes 65535
+      ---
+      duration_ms: 12.6995
+      type: 'test'
+      ...
+    # Subtest: content bytes 65536
+    ok 2 - content bytes 65536
+      ---
+      duration_ms: 11.240417
+      type: 'test'
+      ...
+    # Subtest: content bytes 65537
+    ok 3 - content bytes 65537
+      ---
+      duration_ms: 3.829416
+      type: 'test'
+      ...
+    1..3
+ok 7 - P07 independent exact content UTF8 boundary and malformed Unicode are checked before permits are minted
+  ---
+  duration_ms: 58.242708
+  type: 'test'
+  ...
+# Subtest: P08 independent output/token and safe integer permit limits retain their exact allowed endpoints
+    # Subtest: maxOutputTokens=127
+    ok 1 - maxOutputTokens=127
+      ---
+      duration_ms: 3.990709
+      type: 'test'
+      ...
+    # Subtest: maxOutputTokens=128
+    ok 2 - maxOutputTokens=128
+      ---
+      duration_ms: 5.329375
+      type: 'test'
+      ...
+    # Subtest: maxOutputTokens=4096
+    ok 3 - maxOutputTokens=4096
+      ---
+      duration_ms: 3.3935
+      type: 'test'
+      ...
+    # Subtest: maxOutputTokens=4097
+    ok 4 - maxOutputTokens=4097
+      ---
+      duration_ms: 3.583667
+      type: 'test'
+      ...
+    # Subtest: resultBytes=127
+    ok 5 - resultBytes=127
+      ---
+      duration_ms: 3.623791
+      type: 'test'
+      ...
+    # Subtest: resultBytes=128
+    ok 6 - resultBytes=128
+      ---
+      duration_ms: 3.419666
+      type: 'test'
+      ...
+    # Subtest: resultBytes=16384
+    ok 7 - resultBytes=16384
+      ---
+      duration_ms: 3.471625
+      type: 'test'
+      ...
+    # Subtest: resultBytes=16385
+    ok 8 - resultBytes=16385
+      ---
+      duration_ms: 3.638
+      type: 'test'
+      ...
+    # Subtest: requestBytes=511
+    ok 9 - requestBytes=511
+      ---
+      duration_ms: 3.444666
+      type: 'test'
+      ...
+    # Subtest: requestBytes=512
+    ok 10 - requestBytes=512
+      ---
+      duration_ms: 3.402375
+      type: 'test'
+      ...
+    # Subtest: requestBytes=131072
+    ok 11 - requestBytes=131072
+      ---
+      duration_ms: 3.818084
+      type: 'test'
+      ...
+    # Subtest: requestBytes=131073
+    ok 12 - requestBytes=131073
+      ---
+      duration_ms: 3.241792
+      type: 'test'
+      ...
+    # Subtest: usageUnits=0
+    ok 13 - usageUnits=0
+      ---
+      duration_ms: 3.387
+      type: 'test'
+      ...
+    # Subtest: usageUnits=1
+    ok 14 - usageUnits=1
+      ---
+      duration_ms: 4.238666
+      type: 'test'
+      ...
+    # Subtest: usageUnits=100000000
+    ok 15 - usageUnits=100000000
+      ---
+      duration_ms: 3.592584
+      type: 'test'
+      ...
+    # Subtest: usageUnits=100000001
+    ok 16 - usageUnits=100000001
+      ---
+      duration_ms: 3.710666
+      type: 'test'
+      ...
+    # Subtest: usageUnits=1.5
+    ok 17 - usageUnits=1.5
+      ---
+      duration_ms: 3.466875
+      type: 'test'
+      ...
+    # Subtest: usageUnits=NaN
+    ok 18 - usageUnits=NaN
+      ---
+      duration_ms: 3.637041
+      type: 'test'
+      ...
+    # Subtest: usageUnits=Infinity
+    ok 19 - usageUnits=Infinity
+      ---
+      duration_ms: 3.480958
+      type: 'test'
+      ...
+    # Subtest: usageUnits=9007199254740992
+    ok 20 - usageUnits=9007199254740992
+      ---
+      duration_ms: 3.504375
+      type: 'test'
+      ...
+    1..20
+ok 8 - P08 independent output/token and safe integer permit limits retain their exact allowed endpoints
+  ---
+  duration_ms: 89.754375
+  type: 'test'
+  ...
+# Subtest: P09 independent issue refuses opaque input descriptor tricks without authority callback or reflection traps
+ok 9 - P09 independent issue refuses opaque input descriptor tricks without authority callback or reflection traps
+  ---
+  duration_ms: 22.333334
+  type: 'test'
+  ...
+# Subtest: P10 independent partial consumption is already charged and cannot be retried after iterator return or abort
+ok 10 - P10 independent partial consumption is already charged and cannot be retried after iterator return or abort
+  ---
+  duration_ms: 26.524416
+  type: 'test'
+  ...
+# Subtest: P11 independent source callback seal/disposal synchronously defeats the final source gate
+    # Subtest: seal
+    ok 1 - seal
+      ---
+      duration_ms: 20.531917
+      type: 'test'
+      ...
+    # Subtest: entry-dispose
+    ok 2 - entry-dispose
+      ---
+      duration_ms: 21.402958
+      type: 'test'
+      ...
+    1..2
+ok 11 - P11 independent source callback seal/disposal synchronously defeats the final source gate
+  ---
+  duration_ms: 42.274167
+  type: 'test'
+  ...
+# Subtest: P12 independent current callback Promise/thenable never becomes synchronous consent and preserves redaction
+    # Subtest: false
+    ok 1 - false
+      ---
+      duration_ms: 18.890292
+      type: 'test'
+      ...
+    # Subtest: throw
+    ok 2 - throw
+      ---
+      duration_ms: 19.364125
+      type: 'test'
+      ...
+    # Subtest: promise
+    ok 3 - promise
+      ---
+      duration_ms: 20.655584
+      type: 'test'
+      ...
+    # Subtest: thenable
+    ok 4 - thenable
+      ---
+      duration_ms: 18.271292
+      type: 'test'
+      ...
+    1..4
+ok 12 - P12 independent current callback Promise/thenable never becomes synchronous consent and preserves redaction
+  ---
+  duration_ms: 77.705292
+  type: 'test'
+  ...
+# Subtest: P13 independent wrong genuine agent cannot use another native session permit; unrelated route still works
+ok 13 - P13 independent wrong genuine agent cannot use another native session permit; unrelated route still works
+  ---
+  duration_ms: 25.728042
+  type: 'test'
+  ...
+# Subtest: P14 independent prepared registration cannot revive after topology reversion; explicit own reload is separate
+ok 14 - P14 independent prepared registration cannot revive after topology reversion; explicit own reload is separate
+  ---
+  duration_ms: 40.093791
+  type: 'test'
+  ...
+# Subtest: P15 independent aborted request and unknown string proof fields refuse before private current callback
+    # Subtest: already-aborted
+    ok 1 - already-aborted
+      ---
+      duration_ms: 4.009042
+      type: 'test'
+      ...
+    # Subtest: extra-field
+    ok 2 - extra-field
+      ---
+      duration_ms: 6.330375
+      type: 'test'
+      ...
+    # Subtest: extra-user-source
+    ok 3 - extra-user-source
+      ---
+      duration_ms: 6.278541
+      type: 'test'
+      ...
+    # Subtest: extra-content-block
+    ok 4 - extra-content-block
+      ---
+      duration_ms: 5.973125
+      type: 'test'
+      ...
+    # Subtest: system-id-129
+    ok 5 - system-id-129
+      ---
+      duration_ms: 7.729625
+      type: 'test'
+      ...
+    1..5
+ok 15 - P15 independent aborted request and unknown string proof fields refuse before private current callback
+  ---
+  duration_ms: 41.830292
+  type: 'test'
+  ...
+1..15
+# tests 58
+# suites 0
+# pass 58
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 819.680167

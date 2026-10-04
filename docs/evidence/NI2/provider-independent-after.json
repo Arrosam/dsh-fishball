@@ -1,0 +1,1684 @@
+{
+  "scope": "source-owned deterministic public no-listener fixture only; no ledger/CLI/provider-quality/CODE acceptance",
+  "recorded_at_utc": "2026-10-04T21:58:43.015949+00:00",
+  "author_logical_unit": "6f7d49e",
+  "node": "v22.22.2",
+  "platform": "darwin-arm64",
+  "source": {
+    "path": "test/testing-provider-adversarial.test.mjs",
+    "sha256": "3ab4368cfb472627bf032a280e3e11efa1348b2a065f9a013e68f2470cfabeaf",
+    "bytes": 23255,
+    "unchanged_from_first_snapshot": true
+  },
+  "runs": [
+    {
+      "kind": "independent",
+      "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test test/testing-provider-adversarial.test.mjs",
+      "redirect": "> docs/evidence/NI2/provider-independent-first.tap 2>&1",
+      "evidence": "docs/evidence/NI2/provider-independent-first.tap",
+      "sha256": "79e86afa42f6fbcf06ea540e31a9fffb14fd5d0a4d0c9e799d1ec92d92c1725b",
+      "result": {
+        "tests": 58,
+        "suites": 0,
+        "pass": 58,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 819.680167,
+        "top_level_tests": 15,
+        "nested_tests": 43,
+        "exit_code": 0
+      }
+    },
+    {
+      "kind": "authored",
+      "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test test/testing-provider.test.mjs",
+      "redirect": "> docs/evidence/NI2/provider-independent-authored.tap 2>&1",
+      "evidence": "docs/evidence/NI2/provider-independent-authored.tap",
+      "sha256": "45a8259232271e2692b7c64de4c64ad49b6d2cb353e6bde0458344b921f530ad",
+      "result": {
+        "tests": 21,
+        "suites": 0,
+        "pass": 21,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 559.510167,
+        "top_level_tests": 8,
+        "nested_tests": 13,
+        "exit_code": 0
+      }
+    }
+  ],
+  "syntax": {
+    "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --check test/testing-provider-adversarial.test.mjs",
+    "exit_code": 0,
+    "evidence": "docs/evidence/NI2/provider-independent-syntax.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "author_checks": [
+    {
+      "path": "src/testing-provider.mjs",
+      "expected": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "matches": true
+    },
+    {
+      "path": "package.json",
+      "expected": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "matches": true
+    },
+    {
+      "path": "test/testing-provider.test.mjs",
+      "expected": "50b7f2022a8360fee2bdf5f325cd6be3fd50432612f5b8b375b01d04691a3baf",
+      "sha256": "50b7f2022a8360fee2bdf5f325cd6be3fd50432612f5b8b375b01d04691a3baf",
+      "matches": true
+    },
+    {
+      "path": "test/installation-adversarial.test.mjs",
+      "expected": "206d3891b188886f5f25b0ec11a48a7006eeae79b3b9795072ed0aedbc3328e1",
+      "sha256": "206d3891b188886f5f25b0ec11a48a7006eeae79b3b9795072ed0aedbc3328e1",
+      "matches": true
+    },
+    {
+      "path": "test/portability-adversarial.test.mjs",
+      "expected": "ab3470640041453a930ec30c023817351c9420194c973ee2809c86f6eedf786a",
+      "sha256": "ab3470640041453a930ec30c023817351c9420194c973ee2809c86f6eedf786a",
+      "matches": true
+    },
+    {
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "expected": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "matches": true
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "expected": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "expected": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/host-interface-findings.md",
+      "expected": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8",
+      "sha256": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-hold.md",
+      "expected": "f015ffccf1ed8ad417270e96273eb4fff3da2e4b02eb0c1fb62ceaed2931ecb7",
+      "sha256": "f015ffccf1ed8ad417270e96273eb4fff3da2e4b02eb0c1fb62ceaed2931ecb7",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-checks.json",
+      "expected": "bd231d4e9310f10fe962537d383a7450c9f697c6562b8f10a56a7f386ab84f66",
+      "sha256": "bd231d4e9310f10fe962537d383a7450c9f697c6562b8f10a56a7f386ab84f66",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-first.tap",
+      "expected": "bb5693a732c994103ac9881fd75d568cb89152af5f45514148123e8d71b10ac2",
+      "sha256": "bb5693a732c994103ac9881fd75d568cb89152af5f45514148123e8d71b10ac2",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-second.tap",
+      "expected": "a25b7e1930c0c19fc9db6f873b112b70dd7f7ed99556bdebc9683f26cbe03ba7",
+      "sha256": "a25b7e1930c0c19fc9db6f873b112b70dd7f7ed99556bdebc9683f26cbe03ba7",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-third.tap",
+      "expected": "837f07b7008c7dda69aaaa41f84e2e4145a7751fc4f055d532b1f4c3d6a5732a",
+      "sha256": "837f07b7008c7dda69aaaa41f84e2e4145a7751fc4f055d532b1f4c3d6a5732a",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-fourth.tap",
+      "expected": "19d716083ac23b2e578592b070388948adf1489c9a8e084df933cf29d8d5b7cb",
+      "sha256": "19d716083ac23b2e578592b070388948adf1489c9a8e084df933cf29d8d5b7cb",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-final.tap",
+      "expected": "f4c8b3b6132dbd3d20eee05e5849a2a34e4a5fd96806c3cbb1d2b90e1286a43b",
+      "sha256": "f4c8b3b6132dbd3d20eee05e5849a2a34e4a5fd96806c3cbb1d2b90e1286a43b",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-metadata-author-first.tap",
+      "expected": "34909d876fe00af16b118efa492a57cf048a15a700dc73a5a95e958796f8c405",
+      "sha256": "34909d876fe00af16b118efa492a57cf048a15a700dc73a5a95e958796f8c405",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-metadata-author-final.tap",
+      "expected": "89178ec7e01586e5ba426f4303524d5d9022a7e49271cf4898ed318e6d18d640",
+      "sha256": "89178ec7e01586e5ba426f4303524d5d9022a7e49271cf4898ed318e6d18d640",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-metadata-fixture-finding.md",
+      "expected": "8b35d4f38e977f40c5dadebc996b321b4b52e1213b5cbcb84efbca0282d5d978",
+      "sha256": "8b35d4f38e977f40c5dadebc996b321b4b52e1213b5cbcb84efbca0282d5d978",
+      "matches": true
+    }
+  ],
+  "rows": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "expected": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+      "bytes": 24077,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+      "expected": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683",
+      "sha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683",
+      "bytes": 1086,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "expected": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "bytes": 60361,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts",
+      "expected": "87149646f2227b818f9bdef4980fedc0539572b4574b63d75e1bbb7702390acb",
+      "sha256": "87149646f2227b818f9bdef4980fedc0539572b4574b63d75e1bbb7702390acb",
+      "bytes": 2744,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "expected": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27",
+      "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27",
+      "bytes": 1274,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cosmokit/lib/index.js",
+      "expected": "ba44c0871656e4c7cac2c3c8a2ff644e0d2eb9d6bda7f6355866d686d513268e",
+      "sha256": "ba44c0871656e4c7cac2c3c8a2ff644e0d2eb9d6bda7f6355866d686d513268e",
+      "bytes": 17160,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cosmokit/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cosmokit/package.json",
+      "expected": "a1a35adca3eb1f6a79c358a47d14b3dc56a5112b08fdb1172fe15ed2cc73bb57",
+      "sha256": "a1a35adca3eb1f6a79c358a47d14b3dc56a5112b08fdb1172fe15ed2cc73bb57",
+      "bytes": 747,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cosmokit/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "expected": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+      "bytes": 72994,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json",
+      "expected": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2",
+      "sha256": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2",
+      "bytes": 2014,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "expected": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+      "bytes": 28207,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "expected": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+      "bytes": 20779,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+      "expected": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9",
+      "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9",
+      "bytes": 1985,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/index.js",
+      "expected": "14feb59256b891982b2017d73ed03ee65e2a7365f48e4902a856acb0e52d5eb0",
+      "sha256": "14feb59256b891982b2017d73ed03ee65e2a7365f48e4902a856acb0e52d5eb0",
+      "bytes": 1161,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/package.json",
+      "expected": "6bf63c0d783e25fe2a0f8ca402924a22e4047c313101c863879453a2aeb82d4c",
+      "sha256": "6bf63c0d783e25fe2a0f8ca402924a22e4047c313101c863879453a2aeb82d4c",
+      "bytes": 835,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-compaction-image-offload/lib/types/project-message.js",
+      "expected": "8f8341afd28e967df5aa57f5f4d3d7c9a386fee39c91f4899f779c470ae3198b",
+      "sha256": "8f8341afd28e967df5aa57f5f4d3d7c9a386fee39c91f4899f779c470ae3198b",
+      "bytes": 1605,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-compaction-image-offload/lib/types/project-message.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-compaction-image-offload/lib/types/projection.js",
+      "expected": "205b873f17bd73e96f474e9f2bae3dd92375b6e29d706f34bee24e869507e113",
+      "sha256": "205b873f17bd73e96f474e9f2bae3dd92375b6e29d706f34bee24e869507e113",
+      "bytes": 2613,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-compaction-image-offload/lib/types/projection.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-compaction-image-offload/package.json",
+      "expected": "4b133c9d1bd1e3ae4278f68a3f1b97cd16092d784c8da7e53e8e67760d11dbde",
+      "sha256": "4b133c9d1bd1e3ae4278f68a3f1b97cd16092d784c8da7e53e8e67760d11dbde",
+      "bytes": 1902,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-compaction-image-offload/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "expected": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+      "bytes": 103333,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "expected": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55",
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55",
+      "bytes": 22871,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+      "expected": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc",
+      "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc",
+      "bytes": 2082,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-sandbox/lib/index.js",
+      "expected": "b56373befbfcfe281c17c8892e9a4b2cdcb96851290b3ed0ff56b08915e2f743",
+      "sha256": "b56373befbfcfe281c17c8892e9a4b2cdcb96851290b3ed0ff56b08915e2f743",
+      "bytes": 15210,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-sandbox/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-sandbox/package.json",
+      "expected": "3420770fea90a4c89249c72bae3ff2150fcca0b8ac5a388ded7970292353fb22",
+      "sha256": "3420770fea90a4c89249c72bae3ff2150fcca0b8ac5a388ded7970292353fb22",
+      "bytes": 1185,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-sandbox/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "expected": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca",
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca",
+      "bytes": 12151,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "expected": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c",
+      "sha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c",
+      "bytes": 883,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-catalog/lib/index.js",
+      "expected": "836bbb772ab505c299f1a4a246164c50c7c08b67ab0d17f1251d7ea2cd8c1818",
+      "sha256": "836bbb772ab505c299f1a4a246164c50c7c08b67ab0d17f1251d7ea2cd8c1818",
+      "bytes": 5717,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-catalog/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-catalog/lib/types/message-projections.js",
+      "expected": "c63245bf0c22fbb6bca4de7029437611bac766ca2527e89012f9a6a42c4f907d",
+      "sha256": "c63245bf0c22fbb6bca4de7029437611bac766ca2527e89012f9a6a42c4f907d",
+      "bytes": 436,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-catalog/lib/types/message-projections.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-catalog/package.json",
+      "expected": "fa947e48aceeb5d0b0ad5e5f1feb3301d7a906b386beba6a5448d404816ab243",
+      "sha256": "fa947e48aceeb5d0b0ad5e5f1feb3301d7a906b386beba6a5448d404816ab243",
+      "bytes": 1557,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-catalog/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v0-to-v1/lib/index.js",
+      "expected": "1b3bff6aaf28ca62a864cf97b9aa9aa45ab76de5e459f7881ba4bc8de73490b1",
+      "sha256": "1b3bff6aaf28ca62a864cf97b9aa9aa45ab76de5e459f7881ba4bc8de73490b1",
+      "bytes": 104888,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v0-to-v1/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v0-to-v1/package.json",
+      "expected": "26e9d343a44dc8426d5145205918eb8ee7dca773d5b78a242f67c433f40ea6cb",
+      "sha256": "26e9d343a44dc8426d5145205918eb8ee7dca773d5b78a242f67c433f40ea6cb",
+      "bytes": 1423,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v0-to-v1/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v1-to-v2/lib/index.js",
+      "expected": "b2b401d880bb000017ba8663c4448b501427b23a1cd2f9fdb04cb7ec9d763eff",
+      "sha256": "b2b401d880bb000017ba8663c4448b501427b23a1cd2f9fdb04cb7ec9d763eff",
+      "bytes": 33614,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v1-to-v2/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v1-to-v2/package.json",
+      "expected": "ac8420c79385a17b5da8f30728468e177dacbd1e968a65de3514672865366a8b",
+      "sha256": "ac8420c79385a17b5da8f30728468e177dacbd1e968a65de3514672865366a8b",
+      "bytes": 1541,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v1-to-v2/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v2-to-v3/lib/index.js",
+      "expected": "0dc56fb447e9046fc25995bcd08dbac26e832eba6e9eb583ef49d26467c27cd7",
+      "sha256": "0dc56fb447e9046fc25995bcd08dbac26e832eba6e9eb583ef49d26467c27cd7",
+      "bytes": 36092,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v2-to-v3/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v2-to-v3/package.json",
+      "expected": "bf4a5e4a9916c76f945ac0ab7970e292730fad5122f1129d87d6c5a9cac7cfb5",
+      "sha256": "bf4a5e4a9916c76f945ac0ab7970e292730fad5122f1129d87d6c5a9cac7cfb5",
+      "bytes": 1459,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v2-to-v3/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v3-to-v4/lib/index.js",
+      "expected": "382a3f28b95e0b9504969ac6f407f909aef0ba4699c3175d36c0ef91b31cfde2",
+      "sha256": "382a3f28b95e0b9504969ac6f407f909aef0ba4699c3175d36c0ef91b31cfde2",
+      "bytes": 73014,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v3-to-v4/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v3-to-v4/package.json",
+      "expected": "90518accbd57195ad10624ef7abb574a2d1083189bd84d74359e7f9a0aa0efc1",
+      "sha256": "90518accbd57195ad10624ef7abb574a2d1083189bd84d74359e7f9a0aa0efc1",
+      "bytes": 1400,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format-v3-to-v4/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format/lib/index.js",
+      "expected": "6c7417ec2cd555e2781197d91c4566c88ffcf2728f362d7a2937859be57226ec",
+      "sha256": "6c7417ec2cd555e2781197d91c4566c88ffcf2728f362d7a2937859be57226ec",
+      "bytes": 21069,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format/package.json",
+      "expected": "3c7dfba9e2100404db7cba188cdf2b3638a3d7362ecb5d178009cb648ffbcf49",
+      "sha256": "3c7dfba9e2100404db7cba188cdf2b3638a3d7362ecb5d178009cb648ffbcf49",
+      "bytes": 928,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-format/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "expected": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b",
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b",
+      "bytes": 142847,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json",
+      "expected": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f",
+      "sha256": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f",
+      "bytes": 1568,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/index.js",
+      "expected": "cc0b6d3a224133af611b428d5a49020e300f86c3b4ba28037aeb219029bde3eb",
+      "sha256": "cc0b6d3a224133af611b428d5a49020e300f86c3b4ba28037aeb219029bde3eb",
+      "bytes": 12920,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/package.json",
+      "expected": "ba6bd5ccbf6bb722de342973294bf4a9e1d0c68e7977fe7e7a53e118a04b0c32",
+      "sha256": "ba6bd5ccbf6bb722de342973294bf4a9e1d0c68e7977fe7e7a53e118a04b0c32",
+      "bytes": 1313,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "expected": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8",
+      "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8",
+      "bytes": 20021,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+      "expected": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742",
+      "sha256": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742",
+      "bytes": 1272,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "expected": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+      "bytes": 89972,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "expected": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c",
+      "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c",
+      "bytes": 1553,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "expected": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57",
+      "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57",
+      "bytes": 17395,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "expected": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656",
+      "sha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656",
+      "bytes": 1108,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-timeout/lib/index.js",
+      "expected": "744fdb4f79c8d513c6d4014a018949cfb2f02f4dde4621167302c5467c3994ec",
+      "sha256": "744fdb4f79c8d513c6d4014a018949cfb2f02f4dde4621167302c5467c3994ec",
+      "bytes": 5418,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-timeout/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-timeout/package.json",
+      "expected": "15cf7ea8fe53c9bb3c0cec64425ccb8eddea71a8df97a8a815a3f5598c7c606e",
+      "sha256": "15cf7ea8fe53c9bb3c0cec64425ccb8eddea71a8df97a8a815a3f5598c7c606e",
+      "bytes": 920,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-timeout/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "expected": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7",
+      "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7",
+      "bytes": 158002,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "expected": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee",
+      "sha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee",
+      "bytes": 2241,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js",
+      "expected": "f7e0fa4b750267f6adaa1b901be7987f0d830800ec3a05f247251bf77de0b809",
+      "sha256": "f7e0fa4b750267f6adaa1b901be7987f0d830800ec3a05f247251bf77de0b809",
+      "bytes": 12267,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-typert-protocol/package.json",
+      "expected": "aa690b12e66ed0cd61d90c62e3e44b9eefb0874191d132d8872187f7dc402e9f",
+      "sha256": "aa690b12e66ed0cd61d90c62e3e44b9eefb0874191d132d8872187f7dc402e9f",
+      "bytes": 1059,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-typert-protocol/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "expected": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b",
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b",
+      "bytes": 8478,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+      "expected": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e",
+      "sha256": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e",
+      "bytes": 1767,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-crypto/lib/index.js",
+      "expected": "640b26c8e5a1156c6c8e8749a22f805c9c0e34444778eb4ee9529be3e88ec862",
+      "sha256": "640b26c8e5a1156c6c8e8749a22f805c9c0e34444778eb4ee9529be3e88ec862",
+      "bytes": 1433,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-crypto/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-crypto/package.json",
+      "expected": "b89128d9a6456a908df1454943080f3ec2095ec8629a1094f839c7239e31df2f",
+      "sha256": "b89128d9a6456a908df1454943080f3ec2095ec8629a1094f839c7239e31df2f",
+      "bytes": 843,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-crypto/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/index.js",
+      "expected": "4322a2aacdfe38476d2bbc62338120beea1e1660346d7db5b6c1e1f927a26b7c",
+      "sha256": "4322a2aacdfe38476d2bbc62338120beea1e1660346d7db5b6c1e1f927a26b7c",
+      "bytes": 29627,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/package.json",
+      "expected": "1b99fe57ce64671654386aff410e881156b9231fc7be8b5d3b437f153e7141f1",
+      "sha256": "1b99fe57ce64671654386aff410e881156b9231fc7be8b5d3b437f153e7141f1",
+      "bytes": 848,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.js",
+      "expected": "e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646",
+      "sha256": "e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646",
+      "bytes": 2263,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/package.json",
+      "expected": "e8aebe0548e3fd3e733b03476a0a6531076ba40678137421ecd7fb191792d50a",
+      "sha256": "e8aebe0548e3fd3e733b03476a0a6531076ba40678137421ecd7fb191792d50a",
+      "bytes": 1169,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/schemastery/lib/index.mjs",
+      "expected": "cfcbe46c7416bdb35ce891c252152bbf519e08199bede5930dd7cb880c65f1ef",
+      "sha256": "cfcbe46c7416bdb35ce891c252152bbf519e08199bede5930dd7cb880c65f1ef",
+      "bytes": 22988,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/schemastery/lib/index.mjs"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/schemastery/package.json",
+      "expected": "277eb34d37279ff52d0bbe93704130d722517f400e9cda39df28e7bd3ec01d8d",
+      "sha256": "277eb34d37279ff52d0bbe93704130d722517f400e9cda39df28e7bd3ec01d8d",
+      "bytes": 948,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/schemastery/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@koromix/koffi-darwin-arm64/darwin_arm64/koffi.node",
+      "expected": "571168fbd60ffe51953b82e305cd721da603577649e8e58584f25233012253be",
+      "sha256": "571168fbd60ffe51953b82e305cd721da603577649e8e58584f25233012253be",
+      "bytes": 1222872,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@koromix/koffi-darwin-arm64/darwin_arm64/koffi.node"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@koromix/koffi-darwin-arm64/index.js",
+      "expected": "fbef0669513b53c6d0e6f93e08ab3de02a46e56439416ae96833675e074fe80b",
+      "sha256": "fbef0669513b53c6d0e6f93e08ab3de02a46e56439416ae96833675e074fe80b",
+      "bytes": 209,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@koromix/koffi-darwin-arm64/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@koromix/koffi-darwin-arm64/package.json",
+      "expected": "5af2fc97fdceee8c2482029e3e4d273b86ae570f57a2a0101f10ca0ec2ff622f",
+      "sha256": "5af2fc97fdceee8c2482029e3e4d273b86ae570f57a2a0101f10ca0ec2ff622f",
+      "bytes": 653,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@koromix/koffi-darwin-arm64/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/koffi/index.js",
+      "expected": "34508972d2e18b79fd4a289943568a68bbaf18badd2e82a25c8deb1af27f6225",
+      "sha256": "34508972d2e18b79fd4a289943568a68bbaf18badd2e82a25c8deb1af27f6225",
+      "bytes": 85,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/koffi/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/koffi/package.json",
+      "expected": "c0473aeaf572a612e643489f49ac8e6d1fe26092cf69802567332dc57fdca4c1",
+      "sha256": "c0473aeaf572a612e643489f49ac8e6d1fe26092cf69802567332dc57fdca4c1",
+      "bytes": 2067,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/koffi/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/koffi/src/koffi/index.js",
+      "expected": "9c5a1590ca8ee32166477477b2639a55e91273674fa6d86da259d383918cd087",
+      "sha256": "9c5a1590ca8ee32166477477b2639a55e91273674fa6d86da259d383918cd087",
+      "bytes": 9147,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/koffi/src/koffi/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/koffi/src/koffi/src/static.js",
+      "expected": "3f2b291e2129181c2984e6508b51efa5be30775afbdbafe6c0f4ed076d80d9d1",
+      "sha256": "3f2b291e2129181c2984e6508b51efa5be30775afbdbafe6c0f4ed076d80d9d1",
+      "bytes": 2830,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/koffi/src/koffi/src/static.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/node-addon-native-custom-loader/lib/index.js",
+      "expected": "6d83f4e5426895d40820acf507146226a893c5aefba00a08bf0884446160049e",
+      "sha256": "6d83f4e5426895d40820acf507146226a893c5aefba00a08bf0884446160049e",
+      "bytes": 25080,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/node-addon-native-custom-loader/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/node-addon-native-custom-loader/package.json",
+      "expected": "7dcf9c5e8d1ab160c9915267eb2f21a3f02411ebd7fda89ca033e2a2a8a43393",
+      "sha256": "7dcf9c5e8d1ab160c9915267eb2f21a3f02411ebd7fda89ca033e2a2a8a43393",
+      "bytes": 840,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/node-addon-native-custom-loader/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/node-addon-require-builtin/lib/index.js",
+      "expected": "73966bb0f824b021f77b03f02e00905a532554aad3c6c5a14c2a743aeb4a34a9",
+      "sha256": "73966bb0f824b021f77b03f02e00905a532554aad3c6c5a14c2a743aeb4a34a9",
+      "bytes": 872,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/node-addon-require-builtin/lib/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/node-addon-require-builtin/package.json",
+      "expected": "c156750e8d58cc9115feb5bd3f9eb4e6ec71721a1787f83e0b47602a3998a405",
+      "sha256": "c156750e8d58cc9115feb5bd3f9eb4e6ec71721a1787f83e0b47602a3998a405",
+      "bytes": 1459,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/node-addon-require-builtin/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/compile.js",
+      "expected": "7c4c8bcf404a1c7749cd6f4d765a2882f048c6ae045c8702b2a9e2c79d48ea9b",
+      "sha256": "7c4c8bcf404a1c7749cd6f4d765a2882f048c6ae045c8702b2a9e2c79d48ea9b",
+      "bytes": 3008,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/compile.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/index.js",
+      "expected": "32e7efd49a94a765f6d10a1a0a3c02c50c246def17c80c6f0225f85525d98505",
+      "sha256": "32e7efd49a94a765f6d10a1a0a3c02c50c246def17c80c6f0225f85525d98505",
+      "bytes": 422,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/package.json",
+      "expected": "a046ed85fa09571dba539fee9ef236152d12dabd1f229b014ec3bd2ebaad9000",
+      "sha256": "a046ed85fa09571dba539fee9ef236152d12dabd1f229b014ec3bd2ebaad9000",
+      "bytes": 4142,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/checks.js",
+      "expected": "7543391a9ad5e7df287bbfecaa79844d46af44c75c1de0d43a411d65795d9dd1",
+      "sha256": "7543391a9ad5e7df287bbfecaa79844d46af44c75c1de0d43a411d65795d9dd1",
+      "bytes": 690,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/checks.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/coerce.js",
+      "expected": "fb2efe3b6eacc475c77cbb571b5fb8650d92a10f316dc869e49b722973d83c3c",
+      "sha256": "fb2efe3b6eacc475c77cbb571b5fb8650d92a10f316dc869e49b722973d83c3c",
+      "bytes": 550,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/coerce.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/compat.js",
+      "expected": "0e948b101771cc0e7b753e54b3f5b486929d3db9bd4c09d98fe4ce86271bcf7b",
+      "sha256": "0e948b101771cc0e7b753e54b3f5b486929d3db9bd4c09d98fe4ce86271bcf7b",
+      "bytes": 1090,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/compat.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/deep-partial.js",
+      "expected": "0abffcc9838e04dc6f091229c1d522fbfd43aab9563316b52d3eb8ff2bacf26d",
+      "sha256": "0abffcc9838e04dc6f091229c1d522fbfd43aab9563316b52d3eb8ff2bacf26d",
+      "bytes": 543,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/deep-partial.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/errors.js",
+      "expected": "d32f7c1ef8e2c70072f6f0ec8ba7081bbc331353cc3a7cb4429e5ece91409543",
+      "sha256": "d32f7c1ef8e2c70072f6f0ec8ba7081bbc331353cc3a7cb4429e5ece91409543",
+      "bytes": 2532,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/errors.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/external.js",
+      "expected": "c6b584ae70ba4e7132b2cd78c23ea4ecedc9828abf999edee312372e1fb453d6",
+      "sha256": "c6b584ae70ba4e7132b2cd78c23ea4ecedc9828abf999edee312372e1fb453d6",
+      "bytes": 1101,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/external.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/from-json-schema.js",
+      "expected": "31dc999a26cb6928f5e99ea564d648567e85cf9aa47565198fb6186dbd6c070e",
+      "sha256": "31dc999a26cb6928f5e99ea564d648567e85cf9aa47565198fb6186dbd6c070e",
+      "bytes": 38171,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/from-json-schema.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/in-out.js",
+      "expected": "34370913842ff02d14a9796b11c5ec2af160bdb35a7148edc286e9a9c6fb5c17",
+      "sha256": "34370913842ff02d14a9796b11c5ec2af160bdb35a7148edc286e9a9c6fb5c17",
+      "bytes": 2190,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/in-out.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/iso.js",
+      "expected": "deaa026b7c5302e59719f401248e7866691d8d8a892884dd2b6868b1cb7252d8",
+      "sha256": "deaa026b7c5302e59719f401248e7866691d8d8a892884dd2b6868b1cb7252d8",
+      "bytes": 556,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/iso.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/package.json",
+      "expected": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f",
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f",
+      "bytes": 127,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/parse.js",
+      "expected": "11941573401bbef138842c7a523dff554873343fccbf0e8b0a144259d2d703f1",
+      "sha256": "11941573401bbef138842c7a523dff554873343fccbf0e8b0a144259d2d703f1",
+      "bytes": 1057,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/parse.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/classic/schemas.js",
+      "expected": "2bf4a631a18f734a9a7ab7fc11bcf919214774d2235a312dcec0dd53d0324c32",
+      "sha256": "2bf4a631a18f734a9a7ab7fc11bcf919214774d2235a312dcec0dd53d0324c32",
+      "bytes": 53354,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/classic/schemas.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/api.js",
+      "expected": "03ae6016abc9585e3f3481d6b8d775a95ae4ee65badbde73ca1ed953ff14c0e7",
+      "sha256": "03ae6016abc9585e3f3481d6b8d775a95ae4ee65badbde73ca1ed953ff14c0e7",
+      "bytes": 28953,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/api.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/checks.js",
+      "expected": "bc42543274218aa7ef72192b3218d2a4a399e53df8de240a04d9ff275096f563",
+      "sha256": "bc42543274218aa7ef72192b3218d2a4a399e53df8de240a04d9ff275096f563",
+      "bytes": 19491,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/checks.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/compile.js",
+      "expected": "df28853593428e5a2a8729b09f43baf0998eaae7f1e37797993035187833b054",
+      "sha256": "df28853593428e5a2a8729b09f43baf0998eaae7f1e37797993035187833b054",
+      "bytes": 91611,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/compile.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/core.js",
+      "expected": "c7ce485c97263e42568d16b11bb4a90133221c7e807498a9273d70f41ba16ef6",
+      "sha256": "c7ce485c97263e42568d16b11bb4a90133221c7e807498a9273d70f41ba16ef6",
+      "bytes": 6642,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/core.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/doc.js",
+      "expected": "be4c1b1a1ad247cc70f360a572060edd7e0cea24252c3a319f33d247899c5643",
+      "sha256": "be4c1b1a1ad247cc70f360a572060edd7e0cea24252c3a319f33d247899c5643",
+      "bytes": 1290,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/doc.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/errors.js",
+      "expected": "a0c95ef2f7085b5bc2931f7b566f524b26a0360c8df741e3f87f923745cf9792",
+      "sha256": "a0c95ef2f7085b5bc2931f7b566f524b26a0360c8df741e3f87f923745cf9792",
+      "bytes": 10871,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/errors.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/index.js",
+      "expected": "2a0e452323aa5b75b7d7de4879289e2579b9dd2d6af291c0416ba6806ca2199d",
+      "sha256": "2a0e452323aa5b75b7d7de4879289e2579b9dd2d6af291c0416ba6806ca2199d",
+      "bytes": 690,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/json-schema-generator.js",
+      "expected": "beaeab6faa654e99e443b8a9f5d8a4adc08cd8226f92a0cd32477a58ecfa1807",
+      "sha256": "beaeab6faa654e99e443b8a9f5d8a4adc08cd8226f92a0cd32477a58ecfa1807",
+      "bytes": 3857,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/json-schema-generator.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/json-schema-processors.js",
+      "expected": "b6d2aee72212c076b9cde38da6333591c76a24eb049a4ee4e7bd2b7825d8b817",
+      "sha256": "b6d2aee72212c076b9cde38da6333591c76a24eb049a4ee4e7bd2b7825d8b817",
+      "bytes": 34985,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/json-schema-processors.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/json-schema.js",
+      "expected": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/json-schema.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/memoizer.js",
+      "expected": "18a3188c51229d9189a5408b0b7fbc3e121b55c2b4c3c406d79cb9b77e7ad964",
+      "sha256": "18a3188c51229d9189a5408b0b7fbc3e121b55c2b4c3c406d79cb9b77e7ad964",
+      "bytes": 12517,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/memoizer.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/package.json",
+      "expected": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f",
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f",
+      "bytes": 127,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/parse.js",
+      "expected": "fb05b91ec260f3f484f7c00a177b6126ceb8fd1b09dc90b1200afdffd4d98efd",
+      "sha256": "fb05b91ec260f3f484f7c00a177b6126ceb8fd1b09dc90b1200afdffd4d98efd",
+      "bytes": 8267,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/parse.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/regexes.js",
+      "expected": "24fc98f6fc9175e50ff29d28b040e3b4ac5650de19914d45ee27b853d367ecc6",
+      "sha256": "24fc98f6fc9175e50ff29d28b040e3b4ac5650de19914d45ee27b853d367ecc6",
+      "bytes": 11818,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/regexes.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/registries.js",
+      "expected": "f04d4b2c0bc5b4ac2d6610ea34edf2e5260eade18f20976b79916dcdbeb9fa4d",
+      "sha256": "f04d4b2c0bc5b4ac2d6610ea34edf2e5260eade18f20976b79916dcdbeb9fa4d",
+      "bytes": 1540,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/registries.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/schemas.js",
+      "expected": "e632b655441418f0593153abc6809fd81cf3e0782d810622d0a4fa50ef6e182e",
+      "sha256": "e632b655441418f0593153abc6809fd81cf3e0782d810622d0a4fa50ef6e182e",
+      "bytes": 105968,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/schemas.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/to-json-schema.js",
+      "expected": "85b883eb8f05e9f060c71a39fce7df9345b566af29d5bc9c8fa477fe616a051d",
+      "sha256": "85b883eb8f05e9f060c71a39fce7df9345b566af29d5bc9c8fa477fe616a051d",
+      "bytes": 29029,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/to-json-schema.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/util.js",
+      "expected": "728f52b496620336775eafcdb91c0a574380086e53f215b55c58eedc1422c49c",
+      "sha256": "728f52b496620336775eafcdb91c0a574380086e53f215b55c58eedc1422c49c",
+      "bytes": 34363,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/util.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/versions.js",
+      "expected": "63b38035ff5e2a5a5cfe5665e271af72b0cf9791e770dccf5e99d977064fb96c",
+      "sha256": "63b38035ff5e2a5a5cfe5665e271af72b0cf9791e770dccf5e99d977064fb96c",
+      "bytes": 70,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/versions.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/core/visit.js",
+      "expected": "a804062900869e09ea0b975cfa569fd3c70dc33bad7fc30b63872d451cae29f7",
+      "sha256": "a804062900869e09ea0b975cfa569fd3c70dc33bad7fc30b63872d451cae29f7",
+      "bytes": 6643,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/core/visit.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ar.js",
+      "expected": "eec4016c2b3063ae929617d90ec609e4c425e60c97a954d3a24de0f457b6ec97",
+      "sha256": "eec4016c2b3063ae929617d90ec609e4c425e60c97a954d3a24de0f457b6ec97",
+      "bytes": 5404,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ar.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/az.js",
+      "expected": "5bd03646b9d18b73e71356cd28937e4e6413b806bb23e14689cc88f6f65ff3a6",
+      "sha256": "5bd03646b9d18b73e71356cd28937e4e6413b806bb23e14689cc88f6f65ff3a6",
+      "bytes": 4703,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/az.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/be.js",
+      "expected": "f969afea5d9800a71958a621658943b85a2576a2bfefdd5dea70afc4924d4af4",
+      "sha256": "f969afea5d9800a71958a621658943b85a2576a2bfefdd5dea70afc4924d4af4",
+      "bytes": 6998,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/be.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/bg.js",
+      "expected": "96741333a790320e05aef7286b5b709a4a7c48cfffc50fc5e6acff5b505275e9",
+      "sha256": "96741333a790320e05aef7286b5b709a4a7c48cfffc50fc5e6acff5b505275e9",
+      "bytes": 6029,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/bg.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/bn.js",
+      "expected": "6d8227b52a6864465b7c52a9ef7e09d261d904ec8a619932e15dd9f9f826e8dd",
+      "sha256": "6d8227b52a6864465b7c52a9ef7e09d261d904ec8a619932e15dd9f9f826e8dd",
+      "bytes": 5757,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/bn.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ca.js",
+      "expected": "67f6f38b59a6e3ee81cc5155480465331dd9a142b2471a495503a81dafba0684",
+      "sha256": "67f6f38b59a6e3ee81cc5155480465331dd9a142b2471a495503a81dafba0684",
+      "bytes": 4908,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ca.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ckb.js",
+      "expected": "bdb9ef0cfda4009f8892585a1780fff863cd409931d6f89394c271042c131137",
+      "sha256": "bdb9ef0cfda4009f8892585a1780fff863cd409931d6f89394c271042c131137",
+      "bytes": 5948,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ckb.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/cs.js",
+      "expected": "4ffa0e484ad1842a2c0e5c7f2dfe9160155ff5be4b95ab6e524d3a30a2210488",
+      "sha256": "4ffa0e484ad1842a2c0e5c7f2dfe9160155ff5be4b95ab6e524d3a30a2210488",
+      "bytes": 4953,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/cs.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/da.js",
+      "expected": "29addcd60e88422bed9ed78c6c864220a15c06b31fdb4ab7ad4f87be4098e6ae",
+      "sha256": "29addcd60e88422bed9ed78c6c864220a15c06b31fdb4ab7ad4f87be4098e6ae",
+      "bytes": 4987,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/da.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/de.js",
+      "expected": "f344eb96ba18d9db907f3f9c95897ce2590ab0cde1553c023daffbb1cb5ef6f4",
+      "sha256": "f344eb96ba18d9db907f3f9c95897ce2590ab0cde1553c023daffbb1cb5ef6f4",
+      "bytes": 4774,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/de.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/el.js",
+      "expected": "fdea833aa0a8c381d26216db1521dd7fbc4dccb6d3aa50f9a585ffb975df91eb",
+      "sha256": "fdea833aa0a8c381d26216db1521dd7fbc4dccb6d3aa50f9a585ffb975df91eb",
+      "bytes": 5701,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/el.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/en.js",
+      "expected": "d5930e10d137b048b37823e168e4177947e1f696ada8419c71bb0d32da4333c0",
+      "sha256": "d5930e10d137b048b37823e168e4177947e1f696ada8419c71bb0d32da4333c0",
+      "bytes": 5302,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/en.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/eo.js",
+      "expected": "97797bd22319ecc3f2044da6c305f1114b851803697029ffce2b66644757da3a",
+      "sha256": "97797bd22319ecc3f2044da6c305f1114b851803697029ffce2b66644757da3a",
+      "bytes": 4784,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/eo.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/es.js",
+      "expected": "12e762b921b1e3fdb8e265d2b554de81ce9706ceb23a81527f48ae2dddf355db",
+      "sha256": "12e762b921b1e3fdb8e265d2b554de81ce9706ceb23a81527f48ae2dddf355db",
+      "bytes": 5591,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/es.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/fa.js",
+      "expected": "60e7eeff4c000c85f8420168374344305d3c2110a5f91a2fb672b2a2381eeddf",
+      "sha256": "60e7eeff4c000c85f8420168374344305d3c2110a5f91a2fb672b2a2381eeddf",
+      "bytes": 5343,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/fa.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/fi.js",
+      "expected": "1e72af4193e564cd37dce4a850dc18bc1bcd6ca280f29e9f5f8c6bbab6a2cad9",
+      "sha256": "1e72af4193e564cd37dce4a850dc18bc1bcd6ca280f29e9f5f8c6bbab6a2cad9",
+      "bytes": 5007,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/fi.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/fr-CA.js",
+      "expected": "a2ca0451ff943766bb6a88b392b25447462a1d3ed75c1adda5ddb0bc474bcd42",
+      "sha256": "a2ca0451ff943766bb6a88b392b25447462a1d3ed75c1adda5ddb0bc474bcd42",
+      "bytes": 4749,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/fr-CA.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/fr.js",
+      "expected": "477345d6401d0e4f07794b1a2cff8b78953723f1fc8cfaeb6b660c19be47125a",
+      "sha256": "477345d6401d0e4f07794b1a2cff8b78953723f1fc8cfaeb6b660c19be47125a",
+      "bytes": 5414,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/fr.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/gu.js",
+      "expected": "b1921ac6b4158e6360a8da6099df8bbf2d7bce7c1cf381d5a5e47aa0c74874d2",
+      "sha256": "b1921ac6b4158e6360a8da6099df8bbf2d7bce7c1cf381d5a5e47aa0c74874d2",
+      "bytes": 5930,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/gu.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/he.js",
+      "expected": "1cfff31fac19616d900d1f3febd9690ea87711e13b5be299326ebfd3f33aad4d",
+      "sha256": "1cfff31fac19616d900d1f3febd9690ea87711e13b5be299326ebfd3f33aad4d",
+      "bytes": 12411,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/he.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/hi.js",
+      "expected": "c31e466c2a31dc10ba6a288e1aebf429a6e9566a26918d0240aae058693f6329",
+      "sha256": "c31e466c2a31dc10ba6a288e1aebf429a6e9566a26918d0240aae058693f6329",
+      "bytes": 5940,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/hi.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/hr.js",
+      "expected": "ff2bebef0761f2d6095103d58484e3b95551bc51d56770db8f161b8e0e0ec941",
+      "sha256": "ff2bebef0761f2d6095103d58484e3b95551bc51d56770db8f161b8e0e0ec941",
+      "bytes": 5184,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/hr.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/hu.js",
+      "expected": "9816c21ee0b3be9d973f9e033e9587a608f2d35dd1b984d415b88e03242b0189",
+      "sha256": "9816c21ee0b3be9d973f9e033e9587a608f2d35dd1b984d415b88e03242b0189",
+      "bytes": 4871,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/hu.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/hy.js",
+      "expected": "daf6d0c590d9b061759598ba9f7f97041e2874c7a58da2c64b86f152840d68fa",
+      "sha256": "daf6d0c590d9b061759598ba9f7f97041e2874c7a58da2c64b86f152840d68fa",
+      "bytes": 6720,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/hy.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/id.js",
+      "expected": "e5c23bb0b6f696fa936bafd7969e64738504cf7a5be3ec04b24ae899d4912b58",
+      "sha256": "e5c23bb0b6f696fa936bafd7969e64738504cf7a5be3ec04b24ae899d4912b58",
+      "bytes": 4759,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/id.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/index.js",
+      "expected": "7ea85250d1e7bd9459cda61f38c78757a410d561a5421bb3f08019bba79c9849",
+      "sha256": "7ea85250d1e7bd9459cda61f38c78757a410d561a5421bb3f08019bba79c9849",
+      "bytes": 2607,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/index.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/is.js",
+      "expected": "1cce1285bbf55c8a76303fea0be0fb6d39fbd0ece833137ea23a22f406ac1ae1",
+      "sha256": "1cce1285bbf55c8a76303fea0be0fb6d39fbd0ece833137ea23a22f406ac1ae1",
+      "bytes": 4822,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/is.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/it.js",
+      "expected": "096b497df6c5fe7de4422482b7733e764e4b344e8d7f768a7289556687acdb82",
+      "sha256": "096b497df6c5fe7de4422482b7733e764e4b344e8d7f768a7289556687acdb82",
+      "bytes": 4775,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/it.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ja.js",
+      "expected": "2a6bbbd6dbd573687b22f35873a13cdf730c07423b4ab114e5a8b12d8777146d",
+      "sha256": "2a6bbbd6dbd573687b22f35873a13cdf730c07423b4ab114e5a8b12d8777146d",
+      "bytes": 5054,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ja.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ka.js",
+      "expected": "baf3204123cf4246df654fd1948b6c8da6917e7a06e470aeeaf7c1eaa7003628",
+      "sha256": "baf3204123cf4246df654fd1948b6c8da6917e7a06e470aeeaf7c1eaa7003628",
+      "bytes": 6527,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ka.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/kh.js",
+      "expected": "78c3d1991041bb8c8fc0f7c5d745aae422d4c2e4e8f30bae44f3fef4765900a8",
+      "sha256": "78c3d1991041bb8c8fc0f7c5d745aae422d4c2e4e8f30bae44f3fef4765900a8",
+      "bytes": 111,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/kh.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/km.js",
+      "expected": "e61079f14070dfa9c7b2047eb79f5bea6d4e845f192756d103c121bbd63ee18a",
+      "sha256": "e61079f14070dfa9c7b2047eb79f5bea6d4e845f192756d103c121bbd63ee18a",
+      "bytes": 6509,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/km.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/kn.js",
+      "expected": "884b1b68a1ca02fe9a774b8de9cbfa3486892eea36192699120f57b31f0a1f42",
+      "sha256": "884b1b68a1ca02fe9a774b8de9cbfa3486892eea36192699120f57b31f0a1f42",
+      "bytes": 6512,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/kn.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ko.js",
+      "expected": "11fcef61a2f23e010bf0f569d71be0d49524afc97f3072cc03fdc6fe3ea2f14d",
+      "sha256": "11fcef61a2f23e010bf0f569d71be0d49524afc97f3072cc03fdc6fe3ea2f14d",
+      "bytes": 5109,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ko.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/lt.js",
+      "expected": "d2e67a35a3c6e7241a9eb9c5851e4b5b651ac8b23278854862e6055829946c48",
+      "sha256": "d2e67a35a3c6e7241a9eb9c5851e4b5b651ac8b23278854862e6055829946c48",
+      "bytes": 8223,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/lt.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/mk.js",
+      "expected": "64ddd914c432ba5690d0686bff6603651ce886a891f84823d7dc766c9c980cd1",
+      "sha256": "64ddd914c432ba5690d0686bff6603651ce886a891f84823d7dc766c9c980cd1",
+      "bytes": 5399,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/mk.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ms.js",
+      "expected": "94faf0d306ffa2a4f95e57f3e53060d27220a639b9cb529f00d1d01b6270f045",
+      "sha256": "94faf0d306ffa2a4f95e57f3e53060d27220a639b9cb529f00d1d01b6270f045",
+      "bytes": 4674,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ms.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ne.js",
+      "expected": "6da69989b702ae15baa27b799b6b2b32fd011ba3980a190dd0eccfc9233083d6",
+      "sha256": "6da69989b702ae15baa27b799b6b2b32fd011ba3980a190dd0eccfc9233083d6",
+      "bytes": 5819,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ne.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/nl.js",
+      "expected": "296ced8be508c5f9e82b562049d2974882029bcd5b2ab4ade14401b33ec99909",
+      "sha256": "296ced8be508c5f9e82b562049d2974882029bcd5b2ab4ade14401b33ec99909",
+      "bytes": 4939,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/nl.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/nn.js",
+      "expected": "bae9756817629db30841eb54a27ed9b3c71c2a4208314d8d070be624bd2e9359",
+      "sha256": "bae9756817629db30841eb54a27ed9b3c71c2a4208314d8d070be624bd2e9359",
+      "bytes": 4678,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/nn.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/no.js",
+      "expected": "f358e5586940350ee25a05db184565d23eb1c66903e182ebec812172f31cb55a",
+      "sha256": "f358e5586940350ee25a05db184565d23eb1c66903e182ebec812172f31cb55a",
+      "bytes": 4693,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/no.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ota.js",
+      "expected": "66ed8c3ce00b2e9971ed5a17f002937405d8cdfeb399ebe012db9d2317f42146",
+      "sha256": "66ed8c3ce00b2e9971ed5a17f002937405d8cdfeb399ebe012db9d2317f42146",
+      "bytes": 4723,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ota.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/package.json",
+      "expected": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f",
+      "sha256": "3e3125b5a537a24c3632c1c5c09640ce7bcb3935901b127ad8ae3c37a27f133f",
+      "bytes": 127,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/package.json"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/pl.js",
+      "expected": "b7f82cf9f747785beeec05cd31d3d7493c52bd3647598924141568f148c07222",
+      "sha256": "b7f82cf9f747785beeec05cd31d3d7493c52bd3647598924141568f148c07222",
+      "bytes": 5150,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/pl.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ps.js",
+      "expected": "1c15b81fcce0cdc59dbcca18df5c4ecf4e176fc3fb7668207b9ba54df43cce46",
+      "sha256": "1c15b81fcce0cdc59dbcca18df5c4ecf4e176fc3fb7668207b9ba54df43cce46",
+      "bytes": 5123,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ps.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/pt-BR.js",
+      "expected": "abc52db767b9dd938954776728ea7480cdcab569a5a17664f60e5a2c1d63e60b",
+      "sha256": "abc52db767b9dd938954776728ea7480cdcab569a5a17664f60e5a2c1d63e60b",
+      "bytes": 7024,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/pt-BR.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/pt.js",
+      "expected": "93a820f60d571607bf34b69198f5b24617475584c0b22c0f8d160fcdef096a46",
+      "sha256": "93a820f60d571607bf34b69198f5b24617475584c0b22c0f8d160fcdef096a46",
+      "bytes": 7024,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/pt.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ro.js",
+      "expected": "54751d2866171c9c7ce1a72868dec09efa54d1b2b67401767594c5b360aca38a",
+      "sha256": "54751d2866171c9c7ce1a72868dec09efa54d1b2b67401767594c5b360aca38a",
+      "bytes": 4883,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ro.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ru.js",
+      "expected": "40a019b53bd1684fd4b750db87021520dd5d710f714010c0a594e5bcf5787478",
+      "sha256": "40a019b53bd1684fd4b750db87021520dd5d710f714010c0a594e5bcf5787478",
+      "bytes": 7095,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ru.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/sk.js",
+      "expected": "ae7c49242e70149434c9051dd00209afbd517d98ba54c13692371a5340b616da",
+      "sha256": "ae7c49242e70149434c9051dd00209afbd517d98ba54c13692371a5340b616da",
+      "bytes": 4949,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/sk.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/sl.js",
+      "expected": "490ca48f8aae3aed660758b32856d49a9fc5c7e255dad220e75abaef8c35140b",
+      "sha256": "490ca48f8aae3aed660758b32856d49a9fc5c7e255dad220e75abaef8c35140b",
+      "bytes": 4756,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/sl.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/sv.js",
+      "expected": "448f36996bb0d159489b34ad7d86df03e520a13e43b1c98ea2fb18d7ed4a3c95",
+      "sha256": "448f36996bb0d159489b34ad7d86df03e520a13e43b1c98ea2fb18d7ed4a3c95",
+      "bytes": 4841,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/sv.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ta.js",
+      "expected": "8b6e1bc033fdaefb1acfc7edf88c9f53c3a50cc892066effdab306103e994d42",
+      "sha256": "8b6e1bc033fdaefb1acfc7edf88c9f53c3a50cc892066effdab306103e994d42",
+      "bytes": 6688,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ta.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/tg.js",
+      "expected": "9a5c9a3b18b8ccded28d66033575b22d823df17a7afa8bb9a733f31fe071462f",
+      "sha256": "9a5c9a3b18b8ccded28d66033575b22d823df17a7afa8bb9a733f31fe071462f",
+      "bytes": 5647,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/tg.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/th.js",
+      "expected": "913cc4962ddf5cb54ed694d04b7008493ef401d3333b26426b32f4890712574e",
+      "sha256": "913cc4962ddf5cb54ed694d04b7008493ef401d3333b26426b32f4890712574e",
+      "bytes": 6563,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/th.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/tk.js",
+      "expected": "445abfed18c5a9d79143b02c9cf9c171b41fb5dff8ffc2cb59b7aef7203e5a7f",
+      "sha256": "445abfed18c5a9d79143b02c9cf9c171b41fb5dff8ffc2cb59b7aef7203e5a7f",
+      "bytes": 4458,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/tk.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/tr.js",
+      "expected": "bca07607a27f518f19877dd9c2235fada9c73eb56896f0f6e274781fab71d64e",
+      "sha256": "bca07607a27f518f19877dd9c2235fada9c73eb56896f0f6e274781fab71d64e",
+      "bytes": 4642,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/tr.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ua.js",
+      "expected": "9391169ffbc72f777a83230b6ffcc3f4cf46ab5945ec540de9ef4609dca1f4cc",
+      "sha256": "9391169ffbc72f777a83230b6ffcc3f4cf46ab5945ec540de9ef4609dca1f4cc",
+      "bytes": 111,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ua.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/uk.js",
+      "expected": "1e59ba41296aeb5b6142a6e5ed84712931e33e54ab0b9ae5d83faf436fc3d968",
+      "sha256": "1e59ba41296aeb5b6142a6e5ed84712931e33e54ab0b9ae5d83faf436fc3d968",
+      "bytes": 5665,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/uk.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/ur.js",
+      "expected": "d37ed2c93408e0a6b6e1cd290117a6f0e9d7b2c83509cd34b502e1dd94899c87",
+      "sha256": "d37ed2c93408e0a6b6e1cd290117a6f0e9d7b2c83509cd34b502e1dd94899c87",
+      "bytes": 5491,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/ur.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/uz.js",
+      "expected": "2cbe07635b03064ffad0bfcc98d2d570f3264b9cd3e22bbd5c160cd0343f7872",
+      "sha256": "2cbe07635b03064ffad0bfcc98d2d570f3264b9cd3e22bbd5c160cd0343f7872",
+      "bytes": 4844,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/uz.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/vi.js",
+      "expected": "15939adaf263e0869c602d4b34c206178a235b8bec11c8207ccd3fa50de3a141",
+      "sha256": "15939adaf263e0869c602d4b34c206178a235b8bec11c8207ccd3fa50de3a141",
+      "bytes": 4967,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/vi.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/yo.js",
+      "expected": "88b33f6527c1a2faaf159568330cf727c448dc468eac72142a6fb24f8714ac1e",
+      "sha256": "88b33f6527c1a2faaf159568330cf727c448dc468eac72142a6fb24f8714ac1e",
+      "bytes": 4847,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/yo.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/zh-CN.js",
+      "expected": "8fc02f2bd4d92f46b24b8d82da0ee95c962fc80c14dd7dd469500e14de08d320",
+      "sha256": "8fc02f2bd4d92f46b24b8d82da0ee95c962fc80c14dd7dd469500e14de08d320",
+      "bytes": 4622,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/zh-CN.js"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/zod/v4/locales/zh-TW.js",
+      "expected": "01d9b119e318d8b9f1a8fa720d06424457429425a61d0730984b750e6a5edf7d",
+      "sha256": "01d9b119e318d8b9f1a8fa720d06424457429425a61d0730984b750e6a5edf7d",
+      "bytes": 4672,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/zod/v4/locales/zh-TW.js"
+    },
+    {
+      "path": ".runtime/dsh-web/package-lock.json",
+      "expected": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "bytes": 388886,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/package-lock.json"
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-hold.md",
+      "expected": "f015ffccf1ed8ad417270e96273eb4fff3da2e4b02eb0c1fb62ceaed2931ecb7",
+      "sha256": "f015ffccf1ed8ad417270e96273eb4fff3da2e4b02eb0c1fb62ceaed2931ecb7",
+      "bytes": 4122,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-hold.md"
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author.sha256",
+      "expected": "4ec2fe0075a8d88d7cfbf5bb6ed0aec71f465aaccb0d67fdc5757cb2c6632162",
+      "sha256": "4ec2fe0075a8d88d7cfbf5bb6ed0aec71f465aaccb0d67fdc5757cb2c6632162",
+      "bytes": 2014,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author.sha256"
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "expected": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "bytes": 69293,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/test-design.md"
+    },
+    {
+      "path": "package.json",
+      "expected": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "bytes": 2691,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/package.json"
+    },
+    {
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "expected": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "bytes": 388886,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/scripts/dsh-web-runtime-lock.json"
+    },
+    {
+      "path": "src/config.mjs",
+      "expected": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/config.mjs"
+    },
+    {
+      "path": "src/host-probe.mjs",
+      "expected": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "bytes": 6739,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs"
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "expected": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs"
+    },
+    {
+      "path": "src/ledger.mjs",
+      "expected": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "bytes": 21225,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "expected": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "bytes": 4464,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-security.mjs"
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "expected": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "bytes": 12872,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/testing-provider.mjs"
+    },
+    {
+      "path": "test/testing-provider.test.mjs",
+      "expected": "50b7f2022a8360fee2bdf5f325cd6be3fd50432612f5b8b375b01d04691a3baf",
+      "sha256": "50b7f2022a8360fee2bdf5f325cd6be3fd50432612f5b8b375b01d04691a3baf",
+      "bytes": 11083,
+      "matches": true,
+      "realpath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/testing-provider.test.mjs"
+    }
+  ],
+  "closure_inventory": {
+    "files": 187,
+    "literal_edges": 335,
+    "current_platform_unresolved": 0,
+    "noncurrent_optional_literal_branches": 14,
+    "public_runtime_files": 175,
+    "interpretation": "Conservative literal import/require closure plus explicit consumed public roots/declarations, whole host lock and selected Darwin-arm64 native binary. Does not claim arbitrary unexecuted future dynamic imports."
+  },
+  "outcome": "PASS bounded independent functional module checkpoint; no product/normal ledger/physical CLI/CODE/browser/full-AC acceptance"
+}
