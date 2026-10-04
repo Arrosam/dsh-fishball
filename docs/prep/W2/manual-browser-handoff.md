@@ -1,5 +1,7 @@
 # Owner manual browser handoff for the held M1 gate
 
+**WITHDRAWN on 2026-10-04:** the owner reported limited mobility and that hidden-directory/file/token-copy work was inaccessible. The following handoff is historical only. Do not ask the owner to perform it or the full QA checklist. [Official accessible browser-handoff research](accessible-browser-research.md) supersedes this proposal; W1 HOLD remains. The executor later disconnected and no listener was found; the readiness below is historical, not current.
+
 This is M1 evidence preparation while W2 contract artifacts remain mock-only. It does not accept either milestone, change frozen AC, or route automated browsing around a block.
 
 ## Verified readiness
