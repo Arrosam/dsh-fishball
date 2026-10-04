@@ -12,6 +12,14 @@ export function normalizeReport(input) {
   return immutable({ ...input, verificationEvidence, blockerRefs });
 }
 
+export function normalizeNotificationBinding(input) {
+  fields(input, ['policyRef', 'policyRevision', 'progressRefs', 'mergeKeyRef']);
+  digestRef(input.policyRef); digestRef(input.mergeKeyRef); integer(input.policyRevision, 1);
+  const progressRefs = boundedArray(input.progressRefs).map(digestRef);
+  if (!progressRefs.length || new Set(progressRefs).size !== progressRefs.length) reject('INVALID_INPUT');
+  return immutable({ ...input, progressRefs });
+}
+
 export function normalizeReceipt(input) {
   fields(input, ['artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef', 'permissionState', 'openability', 'observedAt', 'evidenceRef']);
   for (const key of ['artifactRef', 'digest', 'recipientRef', 'channelRef', 'evidenceRef']) digestRef(input[key]);
@@ -49,9 +57,11 @@ export class ResultPipeline {
     return immutable(this.#store.artifact(handle, { taskRef, artifactRef }));
   }
   acceptDelivery(handle, input) {
-    fields(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef', 'previousDeliveryRef'], ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef']);
+    fields(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef', 'previousDeliveryRef', 'notification'], ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef']);
     binding(input); integer(input.artifactVersion, 1);
     for (const key of ['deliveryRef', 'artifactRef', 'digest', 'recipientRef', 'channelRef']) digestRef(input[key]);
+    if (Object.hasOwn(input, 'previousDeliveryRef')) digestRef(input.previousDeliveryRef);
+    input = immutable({ ...input, ...(Object.hasOwn(input, 'notification') ? { notification: normalizeNotificationBinding(input.notification) } : {}) });
     const current = this.#store.artifact(handle, { taskRef: input.taskRef, artifactRef: input.artifactRef });
     if (current.version !== input.artifactVersion || current.digest !== input.digest) reject('ARTIFACT_STALE');
     const task = this.#store.task(handle, input.taskRef);
@@ -59,7 +69,7 @@ export class ResultPipeline {
     return immutable(this.#store.recordDelivery(handle, { ...input, targetDigest }));
   }
   retryFailed(handle, input) {
-    fields(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef', 'previousDeliveryRef']);
+    fields(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef', 'previousDeliveryRef', 'notification'], ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'deliveryRef', 'artifactRef', 'artifactVersion', 'digest', 'recipientRef', 'channelRef', 'previousDeliveryRef']);
     digestRef(input.previousDeliveryRef);
     if (input.previousDeliveryRef === input.deliveryRef) reject('RETRY_NEW_ATTEMPT_REQUIRED');
     const prior = this.#store.getDelivery(handle, { taskRef: input.taskRef, deliveryRef: input.previousDeliveryRef });

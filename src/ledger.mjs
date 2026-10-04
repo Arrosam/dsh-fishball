@@ -176,7 +176,7 @@ export class Ledger {
   }
   validateRuntimeRows() {
     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()){
-      if(this.db.prepare("SELECT 1 FROM automation_records WHERE kind NOT IN ('source','subscription','event','clock','semantic','audit','report','repair','execution','receipt_policy','legacy_command') OR NOT json_valid(payload) LIMIT 1").get()||this.db.prepare('SELECT 1 FROM workspace_memory WHERE revision<1 OR NOT json_valid(metadata) LIMIT 1').get())fail('STORAGE_INVALID');
+      if(this.db.prepare("SELECT 1 FROM automation_records WHERE kind NOT IN ('source','subscription','event','clock','semantic','audit','report','repair','execution','receipt_policy','legacy_command','notification_policy','notification_window','notification_group','notification_fact','notification_claim') OR NOT json_valid(payload) LIMIT 1").get()||this.db.prepare('SELECT 1 FROM workspace_memory WHERE revision<1 OR NOT json_valid(metadata) LIMIT 1').get())fail('STORAGE_INVALID');
     }
     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()&&this.db.prepare("SELECT 1 FROM automation_records a WHERE a.task IS NOT NULL AND NOT EXISTS(SELECT 1 FROM runtime_tasks t WHERE t.owner=a.owner AND t.workspace=a.workspace AND t.task=a.task) LIMIT 1").get())fail('STORAGE_INVALID');
     if(this.db.prepare("SELECT 1 FROM runtime_tasks WHERE control NOT IN ('active','paused','cancel_requested') LIMIT 1").get()) fail('STORAGE_INVALID');

@@ -20,7 +20,7 @@ test('schema3 crypto2 migration validates source before exact backup and preserv
 
 test('encrypted memory CAS, registered secrets, exact replay and tombstone/absence guards',()=>{const secret='SYNTHETIC_MEMORY_SECRET',x=fixture({forbiddenSecrets:[secret]}),namespaceRef=r('namespace'),t=task(x),base={namespaceRef,commandRef:command(),expectedRevision:0,content:'synthetic memory',sourceRefs:[r('source')],requestDigest:r('request')};error('SECRET_REJECTED',()=>x.store.putMemory(x.owner,{...base,content:secret}));const m=x.store.putMemory(x.owner,base);assert.deepEqual(x.store.putMemory(x.owner,base),m);assert.equal(x.store.memoryCommandReceipt(x.owner,{namespaceRef,commandRef:base.commandRef,requestDigest:base.requestDigest}).revision,1);error('IDEMPOTENCY_CONFLICT',()=>x.store.putMemory(x.owner,{...base,content:'changed'}));error('STALE_MEMORY',()=>x.store.putData(x.owner,{taskRef:t.taskRef,commandRef:command(),expectedTaskVersion:t.version,expectedAuthEpoch:t.authEpoch,kind:'context',content:'context',sourceRef:r('source'),expectedMemory:{namespaceRef,revision:0}}));const gone=x.store.deleteMemory(x.owner,{namespaceRef,commandRef:command(),expectedRevision:1});assert(gone.deleted);assert.equal(x.store.getMemory(x.owner,{namespaceRef}).content,undefined);error('MEMORY_DELETED',()=>x.store.putMemory(x.owner,{...base,commandRef:command(),expectedRevision:2}));x.store.close();for(const file of readdirSync(x.dir)){assert(!readFileSync(join(x.dir,file)).includes(Buffer.from('synthetic memory')));assert(!readFileSync(join(x.dir,file)).includes(key));}const reopened=new RuntimeStore(x.config);assert.equal(reopened.getMemory(x.owner,{namespaceRef}).deleted,true);reopened.close();});
 
-test('atomic event intake/dedup/rate/version faults retain complete ingress and original association',()=>{let armed=false;const x=fixture({fixtureMode:true,fixtureFaults:()=>{if(armed)throw Error('SYNTHETIC_SECRET');}}),s=source(x),u=subscription(x,s),input=ingress(s,u);armed=true;error('FIXTURE_CUT',()=>x.store.ingestEvent(x.host,input));armed=false;assert.equal(x.store.listTasks(x.owner).length,0);assert.equal(x.store.listEventReceipts(x.host,{sourceRef:s.sourceRef,subscriptionRef:u.subscriptionRef}).length,0);const accepted=x.store.ingestEvent(x.host,input);assert.equal(accepted.deduplicated,false);const duplicate=x.store.ingestEvent(x.host,{...input,commandRef:command(),taskId:'cannot-rebind'});assert.equal(duplicate.task.taskRef,accepted.task.taskRef);assert(duplicate.deduplicated);error('IDEMPOTENCY_CONFLICT',()=>x.store.ingestEvent(x.host,{...input,commandRef:command(),eventDigest:r('changed')}));error('EVENT_EXPIRED',()=>x.store.ingestEvent(x.host,{...input,commandRef:command(),eventRef:r('expired'),observedAt:899}));error('EVENT_CLOCK_INVALID',()=>x.store.ingestEvent(x.host,{...input,commandRef:command(),eventRef:r('future'),receivedAt:1001}));const next=x.store.configureSource(x.owner,{sourceRef:s.sourceRef,commandRef:command(),expectedRevision:1,spec:{...s.spec,enabled:false}});error('STALE_SOURCE',()=>x.store.ingestEvent(x.host,{...input,commandRef:command()}));error('SOURCE_DISABLED',()=>x.store.ingestEvent(x.host,{...input,expectedSourceRevision:next.revision,commandRef:command()}));x.store.close();const reopened=new RuntimeStore(x.config);assert.equal(reopened.eventReceipt(x.host,{sourceRef:s.sourceRef,subscriptionRef:u.subscriptionRef,eventRef:input.eventRef}).state,'registered');reopened.close();});
+test('atomic event intake/dedup/rate/version faults retain complete ingress and original association',()=>{let armed=false;const x=fixture({fixtureMode:true,fixtureFaults:()=>{if(armed)throw Error('SYNTHETIC_SECRET');}}),s=source(x),u=subscription(x,s),input=ingress(s,u);armed=true;error('FIXTURE_CUT',()=>x.store.ingestEvent(x.host,input));armed=false;assert.equal(x.store.listTasks(x.owner).length,0);assert.equal(x.store.listEventReceipts(x.host,{sourceRef:s.sourceRef,subscriptionRef:u.subscriptionRef}).length,0);const accepted=x.store.ingestEvent(x.host,input);assert.equal(accepted.deduplicated,false);assert.equal(x.store.readData(x.owner,{taskRef:accepted.taskRef,recordRef:accepted.goalRecordRef}).digest,accepted.goalDigest);const duplicate=x.store.ingestEvent(x.host,{...input,commandRef:command(),taskId:'cannot-rebind'});assert.equal(duplicate.task.taskRef,accepted.task.taskRef);assert.equal(duplicate.goalRecordRef,accepted.goalRecordRef);assert.equal(duplicate.goalDigest,accepted.goalDigest);assert(duplicate.deduplicated);error('IDEMPOTENCY_CONFLICT',()=>x.store.ingestEvent(x.host,{...input,commandRef:command(),eventDigest:r('changed')}));error('EVENT_EXPIRED',()=>x.store.ingestEvent(x.host,{...input,commandRef:command(),eventRef:r('expired'),observedAt:899}));error('EVENT_CLOCK_INVALID',()=>x.store.ingestEvent(x.host,{...input,commandRef:command(),eventRef:r('future'),receivedAt:1001}));const next=x.store.configureSource(x.owner,{sourceRef:s.sourceRef,commandRef:command(),expectedRevision:1,spec:{...s.spec,enabled:false}});error('STALE_SOURCE',()=>x.store.ingestEvent(x.host,{...input,commandRef:command()}));error('SOURCE_DISABLED',()=>x.store.ingestEvent(x.host,{...input,expectedSourceRevision:next.revision,commandRef:command()}));x.store.close();const reopened=new RuntimeStore(x.config);assert.equal(reopened.eventReceipt(x.host,{sourceRef:s.sourceRef,subscriptionRef:u.subscriptionRef,eventRef:input.eventRef}).state,'registered');reopened.close();});
 
 test('chat source original private route authorizes read/control but changed pairing and unrelated supplement fail',()=>{const x=fixture(),routeBinding={pairingRef:r('pair'),pairingRevision:1,principalRef:r('peer'),conversationRef:r('conversation'),threadRef:r('thread'),conversationKind:'private'},s=source(x,'chat',routeBinding),u=subscription(x,s),event=x.store.ingestEvent(x.host,ingress(s,u,{routeBinding})),binding={sourceRef:s.sourceRef,subscriptionRef:u.subscriptionRef,expectedSourceRevision:1,expectedSubscriptionRevision:1,taskRef:event.taskRef};assert.equal(x.store.chatTask(x.host,binding).task.taskRef,event.taskRef);const paused=x.store.chatControl(x.host,{...binding,commandRef:command(),expectedTaskVersion:1,expectedAuthEpoch:0,kind:'pause'});assert.equal(paused.control,'paused');const unrelated=task(x),supp=x.store.configureSubscription(x.owner,{subscriptionRef:u.subscriptionRef,sourceRef:s.sourceRef,commandRef:command(),expectedRevision:1,expectedSourceRevision:1,spec:{enabled:true,triggerRef:r('trigger'),route:'supplement',targetTaskRef:unrelated.taskRef}});error('ROUTE_MISMATCH',()=>x.store.ingestEvent(x.host,ingress(s,supp,{routeBinding,eventRef:r('supplement'),targetTaskRef:unrelated.taskRef,expectedTaskVersion:1,expectedAuthEpoch:0})));const changed=x.store.configureSource(x.owner,{sourceRef:s.sourceRef,commandRef:command(),expectedRevision:1,spec:{...s.spec,routeBinding:{...routeBinding,pairingRef:r('other-pair')}}});error('ROUTE_MISMATCH',()=>x.store.chatTask(x.host,{...binding,expectedSourceRevision:changed.revision,expectedSubscriptionRevision:supp.revision}));x.store.close();});
 
@@ -105,4 +105,105 @@ test('genuine schema3 plaintext receipt history migrates preserved but never bec
   const writer=new DatabaseSync(x.config.databasePath);assert.equal(writer.prepare('SELECT receipt FROM runtime_commands WHERE id=?').get(input.commandRef).receipt,plain);writer.close();
   reopened.close();const healthy=new RuntimeStore(x.config);assert.equal(healthy.task(x.owner,receipt.task.taskRef).version,receipt.task.version);healthy.close();
   const edit=new DatabaseSync(x.config.databasePath);edit.exec("DELETE FROM automation_records WHERE kind='legacy_command'");edit.close();const before=readFileSync(x.config.databasePath);error('STORAGE_INVALID',()=>new RuntimeStore(x.config));assert.deepEqual(readFileSync(x.config.databasePath),before);
+});
+
+function notificationFixture(extra={}){
+  let now=1000;const x=fixture({...extra,clock:()=>now});x.setTime=value=>{now=value;};
+  x.policySpec={enabled:true,timeZone:'UTC',quietWindows:[],emergencyKinds:[],mergeKinds:['milestone'],mergeWindowMs:0,minIntervalMs:0,frequency:{windowMs:1000,maxClaims:2}};
+  x.setNotification=spec=>x.store.configureNotificationPolicy(x.owner,{commandRef:command(),policyRef:r('notification-policy'),expectedRevision:x.notification?.revision||0,spec});
+  x.notification=x.setNotification(x.policySpec);
+  x.current=taskRef=>x.store.task(x.owner,taskRef);
+  x.binding=taskRef=>{const t=x.current(taskRef);return{taskRef,commandRef:command(),expectedTaskVersion:t.version,expectedAuthEpoch:t.authEpoch};};
+  x.artifact=taskId=>{
+    const t=x.store.intake(x.owner,{taskId,provider:'fixture',source:'notification-source',eventId:'event-'+taskId,commandRef:command()}).task;
+    const a=x.store.writeArtifact(x.owner,{...x.binding(t.taskRef),artifactRef:command(),version:1,content:'synthetic notification artifact '+taskId});
+    const spec=action(x,a.task,{kind:'review',role:'review',attemptGroupRef:command(),dataDigest:a.digest,charges:{runtimeMs:0,usageUnits:0,costEstimateMicros:0},executor:{mode:'none',generationRef:command(),environmentRef:r('environment'),bindingDigest:r('binding'),toolsDigest:r('tools'),permissionPolicyDigest:r('permission')}}),reviewer={},claim=admitted(x,a.task,spec);
+    x.store.bindExecution(x.host,reviewer,{taskRef:t.taskRef,role:'reviewer',generationRef:claim.generationRef,readRecordRefs:[a.recordRef]});
+    x.store.verifyArtifact(reviewer,{taskRef:t.taskRef,commandRef:command(),artifactRef:a.artifactRef,version:1,digest:a.digest,verdict:'accepted',evidenceRef:r('review-proof')});
+    x.store.settleAction(x.host,{taskRef:t.taskRef,claimRef:claim.claimRef,generationRef:claim.generationRef,commandRef:command(),outcome:'completed',evidenceRef:r('review-proof')});
+    return{taskRef:t.taskRef,...a};
+  };
+  x.progress=(a,content,kind='milestone')=>x.store.writeProgress(x.owner,{...x.binding(a.taskRef),progressRef:command(),kind,content});
+  x.delivery=(a,progress,more={})=>{
+    const input={...x.binding(a.taskRef),deliveryRef:command(),artifactRef:a.artifactRef,artifactVersion:1,digest:a.digest,recipientRef:r('recipient'),channelRef:r('channel'),notification:{policyRef:x.notification.policyRef,policyRevision:x.notification.revision,progressRefs:progress.map(p=>p.progressRef),mergeKeyRef:r('merge-group')},...more};
+    return x.store.recordDelivery(x.owner,{...input,targetDigest:d({ownerRef:r(scope.ownerId),workspaceRef:r(scope.workspaceId),...input})});
+  };
+  x.approve=delivery=>{
+    const t=x.current(delivery.intent.taskRef),spec=action(x,t,{attemptGroupRef:command(),targetDigest:delivery.targetDigest,dataDigest:delivery.digest,charges:{runtimeMs:0,usageUnits:0,costEstimateMicros:0},executor:{mode:'none',generationRef:command(),environmentRef:r('environment'),bindingDigest:r('binding'),toolsDigest:r('tools'),permissionPolicyDigest:r('permission')}});
+    const a=x.store.planAction(x.owner,{...x.binding(t.taskRef),spec}),grant=x.store.grantAction(x.owner,{...x.binding(t.taskRef),actionRef:a.actionRef,actionDigest:a.actionDigest,expiresAt:100000000});
+    return{taskRef:t.taskRef,commandRef:command(),expectedTaskVersion:t.version,expectedAuthEpoch:grant.authEpoch,actionRef:a.actionRef,actionDigest:a.actionDigest,delivery:{deliveryRef:delivery.deliveryRef}};
+  };
+  x.finish=(delivery,claim,state='delivered')=>{
+    x.store.deliveryObservation(x.host,{taskRef:claim.task.taskRef,commandRef:command(),deliveryRef:delivery.deliveryRef,claimRef:claim.claimRef,generationRef:claim.generationRef,state,evidenceRef:command(),permissionState:'allowed',openability:'openable',observedAt:now});
+    return x.store.settleAction(x.host,{taskRef:claim.task.taskRef,commandRef:command(),claimRef:claim.claimRef,generationRef:claim.generationRef,outcome:state==='failed'?'failed':'completed',evidenceRef:command()});
+  };
+  return x;
+}
+
+test('notification quiet/merge windows, explicit emergency exception and zero frequency gate under claim',()=>{
+  for(const boundary of ['quiet','merge-wait','merge-at','emergency','frequency-zero']){
+    const x=notificationFixture();
+    x.notification=x.setNotification({...x.policySpec,quietWindows:['quiet','emergency'].includes(boundary)?[{startMinute:0,endMinute:1440}]:[],emergencyKinds:boundary==='emergency'?['obstacle']:[],mergeWindowMs:boundary.startsWith('merge')?100:0,frequency:{windowMs:1000,maxClaims:boundary==='frequency-zero'?0:2}});
+    const a=x.artifact('task'),p=x.progress(a,'synthetic bounded milestone',boundary==='emergency'?'obstacle':'milestone'),delivery=x.delivery(a,[p]),input=x.approve(delivery);
+    if(boundary==='merge-at')x.setTime(1100);
+    if(boundary==='quiet')error('NOTIFICATION_QUIET',()=>x.store.claimAction(x.host,input));
+    else if(boundary==='merge-wait')error('NOTIFICATION_COALESCING',()=>x.store.claimAction(x.host,input));
+    else if(boundary==='frequency-zero')error('NOTIFICATION_FREQUENCY',()=>x.store.claimAction(x.host,input));
+    else{const claim=x.store.claimAction(x.host,input);assert.equal(x.store.snapshot(x.owner,{taskRef:a.taskRef}).notifications.length,1);assert.equal(x.store.getNotificationPolicy(x.owner,{policyRef:x.notification.policyRef}).windows[0].count,1);assert(x.finish(delivery,claim).releaseEvidenceRef);}
+    x.store.close();
+  }
+});
+
+test('notification pending group survives revision/new progress/reopen; delivered facts dedup by digest and failed retries require release',()=>{
+  for(const outcome of ['delivered','failed']){
+    const x=notificationFixture(),a=x.artifact('task'),p=x.progress(a,'synthetic same fact'),delivery=x.delivery(a,[p]),claim=x.store.claimAction(x.host,x.approve(delivery));
+    const newer=x.progress(a,'synthetic newer fact'),attempt=x.delivery(a,[newer]),approved=x.approve(attempt);
+    error('NOTIFICATION_PENDING',()=>x.store.claimAction(x.host,approved));
+    x.notification=x.setNotification({...x.policySpec,frequency:{windowMs:1000,maxClaims:10}});
+    x.store.close();x.store=new RuntimeStore(x.config);
+    const snap=x.store.snapshot(x.owner,{taskRef:a.taskRef});assert.equal(snap.notifications[0].state,'unknown');assert.equal(snap.notifications[0].released,false);
+    x.setTime(1100);assert(x.finish(delivery,claim,outcome).releaseEvidenceRef);
+    const same=x.progress(a,'synthetic same fact'),retry=x.delivery(a,[same],outcome==='failed'?{previousDeliveryRef:delivery.deliveryRef}:{}),retryInput=x.approve(retry);
+    if(outcome==='delivered')error('NOTIFICATION_DUPLICATE',()=>x.store.claimAction(x.host,retryInput));
+    else{const retryClaim=x.store.claimAction(x.host,retryInput);assert(x.finish(retry,retryClaim).releaseEvidenceRef);}
+    x.store.close();
+  }
+});
+
+test('two independent processes atomically compete for last notification frequency slot',async()=>{
+  const x=notificationFixture();x.notification=x.setNotification({...x.policySpec,frequency:{windowMs:1000,maxClaims:1}});
+  const a=x.artifact('first'),p=x.progress(a,'synthetic first fact'),first=x.approve(x.delivery(a,[p]));
+  const b=x.artifact('second'),q=x.progress(b,'synthetic second fact'),second=x.approve(x.delivery(b,[q]));
+  const moduleUrl=new URL('../src/runtime-store.mjs',import.meta.url).href;
+  const contenders=[first,second].map(input=>{
+    const code=`import{RuntimeStore}from${JSON.stringify(moduleUrl)};const host={};const store=new RuntimeStore({databasePath:${JSON.stringify(x.config.databasePath)},encryptionKey:Buffer.alloc(32,71),principals:[{handle:host,role:'host',scope:${JSON.stringify(scope)}}],clock:()=>1000,hostPermission:()=>true});process.send('ready');process.on('message',input=>{let result;try{store.claimAction(host,input);result='admitted';}catch(e){result=e.code;}store.close();process.send(result);process.disconnect();});`;
+    const child=spawn(process.execPath,['--input-type=module','-e',code],{stdio:['ignore','ignore','pipe','ipc']});
+    return{child,input,ready:new Promise((resolve,reject)=>{child.once('message',resolve);child.once('error',reject);}),result:new Promise(resolve=>child.on('message',value=>{if(value!=='ready')resolve(value);})),closed:new Promise(resolve=>child.once('exit',resolve))};
+  });
+  await Promise.all(contenders.map(contender=>contender.ready));
+  for(const contender of contenders)contender.child.send(contender.input);
+  assert.deepEqual((await Promise.all(contenders.map(contender=>contender.result))).sort(),['NOTIFICATION_FREQUENCY','admitted']);
+  await Promise.all(contenders.map(contender=>contender.closed));
+  assert.equal(x.store.getNotificationPolicy(x.owner,{policyRef:x.notification.policyRef}).windows[0].count,1);x.store.close();
+});
+
+test('composite handoff branch updates semantic requirements while holding pending ownership',()=>{
+  const x=fixture(),t=task(x),claim=admitted(x,t,action(x,t)),before=x.store.snapshot(x.owner,{taskRef:t.taskRef}).semanticRevision,current=x.store.task(x.owner,t.taskRef);
+  x.store.putHandoff(x.owner,{taskRef:t.taskRef,claimRef:claim.claimRef,generationRef:claim.generationRef,actionDigest:claim.actionDigest,commandRef:command(),expectedTaskVersion:current.version,expectedAuthEpoch:current.authEpoch,content:'synthetic handoff branch',sourceRef:claim.actionRef});
+  const snap=x.store.snapshot(x.owner,{taskRef:t.taskRef});assert.equal(snap.semanticRevision,before+1);assert.equal(snap.workers[0].handoff.state,'pending');assert.equal(snap.actions[0].releaseEvidenceRef,null);x.store.close();
+});
+
+test('notification claim faults roll back outbox/counters/ownership and deleted authoritative associations preserve rejection bytes',()=>{
+  for(const target of ['before-commit','group-delete','fact-delete','claim-delete','window-tamper']){
+    let armed=false;const x=notificationFixture({fixtureMode:true,fixtureFaults:()=>{if(armed)throw Error('SYNTHETIC_SECRET');}}),a=x.artifact('task'),p=x.progress(a,'synthetic accountable notification'),delivery=x.delivery(a,[p]),input=x.approve(delivery);
+    if(target==='before-commit'){
+      armed=true;error('FIXTURE_CUT',()=>x.store.claimAction(x.host,input));armed=false;
+      assert.equal(x.store.getDelivery(x.owner,{taskRef:a.taskRef,deliveryRef:delivery.deliveryRef}).state,'accepted');assert.equal(x.store.getNotificationPolicy(x.owner,{policyRef:x.notification.policyRef}).windows.length,0);assert.equal(x.store.snapshot(x.owner,{taskRef:a.taskRef}).notifications.length,0);
+      x.store.claimAction(x.host,input);assert.equal(x.store.getNotificationPolicy(x.owner,{policyRef:x.notification.policyRef}).windows[0].count,1);x.store.close();continue;
+    }
+    x.store.claimAction(x.host,input);x.store.close();const db=new DatabaseSync(x.config.databasePath);
+    if(target==='window-tamper'){const row=db.prepare("SELECT payload FROM automation_records WHERE kind='notification_window'").get(),payload=JSON.parse(row.payload);payload.data.count=0;db.prepare("UPDATE automation_records SET payload=? WHERE kind='notification_window'").run(JSON.stringify(payload));}
+    else db.exec("DELETE FROM automation_records WHERE kind='notification_"+target.split('-')[0]+"'");
+    db.close();const before=readFileSync(x.config.databasePath),entries=readdirSync(x.dir);error('STORAGE_INVALID',()=>new RuntimeStore(x.config));assert.deepEqual(readFileSync(x.config.databasePath),before);assert.deepEqual(readdirSync(x.dir),entries);
+  }
 });

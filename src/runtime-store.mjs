@@ -648,12 +648,12 @@ export class RuntimeStore {
         fail('HOST_DENIED');
       }
       if(!allowed)fail('HOST_DENIED');
-      let record;
+      let record,notificationAdmission;
       if(input.outbox||input.delivery){
         const kind=input.outbox?'message':'delivery',id=input.outbox?.messageRef||input.delivery.deliveryRef;
         record=this.#record(c,t.id,kind,id);
         if(record.state!=='accepted'||record.targetDigest!==a.spec.targetDigest||(kind==='message'?record.bodyDigest:record.digest)!==a.spec.dataDigest)fail('OUTBOX_SPEC_MISMATCH');
-        if(kind==='delivery'){const latest=this.#artifact(c,t.id,record.artifactRef);if(!latest||latest.version!==record.artifactVersion||latest.digest!==record.digest||latest.verification?.verdict!=='accepted')fail('ARTIFACT_UNVERIFIED');}
+        if(kind==='delivery'){const latest=this.#artifact(c,t.id,record.artifactRef);if(!latest||latest.version!==record.artifactVersion||latest.digest!==record.digest||latest.verification?.verdict!=='accepted')fail('ARTIFACT_UNVERIFIED');if(record.notification)notificationAdmission=this.#notificationAdmission(c,t.id,record,at);}
       }
       const claimId=randomUUID(),claimRef=reference(claimId),reservationRef=canonicalDigest({
         claimRef,actionDigest:a.digest
@@ -674,6 +674,7 @@ export class RuntimeStore {
       if(record)this.#saveRecord(c,t.id,input.outbox?'message':'delivery',input.outbox?.messageRef||input.delivery.deliveryRef,{
         ...record,state:'outbox_committed',claimRef,reservationRef,generationRef:worker.generationRef
       });
+      if(notificationAdmission)this.#commitNotification(c,t.id,record,notificationAdmission,claimRef,reservationRef,at);
       const updated=this.#update(t,'running','dispatch');
       return{
         claimRef,reservationRef,actionRef:a.action,actionDigest:a.digest,generationRef:worker.generationRef,sessionRef:worker.sessionRef,task:taskRecord(updated)
@@ -754,7 +755,17 @@ export class RuntimeStore {
   }
   putHandoff(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','claimRef','generationRef','actionDigest','content','sourceRef']);ref(input.actionDigest);ref(input.sourceRef);
-    return this.#mut(handle,input,DISPATCH,'putHandoff',c=>{const task=this.#cas(c,input),{w,a}=this.#claim(c,input);if(a.digest!==input.actionDigest||input.sourceRef!==a.action)fail('SPEC_MISMATCH');if(w.handoff?.state==='pending')fail('HANDOFF_PENDING');const t=this.#update(task,task.status,'progress');const data=this.#data({...c,generationRef:input.generationRef},t,{kind:'branch',content:input.content,sourceRef:input.sourceRef,commandRef:input.commandRef});const handoff={handoffRef:data.recordRef,state:'pending',evidenceRef:canonicalDigest({recordRef:data.recordRef,digest:data.digest,claimRef:w.claimRef,actionDigest:a.digest})};this.#ledger.run('UPDATE runtime_workers SET payload=? WHERE owner=? AND workspace=? AND task=? AND claim=?',this.#check({...w,handoff}),...this.#keys(c,t.id),w.claimRef);return{recordRef:data.recordRef,digest:data.digest,task:taskRecord(t),handoffRef:data.recordRef,claimRef:w.claimRef,generationRef:w.generationRef};});
+    return this.#mut(handle,input,DISPATCH,'putHandoff',c=>{
+      const task=this.#cas(c,input),{w,a}=this.#claim(c,input);
+      if(a.digest!==input.actionDigest||input.sourceRef!==a.action)fail('SPEC_MISMATCH');
+      if(w.handoff?.state==='pending')fail('HANDOFF_PENDING');
+      this.#bumpSemantic(c,task.id);
+      const t=this.#update(task,task.status,'progress');
+      const data=this.#data({...c,generationRef:input.generationRef},t,{kind:'branch',content:input.content,sourceRef:input.sourceRef,commandRef:input.commandRef});
+      const handoff={handoffRef:data.recordRef,state:'pending',evidenceRef:canonicalDigest({recordRef:data.recordRef,digest:data.digest,claimRef:w.claimRef,actionDigest:a.digest})};
+      this.#ledger.run('UPDATE runtime_workers SET payload=? WHERE owner=? AND workspace=? AND task=? AND claim=?',this.#check({...w,handoff}),...this.#keys(c,t.id),w.claimRef);
+      return{recordRef:data.recordRef,digest:data.digest,task:taskRecord(t),handoffRef:data.recordRef,claimRef:w.claimRef,generationRef:w.generationRef};
+    });
   }
   markHandoff(handle,input){
     exact(input,['taskRef','claimRef','generationRef','commandRef','handoffRef','state','evidenceRef']);ref(input.handoffRef);ref(input.evidenceRef);if(!['pending','resolved'].includes(input.state))fail('INVALID_INPUT');
@@ -847,7 +858,7 @@ export class RuntimeStore {
     if(!row)fail('RECORD_NOT_FOUND');
     const payload=parse(row.payload);let original;
     if(kind==='message'){const {evidenceRef,...rest}=payload;original={...rest,state:'accepted',claimRef:null,reservationRef:null,generationRef:null};if(payload.targetDigest!==canonicalDigest(payload.immutableMetadata))fail('STORAGE_INVALID');}
-    else if(kind==='delivery'){const {currentAccess,...rest}=payload;original={...rest,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]};if(payload.targetDigest!==canonicalDigest({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,...payload.intent}))fail('STORAGE_INVALID');}
+    else if(kind==='delivery'){if(payload.notification&&canonical(payload.notification)!==canonical(payload.intent.notification))fail('STORAGE_INVALID');const {currentAccess,...rest}=payload;original={...rest,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]};if(payload.targetDigest!==canonicalDigest({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,...payload.intent}))fail('STORAGE_INVALID');}
     else if(kind==='artifact')original={...payload,verification:null};
     else original=payload;
     if(row.digest!==canonicalDigest(original))fail('STORAGE_INVALID');return payload;
@@ -1002,10 +1013,115 @@ export class RuntimeStore {
       return result;
     });
   }
+  #notificationSpec(spec){
+    exact(spec,['enabled','timeZone','quietWindows','emergencyKinds','mergeKinds','mergeWindowMs','minIntervalMs','frequency']);
+    if(typeof spec.enabled!=='boolean'||typeof spec.timeZone!=='string'||spec.timeZone.length>64||! /^[A-Za-z0-9_+\/-]+$/.test(spec.timeZone))fail('INVALID_INPUT');
+    try{new Intl.DateTimeFormat('en-GB',{timeZone:spec.timeZone}).format(0);}catch{fail('TIMEZONE_INVALID');}
+    canonical(spec.quietWindows);
+    if(!Array.isArray(spec.quietWindows)||spec.quietWindows.length>8)fail('INVALID_INPUT');
+    for(const window of spec.quietWindows){
+      exact(window,['startMinute','endMinute']);
+      integer(window.startMinute,0,1439);integer(window.endMinute,0,1440);
+      if(window.startMinute===window.endMinute)fail('INVALID_INPUT');
+    }
+    for(const key of ['emergencyKinds','mergeKinds']){
+      canonical(spec[key]);
+      if(!Array.isArray(spec[key])||spec[key].length>4||new Set(spec[key]).size!==spec[key].length||spec[key].some(kind=>!['milestone','obstacle','question','final'].includes(kind)))fail('INVALID_INPUT');
+    }
+    integer(spec.mergeWindowMs,0,8640000000000000);integer(spec.minIntervalMs,0,8640000000000000);
+    exact(spec.frequency,['windowMs','maxClaims']);integer(spec.frequency.windowMs,1,8640000000000000);integer(spec.frequency.maxClaims,0,4096);
+    return JSON.parse(canonical(spec));
+  }
+  configureNotificationPolicy(handle,input){
+    exact(input,['commandRef','policyRef','expectedRevision','spec']);
+    ref(input.policyRef);integer(input.expectedRevision);
+    const spec=this.#notificationSpec(input.spec);
+    return this.#mut(handle,input,['owner'],'configureNotificationPolicy',c=>{
+      const old=this.#auto(c,'notification_policy',input.policyRef);
+      if((old?.revision||0)!==input.expectedRevision)fail('STALE_NOTIFICATION_POLICY');
+      if(!old&&this.#autoCount(c,'notification_policy')>=16)fail('NOTIFICATION_LIMIT');
+      return this.#saveAuto(c,'notification_policy',input.policyRef,null,{policyRef:input.policyRef,revision:input.expectedRevision+1,spec});
+    });
+  }
+  getNotificationPolicy(handle,input){
+    exact(input,['policyRef']);
+    const c=this.#ctx(handle,undefined,['owner','coordinator','host']);
+    const policy=this.#auto(c,'notification_policy',input.policyRef);
+    if(!policy)fail('NOTIFICATION_POLICY_UNAVAILABLE');
+    this.#notificationSpec(policy.spec);
+    const windows=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind='notification_window'",c.ownerRef,c.workspaceRef).map(row=>this.#auto(c,'notification_window',row.id)).filter(window=>window.policyRef===policy.policyRef);
+    return{...policy,windows};
+  }
+  #notificationBinding(value){
+    exact(value,['policyRef','policyRevision','progressRefs','mergeKeyRef']);
+    ref(value.policyRef);ref(value.mergeKeyRef);integer(value.policyRevision,1);
+    canonical(value.progressRefs);
+    if(!Array.isArray(value.progressRefs)||value.progressRefs.length===0||value.progressRefs.length>16||new Set(value.progressRefs).size!==value.progressRefs.length)fail('INVALID_INPUT');
+    value.progressRefs.forEach(ref);
+  }
+  #notificationReleased(c,task,delivery){
+    if(!delivery.claimRef)return false;
+    const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,task),delivery.claimRef);
+    if(!worker)fail('STORAGE_INVALID');
+    return !!this.#action(c,task,parse(worker.payload).actionRef).metadata.releaseEvidenceRef;
+  }
+  #notificationAdmission(c,task,delivery,at){
+    const binding=delivery.notification;this.#notificationBinding(binding);
+    const policy=this.#auto(c,'notification_policy',binding.policyRef);
+    if(!policy)fail('NOTIFICATION_POLICY_UNAVAILABLE');
+    if(policy.revision!==binding.policyRevision)fail('STALE_NOTIFICATION_POLICY');
+    const spec=this.#notificationSpec(policy.spec);
+    if(!spec.enabled)fail('NOTIFICATION_DISABLED');
+    const progress=binding.progressRefs.map(id=>{
+      const record=this.#record(c,task,'progress',id);
+      const data=this.#dataMeta(c,task,record.recordRef,record.digest);
+      if(data.kind!=='progress'||data.sourceRef!==record.progressRef)fail('STORAGE_INVALID');
+      return record;
+    });
+    const emergency=progress.some(record=>spec.emergencyKinds.includes(record.kind));
+    if(progress.length>1&&progress.some(record=>!spec.mergeKinds.includes(record.kind)))fail('NOTIFICATION_MERGE_DENIED');
+    if(!emergency&&progress.every(record=>spec.mergeKinds.includes(record.kind))&&at<Math.min(...progress.map(record=>record.at))+spec.mergeWindowMs)fail('NOTIFICATION_COALESCING');
+    let minute;
+    try{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:spec.timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(at);minute=Number(parts.find(part=>part.type==='hour').value)*60+Number(parts.find(part=>part.type==='minute').value);}catch{fail('NOTIFICATION_CLOCK_INVALID');}
+    if(!emergency&&spec.quietWindows.some(window=>window.startMinute<window.endMinute?minute>=window.startMinute&&minute<window.endMinute:minute>=window.startMinute||minute<window.endMinute))fail('NOTIFICATION_QUIET');
+    const endpoint={taskRef:task,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef};
+    const groupId=canonicalDigest({...endpoint,mergeKeyRef:binding.mergeKeyRef}),group=this.#auto(c,'notification_group',groupId);
+    const priorClaims=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='notification_claim'",...this.#keys(c,task)).map(row=>this.#auto(c,'notification_claim',row.id));
+    if(!group&&priorClaims.some(prior=>prior.groupId===groupId))fail('STORAGE_INVALID');
+    if(group){const prior=this.#record(c,task,'delivery',group.deliveryRef);if(!['delivered','failed'].includes(prior.state)||!this.#notificationReleased(c,task,prior))fail('NOTIFICATION_PENDING');}
+    if(!group&&this.#autoCount(c,'notification_group',task)>=this.#limits.maxRecordsPerTask)fail('NOTIFICATION_LIMIT');
+    const facts=progress.map(record=>({id:canonicalDigest({...endpoint,digest:record.digest}),record}));
+    for(const fact of facts){
+      const ownership=this.#auto(c,'notification_fact',fact.id);
+      if(!ownership){if(priorClaims.some(prior=>prior.factIds.includes(fact.id)))fail('STORAGE_INVALID');continue;}
+      const prior=this.#record(c,task,'delivery',ownership.deliveryRef);
+      if(prior.state==='delivered')fail('NOTIFICATION_DUPLICATE');
+      if(prior.state!=='failed'||!this.#notificationReleased(c,task,prior))fail('NOTIFICATION_PENDING');
+      if(delivery.previousDeliveryRef!==prior.deliveryRef)fail('RETRY_UNCONFIRMED');
+    }
+    if(this.#autoCount(c,'notification_fact',task)+facts.filter(fact=>!this.#auto(c,'notification_fact',fact.id)).length>this.#limits.maxRecordsPerTask*16)fail('NOTIFICATION_LIMIT');
+    const windowId=canonicalDigest({policyRef:binding.policyRef,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef}),old=this.#auto(c,'notification_window',windowId);
+    if(old&&(at<old.windowStart||at<old.lastClaimAt))fail('NOTIFICATION_CLOCK_INVALID');
+    if(old&&at-old.lastClaimAt<spec.minIntervalMs)fail('NOTIFICATION_INTERVAL');
+    const windowStart=!old||at-old.windowStart>=spec.frequency.windowMs?at:old.windowStart;
+    const count=old&&windowStart===old.windowStart?old.count:0;
+    if(count>=spec.frequency.maxClaims)fail('NOTIFICATION_FREQUENCY');
+    if(!old&&this.#autoCount(c,'notification_window')>=128)fail('NOTIFICATION_LIMIT');
+    return{binding,groupId,facts,windowId,windowStart,count};
+  }
+  #commitNotification(c,task,delivery,admission,claimRef,reservationRef,at){
+    const {binding,groupId,facts,windowId,windowStart,count}=admission;
+    const ownership={taskRef:task,deliveryRef:delivery.deliveryRef,claimRef,reservationRef,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef,policyRef:binding.policyRef,policyRevision:binding.policyRevision,claimedAt:at};
+    this.#saveAuto(c,'notification_claim',delivery.deliveryRef,task,{...ownership,groupId,factIds:facts.map(fact=>fact.id)});
+    this.#saveAuto(c,'notification_window',windowId,null,{policyRef:binding.policyRef,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef,windowStart,count:count+1,lastClaimAt:at});
+    this.#saveAuto(c,'notification_group',groupId,task,{...ownership,mergeKeyRef:binding.mergeKeyRef,progressRefs:[...binding.progressRefs]});
+    for(const {id,record} of facts)this.#saveAuto(c,'notification_fact',id,task,{...ownership,progressRef:record.progressRef,digest:record.digest});
+  }
   recordDelivery(handle,input){
-    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','targetDigest','previousDeliveryRef'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','targetDigest']);
+    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','targetDigest','previousDeliveryRef','notification'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','targetDigest']);
     for(const k of ['deliveryRef','artifactRef','digest','recipientRef','channelRef','targetDigest'])ref(input[k]);
     integer(input.artifactVersion,1);
+    if(input.notification)this.#notificationBinding(input.notification);
     return this.#mut(handle,input,OWNER,'recordDelivery',c=>{
       this.#cas(c,input);
       const {targetDigest,...intent}=input;if(targetDigest!==canonicalDigest({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,...intent}))fail('DIGEST_MISMATCH');
@@ -1018,7 +1134,7 @@ export class RuntimeStore {
       const a=this.#artifact(c,input.taskRef,input.artifactRef);
       if(!a||a.version!==input.artifactVersion||a.digest!==input.digest||a.verification?.verdict!=='accepted')fail('ARTIFACT_UNVERIFIED');
       const payload={
-        deliveryRef:input.deliveryRef,artifactRef:input.artifactRef,artifactVersion:input.artifactVersion,digest:input.digest,recipientRef:input.recipientRef,channelRef:input.channelRef,targetDigest:input.targetDigest,intent:JSON.parse(canonical(intent)),previousDeliveryRef:input.previousDeliveryRef||null,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]
+        deliveryRef:input.deliveryRef,artifactRef:input.artifactRef,artifactVersion:input.artifactVersion,digest:input.digest,recipientRef:input.recipientRef,channelRef:input.channelRef,targetDigest:input.targetDigest,intent:JSON.parse(canonical(intent)),previousDeliveryRef:input.previousDeliveryRef||null,...(input.notification?{notification:JSON.parse(canonical(input.notification))}:{}),state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]
       };
       return this.#newRecord(c,input.taskRef,'delivery',input.deliveryRef,payload);
     });
@@ -1105,6 +1221,8 @@ export class RuntimeStore {
       result.executions=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='execution'",...keys).map(r=>this.#auto(c,'execution',r.id)).filter(r=>!['worker','reviewer'].includes(c.role)||r.generationRef===c.generationRef);
       result.audits=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='audit'",...keys).map(r=>this.#auto(c,'audit',r.id)).filter(req=>!['worker','reviewer'].includes(c.role)||c.role==='reviewer'&&req.material.every(m=>c.readRecordRefs.includes(m.recordRef))||c.role==='worker'&&result.actions.some(a=>a.spec.targetDigest===req.bindingDigest));
       result.semanticRevision=this.#semantic(c,t.id);
+      result.notificationFacts=['owner','coordinator','host'].includes(c.role)?this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='notification_fact'",...keys).map(row=>{const fact=this.#auto(c,'notification_fact',row.id),delivery=this.#record(c,t.id,'delivery',fact.deliveryRef);return{...fact,state:delivery.state,released:this.#notificationReleased(c,t.id,delivery)};}):[];
+      result.notifications=['owner','coordinator','host'].includes(c.role)?this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='notification_group'",...keys).map(row=>{const group=this.#auto(c,'notification_group',row.id),delivery=this.#record(c,t.id,'delivery',group.deliveryRef);return{...group,state:delivery.state,released:this.#notificationReleased(c,t.id,delivery)};}):[];
       return result;
   }
 
@@ -1407,8 +1525,8 @@ export class RuntimeStore {
         this.#event(t,'intake');
       }       this.#ledger.run('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)',c.ownerRef,c.workspaceRef,input.providerRef,input.sourceIdentityRef,input.eventRef,t.id,now);
       this.#managed(t);
-      let supplement;
-      if(input.goal!==undefined&&subscription.spec.route==='new_task')this.#data(c,t,{
+      let supplement,goalData;
+      if(input.goal!==undefined&&subscription.spec.route==='new_task')goalData=this.#data(c,t,{
         kind:'goal',content:input.goal,sourceRef:source.sourceRef,commandRef:input.commandRef
       });
       if(input.goal!==undefined&&subscription.spec.route==='supplement'){
@@ -1427,7 +1545,7 @@ export class RuntimeStore {
         ...source,rateWindowStart:start,rateCount:count+1
       });
       const receipt={
-        sourceRef:source.sourceRef,subscriptionRef:subscription.subscriptionRef,eventRef:input.eventRef,eventDigest:input.eventDigest,providerRef:input.providerRef,sourceIdentityRef:input.sourceIdentityRef,taskRef:t.id,receivedAt:input.receivedAt,observedAt:input.observedAt,state:'processed',identityMode:source.spec.identityMode,routeBindingDigest:source.spec.routeBinding?canonicalDigest(source.spec.routeBinding):null,...(supplement?{
+        sourceRef:source.sourceRef,subscriptionRef:subscription.subscriptionRef,eventRef:input.eventRef,eventDigest:input.eventDigest,providerRef:input.providerRef,sourceIdentityRef:input.sourceIdentityRef,taskRef:t.id,receivedAt:input.receivedAt,observedAt:input.observedAt,state:'processed',identityMode:source.spec.identityMode,routeBindingDigest:source.spec.routeBinding?canonicalDigest(source.spec.routeBinding):null,...(goalData?{goalRecordRef:goalData.recordRef,goalDigest:goalData.digest}:{}),...(supplement?{
           supplementRecordRef:supplement.recordRef,supplementDigest:supplement.digest
         }:{
         })
@@ -1780,8 +1898,47 @@ export class RuntimeStore {
     if(existing&&existing.key_digest!==hash(this.#key))fail('KEY_MISMATCH');
     this.#validate();
   }
+  #validateAutomation(row){
+    const c={ownerRef:row.owner,workspaceRef:row.workspace};
+    const value=this.#auto(c,row.kind,row.id);
+    if(row.kind==='notification_claim'){
+      const delivery=this.#record(c,row.task,'delivery',value.deliveryRef);
+      if(delivery.claimRef!==value.claimRef||delivery.reservationRef!==value.reservationRef||
+        !this.#auto(c,'notification_group',value.groupId)||
+        value.factIds.some(id=>!this.#auto(c,'notification_fact',id)))fail('STORAGE_INVALID');
+    }
+    if(row.kind==='notification_policy')this.#notificationSpec(value.spec);
+    if(['notification_group','notification_fact'].includes(row.kind)){
+      const delivery=this.#record(c,row.task,'delivery',value.deliveryRef);
+      if(delivery.claimRef!==value.claimRef||delivery.reservationRef!==value.reservationRef||!delivery.notification)fail('STORAGE_INVALID');
+    }
+    if(row.kind==='receipt_policy')this.#receiptPolicy(c);
+    if(row.kind==='legacy_command'){
+      const command=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',row.owner,row.workspace,row.id);
+      if(!command||canonical(value)!==canonical(this.#receiptIdentity(command)))fail('STORAGE_INVALID');
+    }
+    if(row.kind==='semantic'){
+      integer(value.revision,1);
+      for(const id of value.requiredAudits||[])if(!this.#auto(c,'audit',id))fail('STORAGE_INVALID');
+    }
+    if(row.kind==='event'){
+      if(!this.#auto(c,'source',value.sourceRef)||!this.#auto(c,'subscription',value.subscriptionRef)||
+        !this.#ledger.one('SELECT 1 FROM ingress WHERE owner=? AND workspace=? AND provider=? AND source=? AND event=? AND task=?',row.owner,row.workspace,value.providerRef,value.sourceIdentityRef,value.eventRef,value.taskRef))fail('STORAGE_INVALID');
+      for(const [referenceKey,digestKey,kind] of [['goalRecordRef','goalDigest','goal'],['supplementRecordRef','supplementDigest','context']]){
+        if(value[referenceKey]===undefined&&value[digestKey]===undefined)continue;
+        if(value[referenceKey]===undefined||value[digestKey]===undefined)fail('STORAGE_INVALID');
+        const metadata=this.#dataMeta(c,row.task,value[referenceKey],value[digestKey]);
+        if(metadata.kind!==kind||metadata.sourceRef!==value.sourceRef||metadata.generationRef!==null)fail('STORAGE_INVALID');
+      }
+    }
+    if(row.kind==='subscription'&&!this.#auto(c,'source',value.sourceRef))fail('STORAGE_INVALID');
+    if(row.kind==='execution'&&!this.#ledger.one('SELECT 1 FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',row.owner,row.workspace,row.task,value.claimRef))fail('STORAGE_INVALID');
+  }
   #validate(){
-    if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){for(const r of this.#ledger.query('SELECT * FROM automation_records')){const c={ownerRef:r.owner,workspaceRef:r.workspace},value=this.#auto(c,r.kind,r.id);if(r.kind==='receipt_policy')this.#receiptPolicy(c);if(r.kind==='legacy_command'){const command=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',r.owner,r.workspace,r.id);if(!command||canonical(value)!==canonical(this.#receiptIdentity(command)))fail('STORAGE_INVALID');}if(r.kind==='semantic'){integer(value.revision,1);for(const id of value.requiredAudits||[])if(!this.#auto(c,'audit',id))fail('STORAGE_INVALID');}if(r.kind==='event'&&(!this.#auto(c,'source',value.sourceRef)||!this.#auto(c,'subscription',value.subscriptionRef)||!this.#ledger.one('SELECT 1 FROM ingress WHERE owner=? AND workspace=? AND provider=? AND source=? AND event=? AND task=?',r.owner,r.workspace,value.providerRef,value.sourceIdentityRef,value.eventRef,value.taskRef)))fail('STORAGE_INVALID');if(r.kind==='subscription'&&!this.#auto(c,'source',value.sourceRef))fail('STORAGE_INVALID');if(r.kind==='execution'&&!this.#ledger.one('SELECT 1 FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',r.owner,r.workspace,r.task,value.claimRef))fail('STORAGE_INVALID');}for(const r of this.#ledger.query('SELECT * FROM workspace_memory'))this.#memory({ownerRef:r.owner,workspaceRef:r.workspace},r.namespace);}
+    if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){
+      for(const row of this.#ledger.query('SELECT * FROM automation_records'))this.#validateAutomation(row);
+      for(const row of this.#ledger.query('SELECT * FROM workspace_memory'))this.#memory({ownerRef:row.owner,workspaceRef:row.workspace},row.namespace);
+    }
     for(const row of this.#ledger.query('SELECT * FROM runtime_commands'))this.#commandReceipt(row,false,true);
     for(const row of this.#ledger.query('SELECT metadata FROM runtime_data'))if(parse(row.metadata).cryptoVersion!==2)fail('CRYPTO_LEGACY_UNVERIFIED');
     for(const table of ['runtime_commands','runtime_data','runtime_actions','runtime_workers','runtime_records']){
@@ -1796,7 +1953,7 @@ export class RuntimeStore {
       }
     }
     for(const policyRow of this.#ledger.query('SELECT * FROM runtime_policy'))this.#getPolicy({ownerRef:policyRow.owner,workspaceRef:policyRow.workspace});
-    for(const r of this.#ledger.query('SELECT * FROM runtime_records'))this.#record({ownerRef:r.owner,workspaceRef:r.workspace},r.task,r.kind,r.id);
+    for(const r of this.#ledger.query('SELECT * FROM runtime_records')){const c={ownerRef:r.owner,workspaceRef:r.workspace},record=this.#record(c,r.task,r.kind,r.id);if(r.kind==='delivery'&&record.notification&&record.claimRef){const ownership=this.#auto(c,'notification_claim',record.deliveryRef);if(!ownership||ownership.claimRef!==record.claimRef||ownership.reservationRef!==record.reservationRef)fail('STORAGE_INVALID');}}
     for(const r of this.#ledger.query('SELECT * FROM runtime_actions')){
       const spec=normalizedSpec(parse(r.spec)),m=parse(r.metadata),action=this.#ledger.one('SELECT * FROM actions WHERE owner=? AND workspace=? AND task=? AND id=?',r.owner,r.workspace,r.task,r.action);
       if(!action||spec.actionRef!==r.action||spec.kind!==action.kind||spec.units!==action.units||spec.targetDigest!==action.target_digest||spec.dataDigest!==action.data_digest||r.digest!==canonicalDigest({ownerRef:r.owner,workspaceRef:r.workspace,taskRef:r.task,taskVersion:m.plannedTaskVersion,authEpoch:m.plannedAuthEpoch,spec}))fail('STORAGE_INVALID');
