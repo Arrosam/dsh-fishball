@@ -1,5 +1,7 @@
 # BUB007B — Memory adapter, isolation and retrieval
 
+Current alias: **DF007B**. Historical BUB IDs and approved source text below remain preserved. The [owner amendment](../owner-amendment-2026-10-04.md) controls current naming, MIT and chat-provider applicability.
+
 Status: planned.
 Wave: W3 after007A; isolation contracts fromW1.
 Source AC IDs retained: BUB007-03..06.

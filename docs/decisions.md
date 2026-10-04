@@ -2,15 +2,15 @@
 
 These do not block independent M1 fixtures.
 - D1 resolved for this wave by the newer owner instruction: install latest official DSH Web in isolated project state, use loopback browser acceptance, exclude old Desktop shims and Electron/native-shell checks. Registry verified newest published preview 0.2.1-alpha.1 (2026-10-03); npm latest/next still names older 0.2.0-rc.2 (2026-09-29). Pin exact alpha for this wave; subsequent breaking upgrades require explicit assessment. [Compatibility](compatibility.md) records package/API/validation evidence. No other installation is upgraded or removed. Owner's statements that old Desktop is unmaintained and Electron is Web-based remain owner context unless independently verified.
-- D2: first chat provider and deployment/account constraints; no provider selected or live account setup authorized.
+- D2 resolved by the newest [owner amendment](owner-amendment-2026-10-04.md): no first chat platform this phase. Provider-neutral contract validation remains required; actual chat software/accounts/delivery are explicitly future/out of this phase.
 - D3/D10: measured performance, queue/concurrency/retry/time/cost thresholds. M1 uses conservative configurable fixture caps, no spend claims; owner preference Sol6.1 ≥high coding, max root-cause/audits, xhigh visual, no Astra.
-- D4: retention/backup/import/export/delete scope and artifact lifetime. Independent bubbles storage is mandatory; no fishball personal-data import.
+- D4: retention/backup/import/export/delete scope and artifact lifetime. Independent dsh-fishball storage is mandatory; no fishball personal-data import.
 - D5/D6: permitted cross-session scope, owner pairing, approval/secret-store/user-handoff interfaces and allowed destinations.
-- D7: pinned fishball code revision, portability route, extracted-code redistribution/license/attribution. No memory code copied in M1.
+- D7 current subset: exact pins, ESM algorithm translation, source-byte hashes and exhausted relevant contributor histories are recorded in [provenance](fishball-provenance.md). All inspected source-change identities match the owner; READMEs declare MIT, no conflicting notice or separate human contributor identified. No compiled Kotlin/JS or whole-core reuse is claimed. Project MIT and notices cover owner-authored code; future new source incorporation requires review.
 - D8/D9: summaries/context limits, event source, owner timezone, missed schedules, quiet hours/emergency exceptions and provider replay limits.
 - D11/D12: artifact types/report depth and actual native task-panel extension entry.
 - D13: runtime mandatory-review categories/severity and bounded repair loops. Development review is already mandatory for every ticket.
-- D14: main copyright license and eventual preview packaging/platform. Public target Arrosam/bubbles is intended only after full agreed MVP acceptance; local history retained. No stable designation.
+- D14 resolved license/name: MIT, dsh-fishball (df), verified local owner attribution Arrosin. Eventual public target Arrosam/dsh-fishball is conditional on full agreed MVP acceptance; no remote/push now. Preview packaging details remain to verify. No stable designation.
 
 ## Withdrawn interoperability requirement
 
