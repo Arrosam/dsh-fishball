@@ -1,0 +1,102 @@
+TAP version 13
+# (node:56809) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: read-only first status/preview and strict consent denials never create persistent entries
+ok 1 - read-only first status/preview and strict consent denials never create persistent entries
+  ---
+  duration_ms: 5.390167
+  type: 'test'
+  ...
+# Subtest: preview supersession, exact expiry, rollback and precommit abort have zero writes
+ok 2 - preview supersession, exact expiry, rollback and precommit abort have zero writes
+  ---
+  duration_ms: 50.451417
+  type: 'test'
+  ...
+# Subtest: consented same-schema encrypted core, private state, one-use preview and retained namespace reopen
+ok 3 - consented same-schema encrypted core, private state, one-use preview and retained namespace reopen
+  ---
+  duration_ms: 54.378792
+  type: 'test'
+  ...
+# Subtest: retained target, every sidecar, dangling entries and lexical/path/mode drift preserve bytes
+ok 4 - retained target, every sidecar, dangling entries and lexical/path/mode drift preserve bytes
+  ---
+  duration_ms: 10.317958
+  type: 'test'
+  ...
+# Subtest: publication contender, callback secrets and activation failure preserve accountable partials
+ok 5 - publication contender, callback secrets and activation failure preserve accountable partials
+  ---
+  duration_ms: 84.57275
+  type: 'test'
+  ...
+# Subtest: activation awaits recheck key/metadata/inode and own disposal, without replay or false ready
+ok 6 - activation awaits recheck key/metadata/inode and own disposal, without replay or false ready
+  ---
+  duration_ms: 141.835292
+  type: 'test'
+  ...
+# Subtest: postcommit request abort retains valid ready state and cannot undo consent or initialize twice
+ok 7 - postcommit request abort retains valid ready state and cannot undo consent or initialize twice
+  ---
+  duration_ms: 44.700584
+  type: 'test'
+  ...
+# Subtest: future/corrupt/partial retained setup refuses repair or key replacement
+ok 8 - future/corrupt/partial retained setup refuses repair or key replacement
+  ---
+  duration_ms: 264.169459
+  type: 'test'
+  ...
+# Subtest: exact inode and profile binding refuse same-byte replacement without following retained state
+ok 9 - exact inode and profile binding refuse same-byte replacement without following retained state
+  ---
+  duration_ms: 144.926916
+  type: 'test'
+  ...
+# Subtest: unload before trusted activation and corrupt ready-state read seals child admission
+ok 10 - unload before trusted activation and corrupt ready-state read seals child admission
+  ---
+  duration_ms: 44.317417
+  type: 'test'
+  ...
+# Subtest: two genuine processes prepare before barrier and only one publishes the owned namespace
+ok 11 - two genuine processes prepare before barrier and only one publishes the owned namespace
+  ---
+  duration_ms: 235.546333
+  type: 'test'
+  ...
+# Subtest: genuine abrupt child exits at six durable cuts preserve partial facts and never resume or replay
+ok 12 - genuine abrupt child exits at six durable cuts preserve partial facts and never resume or replay
+  ---
+  duration_ms: 723.567375
+  type: 'test'
+  ...
+# Subtest: original public native owner setup has zero preconsent writes, actual child readiness, encrypted dedup and ten reloads
+ok 13 - original public native owner setup has zero preconsent writes, actual child readiness, encrypted dedup and ten reloads
+  ---
+  duration_ms: 221.889583
+  type: 'test'
+  ...
+# Subtest: native startup future-schema refusal preserves setup/database facts and mounts no task route
+ok 14 - native startup future-schema refusal preserves setup/database facts and mounts no task route
+  ---
+  duration_ms: 62.057667
+  type: 'test'
+  ...
+# Subtest: installed entry missing concrete carrier remains pending before any storage or runtime
+ok 15 - installed entry missing concrete carrier remains pending before any storage or runtime
+  ---
+  duration_ms: 0.92625
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2322.626791
