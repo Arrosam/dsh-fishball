@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: independent exact carrier source 404/405 require fresh coherent nonempty task readback and confer no consent
+ok 1 - independent exact carrier source 404/405 require fresh coherent nonempty task readback and confer no consent
+  ---
+  duration_ms: 21.283625
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source signature/prototype/accessor/wire negatives cannot start a fallback list
+ok 2 - independent exact carrier source signature/prototype/accessor/wire negatives cannot start a fallback list
+  ---
+  duration_ms: 3.881
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source original list needs literal successful envelope and bounded valid task metadata
+ok 3 - independent exact carrier source original list needs literal successful envelope and bounded valid task metadata
+  ---
+  duration_ms: 4.341666
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source native-client disconnect state or disposal aborts pending list without late publication
+ok 4 - independent exact carrier source native-client disconnect state or disposal aborts pending list without late publication
+  ---
+  duration_ms: 0.688792
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source newest required/recovery/unavailable status fences an earlier advanced list
+ok 5 - independent exact carrier source newest required/recovery/unavailable status fences an earlier advanced list
+  ---
+  duration_ms: 1.1165
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source superseded status and list generations cannot publish or overwrite newer task
+ok 6 - independent exact carrier source superseded status and list generations cannot publish or overwrite newer task
+  ---
+  duration_ms: 0.849875
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+ok 7 - independent exact carrier source uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+  ---
+  duration_ms: 0.509208
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source previously validated advanced tasks do not survive newer status auth or malformed failure
+ok 8 - independent exact carrier source previously validated advanced tasks do not survive newer status auth or malformed failure
+  ---
+  duration_ms: 0.922959
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source synchronous close on missing-route publication prevents the follow-on RPC
+ok 9 - independent exact carrier source synchronous close on missing-route publication prevents the follow-on RPC
+  ---
+  duration_ms: 0.574916
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated 404/405 require fresh coherent nonempty task readback and confer no consent
+ok 10 - independent exact carrier generated 404/405 require fresh coherent nonempty task readback and confer no consent
+  ---
+  duration_ms: 3.333208
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated signature/prototype/accessor/wire negatives cannot start a fallback list
+ok 11 - independent exact carrier generated signature/prototype/accessor/wire negatives cannot start a fallback list
+  ---
+  duration_ms: 3.695709
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated original list needs literal successful envelope and bounded valid task metadata
+ok 12 - independent exact carrier generated original list needs literal successful envelope and bounded valid task metadata
+  ---
+  duration_ms: 4.02225
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated native-client disconnect state or disposal aborts pending list without late publication
+ok 13 - independent exact carrier generated native-client disconnect state or disposal aborts pending list without late publication
+  ---
+  duration_ms: 0.621583
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated newest required/recovery/unavailable status fences an earlier advanced list
+ok 14 - independent exact carrier generated newest required/recovery/unavailable status fences an earlier advanced list
+  ---
+  duration_ms: 0.720292
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated superseded status and list generations cannot publish or overwrite newer task
+ok 15 - independent exact carrier generated superseded status and list generations cannot publish or overwrite newer task
+  ---
+  duration_ms: 0.780916
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+ok 16 - independent exact carrier generated uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+  ---
+  duration_ms: 0.367209
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated previously validated advanced tasks do not survive newer status auth or malformed failure
+ok 17 - independent exact carrier generated previously validated advanced tasks do not survive newer status auth or malformed failure
+  ---
+  duration_ms: 0.625125
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated synchronous close on missing-route publication prevents the follow-on RPC
+ok 18 - independent exact carrier generated synchronous close on missing-route publication prevents the follow-on RPC
+  ---
+  duration_ms: 0.302875
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 157.254417

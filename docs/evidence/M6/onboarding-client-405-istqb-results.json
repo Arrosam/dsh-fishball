@@ -1,0 +1,113 @@
+{
+  "scope": "Typed source/generated-bundle native404/405 carrier, fresh original task-list reply and setup/lifecycle guards; no actual browser/native auth/HTTP/profile/provider",
+  "reviewer": "/root/istqb_review",
+  "model": "gpt-6.1-sol",
+  "reasoningEffort": "max",
+  "moduleVerdict": "PASS",
+  "aggregateProductVerdict": "HOLD",
+  "finalCodeVerdict": "HOLD; no substitute review performed",
+  "test": {
+    "path": "test/onboarding-client-405-adversarial.test.mjs",
+    "sha256": "0775bb43e86cc3a9eaeced0c6e2c72fb7f3f0b3a13d2c03bf238951ca24d51b7",
+    "familiesPerFactory": 9,
+    "factories": [
+      "actual CJS source",
+      "actual generated lazy-registration factory"
+    ],
+    "assertionsChangedAfterFirstFailure": false
+  },
+  "design": "docs/evidence/M6/onboarding-client-405-test-design.md",
+  "review": "docs/evidence/M6/onboarding-client-405-test-review.md",
+  "firstAuthorHold": {
+    "manifest": "docs/evidence/M6/onboarding-client-author.405.sha256",
+    "sha256": "9feb9b69102a9f6e9abf3d8c25180d3fab32a442095c16f3bd98dc4cbbada147",
+    "entries": 5,
+    "beforeAfterMatchedAtFirstRun": true,
+    "nowHistorical": true
+  },
+  "finalAuthorHold": {
+    "manifest": "docs/evidence/M6/onboarding-client-author.T01.sha256",
+    "sha256": "be5cf8fef00fa017fd617157715fa0eb1d03b0c9dccd57d85af344a6adb2759e",
+    "entries": 6,
+    "beforeAfterMatched": true
+  },
+  "finalSources": {
+    "src/client-entry.cjs": "191e2becac16cd00d814fbf70896a8b744ff5b7ae2f520cd3f8b57c31f56c2bd",
+    "lib/client.js": "341b7b9d679fd74cb2b5ee6cff9ed5388c809a1dc8cc55415ced4eb612733301",
+    "test/onboarding-client.test.mjs": "f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0"
+  },
+  "runs": [
+    {
+      "label": "First source/generated hold",
+      "command": "node --test test/onboarding-client-405-adversarial.test.mjs",
+      "exitCode": 1,
+      "raw": "docs/evidence/M6/onboarding-client-405-istqb-first.tap",
+      "rawSha256": "6445fdac0dceea6fded2f300ac507b1c8e16a3592c3dab858ccc8a50a44b2db2",
+      "tests": 18,
+      "pass": 16,
+      "fail": 2,
+      "cancelled": 0,
+      "skip": 0,
+      "durationMs": 170.098417
+    },
+    {
+      "label": "Unchanged independent retest",
+      "command": "node --test test/onboarding-client-405-adversarial.test.mjs",
+      "exitCode": 0,
+      "raw": "docs/evidence/M6/onboarding-client-405-istqb-T01-retest.tap",
+      "rawSha256": "9a0850e0540e38d9418084e52bb82b6faa0aa5dab2a4c8917a7cc7eb1e91f36b",
+      "tests": 18,
+      "pass": 18,
+      "fail": 0,
+      "cancelled": 0,
+      "skip": 0,
+      "durationMs": 157.254417
+    },
+    {
+      "label": "Current author28 + original independent26 + unchanged carrier18",
+      "command": "node --test test/onboarding-client.test.mjs test/onboarding-client-adversarial.test.mjs test/onboarding-client-405-adversarial.test.mjs",
+      "exitCode": 0,
+      "raw": "docs/evidence/M6/onboarding-client-405-istqb-final.tap",
+      "rawSha256": "91fe6973a0e967ea7a88c6b051508d7e39d95cc8a2548ecd962493cae8b00d2b",
+      "tests": 72,
+      "pass": 72,
+      "fail": 0,
+      "cancelled": 0,
+      "skip": 0,
+      "durationMs": 156.057958
+    }
+  ],
+  "finding": {
+    "id": "UISET-T01",
+    "disposition": "Independently CLOSED",
+    "firstTrigger": "Exact status405 followed by malformed task-list {ok:1,value:[]} incorrectly enabled advanced task view",
+    "riskLimit": "Typed malformed-reply/readiness counterexample; no actual native authorization bypass demonstrated",
+    "rootFindingCommit": "97e0f03",
+    "retainedSourceAndFirstFailure": true,
+    "allOriginalNumericStringContradictoryNegativesExecuteAndDenyOnRetest": true
+  },
+  "checks": [
+    {
+      "command": "node --check test/onboarding-client-405-adversarial.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "node scripts/build-client.mjs --check",
+      "exitCode": 0
+    }
+  ],
+  "unchangedCheckpoints": [
+    "Server setup12-entry held archive and49/65 evidence",
+    "Original independent UI26-case file and8-entry checkpoint",
+    "Original issued contract/design and original404-only snapshots/manifests",
+    "Historical57-path archive"
+  ],
+  "remainingGates": [
+    "Actual rendered browser/keyboard/focus/accessibility",
+    "Final independent CODE remains blocked",
+    "Actual host/profile/HTTP/installed process observations remain root-owned evidence",
+    "Production model/policy/tool/recipient choices and useful model/audit quality",
+    "Whole-ticket/MVP/publication acceptance"
+  ],
+  "hostileProxyLimit": "Ordinary getter guards verified; same-process reflection traps may execute, explicitly tested trap1 by author case; no universal trap0 claim"
+}

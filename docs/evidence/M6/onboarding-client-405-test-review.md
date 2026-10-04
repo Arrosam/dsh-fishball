@@ -1,0 +1,53 @@
+# Independent exact405 native-carrier correction test review
+
+Current checkpoint: **PASS for the held typed source/bundle carrier correction; UISET-T01 independently CLOSED. Aggregate acceptance remains HOLD.** The unaffected setup unit is separately [49/65 PASS](installation-test-review.md). Reviewer `/root/istqb_review`, Sol6.1/max. This is the authorized ISTQB lane; final CODE/browser gates remain HOLD and are not replaced. No production/author/old independent test, Git, real native host/profile/HTTP/listener/authentication, credential, browser or provider operation was performed by this lane.
+
+The [new design](onboarding-client-405-test-design.md) was written before this independent execution. It follows the committed [native-carrier addendum](../../onboarding-native-carrier-addendum.md), SHA256 `843ec553298859c91c6e191a5043afd3548c550b72fe7312e942a4e841e96132`, with honest initial-author-draft ordering. Original contract/design, original source/bundle snapshots, UI26/46 raw tests and initial manifests stay historical and unchanged.
+
+The first [five-entry author405 manifest](onboarding-client-author.405.sha256) matched [before](onboarding-client-405-istqb-before.txt) and [after first](onboarding-client-405-istqb-after-first.txt). It bound source `0ff4ae8217992437f0196f80ac295dd05639bd258049d4697fff49965b6cf818`, bundle `798040982e353218eae60d79ee70438a592ae5f85d5736bc2c66b7dba04190f6` and author test `0684719e13f5e2ff3c3d7d6bc00da8b8e75968f3d3d3acd54114ec1121308218`. That manifest is historical after the explicitly authorized remediation. Public first source/bundle/author-test bytes are copied to the distinct `onboarding-client-405-first-{client-source,bundle,author-test}.txt` snapshots, rather than silently referring to the changed live files.
+
+`node --test test/onboarding-client-405-adversarial.test.mjs` first run: **18 tests,16 PASS,2 FAIL,0skip/cancelled,170.098417ms,exit1**. [Raw first TAP](onboarding-client-405-istqb-first.tap), SHA256 `6445fdac0dceea6fded2f300ac507b1c8e16a3592c3dab858ccc8a50a44b2db2`, and [exact independent first source](onboarding-client-405-istqb-first-source.txt) are retained. Its unchanged live test SHA256 remains `0775bb43e86cc3a9eaeced0c6e2c72fb7f3f0b3a13d2c03bf238951ca24d51b7`. The first HOLD review is preserved as [first-review.txt](onboarding-client-405-istqb-first-review.txt). Same-realm typed React/RPC factories test both actual CJS source and generated lazy-registration factory; they exercise no DOM or native transport.
+
+## UISET-T01: first counterexample and correction
+
+Trigger: exact `transport failure for /df-setup/v1/status: HTTP 405`, followed by `/df-rpc/v1/list` returning `{ok:1,value:[]}`. Expected: malformed success denied, task model stale/blocked, advanced task view absent. Actual in source and generated bundle: task model becomes ready/stale-false and displays `Create task`.
+
+Both retained failures are [the unchanged literal-success/list family](../../../test/onboarding-client-405-adversarial.test.mjs:75), assertion line81. Pre-fix `createModel.call` used truthiness of `result.ok`, rather than a literal/closed successful envelope. The same unchanged family includes string `ok:'true'` and contradictory `{ok:true,value:[],error:{code:'OPERATOR_REQUIRED'}}` negatives; the first numeric counterexample prevented those later iterations in the first run. Their old acceptance was visible analytically in the same helper, not falsely claimed as executed first-run assertions. After remediation, every unchanged negative iteration executes and denies as expected.
+
+The issue violates the exact405/404 **fresh structurally successful original-list** gate in the corrective addendum and UISET-06. It is typed malformed-response/readiness evidence; this test does not demonstrate a native authentication bypass or backend action authorization. No grant/worker/effect/confirm was sent. Root and the UI author received the counterexample before any remediation.
+
+Root accepted the bounded typed functional finding and committed [its record](onboarding-client-405-finding.md) at `97e0f03` before remediation. It preserved prior source/bundle/23-author-test bytes at `26b1d1d` in `onboarding-client-before-T01.*.txt`. The same UI author then repaired the common task reply boundary: literal closed success, safe closed structured failure, detached plain JSON replies and safe stable thrown-error projection. Neither exact404/405 set membership nor endpoint/permission/policy limits expanded. No independent file or assertion was changed. The current [author report](onboarding-client-author.T01.md) records the135-case author batch as author verification, not this reviewer's independent result.
+
+## Exact corrected hold and independent commands
+
+The [six-entry T01 author manifest](onboarding-client-author.T01.sha256) matched [before](onboarding-client-405-T01-istqb-before.txt) and [after](onboarding-client-405-T01-istqb-after.txt) independent final execution. Current source SHA256 `191e2becac16cd00d814fbf70896a8b744ff5b7ae2f520cd3f8b57c31f56c2bd`, generated bundle `341b7b9d679fd74cb2b5ee6cff9ed5388c809a1dc8cc55415ced4eb612733301`, author tests `f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0`. Runtime Node22.22.2/macOS. No install or dependency action.
+
+| Exact command | Expected / actual | Raw evidence |
+| --- | --- | --- |
+| `node --test test/onboarding-client-405-adversarial.test.mjs` | Unchanged18 source/bundle cases: **18/18 PASS**,0fail/skip/cancelled,157.254417ms,exit0 | [Corrected retest TAP](onboarding-client-405-istqb-T01-retest.tap), SHA256 `9a0850e0540e38d9418084e52bb82b6faa0aa5dab2a4c8917a7cc7eb1e91f36b` |
+| `node --test test/onboarding-client.test.mjs test/onboarding-client-adversarial.test.mjs test/onboarding-client-405-adversarial.test.mjs` | Current author28 + original independent26 + unchanged carrier18: **72/72 PASS**,0fail/skip/cancelled,156.057958ms,exit0 | [Final combined TAP](onboarding-client-405-istqb-final.tap), SHA256 `91fe6973a0e967ea7a88c6b051508d7e39d95cc8a2548ecd962493cae8b00d2b` |
+| `node --check test/onboarding-client-405-adversarial.test.mjs` | Exit0 | [Syntax capture](onboarding-client-405-istqb-check.txt) |
+| `node scripts/build-client.mjs --check` | Deterministic source/bundle agreement,exit0 | [Build capture](onboarding-client-405-istqb-build-check.txt) |
+| `shasum -a 256 -c docs/evidence/M6/onboarding-client-author.T01.sha256` | All6 match before/after | Linked captures above |
+
+## Nine-family expected/actual matrix
+
+All rows execute against both source and generated bundle. Original [published corrective design](onboarding-client-405-test-design.md) remains unchanged. The initial two failing family results are preserved as history, not overwritten by this matrix.
+
+| Design ID / test family | Expected / actual corrected result |
+| --- | --- |
+| C405-01 exact404/405,coherent nonempty list/status | Only status→fresh list→exact selected-task status reads;task view enables after valid readback,setup acceptance/prepare/confirm stay unavailable. PASS2/2. |
+| C405-02 signature/prototype/accessor/wire negatives |22 prefix/suffix/Unicode/code/endpoint/auth/network/string/inherited/accessor/embedded/malformed setup partitions per factory:routeMissing false,no task list,no canary/message getter. PASS2/2. |
+| C405-03 literal/closed task success |12 malformed content/envelope/field/count/owner-failure partitions per factory,including all original numeric/string/contradictory regressions:stale blocked,task view absent,no retry. PASS2/2;T01 closed. |
+| C405-04 native-client connection-state disconnect or disposal | Pending list aborts;late valid reply cannot publish into closed/offline generation. PASS2/2. |
+| C405-05 newer required/recovery/unavailable status | Old pending advanced list cannot change newer setup status or enable a task view. PASS2/2. |
+| C405-06 stale status and replacement list generations | Delayed old405 does not start list;old task list cannot overwrite current validated selected task;old request aborted. PASS2/2. |
+| C405-07 uncertain confirm/readback405 | One explicitly accepted confirmation only;status readback405 cannot acquire refresh-only fallback or infer initialized/ready;no second confirm or task-list RPC. PASS2/2. |
+| C405-08 previously current advanced view,then auth/malformed failure | Current status invalidates former task readiness;old tasks cannot satisfy fresh-list gate;no secret/alternate-route retry. PASS2/2. |
+| C405-09 synchronous closure during route-missing publication | Own model disposal prevents the otherwise subsequent list RPC. PASS2/2. |
+
+The72-case final run also executes the unchanged original26 consent vectors and all28 current authored setup/carrier/reply tests. The five new authored T01 cases cover structured failure projection,frozen valid replies,ordinary getter denial,transparent and hostile Proxy safety,and missing structuredClone fail-closed behavior. This reviewer reran them in R2; their test authorship remains the UI author's. A same-process hostile Proxy may execute reflection traps during prototype/descriptor inspection: author test explicitly sees one hostile ownKeys trap,then stable INVALID_RESPONSE/no canary. Ordinary getters remain uncalled. Native JSON transport cannot carry executable accessors/proxies; neither author nor this report claims universal trap0. Only the independent message-accessor cases explicitly assert0.
+
+Requirement contribution is UISET-01/03/04/05/06/07/08/09, SET-02/03/14/15/17, retained BUB006-01/02/03/05, BUB014-01/02/03/05 and BUB016-01/02/04. Expected strict fresh-list success,exact current-plan consent,stale/error/uncertain/lifecycle guards and closed safe output now pass the exact commands above. The [26-row source matrix](installation-test-review.md) and global82+5 mapping remain authoritative;no whole-ticket pass follows from typed modules. Actual native405 was observed by root separately;its original owner and anonymous405 route-absence observations themselves do not authenticate anyone. Only a fresh original authorized task-list response can provide the underlying readiness fact.
+
+Browser/BUB014-04,actual rendered carrier/keyboard/focus/accessibility,final independent CODE,production model/policy and useful-model/audit-quality,product/MVP/publication acceptance remain HOLD. This lane performs no HTTP/listener/host or owner credential action and no correctness-review reroute. The unaffected server12-entry setup checkpoint,original UI8-entry checkpoint,historical57-path archive,first16/18 failure/snapshots and old author manifests remain intact;the new final correction has its own evidence/manifest. All owned test bodies are held after final verification.

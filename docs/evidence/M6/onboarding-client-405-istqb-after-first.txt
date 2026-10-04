@@ -1,0 +1,5 @@
+src/client-entry.cjs: OK
+lib/client.js: OK
+test/onboarding-client.test.mjs: OK
+docs/onboarding-native-carrier-addendum.md: OK
+docs/evidence/M6/onboarding-client-author.405.tap: OK
