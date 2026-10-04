@@ -86,21 +86,23 @@ export class RuntimeStore {
       this.#bind(principals[i]);
     }
     if(fixtureMaxPageCount!==undefined)integer(fixtureMaxPageCount,1,1000000);
-    this.#ledger=new Ledger(databasePath,{
-      migrationFault,maxPageCount:fixtureMaxPageCount
-    });
     try {
+      this.#ledger=new Ledger(databasePath,{
+        migrationFault,maxPageCount:fixtureMaxPageCount,
+        validateSnapshot:snapshot=>{
+          const original=this.#ledger;
+          this.#ledger=snapshot;
+          try{this.#validateOpen();}finally{this.#ledger=original;}
+        }
+      });
       this.#ledger.transaction(()=>{
-        const existing=this.#ledger.one('SELECT key_digest FROM runtime_security WHERE id=1');
-        const keyDigest=hash(this.#key);
-        if(existing&&existing.key_digest!==keyDigest)fail('KEY_MISMATCH');
-        if(!existing)this.#ledger.run('INSERT INTO runtime_security VALUES(1,?)',keyDigest);
-        this.#validate();
+        this.#validateOpen();
+        if(!this.#ledger.one('SELECT key_digest FROM runtime_security WHERE id=1'))this.#ledger.run('INSERT INTO runtime_security VALUES(1,?)',hash(this.#key));
         this.#recover();
       });
     }
     catch(e){
-      this.#ledger.close();
+      this.#ledger?.close();
       this.#key.fill(0);
       throw e;
     }
@@ -294,7 +296,7 @@ export class RuntimeStore {
     return this.#ledger.query('SELECT * FROM tasks WHERE owner=? AND workspace=? ORDER BY created_at,id',c.ownerRef,c.workspaceRef).map(taskRecord);
   }
   #data(c,t,input){
-    if(!DATA_KINDS.includes(input.kind)||typeof input.content!=='string')fail('INVALID_INPUT');
+    if(!DATA_KINDS.includes(input.kind)||typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
     ref(input.sourceRef);
     if(Buffer.byteLength(input.content)>this.#limits.maxDataBytes)fail('INPUT_TOO_LARGE');
     if(this.#secrets.some(s=>input.content.includes(s)))fail('SECRET_REJECTED');
@@ -303,11 +305,11 @@ export class RuntimeStore {
     const id=canonicalDigest({
       commandRef:input.commandRef,kind:input.kind
     }),digest=hash(input.content),metadata={
-      recordRef:id,digest,kind:input.kind,sourceRef:input.sourceRef,taskVersion:t.version,authEpoch:t.auth_epoch,generationRef:c.generationRef||null,createdAt:this.#now(),byteLength:Buffer.byteLength(input.content)
+      recordRef:id,digest,kind:input.kind,sourceRef:input.sourceRef,taskVersion:t.version,authEpoch:t.auth_epoch,generationRef:c.generationRef||null,createdAt:this.#now(),byteLength:Buffer.byteLength(input.content),cryptoVersion:2
     };
     const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',this.#key,nonce);
     cipher.setAAD(Buffer.from(canonical({
-      keys,id,kind:input.kind,digest
+      format:'runtime-data/v2',keys,id,kind:input.kind,digest,metadata
     })));
     const ciphertext=Buffer.concat([cipher.update(input.content,'utf8'),cipher.final()]);
     this.#ledger.run('INSERT INTO runtime_data VALUES(?,?,?,?,?,?,?,?,?,?)',...keys,id,input.kind,digest,ciphertext,nonce,cipher.getAuthTag(),canonical(metadata));
@@ -331,36 +333,51 @@ export class RuntimeStore {
     }
     else if(c.role==='worker'&&!(['goal','constraints','context'].includes(m.kind)||m.generationRef===c.generationRef&&['message','artifact','progress'].includes(m.kind)))fail('UNAUTHORIZED');
   }
+  // Authenticate metadata before using it for any authorization or association.
+  // Legacy producer/source/generation labels cannot be safely resealed as facts.
+  #openData(c,row){
+    const metadata=parse(row.metadata);
+    if(metadata.cryptoVersion!==2)fail('CRYPTO_LEGACY_UNVERIFIED');
+    try{
+      exact(metadata,['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion']);
+      for(const key of ['recordRef','digest','sourceRef'])ref(metadata[key]);
+      if(metadata.generationRef!==null)ref(metadata.generationRef);
+      integer(metadata.taskVersion,1);
+      integer(metadata.authEpoch);
+      integer(metadata.createdAt);
+      integer(metadata.byteLength,0,this.#limits.maxDataBytes);
+      if(!DATA_KINDS.includes(metadata.kind)||metadata.recordRef!==row.id||metadata.digest!==row.digest||metadata.kind!==row.kind||row.owner!==c.ownerRef||row.workspace!==c.workspaceRef||row.nonce.length!==12||row.tag.length!==16||row.ciphertext.length!==metadata.byteLength)fail('STORAGE_INVALID');
+      const decipher=createDecipheriv('aes-256-gcm',this.#key,row.nonce);
+      decipher.setAAD(Buffer.from(canonical({
+        format:'runtime-data/v2',keys:this.#keys(c,row.task),id:row.id,kind:row.kind,digest:row.digest,metadata
+      })));
+      decipher.setAuthTag(row.tag);
+      const bytes=Buffer.concat([decipher.update(row.ciphertext),decipher.final()]);
+      if(bytes.length!==metadata.byteLength||hash(bytes)!==row.digest)fail('STORAGE_INVALID');
+      const content=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);
+      if(!content.isWellFormed())fail('STORAGE_INVALID');
+      return {metadata,content};
+    }
+    catch{
+      fail('STORAGE_INVALID');
+    }
+  }
   readData(handle,input){
     exact(input,['taskRef','recordRef']);
     const c=this.#ctx(handle,input.taskRef);
     ref(input.recordRef);
     const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,input.taskRef),input.recordRef);
     if(!row)fail('RECORD_NOT_FOUND');
-    const metadata=parse(row.metadata);
+    const {metadata,content}=this.#openData(c,row);
     try{this.#readAllowed(c,metadata);}catch(error){const addressed=metadata.kind==='message'&&['worker','reviewer'].includes(c.role)&&this.#ledger.query("SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind='message'",...this.#keys(c,input.taskRef)).map(r=>parse(r.payload)).some(m=>m.bodyRecordRef===row.id&&m.bodyDigest===row.digest&&['sent','consumed'].includes(m.state)&&m.immutableMetadata.recipientGenerationRef===c.generationRef&&m.immutableMetadata.recipientSessionRef===c.sessionRef);if(!addressed)throw error;}
-    try{
-      const decipher=createDecipheriv('aes-256-gcm',this.#key,row.nonce);
-      decipher.setAAD(Buffer.from(canonical({
-        keys:this.#keys(c,input.taskRef),id:row.id,kind:row.kind,digest:row.digest
-      })));
-      decipher.setAuthTag(row.tag);
-      const content=Buffer.concat([decipher.update(row.ciphertext),decipher.final()]).toString('utf8');
-      if(hash(content)!==row.digest)fail('STORAGE_INVALID');
-      return{
-        ...metadata,content
-      };
-    }
-    catch{
-      fail('STORAGE_INVALID');
-    }
+    return {...metadata,content};
   }
   listData(handle,input){
     exact(input,['taskRef','kind'],['taskRef']);
     const c=this.#ctx(handle,input.taskRef);
     this.#task(c,input.taskRef);
     if(input.kind!==undefined&&!DATA_KINDS.includes(input.kind))fail('INVALID_INPUT');
-    return this.#ledger.query('SELECT metadata FROM runtime_data WHERE owner=? AND workspace=? AND task=?'+(input.kind?' AND kind=?':''),...this.#keys(c,input.taskRef),...(input.kind?[input.kind]:[])).map(r=>parse(r.metadata)).filter(m=>{
+    return this.#ledger.query('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=?'+(input.kind?' AND kind=?':''),...this.#keys(c,input.taskRef),...(input.kind?[input.kind]:[])).map(r=>this.#openData(c,r).metadata).filter(m=>{
       try{
         this.#readAllowed(c,m);
         return true;
@@ -759,9 +776,9 @@ export class RuntimeStore {
   #dataMeta(c,task,id,digest){
     ref(id);
     ref(digest);
-    const row=this.#ledger.one('SELECT metadata FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,task),id);
+    const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,task),id);
     if(!row)fail('RECORD_NOT_FOUND');
-    const m=parse(row.metadata);
+    const m=this.#openData(c,row).metadata;
     this.#readAllowed(c,m);
     if(m.digest!==digest)fail('DIGEST_MISMATCH');
     return m;
@@ -785,9 +802,9 @@ export class RuntimeStore {
         if(e.code!=='UNAUTHORIZED'||!m.originalMessageRef)throw e;
         const parent=this.#record(c,input.taskRef,'message',m.originalMessageRef);
         if(parent.state!=='consumed'||parent.bodyRecordRef!==input.bodyRecordRef||parent.bodyDigest!==input.bodyDigest||parent.immutableMetadata.recipientGenerationRef!==c.generationRef||parent.immutableMetadata.recipientSessionRef!==c.sessionRef)fail('UNAUTHORIZED');
-        const row=this.#ledger.one('SELECT metadata FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,input.taskRef),input.bodyRecordRef);
+        const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,input.taskRef),input.bodyRecordRef);
         if(!row)fail('RECORD_NOT_FOUND');
-        body=parse(row.metadata);
+        body=this.#openData(c,row).metadata;
       }
       if(c.role==='reviewer'&&(m.category!=='review_result'||body.kind!=='verification'||body.generationRef!==c.generationRef))fail('UNAUTHORIZED');if(c.role!=='reviewer'&&body.kind!=='message')fail('INVALID_INPUT');
       if(m.originalMessageRef){
@@ -996,7 +1013,13 @@ export class RuntimeStore {
     this.#ctx(handle,input.taskRef,['owner','coordinator','host']);
     return this.snapshot(handle,input);
   }
+  #validateOpen(){
+    const existing=this.#ledger.one('SELECT key_digest FROM runtime_security WHERE id=1');
+    if(existing&&existing.key_digest!==hash(this.#key))fail('KEY_MISMATCH');
+    this.#validate();
+  }
   #validate(){
+    for(const row of this.#ledger.query('SELECT metadata FROM runtime_data'))if(parse(row.metadata).cryptoVersion!==2)fail('CRYPTO_LEGACY_UNVERIFIED');
     for(const table of ['runtime_commands','runtime_data','runtime_actions','runtime_workers','runtime_records']){
       const rows=this.#ledger.query(`SELECT * FROM ${table}`);
       if(rows.length>this.#limits.maxCommands+this.#limits.maxTasks*this.#limits.maxRecordsPerTask)fail('STORAGE_INVALID');
@@ -1015,24 +1038,8 @@ export class RuntimeStore {
       if(!action||spec.actionRef!==r.action||spec.kind!==action.kind||spec.units!==action.units||spec.targetDigest!==action.target_digest||spec.dataDigest!==action.data_digest||r.digest!==canonicalDigest({ownerRef:r.owner,workspaceRef:r.workspace,taskRef:r.task,taskVersion:m.plannedTaskVersion,authEpoch:m.plannedAuthEpoch,spec}))fail('STORAGE_INVALID');
       if(action.claim_id){if(m.claimRef!==reference(action.claim_id)||m.generationRef!==spec.executor.generationRef)fail('STORAGE_INVALID');const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',r.owner,r.workspace,r.task,m.claimRef);if(!worker)fail('STORAGE_INVALID');const w=parse(worker.payload);if(w.claimRef!==m.claimRef||w.actionRef!==r.action||w.actionDigest!==r.digest||w.reservationRef!==m.reservationRef||w.generationRef!==m.generationRef)fail('STORAGE_INVALID');if(m.releaseEvidenceRef&&['unknown','dispatch_intent'].includes(action.state)||!m.releaseEvidenceRef&&!['unknown','dispatch_intent'].includes(action.state))fail('STORAGE_INVALID');}
     }
-    for(const r of this.#ledger.query('SELECT * FROM runtime_data')){
-      const c={
-        ownerRef:r.owner,workspaceRef:r.workspace
-      };
-      const m=parse(r.metadata);
-      if(m.recordRef!==r.id||m.digest!==r.digest||m.kind!==r.kind||r.nonce.length!==12||r.tag.length!==16||r.ciphertext.length>this.#limits.maxDataBytes)fail('STORAGE_INVALID');
-      try{
-        const d=createDecipheriv('aes-256-gcm',this.#key,r.nonce);
-        d.setAAD(Buffer.from(canonical({
-          keys:this.#keys(c,r.task),id:r.id,kind:r.kind,digest:r.digest
-        })));
-        d.setAuthTag(r.tag);
-        const content=Buffer.concat([d.update(r.ciphertext),d.final()]);
-        if(hash(content)!==r.digest)fail('STORAGE_INVALID');
-      }
-      catch{
-        fail('STORAGE_INVALID');
-      }
+    for(const row of this.#ledger.query('SELECT * FROM runtime_data')){
+      this.#openData({ownerRef:row.owner,workspaceRef:row.workspace},row);
     }
   }
   #recover(){

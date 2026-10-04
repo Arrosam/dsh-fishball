@@ -1,7 +1,8 @@
 import { DatabaseSync } from 'node:sqlite';
-import { copyFileSync, existsSync, statSync, openSync, closeSync, fsyncSync, chmodSync, readSync, lstatSync } from 'node:fs';
+import { copyFileSync, existsSync, statSync, openSync, closeSync, fsyncSync, chmodSync, readSync, lstatSync, mkdtempSync, rmSync } from 'node:fs';
 import { constants } from 'node:fs';
-import { isAbsolute, dirname } from 'node:path';
+import { isAbsolute, dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 export class FoundationError extends Error {
   constructor(code) { super(code); this.name = 'FoundationError'; this.code = code; }
@@ -55,12 +56,34 @@ function preflight(path, existed) {
 
 
 export class Ledger {
-  constructor(path, { migrationFault, maxPageCount } = {}) {
+  constructor(path, { migrationFault, maxPageCount, validateSnapshot } = {}) {
     if (typeof path !== 'string' || !isAbsolute(path) || path.length > 4096 || path.includes('\0')) fail('INVALID_CONFIG');
     this.path = path; this.closed = false; this.restricted = false;
     const existed = existsSync(path);
     try {
       preflight(path,existed);
+      // An existing rollback journal may need recovery even for read-only SQL.
+      // Recover an isolated bounded copy first, so rejected ciphertext/key/legacy
+      // metadata never causes SQLite to mutate the original main or journal.
+      const journal=lstatSync(`${path}-journal`,{throwIfNoEntry:false});
+      if(existed&&journal&&validateSnapshot){
+        if(!journal.isFile()||statSync(path).size+journal.size>256*1024*1024)fail('STORAGE_UNAVAILABLE');
+        const directory=mkdtempSync(join(tmpdir(),'runtime-ledger-validation-'));
+        chmodSync(directory,0o700);
+        let snapshot;
+        try{
+          const snapshotPath=join(directory,'ledger.sqlite');
+          copyFileSync(path,snapshotPath,constants.COPYFILE_EXCL);
+          chmodSync(snapshotPath,0o600);
+          copyFileSync(`${path}-journal`,`${snapshotPath}-journal`,constants.COPYFILE_EXCL);
+          chmodSync(`${snapshotPath}-journal`,0o600);
+          snapshot=new Ledger(snapshotPath);
+          validateSnapshot(snapshot);
+        }
+        finally{
+          try{snapshot?.close();}finally{rmSync(directory,{recursive:true,force:true});}
+        }
+      }
       this.db = new DatabaseSync(path);
       if (!existed) chmodSync(path,0o600);
       this.db.exec('PRAGMA busy_timeout=2000; PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;');

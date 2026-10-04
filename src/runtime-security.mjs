@@ -17,7 +17,7 @@ export function canonical(value,depth=0) {
  if(depth>12) fail('INPUT_TOO_LARGE');
  if(value===null||typeof value==='boolean') return JSON.stringify(value);
  if(typeof value==='number') { integer(value); return String(value); }
- if(typeof value==='string') { if(Buffer.byteLength(value)>65536) fail('INPUT_TOO_LARGE'); return JSON.stringify(value); }
+ if(typeof value==='string') { if(!value.isWellFormed()) fail('INVALID_INPUT'); if(Buffer.byteLength(value)>65536) fail('INPUT_TOO_LARGE'); return JSON.stringify(value); }
  if(Array.isArray(value)) {
   if(types.isProxy(value)||Object.getPrototypeOf(value)!==Array.prototype||value.length>128) fail('INVALID_INPUT');
   const d=Object.getOwnPropertyDescriptors(value);
@@ -26,7 +26,7 @@ export function canonical(value,depth=0) {
  }
  if(!value||typeof value!=='object'||types.isProxy(value)||Object.getPrototypeOf(value)!==Object.prototype) fail('INVALID_INPUT');
  const d=Object.getOwnPropertyDescriptors(value),keys=Reflect.ownKeys(d);
- if(keys.length>64||keys.some(k=>typeof k!=='string'||!d[k].enumerable||!Object.hasOwn(d[k],'value'))) fail('INVALID_INPUT');
+ if(keys.length>64||keys.some(k=>typeof k!=='string'||!k.isWellFormed()||!d[k].enumerable||!Object.hasOwn(d[k],'value'))) fail('INVALID_INPUT');
  return '{'+keys.sort().map(k=>JSON.stringify(k)+':'+canonical(d[k].value,depth+1)).join(',')+'}';
 }
 export const canonicalDigest = value => hash(canonical(value));

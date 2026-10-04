@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
+import { createHash, createCipheriv, createDecipheriv } from 'node:crypto';
+import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, writeFileSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -898,4 +898,174 @@ test('independent durable handoff: stopped executor and known effect still hold 
   expectRuntimeError(() => f.store.markHandoff(f.host, { ...mapping, commandRef: f.command(), handoffRef: ref(999), state: 'resolved', evidenceRef: ref(2602) }), 'HANDOFF_MISMATCH');
   f.store.markHandoff(f.host, { ...mapping, commandRef: f.command(), handoffRef: handoff.handoffRef, state: 'resolved', evidenceRef: ref(2602) });
   const released = f.store.settleAction(f.host, { ...mapping, commandRef: f.command(), outcome: 'completed', evidenceRef: ref(2601) }); assert.equal(released.reservationHeld, false);
+});
+
+// Separate correctness-review CR11/12: these regressions extend the independent
+// isolation/byte design; they do not claim discovery of the auditor's findings.
+test('independent durable data integrity: live authorization/provenance metadata edits never grant plaintext or escape listing', t => {
+  for (const field of ['generationRef', 'kind', 'recordRef', 'digest', 'sourceRef', 'taskVersion', 'authEpoch', 'createdAt', 'byteLength', 'extraField']) {
+    const f = runtimeFixture(t), task = runtimeIntake(f, `metadata-${field}`), content = `owner-private-integrity-${field}`;
+    const data = runtimePut(f, task.taskRef, 'artifact', content), worker = {}, reviewer = {}, generationRef = ref(2700), forgedRef = ref(2701);
+    f.store.bindExecution(f.host, worker, { taskRef: task.taskRef, generationRef, sessionRef: ref(2702), role: 'worker' });
+    f.store.bindExecution(f.host, reviewer, { taskRef: task.taskRef, generationRef: ref(2703), sessionRef: ref(2704), role: 'reviewer', readRecordRefs: [forgedRef] });
+    expectRuntimeError(() => f.store.readData(worker, { taskRef: task.taskRef, recordRef: data.recordRef }), 'UNAUTHORIZED');
+    expectRuntimeError(() => f.store.readData(reviewer, { taskRef: task.taskRef, recordRef: data.recordRef }), 'UNAUTHORIZED');
+    assert.equal(f.store.readData(f.owner, { taskRef: task.taskRef, recordRef: data.recordRef }).content, content);
+    const db = new DatabaseSync(f.config.databasePath);
+    try {
+      const row = db.prepare('SELECT * FROM runtime_data WHERE id=?').get(data.recordRef), metadata = JSON.parse(row.metadata);
+      const replacement = { generationRef, kind: 'goal', recordRef: forgedRef, digest: forgedRef, sourceRef: forgedRef,
+        taskVersion: metadata.taskVersion + 1, authEpoch: metadata.authEpoch + 1, createdAt: metadata.createdAt + 1,
+        byteLength: metadata.byteLength + 1, extraField: 'synthetic forged provenance' };
+      metadata[field] = replacement[field];
+      db.prepare('UPDATE runtime_data SET metadata=? WHERE id=?').run(JSON.stringify(metadata), data.recordRef);
+      const changed = db.prepare('SELECT * FROM runtime_data WHERE id=?').get(data.recordRef);
+      for (const bound of ['ciphertext', 'nonce', 'tag', 'digest', 'kind', 'id']) assert.deepEqual(changed[bound], row[bound], `only metadata changed: ${bound}`);
+    } finally { db.close(); }
+    expectRuntimeError(() => f.store.readData(f.owner, { taskRef: task.taskRef, recordRef: data.recordRef }), 'STORAGE_INVALID');
+    expectRuntimeError(() => f.store.readData(worker, { taskRef: task.taskRef, recordRef: data.recordRef }), 'STORAGE_INVALID');
+    expectRuntimeError(() => f.store.readData(reviewer, { taskRef: task.taskRef, recordRef: data.recordRef }), 'STORAGE_INVALID');
+    expectRuntimeError(() => f.store.listData(f.owner, { taskRef: task.taskRef }), 'STORAGE_INVALID');
+    f.close(); const before = readFileSync(f.config.databasePath), entries = readdirSync(f.directory).sort();
+    expectRuntimeError(() => new RuntimeStore(f.config), 'STORAGE_INVALID');
+    assert.deepEqual(readFileSync(f.config.databasePath), before); assert.deepEqual(readdirSync(f.directory).sort(), entries);
+  }
+});
+
+test('independent durable format: genuine unverified v1 ciphertext rejects before recovery without automatic resealing', t => {
+  for (const tampered of [false, true]) {
+    const f = runtimeFixture(t), content = 'synthetic valid original v1 private goal', task = runtimeIntake(f, `v1-${tampered}`, { goal: content });
+    runtimePolicy(f); const plan = runtimePlan(f, task), claim = runtimeClaim(f, plan);
+    f.store.workerObservation(f.host, { taskRef: task.taskRef, claimRef: claim.claimRef, generationRef: claim.generationRef, commandRef: f.command(), phase: 'submitted', evidenceRef: ref(2800) });
+    f.close(); const db = new DatabaseSync(f.config.databasePath);
+    try {
+      const row = db.prepare('SELECT * FROM runtime_data WHERE task=?').get(task.taskRef), metadata = JSON.parse(row.metadata);
+      delete metadata.cryptoVersion;
+      if (tampered) metadata.generationRef = ref(2801);
+      // Exact legacy canonical AAD, independently constructed in sorted-key
+      // order. Scope/id/kind/digest were bound; immutable metadata was absent.
+      const aad = Buffer.from(JSON.stringify({ digest: row.digest, id: row.id, keys: [row.owner, row.workspace, row.task], kind: row.kind }));
+      const cipher = createCipheriv('aes-256-gcm', fixtureKey, row.nonce); cipher.setAAD(aad);
+      const ciphertext = Buffer.concat([cipher.update(content, 'utf8'), cipher.final()]), tag = cipher.getAuthTag();
+      db.prepare('UPDATE runtime_data SET ciphertext=?,tag=?,metadata=? WHERE id=?').run(ciphertext, tag, JSON.stringify(metadata), row.id);
+      const verify = createDecipheriv('aes-256-gcm', fixtureKey, row.nonce); verify.setAAD(aad); verify.setAuthTag(tag);
+      assert.equal(Buffer.concat([verify.update(ciphertext), verify.final()]).toString('utf8'), content, 'genuine legacy ciphertext is decryptable under its original format');
+      assert.equal(sha(content), row.digest);
+    } finally { db.close(); }
+    const before = readFileSync(f.config.databasePath), entries = readdirSync(f.directory).sort();
+    expectRuntimeError(() => new RuntimeStore(f.config), 'CRYPTO_LEGACY_UNVERIFIED');
+    assert.deepEqual(readFileSync(f.config.databasePath), before, 'rejection precedes claim recovery, task changes and any reseal');
+    assert.deepEqual(readdirSync(f.directory).sort(), entries, 'no silent backup/quarantine or replacement is created');
+    const readback = new DatabaseSync(f.config.databasePath);
+    try { assert.equal(readback.prepare('SELECT state FROM actions').get().state, 'dispatch_intent'); assert.equal(readback.prepare('SELECT status FROM tasks').get().status, 'running'); }
+    finally { readback.close(); }
+  }
+});
+
+test('independent durable UTF-8: every lone-surrogate partition rejects before command hashing or typed persistence', t => {
+  const malformed = ['\ud800', '\udbff', '\udc00', '\udfff', 'prefix\ud800suffix', '\udc00\ud800'];
+  const f = runtimeFixture(t), task = runtimeIntake(f, 'well-formed');
+  const before = f.store.snapshot(f.owner, { taskRef: task.taskRef }), bytes = readFileSync(f.config.databasePath);
+  for (const content of malformed) {
+    assert.equal(content.isWellFormed(), false);
+    expectRuntimeError(() => canonicalDigest({ content }), 'INVALID_INPUT');
+    expectRuntimeError(() => canonicalDigest({ [content]: 'safe value' }), 'INVALID_INPUT');
+    for (const kind of ['goal', 'constraints', 'clarification', 'branch', 'context', 'message', 'artifact', 'verification', 'progress']) expectRuntimeError(() => runtimePut(f, task.taskRef, kind, content), 'INVALID_INPUT');
+    expectRuntimeError(() => f.store.intake(f.owner, { taskId: 'invalid-goal', provider: 'fixture', source: 'inbox', eventId: 'invalid-event', commandRef: f.command(), goal: content }), 'INVALID_INPUT');
+  }
+  assert.deepEqual(f.store.snapshot(f.owner, { taskRef: task.taskRef }), before);
+  assert.equal(f.store.listTasks(f.owner).length, 1);
+  assert.deepEqual(readFileSync(f.config.databasePath), bytes);
+});
+
+test('independent durable UTF-8: valid scalar/pair and explicit replacement characters roundtrip exact strings and digests', t => {
+  const f = runtimeFixture(t), task = runtimeIntake(f, 'unicode-roundtrip');
+  const strings = ['😀', '𝄞', '中\nline', 'e\u0301', 'é', '\ufffd', '\ud7ff', '\ue000', '\udbff\udfff'];
+  const receipts = strings.map(content => {
+    assert.equal(content.isWellFormed(), true);
+    const written = runtimePut(f, task.taskRef, 'artifact', content), read = f.store.readData(f.owner, { taskRef: task.taskRef, recordRef: written.recordRef });
+    assert.equal(read.content, content); assert.equal(read.digest, sha(content)); assert.equal(read.byteLength, Buffer.byteLength(content));
+    return { content, recordRef: written.recordRef, digest: written.digest };
+  });
+  f.reopen();
+  for (const item of receipts) { const read = f.store.readData(f.owner, { taskRef: task.taskRef, recordRef: item.recordRef }); assert.equal(read.content, item.content); assert.equal(read.digest, item.digest); }
+});
+
+test('independent actual crash journal: unverified legacy, wrong key and relabeled metadata preserve main/journal while valid v2 recovers', { timeout: 20000 }, t => {
+  for (const mode of ['legacy-v1', 'wrong-key', 'metadata-edit', 'valid-v2']) {
+    const f = runtimeFixture(t), acknowledged = [];
+    for (let i = 0; i < 12; i++) {
+      const content = `synthetic journal goal ${i}: ` + '中 bounded encrypted goal\n'.repeat(300);
+      const task = runtimeIntake(f, `hot-journal-${mode}-${i}`, { goal: content });
+      const [data] = f.store.listData(f.owner, { taskRef: task.taskRef });
+      acknowledged.push({ task, content, recordRef: data.recordRef });
+    }
+    const first = acknowledged[0]; runtimePolicy(f);
+    const plan = runtimePlan(f, first.task), claim = runtimeClaim(f, plan);
+    f.close();
+    const db = new DatabaseSync(f.config.databasePath);
+    let expectedTasks, expectedData;
+    try {
+      const row = db.prepare('SELECT * FROM runtime_data WHERE id=?').get(first.recordRef), metadata = JSON.parse(row.metadata);
+      if (mode === 'legacy-v1') {
+        delete metadata.cryptoVersion;
+        const aad = Buffer.from(JSON.stringify({ digest: row.digest, id: row.id, keys: [row.owner, row.workspace, row.task], kind: row.kind }));
+        const cipher = createCipheriv('aes-256-gcm', fixtureKey, row.nonce); cipher.setAAD(aad);
+        const ciphertext = Buffer.concat([cipher.update(first.content, 'utf8'), cipher.final()]), tag = cipher.getAuthTag();
+        db.prepare('UPDATE runtime_data SET ciphertext=?,tag=?,metadata=? WHERE id=?').run(ciphertext, tag, JSON.stringify(metadata), row.id);
+        const oracle = createDecipheriv('aes-256-gcm', fixtureKey, row.nonce); oracle.setAAD(aad); oracle.setAuthTag(tag);
+        assert.equal(Buffer.concat([oracle.update(ciphertext), oracle.final()]).toString('utf8'), first.content);
+      } else if (mode === 'metadata-edit') {
+        metadata.generationRef = ref(2900);
+        db.prepare('UPDATE runtime_data SET metadata=? WHERE id=?').run(JSON.stringify(metadata), row.id);
+      }
+      expectedTasks = db.prepare('SELECT id,status,version,auth_epoch FROM tasks ORDER BY id').all();
+      expectedData = db.prepare('SELECT id,task,digest,ciphertext,nonce,tag,metadata FROM runtime_data ORDER BY id').all();
+    } finally { db.close(); }
+    const committedMain = readFileSync(f.config.databasePath);
+    const source = `import {DatabaseSync} from 'node:sqlite'; const db=new DatabaseSync(process.argv[1]); db.exec('PRAGMA journal_mode=DELETE;PRAGMA synchronous=FULL;PRAGMA cache_size=1;PRAGMA cache_spill=ON;BEGIN IMMEDIATE;UPDATE runtime_data SET ciphertext=zeroblob(length(ciphertext));UPDATE tasks SET version=version+1,updated_at=updated_at+1;'); process.exit(77);`;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', source, f.config.databasePath], { encoding: 'utf8', timeout: 5000 });
+    assert.equal(child.status, 77, child.stderr);
+    const journalPath = `${f.config.databasePath}-journal`;
+    assert.ok(existsSync(journalPath), 'actual abrupt exit leaves a rollback journal');
+    assert.equal(readFileSync(journalPath).subarray(0, 8).toString('hex'), 'd9d505f920a163d7', 'spilled journal has the actual SQLite hot-journal header');
+    assert.notDeepEqual(readFileSync(f.config.databasePath), committedMain, 'uncommitted dirty pages reached the main file before the crash');
+    const originals = new Map(readdirSync(f.directory).sort().map(name => [name, readFileSync(join(f.directory, name))]));
+    const assertOriginals = () => {
+      assert.deepEqual(readdirSync(f.directory).sort(), [...originals.keys()]);
+      for (const [name, bytes] of originals) assert.deepEqual(readFileSync(join(f.directory, name)), bytes, `original ${name} remains byte-exact`);
+    };
+    if (mode !== 'valid-v2') {
+      const code = mode === 'legacy-v1' ? 'CRYPTO_LEGACY_UNVERIFIED' : mode === 'wrong-key' ? 'KEY_MISMATCH' : 'STORAGE_INVALID';
+      expectRuntimeError(() => new RuntimeStore({ ...f.config, ...(mode === 'wrong-key' ? { encryptionKey: Buffer.alloc(32, 74) } : {}) }), code);
+      assertOriginals();
+    }
+    // A separate copy recovers the journal and proves the original acknowledged
+    // logical facts remain available. Opening the rejected original is avoided.
+    const copyDirectory = mkdtempSync(join(tmpdir(), 'bubbles-s2-independent-journal-copy-'));
+    t.after(() => rmSync(copyDirectory, { recursive: true, force: true }));
+    const copyPath = join(copyDirectory, 'oracle.sqlite');
+    copyFileSync(f.config.databasePath, copyPath); copyFileSync(journalPath, `${copyPath}-journal`);
+    const oracle = new DatabaseSync(copyPath);
+    try {
+      assert.deepEqual(oracle.prepare('SELECT id,status,version,auth_epoch FROM tasks ORDER BY id').all(), expectedTasks);
+      assert.deepEqual(oracle.prepare('SELECT id,task,digest,ciphertext,nonce,tag,metadata FROM runtime_data ORDER BY id').all(), expectedData);
+      const action = oracle.prepare('SELECT state,claim_id FROM actions WHERE id=?').get(plan.action.actionRef);
+      assert.equal(action.state, 'dispatch_intent'); assert.equal(reference(action.claim_id), claim.claimRef);
+      assert.equal(oracle.prepare('SELECT count(*) AS n FROM reservations WHERE claim_id=? AND action=?').get(action.claim_id, plan.action.actionRef).n, 1);
+    } finally { oracle.close(); }
+    assert.equal(existsSync(`${copyPath}-journal`), false, 'only the independent copy was recovered by the SQL oracle');
+    assertOriginals();
+    if (mode === 'valid-v2') {
+      f.reopen();
+      assert.equal(existsSync(journalPath), false, 'verified current format permits recovery of the original');
+      for (const item of acknowledged) assert.equal(f.store.readData(f.owner, { taskRef: item.task.taskRef, recordRef: item.recordRef }).content, item.content);
+      const snapshot = f.store.snapshot(f.owner, { taskRef: first.task.taskRef });
+      assert.equal(snapshot.task.status, 'recovery_required');
+      assert.equal(snapshot.actions[0].state, 'unknown'); assert.equal(snapshot.actions[0].releaseEvidenceRef, null);
+      assert.equal(snapshot.actions[0].actionDigest, plan.action.actionDigest);
+      assert.equal(snapshot.workers[0].claimRef, claim.claimRef); assert.equal(snapshot.workers[0].generationRef, claim.generationRef);
+      assert.equal(f.store.listTasks(f.owner).filter(task => task.status === 'queued' && task.version === 1).length, 11);
+    }
+  }
 });
