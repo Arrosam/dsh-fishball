@@ -1,0 +1,158 @@
+{
+  "target": "dsh-web-0.2.1-alpha.1",
+  "channel": "preview",
+  "verifiedAt": "2026-10-04",
+  "registry": "https://registry.npmjs.org/",
+  "distTags": {
+    "latest": "0.2.0-rc.2",
+    "next": "0.2.0-rc.2",
+    "alpha": "0.2.1-alpha.1"
+  },
+  "selection": "Newest official published preview, exact alpha pin; not npm latest tag",
+  "node": "v22.22.2",
+  "sqlite": "3.53.2",
+  "packages": {
+    "@deepseek-ai/dsh": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/bin.js",
+      "sha256": "1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f"
+    },
+    "@deepseek-ai/cordis": {
+      "version": "4.0.5-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+    },
+    "@deepseek-ai/dsh-session": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    "@deepseek-ai/dsh-user-approval": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+    },
+    "@deepseek-ai/dsh-web-app": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/index.js",
+      "sha256": "c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85"
+    },
+    "@deepseek-ai/dsh-host-webserver": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+    },
+    "@deepseek-ai/dsh-agent": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    "@deepseek-ai/dsh-agent-loop": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    "@deepseek-ai/dsh-api-session-controller": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-session-controller/lib/index.js",
+      "sha256": "d8219295e47819c1f0b5285b0a76ab5ff6a4ae7f1cf0b5eb8ee0753e763626e2"
+    },
+    "@deepseek-ai/dsh-tool-subagent": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tool-subagent/lib/index.js",
+      "sha256": "26a1e804aab4c6f9cb53a670c63b817fc8d9409569e6d68eda6fda33b966a840"
+    },
+    "@deepseek-ai/dsh-skill-filesystem": {
+      "version": "0.2.1-alpha.1",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-skill-filesystem/lib/index.js",
+      "sha256": "244e92e032ef15e96cb60c9e2cfddf5d89e167eb171fcbfd83e9415b0455a0d7"
+    }
+  },
+  "distribution": {
+    "version": "0.2.1-alpha.1",
+    "publishedAt": "2026-10-03T04:53:22.343Z",
+    "repository": {
+      "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "type": "git",
+      "directory": "apps/cli"
+    },
+    "license": "MIT",
+    "dist": {
+      "shasum": "4f0727d2b8b62d798cfbb5d5df0c797671a3a888",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.2.1-alpha.1.tgz",
+      "fileCount": 20,
+      "integrity": "sha512-DJ8pwG/XqzwDrYQTgJXuIga6ku153Z4vJI/B3MzNtudVCkDaOf4O2pUQh1ToroLHPPe4mxhhFeNJ7ttNculqMw==",
+      "signatures": [
+        {
+          "sig": "MEUCIQC8HTKA/d4I765hh5gazLhJw8p/D7ZNUYLLPynw5rs7ygIgDfVqAySwdniplSPDbQydBDLNNXzAFTCiPG+kCc0tw54=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEUCICjTHWJsJQ7bsmO4DFVg1GOJq0l54nTVaMubA2A9eXb3AiEA3RhhVpqP4jA/2J4GUm/vkSFW5VY/hKJjScZiJUeU7tY="
+        }
+      ],
+      "unpackedSize": 73774
+    },
+    "sha256": "857f93aa6c85cbd92be3422380e5516f236dc5c49cda0405a958cbdf1865e8db"
+  },
+  "runtimeLock": {
+    "path": "scripts/dsh-web-runtime-lock.json",
+    "sha256": "91b1d804426b61ff15317ce69c57d83ba14ac9add0acdd7b80b6a1f9086ee0ec",
+    "lockfileVersion": 3,
+    "entries": 629
+  },
+  "install": {
+    "scripts": "all disabled (--ignore-scripts)",
+    "audit": "disabled",
+    "fund": "disabled",
+    "installedPackages": 560,
+    "lifecyclePackages": [
+      "@deepseek-ai/dsh-subprocess-local@0.2.1-alpha.1",
+      "@google/genai@2.21.0",
+      "koffi@3.1.1",
+      "node-pty@1.2.0-beta.15",
+      "protobufjs@7.6.6"
+    ],
+    "lifecycleReview": [
+      {
+        "package": "@deepseek-ai/dsh-subprocess-local@0.2.1-alpha.1",
+        "file": "scripts/ensure-spawn-helper.mjs",
+        "sha256": "ca5509febf1e6ec1356df121835ebe5ed2f9cace4bdc2ba6d83d41c7e45e0f1b",
+        "executed": false
+      },
+      {
+        "package": "koffi@3.1.1",
+        "file": "cnoke.cjs",
+        "sha256": "d0547e34c211e4c01914418b514bba0f141359324fe1369734660bd75f7ffafc",
+        "executed": false
+      },
+      {
+        "package": "node-pty@1.2.0-beta.15",
+        "file": "scripts/prebuild.js",
+        "sha256": "7e604b10f7769d7dc95947d3481c00513b9e3bb6c561d5264506350a16a0381a",
+        "executed": false
+      },
+      {
+        "package": "node-pty@1.2.0-beta.15",
+        "file": "scripts/post-install.js",
+        "sha256": "98b3f6379debdab20eea21f216e0d09fa38c7757ddc3411f1a743eae7f5be14a",
+        "executed": false
+      },
+      {
+        "package": "protobufjs@7.6.6",
+        "file": "scripts/postinstall.js",
+        "sha256": "5af8463b97ee8e309b4a2111f9479bacdf0c180de0ca0155527679b1fc6d9e6c",
+        "executed": false
+      },
+      {
+        "package": "@google/genai@2.21.0",
+        "source": "package.json#scripts.preinstall",
+        "script": "echo 'preinstall: no-op'",
+        "sha256": "6ae827ea8da9c7a0e0be10ef82a81d7a4b8b0397b3a678259a0ecafb1aae04fa",
+        "executed": false
+      }
+    ]
+  },
+  "codeSnapshot": "10723812a1f3a85425a5428212ee5febffa62e3d"
+}

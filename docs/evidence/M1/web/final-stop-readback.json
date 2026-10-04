@@ -1,0 +1,27 @@
+{
+  "validator": "web_validation",
+  "observedAt": "2026-10-04T06:33:04.396Z",
+  "node": "v22.22.2",
+  "finalState": {
+    "loads": 12,
+    "unloads": 12,
+    "inferenceAttempts": 0,
+    "generation": 11,
+    "pid": 10939,
+    "phase": "disposed",
+    "deduplicated": true,
+    "firstDeduplicated": true,
+    "entries": 1,
+    "sessions": 0,
+    "hostSupported": true,
+    "target": "dsh-web-0.2.1-alpha.1",
+    "loopback": true,
+    "port": 3080,
+    "permissionBridge": "deny-all",
+    "identity": "trusted synthetic local fixture only",
+    "operator": "unavailable",
+    "staleReference": "disposed"
+  },
+  "ephemeralAccessFileExists": false,
+  "sourceChangesSinceRestart": []
+}

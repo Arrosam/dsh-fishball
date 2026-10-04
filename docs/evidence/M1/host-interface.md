@@ -1,86 +1,92 @@
-# BUB001 bounded native interface evidence
+# Current native host interface: DSH Web preview
 
-Author: delegated `host_bootstrap` (gpt-6.1-sol, high or above), 2026-10-04. Starting branch `feat/M1-foundation`, prerequisite commit `abb28b7e3962fa46c492b077c6cce5a8613a843b`. Root alone controls Git. This document records implementation and executable fixture evidence; independent reviews and the final reviewed SHA are recorded by root separately. It does not accept the full BUB001 ticket, a full MVP, or a release.
+Author: delegated host_bootstrap, GPT-6.1 Sol, high reasoning. Frozen code snapshot: `10723812a1f3a85425a5428212ee5febffa62e3d`. Verified 2026-10-04: official `@deepseek-ai/dsh@0.2.1-alpha.1`, public Cordis `4.0.5-alpha.1`, system Node `22.22.2`, built-in SQLite `3.53.2`. The owner selected the newest official published preview. Registry `latest` and `next` were `0.2.0-rc.2`; `alpha` was `0.2.1-alpha.1`, published 2026-10-03T04:53:22.343Z. The exact alpha pin is deliberate and is not described as the npm latest tag. No SDK runtime, DSH-X launcher or old-host shim is used.
 
-## Policy and dependency gate
+The old Desktop report is preserved unchanged in [historical evidence](host-interface.desktop-historical.md). Its acceptance does not establish current Web support.
 
-Read AGENTS, development-workflow, waves, foundation-contract, M1-foundation and BUB001 before implementation. Inspected enabled tools and installed public package inventory: no separate `runtime-policy` tool/package was supplied. Root confirmed the applicable policy is the managed workspace-write sandbox plus owner restrictions. All execution used normal `use_default` permissions. No action was denied; one exec-server transport disconnect was retried normally. No escalation or bypass occurred.
+## Provenance and reviewed installation
 
-Imports are confined to built-in Node APIs and existing public installed Cordis/session/approval modules. No install, download, package script from an external dependency, credential/profile/settings read/write, live launcher, inference, model registration or external transport was used. SQLite is built in; no storage dependency was needed. `package.json` is private and `0.1.0-preview.1`, with exact peer declarations documenting host requirements. No package lock is required for zero newly installed dependencies; do not run `npm install` for this fixture. No distribution source was copied and no owner copyright license was selected.
+The [official README](https://github.com/deepseek-ai/deepseek-harness/blob/master/README.md) identifies `npx @deepseek-ai/dsh web`, loopback `127.0.0.1:3080` and `--no-open`. The [CLI manifest](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/cli/package.json), [CLI reference](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/cli/README.md), [profile boot](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/cli/src/profile-boot.ts), [home paths](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/util/home-paths/src/index.ts) and [safety notice](https://github.com/deepseek-ai/deepseek-harness/blob/master/SAFETY.md) were browser-verified. Changing master documents located the controls; actual published files establish the supported pin.
 
-## Concrete support target and provenance
+Canonical tarball: `https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.2.1-alpha.1.tgz`, 24,302 bytes. SHA256 `857f93aa6c85cbd92be3422380e5516f236dc5c49cda0405a958cbdf1865e8db`; SHA512 matches registry integrity `sha512-DJ8pwG/XqzwDrYQTgJXuIga6ku153Z4vJI/B3MzNtudVCkDaOf4O2pUQh1ToroLHPPe4mxhhFeNJ7ttNculqMw==`. Published metadata declares MIT and the official repository/directory `deepseek-ai/deepseek-harness` / `apps/cli`, with no top-package engines or lifecycle scripts. Full versions, public source hashes and distribution metadata are in [host-runtime-provenance.json](host-runtime-provenance.json).
 
-Only target `desktop-0.9.1-harness-0.1.5-rc.2` is supported by the native bootstrap. The installed Mac directory pin is intentional M1 scope; portable installation/packaging remains later work. The fixture imports public modules from `/Applications/DSH Desktop.app/Contents/Resources/app/node_modules/@deepseek-ai/` and executes `/Applications/DSH Desktop.app/Contents/Resources/app/node_modules/node/bin/node`.
+The initial normal-sandbox registry request failed `ENOTFOUND`; root then obtained approval for narrowly scoped official-registry acquisition. Successful pack/lock/install commands used an empty inherited environment, fixed PATH, explicit project user/global npm configs and cache, zero retries and 15-second request timeouts. They did not use personal npm configuration/log paths.
 
-| Component | Observed version | SHA256 checked by bootstrap |
+Executed commands, with explicit project configuration/cache arguments omitted here for readability:
+
+```sh
+npm pack @deepseek-ai/dsh@0.2.1-alpha.1 --ignore-scripts --json
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+npm ci --ignore-scripts --no-audit --no-fund
+```
+
+The exact manifest and complete transitive lock are tracked as `scripts/dsh-web-runtime-package.json` and `scripts/dsh-web-runtime-lock.json`. Lock SHA256: `91b1d804426b61ff15317ce69c57d83ba14ac9add0acdd7b80b6a1f9086ee0ec`. There are 629 lock entries including root/all-platform optional packages; 560 installed packages. [Engine check](host-engine-check.json) inspected all 560 installed manifests: 183 declared Node engine ranges, zero failures against Node 22.22.2.
+
+Before installation, all five lifecycle-flagged packages were acquired with scripts disabled and their scripts inspected:
+
+| Published package | Reviewed action | Execution |
 | --- | --- | --- |
-| Desktop `app/package.json` | 0.9.1 | `fc1389b7779ce658572760f9b304e1e9f01b0b551959861cb79869b6428887db` |
-| embedded `dsh/package.json` | 0.1.5-rc.2 | version only; concrete public services below are source-pinned |
-| `cordis/lib/index.js` | 4.0.2 | `1729cdbf8ee40b17c8839e06bf96491490548559e11ef7e411271e0754e751c5` |
-| `dsh-session/lib/index.js` | 0.1.5-rc.2 | `05e94f57d96e7979670a5b51024c8591572eb0051ce793613dbdec35cf2c47bf` |
-| `dsh-user-approval/lib/index.js` | 0.1.5-rc.2 | `fbd3f2e348358d27234739f8cbc4bdb2d6450b0a6b1b207572463977b14a5ecb` |
-| bundled Node | v24.9.0 | runtime version and actual SQLite capability checked |
-| bundled built-in SQLite | 3.50.4 | actual `DatabaseSync(':memory:')` and SQL version query |
+| dsh-subprocess-local 0.2.1-alpha.1 | restore bundled spawn-helper executable bit | disabled |
+| @google/genai 2.21.0 | empty preinstall echo | disabled |
+| koffi 3.1.1 | native prebuild/build through cnoke | disabled |
+| node-pty 1.2.0-beta.15 | prebuild check or node-gyp fallback; platform postinstall cleanup | disabled |
+| protobufjs 7.6.6 | compatibility notice | disabled |
 
-Development Node v22.22.2 also provides built-in SQLite, observed 3.53.2 by the core author. It runs the core/config unit suite; it does not pass the exact native runtime target. `npm test` invokes the bundled Node for the host fixture inside the bootstrap test. `npm run test:host` runs the complete suite under the bundled Node. The package engine declaration permits both tested development/runtime versions, while `probeHost` permits only v24.9.0 as the native target.
+No lifecycle script was enabled to remedy a test. Actual Web boot succeeds with scripts disabled. Terminal/subprocess/native-addon and provider execution remain untested. `npm run host:setup` reproducibly performs the exact locked `npm ci`, with all scripts disabled; launch/test never silently downloads code. The root package is private and preview; its owner copyright license remains pending. Peer declarations describe official host requirements, without requiring root peer installation.
 
-Version strings do not suffice. Bootstrap requires the Cordis global context brand **and exact installed Context class identity**, exact installed SessionStore/ApprovalService class provenance, native `provide/effect/on`, `sessions.create/get/list`, `approval.request/effectivePolicy`, pinned source hashes, and actual built-in SQLite use. Handmade method lookalikes fail provenance. Missing or changed packages/services/runtime fail before Foundation construction; no fallback to CLI or master is attempted. Update any version/hash only after reviewing and retesting that concrete public implementation. `probeHost()` returns named failed checks, versions/hashes and stable bridge status without raw paths/config/errors. Native load failures use `HOST_CAPABILITY_UNSUPPORTED`; the exported probe supplies the concrete capability differences for diagnosis.
+## Native API and fail-closed boundary
 
-The current official [Cordis primer](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cordis-primer.md) was browser-verified on 2026-10-04. Its public plugin/injection/reversible-effect model informed the implementation; installed 4.0.2 source, not current master assumptions, determined the actual APIs. Initial `main` references failed; the official repository uses `master`. Official [master package metadata](https://github.com/deepseek-ai/deepseek-harness/blob/master/package.json) was separately browser-observed at **0.2.1-alpha.1**. It is not the installed version, supported target, or upgrade authorization.
+Installed public packages are under `.runtime/dsh-web/node_modules/@deepseek-ai`. `src/host-probe.mjs` checks exact CLI, Cordis, session, approval, Web app and Web server versions/source hashes; real imported Context/SessionStore/ApprovalService class identity; context `provide/effect/on`; session `create/get/list`; approval `request/effectivePolicy`; exact Node, an actual SQLite query and runtime-lock equality. Handmade contexts/version strings cannot pass. Required capability failure precedes Foundation/storage construction. Strict synchronous Standard Schema rejects unknown, hidden, accessor and proxy fields before intake.
 
-Global CLI `/opt/homebrew/bin/dsh` resolves to `/opt/homebrew/lib/node_modules/@deepseek-ai/dsh/lib/bin.js`; its package is **0.1.1-rc.2**, package.json SHA256 `dc930c0b18158f49ae3753ceaf6b1b7ae71dc6c8f45c85a2d679b142024addf7`. It was inspected read-only, not launched. Its public services/package/runtime differ from the pinned Desktop target; this bootstrap does not claim CLI compatibility. The SDK-minimal/app/JSON-RPC packages and DSH-X are not used: bubbles remains a native host plugin and creates no additional runtime, daemon or launcher.
+The plugin injects native sessions/approval and publishes one effect-owned bubbles service. Every borrowed operation checks public Cordis fiber lifecycle, closing admission at disposal request before asynchronous cleanup. It adds no model tool, remote transport, worker, timer or operator authority.
 
-## Bootstrap/core interface and trust
+Default native loading has no principal bridge: task operations fail `IDENTITY_UNAVAILABLE`. The same-process test factory samples, copies and freezes a trusted synthetic owner/workspace callback. Config and payloads cannot authenticate or override scope. Native operator deletion returns `OPERATOR_UNAVAILABLE`; no grant/revoke authority is published, and host permission remains deny-all. Web browser authentication does not create bubbles operator/principal authority.
 
-ESM default export is `{name, inject:['sessions','approval'], Config, apply}`; named exports include `createPlugin`, `Config`, `validateConfig`, `apply`, `probeHost`. Cordis 4.0.2 accepts the synchronous Standard Schema `Config['~standard'].validate` contract. Config requires an absolute bounded databasePath; only databasePath/hostTarget/limits are accepted. All accessors, Proxies (including revoked ones), unusual prototypes, symbols, unknown keys, invalid number types and invalid target strings fail with fixed codes. Proxy traps are never invoked by record validation. Paths/keys/values/errors are never interpolated into diagnostics. Limits default to queue32/active2/attempts3/tasks1000/actions16/events128/metadata1024; metadata min256, explicit conservative caps and active≤queue≤tasks are validated before opening storage.
+Concrete installed worker/control findings for W2 are distinct from SessionStore persistence:
 
-`Foundation({databasePath,limits,hostPermission:()=>false,trustedOperators:[]})` starts recovery and supplies `close()`. Storage lives only in the private effect closure. `ctx.bubbles` publishes no Foundation handle, capability, grant/revoke function, tool, event ingress, timer, provider or worker. Its default native identity bridge is unavailable, so task calls fail `IDENTITY_UNAVAILABLE`; native dispatch remains denied. `deleteTask` fails `OPERATOR_UNAVAILABLE` until a trusted operator bridge exists. A denied action never becomes an allowed action because a durable grant exists in another fixture.
+| Public package, version 0.2.1-alpha.1 | Installed interface | Evidence |
+| --- | --- | --- |
+| dsh-session | SessionStore create/get/list/prepare and session event facts | real public fixture; not an execution loop |
+| dsh-agent | AgentRegistry create(options), resume(options), registered factory, scoped initiating-agent attribution and effect-owned handles | source inspected; not invoked |
+| dsh-agent-loop | factory createAgent/resume; ReactLoopAgent send(message,target,wakeup), followup, steer, inject and cancel; cancel aborts the active phase and can preserve inbox | source inspected; not invoked |
+| dsh-api-session-controller | native sessionController create/fork/cancel and live/cold session projections | source inspected; commands not invoked |
+| dsh-tool-subagent | agent-scoped public tool composition via agent/preset/model-selection services and lifecycle events | source inspected; not invoked |
 
-`createPlugin({identity})` accepts a trusted same-process callback outside JSON/config for controlled host integration. The callback is sampled once before ledger creation and copied/frozen per activation; subsequent mutation of its source object cannot change scope. Native operations derive scope exclusively from that binding: `intake(input)`, `getTask(taskId)`, `listTasks()`, `exportTask(taskId)`, `transition(taskId,input)`, `requestAction(taskId,input)`, `claim(taskId,actionId,input)`, `cancel(taskId,input)`, `settle(taskId,actionId,input)`. Request objects accept only their per-method field allowlist. Payload scope/owner/workspace/principal/verified flags cannot authenticate or override the binding. Arbitrary JSON callers have no exported permission/authority mint.
+Extra source hashes are in provenance. These are W2 integration candidates, not inferred worker support from persistence. SDK and DSH-X are separate compositions, untested here; older global CLI/Desktop are outside the current target.
 
-One `ctx.effect` owns SQLite cleanup and `ctx.provide('bubbles',service)`; cleanup registered before publication handles startup failures. Borrowed methods additionally check public fiber state/uid: Cordis marks unload synchronously but schedules disposer work asynchronously. Consequently old references fail `SERVICE_DISPOSED` from the unload linearization point, including before disposal promises settle. Required-service loss stops dependents; their reappearance creates a new service and reruns config/capability validation and recovery. Changing identity requires a new activation.
+## Reproduction and actual profile
 
-## Actual executable fixture and commands
+```sh
+npm run check
+npm test
+npm run host:smoke
+npm run host:web
+npm run host:profile-smoke
+```
 
-`scripts/host-smoke.mjs` creates the installed public Context, loads installed SessionStore and ApprovalService with policy `never`, and imports the real bubbles plugin. All IDs are synthetic and ledgers are temporary and removed in finally. It does not create the Desktop app, read a profile, mount an agent loop or configure an inference provider.
+Syntax check: 14 ESM files. Current unit suite: 109/109 pass; bootstrap 11/11 pass. Public-library smoke: 11 loads/10 reloads/11 distinct deduplicated synthetic entries, service removal/reappearance, malformed config and identity before storage, immediate held-reference disposal rejection, zero inference. That fixture never reads a DSH profile.
 
-Commands run from the bubbles repository:
+The actual runner executes official CLI `lib/bin.js --profile web --host 127.0.0.1 --port 3080 --no-open`. Its child inherits only fixed PATH, absolute project `DSH_HOME` and distinct project `DSH_AGENTS_HOME`, telemetry opt-out and read-only permission mode. Clean working directory `.runtime/dsh-web-workspace`, home `.runtime/dsh-web-home` and agents root `.runtime/dsh-web-agents` are controlled; cwd/home contain no `.env`; HOME/CODEX_HOME are not repurposed. The native profile stacks official dsh-base + dsh-web-app with a profile patch inserting owned `scripts/web-fixture.mjs`. Account/account-controller and automatic LLM title rows are disabled. Official URL printing/opening are disabled.
 
-- Bundled `node -e` SQLite probe: v24.9.0, actual SQLite3.50.4; success.
-- `npm run check`: syntax success for all runtime/test/script ESM files; zero installs/downloads. Final count is recorded by root after integration.
-- `node --test test/bootstrap.test.mjs`: **8/8 passed** under development Node22.22.2, including the metadata min256 N-1/N/N+1 boundary; actual host fixture spawned bundled Node24.9.0.
-- `npm run host:smoke`: **passed**, JSON result loads11/reloads10/entries11, permissionOutcome=`rejected`, inferenceCalls=0, profileAccess=false, all capability checks true.
+The trusted local observer owns a bubbles child fiber and synthetic identity, writes only allowlisted counters, and blocks attempted agent requests. It publishes no HTTP/operator endpoint. Synthetic browser access is an ephemeral mode600 private runtime file, deleted on disposal; raw tokens are excluded from durable evidence/logs/screenshots.
 
-Fixture checks: real approval request runs inside a synthetic turn and policy never rejects it; fixture session unload removes it. Malformed config fails before ledger creation and sentinel config values/keys do not enter errors. Default native task identity rejects spoofed JSON. Eleven real plugin activations with ten reloads each submit one synthetic input twice and produce exactly one durable entry per input; reopen retains prior entries. No worker sessions appear. Plugin registry count returns to baseline and ctx.bubbles disappears after every unload. Every captured method rejects immediately after unload is requested and after it settles. Mutating the trusted identity source after load leaves bound scope unchanged. Missing both required services, late approval appearance, approval disappearance/reappearance, and session disappearance are tested; no ledger is created while dependencies are missing. Provider removal closes old admission immediately.
+Normal-sandbox launch failed `listen EPERM: operation not permitted 127.0.0.1:3080`; approved narrow loopback execution succeeded. Normal-sandbox termination of the escalated runner was denied; reviewed termination of only the owned runner succeeded. Binding, personal-data boundaries and approval review were preserved. Initial observer property access without inject was corrected to public ad-hoc `ctx.get`, intentionally borrowing the child service to test disposal.
 
-An independent reviewer reproduced an initial unload-before-disposer race (CR-02); public fiber state/uid checks fixed it and the regression now runs before awaiting every disposal. The reviewer independently retested that fix. An initial deletion argument mismatch was replaced with explicit native operator denial. A hostile input Proxy could originally throw its raw error through record validation (CR-05); `util.types.isProxy` now rejects hostile/revoked Proxies without invoking traps and unit/native-fixture regressions pass. These changes require the independent final review/retest recorded by root; this author does not self-accept them.
+Ten actual profile HMR updates passed in one server PID: loads11/unloads10, one retained durable synthetic entry, all held stale references disposed, zero DSH sessions/inference attempts. Nonsecret snapshots: [web-profile-smoke.json](web-profile-smoke.json). Full graceful stop then exited0, left observer disposed at loads11/unloads11, deleted ephemeral access and removed the loopback listener. Independent same-profile restart verified a new process, one retained entry and firstDeduplicated=true, with zero sessions/inference attempts. Audit CR11 found chunk-split log redaction needed bounded per-stream line buffering: fixed and independently retested, including oversized-line suppression and final-tail redaction. Audit CR12 found the separate default user-agents skill root: bound supported DSH_AGENTS_HOME to a distinct project-local path. A regression calls only the actual published provider roots(undefined), never discovery/body reads, and confirms exactly the two controlled skill roots. The corrected final source was independently observed active with its project agents directory; final graceful shutdown then exited0. Independent final readback confirmed loads15/unloads15, disposed stale reference, one retained entry, zero sessions/inference attempts, no loopback listener and no private access file. Source hashes remained unchanged between active/stopped readbacks. Final runner SHA256: `30dbb53a9e00255cde51ce9bf79db21fd7287726ec9ef7cd6ec5065d97bf39cf`. The separate browser evidence owns those final readbacks.
 
-## Supported/pending matrix
+## Support matrix
 
-| Gate | Status/evidence |
+| Gate | Status |
 | --- | --- |
-| Installed public Cordis/session/approval package/runtime pin | tested supported for the exact target above |
-| Native library plugin config/load/unload/reload10 and dependency changes | tested supported in disposable public-service fixture |
-| Strict config / fake capability / identity override denial | automated fixture/unit checks passed |
-| Native DSH owner/session-principal bridge, operator bridge, exact runtime permissions | pending; default identity unavailable/operator unavailable/dispatch denied |
-| Actual Desktop profile install/activation/settings integration | pending, not run; requires bounded profile/settings authorization |
-| Desktop UI/window-close/full-quit/restart lifetime | pending, not run; library fixture is not app lifetime evidence |
-| CLI0.1.1-rc.2 | unsupported by this exact target pin; full CLI compatibility/functional tests pending |
-| Upstream0.2.1-alpha.1 | observed only; no install/upgrade/runtime acceptance |
-| Real agent/provider/inference/effects | pending later milestones; zero calls in M1 |
-| Full BUB001-01..05 / full MVP / release | pending; bounded M1 API foundation only |
+| Official published preview provenance/transitive lock/engine checks | verified |
+| Public native library lifecycle/reload10/default-deny identity and permission | passed |
+| Actual isolated official Web boot/loopback/profile HMR reload10/graceful stop | passed |
+| Web browser shell/authentication/plugin UI | blocked: independent IAB and native Chrome returned net::ERR_BLOCKED_BY_CLIENT; blocker screenshot only; no host UI capture/token access |
+| Full process restart, retained ledger and final corrected-source graceful stop | independently passed; host left stopped |
+| Trusted native principal/operator/permission bridge and action dispatch | pending; fail-closed |
+| Provider/model/subprocess/tool/worker cancellation/session resume | source findings only; not executed |
+| Bubbles task UI/full vertical slice/full MVP/stable release | outside M1; not claimed |
 
-## Installed native worker/control findings for W2 (read-only)
+Final acceptance requires independent code/test review of the final tree and the separate actual browser/process-lifetime evidence. No dsh-std dependency/conformance adaptation was made; the owner withdrew that requirement before implementation.
 
-These are concrete installed **0.1.5-rc.2** source findings, not M1 runtime acceptance. `SessionStore.create` constructs an in-memory Session and explicitly supplies no persistence by itself. AgentRegistry (`ctx.agents`, `dsh-agent/lib/index.js`, create at line417/resume430) instead requires a registered factory and returns an owning AgentHandle after setup/publication/loop start. `resume` requires configured persistence through that factory. The factory is AgentLoop (`ctx.agentLoop`), injecting agents/sessions/llm/tools/systemPrompt/sessionProjections. Its worker Agent methods in `dsh-agent-loop/lib/index.js` at lines783–803 include `send`, `followup` (next-turn+wakeup), `steer` (next-step+wakeup), `inject` (next-step without wakeup), `cancel` (clears inbox unless keepInbox and signals current abort). Calling cancellation is not confirmed termination or proof that an effect was reversed.
-
-`SubagentRuntime` (`ctx.subagents`, `dsh-subagent/lib/index.js`) is a named-provider registry. One-shot `start` and continuation/control paths are different. Continuations require agents, session persistence and query; listing/control also requires sessionProjections/sessions/sessionQuery and rejects missing seams with named capability errors. Provider capability flags must be checked for the desired operation. `SessionController` (`ctx.sessionController`, `dsh-api-session-controller/lib/index.js`) injects agentDefaultModel/agents/attachments/fileUploads/llm/sessions/sessionProjections/sessionQuery/typert/workspaceRegistry and exposes create/resume/fork/cancel adapters. M1 mounts none of these worker assemblies. W2 must verify actual factory/provider/control methods and trusted host identities before using them; SessionStore success proves no worker-loop support.
-
-Additional installed source SHA256 values, not bootstrap acceptance hashes:
-
-- dsh-agent/lib/index.js: `b05aa36fce8e2f910596a682fb1d2b461eac2549e344360c92711a557d06b0bb`
-- dsh-agent-loop/lib/index.js: `257eb83c00a05ee068e9f4ba80ca71ab94e3a1275d24b7a0cf5038ff23dd0fd8`
-- dsh-subagent/lib/index.js: `b8ea0e37bd6f1d9c4bd870c4ca03839f6d0e42f648a83578e31a448f6dffe4ef`
-- dsh-api-session-controller/lib/index.js: `2c0fa776bc3ad457477d48d929a41cc0e7ef5f7d8d2ffbe102b77ae97780bab0`
-
-Suggested root commit units: (1) config/probe/native service/package declaration, (2) bootstrap regression tests + installed public smoke + coordinated syntax-check script, (3) host-interface evidence together with root-reviewed integration/remediation evidence. Core files and independent review/adversarial tests remain their respective authors' units.
+Reproducible setup script itself was executed after stopping the server: exact locked npm ci added 560 packages in 7s, with all lifecycle scripts disabled and no engine incompatibility. Final source tests include log chunk/overflow redaction and actual isolated skill-root enumeration.
