@@ -58,6 +58,15 @@ test('metadata minimum matches core at N-1, N and N+1 before storage opens', () 
   }
 });
 
+test('hidden valid and invalid limits reject before defaults can weaken explicit caps', () => {
+  for (const value of [1, 0]) {
+    const limits = Object.defineProperty({}, 'maxActive', { value });
+    const input = { databasePath: '/tmp/synthetic-ledger.sqlite', limits };
+    assert.throws(() => validateConfig(input), { code: 'CONFIG_INVALID', message: 'CONFIG_INVALID' });
+    assert.deepEqual(Config['~standard'].validate(input), { issues: [{ message: 'CONFIG_INVALID' }] });
+  }
+});
+
 test('synchronous Cordis Standard Schema emits only stable issue codes', () => {
   assert.deepEqual(Config['~standard'].validate({ databasePath: '/tmp/a', credential: 'synthetic-secret' }), {
     issues: [{ message: 'CONFIG_INVALID' }],

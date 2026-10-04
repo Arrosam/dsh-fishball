@@ -22,7 +22,7 @@ export function record(value, allowed, code = 'CONFIG_INVALID') {
       ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new BootstrapError(code);
   const descriptors = Object.getOwnPropertyDescriptors(value);
   if (Reflect.ownKeys(descriptors).some(key => typeof key !== 'string' ||
-      !allowed.includes(key) || !('value' in descriptors[key]))) throw new BootstrapError(code);
+      !allowed.includes(key) || !('value' in descriptors[key]) || !descriptors[key].enumerable)) throw new BootstrapError(code);
   return value;
 }
 
