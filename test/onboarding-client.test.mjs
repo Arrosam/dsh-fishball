@@ -220,3 +220,50 @@ test('exact405 fallback cannot publish a pending list after disconnect or unload
     assert.equal(calls.at(-1).signal.aborted, true); gate.resolve(ok([])); await settle(); assert.equal(app.model.getSnapshot().phase === 'ready', false); assert.equal(text(client.Panel(app)).includes('Create task'), false); app.close();
   }
 });
+
+test('task reply envelopes require literal closed success and reject unknown, contradictory or unsafe shapes', async () => {
+  let getters = 0;
+  const accessor = Object.defineProperty({ value: [] }, 'ok', { enumerable: true, get() { getters++; return true; } });
+  const nestedAccessor = Object.defineProperty({}, 'taskRef', { enumerable: true, get() { getters++; throw new Error('SYNTHETIC_T01_CANARY'); } });
+  const symbol = { ok: true, value: [] }; symbol[Symbol('unexpected')] = true;
+  const hidden = { ok: true, value: [] }; Object.defineProperty(hidden, 'hidden', { value: 'SYNTHETIC_T01_CANARY' });
+  const cycle = {}; cycle.loop = cycle;
+  const vectors = [{ ok: 1, value: [] }, { ok: 'true', value: [] }, { ok: true, value: [], error: { code: 'OPERATOR_REQUIRED' } }, { ok: true, value: [], extra: 'SYNTHETIC_T01_CANARY' }, { ok: true }, Object.create({ ok: true, value: [] }), accessor, hidden, symbol, new Proxy({ ok: true, value: [] }, {}), { ok: true, value: [new Proxy({}, {})] }, { ok: true, value: [nestedAccessor] }, { ok: true, value: [cycle] }, { ok: true, value: new Date() }, { ok: true, value: Array(1) }, { ok: true, value: undefined }];
+  for (const result of vectors) {
+    const model = client.createModel({ call: async () => result }); await model.refresh(); assert.equal(model.getSnapshot().phase, 'error'); assert.equal(model.getSnapshot().stale, true); assert.equal(model.getSnapshot().error, 'INVALID_RESPONSE'); assert.equal(JSON.stringify(model.getSnapshot()).includes('SYNTHETIC_T01_CANARY'), false); model.dispose();
+  }
+  assert.equal(getters, 0);
+});
+
+test('valid task failure envelopes preserve stable codes while malformed errors and thrown getters are redacted', async () => {
+  for (const result of [{ ok: false, error: { code: 'OPERATOR_REQUIRED' } }, { ok: false, error: { code: 'STALE_VERSION', message: 'SYNTHETIC_T01_CANARY', details: { synthetic: 'SYNTHETIC_T01_CANARY' } } }, { ok: false, error: { code: 'SYNTHETIC_T01_CANARY', message: 'SYNTHETIC_T01_CANARY', details: {} } }]) {
+    const model = client.createModel({ call: async () => result }); await model.refresh(); assert.equal(model.getSnapshot().error, ['OPERATOR_REQUIRED', 'STALE_VERSION'].includes(result.error.code) ? result.error.code : 'RESULT_UNCONFIRMED'); assert.equal(model.getSnapshot().stale, true); assert.equal(JSON.stringify(model.getSnapshot()).includes('SYNTHETIC_T01_CANARY'), false); model.dispose();
+  }
+  let getters = 0;
+  const errorAccessor = Object.defineProperty({}, 'code', { enumerable: true, get() { getters++; throw new Error('SYNTHETIC_T01_CANARY'); } });
+  for (const result of [{ ok: false }, { ok: false, value: [], error: { code: 'OPERATOR_REQUIRED' } }, { ok: false, error: { code: 'OPERATOR_REQUIRED', extra: 'SYNTHETIC_T01_CANARY' } }, { ok: false, error: { code: 1 } }, { ok: false, error: { code: 'OPERATOR_REQUIRED', message: {} } }, { ok: false, error: { code: 'OPERATOR_REQUIRED', details: [] } }, { ok: false, error: errorAccessor }]) {
+    const model = client.createModel({ call: async () => result }); await model.refresh(); assert.equal(model.getSnapshot().error, 'INVALID_RESPONSE'); assert.equal(JSON.stringify(model.getSnapshot()).includes('SYNTHETIC_T01_CANARY'), false); model.dispose();
+  }
+  const thrown = Object.defineProperty({}, 'message', { get() { getters++; throw new Error('SYNTHETIC_T01_CANARY'); } });
+  const model = client.createModel({ call: async () => { throw thrown; } }); await model.refresh(); assert.equal(model.getSnapshot().error, 'RESULT_UNCONFIRMED'); assert.equal(getters, 0); model.dispose();
+});
+
+test('common task reply parser accepts frozen native-format success envelopes', async () => {
+  const empty = Object.freeze([]), result = Object.freeze({ ok: true, value: empty });
+  const model = client.createModel({ call: async () => result }); await model.refresh(); assert.equal(model.getSnapshot().phase, 'ready'); assert.equal(model.getSnapshot().stale, false); assert.deepEqual(model.getSnapshot().tasks, []); model.dispose();
+});
+
+
+test('hostile same-process proxy reflection may run its trap but rejects safely with stable errors', async () => {
+  let traps = 0;
+  const response = new Proxy({ ok: true, value: [] }, { ownKeys() { traps++; throw new Error('SYNTHETIC_T01_PROXY_CANARY'); } });
+  const model = client.createModel({ call: async () => response }); await model.refresh();
+  assert.equal(traps, 1); assert.equal(model.getSnapshot().phase, 'error'); assert.equal(model.getSnapshot().error, 'INVALID_RESPONSE'); assert.equal(JSON.stringify(model.getSnapshot()).includes('SYNTHETIC_T01_PROXY_CANARY'), false); model.dispose();
+});
+
+test('missing structuredClone fails task reply parsing closed without an unsafe fallback', async () => {
+  const original = globalThis.structuredClone, model = client.createModel({ call: async () => ({ ok: true, value: [] }) });
+  try { globalThis.structuredClone = undefined; await model.refresh(); }
+  finally { globalThis.structuredClone = original; }
+  assert.equal(model.getSnapshot().phase, 'error'); assert.equal(model.getSnapshot().stale, true); assert.equal(model.getSnapshot().error, 'INVALID_RESPONSE'); model.dispose();
+});

@@ -1,0 +1,6 @@
+191e2becac16cd00d814fbf70896a8b744ff5b7ae2f520cd3f8b57c31f56c2bd  src/client-entry.cjs
+341b7b9d679fd74cb2b5ee6cff9ed5388c809a1dc8cc55415ced4eb612733301  lib/client.js
+f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0  test/onboarding-client.test.mjs
+306c1209e2e20f4c133a3d10a4cb6093835ec45eced7653c4f426aec63c2b1b0  docs/evidence/M6/onboarding-client-405-finding.md
+843ec553298859c91c6e191a5043afd3548c550b72fe7312e942a4e841e96132  docs/onboarding-native-carrier-addendum.md
+26235524bf92327d74ab54eaa32ad62a0d6756e167549e5dcc5758fca06af723  docs/evidence/M6/onboarding-client-author.T01-final.tap

@@ -1,0 +1,822 @@
+TAP version 13
+# Subtest: reproducible native bundle registers one lazy dsh-fishball module and imports host React only on materialization
+ok 1 - reproducible native bundle registers one lazy dsh-fishball module and imports host React only on materialization
+  ---
+  duration_ms: 84.105917
+  type: 'test'
+  ...
+# Subtest: captured-original-revise
+ok 2 - captured-original-revise
+  ---
+  duration_ms: 2.3505
+  type: 'test'
+  ...
+# Subtest: captured-original-answer
+ok 3 - captured-original-answer
+  ---
+  duration_ms: 0.6315
+  type: 'test'
+  ...
+# Subtest: second-session-link-actionRef
+ok 4 - second-session-link-actionRef
+  ---
+  duration_ms: 0.9035
+  type: 'test'
+  ...
+# Subtest: second-session-link-claimRef
+ok 5 - second-session-link-claimRef
+  ---
+  duration_ms: 0.329459
+  type: 'test'
+  ...
+# Subtest: second-session-link-sessionRef
+ok 6 - second-session-link-sessionRef
+  ---
+  duration_ms: 1.148291
+  type: 'test'
+  ...
+# Subtest: second-session-link-taskVersion
+ok 7 - second-session-link-taskVersion
+  ---
+  duration_ms: 0.384958
+  type: 'test'
+  ...
+# Subtest: second-session-link-taskRef
+ok 8 - second-session-link-taskRef
+  ---
+  duration_ms: 0.27075
+  type: 'test'
+  ...
+# Subtest: second-session-link-generationRef
+ok 9 - second-session-link-generationRef
+  ---
+  duration_ms: 0.199084
+  type: 'test'
+  ...
+# Subtest: second-session-link-actionDigest
+ok 10 - second-session-link-actionDigest
+  ---
+  duration_ms: 0.416958
+  type: 'test'
+  ...
+# Subtest: second-session-link-authEpoch
+ok 11 - second-session-link-authEpoch
+  ---
+  duration_ms: 0.225458
+  type: 'test'
+  ...
+# Subtest: second-session-link-sessionId
+ok 12 - second-session-link-sessionId
+  ---
+  duration_ms: 0.316458
+  type: 'test'
+  ...
+# Subtest: session-hash-await-disconnect
+ok 13 - session-hash-await-disconnect
+  ---
+  duration_ms: 0.274041
+  type: 'test'
+  ...
+# Subtest: session-hash-await-dispose
+ok 14 - session-hash-await-dispose
+  ---
+  duration_ms: 0.160667
+  type: 'test'
+  ...
+# Subtest: session-hash-await-refresh
+ok 15 - session-hash-await-refresh
+  ---
+  duration_ms: 0.2395
+  type: 'test'
+  ...
+# Subtest: audit-report-bound-taskRef
+ok 16 - audit-report-bound-taskRef
+  ---
+  duration_ms: 0.685791
+  type: 'test'
+  ...
+# Subtest: audit-report-bound-auditRef
+ok 17 - audit-report-bound-auditRef
+  ---
+  duration_ms: 0.2035
+  type: 'test'
+  ...
+# Subtest: audit-report-bound-artifactVersion
+ok 18 - audit-report-bound-artifactVersion
+  ---
+  duration_ms: 0.172084
+  type: 'test'
+  ...
+# Subtest: audit-report-bound-digest
+ok 19 - audit-report-bound-digest
+  ---
+  duration_ms: 0.25675
+  type: 'test'
+  ...
+# Subtest: audit-report-bound-materialDigest
+ok 20 - audit-report-bound-materialDigest
+  ---
+  duration_ms: 0.152708
+  type: 'test'
+  ...
+# Subtest: audit-report-bound-bindingDigest
+ok 21 - audit-report-bound-bindingDigest
+  ---
+  duration_ms: 0.15175
+  type: 'test'
+  ...
+# Subtest: audit-final-status-exact-task-not-only-equal-version
+ok 22 - audit-final-status-exact-task-not-only-equal-version
+  ---
+  duration_ms: 0.236834
+  type: 'test'
+  ...
+# Subtest: automation-command-await-approve-disconnect
+ok 23 - automation-command-await-approve-disconnect
+  ---
+  duration_ms: 0.552625
+  type: 'test'
+  ...
+# Subtest: automation-command-await-approve-dispose
+ok 24 - automation-command-await-approve-dispose
+  ---
+  duration_ms: 0.159083
+  type: 'test'
+  ...
+# Subtest: automation-command-await-approve-reload
+ok 25 - automation-command-await-approve-reload
+  ---
+  duration_ms: 0.212083
+  type: 'test'
+  ...
+# Subtest: automation-command-await-source-disconnect
+ok 26 - automation-command-await-source-disconnect
+  ---
+  duration_ms: 0.167917
+  type: 'test'
+  ...
+# Subtest: automation-command-await-source-dispose
+ok 27 - automation-command-await-source-dispose
+  ---
+  duration_ms: 0.137958
+  type: 'test'
+  ...
+# Subtest: automation-command-await-source-reload
+ok 28 - automation-command-await-source-reload
+  ---
+  duration_ms: 0.219042
+  type: 'test'
+  ...
+# Subtest: automation-command-await-subscription-disconnect
+ok 29 - automation-command-await-subscription-disconnect
+  ---
+  duration_ms: 0.287
+  type: 'test'
+  ...
+# Subtest: automation-command-await-subscription-dispose
+ok 30 - automation-command-await-subscription-dispose
+  ---
+  duration_ms: 0.140625
+  type: 'test'
+  ...
+# Subtest: automation-command-await-subscription-reload
+ok 31 - automation-command-await-subscription-reload
+  ---
+  duration_ms: 0.959167
+  type: 'test'
+  ...
+# Subtest: missed-plan-source-subscription-association-must-match
+ok 32 - missed-plan-source-subscription-association-must-match
+  ---
+  duration_ms: 0.204291
+  type: 'test'
+  ...
+# Subtest: source-disable-captures-complete-explicit-policy-before-await
+ok 33 - source-disable-captures-complete-explicit-policy-before-await
+  ---
+  duration_ms: 1.403875
+  type: 'test'
+  ...
+# Subtest: redacted-private-callback-approve
+ok 34 - redacted-private-callback-approve
+  ---
+  duration_ms: 0.291875
+  type: 'test'
+  ...
+# Subtest: redacted-private-callback-navigate
+ok 35 - redacted-private-callback-navigate
+  ---
+  duration_ms: 0.243083
+  type: 'test'
+  ...
+# Subtest: explicit goal and constraint revisions retain current CAS and never grant or execute
+ok 36 - explicit goal and constraint revisions retain current CAS and never grant or execute
+  ---
+  duration_ms: 2.715834
+  type: 'test'
+  ...
+# Subtest: question answers require the exact complete current batch; answering grants no authority
+ok 37 - question answers require the exact complete current batch; answering grants no authority
+  ---
+  duration_ms: 0.993625
+  type: 'test'
+  ...
+# Subtest: revision and answer command awaits preserve input and reject disconnect with zero writes
+ok 38 - revision and answer command awaits preserve input and reject disconnect with zero writes
+  ---
+  duration_ms: 1.030833
+  type: 'test'
+  ...
+# Subtest: paused owner navigation uses two exact live mapping reads plus native ID hash; no worker wake
+ok 39 - paused owner navigation uses two exact live mapping reads plus native ID hash; no worker wake
+  ---
+  duration_ms: 0.636333
+  type: 'test'
+  ...
+# Subtest: foreign session bindings, native ID, terminal incarnation or lost epoch never navigate
+ok 40 - foreign session bindings, native ID, terminal incarnation or lost epoch never navigate
+  ---
+  duration_ms: 1.646375
+  type: 'test'
+  ...
+# Subtest: source and missed-plan approval use explicit loaded policies, exact source/sub/clock CAS and no effect grant
+ok 41 - source and missed-plan approval use explicit loaded policies, exact source/sub/clock CAS and no effect grant
+  ---
+  duration_ms: 14.798792
+  type: 'test'
+  ...
+# Subtest: forged or revision-stale clock plan and disconnect during approval digest admit zero writes
+ok 42 - forged or revision-stale clock plan and disconnect during approval digest admit zero writes
+  ---
+  duration_ms: 0.666666
+  type: 'test'
+  ...
+# Subtest: artifact version, verification, delivery access and independent coverage are separate displayed facts
+ok 43 - artifact version, verification, delivery access and independent coverage are separate displayed facts
+  ---
+  duration_ms: 0.900208
+  type: 'test'
+  ...
+# Subtest: audit report inspection requires original material binding and fresh task CAS before publishing coverage
+ok 44 - audit report inspection requires original material binding and fresh task CAS before publishing coverage
+  ---
+  duration_ms: 1.852666
+  type: 'test'
+  ...
+# Subtest: throwing navigation or source command hooks cannot leak uppercase canaries or wedge busy
+ok 45 - throwing navigation or source command hooks cannot leak uppercase canaries or wedge busy
+  ---
+  duration_ms: 0.849167
+  type: 'test'
+  ...
+# Subtest: audit final read must retain exact task scope even when a foreign task has identical CAS
+ok 46 - audit final read must retain exact task scope even when a foreign task has identical CAS
+  ---
+  duration_ms: 0.305917
+  type: 'test'
+  ...
+# Subtest: mixed schedule/source/subscription association cannot submit owner approval despite matching revisions
+ok 47 - mixed schedule/source/subscription association cannot submit owner approval despite matching revisions
+  ---
+  duration_ms: 0.175042
+  type: 'test'
+  ...
+# (node:59240) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: native RPC list and scoped immutable detail paint one current CAS snapshot
+ok 48 - native RPC list and scoped immutable detail paint one current CAS snapshot
+  ---
+  duration_ms: 8.728625
+  type: 'test'
+  ...
+# Subtest: cancel double-click admits one exact CAS request; authoritative readback remains cancellation requested
+ok 49 - cancel double-click admits one exact CAS request; authoritative readback remains cancellation requested
+  ---
+  duration_ms: 0.866667
+  type: 'test'
+  ...
+# Subtest: native CAS rejection does not retry mutation or expose arbitrary error prose
+ok 50 - native CAS rejection does not retry mutation or expose arbitrary error prose
+  ---
+  duration_ms: 0.323875
+  type: 'test'
+  ...
+# Subtest: disconnect invalidates a pending mutation and aborts its native request without a false readback
+ok 51 - disconnect invalidates a pending mutation and aborts its native request without a false readback
+  ---
+  duration_ms: 0.415334
+  type: 'test'
+  ...
+# Subtest: late selected task details cannot replace a newer task or a disposed panel
+ok 52 - late selected task details cannot replace a newer task or a disposed panel
+  ---
+  duration_ms: 0.322083
+  type: 'test'
+  ...
+# Subtest: terminal, recovery, stale and offline controls stay disabled; action hashes cannot grant informed approval
+ok 53 - terminal, recovery, stale and offline controls stay disabled; action hashes cannot grant informed approval
+  ---
+  duration_ms: 0.705208
+  type: 'test'
+  ...
+# Subtest: native SlotCore registrations are additive and release with the owning fixture context
+ok 54 - native SlotCore registrations are additive and release with the owning fixture context
+  ---
+  duration_ms: 7.067833
+  type: 'test'
+  ...
+# Subtest: client model crosses genuine public native owner RPC framing into encrypted runtime and controls
+ok 55 - client model crosses genuine public native owner RPC framing into encrypted runtime and controls
+  ---
+  duration_ms: 69.3875
+  type: 'test'
+  ...
+# Subtest: connection loss during async command digest cannot submit control or intake under a new epoch
+ok 56 - connection loss during async command digest cannot submit control or intake under a new epoch
+  ---
+  duration_ms: 0.655833
+  type: 'test'
+  ...
+# Subtest: client rejects trailing newline references before task selection or mutation
+ok 57 - client rejects trailing newline references before task selection or mutation
+  ---
+  duration_ms: 0.352083
+  type: 'test'
+  ...
+# Subtest: throwing intake command source is redacted and clears busy for a later explicit attempt
+ok 58 - throwing intake command source is redacted and clears busy for a later explicit attempt
+  ---
+  duration_ms: 0.309459
+  type: 'test'
+  ...
+# Subtest: client displays exact trusted preview before one explicit expiry grant; grant does not start work
+ok 59 - client displays exact trusted preview before one explicit expiry grant; grant does not start work
+  ---
+  duration_ms: 1.082208
+  type: 'test'
+  ...
+# Subtest: wrong preview scope, data, concrete environment, limit or token never enables client grant
+ok 60 - wrong preview scope, data, concrete environment, limit or token never enables client grant
+  ---
+  duration_ms: 1.565583
+  type: 'test'
+  ...
+# Subtest: expired, disconnected or superseded preview cannot grant or paint newer owner material
+ok 61 - expired, disconnected or superseded preview cannot grant or paint newer owner material
+  ---
+  duration_ms: 0.522833
+  type: 'test'
+  ...
+# Subtest: client concrete preview and explicit grant cross genuine native RPC into scoped encrypted store; forged token cannot grant
+ok 62 - client concrete preview and explicit grant cross genuine native RPC into scoped encrypted store; forged token cannot grant
+  ---
+  duration_ms: 30.966084
+  type: 'test'
+  ...
+# Subtest: preview grant digest failure is redacted, clears busy and performs no native mutation
+ok 63 - preview grant digest failure is redacted, clears busy and performs no native mutation
+  ---
+  duration_ms: 0.299417
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source 404/405 require fresh coherent nonempty task readback and confer no consent
+ok 64 - independent exact carrier source 404/405 require fresh coherent nonempty task readback and confer no consent
+  ---
+  duration_ms: 20.900875
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source signature/prototype/accessor/wire negatives cannot start a fallback list
+ok 65 - independent exact carrier source signature/prototype/accessor/wire negatives cannot start a fallback list
+  ---
+  duration_ms: 5.567041
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source original list needs literal successful envelope and bounded valid task metadata
+ok 66 - independent exact carrier source original list needs literal successful envelope and bounded valid task metadata
+  ---
+  duration_ms: 5.419875
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source native-client disconnect state or disposal aborts pending list without late publication
+ok 67 - independent exact carrier source native-client disconnect state or disposal aborts pending list without late publication
+  ---
+  duration_ms: 0.772708
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source newest required/recovery/unavailable status fences an earlier advanced list
+ok 68 - independent exact carrier source newest required/recovery/unavailable status fences an earlier advanced list
+  ---
+  duration_ms: 1.68375
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source superseded status and list generations cannot publish or overwrite newer task
+ok 69 - independent exact carrier source superseded status and list generations cannot publish or overwrite newer task
+  ---
+  duration_ms: 1.205833
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+ok 70 - independent exact carrier source uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+  ---
+  duration_ms: 0.810625
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source previously validated advanced tasks do not survive newer status auth or malformed failure
+ok 71 - independent exact carrier source previously validated advanced tasks do not survive newer status auth or malformed failure
+  ---
+  duration_ms: 1.496333
+  type: 'test'
+  ...
+# Subtest: independent exact carrier source synchronous close on missing-route publication prevents the follow-on RPC
+ok 72 - independent exact carrier source synchronous close on missing-route publication prevents the follow-on RPC
+  ---
+  duration_ms: 0.608875
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated 404/405 require fresh coherent nonempty task readback and confer no consent
+ok 73 - independent exact carrier generated 404/405 require fresh coherent nonempty task readback and confer no consent
+  ---
+  duration_ms: 3.179708
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated signature/prototype/accessor/wire negatives cannot start a fallback list
+ok 74 - independent exact carrier generated signature/prototype/accessor/wire negatives cannot start a fallback list
+  ---
+  duration_ms: 4.709292
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated original list needs literal successful envelope and bounded valid task metadata
+ok 75 - independent exact carrier generated original list needs literal successful envelope and bounded valid task metadata
+  ---
+  duration_ms: 4.789333
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated native-client disconnect state or disposal aborts pending list without late publication
+ok 76 - independent exact carrier generated native-client disconnect state or disposal aborts pending list without late publication
+  ---
+  duration_ms: 0.754125
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated newest required/recovery/unavailable status fences an earlier advanced list
+ok 77 - independent exact carrier generated newest required/recovery/unavailable status fences an earlier advanced list
+  ---
+  duration_ms: 1.410417
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated superseded status and list generations cannot publish or overwrite newer task
+ok 78 - independent exact carrier generated superseded status and list generations cannot publish or overwrite newer task
+  ---
+  duration_ms: 0.94925
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+ok 79 - independent exact carrier generated uncertain confirm followed by exact405 readback never acquires refresh-only fallback
+  ---
+  duration_ms: 0.380458
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated previously validated advanced tasks do not survive newer status auth or malformed failure
+ok 80 - independent exact carrier generated previously validated advanced tasks do not survive newer status auth or malformed failure
+  ---
+  duration_ms: 0.789625
+  type: 'test'
+  ...
+# Subtest: independent exact carrier generated synchronous close on missing-route publication prevents the follow-on RPC
+ok 81 - independent exact carrier generated synchronous close on missing-route publication prevents the follow-on RPC
+  ---
+  duration_ms: 0.484958
+  type: 'test'
+  ...
+# Subtest: independent onboarding source public location UTF8 N-1/N/N+1 and well-formed text partitions
+ok 82 - independent onboarding source public location UTF8 N-1/N/N+1 and well-formed text partitions
+  ---
+  duration_ms: 2.761792
+  type: 'test'
+  ...
+# Subtest: independent onboarding source closed RPC envelope/error partitions never publish secrets or acquire fallback
+ok 83 - independent onboarding source closed RPC envelope/error partitions never publish secrets or acquire fallback
+  ---
+  duration_ms: 2.287834
+  type: 'test'
+  ...
+# Subtest: independent onboarding source primitive snapshots stay immutable after reply objects change
+ok 84 - independent onboarding source primitive snapshots stay immutable after reply objects change
+  ---
+  duration_ms: 1.339375
+  type: 'test'
+  ...
+# Subtest: independent onboarding source delayed prepare expiry and response-clock lifetime boundaries fence consent
+ok 85 - independent onboarding source delayed prepare expiry and response-clock lifetime boundaries fence consent
+  ---
+  duration_ms: 0.993209
+  type: 'test'
+  ...
+# Subtest: independent onboarding source an acknowledged commit arriving after local expiry remains an observed fact
+ok 86 - independent onboarding source an acknowledged commit arriving after local expiry remains an observed fact
+  ---
+  duration_ms: 0.208584
+  type: 'test'
+  ...
+# Subtest: independent onboarding source known non-ready acknowledgements cannot infer initialization or retry
+ok 87 - independent onboarding source known non-ready acknowledgements cannot infer initialization or retry
+  ---
+  duration_ms: 0.39825
+  type: 'test'
+  ...
+# Subtest: independent onboarding source uncertain readback disconnect preserves no-automatic-confirm rule
+ok 88 - independent onboarding source uncertain readback disconnect preserves no-automatic-confirm rule
+  ---
+  duration_ms: 5.167875
+  type: 'test'
+  ...
+# Subtest: independent onboarding source stale current-target change discards checked plan and delayed prepare
+ok 89 - independent onboarding source stale current-target change discards checked plan and delayed prepare
+  ---
+  duration_ms: 0.596792
+  type: 'test'
+  ...
+# Subtest: independent onboarding source post-ready service error prevents the task panel accepting old data
+ok 90 - independent onboarding source post-ready service error prevents the task panel accepting old data
+  ---
+  duration_ms: 15.09
+  type: 'test'
+  ...
+# Subtest: independent onboarding source a stale advanced list cannot bypass newer setup-required status
+ok 91 - independent onboarding source a stale advanced list cannot bypass newer setup-required status
+  ---
+  duration_ms: 1.312625
+  type: 'test'
+  ...
+# Subtest: independent onboarding source exact-route fallback also requires structurally valid fresh original list
+ok 92 - independent onboarding source exact-route fallback also requires structurally valid fresh original list
+  ---
+  duration_ms: 1.324458
+  type: 'test'
+  ...
+# Subtest: independent onboarding source synchronous closed/refresh listeners fence captured consent before RPC
+ok 93 - independent onboarding source synchronous closed/refresh listeners fence captured consent before RPC
+  ---
+  duration_ms: 0.840709
+  type: 'test'
+  ...
+# Subtest: independent onboarding source declared setup reason/output never renders raw structured or thrown callback secrets
+ok 94 - independent onboarding source declared setup reason/output never renders raw structured or thrown callback secrets
+  ---
+  duration_ms: 0.890292
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated public location UTF8 N-1/N/N+1 and well-formed text partitions
+ok 95 - independent onboarding generated public location UTF8 N-1/N/N+1 and well-formed text partitions
+  ---
+  duration_ms: 1.257334
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated closed RPC envelope/error partitions never publish secrets or acquire fallback
+ok 96 - independent onboarding generated closed RPC envelope/error partitions never publish secrets or acquire fallback
+  ---
+  duration_ms: 2.39025
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated primitive snapshots stay immutable after reply objects change
+ok 97 - independent onboarding generated primitive snapshots stay immutable after reply objects change
+  ---
+  duration_ms: 0.413083
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated delayed prepare expiry and response-clock lifetime boundaries fence consent
+ok 98 - independent onboarding generated delayed prepare expiry and response-clock lifetime boundaries fence consent
+  ---
+  duration_ms: 0.735666
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated an acknowledged commit arriving after local expiry remains an observed fact
+ok 99 - independent onboarding generated an acknowledged commit arriving after local expiry remains an observed fact
+  ---
+  duration_ms: 0.098291
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated known non-ready acknowledgements cannot infer initialization or retry
+ok 100 - independent onboarding generated known non-ready acknowledgements cannot infer initialization or retry
+  ---
+  duration_ms: 0.201458
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated uncertain readback disconnect preserves no-automatic-confirm rule
+ok 101 - independent onboarding generated uncertain readback disconnect preserves no-automatic-confirm rule
+  ---
+  duration_ms: 1.589333
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated stale current-target change discards checked plan and delayed prepare
+ok 102 - independent onboarding generated stale current-target change discards checked plan and delayed prepare
+  ---
+  duration_ms: 0.378167
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated post-ready service error prevents the task panel accepting old data
+ok 103 - independent onboarding generated post-ready service error prevents the task panel accepting old data
+  ---
+  duration_ms: 1.175875
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated a stale advanced list cannot bypass newer setup-required status
+ok 104 - independent onboarding generated a stale advanced list cannot bypass newer setup-required status
+  ---
+  duration_ms: 0.7915
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated exact-route fallback also requires structurally valid fresh original list
+ok 105 - independent onboarding generated exact-route fallback also requires structurally valid fresh original list
+  ---
+  duration_ms: 1.246291
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated synchronous closed/refresh listeners fence captured consent before RPC
+ok 106 - independent onboarding generated synchronous closed/refresh listeners fence captured consent before RPC
+  ---
+  duration_ms: 0.915166
+  type: 'test'
+  ...
+# Subtest: independent onboarding generated declared setup reason/output never renders raw structured or thrown callback secrets
+ok 107 - independent onboarding generated declared setup reason/output never renders raw structured or thrown callback secrets
+  ---
+  duration_ms: 0.843416
+  type: 'test'
+  ...
+# Subtest: setup first load and preview only read exact setup RPC; unchecked consent cannot confirm
+ok 108 - setup first load and preview only read exact setup RPC; unchecked consent cannot confirm
+  ---
+  duration_ms: 15.539917
+  type: 'test'
+  ...
+# Subtest: checkbox and separate confirmation control submit only the immutable displayed plan once
+ok 109 - checkbox and separate confirmation control submit only the immutable displayed plan once
+  ---
+  duration_ms: 0.622167
+  type: 'test'
+  ...
+# Subtest: literal checkbox values and expiry boundaries fence confirmation locally
+ok 110 - literal checkbox values and expiry boundaries fence confirmation locally
+  ---
+  duration_ms: 1.91625
+  type: 'test'
+  ...
+# Subtest: refresh, new preview and reconnect always erase prior acceptance without confirmation
+ok 111 - refresh, new preview and reconnect always erase prior acceptance without confirmation
+  ---
+  duration_ms: 0.540417
+  type: 'test'
+  ...
+# Subtest: disconnection aborts pending prepare and late replies cannot publish an earlier plan
+ok 112 - disconnection aborts pending prepare and late replies cannot publish an earlier plan
+  ---
+  duration_ms: 0.188875
+  type: 'test'
+  ...
+# Subtest: superseded status and confirmation results cannot replace a new connection snapshot
+ok 113 - superseded status and confirmation results cannot replace a new connection snapshot
+  ---
+  duration_ms: 0.381083
+  type: 'test'
+  ...
+# Subtest: uncertain confirm performs status reconciliation only and never repeats initialization
+ok 114 - uncertain confirm performs status reconciliation only and never repeats initialization
+  ---
+  duration_ms: 0.916
+  type: 'test'
+  ...
+# Subtest: unload aborts all setup requests and closed references perform no calls
+ok 115 - unload aborts all setup requests and closed references perform no calls
+  ---
+  duration_ms: 0.155958
+  type: 'test'
+  ...
+# Subtest: closed status projection rejects hostile fields, unexpected semantics and accessors without rendering them
+ok 116 - closed status projection rejects hostile fields, unexpected semantics and accessors without rendering them
+  ---
+  duration_ms: 0.527917
+  type: 'test'
+  ...
+# Subtest: closed previews reject different targets, authority, TTL, references, unknown secret fields and accessors
+ok 117 - closed previews reject different targets, authority, TTL, references, unknown secret fields and accessors
+  ---
+  duration_ms: 1.02275
+  type: 'test'
+  ...
+# Subtest: confirmation extra fields or a changed target are unconfirmed and followed by status only
+ok 118 - confirmation extra fields or a changed target are unconfirmed and followed by status only
+  ---
+  duration_ms: 0.415333
+  type: 'test'
+  ...
+# Subtest: clock and transport error accessors cannot leak callback prose or wedge pending state
+ok 119 - clock and transport error accessors cannot leak callback prose or wedge pending state
+  ---
+  duration_ms: 1.167041
+  type: 'test'
+  ...
+# Subtest: recovery, unavailable, loading, disconnected and ready phases do not expose setup confirmation
+ok 120 - recovery, unavailable, loading, disconnected and ready phases do not expose setup confirmation
+  ---
+  duration_ms: 0.54225
+  type: 'test'
+  ...
+# Subtest: native application mount and reconnect perform only setup status until actual ready
+ok 121 - native application mount and reconnect perform only setup status until actual ready
+  ---
+  duration_ms: 5.734834
+  type: 'test'
+  ...
+# Subtest: advanced compatibility requires exact pinned status404 signature and a successful original list
+ok 122 - advanced compatibility requires exact pinned status404 signature and a successful original list
+  ---
+  duration_ms: 3.349375
+  type: 'test'
+  ...
+# Subtest: manual setup status refresh fences an earlier advanced list until a fresh successful list
+ok 123 - manual setup status refresh fences an earlier advanced list until a fresh successful list
+  ---
+  duration_ms: 0.814667
+  type: 'test'
+  ...
+# Subtest: captured old checkbox and confirm handlers cannot accept or confirm a replacement preview
+ok 124 - captured old checkbox and confirm handlers cannot accept or confirm a replacement preview
+  ---
+  duration_ms: 0.554625
+  type: 'test'
+  ...
+# Subtest: observed expiry followed by clock rollback cannot resurrect checked consent
+ok 125 - observed expiry followed by clock rollback cannot resurrect checked consent
+  ---
+  duration_ms: 0.155291
+  type: 'test'
+  ...
+# Subtest: a disconnect triggered synchronously by pending-state publication prevents confirmation admission
+ok 126 - a disconnect triggered synchronously by pending-state publication prevents confirmation admission
+  ---
+  duration_ms: 0.174459
+  type: 'test'
+  ...
+# Subtest: preview lifetime upper bound uses response time while preserving request-time rollback fencing
+ok 127 - preview lifetime upper bound uses response time while preserving request-time rollback fencing
+  ---
+  duration_ms: 0.229417
+  type: 'test'
+  ...
+# Subtest: exact pinned Web status405 requires a fresh valid original list and never setup consent
+ok 128 - exact pinned Web status405 requires a fresh valid original list and never setup consent
+  ---
+  duration_ms: 1.364958
+  type: 'test'
+  ...
+# Subtest: near405, authentication failures, malformed status and malformed original lists cannot enable fallback
+ok 129 - near405, authentication failures, malformed status and malformed original lists cannot enable fallback
+  ---
+  duration_ms: 2.6645
+  type: 'test'
+  ...
+# Subtest: exact405 fallback cannot publish a pending list after disconnect or unload
+ok 130 - exact405 fallback cannot publish a pending list after disconnect or unload
+  ---
+  duration_ms: 0.692
+  type: 'test'
+  ...
+# Subtest: task reply envelopes require literal closed success and reject unknown, contradictory or unsafe shapes
+ok 131 - task reply envelopes require literal closed success and reject unknown, contradictory or unsafe shapes
+  ---
+  duration_ms: 0.772416
+  type: 'test'
+  ...
+# Subtest: valid task failure envelopes preserve stable codes while malformed errors and thrown getters are redacted
+ok 132 - valid task failure envelopes preserve stable codes while malformed errors and thrown getters are redacted
+  ---
+  duration_ms: 0.529375
+  type: 'test'
+  ...
+# Subtest: common task reply parser accepts frozen native-format success envelopes
+ok 133 - common task reply parser accepts frozen native-format success envelopes
+  ---
+  duration_ms: 0.106292
+  type: 'test'
+  ...
+# Subtest: hostile same-process proxy reflection may run its trap but rejects safely with stable errors
+ok 134 - hostile same-process proxy reflection may run its trap but rejects safely with stable errors
+  ---
+  duration_ms: 0.156833
+  type: 'test'
+  ...
+# Subtest: missing structuredClone fails task reply parsing closed without an unsafe fallback
+ok 135 - missing structuredClone fails task reply parsing closed without an unsafe fallback
+  ---
+  duration_ms: 0.194166
+  type: 'test'
+  ...
+1..135
+# tests 135
+# suites 0
+# pass 135
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 314.46675
