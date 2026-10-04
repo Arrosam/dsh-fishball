@@ -3,8 +3,23 @@
   "version": "0.1.0-preview.1",
   "private": true,
   "type": "module",
-  "description": "Bounded native DSH foundation preview",
-  "exports": "./src/index.mjs",
+  "description": "Native DSH staged development preview",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./runtime": "./src/runtime-plugin.mjs",
+    "./client": "./lib/client.js"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
   "engines": { "node": "22.22.2" },
   "scripts": {
     "check": "node scripts/check.mjs",
@@ -13,7 +28,9 @@
     "host:smoke": "node scripts/host-smoke.mjs",
     "host:setup": "node scripts/dsh-web-setup.mjs",
     "host:web": "node scripts/dsh-web.mjs",
-    "host:profile-smoke": "node scripts/web-profile-smoke.mjs"
+    "host:profile-smoke": "node scripts/web-profile-smoke.mjs",
+    "client:build": "node scripts/build-client.mjs",
+    "client:check": "node scripts/build-client.mjs --check"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.1",

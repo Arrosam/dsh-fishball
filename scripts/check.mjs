@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 // No build, package install, network lookup or downloaded executable.
 let count = 0;
 for (const directory of ['src', 'scripts', 'test']) {
-  for (const name of readdirSync(directory).filter(name => name.endsWith('.mjs')).sort()) {
+  for (const name of readdirSync(directory).filter(name => /\.(mjs|cjs)$/.test(name)).sort()) {
     const result = spawnSync(process.execPath, ['--check', join(directory, name)], { encoding: 'utf8' });
     if (result.status !== 0) {
       process.stderr.write(result.stderr);
