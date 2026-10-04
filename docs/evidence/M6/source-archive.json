@@ -1,0 +1,15 @@
+{
+  "result": "passed",
+  "candidateCommit": "de505ea",
+  "archivePath": ".runtime/final-regression/dsh-fishball-source-de505ea.tar.gz",
+  "localOnly": true,
+  "published": false,
+  "files": 382,
+  "sha256": "8424cbaf7505b6053e3b74c7aabe1594682647356d107db2fb3875bfec46972c",
+  "frozenExecutableFilesMatched": 88,
+  "forbiddenRuntimeCredentialDatabaseCacheFiles": 0,
+  "sourceAndBundleIdenticalToConsolidatedRun": true,
+  "evidenceOnlyClosureCommitsMayFollow": true,
+  "portableProductionInstall": "HOLD",
+  "captureTime": "2026-10-04T15:23:58.491Z"
+}
