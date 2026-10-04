@@ -17,11 +17,16 @@ export function fixtureDatabasePath(home = paths.home) {
     try { return lstatSync(path); }
     catch (error) { if (error.code === 'ENOENT') return null; throw new Error('STORE_PATH_UNAVAILABLE'); }
   };
-  const currentEntry = entry(current), legacyEntry = entry(legacy);
-  if (currentEntry && legacyEntry) throw new Error('STORE_PATH_AMBIGUOUS');
-  const selected = legacyEntry ? legacy : current;
-  const selectedEntry = legacyEntry ?? currentEntry;
-  if (selectedEntry && !selectedEntry.isFile()) throw new Error('STORE_PATH_UNSUPPORTED');
+  // A SQLite namespace includes crash/WAL sidecars. Main-file absence cannot
+  // establish empty state or bypass the ledger's same-basename recovery gates.
+  const entries = path => ['', '-wal', '-shm', '-journal'].map(suffix => entry(path + suffix));
+  const currentEntries = entries(current), legacyEntries = entries(legacy);
+  const hasCurrent = currentEntries.some(Boolean), hasLegacy = legacyEntries.some(Boolean);
+  if (hasCurrent && hasLegacy) throw new Error('STORE_PATH_AMBIGUOUS');
+  const selected = hasLegacy ? legacy : current;
+  const selectedEntries = hasLegacy ? legacyEntries : currentEntries;
+  if (selectedEntries.some(info => info && !info.isFile())) throw new Error('STORE_PATH_UNSUPPORTED');
+  if (!selectedEntries[0] && selectedEntries.some(Boolean)) throw new Error('STORE_PATH_ORPHANED');
   return selected;
 }
 export function profilePatch(generation = 1) {

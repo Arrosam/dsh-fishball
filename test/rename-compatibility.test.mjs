@@ -65,3 +65,18 @@ test('legacy projection keeps revisions and source facts on a read, without over
   projection.contractVersion = 'df.memory-projection/future'; row.content = JSON.stringify(projection); row.digest = hash(row.content);
   assert.throws(() => adapter.state(), { code: 'MEMORY_CORRUPT' }); assert.equal(writes, 0);
 });
+
+
+test('orphan SQLite sidecars and mixed namespaces cannot select a blank renamed store', t => {
+  for (const basename of ['bubbles.sqlite', 'dsh-fishball.sqlite']) for (const suffix of ['-wal', '-shm', '-journal']) {
+    const home = mkdtempSync(join(tmpdir(), 'df-rename-sidecar-')); t.after(() => rmSync(home, { recursive: true, force: true }));
+    const path = join(home, basename + suffix); writeFileSync(path, 'synthetic-orphan-bytes');
+    assert.throws(() => fixtureDatabasePath(home), { message: 'STORE_PATH_ORPHANED' });
+    assert.equal(readFileSync(path, 'utf8'), 'synthetic-orphan-bytes');
+    const other = join(home, basename === 'bubbles.sqlite' ? 'dsh-fishball.sqlite' : 'bubbles.sqlite');
+    writeFileSync(other, 'other-synthetic-main');
+    assert.throws(() => fixtureDatabasePath(home), { message: 'STORE_PATH_AMBIGUOUS' });
+    assert.equal(readFileSync(path, 'utf8'), 'synthetic-orphan-bytes');
+    assert.equal(readFileSync(other, 'utf8'), 'other-synthetic-main');
+  }
+});

@@ -274,3 +274,37 @@ test('independent rename native session: exact prebound legacy/current refs surv
   const denied = new NativeAdapter(ctx, { environments }); await assert.rejects(denied.prepare(base, task, actionDigest), { code: 'HOST_PERMISSION_DENIED' });
   assert.equal(creates, 0); assert.equal(streams, 0); assert.equal(ctx.agents.list().length, 0); assert.equal(ctx.sessions.list().length, 0);
 });
+
+test('independent rename namespaces: orphan/mixed/nonregular sidecars cannot route to a blank store or change any recoverable entry', t => {
+  const capture = home => readdirSync(home).sort().map(name => {
+    const path = join(home, name), info = lstatSync(path);
+    return { name, type: info.isSymbolicLink() ? 'link' : info.isDirectory() ? 'directory' : 'file', value: info.isSymbolicLink() ? readlinkSync(path) : info.isDirectory() ? readdirSync(path) : readFileSync(path), mtimeMs: info.mtimeMs };
+  });
+  for (const basename of ['bubbles.sqlite', 'dsh-fishball.sqlite']) for (const suffix of ['-wal', '-shm', '-journal']) {
+    const home = directory(t); writeFileSync(join(home, `${basename}${suffix}`), `synthetic recoverable orphan ${basename}${suffix}`);
+    const before = capture(home); assert.throws(() => fixtureDatabasePath(home), { message: 'STORE_PATH_ORPHANED' }); assert.deepEqual(capture(home), before);
+    assert.equal(existsSync(join(home, 'bubbles.sqlite')), false); assert.equal(existsSync(join(home, 'dsh-fishball.sqlite')), false);
+  }
+  for (const entries of [
+    ['bubbles.sqlite-wal', 'dsh-fishball.sqlite'],
+    ['bubbles.sqlite', 'dsh-fishball.sqlite-shm'],
+    ['bubbles.sqlite-journal', 'dsh-fishball.sqlite-wal'],
+    ['bubbles.sqlite-shm', 'dsh-fishball.sqlite-journal'],
+  ]) {
+    const home = directory(t); for (const name of entries) writeFileSync(join(home, name), `synthetic distinct bytes for ${name}`);
+    const before = capture(home); assert.throws(() => fixtureDatabasePath(home), { message: 'STORE_PATH_AMBIGUOUS' }); assert.deepEqual(capture(home), before);
+  }
+  for (const basename of ['bubbles.sqlite', 'dsh-fishball.sqlite']) for (const suffix of ['-wal', '-shm', '-journal']) for (const kind of ['dangling', 'directory']) {
+    const home = directory(t); writeFileSync(join(home, basename), 'synthetic main bytes');
+    const sidecar = join(home, `${basename}${suffix}`);
+    if (kind === 'dangling') symlinkSync(join(home, 'missing-sidecar-target'), sidecar); else mkdirSync(sidecar);
+    const before = capture(home); assert.throws(() => fixtureDatabasePath(home), { message: 'STORE_PATH_UNSUPPORTED' }); assert.deepEqual(capture(home), before);
+    assert.equal(existsSync(join(home, 'missing-sidecar-target')), false);
+  }
+  for (const basename of ['bubbles.sqlite', 'dsh-fishball.sqlite']) {
+    const home = directory(t); for (const suffix of ['', '-wal', '-shm', '-journal']) writeFileSync(join(home, `${basename}${suffix}`), `synthetic selected namespace ${suffix}`);
+    const before = capture(home); assert.equal(fixtureDatabasePath(home), join(home, basename)); assert.deepEqual(capture(home), before);
+    // Resolver preserves the selected namespace; SQLite validity/recovery is a
+    // separate guard. Opaque sidecar bytes are never opened as a real journal.
+  }
+});
