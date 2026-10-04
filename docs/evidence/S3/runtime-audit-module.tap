@@ -1,0 +1,231 @@
+TAP version 13
+# (node:42966) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: audit material is immutable, individually digest-bound and canonical regardless of caller ordering
+ok 1 - audit material is immutable, individually digest-bound and canonical regardless of caller ordering
+  ---
+  duration_ms: 10.190708
+  type: 'test'
+  ...
+# Subtest: audit policies require explicit bounded thresholds and rounds; no missing configuration gains defaults
+ok 2 - audit policies require explicit bounded thresholds and rounds; no missing configuration gains defaults
+  ---
+  duration_ms: 0.858875
+  type: 'test'
+  ...
+# Subtest: requirements and reports reject prose, paths, authority flags and executable metadata without callbacks
+ok 3 - requirements and reports reject prose, paths, authority flags and executable metadata without callbacks
+  ---
+  duration_ms: 0.714542
+  type: 'test'
+  ...
+# Subtest: coverage and uncertainty are explicit; findings are bounded metadata and never a success shortcut
+ok 4 - coverage and uncertainty are explicit; findings are bounded metadata and never a success shortcut
+  ---
+  duration_ms: 1.571542
+  type: 'test'
+  ...
+# Subtest: repair lineage requires prior report, exact claim and bounded positive round without auto-triggering work
+ok 5 - repair lineage requires prior report, exact claim and bounded positive round without auto-triggering work
+  ---
+  duration_ms: 0.435041
+  type: 'test'
+  ...
+# Subtest: facade requires typed authoritative capability and forwards opaque identity; malformed output cannot invoke core
+ok 6 - facade requires typed authoritative capability and forwards opaque identity; malformed output cannot invoke core
+  ---
+  duration_ms: 0.688042
+  type: 'test'
+  ...
+# Subtest: repair claim combines exact approved action and bounded lineage in one core call before any effect
+ok 7 - repair claim combines exact approved action and bounded lineage in one core call before any effect
+  ---
+  duration_ms: 0.26725
+  type: 'test'
+  ...
+# Subtest: actual required pending gate cannot be bypassed by direct core completion, flags or another owner
+ok 8 - actual required pending gate cannot be bypassed by direct core completion, flags or another owner
+  ---
+  duration_ms: 17.969875
+  type: 'test'
+  ...
+# Subtest: exact independent admitted charged review passes only after explicit known executor release
+ok 9 - exact independent admitted charged review passes only after explicit known executor release
+  ---
+  duration_ms: 21.662875
+  type: 'test'
+  ...
+# Subtest: reviewer unknown, failed, budget and explicit unexamined material remain required after release and reopen
+    # Subtest: unknown
+    ok 1 - unknown
+      ---
+      duration_ms: 21.714958
+      type: 'test'
+      ...
+    # Subtest: failed
+    ok 2 - failed
+      ---
+      duration_ms: 20.389125
+      type: 'test'
+      ...
+    # Subtest: budget_exhausted
+    ok 3 - budget_exhausted
+      ---
+      duration_ms: 19.3735
+      type: 'test'
+      ...
+    # Subtest: unexamined
+    ok 4 - unexamined
+      ---
+      duration_ms: 18.661292
+      type: 'test'
+      ...
+    1..4
+ok 10 - reviewer unknown, failed, budget and explicit unexamined material remain required after release and reopen
+  ---
+  duration_ms: 80.555584
+  type: 'test'
+  ...
+# Subtest: fatal resolved flag and owner-configured warning threshold cannot be report shortcuts to completion
+    # Subtest: fatal
+    ok 1 - fatal
+      ---
+      duration_ms: 15.411833
+      type: 'test'
+      ...
+    # Subtest: warning
+    ok 2 - warning
+      ---
+      duration_ms: 15.789291
+      type: 'test'
+      ...
+    1..2
+ok 11 - fatal resolved flag and owner-configured warning threshold cannot be report shortcuts to completion
+  ---
+  duration_ms: 31.397584
+  type: 'test'
+  ...
+# Subtest: same-round contradictory report conflicts retain original failed report and exact duplicate receipt
+ok 12 - same-round contradictory report conflicts retain original failed report and exact duplicate receipt
+  ---
+  duration_ms: 19.0095
+  type: 'test'
+  ...
+# Subtest: artifact or later semantic goal revision invalidates prior exact report without erasing its history
+    # Subtest: artifact
+    ok 1 - artifact
+      ---
+      duration_ms: 20.992209
+      type: 'test'
+      ...
+    # Subtest: goal
+    ok 2 - goal
+      ---
+      duration_ms: 22.111334
+      type: 'test'
+      ...
+    # Subtest: constraints
+    ok 3 - constraints
+      ---
+      duration_ms: 19.769792
+      type: 'test'
+      ...
+    # Subtest: clarification
+    ok 4 - clarification
+      ---
+      duration_ms: 20.071
+      type: 'test'
+      ...
+    # Subtest: branch
+    ok 5 - branch
+      ---
+      duration_ms: 19.25375
+      type: 'test'
+      ...
+    # Subtest: context
+    ok 6 - context
+      ---
+      duration_ms: 20.308459
+      type: 'test'
+      ...
+    1..6
+ok 13 - artifact or later semantic goal revision invalidates prior exact report without erasing its history
+  ---
+  duration_ms: 123.012917
+  type: 'test'
+  ...
+# Subtest: wrong material, wrong claim/generation and malicious authority fields leave authoritative state unchanged
+ok 14 - wrong material, wrong claim/generation and malicious authority fields leave authoritative state unchanged
+  ---
+  duration_ms: 17.128833
+  type: 'test'
+  ...
+# Subtest: bounded admitted repair retains failed history and requires a fresh exact review of changed bytes
+ok 15 - bounded admitted repair retains failed history and requires a fresh exact review of changed bytes
+  ---
+  duration_ms: 32.257042
+  type: 'test'
+  ...
+# Subtest: repair admission exhausts the same total attempts and leaves failed audit blocked without a free retry
+ok 16 - repair admission exhausts the same total attempts and leaves failed audit blocked without a free retry
+  ---
+  duration_ms: 20.396333
+  type: 'test'
+  ...
+# Subtest: producer generation reuse cannot self-review under a newly bound reviewer role
+ok 17 - producer generation reuse cannot self-review under a newly bound reviewer role
+  ---
+  duration_ms: 19.419208
+  type: 'test'
+  ...
+# Subtest: held review of another target and unbound material are not admitted evidence for the configured audit
+ok 18 - held review of another target and unbound material are not admitted evidence for the configured audit
+  ---
+  duration_ms: 19.522583
+  type: 'test'
+  ...
+# Subtest: late review after cancellation never completes task or drops the existing accountable claim
+ok 19 - late review after cancellation never completes task or drops the existing accountable claim
+  ---
+  duration_ms: 18.278292
+  type: 'test'
+  ...
+# Subtest: configured zero repair bound rejects the atomic repair claim without dispatch or free attempt
+ok 20 - configured zero repair bound rejects the atomic repair claim without dispatch or free attempt
+  ---
+  duration_ms: 17.3475
+  type: 'test'
+  ...
+# Subtest: review material contains only individually allowed required bytes and coverage cannot omit an input
+ok 21 - review material contains only individually allowed required bytes and coverage cannot omit an input
+  ---
+  duration_ms: 18.448
+  type: 'test'
+  ...
+# Subtest: unknown review may recover through an approved bounded evidence repair without mutating artifact bytes
+ok 22 - unknown review may recover through an approved bounded evidence repair without mutating artifact bytes
+  ---
+  duration_ms: 28.904125
+  type: 'test'
+  ...
+# Subtest: owner semantic rebind after prior pass keeps history and requires fresh full-target review of same artifact
+ok 23 - owner semantic rebind after prior pass keeps history and requires fresh full-target review of same artifact
+  ---
+  duration_ms: 27.328084
+  type: 'test'
+  ...
+# Subtest: direct core repair claim cannot bypass atomic audit lineage even with an exact owner grant
+ok 24 - direct core repair claim cannot bypass atomic audit lineage even with an exact owner grant
+  ---
+  duration_ms: 16.976083
+  type: 'test'
+  ...
+1..24
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 663.404875

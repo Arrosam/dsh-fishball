@@ -63,6 +63,14 @@ export function normalizeAuditRepair(input) {
   return immutable(input);
 }
 
+export function normalizeAuditRepairClaim(input) {
+  fields(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'actionRef', 'actionDigest', 'auditRef', 'round', 'previousReportRef', 'evidenceRef']);
+  binding(input);
+  for (const key of ['actionRef', 'actionDigest', 'auditRef', 'previousReportRef', 'evidenceRef']) digestRef(input[key]);
+  integer(input.round, 1, 8);
+  return immutable(input);
+}
+
 export class RuntimeAudit {
   #store;
   constructor(store) {
@@ -78,6 +86,14 @@ export class RuntimeAudit {
   }
   repair(handle, input) {
     return immutable(this.#store.recordRepair(handle, normalizeAuditRepair(input)));
+  }
+  claimRepair(handle, input) {
+    const checked = normalizeAuditRepairClaim(input);
+    if (typeof this.#store.claimAction !== 'function') reject('CAPABILITY_UNAVAILABLE');
+    const { auditRef, round, previousReportRef, evidenceRef, ...action } = checked;
+    // Approval, shared budget, bounded lineage and claim are committed together
+    // by the core before a host may invoke a repair adapter. This sends nothing.
+    return immutable(this.#store.claimAction(handle, { ...action, auditRepair: { auditRef, round, previousReportRef, evidenceRef } }));
   }
   read(handle, taskRef, auditRef) {
     digestRef(taskRef); digestRef(auditRef);
