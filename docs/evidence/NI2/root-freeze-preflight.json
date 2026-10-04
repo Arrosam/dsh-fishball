@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "status": "documentation_and_read_only_source_pins_verified",
+  "heldDocuments": [
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "bytes": 51095
+    },
+    {
+      "path": "docs/evidence/NI2/contract-author-notes.md",
+      "sha256": "29bacb4387b50ed13862c3edd264c942ce4ea2aca7409dd87c3369b3b3322bb3",
+      "bytes": 12090
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "bytes": 69293
+    },
+    {
+      "path": "docs/evidence/NI2/host-interface-findings.md",
+      "sha256": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8",
+      "bytes": 31222
+    },
+    {
+      "path": "docs/evidence/NI6/native-validation-design.md",
+      "sha256": "578c19408ea1204740a02c5c3c36e530c67f5d382cd1f514a9569f8096e419ab",
+      "bytes": 17972
+    },
+    {
+      "path": "docs/normal-events-contract.md",
+      "sha256": "6d3a6800ddaede4d0d9242bc8dabed33bfa5cd5425ffceb128e1d0c13f5ab405",
+      "bytes": 16703
+    },
+    {
+      "path": "docs/evidence/NI4/events-contract.md",
+      "sha256": "d4400b03214581c9c5895ffc70c67d9c5de51ed4b2f57779b3da5ab96a848be9",
+      "bytes": 9605
+    },
+    {
+      "path": "docs/evidence/NI4/test-design.md",
+      "sha256": "4d61064d6c05ba72dd23fd6b3502eb5b3d84b20490e067bb9f9b8693af8f69e0",
+      "bytes": 25562
+    }
+  ],
+  "localLinksChecked": 43,
+  "uniqueLiteralSourcePinsChecked": 62,
+  "pins": [
+    {
+      "path": "docs/normal-worker-proposal.md",
+      "sha256": "7756af71dfa9d7edbb791b7915d78c4500557ab54ed1f9348124c3ea5ed5878b"
+    },
+    {
+      "path": "docs/normal-entry-integration-plan.md",
+      "sha256": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0"
+    },
+    {
+      "path": "docs/native-preview-api.md",
+      "sha256": "494ae6f4a0ef9835188b0df8fdc25e605c339eba42dfed44771325cdd40d61e9"
+    },
+    {
+      "path": "docs/runtime-api.md",
+      "sha256": "f6263a663dc2fff31f871a157a987b321abc1736e2d56f5c2642988b66e704ab"
+    },
+    {
+      "path": "docs/runtime-automation-api.md",
+      "sha256": "69bdd87028d638e5a21e948e670cb9401e5ce6abb3d5e7c29310f1a86d30b3c3"
+    },
+    {
+      "path": "src/installed-config.mjs",
+      "sha256": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2"
+    },
+    {
+      "path": "src/installed-plugin.mjs",
+      "sha256": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "19adc5ec11954299fa7469b1157f95d27dae2bab66efb2c91506749f46ba2cd5"
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40"
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "e1b42124b08267e65ecd4d46bcbcb7c2c0d39ef563016ffda167bedb66cffd04"
+    },
+    {
+      "path": "src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+    },
+    {
+      "path": "src/approval-preview.mjs",
+      "sha256": "921d8946bd76c76f08fd6a21dbd73254c75716abcb86d6d2aadd33694ab3aa30"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "63dbc100d4dfa4fa42db31003c84a7925de025dd66af08f5bae589a4e8e7e850"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "sha256": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96"
+    },
+    {
+      "path": "src/client-entry.cjs",
+      "sha256": "191e2becac16cd00d814fbf70896a8b744ff5b7ae2f520cd3f8b57c31f56c2bd"
+    },
+    {
+      "path": "src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "path": "docs/tickets/BUB002.md",
+      "sha256": "1b3b7a1d25f67deefe0947004422919b22712b8682553edfa2ca6d379e990665"
+    },
+    {
+      "path": "docs/tickets/BUB004.md",
+      "sha256": "8b19cff5e3296ebcfbac7eb32b82aab7c2aa939cf42a6564520848fdaf23a6a0"
+    },
+    {
+      "path": "docs/tickets/BUB005.md",
+      "sha256": "8517546177534ea4bf8adc7fff3c25da6a718823128183307fea9ade8432ea4f"
+    },
+    {
+      "path": "docs/tickets/BUB006.md",
+      "sha256": "affa8641b9a80efce152cbcc9e6cfad4114e255aaac04617d6f935bc52878f94"
+    },
+    {
+      "path": "docs/tickets/BUB008.md",
+      "sha256": "f83349faa315d51e260e8fb61dc27c3e953791bec4b185b9789bce55b936b82a"
+    },
+    {
+      "path": "docs/tickets/BUB011.md",
+      "sha256": "ab185f940bd7a32a7a1d8dffc4e7cbeb33d21a8b51ceaa354750c6db2bc5623a"
+    },
+    {
+      "path": "docs/tickets/BUB012.md",
+      "sha256": "93e00fa5795a40c3561ce1c50d4ed07b4e784b7fa4d1f54fa8fa58cdc6d1bac7"
+    },
+    {
+      "path": "docs/tickets/BUB013.md",
+      "sha256": "a9d4c28492f6bdb49a469d1fbcde58079a8a28461143a653ed59102b57e99012"
+    },
+    {
+      "path": "docs/tickets/BUB014.md",
+      "sha256": "59ab8b06baecb67b62d1a8c22e157efabb2858daeddc46cbd31aad4a63db34df"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/types.d.ts",
+      "sha256": "6b7f5b81f6b680b1bf33346950f43e1cb760182f14d54cb71f5f0c1f2ce20352"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/call-config.js",
+      "sha256": "170f3ce7c7136b93087e2f5d50faa8b69815894ec3ebdf26c36d57e4c7a17a03"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "sha256": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/index.d.ts",
+      "sha256": "47e6ec0952cfd9bffb30d1a0092c8303aa03800836cdd6d242fccc3e0770e6a9"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/composition-inventory.d.ts",
+      "sha256": "43614f0c8be6fcb0620fd255140f2c46262a4e6d3c9a2ff21466fc20ca3e8ad8"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts",
+      "sha256": "806dfa610c3ed3ce80ffac89900993288d7013d4278ab21e2b55b193c542f79a"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+      "sha256": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-permission-presets/lib/types/index.d.ts",
+      "sha256": "7087a24640967eca84438801af15ab600e79b4cfe580be5e2fa907eaba0707e8"
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b"
+    },
+    {
+      "path": "docs/evidence/NI2/contract-author-notes.md",
+      "sha256": "29bacb4387b50ed13862c3edd264c942ce4ea2aca7409dd87c3369b3b3322bb3"
+    },
+    {
+      "path": "docs/evidence/NI2/host-interface-findings.md",
+      "sha256": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8"
+    },
+    {
+      "path": "docs/evidence/NI6/native-validation-design.md",
+      "sha256": "578c19408ea1204740a02c5c3c36e530c67f5d382cd1f514a9569f8096e419ab"
+    },
+    {
+      "path": "package.json",
+      "sha256": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027"
+    },
+    {
+      "path": ".runtime/dsh-web/package-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/index.js",
+      "sha256": "7e23c01514303b2dfa1b69a95929cb19e43ba761d3478a3104d0f565ca537be7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts",
+      "sha256": "7c03f0f92be4a48cc7960ac02fc040b2088b462ae790eab1427e50bfe5e74b31"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/handle.d.ts",
+      "sha256": "0218ad845fb8191dc46c507a41bc56587321236cb6a2a9ac25ef78f83a4ddcc5"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/entry.d.ts",
+      "sha256": "047a95a352588e566336593969e4a3a7164b3a6ef1bd0ca16a1eb6b766b1c6a5"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+      "sha256": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "sha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts",
+      "sha256": "954717f76586dc0e824f74bb51378529cf4963aff4582e3d25a7bc3c8142727d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "sha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts",
+      "sha256": "3536b173ec22361dcda85c05281921fc850db49984813b138d05395c4fe4510f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "sha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/index.d.ts",
+      "sha256": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e"
+    }
+  ],
+  "runtimeActions": 0,
+  "productTestsRun": 0,
+  "productAcceptance": "HOLD",
+  "code": "HOLD",
+  "browser": "HOLD"
+}
