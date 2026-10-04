@@ -30,8 +30,9 @@ test('separate actual-Web fixture manifest pins isolated env, explicit runtime f
   assert.equal(Object.hasOwn(patch.find(row => row.id === 'connection'), 'name'), false);
   assert.deepEqual(patch.find(row => row.id === 'connection').inject, ['webServer']);
   assert.deepEqual(patch.find(row => row.id === 'connection').config, { trustedHosts: [] });
-  assert.equal(patch.find(row => row.id === 'credentials').name.endsWith('/runtime-web-credentials.mjs'), true);
-  assert.equal(patch.find(row => row.insert).insert[0].name.endsWith('/runtime-web-fixture.mjs'), true);
+  assert.deepEqual(patch.find(row => row.id === 'credentials'), { id: 'credentials', disabled: true });
+  assert.equal(patch.find(row => row.insert).insert.find(row => row.id === 'df-runtime-synthetic-credentials').name.endsWith('/runtime-web-credentials.mjs'), true);
+  assert.equal(patch.find(row => row.insert).insert.find(row => row.id === 'df-runtime-synthetic-fixture').name.endsWith('/runtime-web-fixture.mjs'), true);
   for (const id of ['llm-deepseek', 'llm-deepseek-account', 'llm-pi-ai', 'deepseek-account', 'session-title-llm', 'tool-web', 'tool-bash', 'tool-fs']) assert.equal(patch.find(row => row.id === id).disabled, true);
   assert.equal(Object.values(patch).some(row => JSON.stringify(row).includes('secret')), false);
   const fixture = readFileSync(new URL('../scripts/runtime-web-fixture.mjs', import.meta.url), 'utf8');
@@ -200,4 +201,3 @@ async function nativeWebComposition(mode) {
 
 test('diagnostic-only wrapper retains original native auth/export and scoped lifetime', () => nativeWebComposition('diagnostic-wrapper'));
 test('runner public profile injection retains original Connection package/client metadata and native product lifetime', () => nativeWebComposition('original-profile-entry'));
-

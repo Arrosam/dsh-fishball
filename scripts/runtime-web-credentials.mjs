@@ -20,9 +20,12 @@ export class FixtureCredentialProvider extends CredentialProvider {
   #path; #pending = Promise.resolve(); #active = true;
   constructor(ctx, path = runtimeFiles.auth) {
     super(ctx); this.#path = path; ctx.effect(() => () => { this.#active = false; }, 'df.fixture-credentials');
+    // Metadata identity only: no grant, key or authority. A non-function
+    // value survives public Cordis service shadows for an await-boundary check.
+    Object.defineProperty(this, 'fixtureInstance', { value: Object.freeze({}), enumerable: false });
     // Cordis context access scopes services through a proxy. Bound methods
     // retain the provider's private fields while admission remains native.
-    for (const method of ['readRecord', 'describeRecord', 'listRecords', 'modifyRecord']) this[method] = this[method].bind(this);
+    for (const method of ['readRecord', 'describeRecord', 'listRecords', 'modifyRecord', 'assertFixtureBacking']) this[method] = this[method].bind(this);
   }
   async resolve() { return undefined; }
   async describe() { return { configured: false, writable: false }; }
@@ -37,6 +40,13 @@ export class FixtureCredentialProvider extends CredentialProvider {
   async readRecord(key) { return copy(this.#read(key)); }
   async describeRecord(key) { const current = this.#read(key); return { configured: !!current, ...(current ? { kind: current.kind } : {}), writable: key === permittedKey }; }
   async listRecords() { return this.#read(permittedKey) ? [{ key: permittedKey, kind: 'grant' }] : []; }
+  // Trusted fixture metadata gate: prove the expected file is this exact live
+  // provider's native grant backing, without returning its credential payload.
+  assertFixtureBacking(path) {
+    try {
+      if (path !== this.#path || this.#read(permittedKey)?.kind !== 'grant' || (lstatSync(this.#path).mode & 0o777) !== 0o600) fail();
+    } catch { fail(); }
+  }
   async deleteRecord() { fail(); }
   modifyRecord(key, mutate) {
     if (!this.#active || key !== permittedKey || typeof mutate !== 'function') return Promise.reject(new Error('FIXTURE_CREDENTIAL_UNAVAILABLE'));
@@ -77,3 +87,7 @@ export class FixtureCredentialProvider extends CredentialProvider {
 }
 export const name = 'df-runtime-synthetic-credentials';
 export function apply(ctx) { new FixtureCredentialProvider(ctx); }
+// Trusted module-test composition only, never a serialized profile path.
+export function createFixtureCredentialPlugin(path) {
+  return { name, apply(ctx) { new FixtureCredentialProvider(ctx, path); } };
+}

@@ -4,12 +4,29 @@ import { createRuntimePlugin } from '../src/runtime-plugin.mjs';
 import { EnvironmentRegistry } from '../src/environment.mjs';
 import { probeWorkerHost } from '../src/native-adapter.mjs';
 import { runtimePaths, runtimeFiles, checkPrivateFile, verifyRuntimeFixtureHost } from './runtime-web.mjs';
+import { FixtureCredentialProvider } from './runtime-web-credentials.mjs';
 const d = value => createHash('sha256').update(value).digest('hex');
 export const fixtureTokenCount = text => text.split(/\s+/u).filter(Boolean).length;
 export const name = 'df-runtime-local-fixture';
-export const inject = ['sessions', 'approval', 'connection', 'agents', 'llm', 'tools', 'webServer'];
+export const inject = ['sessions', 'approval', 'connection', 'credentials', 'agents', 'llm', 'tools', 'webServer'];
+export async function verifyFixtureCredentialBacking(ctx, path = runtimeFiles.auth) {
+  try {
+    const provider = ctx.credentials;
+    if (!(provider instanceof FixtureCredentialProvider)) throw new Error();
+    const description = await provider.describeRecord('client-connection/browser-session');
+    // Public service shadows wrap even bound methods. The fixture exposes an
+    // opaque metadata instance value containing no credential or authority.
+    const current = ctx.credentials;
+    if (!(current instanceof FixtureCredentialProvider) || current.fixtureInstance !== provider.fixtureInstance) throw new Error();
+    if (description.configured !== true || description.kind !== 'grant' || description.writable !== true) throw new Error();
+    current.assertFixtureBacking(path);
+    checkPrivateFile(path);
+    return Object.freeze({ provider: 'FixtureCredentialProvider', configured: true, kind: 'grant', nativeBrowserAuth: 'unchanged' });
+  } catch { throw new Error('FIXTURE_CREDENTIAL_BACKING_UNAVAILABLE'); }
+}
 export async function apply(ctx) {
   const provenance = verifyRuntimeFixtureHost();
+  const credentialBacking = await verifyFixtureCredentialBacking(ctx);
   if (ctx.llm.listProviders().length !== 0) throw new Error('FIXTURE_MODEL_ROUTE_UNAVAILABLE');
   const state = { loads: 0, unloads: 0, inferenceAttempts: 0, recipientAttempts: 0, toolAttempts: 0, cleanupCalls: 0 };
   try { const old = JSON.parse(readFileSync(runtimeFiles.state, 'utf8')); for (const key of Object.keys(state)) if (Number.isSafeInteger(old[key]) && old[key] >= 0) state[key] = old[key]; } catch {}
@@ -38,7 +55,7 @@ export async function apply(ctx) {
   state.loads++;
   Object.assign(state, { phase: 'active', pid: process.pid, target: diagnostic.target, hostSupported: diagnostic.supported, runtimeExport: 'src/runtime-plugin.mjs:createRuntimePlugin', schemaVersion: diagnostic.schemaVersion, provenance, modelProviders: ctx.llm.listProviders().length, capabilities: diagnostic.capabilities,
     loopback: ctx.webServer.host === '127.0.0.1', port: ctx.webServer.port, sessions: ctx.sessions.list().length,
-    policy: 'default-deny', modelReadiness: 'unavailable; no provider/catalog configured', previewMeaning: 'unavailable; no concrete action resolver', credentialBacking: 'synthetic public provider; native BrowserAuth unchanged' });
+    policy: 'default-deny', modelReadiness: 'unavailable; no provider/catalog configured', previewMeaning: 'unavailable; no concrete action resolver', credentialBacking });
   mkdirSync(runtimePaths.private, { recursive: true, mode: 0o700 });
   writeFileSync(runtimeFiles.access, JSON.stringify({ url: ctx.connection.authenticatedUrl(`http://127.0.0.1:${ctx.webServer.port}`) }), { mode: 0o600 }); chmodSync(runtimeFiles.access, 0o600);
   write();

@@ -41,8 +41,13 @@ export function runtimeProfilePatch() {
     // Public Loader entry injection merges into the unchanged official
     // Connection fiber; preserve its package and browser client metadata.
     { id: 'connection', inject: ['webServer'], config: { trustedHosts: [] } },
-    { id: 'credentials', name: fileURLToPath(new URL('./runtime-web-credentials.mjs', import.meta.url)), config: {} },
-    { insert: [{ id: 'df-runtime-synthetic-fixture', name: fileURLToPath(new URL('./runtime-web-fixture.mjs', import.meta.url)), config: {} }] },
+    // Patch.name is an expected-name guard, never a replacement. Disable
+    // the shipped provider and insert one distinct trusted synthetic provider.
+    { id: 'credentials', disabled: true },
+    { insert: [
+      { id: 'df-runtime-synthetic-credentials', name: fileURLToPath(new URL('./runtime-web-credentials.mjs', import.meta.url)), config: {} },
+      { id: 'df-runtime-synthetic-fixture', name: fileURLToPath(new URL('./runtime-web-fixture.mjs', import.meta.url)), config: {} },
+    ] },
   ], null, 2) + '\n';
 }
 function entry(path) {
