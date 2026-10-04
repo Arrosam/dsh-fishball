@@ -1,0 +1,90 @@
+TAP version 13
+# (node:51229) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent rename paths: empty/current/legacy/both partitions never rewrite or silently select another store
+ok 1 - independent rename paths: empty/current/legacy/both partitions never rewrite or silently select another store
+  ---
+  duration_ms: 6.381167
+  type: 'test'
+  ...
+# Subtest: independent rename encrypted path: sole legacy basename reads existing v2 without rehashing IDs, new file or authority change
+ok 2 - independent rename encrypted path: sole legacy basename reads existing v2 without rehashing IDs, new file or authority change
+  ---
+  duration_ms: 13.0555
+  type: 'test'
+  ...
+# Subtest: independent rename memory: exact prior label normalizes in memory with IDs/session/facts preserved and zero persistence
+ok 3 - independent rename memory: exact prior label normalizes in memory with IDs/session/facts preserved and zero persistence
+  ---
+  duration_ms: 4.959708
+  type: 'test'
+  ...
+# Subtest: independent rename memory rejection: future/near-label/cross-owner/workspace and extra fields never gain compatibility
+ok 4 - independent rename memory rejection: future/near-label/cross-owner/workspace and extra fields never gain compatibility
+  ---
+  duration_ms: 3.627875
+  type: 'test'
+  ...
+# Subtest: independent rename projection: exact old/current label combinations preserve revisions/sources/tombstones without writes
+ok 5 - independent rename projection: exact old/current label combinations preserve revisions/sources/tombstones without writes
+  ---
+  duration_ms: 2.722875
+  type: 'test'
+  ...
+# Subtest: independent rename projection rejection: future/cross-scope/corrupt content is never persisted or silently relabeled
+ok 6 - independent rename projection rejection: future/cross-scope/corrupt content is never persisted or silently relabeled
+  ---
+  duration_ms: 1.266459
+  type: 'test'
+  ...
+# Subtest: independent rename public identities: MIT/private preview package, native plugin, lazy module and df panel agree
+ok 7 - independent rename public identities: MIT/private preview package, native plugin, lazy module and df panel agree
+  ---
+  duration_ms: 8.170458
+  type: 'test'
+  ...
+# Subtest: independent rename RPC: channel rename never admits JSON or cloned peers, aliases or disposed captured handlers
+ok 8 - independent rename RPC: channel rename never admits JSON or cloned peers, aliases or disposed captured handlers
+  ---
+  duration_ms: 0.510083
+  type: 'test'
+  ...
+# Subtest: independent rename native carrier: df diagnostics and RPC retain trusted scope, auth rejection and unload fencing
+ok 9 - independent rename native carrier: df diagnostics and RPC retain trusted scope, auth rejection and unload fencing
+  ---
+  duration_ms: 49.644083
+  type: 'test'
+  ...
+# Subtest: independent rename crypto boundary: genuine old v1 rejects unchanged independently of filename branding
+ok 10 - independent rename crypto boundary: genuine old v1 rejects unchanged independently of filename branding
+  ---
+  duration_ms: 16.802958
+  type: 'test'
+  ...
+# Subtest: independent rename paths: dangling/directory entries never select a blank store and both-entry ambiguity preserves every entry
+ok 11 - independent rename paths: dangling/directory entries never select a blank store and both-entry ambiguity preserves every entry
+  ---
+  duration_ms: 7.378917
+  type: 'test'
+  ...
+# Subtest: independent rename native session: exact prebound legacy/current refs survive without consent rewrite; only new unbound defaults df
+ok 12 - independent rename native session: exact prebound legacy/current refs survive without consent rewrite; only new unbound defaults df
+  ---
+  duration_ms: 12.497375
+  type: 'test'
+  ...
+# Subtest: independent rename namespaces: orphan/mixed/nonregular sidecars cannot route to a blank store or change any recoverable entry
+ok 13 - independent rename namespaces: orphan/mixed/nonregular sidecars cannot route to a blank store or change any recoverable entry
+  ---
+  duration_ms: 18.802417
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 338.853166

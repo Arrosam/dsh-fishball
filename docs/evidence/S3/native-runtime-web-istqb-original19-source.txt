@@ -1,0 +1,98 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync, lstatSync, existsSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomBytes, createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+const repo = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+const { FixtureCredentialProvider } = await import(pathToFileURL(`${repo}/scripts/runtime-web-credentials.mjs`));
+const { DSH_WEB_RUNTIME_ROOT } = await import(pathToFileURL(`${repo}/src/host-probe.mjs`));
+const { Context } = await import(pathToFileURL(`${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/cordis/lib/index.js`));
+const key = 'client-connection/browser-session';
+const valid = () => ({ kind: 'grant', payload: { version: 1, secret: randomBytes(32).toString('base64url') } });
+const digest = value => createHash('sha256').update(value).digest('hex');
+const gate = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
+async function fixture(run) {
+  const directory = mkdtempSync(join(tmpdir(), 'df-runtime-credential-independent-'));
+  const ctx = new Context(); ctx.logger.exporters?.clear?.();
+  const path = join(directory, 'synthetic-private-auth.json'), provider = new FixtureCredentialProvider(ctx, path);
+  try { await run({ directory, path, ctx, provider }); }
+  finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }); }
+}
+async function denied(operation) {
+  let error; try { await operation(); } catch (caught) { error = caught; }
+  assert.ok(error, 'expected denied credential operation');
+  assert.equal(error.message === 'FIXTURE_CREDENTIAL_UNAVAILABLE', true, 'expected stable redacted credential error');
+}
+
+test('independent synthetic credential file byte cap 1023/1024/1025', async t => {
+  for (const bytes of [1023, 1024, 1025]) await t.test(`serialized-bytes-${bytes}`, async () => fixture(async ({ path, provider }) => {
+    const json = JSON.stringify(valid()); const body = json + ' '.repeat(bytes - Buffer.byteLength(json));
+    writeFileSync(path, body, { mode: 0o600 }); const before = digest(readFileSync(path));
+    if (bytes <= 1024) assert.equal((await provider.readRecord(key)).kind, 'grant');
+    else await denied(() => provider.readRecord(key));
+    assert.equal(digest(readFileSync(path)), before);
+  }));
+});
+test('independent closed persisted credential format partitions', async t => {
+  for (const partition of ['version0', 'version2', 'extra-record', 'extra-payload', 'secret42', 'secret44', 'noncanonical']) await t.test(partition, async () => fixture(async ({ path, provider }) => {
+    const value = valid();
+    if (partition === 'version0') value.payload.version = 0;
+    if (partition === 'version2') value.payload.version = 2;
+    if (partition === 'extra-record') value.extra = true;
+    if (partition === 'extra-payload') value.payload.extra = true;
+    if (partition === 'secret42') value.payload.secret = 'A'.repeat(42);
+    if (partition === 'secret44') value.payload.secret = 'A'.repeat(44);
+    if (partition === 'noncanonical') value.payload.secret = 'A'.repeat(42) + 'B';
+    writeFileSync(path, JSON.stringify(value), { mode: 0o600 }); const before = digest(readFileSync(path));
+    await denied(() => provider.readRecord(key)); assert.equal(digest(readFileSync(path)), before);
+  }));
+});
+test('independent existing symlink entry denied without reading or replacing its target', async () => fixture(async ({ directory, path, provider }) => {
+  const target = join(directory, 'synthetic-target.json'); writeFileSync(target, JSON.stringify(valid()), { mode: 0o600 });
+  const before = digest(readFileSync(target)); symlinkSync(target, path);
+  await denied(() => provider.readRecord(key)); await denied(() => provider.modifyRecord(key, async () => valid()));
+  assert.equal(lstatSync(path).isSymbolicLink(), true); assert.equal(digest(readFileSync(target)), before);
+}));
+test('independent dangling credential entry must fail before callback or replacement', async () => fixture(async ({ directory, path, provider }) => {
+  const target = join(directory, 'synthetic-missing-target.json'); symlinkSync(target, path); let calls = 0;
+  await denied(() => provider.readRecord(key));
+  await denied(() => provider.modifyRecord(key, async () => { calls++; return valid(); }));
+  assert.equal(calls, 0); assert.equal(lstatSync(path).isSymbolicLink(), true); assert.equal(existsSync(target), false);
+}));
+test('independent dangling credential write must not replace the existing entry', async () => fixture(async ({ directory, path, provider }) => {
+  const target = join(directory, 'synthetic-missing-target.json'); symlinkSync(target, path); let calls = 0;
+  await denied(() => provider.modifyRecord(key, async () => { calls++; return valid(); }));
+  assert.equal(calls, 0); assert.equal(lstatSync(path).isSymbolicLink(), true); assert.equal(existsSync(target), false);
+}));
+test('independent callback result remains private copy and reads cannot mutate persistent record', async () => fixture(async ({ path, provider }) => {
+  const input = valid(); await provider.modifyRecord(key, async () => input); const before = digest(readFileSync(path));
+  input.payload.version = 99; const read = await provider.readRecord(key); read.payload.version = 98;
+  assert.equal((await provider.readRecord(key)).payload.version, 1); assert.equal(digest(readFileSync(path)), before);
+}));
+test('independent dispose during pending native credential write denies publication and late callbacks', async () => fixture(async ({ path, ctx, provider }) => {
+  const original = valid(); await provider.modifyRecord(key, async () => original); const before = digest(readFileSync(path));
+  const entered = gate(), release = gate(); let queuedCalls = 0;
+  const pending = provider.modifyRecord(key, async () => { entered.resolve(); await release.promise; return valid(); });
+  const pendingDenied = denied(() => pending); await entered.promise;
+  const queued = provider.modifyRecord(key, async () => { queuedCalls++; return valid(); });
+  const queuedDenied = denied(() => queued); await ctx.fiber.dispose(); release.resolve();
+  await Promise.all([pendingDenied, queuedDenied]); assert.equal(queuedCalls, 0); assert.equal(digest(readFileSync(path)), before);
+  await denied(() => provider.readRecord(key)); assert.equal(existsSync(`${path}.lock`), false); assert.equal(existsSync(`${path}.tmp`), false);
+}));
+test('independent two provider contenders do not overwrite an in-flight native signing record', async () => fixture(async ({ path, ctx, provider }) => {
+  const original = valid(); await provider.modifyRecord(key, async () => original);
+  const secondCtx = new Context(); secondCtx.logger.exporters?.clear?.();
+  try {
+    const second = new FixtureCredentialProvider(secondCtx, path), entered = gate(), release = gate(); let secondCalls = 0;
+    const pending = provider.modifyRecord(key, async current => { entered.resolve(); await release.promise; return current; });
+    await entered.promise; await denied(() => second.modifyRecord(key, async () => { secondCalls++; return valid(); }));
+    release.resolve(); await pending; assert.equal(secondCalls, 0); assert.equal(digest(JSON.stringify(await provider.readRecord(key))), digest(JSON.stringify(original)));
+  } finally { await secondCtx.fiber.dispose(); }
+}));
+test('independent cleanup I/O failure must retain stable private error projection', async () => fixture(async ({ path, provider }) => {
+  await provider.modifyRecord(key, async () => valid()); const before = digest(readFileSync(path));
+  await denied(() => provider.modifyRecord(key, async () => { unlinkSync(`${path}.lock`); throw new Error('SYNTHETIC_PRIVATE_CALLBACK_CANARY'); }));
+  assert.equal(digest(readFileSync(path)), before);
+}));

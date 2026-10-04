@@ -142,7 +142,10 @@ test('independent rename public identities: MIT/private preview package, native 
   let module, imports = 0;
   new Script(readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8')).runInContext(createContext({ AbortController, window: { __ModuleLoader__: { load(value) { assert.equal(module, undefined); module = value; } } } }));
   assert.equal(module.id, metadata.name); assert.equal(imports, 0);
-  const React = { Fragment: 'fragment', createElement: (type, props, ...children) => ({ type, props: props ?? {}, children: children.flat(Infinity).filter(v => v !== false && v != null) }), useSyncExternalStore: (_, get) => get(), useState: () => ['', () => {}] };
+  // This identity oracle renders a tree without a React commit phase.
+  // Register effects without running their interval callbacks.
+  const effects = [];
+  const React = { Fragment: 'fragment', createElement: (type, props, ...children) => ({ type, props: props ?? {}, children: children.flat(Infinity).filter(v => v !== false && v != null) }), useSyncExternalStore: (_, get) => get(), useState: () => ['', () => {}], useEffect(effect) { effects.push(effect); } };
   const client = module.factory(name => { imports++; assert.equal(name, 'react'); return React; }); assert.equal(imports, 1);
   const calls = [], model = client.createModel({ async call(channel, endpoint) { calls.push({ channel, endpoint }); return { ok: true, value: [] }; } }, { clock: () => 100 });
   await model.refresh(); assert.deepEqual(calls, [{ channel: '/df-rpc', endpoint: 'v1/list' }]);

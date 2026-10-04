@@ -1,0 +1,28 @@
+TAP version 13
+# (node:51136) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent rename public identities: MIT/private preview package, native plugin, lazy module and df panel agree
+not ok 1 - independent rename public identities: MIT/private preview package, native plugin, lazy module and df panel agree
+  ---
+  duration_ms: 3.866542
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/rename-adversarial.test.mjs:136:1'
+  failureType: 'testCodeFailure'
+  error: 'React.useEffect is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    Object.Panel (evalmachine.<anonymous>:287:11)
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/rename-adversarial.test.mjs:149:23)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 176.808667
