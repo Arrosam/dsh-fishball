@@ -194,3 +194,58 @@ test('old consent cannot restore revoked or replaced approval authority',t=>{
  x.core.revoke(x.capability,S,'task','action');rejects(()=>x.core.grant(x.capability,S,'task','action',oldConsent),'STALE_AUTHORITY');rejects(()=>x.core.claim(S,'task','action',{expectedVersion:1}),'APPROVAL_INVALID');
  const current=x.core.getTask(S,'task');x.core.grant(x.capability,S,'task','action',{expectedVersion:current.version,expectedAuthEpoch:current.authEpoch,expiresAt:2000});assert.equal(x.core.claim(S,'task','action',{expectedVersion:1}).action.state,'dispatch_intent');
 });
+
+
+test('unsupported crash-left WAL stores reject before SQLite touches main or sidecars',t=>{
+ const dir=mkdtempSync(join(tmpdir(),'bubbles-wal-preflight-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ for(const version of [99,1,2]) {
+  const path=join(dir,`schema-${version}.db`);
+  if(version===2){const core=new Foundation({databasePath:path});core.close();}
+  const seed=version===99 ? 'CREATE TABLE future(value INTEGER); PRAGMA user_version=99;' : version===1 ? legacySchemaSql : '';
+  const insert=version===99 ? "db.exec('INSERT INTO future VALUES(1)');" : `db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run('${D}','${D}','${D}','queued',1,0,1000,1000);db.prepare('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)').run('${D}','${D}','${D}','${D}','${D}','${D}',1000);db.prepare('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)').run('${D}','${D}','${D}',1,1,'queued','intake',1000);`;
+  const result=child(`import{DatabaseSync}from'node:sqlite';const db=new DatabaseSync(${JSON.stringify(path)});db.exec(${JSON.stringify(seed)});db.exec('PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0;');db.exec('BEGIN IMMEDIATE');${insert}db.exec('COMMIT');process.exit(73);`);
+  assert.equal(result.status,73,result.stderr);assert.equal(existsSync(path+'-wal'),true);assert.equal(existsSync(path+'-shm'),true);
+  const before=new Map(readdirSync(dir).filter(name=>name.startsWith(`schema-${version}.db`)).map(name=>[name,readFileSync(join(dir,name))]));assert.ok(before.get(`schema-${version}.db-wal`).length>32);
+  rejects(()=>new Foundation({databasePath:path}),version===99?'SCHEMA_FUTURE':'SCHEMA_UNSUPPORTED');
+  assert.deepEqual(readdirSync(dir).filter(name=>name.startsWith(`schema-${version}.db`)).sort(),[...before.keys()].sort());
+  for(const [name,bytes] of before)assert.deepEqual(readFileSync(join(dir,name)),bytes,name);
+ }
+ const persistent=join(dir,'persistent-wal.db'),core=new Foundation({databasePath:persistent});core.close();const db=new DatabaseSync(persistent);db.exec('PRAGMA journal_mode=WAL');db.close();assert.equal(existsSync(persistent+'-wal'),false);assert.equal(existsSync(persistent+'-shm'),false);const original=readFileSync(persistent);assert.equal(original[18],2);rejects(()=>new Foundation({databasePath:persistent}),'SCHEMA_UNSUPPORTED');assert.deepEqual(readFileSync(persistent),original);
+});
+
+test('header preflight rejects ambiguous unsupported inputs without recovery or mutation',t=>{
+ const x=setup(t);x.core.close();const valid=readFileSync(x.databasePath);
+ for(const [name,mutate,code] of [
+  ['future-delete',buffer=>buffer.writeInt32BE(99,60),'SCHEMA_FUTURE'],
+  ['unsupported-zero',buffer=>buffer.writeInt32BE(0,60),'SCHEMA_UNSUPPORTED'],
+  ['unsupported-negative',buffer=>buffer.writeInt32BE(-1,60),'SCHEMA_UNSUPPORTED'],
+  ['unknown-read-version',buffer=>{buffer[19]=3;},'SCHEMA_UNSUPPORTED'],
+  ['bad-page-size',buffer=>buffer.writeUInt16BE(513,16),'STORAGE_UNAVAILABLE'],
+  ['truncated-header',()=>{},'STORAGE_UNAVAILABLE'],
+ ]){
+  const path=join(x.dir,name+'.db'),bytes=Buffer.from(valid);mutate(bytes);writeFileSync(path,name==='truncated-header'?bytes.subarray(0,80):bytes);const original=readFileSync(path);
+  // An unsupported main plus a journal is still rejected before SQLite may try
+  // recovery; this deliberately synthetic sidecar is itself preserved exactly.
+  const journal=path+'-journal';writeFileSync(journal,'synthetic-unsupported-journal');const journalBytes=readFileSync(journal);
+  rejects(()=>new Foundation({databasePath:path}),code);assert.deepEqual(readFileSync(path),original);assert.deepEqual(readFileSync(journal),journalBytes);
+ }
+ const missing=join(x.dir,'orphan-main.db');writeFileSync(missing+'-wal','synthetic-orphan-wal');rejects(()=>new Foundation({databasePath:missing}),'SCHEMA_UNSUPPORTED');assert.equal(existsSync(missing),false);assert.equal(readFileSync(missing+'-wal','utf8'),'synthetic-orphan-wal');
+});
+
+
+test('supported DELETE hot rollback journal recovers acknowledged facts',t=>{
+ const x=setup(t);for(let i=0;i<16;i++)intake(x.core,'hot-'+i);x.core.close();
+ const result=child(`import{DatabaseSync}from'node:sqlite';const db=new DatabaseSync(${JSON.stringify(x.databasePath)});db.exec('PRAGMA cache_size=1; BEGIN IMMEDIATE; UPDATE tasks SET auth_epoch=auth_epoch+1; UPDATE events SET at=at+1;');process.exit(74);`);
+ assert.equal(result.status,74,result.stderr);const journal=x.databasePath+'-journal';assert.equal(existsSync(journal),true);const bytes=readFileSync(journal);assert.ok(bytes.length>28);assert.notDeepEqual(bytes.subarray(0,8),Buffer.alloc(8),'rollback journal is hot, not only an unflushed empty header');
+ const reopened=new Foundation({databasePath:x.databasePath});t.after(()=>reopened.close());const tasks=reopened.listTasks(S);assert.equal(tasks.length,16);assert.equal(tasks.every(task=>task.authEpoch===0&&task.version===1&&task.status==='queued'),true);assert.equal(reopened.exportTask(S,'hot-0').history[0].at,1000);assert.equal(existsSync(journal),false);
+});
+
+test('concurrent future version cannot be downgraded during migration or runtime mutation',t=>{
+ const dir=mkdtempSync(join(tmpdir(),'bubbles-version-lock-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const legacy=join(dir,'legacy.db'),db=new DatabaseSync(legacy);db.exec(legacySchemaSql);db.close();
+ const originalExec=DatabaseSync.prototype.exec;let changed=false;
+ DatabaseSync.prototype.exec=function(sql){if(!changed&&sql==='BEGIN EXCLUSIVE'){changed=true;const writer=new DatabaseSync(legacy);writer.exec('PRAGMA user_version=99');writer.close();}return originalExec.call(this,sql);};
+ try{rejects(()=>new Foundation({databasePath:legacy}),'SCHEMA_FUTURE');}finally{DatabaseSync.prototype.exec=originalExec;}
+ assert.equal(changed,true);assert.equal(existsSync(legacy+'.schema-1.backup'),false);const check=new DatabaseSync(legacy);assert.equal(check.prepare('PRAGMA user_version').get().user_version,99);assert.equal(check.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE type='table'").get().n,3);check.close();
+ const x=setup(t);intake(x.core);const before=x.core.getTask(S,'task');const writer=new DatabaseSync(x.databasePath);writer.exec('PRAGMA user_version=99');writer.close();const original=readFileSync(x.databasePath);rejects(()=>x.core.transition(S,'task',{expectedVersion:before.version,status:'waiting',reason:'progress'}),'SCHEMA_FUTURE');assert.deepEqual(readFileSync(x.databasePath),original);rejects(()=>intake(x.core,'next'),'SCHEMA_FUTURE');
+});

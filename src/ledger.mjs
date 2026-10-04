@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import { copyFileSync, existsSync, statSync, openSync, closeSync, fsyncSync, chmodSync } from 'node:fs';
+import { copyFileSync, existsSync, statSync, openSync, closeSync, fsyncSync, chmodSync, readSync, lstatSync } from 'node:fs';
 import { constants } from 'node:fs';
 import { isAbsolute, dirname } from 'node:path';
 
@@ -21,6 +21,28 @@ const EXTRA = {
 // Version 1 is a bounded task-only foundation; it cannot contain action authority.
 export const legacySchemaSql = Object.values(BASE).join(';') + '; PRAGMA user_version=1;';
 const normalize = sql => sql.replace(/\s+/g, ' ').trim();
+// Only DELETE/rollback journals belong to this foundation. Inspect bytes before
+// SQLite opens a rejected store: even read-only SQLite can modify WAL's SHM.
+function preflight(path, existed) {
+  if (existed) {
+    const info=statSync(path);
+    if (!info.isFile() || info.size===0) fail('STORAGE_INVALID');
+    const header=Buffer.alloc(100), fd=openSync(path,'r');
+    let read;
+    try { read=readSync(fd,header,0,header.length,0); } finally { closeSync(fd); }
+    if (read!==header.length || !header.subarray(0,16).equals(Buffer.from('SQLite format 3\0','ascii'))) fail('STORAGE_UNAVAILABLE');
+    const version=header.readInt32BE(60);
+    if (version>SCHEMA_VERSION) fail('SCHEMA_FUTURE');
+    if (version!==1 && version!==SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
+    if (header[18]!==1 || header[19]!==1) fail('SCHEMA_UNSUPPORTED');
+    const pageSize=header.readUInt16BE(16)===1 ? 65536 : header.readUInt16BE(16);
+    if (pageSize<512 || pageSize>65536 || (pageSize & (pageSize-1))!==0 || info.size<pageSize || info.size%pageSize!==0 || pageSize-header[20]<480 || header[21]!==64 || header[22]!==32 || header[23]!==32) fail('STORAGE_UNAVAILABLE');
+  }
+  // lstat also catches a dangling sidecar symlink; no SQLite recovery is allowed
+  // on a WAL store, even when the main file's version/header is stale or absent.
+  if (lstatSync(`${path}-wal`,{throwIfNoEntry:false}) || lstatSync(`${path}-shm`,{throwIfNoEntry:false})) fail('SCHEMA_UNSUPPORTED');
+}
+
 
 export class Ledger {
   constructor(path, { migrationFault, maxPageCount } = {}) {
@@ -28,7 +50,7 @@ export class Ledger {
     this.path = path; this.closed = false; this.restricted = false;
     const existed = existsSync(path);
     try {
-      if (existed && (!statSync(path).isFile() || statSync(path).size === 0)) fail('STORAGE_INVALID');
+      preflight(path,existed);
       this.db = new DatabaseSync(path);
       if (!existed) chmodSync(path,0o600);
       this.db.exec('PRAGMA busy_timeout=2000; PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;');
@@ -38,7 +60,7 @@ export class Ledger {
       if (this.db.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') fail('STORAGE_INVALID');
       if (!existed) {
         this.db.exec('BEGIN EXCLUSIVE');
-        try { for (const sql of Object.values({ ...BASE, ...EXTRA })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
+        try { this.version(0); if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) fail('SCHEMA_UNSUPPORTED'); for (const sql of Object.values({ ...BASE, ...EXTRA })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
         catch (error) { this.db.exec('ROLLBACK'); throw error; }
       } else if (version === 1) {
         this.verify(BASE);
@@ -46,6 +68,7 @@ export class Ledger {
         this.db.exec('BEGIN EXCLUSIVE');
         try {
           // Validate source under the exclusive lock before any backup or schema write.
+          this.version(1);
           this.verify(BASE);
           this.validateRows(false);
           // Lock out concurrent writes before making an exact recoverable copy.
@@ -63,7 +86,7 @@ export class Ledger {
         } catch (error) { this.db.exec('ROLLBACK'); throw error; }
       } else if (version !== SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
       this.db.exec('BEGIN IMMEDIATE');
-      try { this.verify({ ...BASE, ...EXTRA }); this.validateRows(true); this.db.exec('COMMIT'); }
+      try { this.version(SCHEMA_VERSION); this.verify({ ...BASE, ...EXTRA }); this.validateRows(true); this.db.exec('COMMIT'); }
       catch(error) { this.db.exec('ROLLBACK'); throw error; }
       if (maxPageCount !== undefined) this.db.exec(`PRAGMA max_page_count=${maxPageCount}`);
     } catch (error) {
@@ -72,6 +95,11 @@ export class Ledger {
       if (error instanceof FoundationError) throw error;
       fail('STORAGE_UNAVAILABLE');
     }
+  }
+  version(expected) {
+    const actual=this.db.prepare('PRAGMA user_version').get().user_version;
+    if(actual>SCHEMA_VERSION) fail('SCHEMA_FUTURE');
+    if(actual!==expected || this.db.prepare('PRAGMA journal_mode').get().journal_mode!=='delete') fail('SCHEMA_UNSUPPORTED');
   }
   verify(expected) {
     const tables = this.db.prepare("SELECT name,sql FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all();
@@ -112,7 +140,7 @@ export class Ledger {
   transaction(fn) {
     return this.guarded(() => {
       this.db.exec('BEGIN IMMEDIATE');
-      try { const result = fn(); this.db.exec('COMMIT'); return result; }
+      try { this.version(SCHEMA_VERSION); const result = fn(); this.db.exec('COMMIT'); return result; }
       catch (error) { try { this.db.exec('ROLLBACK'); } catch { this.restricted = true; } throw error; }
     });
   }
