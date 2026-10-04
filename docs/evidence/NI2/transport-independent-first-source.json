@@ -1,0 +1,10 @@
+{
+  "test": "test/operator-invocation-adversarial.test.mjs",
+  "sha256": "b91bcaddea72bdd35e1c061a7c2ccd9e277cdd8b818e99e5f95eb90f149d51d9",
+  "bytes": 20009,
+  "before_sha256": "f21d2fcad17c8a3a50923e7ee59ad2281f08157f4652a5a9baa62eb0bdf96d6f",
+  "source_snapshot": "docs/evidence/NI2/transport-independent-first-test.mjs.txt",
+  "preserved_before_first_execution": true,
+  "scope": "typed private bridge carrier; no native authentication/durable store proof",
+  "source_mismatches": []
+}
