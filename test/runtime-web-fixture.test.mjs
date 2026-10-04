@@ -27,6 +27,9 @@ test('separate actual-Web fixture manifest pins isolated env, explicit runtime f
   assert.equal(runtimePaths.base.includes('/.runtime/dsh-web-runtime-fixture/'), true); assert.equal(runtimeFiles.key.startsWith(runtimePaths.private + '/'), true);
   const patch = JSON.parse(runtimeProfilePatch());
   assert.equal(patch.find(row => row.id === 'web-runtime').config.openBrowser, false); assert.equal(patch.find(row => row.id === 'web-runtime').config.printUrl, false);
+  assert.equal(Object.hasOwn(patch.find(row => row.id === 'connection'), 'name'), false);
+  assert.deepEqual(patch.find(row => row.id === 'connection').inject, ['webServer']);
+  assert.deepEqual(patch.find(row => row.id === 'connection').config, { trustedHosts: [] });
   assert.equal(patch.find(row => row.id === 'credentials').name.endsWith('/runtime-web-credentials.mjs'), true);
   assert.equal(patch.find(row => row.insert).insert[0].name.endsWith('/runtime-web-fixture.mjs'), true);
   for (const id of ['llm-deepseek', 'llm-deepseek-account', 'llm-pi-ai', 'deepseek-account', 'session-title-llm', 'tool-web', 'tool-bash', 'tool-fs']) assert.equal(patch.find(row => row.id === id).disabled, true);
@@ -138,7 +141,7 @@ test('nested synthetic profile directory boundaries preflight existing and dangl
 });
 
 
-test('public native Connection Web composition preserves original exports/auth and binds the exact injected provider scope', async () => {
+async function nativeWebComposition(mode) {
   assert.equal(RuntimeWebConnection.Config, Connection.Config); assert.equal(RuntimeWebConnection.apply, Connection.apply);
   assert.deepEqual(RuntimeWebConnection.inject, ['credentials', 'webServer']); assert.deepEqual(Connection.inject, ['credentials']);
   const { WebServer } = await import(`${root}/dsh-host-webserver/lib/index.js`);
@@ -155,7 +158,22 @@ test('public native Connection Web composition preserves original exports/auth a
     const failingConsumer = ctx.plugin({ inject: ['connection', 'webServer'], apply(c) { c.connection.rpc.handle('/synthetic-unwrapped', () => ({})); } });
     await assert.rejects(Promise.resolve(failingConsumer), /cannot get property "webServer" without inject/); await failingConsumer.dispose();
     assert.equal(first.server.prefixes.has('/synthetic-unwrapped'), false); const authBefore = digest(readFileSync(authPath)); await unwrapped.dispose();
-    const connection = ctx.plugin(RuntimeWebConnection); await connection;
+    let connection;
+    if (mode === 'diagnostic-wrapper') {
+      connection = ctx.plugin(RuntimeWebConnection); await connection;
+    } else {
+      const { Loader } = await import(`${root}/cordis-plugin-loader/lib/index.js`);
+      await ctx.plugin(Loader);
+      const row = JSON.parse(runtimeProfilePatch()).find(row => row.id === 'connection');
+      assert.equal(Object.hasOwn(row, 'name'), false);
+      const nativePackage = JSON.parse(readFileSync(`${root}/dsh-client-connection/package.json`, 'utf8'));
+      assert.equal(nativePackage.name, '@deepseek-ai/dsh-client-connection'); assert.equal(nativePackage.version, '0.2.1-alpha.1');
+      assert.deepEqual(nativePackage.dsh.client, { inject: [], platform: 'web', immediately: true });
+      const id = await ctx.loader.create({ name: `${root}/dsh-client-connection/lib/index.js`, inject: row.inject, config: row.config });
+      await ctx.loader.await(); const entry = ctx.loader.resolve(id); connection = entry.fiber; await connection.await();
+      assert.equal(entry.moduleNamespace, Connection); assert.equal(entry.moduleNamespace.Config, Connection.Config); assert.equal(entry.moduleNamespace.apply, Connection.apply);
+      assert.deepEqual(Object.keys(connection.inject).sort(), ['credentials', 'webServer']);
+    }
     let runtime; const parent = ctx.plugin({ inject: ['connection', 'sessions', 'approval', 'webServer'], async apply(c) {
       runtime = c.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'original-native-owner', workspaceId: 'original-native-workspace' }), encryptionKey: () => Buffer.alloc(32, 11) }), { databasePath: join(directory, 'ledger.sqlite') }); await runtime;
     } }); await parent;
@@ -172,10 +190,14 @@ test('public native Connection Web composition preserves original exports/auth a
     assert.equal((await request(oldRoute, { cookie: undefined })).status, 401); assert.equal((await request(oldRoute, { origin: 'http://synthetic.invalid' })).status, 403);
     const borrowed = ctx.df, removing = first.fiber.dispose(); assert.equal((await request(oldRoute)).result.error.code, 'SERVICE_DISPOSED'); await removing;
     assert.equal(first.server.prefixes.size, 0); assert.throws(() => borrowed.diagnostics(), { code: 'SERVICE_DISPOSED' });
-    const second = await mount(); await connection; await parent; await runtime;
+    const second = await mount(); await connection.await(); await parent; await runtime;
     assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.ok, true); assert.equal((await request(oldRoute)).result.error.code, 'SERVICE_DISPOSED');
     assert.equal(digest(readFileSync(authPath)), authBefore); assert.equal(ctx.sessions.list().length, 0);
     const shutdown = parent.dispose(); assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.error.code, 'SERVICE_DISPOSED'); await shutdown;
     assert.equal(second.server.prefixes.has('/df-rpc'), false); assert.equal(second.server.server, undefined); cookie = undefined;
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }); }
-});
+}
+
+test('diagnostic-only wrapper retains original native auth/export and scoped lifetime', () => nativeWebComposition('diagnostic-wrapper'));
+test('runner public profile injection retains original Connection package/client metadata and native product lifetime', () => nativeWebComposition('original-profile-entry'));
+

@@ -38,7 +38,9 @@ export function runtimeProfilePatch() {
     { id: 'web-runtime', config: { openBrowser: false, printUrl: false, surfaceContext: true, trustedHosts: [] } },
     { id: 'approval', config: { policy: 'never' } },
     ...disabled.map(id => ({ id, disabled: true })),
-    { id: 'connection', name: fileURLToPath(new URL('./runtime-web-connection.mjs', import.meta.url)), config: { trustedHosts: [] } },
+    // Public Loader entry injection merges into the unchanged official
+    // Connection fiber; preserve its package and browser client metadata.
+    { id: 'connection', inject: ['webServer'], config: { trustedHosts: [] } },
     { id: 'credentials', name: fileURLToPath(new URL('./runtime-web-credentials.mjs', import.meta.url)), config: {} },
     { insert: [{ id: 'df-runtime-synthetic-fixture', name: fileURLToPath(new URL('./runtime-web-fixture.mjs', import.meta.url)), config: {} }] },
   ], null, 2) + '\n';

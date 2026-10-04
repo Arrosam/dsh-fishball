@@ -1,0 +1,148 @@
+TAP version 13
+# (node:48601) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: native authenticated owner prepares, previews, grants and explicitly executes one real local loop; private reviewer and cancel preserve holds
+ok 1 - native authenticated owner prepares, previews, grants and explicitly executes one real local loop; private reviewer and cancel preserve holds
+  ---
+  duration_ms: 245.594667
+  type: 'test'
+  ...
+# Subtest: actual native plugin quit closes active owned workers after fiber deactivation and reopening retains accountable holds
+ok 2 - actual native plugin quit closes active owned workers after fiber deactivation and reopening retains accountable holds
+  ---
+  duration_ms: 140.68125
+  type: 'test'
+  ...
+# Subtest: trusted native automation installer admits deduplicated ingress and only exact owner approval resolves missed schedule; timers and tokens stop with plugin
+ok 3 - trusted native automation installer admits deduplicated ingress and only exact owner approval resolves missed schedule; timers and tokens stop with plugin
+  ---
+  duration_ms: 44.952541
+  type: 'test'
+  ...
+# Subtest: private paired chat contract and explicit notification policy are native installation features; asynchronous ingress cannot outlive quit
+ok 4 - private paired chat contract and explicit notification policy are native installation features; asynchronous ingress cannot outlive quit
+  ---
+  duration_ms: 27.536541
+  type: 'test'
+  ...
+# Subtest: only the DSH admitted operator can reach trusted closures
+ok 5 - only the DSH admitted operator can reach trusted closures
+  ---
+  duration_ms: 1.408375
+  type: 'test'
+  ...
+# Subtest: payload accessors, proxies, sparse arrays and authority prototypes never run
+ok 6 - payload accessors, proxies, sparse arrays and authority prototypes never run
+  ---
+  duration_ms: 0.528208
+  type: 'test'
+  ...
+# Subtest: capture disconnects mutable input and abort fences only new admission
+ok 7 - capture disconnects mutable input and abort fences only new admission
+  ---
+  duration_ms: 0.889375
+  type: 'test'
+  ...
+# Subtest: disposal closes captured handlers immediately and secret errors stay redacted
+ok 8 - disposal closes captured handlers immediately and secret errors stay redacted
+  ---
+  duration_ms: 0.42075
+  type: 'test'
+  ...
+# (node:48603) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+ok 9 - actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+  ---
+  duration_ms: 38.301583
+  type: 'test'
+  ...
+# Subtest: native runtime reload preserves encrypted intake and missing key/identity fails before storage
+ok 10 - native runtime reload preserves encrypted intake and missing key/identity fails before storage
+  ---
+  duration_ms: 18.359625
+  type: 'test'
+  ...
+# Subtest: unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+ok 11 - unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+  ---
+  duration_ms: 17.563333
+  type: 'test'
+  ...
+# Subtest: partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+ok 12 - partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+  ---
+  duration_ms: 8.020667
+  type: 'test'
+  ...
+# Subtest: trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+ok 13 - trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+  ---
+  duration_ms: 14.728958
+  type: 'test'
+  ...
+# Subtest: scoped Web runtime requires real public WebServer registration and seals old scopes on service loss
+ok 14 - scoped Web runtime requires real public WebServer registration and seals old scopes on service loss
+  ---
+  duration_ms: 14.673583
+  type: 'test'
+  ...
+# (node:48604) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: separate actual-Web fixture manifest pins isolated env, explicit runtime factory and no secret YAML
+ok 15 - separate actual-Web fixture manifest pins isolated env, explicit runtime factory and no secret YAML
+  ---
+  duration_ms: 2.190333
+  type: 'test'
+  ...
+# Subtest: genuine public BrowserAuth token exchange and OperatorPeer admission use only synthetic JSON0600 credential backing
+ok 16 - genuine public BrowserAuth token exchange and OperatorPeer admission use only synthetic JSON0600 credential backing
+  ---
+  duration_ms: 33.302
+  type: 'test'
+  ...
+# Subtest: private auth persistence rejects unsafe mode, locks, unknown record formats and callback secrets without fallback
+ok 17 - private auth persistence rejects unsafe mode, locks, unknown record formats and callback secrets without fallback
+  ---
+  duration_ms: 2.824083
+  type: 'test'
+  ...
+# Subtest: synthetic integer tokenizer assembles an actual protected scoped execution context without a model
+ok 18 - synthetic integer tokenizer assembles an actual protected scoped execution context without a model
+  ---
+  duration_ms: 16.067666
+  type: 'test'
+  ...
+# Subtest: dangling native auth entries fail before read/mutation and cleanup faults stay redacted
+ok 19 - dangling native auth entries fail before read/mutation and cleanup faults stay redacted
+  ---
+  duration_ms: 3.306708
+  type: 'test'
+  ...
+# Subtest: nested synthetic profile directory boundaries preflight existing and dangling symlinks before writes
+ok 20 - nested synthetic profile directory boundaries preflight existing and dangling symlinks before writes
+  ---
+  duration_ms: 9.5145
+  type: 'test'
+  ...
+# Subtest: diagnostic-only wrapper retains original native auth/export and scoped lifetime
+ok 21 - diagnostic-only wrapper retains original native auth/export and scoped lifetime
+  ---
+  duration_ms: 46.1105
+  type: 'test'
+  ...
+# Subtest: runner public profile injection retains original Connection package/client metadata and native product lifetime
+ok 22 - runner public profile injection retains original Connection package/client metadata and native product lifetime
+  ---
+  duration_ms: 395.437416
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 697.592125
