@@ -1,0 +1,30 @@
+{
+  "baseCommit": "5619192",
+  "purpose": "Before narrow readAuditInput addition and tracked genuine4 fixture relocation",
+  "files": [
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+    },
+    {
+      "path": "test/normal-audit-core.test.mjs",
+      "sha256": "c491f5385b438cc270f4c03f6ce874966bbdadb70d0a9a74c1f2ebab696b26d8"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "file": "src/runtime-store.mjs",
+    "exitCode": 0,
+    "output": ""
+  },
+  {
+    "file": "test/normal-audit-core.test.mjs",
+    "exitCode": 0,
+    "output": ""
+  }
+]

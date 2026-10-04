@@ -1791,6 +1791,20 @@ export class RuntimeStore {
       return value;
     }catch{fail('STORAGE_INVALID');}
   }
+  readAuditInput(handle,input){
+    exact(input,['taskRef','inputRecordRef']);
+    ref(input.taskRef);ref(input.inputRecordRef);
+    const c=this.#ctx(handle,input.taskRef,HOST);
+    return this.#ledger.transaction(()=>{
+      // This is an authenticated historical read, never fresh admission or
+      // native origin. Validate the original graph before returning its bytes.
+      const association=this.#auditInput(c,input.inputRecordRef);
+      if(association.taskRef!==input.taskRef)fail('AUDIT_BINDING_MISMATCH');
+      const {metadata,content}=this.#auditData(c,input.taskRef,input.inputRecordRef);
+      this.#readAllowed(c,metadata);
+      return {association,data:{...metadata,content}};
+    });
+  }
   #auditSpec(c,task,spec,current){
     if(!spec.executionInput)fail('AUDIT_INPUT_REQUIRED');
     const input=this.#auditInput(c,spec.executionInput.recordRef),binding=spec.executionInput;

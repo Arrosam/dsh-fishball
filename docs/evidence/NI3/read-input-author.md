@@ -1,0 +1,23 @@
+# Narrow schema5 historical input projection: author hold
+
+Root authorized this addition at the committed `5619192` schema5 author unit. The prior23-case source test and manifest are preserved in `read-input-author/before-23-test.mjs.txt` and `before-source.json`. Earlier135-case results remain bound to their earlier exact source; they are not repeated or presented as validation of this patch. No schema6/7, new migration interpretation, native execution, provider call, protected-row tamper probe or blocked CODE experiment is included.
+
+The only product change is `RuntimeStore.readAuditInput(host,{taskRef,inputRecordRef})->{association,data}`. It validates the closed two-field input and canonical refs before accessing caller fields, authenticates the exact existing HOST capability, and uses the original ledger transaction. The existing authenticated `#auditInput` graph is validated before projection; exact task equality precedes the permitted encrypted-data return. `association` is the original closed `df.audit-input-association/v1` payload, and `data` has exactly the existing `readData` metadata/content shape. Generic readData, listData, snapshot, AAD, encrypted data, command receipts, grants, claims and schema version remain unchanged.
+
+This is historical projection only. It checks no new permission callback, constructor execution bounds, current policy/consent/task CAS or native lifetime and creates no origin, receipt, intent or reservation. Missing association produces `AUDIT_INPUT_REQUIRED`; an authenticated same-scope association addressed with a different task produces `AUDIT_BINDING_MISMATCH`; foreign scope finds no association. Existing HOST authorization errors precede projection, invalid descriptors/refs remain `INVALID_INPUT`, and original authentication/inverse validation errors remain `STORAGE_INVALID`. No corrupt-row executable probe was authorized or run for this addition; corruption refusal uses the unchanged authenticated validator rather than a new fallback.
+
+Genuine source4 fixture reads now use the tracked `test/fixtures/authentic-schema4/` archive. The original source-hold bytes and their `.runtime` provenance paths remain unchanged. Test reads use each row's original `origin` mapping inside the tracked archive and verify the exact five module hashes before importing its actual writer. No source/version byte is changed or relabeled. The historical ignored capsule and earlier raw evidence remain intact.
+
+The first focused command was:
+
+```
+node --test --test-name-pattern='readAuditInput|genuine|subprocess cuts|migration exclusive lock' test/normal-audit-core.test.mjs
+```
+
+It passed10/10,0fail/skip, without correction. The four new families establish exact association/data shape and detached returns; unchanged main bytes/SQL rows/list/snapshot/entries on reads; owner, worker, advanced/private reviewer and forged-handle refusal; foreign scope, task mismatch and absent/plain-context association refusal; closed refs, extra authority flags and hostile descriptors with zero getter/proxy invocation; and authentic historical projection after revoke, cancellation, model/resource policy drift, artifact revision and reopen. The late native fence still refuses the revoked claim, and the held reservation remains held. Reopen without execution bounds does not turn this historical read into execution availability.
+
+The six relocated genuine4 tests revalidate exact source backup/ciphertext/receipt/grant/tombstone preservation, actual4-reader future refusal, wrong key/backup collision, migration rollback fault, pre/post-COMMIT child exits, spilled DELETE journal copy-first preservation/recovery, and a concurrently acknowledged source4 typed write under the migration lock. These are the affected cases; unrelated module suites and the other original17 author tests were not rerun for an inflated total.
+
+Tracked raw TAP is `read-input-author/first.tap`, SHA256 `50cd58df3de01d2b1a14e8d973cbd7767314ccd3636cc79133160324c5250417`. `first-run-source.json` records the exact command, exit0 and equal before/after source hashes. The two affected `node --check` commands pass; `syntax-checks.json` retains their results. The final `source-hold.json` pins the product/test/evidence/archive graph for independent testing and root commit.
+
+The main executable core lease is released on this author hold; further source changes require a new root lease. Independent schema5 execution/review, installed normal audit/repair consumers, native result provenance/quality, CODE and browser/full acceptance remain separate. Root may assign source-only schema6 staging later; this hold grants none of that scope.

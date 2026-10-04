@@ -1,0 +1,25 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "--test-name-pattern=readAuditInput|genuine|subprocess cuts|migration exclusive lock",
+    "test/normal-audit-core.test.mjs"
+  ],
+  "exitCode": 0,
+  "before": {
+    "src/ledger.mjs": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "src/runtime-store.mjs": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "test/normal-audit-core.test.mjs": "9e6c05b9b3f9bf0ce9ab1e909d207fa3ac30022dde267484fdc87d7c944f67e8"
+  },
+  "after": {
+    "src/ledger.mjs": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "src/runtime-store.mjs": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "test/normal-audit-core.test.mjs": "9e6c05b9b3f9bf0ce9ab1e909d207fa3ac30022dde267484fdc87d7c944f67e8"
+  }
+}

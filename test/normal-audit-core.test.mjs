@@ -165,7 +165,7 @@ test('claim refuses when admitted audit output could exhaust the last data slot'
 // Genuine source4 is the exact supported keyed-receipt writer preserved by the
 // root promotion preflight. Neither these fixtures nor their version headers
 // are produced by the new schema5 writer or relabeled with SQL.
-const oldSource=new URL('../.runtime/ni3-source4/',import.meta.url);
+const oldSource=new URL('./fixtures/authentic-schema4/',import.meta.url);
 const currentSource=new URL('../src/runtime-store.mjs',import.meta.url).href;
 let oldModules;
 async function genuine4(){
@@ -173,7 +173,9 @@ async function genuine4(){
     const hold=JSON.parse(readFileSync(new URL('source-hold.json',oldSource),'utf8'));
     assert.equal(hold.schemaVersion,4);
     for(const file of hold.files){
-      const bytes=readFileSync(new URL('../'+file.path,import.meta.url));
+      // Preserve the original manifest's origin mapping and all five bytes.
+      // Its historical .runtime path remains provenance, not a fixture read.
+      const bytes=readFileSync(new URL(file.origin,oldSource));
       assert.equal(createHash('sha256').update(bytes).digest('hex'),file.sha256);
     }
     oldModules={...await import(new URL('src/runtime-store.mjs',oldSource)),...await import(new URL('src/foundation.mjs',oldSource))};
@@ -359,4 +361,57 @@ test('migration exclusive lock includes an acknowledged concurrent genuine4 type
     const backup=x.config.databasePath+'.schema-4.backup',backupRows=sqlSnapshot(backup);assert.equal(backupRows.version,4);assert.equal(sqlSnapshot(x.config.databasePath).version,5);assert.deepEqual(sqlSnapshot(x.config.databasePath).tables,backupRows.tables);
     const old=new x.Old.RuntimeStore({...x.config,databasePath:backup});assert.deepEqual(old.intake(x.owner,input),writerReceipt);old.close();
   }finally{children.forEach(c=>{if(c.child.exitCode===null)c.child.kill();});}
+});
+
+test('historical readAuditInput returns exact authenticated association and original data shape with no writes or generic read changes',()=>{
+  const x=fixture(),input=prepare(x),request={taskRef:x.task.taskRef,inputRecordRef:input.recordRef};
+  const beforeRows=sqlSnapshot(x.config.databasePath),beforeBytes=readFileSync(x.config.databasePath),beforeEntries=readdirSync(join(x.config.databasePath,'..'));
+  const generic=x.store.readData(x.host,{taskRef:x.task.taskRef,recordRef:input.recordRef}),list=x.store.listData(x.host,{taskRef:x.task.taskRef}),snapshot=x.store.snapshot(x.host,{taskRef:x.task.taskRef});
+  const result=x.store.readAuditInput(x.host,request);
+  assert.deepEqual(Object.keys(result).sort(),['association','data']);assert.deepEqual(result.data,generic);
+  assert.deepEqual(Object.keys(result.association).sort(),['contractVersion','ownerRef','workspaceRef','taskRef','auditRef','auditRevision','round','purpose','recordRef','digest','byteLength','bindingDigest','materialDigest','artifactRef','artifactVersion','artifactDigest','semanticRevision','sourceTaskVersion','sourceAuthEpoch','contextRecordRef','contextDigest','previousReportRef','material','inputByteLimit','resultByteLimit','createdAt'].sort());
+  assert.equal(result.association.contractVersion,'df.audit-input-association/v1');assert.equal(result.association.recordRef,input.recordRef);assert.equal(result.association.digest,input.digest);assert.equal(result.data.auditInputRef,input.recordRef);assert.equal(result.data.kind,'context');
+  result.association.material[0].digest=r('mutated-return-only');result.data.content='mutated return only';
+  assert.equal(x.store.readAuditInput(x.host,request).data.content,generic.content);
+  assert.deepEqual(x.store.listData(x.host,{taskRef:x.task.taskRef}),list);assert.deepEqual(x.store.snapshot(x.host,{taskRef:x.task.taskRef}),snapshot);
+  assert.deepEqual(sqlSnapshot(x.config.databasePath),beforeRows);assert.deepEqual(readFileSync(x.config.databasePath),beforeBytes);assert.deepEqual(readdirSync(join(x.config.databasePath,'..')),beforeEntries);x.store.close();
+});
+
+test('readAuditInput authorizes only exact original host capability and refuses foreign scope, task and absent associations without bytes',()=>{
+  const x=fixture(),input=prepare(x),held=claim(x,input),reviewer={};
+  x.store.bindAuditReviewer(x.host,reviewer,{taskRef:x.task.taskRef,auditRef:input.auditRef,claimRef:held.claimRef,generationRef:held.generationRef,sessionRef:held.sessionRef});
+  const request={taskRef:x.task.taskRef,inputRecordRef:input.recordRef},before=sqlSnapshot(x.config.databasePath);
+  for(const handle of [x.owner,x.worker,x.advancedReviewer,reviewer,{}, {...x.host}])rejects('UNAUTHORIZED',()=>x.store.readAuditInput(handle,request));
+  rejects('AUDIT_BINDING_MISMATCH',()=>x.store.readAuditInput(x.host,{...request,taskRef:r('different-task')}));
+  rejects('AUDIT_INPUT_REQUIRED',()=>x.store.readAuditInput(x.host,{...request,inputRecordRef:x.context.recordRef}));
+  rejects('AUDIT_INPUT_REQUIRED',()=>x.store.readAuditInput(x.host,{...request,inputRecordRef:r('absent-input')}));
+  assert.deepEqual(sqlSnapshot(x.config.databasePath),before);x.store.close();
+  const foreign={},store=new RuntimeStore({...x.config,principals:[{handle:foreign,role:'host',scope:{ownerId:'different-owner',workspaceId:scope.workspaceId}}]});
+  rejects('AUDIT_INPUT_REQUIRED',()=>store.readAuditInput(foreign,request));store.close();
+});
+
+test('readAuditInput closes refs and descriptor inputs before getters/proxies or authority flags can reach projection',()=>{
+  const x=fixture(),input=prepare(x),request={taskRef:x.task.taskRef,inputRecordRef:input.recordRef};let traps=0;
+  const accessor={inputRecordRef:input.recordRef};Object.defineProperty(accessor,'taskRef',{enumerable:true,get(){traps++;throw Error('synthetic accessor error');}});
+  const proxy=new Proxy(request,{get(){traps++;throw Error('synthetic proxy error');},getPrototypeOf(){traps++;throw Error('synthetic prototype error');}});
+  const hidden={...request};Object.defineProperty(hidden,'authority',{value:true,enumerable:false});
+  const symbol={...request,[Symbol('authority')]:true};
+  const before=sqlSnapshot(x.config.databasePath);
+  for(const invalid of [null,[],accessor,proxy,hidden,symbol,{...request,approved:true},{...request,expectedTaskVersion:1},{...request,taskRef:'raw-task'},{...request,inputRecordRef:input.recordRef+'\n'}])rejects('INVALID_INPUT',()=>x.store.readAuditInput(x.host,invalid));
+  assert.equal(traps,0);assert.deepEqual(sqlSnapshot(x.config.databasePath),before);x.store.close();
+});
+
+test('readAuditInput remains historical after revoke, cancellation, policy and artifact drift and reopen, without fresh admission',()=>{
+  let permissions=0,deny=false;
+  const x=fixture({hostPermission:()=>{permissions++;if(deny)throw Error('synthetic denied seam');return true;}}),input=prepare(x),held=claim(x,input),flow=begin(x,input,held),request={taskRef:x.task.taskRef,inputRecordRef:input.recordRef};
+  const historical=x.store.readAuditInput(x.host,request),current=x.store.task(x.owner,x.task.taskRef);
+  x.store.revokeAction(x.owner,{taskRef:current.taskRef,commandRef:command(),expectedTaskVersion:current.version,expectedAuthEpoch:current.authEpoch,actionRef:held.actionRef,actionDigest:held.actionDigest});
+  x.store.policy(x.owner,{commandRef:command(),expectedVersion:x.store.getPolicy(x.owner).version,limits:{maxActive:0},modelPolicy:x.store.getPolicy(x.owner).modelPolicy});
+  const revised=x.store.task(x.owner,current.taskRef);
+  x.store.writeArtifact(x.owner,{taskRef:revised.taskRef,commandRef:command(),expectedTaskVersion:revised.version,expectedAuthEpoch:revised.authEpoch,artifactRef:x.artifact.artifactRef,version:2,content:'new artifact is not the historical reviewed artifact'});
+  const updated=x.store.task(x.owner,current.taskRef);x.store.control(x.owner,{taskRef:updated.taskRef,commandRef:command(),expectedTaskVersion:updated.version,expectedAuthEpoch:updated.authEpoch,kind:'cancel'});
+  deny=true;const permissionCalls=permissions,before=sqlSnapshot(x.config.databasePath);
+  assert.deepEqual(x.store.readAuditInput(x.host,request),historical);assert.equal(permissions,permissionCalls);assert.deepEqual(sqlSnapshot(x.config.databasePath),before);
+  rejects('CLAIM_REVOKED',()=>x.store.assertNativeRequestCurrent(x.host,flow.consume));x.store.close();
+  const reopened=new RuntimeStore({...x.config,auditExecutionBounds:undefined});const reopenedRows=sqlSnapshot(x.config.databasePath);assert.deepEqual(reopened.readAuditInput(x.host,request),historical);assert.deepEqual(sqlSnapshot(x.config.databasePath),reopenedRows);assert.equal(reopened.snapshot(x.owner,{taskRef:current.taskRef}).actions[0].releaseEvidenceRef,null);reopened.close();
 });

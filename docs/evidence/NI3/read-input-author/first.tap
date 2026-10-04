@@ -1,0 +1,72 @@
+TAP version 13
+# (node:84742) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: genuine supported4 migrates to5 with exact backup, ciphertext, signed historical receipts, grants and tombstone dedup preserved
+ok 1 - genuine supported4 migrates to5 with exact backup, ciphertext, signed historical receipts, grants and tombstone dedup preserved
+  ---
+  duration_ms: 69.925875
+  type: 'test'
+  ...
+# Subtest: genuine4 wrong-key rejection and exclusive backup collision preserve original store and existing backup
+ok 2 - genuine4 wrong-key rejection and exclusive backup collision preserve original store and existing backup
+  ---
+  duration_ms: 50.351625
+  type: 'test'
+  ...
+# Subtest: genuine4 migration fault rolls back source and leaves a byte-exact source4 recovery backup
+ok 3 - genuine4 migration fault rolls back source and leaves a byte-exact source4 recovery backup
+  ---
+  duration_ms: 35.899584
+  type: 'test'
+  ...
+# Subtest: actual subprocess cuts before and after migration commit preserve genuine4 backup and supported reopening semantics
+ok 4 - actual subprocess cuts before and after migration commit preserve genuine4 backup and supported reopening semantics
+  ---
+  duration_ms: 267.660958
+  type: 'test'
+  ...
+# Subtest: genuine4 spilled DELETE journal validates copy first: wrong key preserves bytes, valid5 recovers acknowledged rows and migrates
+ok 5 - genuine4 spilled DELETE journal validates copy first: wrong key preserves bytes, valid5 recovers acknowledged rows and migrates
+  ---
+  duration_ms: 172.077334
+  type: 'test'
+  ...
+# Subtest: migration exclusive lock includes an acknowledged concurrent genuine4 typed write in its exact backup
+ok 6 - migration exclusive lock includes an acknowledged concurrent genuine4 typed write in its exact backup
+  ---
+  duration_ms: 254.374083
+  type: 'test'
+  ...
+# Subtest: historical readAuditInput returns exact authenticated association and original data shape with no writes or generic read changes
+ok 7 - historical readAuditInput returns exact authenticated association and original data shape with no writes or generic read changes
+  ---
+  duration_ms: 30.672583
+  type: 'test'
+  ...
+# Subtest: readAuditInput authorizes only exact original host capability and refuses foreign scope, task and absent associations without bytes
+ok 8 - readAuditInput authorizes only exact original host capability and refuses foreign scope, task and absent associations without bytes
+  ---
+  duration_ms: 34.717917
+  type: 'test'
+  ...
+# Subtest: readAuditInput closes refs and descriptor inputs before getters/proxies or authority flags can reach projection
+ok 9 - readAuditInput closes refs and descriptor inputs before getters/proxies or authority flags can reach projection
+  ---
+  duration_ms: 14.493666
+  type: 'test'
+  ...
+# Subtest: readAuditInput remains historical after revoke, cancellation, policy and artifact drift and reopen, without fresh admission
+ok 10 - readAuditInput remains historical after revoke, cancellation, policy and artifact drift and reopen, without fresh admission
+  ---
+  duration_ms: 46.95075
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1085.552459
