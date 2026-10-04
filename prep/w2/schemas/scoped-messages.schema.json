@@ -1,0 +1,763 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "scope",
+    "taskVersion",
+    "authEpoch",
+    "binding",
+    "messageRef",
+    "sourceIdentity",
+    "sender",
+    "receiver",
+    "category",
+    "purposeRef",
+    "actionDigest",
+    "payload",
+    "grantBinding",
+    "route",
+    "state",
+    "dispatchOrder",
+    "retryPolicy"
+  ],
+  "properties": {
+    "contractVersion": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+    },
+    "scope": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/scope"
+    },
+    "taskVersion": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+    },
+    "authEpoch": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+    },
+    "binding": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+    },
+    "messageRef": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRef",
+        "eventRef",
+        "dedupMode"
+      ],
+      "properties": {
+        "sourceRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "eventRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "dedupMode": {
+          "enum": [
+            "unique_id",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "sender": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionRef",
+        "generationRef"
+      ],
+      "properties": {
+        "sessionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "generationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      }
+    },
+    "receiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionRef",
+        "generationRef"
+      ],
+      "properties": {
+        "sessionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "generationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      }
+    },
+    "category": {
+      "enum": [
+        "status",
+        "context",
+        "review_request",
+        "review_result",
+        "control_request"
+      ]
+    },
+    "purposeRef": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+    },
+    "actionDigest": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bodyRef",
+        "digest",
+        "byteLength"
+      ],
+      "properties": {
+        "bodyRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "digest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        }
+      }
+    },
+    "grantBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grantRef",
+        "grantVersion",
+        "authEpoch",
+        "expiresAt",
+        "category",
+        "scope",
+        "sender",
+        "receiver",
+        "actionDigest",
+        "targetDigest",
+        "dataDigest",
+        "limitsDigest",
+        "taskVersion"
+      ],
+      "properties": {
+        "grantRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "grantVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "authEpoch": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+        },
+        "expiresAt": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+        },
+        "category": {
+          "enum": [
+            "status",
+            "context",
+            "review_request",
+            "review_result",
+            "control_request"
+          ]
+        },
+        "scope": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/scope"
+        },
+        "sender": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sessionRef",
+            "generationRef"
+          ],
+          "properties": {
+            "sessionRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "generationRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            }
+          }
+        },
+        "receiver": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sessionRef",
+            "generationRef"
+          ],
+          "properties": {
+            "sessionRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "generationRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            }
+          }
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "targetDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "dataDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "limitsDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "taskVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "originalSender",
+        "originalPurposeRef",
+        "hopCount",
+        "hopLimit",
+        "visitedGenerationRefs"
+      ],
+      "properties": {
+        "originalSender": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sessionRef",
+            "generationRef"
+          ],
+          "properties": {
+            "sessionRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "generationRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            }
+          }
+        },
+        "originalPurposeRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "hopCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "hopLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "visitedGenerationRefs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+          }
+        }
+      }
+    },
+    "state": {
+      "enum": [
+        "accepted",
+        "outbox_committed",
+        "sent",
+        "consumption_confirmed",
+        "unknown",
+        "rejected"
+      ]
+    },
+    "dispatchOrder": {
+      "enum": [
+        "not_claimed",
+        "revoke_first",
+        "claim_first"
+      ]
+    },
+    "retryPolicy": {
+      "const": "query_before_retry"
+    },
+    "outboxRef": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+    },
+    "claimRef": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+    },
+    "reservationRef": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+    },
+    "receipt": {
+      "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+    },
+    "reconciliation": {
+      "enum": [
+        "query_required",
+        "confirmed_failed",
+        "confirmed_consumed"
+      ]
+    },
+    "rejectionCode": {
+      "enum": [
+        "capability_unavailable",
+        "scope_denied",
+        "session_generation_stale",
+        "grant_denied",
+        "grant_revoked",
+        "expired",
+        "version_stale",
+        "hop_limit",
+        "route_loop",
+        "target_terminal",
+        "dedup_conflict"
+      ]
+    },
+    "dedupWarning": {
+      "const": "no_unique_source_id"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "accepted"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "outboxRef"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "claimRef"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "reservationRef"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "receipt"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "reconciliation"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "rejectionCode"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dispatchOrder": {
+            "enum": [
+              "not_claimed",
+              "revoke_first"
+            ]
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "not": {
+              "const": "rejected"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "then": {
+        "not": {
+          "required": [
+            "rejectionCode"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "not": {
+              "const": "consumption_confirmed"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "then": {
+        "not": {
+          "required": [
+            "receipt"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "not": {
+              "const": "unknown"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "then": {
+        "not": {
+          "required": [
+            "reconciliation"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "accepted"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dispatchOrder": {
+            "const": "not_claimed"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "required": [
+          "rejectionCode"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dispatchOrder": {
+            "const": "revoke_first"
+          }
+        },
+        "required": [
+          "dispatchOrder"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "state": {
+            "const": "rejected"
+          },
+          "rejectionCode": {
+            "const": "grant_revoked"
+          }
+        },
+        "required": [
+          "rejectionCode"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "outbox_committed"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dispatchOrder": {
+            "const": "claim_first"
+          }
+        },
+        "required": [
+          "outboxRef",
+          "claimRef",
+          "reservationRef"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "sent"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dispatchOrder": {
+            "const": "claim_first"
+          }
+        },
+        "required": [
+          "outboxRef",
+          "claimRef",
+          "reservationRef"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "consumption_confirmed"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dispatchOrder": {
+            "const": "claim_first"
+          }
+        },
+        "required": [
+          "outboxRef",
+          "claimRef",
+          "reservationRef"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dispatchOrder": {
+            "const": "claim_first"
+          }
+        },
+        "required": [
+          "outboxRef",
+          "claimRef",
+          "reservationRef"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "consumption_confirmed"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "required": [
+          "receipt"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "reconciliation": {
+            "const": "query_required"
+          }
+        },
+        "required": [
+          "reconciliation"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sourceIdentity": {
+            "properties": {
+              "dedupMode": {
+                "const": "unavailable"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "then": {
+        "required": [
+          "dedupWarning"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "outboxRef"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "claimRef"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "reservationRef"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "receipt"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "reconciliation"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:bubbles:w2-prep:scoped-messages:v1"
+}

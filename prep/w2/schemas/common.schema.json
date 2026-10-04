@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:bubbles:w2-prep:common:v1",
+  "$defs": {
+    "contractVersion": { "const": "bubbles.w2-prep/v1" },
+    "ref": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[a-f0-9]{64}$" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "epoch": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "time": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ownerRef", "workspaceRef", "taskRef"],
+      "properties": {
+        "ownerRef": { "$ref": "#/$defs/ref" },
+        "workspaceRef": { "$ref": "#/$defs/ref" },
+        "taskRef": { "$ref": "#/$defs/ref" }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "expectedTaskVersion", "expectedAuthEpoch", "commandRef"],
+      "properties": {
+        "scope": { "$ref": "#/$defs/scope" },
+        "expectedTaskVersion": { "$ref": "#/$defs/version" },
+        "expectedAuthEpoch": { "$ref": "#/$defs/epoch" },
+        "commandRef": { "$ref": "#/$defs/ref" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceRef", "digest", "observedAt", "sourceKind"],
+      "properties": {
+        "evidenceRef": { "$ref": "#/$defs/ref" },
+        "digest": { "$ref": "#/$defs/ref" },
+        "observedAt": { "$ref": "#/$defs/time" },
+        "sourceKind": { "enum": ["mock", "ledger_snapshot", "native_observation"] }
+      }
+    }
+  }
+}

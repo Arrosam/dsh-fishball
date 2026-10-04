@@ -11,6 +11,10 @@ Triage/AC → logical-unit implementation commits → independent code review �
 
 007A owns original BUB007-01 and02 only: portable runtime reuse and redistribution license. Original007B criteria remain on the separate007B card.
 
+## Current owner host baseline
+
+Use exact official DSH Web 0.2.1-alpha.1 in project-local isolation, with loopback browser acceptance and no old Desktop shims or Electron/native-shell validation. [Compatibility and source-AC interpretation](../compatibility.md) applies to this ticket. Original source AC below are preserved; newer explicit owner host decisions supersede older baseline advice. Future breaking upgrades require explicit reassessment rather than floating dependencies during tests.
+
 ## Approved source scope and acceptance
 
 BUB007 fishball 记忆代码整合

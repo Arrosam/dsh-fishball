@@ -1,0 +1,1131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:bubbles:w2-prep:resources:v1",
+  "title": "Mock-only candidate W2 reservation, budget and model-policy envelopes",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/admissionRequest"
+    },
+    {
+      "$ref": "#/$defs/reservationSnapshot"
+    },
+    {
+      "$ref": "#/$defs/budgetPolicy"
+    },
+    {
+      "$ref": "#/$defs/usageObservation"
+    },
+    {
+      "$ref": "#/$defs/controlRequest"
+    }
+  ],
+  "$defs": {
+    "modelPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "presetRef",
+        "policyVersion",
+        "modelRef",
+        "reasoningRef",
+        "catalogEvidence",
+        "substitutionPolicy"
+      ],
+      "properties": {
+        "presetRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "policyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "modelRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "reasoningRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "catalogEvidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "substitutionPolicy": {
+          "const": "deny"
+        }
+      }
+    },
+    "normalizedSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionRef",
+        "role",
+        "targetDigest",
+        "dataDigest",
+        "units",
+        "attemptGroupRef",
+        "attemptIndex",
+        "modelPolicy",
+        "charges",
+        "binding",
+        "resourceDomainRef",
+        "expectedResourcePolicyVersion",
+        "expectedModelPolicyVersion",
+        "executorBinding"
+      ],
+      "properties": {
+        "actionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "role": {
+          "enum": [
+            "worker",
+            "review",
+            "repair"
+          ]
+        },
+        "targetDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "dataDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "units": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "attemptGroupRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "attemptIndex": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "modelPolicy": {
+          "$ref": "#/$defs/modelPolicy"
+        },
+        "charges": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "runtimeMillis",
+            "usageUnits",
+            "costEstimate"
+          ],
+          "properties": {
+            "runtimeMillis": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "usageUnits": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "costEstimate": {
+              "$ref": "#/$defs/admissionCostEstimate"
+            }
+          }
+        },
+        "binding": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+        },
+        "resourceDomainRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "expectedResourcePolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "expectedModelPolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "executorBinding": {
+          "$ref": "#/$defs/executorBinding"
+        }
+      }
+    },
+    "budgetLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queueCapacity",
+        "activeUnitLimit",
+        "perGroupAttemptLimit",
+        "runtimeMillisLimit",
+        "usageUnitLimit",
+        "eventBytesLimit",
+        "messageBytesLimit",
+        "storedRecordLimit",
+        "controlQueueCapacity",
+        "totalAttemptLimit"
+      ],
+      "properties": {
+        "queueCapacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "activeUnitLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "runtimeMillisLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "usageUnitLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventBytesLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "messageBytesLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "storedRecordLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "controlQueueCapacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "perGroupAttemptLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "totalAttemptLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "cost": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "amountMicros",
+            "currency",
+            "sourceEvidence"
+          ],
+          "properties": {
+            "kind": {
+              "const": "actual"
+            },
+            "amountMicros": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "sourceEvidence": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "amountMicros",
+            "currency",
+            "sourceEvidence",
+            "estimate"
+          ],
+          "properties": {
+            "kind": {
+              "const": "estimated"
+            },
+            "amountMicros": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "sourceEvidence": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+            },
+            "estimate": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceRef",
+                "methodRef",
+                "errorBoundMicros"
+              ],
+              "properties": {
+                "sourceRef": {
+                  "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                },
+                "methodRef": {
+                  "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+                },
+                "errorBoundMicros": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "properties": {
+            "kind": {
+              "const": "unknown"
+            },
+            "reason": {
+              "enum": [
+                "not_reported",
+                "source_unavailable",
+                "incomplete"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "admissionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "binding",
+        "resourceDomainRef",
+        "expectedResourcePolicyVersion",
+        "expectedModelPolicyVersion",
+        "actionDigest",
+        "normalizedSpec",
+        "requestedAt",
+        "expiresAt",
+        "evidence"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "admission_request"
+        },
+        "binding": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+        },
+        "resourceDomainRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "expectedResourcePolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "expectedModelPolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "normalizedSpec": {
+          "$ref": "#/$defs/normalizedSpec"
+        },
+        "requestedAt": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+        },
+        "expiresAt": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+        },
+        "evidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      }
+    },
+    "reservationSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "scope",
+        "taskVersion",
+        "authEpoch",
+        "reservationRef",
+        "claimRef",
+        "actionDigest",
+        "resourcePolicyVersion",
+        "modelPolicyVersion",
+        "role",
+        "units",
+        "state",
+        "reservationHeld",
+        "evidence",
+        "actionRef",
+        "generationRef",
+        "uncertaintyAxes"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "reservation_snapshot"
+        },
+        "scope": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/scope"
+        },
+        "taskVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "authEpoch": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+        },
+        "reservationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "claimRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "resourcePolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "modelPolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "role": {
+          "enum": [
+            "worker",
+            "review",
+            "repair"
+          ]
+        },
+        "units": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "enum": [
+            "dispatch_intent",
+            "running",
+            "unknown",
+            "cancel_requested",
+            "released"
+          ]
+        },
+        "reservationHeld": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "releaseEvidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "releaseBasis": {
+          "enum": [
+            "confirmed_no_executor",
+            "confirmed_stopped_and_settled"
+          ]
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "actionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "generationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "sessionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "uncertaintyAxes": {
+          "type": "array",
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "worker_create",
+              "worker_execution",
+              "action_effect",
+              "message_consumption",
+              "delivery",
+              "handoff"
+            ]
+          }
+        },
+        "outcomeEvidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "terminalEvidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "released"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reservationHeld": {
+                "const": false
+              },
+              "uncertaintyAxes": {
+                "maxItems": 0,
+                "type": "array"
+              }
+            },
+            "required": [
+              "releaseEvidence",
+              "terminalEvidence",
+              "outcomeEvidence",
+              "releaseBasis"
+            ]
+          },
+          "else": {
+            "properties": {
+              "reservationHeld": {
+                "const": true
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "releaseEvidence"
+                  ]
+                },
+                {
+                  "required": [
+                    "releaseBasis"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "uncertaintyAxes": {
+                "minItems": 1,
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "releaseBasis": {
+                "const": "confirmed_stopped_and_settled"
+              }
+            },
+            "required": [
+              "releaseBasis"
+            ]
+          },
+          "then": {
+            "required": [
+              "sessionRef"
+            ]
+          }
+        }
+      ]
+    },
+    "budgetPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "binding",
+        "resourceDomainRef",
+        "expectedResourcePolicyVersion",
+        "proposedResourcePolicyVersion",
+        "limits",
+        "observedHeldUnits",
+        "admissionMode",
+        "preserveExistingReservations",
+        "enforcement",
+        "hardBillCap",
+        "evidence",
+        "costPolicy"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "budget_policy"
+        },
+        "binding": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+        },
+        "resourceDomainRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "expectedResourcePolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "proposedResourcePolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "limits": {
+          "$ref": "#/$defs/budgetLimits"
+        },
+        "observedHeldUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "admissionMode": {
+          "enum": [
+            "normal",
+            "drain",
+            "paused"
+          ]
+        },
+        "preserveExistingReservations": {
+          "const": true
+        },
+        "enforcement": {
+          "const": "dispatch_budget_only"
+        },
+        "hardBillCap": {
+          "const": false
+        },
+        "evidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "costPolicy": {
+          "$ref": "#/$defs/costPolicy"
+        }
+      }
+    },
+    "usageObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "scope",
+        "taskVersion",
+        "authEpoch",
+        "claimRef",
+        "reservationRef",
+        "resourcePolicyVersion",
+        "modelPolicyVersion",
+        "usageUnitRef",
+        "sourceEvidence",
+        "usageKind",
+        "cost",
+        "actionRef",
+        "actionDigest",
+        "generationRef"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "usage_observation"
+        },
+        "scope": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/scope"
+        },
+        "taskVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "authEpoch": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/epoch"
+        },
+        "claimRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "reservationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "resourcePolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "modelPolicyVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/version"
+        },
+        "usageUnitRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "sourceEvidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "usageKind": {
+          "enum": [
+            "actual",
+            "estimated",
+            "unknown"
+          ]
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "estimate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceRef",
+            "methodRef",
+            "errorBoundUnits"
+          ],
+          "properties": {
+            "sourceRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "methodRef": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+            },
+            "errorBoundUnits": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "unknownReason": {
+          "enum": [
+            "not_reported",
+            "source_unavailable",
+            "incomplete"
+          ]
+        },
+        "cost": {
+          "$ref": "#/$defs/cost"
+        },
+        "actionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "generationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "sessionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "usageKind": {
+                "const": "actual"
+              }
+            },
+            "required": [
+              "usageKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "quantity"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "estimate"
+                  ]
+                },
+                {
+                  "required": [
+                    "unknownReason"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "usageKind": {
+                "const": "estimated"
+              }
+            },
+            "required": [
+              "usageKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "quantity",
+              "estimate"
+            ],
+            "not": {
+              "required": [
+                "unknownReason"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "usageKind": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "usageKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "unknownReason"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "quantity"
+                  ]
+                },
+                {
+                  "required": [
+                    "estimate"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "controlRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "binding",
+        "controlKind",
+        "admissionClass",
+        "requiresWorker",
+        "requestedAt",
+        "evidence"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/contractVersion"
+        },
+        "kind": {
+          "const": "control_request"
+        },
+        "binding": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/binding"
+        },
+        "controlKind": {
+          "enum": [
+            "pause_admission",
+            "revoke_action",
+            "cancel_task",
+            "read_status"
+          ]
+        },
+        "admissionClass": {
+          "const": "control"
+        },
+        "requiresWorker": {
+          "const": false
+        },
+        "requestedAt": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/time"
+        },
+        "evidence": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+        },
+        "actionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "actionDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "controlKind": {
+                "const": "revoke_action"
+              }
+            },
+            "required": [
+              "controlKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "actionRef",
+              "actionDigest"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "actionRef"
+                  ]
+                },
+                {
+                  "required": [
+                    "actionDigest"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "executorBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "generationRef",
+        "environmentRef",
+        "bindingDigest",
+        "toolsDigest",
+        "permissionPolicyDigest"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "create",
+            "resume"
+          ]
+        },
+        "generationRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "environmentRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "bindingDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "toolsDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "permissionPolicyDigest": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        },
+        "sessionRef": {
+          "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/ref"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "resume"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "sessionRef"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "sessionRef"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "costPolicy": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "decisionRef"
+          ],
+          "properties": {
+            "mode": {
+              "const": "decision_pending"
+            },
+            "decisionRef": {
+              "const": "D10"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "currency",
+            "limitMicros",
+            "priceSourceEvidence",
+            "unknownCostHandling"
+          ],
+          "properties": {
+            "mode": {
+              "const": "estimated_dispatch_budget"
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "limitMicros": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "priceSourceEvidence": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+            },
+            "unknownCostHandling": {
+              "const": "block_budget_dependent_dispatch"
+            }
+          }
+        }
+      ]
+    },
+    "admissionCostEstimate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "properties": {
+            "kind": {
+              "const": "unknown"
+            },
+            "reason": {
+              "enum": [
+                "not_estimated",
+                "unpriced_model",
+                "source_unavailable"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "amountMicros",
+            "currency",
+            "sourceEvidence",
+            "errorBoundMicros"
+          ],
+          "properties": {
+            "kind": {
+              "const": "estimated"
+            },
+            "amountMicros": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "sourceEvidence": {
+              "$ref": "urn:bubbles:w2-prep:common:v1#/$defs/evidence"
+            },
+            "errorBoundMicros": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

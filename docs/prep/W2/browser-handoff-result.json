@@ -1,0 +1,40 @@
+{
+  "observedAt": "2026-10-04T07:55:15.232Z",
+  "host": "DSH Web 0.2.1-alpha.1",
+  "node": "v22.22.2",
+  "nativeCliPid": 17906,
+  "managedExecSession": 9620,
+  "cleanUrl": "http://127.0.0.1:3080",
+  "listener": "127.0.0.1:3080",
+  "establishedLoopbackConnections": 2,
+  "officialDefaultBrowserAnnouncementObserved": true,
+  "openerErrorObserved": false,
+  "openBrowser": true,
+  "printUrl": false,
+  "customOpenerCreated": false,
+  "blockedAutomationNavigationRetried": false,
+  "authenticationValuesReadCopiedOrTransmittedByAgent": false,
+  "privateAccessFileMetadata": {
+    "exists": true,
+    "mode": "0600",
+    "contentsRead": false
+  },
+  "observer": {
+    "phase": "active",
+    "pid": 17906,
+    "generation": 11,
+    "loads": 17,
+    "unloads": 15,
+    "hostSupported": true,
+    "sessions": 0,
+    "inferenceAttempts": 0
+  },
+  "priorInstanceDisconnected": true,
+  "priorStaleAccessFileCleanupAt": "2026-10-04T07:53:00.820Z",
+  "priorGracefulDisposalConfirmed": false,
+  "browserRenderingAndControls": "NOT_ASSESSED",
+  "browserCloseBehavior": "NOT_ASSESSED",
+  "w1Acceptance": "HOLD",
+  "w2RuntimeAcceptance": "NOT_ASSESSED",
+  "ownerFileTokenStepsOrQaChecklistRequired": false
+}

@@ -1,0 +1,37 @@
+{
+  "validator": "web_validation",
+  "observedAt": "2026-10-04T06:31:13.372Z",
+  "target": "dsh-web-0.2.1-alpha.1",
+  "node": "v22.22.2",
+  "restartState": {
+    "loads": 12,
+    "unloads": 11,
+    "inferenceAttempts": 0,
+    "generation": 11,
+    "pid": 10939,
+    "phase": "active",
+    "deduplicated": true,
+    "firstDeduplicated": true,
+    "entries": 1,
+    "sessions": 0,
+    "hostSupported": true,
+    "target": "dsh-web-0.2.1-alpha.1",
+    "loopback": true,
+    "port": 3080,
+    "permissionBridge": "deny-all",
+    "identity": "trusted synthetic local fixture only",
+    "operator": "unavailable"
+  },
+  "ephemeralAccessFileExists": true,
+  "sha256": {
+    "src/index.mjs": "24821c18d198571d3e7e8397e65a1e5a4c7c3647503d8964cd08a7885d99b307",
+    "src/config.mjs": "9affece27094400357042b6b80832e2afc4dcf1153a5af7f26680691207a2cc7",
+    "src/host-probe.mjs": "ca6f4ae7f5115ff25de254884959f34f372cc82dca46e160ed5805beda5069d6",
+    "src/foundation.mjs": "ccc9bdcad7bd5f6806938fb436a6f80ea8c643f1740c7e5776e122db1d1fa963",
+    "src/ledger.mjs": "a015bd4d933aacf0a01314b1b2c7f797cbe498d81cde07488268bb0832040a33",
+    "scripts/dsh-web.mjs": "91d0bda7174ada145c57b6f9be49395a220fd09000fb5a7a616dc3c5c0dc4c62",
+    "scripts/web-fixture.mjs": "3f23c530bf49e468ed7b7cfacfb833b19e3adabc2da0cc24ab293205c95e50e4",
+    ".runtime/dsh-web-home/profiles/web/package.json": "210068ddb9ebc4cdf395ebb53020be6ccaaedb917e74dae16296d62394626398",
+    ".runtime/dsh-web-home/profiles/web/cordis.patch.yml": "82c0432dec8244e48c7d325c62202adb69e298b40f349286039db3e0d6bbc182"
+  }
+}

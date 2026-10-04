@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-10-04T08:07:01.264Z",
+  "nativeCliPid": 17906,
+  "managedExecSession": 9620,
+  "listener": "127.0.0.1:3080",
+  "listenerStillObserved": true,
+  "ownerConfirmation": {
+    "reportedAt": "2026-10-04T08:02:00Z",
+    "reportedBy": "parent delegation",
+    "source": "Sentinel_5943913b7f5c8191840119813069a7c0",
+    "statement": "kandaole",
+    "interpretation": "tab opening observed by owner only"
+  },
+  "observer": {
+    "phase": "active",
+    "pid": 17906,
+    "entries": 1,
+    "deduplicated": true,
+    "sessionsAtPluginApply": 0,
+    "inferenceAttempts": 0
+  },
+  "currentRootToolInventory": {
+    "entries": 340,
+    "browserRuntimeEntries": 0
+  },
+  "independentValidatorToolInventory": {
+    "entries": 340,
+    "browserRuntimeEntries": 0
+  },
+  "existingTabObservation": "NOT_RUN: no callable supported BrowserUse/NodeREPL/CUA runtime",
+  "newBrowserNavigationCalls": 0,
+  "authenticationValuesReadCopiedOrTransmittedByAgent": false,
+  "browserRenderingControlsAndClose": "NOT_ASSESSED",
+  "w1Acceptance": "HOLD",
+  "w2RuntimeAcceptance": "NOT_ASSESSED"
+}

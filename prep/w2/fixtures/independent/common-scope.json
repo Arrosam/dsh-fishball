@@ -1,0 +1,227 @@
+{
+  "fixtureKind": "mock",
+  "schemaId": "urn:bubbles:w2-prep:common:v1#/$defs/scope",
+  "vectors": [
+    {
+      "id": "IS-base",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-identical-refs",
+      "sourceAC": [
+        "BUB008-04"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Equal refs are structurally legal; they do not authenticate or equate the trusted identity domains.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000001"
+      }
+    },
+    {
+      "id": "IS-ownerRef-short",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-ownerRef-long",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-ownerRef-missing",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-ownerRef-null",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": null,
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-workspaceRef-short",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-workspaceRef-long",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-workspaceRef-missing",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-workspaceRef-null",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": null,
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "IS-taskRef-short",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "IS-taskRef-long",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "IS-taskRef-missing",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002"
+      }
+    },
+    {
+      "id": "IS-taskRef-null",
+      "sourceAC": [
+        "BUB008-04",
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Each scoped identity position is checked independently. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": null
+      }
+    },
+    {
+      "id": "IS-forged-trust",
+      "sourceAC": [
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Closed scoped refs reject serialized trust flags. Real trusted caller checks remain unrun.",
+      "instance": {
+        "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+        "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+        "taskRef": "0000000000000000000000000000000000000000000000000000000000000003",
+        "verified": true
+      }
+    }
+  ]
+}

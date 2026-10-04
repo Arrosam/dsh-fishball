@@ -1,0 +1,8 @@
+{
+  "name": "bubbles-dsh-web-runtime",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.2.1-alpha.1"
+  }
+}

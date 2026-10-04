@@ -1,0 +1,62 @@
+{
+  "codeSnapshot": "10723812a1f3a85425a5428212ee5febffa62e3d",
+  "target": "dsh-web-0.2.1-alpha.1",
+  "commands": {
+    "node scripts/check.mjs": {
+      "exit": 0,
+      "files": 14
+    },
+    "node --test test/*.test.mjs": {
+      "exit": 0,
+      "pass": 109,
+      "fail": 0
+    },
+    "node --test test/bootstrap.test.mjs": {
+      "exit": 0,
+      "pass": 11,
+      "fail": 0
+    },
+    "node scripts/dsh-web-setup.mjs": {
+      "exit": 0,
+      "installedPackages": 560,
+      "lifecycleScriptsExecuted": 0
+    },
+    "node scripts/host-smoke.mjs": {
+      "exit": 0,
+      "loads": 11,
+      "reloads": 10,
+      "entries": 11,
+      "inferenceCalls": 0
+    },
+    "node scripts/web-profile-smoke.mjs": {
+      "exit": 0,
+      "profileReloads": 10,
+      "entries": 1,
+      "inferenceAttempts": 0
+    }
+  },
+  "finalState": {
+    "loads": 15,
+    "unloads": 15,
+    "inferenceAttempts": 0,
+    "generation": 11,
+    "pid": 11557,
+    "phase": "disposed",
+    "deduplicated": true,
+    "firstDeduplicated": true,
+    "entries": 1,
+    "sessions": 0,
+    "hostSupported": true,
+    "target": "dsh-web-0.2.1-alpha.1",
+    "loopback": true,
+    "port": 3080,
+    "permissionBridge": "deny-all",
+    "identity": "trusted synthetic local fixture only",
+    "operator": "unavailable",
+    "staleReference": "disposed"
+  },
+  "privateAccessPresent": false,
+  "listener": "independently verified absent after final graceful stop",
+  "browserGate": "blocked: supported browser surfaces net::ERR_BLOCKED_BY_CLIENT; no host UI acceptance",
+  "finalRunnerSha256": "30dbb53a9e00255cde51ce9bf79db21fd7287726ec9ef7cd6ec5065d97bf39cf"
+}

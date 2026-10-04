@@ -1,0 +1,1204 @@
+{
+  "fixtureKind": "mock",
+  "schemaId": "urn:bubbles:w2-prep:scoped-messages:v1",
+  "vectors": [
+    {
+      "id": "IM-accepted-base",
+      "sourceAC": [
+        "BUB005-01",
+        "BUB005-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-byte-length-0",
+      "sourceAC": [
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Declared byte-length boundary only; actual payload resolution/UTF-8 size and digest must be checked later.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 0
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-byte-length-65535",
+      "sourceAC": [
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Declared byte-length boundary only; actual payload resolution/UTF-8 size and digest must be checked later.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 65535
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-byte-length-65536",
+      "sourceAC": [
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Declared byte-length boundary only; actual payload resolution/UTF-8 size and digest must be checked later.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 65536
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-byte-length-65537",
+      "sourceAC": [
+        "BUB005-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Declared byte-length boundary only; actual payload resolution/UTF-8 size and digest must be checked later.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 65537
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-hop-limit-crossfield",
+      "sourceAC": [
+        "BUB005-04"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Each field is within wire bounds but count exceeds its chosen limit; future trusted route handling MUST reject this semantic mismatch.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 8,
+          "hopLimit": 1,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-grant-digest-crossfield",
+      "sourceAC": [
+        "BUB005-02"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Shape-valid changed grant data digest MUST fail exact immutable-spec authorization at claim.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "0000000000000000000000000000000000000000000000000000000000000385",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-receiver-incarnation-crossfield",
+      "sourceAC": [
+        "BUB005-01",
+        "BUB005-02"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Shape-valid receiver incarnation mismatch with grant MUST fail trusted current-generation authorization.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000386"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-accepted-has-claim",
+      "sourceAC": [
+        "BUB005-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Accepted is distinct from committed claim/outbox dispatch.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry",
+        "claimRef": "0000000000000000000000000000000000000000000000000000000000000387"
+      }
+    },
+    {
+      "id": "IM-sent-claims-consumption",
+      "sourceAC": [
+        "BUB005-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Sent cannot include a consumption receipt while retaining a non-consumed state.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "sent",
+        "dispatchOrder": "claim_first",
+        "retryPolicy": "query_before_retry",
+        "outboxRef": "7772189a259534b293ca813cb5bdb069828abb2a15fd7f8e0aab0face30cda22",
+        "claimRef": "dd1b3c312cf7d816130354452e9629ce39355b0c534129dd26a08cd9a4502ede",
+        "reservationRef": "9efa077f044e7a779c655f8d8e8760cacd16ce2347b6aa10e45b18fb5325fdd6",
+        "receipt": {
+          "evidenceRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "digest": "0000000000000000000000000000000000000000000000000000000000000006",
+          "observedAt": 0,
+          "sourceKind": "mock"
+        }
+      }
+    },
+    {
+      "id": "IM-unknown-no-reservation",
+      "sourceAC": [
+        "BUB005-03",
+        "BUB005-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Unknown consumption retains accountable reservation linkage.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ]
+        },
+        "state": "unknown",
+        "dispatchOrder": "claim_first",
+        "retryPolicy": "query_before_retry",
+        "outboxRef": "7772189a259534b293ca813cb5bdb069828abb2a15fd7f8e0aab0face30cda22",
+        "claimRef": "dd1b3c312cf7d816130354452e9629ce39355b0c534129dd26a08cd9a4502ede",
+        "reconciliation": "query_required"
+      }
+    },
+    {
+      "id": "IM-route-authority",
+      "sourceAC": [
+        "BUB005-04"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Forwarding metadata cannot authorize itself.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": [
+            "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          ],
+          "verified": true
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    },
+    {
+      "id": "IM-empty-visited-route",
+      "sourceAC": [
+        "BUB005-04"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "A route requires its origin/incarnation path; complete origin matching remains semantic.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "scope": {
+          "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+          "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+          "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+        },
+        "taskVersion": 2,
+        "authEpoch": 1,
+        "binding": {
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "expectedTaskVersion": 2,
+          "expectedAuthEpoch": 1,
+          "commandRef": "5d347fd948b66308f502c3f65c8f7e12ff1c5cf8c760bcdfb188ae1ec7b8b618"
+        },
+        "messageRef": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d",
+        "sourceIdentity": {
+          "sourceRef": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+          "eventRef": "b8e1f80bd70ae0784c7855a451731b745fddb67749d23f637be9082b75e9575b",
+          "dedupMode": "unique_id"
+        },
+        "sender": {
+          "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+          "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+        },
+        "receiver": {
+          "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+          "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+        },
+        "category": "status",
+        "purposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+        "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+        "payload": {
+          "bodyRef": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+          "digest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "byteLength": 20
+        },
+        "grantBinding": {
+          "grantRef": "3492ad65d05a973fef8c825521eeb41ae64625a672a8aeeeabc696e16d62a020",
+          "grantVersion": 1,
+          "authEpoch": 1,
+          "expiresAt": 2000,
+          "category": "status",
+          "scope": {
+            "ownerRef": "720250f585bb327e97760d3f1bd690a23887f27a88741d08e6c4f48bf87702c1",
+            "workspaceRef": "e46386c969f953db521199e41752408d2d7a8f7533f78a3f0f1196c4234dc3f3",
+            "taskRef": "c44d12080140887d9442ca32a709906a2ef27116e511645dac96ad2eab2170b6"
+          },
+          "sender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "receiver": {
+            "sessionRef": "81bae876b70513c9decc608eed549977a81afa1c2b6b4080aec256339e792e0f",
+            "generationRef": "9b82087814167e099526d11f48d799b959f8f8223f211a748c251464206c3f0d"
+          },
+          "actionDigest": "bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+          "targetDigest": "34a04005bcaf206eec990bd9637d9fdb6725e0a0c0d4aebf003f17f4c956eb5c",
+          "dataDigest": "3717cba429bb2e1d238a89e2cfba7c2c1ebfeeb81d404bb1a588190a8523673d",
+          "limitsDigest": "8a46fd6fc3d79d419361a7043d0365b6dfeb6b92da9e376450898ff88d9cea00",
+          "taskVersion": 2
+        },
+        "route": {
+          "originalSender": {
+            "sessionRef": "0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a",
+            "generationRef": "97cdcf245f98e8bee57b8412f0c8c7c0da20e8bd8e17fd1172b044e7de8dccf0"
+          },
+          "originalPurposeRef": "81b06df4303e6581efecfa2830bf76c30a9d32a3e4892eac2fe43b7487d3ae2f",
+          "hopCount": 0,
+          "hopLimit": 8,
+          "visitedGenerationRefs": []
+        },
+        "state": "accepted",
+        "dispatchOrder": "not_claimed",
+        "retryPolicy": "query_before_retry"
+      }
+    }
+  ]
+}
