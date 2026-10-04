@@ -1,0 +1,17 @@
+{
+  "result": "installed-frozen-package",
+  "sourceCandidate": "de505ea",
+  "artifactSha256": "3fda3dbe8e69b06ee9b819f925c03f68c2e34221b127fb9767b49b321d744edb",
+  "artifactBytes": 1139650,
+  "installedFrozenFilesMatched": 88,
+  "pluginModulePhysicalDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/portable-install/home/profiles/web/node_modules/dsh-fishball",
+  "hostPhysicalDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/portable-install/host",
+  "profileEntryName": "dsh-fishball",
+  "pluginHasColocatedRuntime": false,
+  "hostSymlinksChecked": 12,
+  "allHostLinksStayInsideFreshHost": true,
+  "personalProfileCredentialEnvCopied": false,
+  "packageScriptsExecuted": false,
+  "dependencyDownloads": false,
+  "captureTime": "2026-10-04T15:44:07.906Z"
+}

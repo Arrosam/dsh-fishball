@@ -1,0 +1,30 @@
+{
+  "case": "ordinary bare runtime entry from original emitted preview artifact",
+  "artifactSourceCommit": "de505ea",
+  "artifactSHA256": "3fda3dbe8e69b06ee9b819f925c03f68c2e34221b127fb9767b49b321d744edb",
+  "pid": 53273,
+  "execSession": 16928,
+  "entry": "dsh-fishball/runtime",
+  "launchExitCode": 0,
+  "observedResult": "native CLI reports failed to import",
+  "rootCause": "eager imports use absent plugin-relative ignored .runtime/dsh-web; installed package contains no host runtime",
+  "runtimeDatabaseCreated": false,
+  "observerState": {
+    "phase": "disposed",
+    "pid": 53273,
+    "pluginEntryName": "dsh-fishball/runtime",
+    "pluginAvailable": false,
+    "sessions": 0,
+    "providers": 0,
+    "inferenceAttempts": 0,
+    "toolAttempts": 0,
+    "host": "127.0.0.1",
+    "port": 3080,
+    "staleReference": "unavailable",
+    "sessionObservation": "queried-at-disposal"
+  },
+  "temporaryPrivateAccessRemoved": true,
+  "productionSourceChangedForThisCase": false,
+  "observerFix": "uses public Cordis ctx.effect cleanup; default llm-deepseek row disabled",
+  "nativeCredentialContentRead": false
+}

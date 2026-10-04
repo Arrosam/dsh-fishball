@@ -1,0 +1,39 @@
+{
+  "result": "failed-as-reproduced",
+  "sourceCandidate": "de505ea",
+  "pid": 52808,
+  "launcherSession": 86751,
+  "launcherExitCode": 0,
+  "normalProfileEntry": "dsh-fishball",
+  "error": "HOST_CAPABILITY_UNSUPPORTED",
+  "rootCause": "plugin-relative ignored runtime path absent in actual installed package",
+  "phase": "observer-active",
+  "pluginEntryName": "dsh-fishball",
+  "pluginAvailable": false,
+  "sessions": 0,
+  "providers": 1,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "host": "127.0.0.1",
+  "port": 3080,
+  "pluginDatabaseCreated": false,
+  "privateAccessRemoved": false,
+  "nativeCredentialFile": {
+    "regular": true,
+    "mode": "600",
+    "bytes": 161,
+    "contentsRead": false,
+    "origin": "fresh native BrowserAuth; no copied user credentials"
+  },
+  "listenerAfterStop": {
+    "exitCode": 1,
+    "outputEmpty": true
+  },
+  "defaultProviderFinding": {
+    "registered": 1,
+    "requests": 0,
+    "action": "owned process stopped; disable llm-deepseek default route before next launch"
+  },
+  "codeModified": false,
+  "captureTime": "2026-10-04T15:52:23.378Z"
+}
