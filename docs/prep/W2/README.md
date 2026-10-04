@@ -28,3 +28,5 @@ Mock vectors can verify schema structure, finite bounds and candidate state-spec
 No schemas or fixtures are loaded by bubbles. W1's schema2 ledger, private capability identity, current default-deny native dispatch/operator bridges and exact DSH Web0.2.1-alpha.1 pin stay unchanged. Any later bridge/migration is a separately reviewed W2 implementation after the dependency gate. No new harness, daemon, fishball copy, chat account or browser workaround is introduced.
 
 Pending decisions are references to [the existing decision register](../../decisions.md), not defaults silently selected here. Source ticket IDs and all original acceptance criteria remain authoritative. Preparatory evidence will describe verified vectors versus unexecuted runtime test designs explicitly.
+
+The owner is manually testing the held M1 shell through their own browser. [Manual handoff](manual-browser-handoff.md) and its readiness readback are separate from W2 mock validation; the isolated existing fixture is intentionally active for that handoff. They do not change any W1 acceptance criterion or reopen blocked automation routes.
