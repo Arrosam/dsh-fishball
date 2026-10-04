@@ -1,0 +1,10 @@
+src/host-probe.mjs: OK
+src/native-adapter.mjs: OK
+src/runtime-plugin.mjs: OK
+test/portability.test.mjs: OK
+docs/evidence/M6/portable-resolver-author.md: OK
+docs/evidence/M6/portability-author-first.json: OK
+docs/evidence/M6/portability-author-final.tap: OK
+docs/evidence/M6/portability-affected-final.tap: OK
+docs/evidence/M6/portability-development-link-first.tap: OK
+scripts/dsh-web-runtime-lock.json: OK

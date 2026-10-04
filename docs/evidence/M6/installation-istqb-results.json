@@ -1,0 +1,75 @@
+{
+  "scope": "Independent setup module, private FS/encrypted-store/process and genuine public no-listener native composition; no actual CLI/HTTP/browser/provider work",
+  "reviewer": "/root/istqb_review",
+  "model": "gpt-6.1-sol",
+  "reasoningEffort": "max",
+  "moduleVerdict": "PASS",
+  "aggregateProductVerdict": "HOLD",
+  "finalCodeVerdict": "HOLD; not performed by this test lane",
+  "environment": {
+    "node": "v22.22.2",
+    "sqlite": "3.51.3",
+    "platform": "darwin",
+    "arch": "arm64",
+    "uid": 501
+  },
+  "heldAuthorManifest": {
+    "path": "docs/evidence/M6/installation-author.sha256",
+    "sha256": "783f04c28910edc3f48a5e28d3e58a97a847e8a20885e539ce720e4d890aa5c1",
+    "entries": 15,
+    "beforeAfterMatched": true
+  },
+  "executables": {
+    "src/setup-state.mjs": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+    "src/installed-plugin.mjs": "c6fd3a0f6c41e7d274e9b904e4c27186c74b6bee2cf72a94db97127f0d238a32",
+    "test/installation.test.mjs": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+    "test/installation-adversarial.test.mjs": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756"
+  },
+  "runs": [
+    {
+      "command": "node --test test/installation-adversarial.test.mjs",
+      "exitCode": 0,
+      "raw": "docs/evidence/M6/installation-istqb-first.tap",
+      "rawSha256": "30893d2a03d87f179025fb1c840bde36eb66c15a39b026ea066d31dd7204bbb2",
+      "topLevelFamilies": 18,
+      "tests": 49,
+      "pass": 49,
+      "fail": 0,
+      "cancelled": 0,
+      "skip": 0,
+      "durationMs": 1656.868959
+    },
+    {
+      "command": "node --test test/installation.test.mjs test/installation-adversarial.test.mjs",
+      "exitCode": 0,
+      "raw": "docs/evidence/M6/installation-istqb-final.tap",
+      "rawSha256": "78ca2a40c3be0e0c7cfb2e651c2feccae96cf9d8a2868b919fd118f7ecb5a199",
+      "topLevelFamilies": 34,
+      "tests": 65,
+      "pass": 65,
+      "fail": 0,
+      "cancelled": 0,
+      "skip": 0,
+      "durationMs": 2951.670834
+    }
+  ],
+  "syntax": {
+    "command": "node --check test/installation-adversarial.test.mjs",
+    "exitCode": 0
+  },
+  "independentFirstFailure": null,
+  "assertionChangesAfterFirstRun": false,
+  "findings": {
+    "reproducedOnHeldSource": [],
+    "preRunAnalyticalFinalFreshnessGap": "Author repaired before hold; final callback expiry/abort/lifetime regressions pass. No fabricated executed pre-fix failure."
+  },
+  "sourceAcCount": 26,
+  "remainingGates": [
+    "Final independent CODE remains blocked",
+    "Actual browser/visual/keyboard/focus",
+    "Root actual new normal installed artifact/CLI/profile/HTTP/quit/restart proof separate",
+    "Production model/catalog/policy/tool/recipient choices and useful model/audit quality",
+    "Other package layouts/platforms; key rotation/deletion/repair; unexecuted distinct OS faults"
+  ],
+  "historicalUi": "Original404-only source/design/results preserved; new exact405 carrier correction requires separate held-source/bundle test checkpoint"
+}

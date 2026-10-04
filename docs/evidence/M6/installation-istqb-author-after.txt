@@ -1,0 +1,15 @@
+src/setup-state.mjs: OK
+src/installed-plugin.mjs: OK
+test/installation.test.mjs: OK
+docs/evidence/M6/installation-author-affected.tap: OK
+docs/evidence/M6/installation-author-check.txt: OK
+docs/evidence/M6/installation-author-child-fence-first.tap: OK
+docs/evidence/M6/installation-author-final-2.tap: OK
+docs/evidence/M6/installation-author-final.tap: OK
+docs/evidence/M6/installation-author-first.tap: OK
+docs/evidence/M6/installation-author-fixed-2.tap: OK
+docs/evidence/M6/installation-author-fixed.tap: OK
+docs/evidence/M6/installation-author-held-check.txt: OK
+docs/evidence/M6/installation-author-held.tap: OK
+docs/evidence/M6/installation-author-second.tap: OK
+docs/evidence/M6/installation-author.md: OK
