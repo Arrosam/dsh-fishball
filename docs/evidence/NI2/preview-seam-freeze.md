@@ -1,0 +1,7 @@
+# NI2 private preview closure implementation decision
+
+Root read and verified [the exact seam addition](preview-seam-addendum.md) SHA256 `fd8917fd1ea558163107daba26cabdeba5965015d58192c545ec950af93c7c81` and [separate independent design](preview-seam-test-addendum.md) SHA256 `df4dde5d1445c1c8fe4c27a9b63f700b29b3ecff180d4bd911b15e2542ff0adb`. The primary NI2 author confirmed the two exact lazy closures are compatible before this decision.
+
+Root grants the affected composer/runtime implementation under the existing exclusive NI2 shared-file lease. Add only `prepareOwnerPreview` and `grantOwnerPreview` to the private installer input. Bind to the one original owner ApprovalPreview after its valid construction; never call them at install/boot or expose handles/configuration callbacks. Preserve exact original operation inputs/output and independently validated current normal action/context/lifetime semantics. Strip accept for the original service and previewRef only for the actual original store-grant receipt input. Fan out each actual successful committed grant once; observer failure seals admission while preserving committed uncertainty.
+
+Original held contract/design and advanced behavior stay unchanged. The separate ten-family design contributes planned source-AC mechanisms, not executed or accepted cases. Author checks, independent executable tests and original physical/native proof follow the exact new source hold. No schema, persistent permission, model/network/tool/recipient/CODE/browser or release authorization is added.
