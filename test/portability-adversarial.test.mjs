@@ -73,7 +73,12 @@ test('independent portability metadata retains normal exports, preview, MIT and 
   assert.equal(metadata.license, 'MIT');
   assert.match(metadata.version, /-preview\./);
   assert.equal(metadata.engines.node, '22.22.2');
-  assert.deepEqual(metadata.exports, { '.': './src/index.mjs', './runtime': './src/runtime-plugin.mjs', './client': './lib/client.js' });
+  const originalExports = { '.': './src/index.mjs', './runtime': './src/runtime-plugin.mjs', './client': './lib/client.js' };
+  for (const [specifier, target] of Object.entries(originalExports)) assert.equal(metadata.exports[specifier], target);
+  const installedExtension = Object.hasOwn(metadata.exports, './installed') ? { './installed': './src/installed-plugin.mjs' } : {};
+  // Explicit owner-authorized fourth entry; original artifact inputs retain
+  // their exact three-export contract. No arbitrary extra export is allowed.
+  assert.deepEqual(metadata.exports, { ...originalExports, ...installedExtension });
   for (const target of Object.values(metadata.exports)) {
     assert.equal(isAbsolute(target), false);
     const path = resolve(f.installed, target);
@@ -97,14 +102,14 @@ test('independent portability metadata retains exact official peer pins', t => {
 test('independent portability bare exports resolve inside a regular relocated package from an unrelated cwd', t => {
   const f = relocated(t);
   const result = child(f, `
-    const specifiers = ['dsh-fishball', 'dsh-fishball/runtime', 'dsh-fishball/client'];
+    const specifiers = ['dsh-fishball', 'dsh-fishball/runtime', 'dsh-fishball/client'${Object.hasOwn(packageMetadata.exports, './installed') ? ", 'dsh-fishball/installed'" : ''}];
     const resolved = specifiers.map(value => import.meta.resolve(value));
     assert.ok(resolved.every(value => value.startsWith(packageUrl) && !value.startsWith(new URL('file://' + original).href)));
     assert.equal(process.env.NODE_PATH, undefined);
     assert.equal(process.env.NODE_OPTIONS, undefined);
     console.log(JSON.stringify({ pathsInsideInstalledPackage: true, exports: resolved.length, hasNodePath: false }));
   `);
-  assert.deepEqual(result, { pathsInsideInstalledPackage: true, exports: 3, hasNodePath: false });
+  assert.deepEqual(result, { pathsInsideInstalledPackage: true, exports: Object.hasOwn(packageMetadata.exports, './installed') ? 4 : 3, hasNodePath: false });
 });
 
 test('independent portability missing peers cannot obtain a supported probe from the development checkout', t => {
