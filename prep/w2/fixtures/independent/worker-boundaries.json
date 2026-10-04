@@ -1,0 +1,903 @@
+{
+  "fixtureKind": "mock",
+  "schemaId": "urn:bubbles:w2-prep:worker-lifecycle:v1",
+  "vectors": [
+    {
+      "id": "IW-ready-base",
+      "sourceAC": [
+        "BUB004-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "query",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "ready",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "open",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "dispatch_bound_action",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-terminal-held-unknown-effect",
+      "sourceAC": [
+        "BUB004-04",
+        "BUB011-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Known worker terminal does not settle an unknown external effect; held partial outcome evidence is legal and does not free capacity.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "reconcile",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "terminal",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008",
+          "terminalOutcome": "completed",
+          "terminalEvidence": {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000001e",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000082",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held",
+          "outcomeEvidence": {
+            "evidenceRef": "0000000000000000000000000000000000000000000000000000000000000020",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000084",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "completed_effect",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "unknown",
+          "evidence": []
+        },
+        "nextOperation": "reconcile_terminal",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-release-missing-terminalEvidence",
+      "sourceAC": [
+        "BUB004-04",
+        "BUB011-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Released snapshot needs separately attributable terminalEvidence; shape alone is not trusted termination/settlement/release proof.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "reconcile",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "terminal",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008",
+          "terminalOutcome": "completed"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "released",
+          "releaseBasis": "confirmed_stopped_and_settled",
+          "outcomeEvidence": {
+            "evidenceRef": "0000000000000000000000000000000000000000000000000000000000000020",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000084",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          },
+          "releaseEvidence": {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000003c",
+            "digest": "00000000000000000000000000000000000000000000000000000000000000a0",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "completed_effect",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "completed",
+          "evidence": [
+            {
+              "evidenceRef": "000000000000000000000000000000000000000000000000000000000000001f",
+              "digest": "0000000000000000000000000000000000000000000000000000000000000083",
+              "observedAt": 2000,
+              "sourceKind": "mock"
+            }
+          ]
+        },
+        "nextOperation": "reconcile_terminal",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-release-missing-outcomeEvidence",
+      "sourceAC": [
+        "BUB004-04",
+        "BUB011-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Released snapshot needs separately attributable outcomeEvidence; shape alone is not trusted termination/settlement/release proof.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "reconcile",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "terminal",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008",
+          "terminalOutcome": "completed",
+          "terminalEvidence": {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000001e",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000082",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "released",
+          "releaseBasis": "confirmed_stopped_and_settled",
+          "releaseEvidence": {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000003c",
+            "digest": "00000000000000000000000000000000000000000000000000000000000000a0",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "completed_effect",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "completed",
+          "evidence": [
+            {
+              "evidenceRef": "000000000000000000000000000000000000000000000000000000000000001f",
+              "digest": "0000000000000000000000000000000000000000000000000000000000000083",
+              "observedAt": 2000,
+              "sourceKind": "mock"
+            }
+          ]
+        },
+        "nextOperation": "reconcile_terminal",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-release-missing-releaseEvidence",
+      "sourceAC": [
+        "BUB004-04",
+        "BUB011-05"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Released snapshot needs separately attributable releaseEvidence; shape alone is not trusted termination/settlement/release proof.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "reconcile",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "terminal",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008",
+          "terminalOutcome": "completed",
+          "terminalEvidence": {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000001e",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000082",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "released",
+          "releaseBasis": "confirmed_stopped_and_settled",
+          "outcomeEvidence": {
+            "evidenceRef": "0000000000000000000000000000000000000000000000000000000000000020",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000084",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "completed_effect",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "completed",
+          "evidence": [
+            {
+              "evidenceRef": "000000000000000000000000000000000000000000000000000000000000001f",
+              "digest": "0000000000000000000000000000000000000000000000000000000000000083",
+              "observedAt": 2000,
+              "sourceKind": "mock"
+            }
+          ]
+        },
+        "nextOperation": "reconcile_terminal",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-uncertainty-missing",
+      "sourceAC": [
+        "BUB004-02"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Unknown create cannot claim terminal facts or omit reconciliation uncertainty.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "query",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "unknown",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "query_same_incarnation",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-unknown-ready-evidence",
+      "sourceAC": [
+        "BUB004-02"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Unknown create cannot claim terminal facts or omit reconciliation uncertainty.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "query",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "unknown",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "uncertainty": {
+            "reason": "create_timeout",
+            "reconciliation": "required"
+          },
+          "terminalEvidence": {
+            "evidenceRef": "0000000000000000000000000000000000000000000000000000000000000005",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000006",
+            "observedAt": 0,
+            "sourceKind": "mock"
+          }
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "query_same_incarnation",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-denied-admission-open",
+      "sourceAC": [
+        "BUB011-02"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Denied host permission blocks new admission; no tool workaround is represented.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "query",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "ready",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "open",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "denied"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "dispatch_bound_action",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-generation-long",
+      "sourceAC": [
+        "BUB004-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Session-incarnation reference exact length N+1 rejects.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "query",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "ready",
+          "generationRef": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "open",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "dispatch_bound_action",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-environment-unknown-field",
+      "sourceAC": [
+        "BUB011-01"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Closed environment binding has no silent fallback flag.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "query",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "ready",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online",
+          "fallbackAllowed": true
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "open",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "allowed"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "dispatch_bound_action",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "IW-handoff-expired-held",
+      "sourceAC": [
+        "BUB011-04"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Expired request remains blocked and accountable; no login/approval or actual expiry comparison is performed.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "request_handoff",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "ready",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "unknown"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "await_handoff_verification",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ],
+        "handoff": {
+          "requestRef": "0000000000000000000000000000000000000000000000000000000000000014",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006",
+          "targetDigest": "0000000000000000000000000000000000000000000000000000000000000015",
+          "environmentBindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "state": "expired",
+          "reasonCode": "login_required",
+          "steps": [
+            "authenticate_in_bound_surface",
+            "verify_bound_target"
+          ],
+          "resumeCondition": "authenticated_on_bound_surface",
+          "expiresAt": 3000
+        }
+      }
+    },
+    {
+      "id": "IW-handoff-verified-without-evidence",
+      "sourceAC": [
+        "BUB011-04"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Handoff verified state requires an evidence shape, never merely an enum change.",
+      "instance": {
+        "contractVersion": "bubbles.w2-prep/v1",
+        "binding": {
+          "scope": {
+            "ownerRef": "0000000000000000000000000000000000000000000000000000000000000001",
+            "workspaceRef": "0000000000000000000000000000000000000000000000000000000000000002",
+            "taskRef": "0000000000000000000000000000000000000000000000000000000000000003"
+          },
+          "expectedTaskVersion": 4,
+          "expectedAuthEpoch": 0,
+          "commandRef": "0000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "taskVersion": 4,
+        "authEpoch": 0,
+        "operation": "request_handoff",
+        "action": {
+          "actionRef": "0000000000000000000000000000000000000000000000000000000000000005",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006"
+        },
+        "worker": {
+          "phase": "ready",
+          "generationRef": "0000000000000000000000000000000000000000000000000000000000000007",
+          "sessionRef": "0000000000000000000000000000000000000000000000000000000000000008"
+        },
+        "environment": {
+          "environmentRef": "0000000000000000000000000000000000000000000000000000000000000009",
+          "bindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "toolsDigest": "000000000000000000000000000000000000000000000000000000000000000b",
+          "permissionPolicyDigest": "000000000000000000000000000000000000000000000000000000000000000c",
+          "availability": "online"
+        },
+        "reservation": {
+          "reservationRef": "000000000000000000000000000000000000000000000000000000000000000d",
+          "claimRef": "000000000000000000000000000000000000000000000000000000000000000e",
+          "state": "held"
+        },
+        "control": {
+          "admission": "blocked",
+          "cancelOutcome": "none",
+          "revokeOutcome": "none",
+          "permissionOutcome": "unknown"
+        },
+        "effects": {
+          "state": "none_observed",
+          "evidence": []
+        },
+        "nextOperation": "await_handoff_verification",
+        "evidence": [
+          {
+            "evidenceRef": "000000000000000000000000000000000000000000000000000000000000000f",
+            "digest": "0000000000000000000000000000000000000000000000000000000000000073",
+            "observedAt": 2000,
+            "sourceKind": "mock"
+          }
+        ],
+        "handoff": {
+          "requestRef": "0000000000000000000000000000000000000000000000000000000000000014",
+          "actionDigest": "0000000000000000000000000000000000000000000000000000000000000006",
+          "targetDigest": "0000000000000000000000000000000000000000000000000000000000000015",
+          "environmentBindingDigest": "000000000000000000000000000000000000000000000000000000000000000a",
+          "state": "verified",
+          "reasonCode": "login_required",
+          "steps": [
+            "authenticate_in_bound_surface",
+            "verify_bound_target"
+          ],
+          "resumeCondition": "authenticated_on_bound_surface",
+          "expiresAt": 3000
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "fixtureKind": "mock",
+  "schemaId": "urn:bubbles:w2-prep:common:v1#/$defs/version",
+  "vectors": [
+    {
+      "id": "IV-negative",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": -1
+    },
+    {
+      "id": "IV-zero",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": 0
+    },
+    {
+      "id": "IV-one",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": 1
+    },
+    {
+      "id": "IV-safe-max-minus-one",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": 9007199254740990
+    },
+    {
+      "id": "IV-safe-max",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": true,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": 9007199254740991
+    },
+    {
+      "id": "IV-safe-max-plus-one",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": 9007199254740992
+    },
+    {
+      "id": "IV-fraction",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": 1.5
+    },
+    {
+      "id": "IV-numeric-string",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": "1"
+    },
+    {
+      "id": "IV-null",
+      "sourceAC": [
+        "BUB002-02",
+        "BUB014-03"
+      ],
+      "technique": "boundary / equivalence / state",
+      "expectedValid": false,
+      "reason": "Finite integer version boundary; no trusted clock, expiry/CAS ordering or successor policy proven. Structural mock only; no caller identity, digest contents, current state, effect or native observation is established.",
+      "instance": null
+    }
+  ]
+}
