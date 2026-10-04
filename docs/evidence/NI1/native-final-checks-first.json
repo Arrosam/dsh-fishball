@@ -1,0 +1,31 @@
+{
+  "result": "STOPPED at denied default-sandbox readback",
+  "defaultReadback": {
+    "command": "/bin/ps -p 65065,65161,65337 -o pid=,stat=",
+    "error": "PermissionError: [Errno 1] Operation not permitted: '/bin/ps'",
+    "executed": false
+  },
+  "alreadyVerifiedBeforeDenial": [
+    "native reports copied",
+    "96 executable holds",
+    "49 public product holds",
+    "16 independent holds",
+    "five native helpers",
+    "three owned stop reports",
+    "temporary access absent",
+    "no3080 listener"
+  ],
+  "privacyAndTraceChecksAtThatAttempt": "NOT RUN",
+  "preciseApprovalRecovery": {
+    "command": "/bin/ps -p 65065,65161,65337 -o pid=,stat=",
+    "sandboxPermissions": "require_escalated",
+    "scope": "read only; these three known owned PIDs; pid/stat only; no changes",
+    "autoReview": "approved",
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "",
+    "meaning": "none of the three known owned PIDs was present",
+    "source": "preceding approved exec_command result, preserved by root"
+  },
+  "blockedIndependentCodeAndBrowserExperimentsRetried": false
+}

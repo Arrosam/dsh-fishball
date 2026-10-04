@@ -1,0 +1,21 @@
+// Root supplement: reconcile the exact historical synthetic memory command
+// after the original native CLI restart, using only admitted current read facts.
+import assert from 'node:assert/strict';
+import { readFileSync,writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+const base=fileURLToPath(new URL('./',import.meta.url)),origin='http://127.0.0.1:3080';
+const digest=value=>createHash('sha256').update(value).digest('hex');
+let stage='original-native-authentication',cookie;
+try{
+ const url=new URL(JSON.parse(readFileSync(`${base}private/native-access.json`,'utf8')).url);assert.equal(url.origin,origin);
+ const exchange=await fetch(url.href,{redirect:'manual',signal:AbortSignal.timeout(5000)});assert.equal(exchange.status,303);cookie=exchange.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+ async function call(method,payload={}){
+  const response=await fetch(`${origin}/df-rpc/v1/${method}`,{method:'POST',headers:{cookie,origin,'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:'ni1-historical-memory-reopen',method:`v1/${method}`,payload}),signal:AbortSignal.timeout(5000)});assert.equal(response.status,200);const result=(await response.json()).result;assert.equal(result.ok,true);return result.value;
+ }
+ stage='current-source-bound-memory-read';const before=await call('memoryRead');assert.equal(before.revision,1);assert.equal(before.projection.facts.length,1);assert.equal(before.projection.core.preferences.length,1);
+ const fact=before.projection.facts[0],preference=before.projection.core.preferences[0];assert.equal(fact.confidence,0.9);assert.deepEqual(preference.embedding,[0.25,-0.5,0.75]);
+ stage='exact-historical-command-reconciliation';const replay=await call('memoryRemember',{commandRef:digest('ni1-remember-one'),expectedRevision:0,candidate:{kind:'preference',content:{text:preference.text},confidence:fact.confidence,embedding:[...preference.embedding],sourceRefs:[...fact.sourceRefs],observedAt:fact.observedAt,ttl:'ONE_MONTH'}});assert.equal(replay.revision,1);assert.equal(replay.deduplicated,true);assert.deepEqual(await call('memoryRead'),before);
+ const state=JSON.parse(readFileSync(`${base}evidence/observer-state.json`,'utf8'));assert.equal(state.pid,65161);for(const key of ['sessions','providers','inferenceAttempts','toolAttempts'])assert.equal(state[key],0);
+ const report={result:'passed',pid:state.pid,cycle:'restart',originalNativeOwner:true,reconstructedOnlyFromCurrentPrivateAdmittedFacts:true,exactOriginalCommandDigest:true,historicalReceiptRevision:1,currentMemoryRevision:1,deduplicated:true,memoryProjectionUnchanged:true,decimalConfidence:0.9,sessions:0,providers:0,inferenceAttempts:0,toolAttempts:0,externalRecipientAttempts:0,timestamp:new Date().toISOString()};writeFileSync(`${base}evidence/restart-memory-replay.json`,JSON.stringify(report,null,2)+'\n',{mode:0o600});console.log(JSON.stringify(report));
+}catch{console.error(JSON.stringify({result:'failed',stage,code:'NI1_REOPENED_MEMORY_REPLAY_FAILED'}));process.exitCode=1;}finally{cookie=undefined;}

@@ -1,0 +1,19 @@
+{
+  "result": "passed",
+  "cycle": "restart",
+  "pid": 65161,
+  "ownedNativeChildExited": true,
+  "observerDisposed": true,
+  "temporaryAccessRemoved": true,
+  "listener3080Absent": true,
+  "databaseRetained": true,
+  "setupRetained": true,
+  "setupCleanupCode": "SERVICE_DISPOSED",
+  "runtimeCleanupCode": "SERVICE_DISPOSED",
+  "cleanupObservation": "ancestor cleanup ordering only; own unload fencing separately tested",
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "timestamp": "2026-10-04T19:46:57.931Z"
+}

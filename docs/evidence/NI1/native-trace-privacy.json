@@ -1,0 +1,21 @@
+{
+  "result": "passed",
+  "approvedSourceLines": 529,
+  "approvedSourceSha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+  "originalACUniqueCount": 82,
+  "currentContractACUniqueCount": 5,
+  "publicFilesScanned": 680,
+  "publicScope": "cached plus unignored untracked regular files at this observation",
+  "knownOwnSyntheticDFKeysChecked": 2,
+  "representations": [
+    "raw",
+    "hex",
+    "base64"
+  ],
+  "knownOwnSyntheticDFKeysFound": 0,
+  "ignoredRuntimeFilesInPublicScope": 0,
+  "credentialContentsRead": false,
+  "personalFishballDataInspected": false,
+  "nativeAccessAndPrivateBaselineCopied": false,
+  "timestamp": "2026-10-04T20:04:44.906220+00:00"
+}

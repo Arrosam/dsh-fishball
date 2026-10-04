@@ -1,0 +1,19 @@
+{
+  "result": "passed",
+  "pid": 65161,
+  "cycle": "restart",
+  "originalNativeOwner": true,
+  "reconstructedOnlyFromCurrentPrivateAdmittedFacts": true,
+  "exactOriginalCommandDigest": true,
+  "historicalReceiptRevision": 1,
+  "currentMemoryRevision": 1,
+  "deduplicated": true,
+  "memoryProjectionUnchanged": true,
+  "decimalConfidence": 0.9,
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "externalRecipientAttempts": 0,
+  "timestamp": "2026-10-04T19:46:43.555Z"
+}

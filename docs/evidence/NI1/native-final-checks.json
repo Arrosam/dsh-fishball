@@ -1,0 +1,78 @@
+{
+  "result": "bounded NI1 physical-package native proof passed",
+  "package": {
+    "sourceCommit": "4761db394d18f8e18d8b31afb516e6bff20ce7f0",
+    "artifactSha256": "36180aa2a5ce48e31ade8c7993dd923d032fb97bed5199cab55b54f837175ad8",
+    "artifactBytes": 1793166,
+    "regularFiles": 648
+  },
+  "sourceAndFixtureChecks": {
+    "executables": {
+      "path": "docs/evidence/NI1/root-executable-freeze.sha256",
+      "sha256": "9e528b13766c51da9bbc8c75d0007fdcd353d9f1b6b8ed96ff374e82c307df35",
+      "entries": 96,
+      "matched": 96
+    },
+    "publicProduct": {
+      "path": "docs/evidence/NI1/root-product-held.sha256",
+      "sha256": "60f0c3a3ebad7e08e4bc7badea9d587ceb50e342662b9230e3607ae8f42e6d30",
+      "entries": 49,
+      "matched": 49
+    },
+    "independent": {
+      "path": "docs/evidence/NI1/istqb-held.sha256",
+      "sha256": "a460cd84c45d183e4963c30bf3298d235bb29e62063e8e90aae36ee948edeac3",
+      "entries": 16,
+      "matched": 16
+    },
+    "nativeHelpers": {
+      "originalFinalHelpersMatched": 5,
+      "readbackSupplementsMatched": 2
+    }
+  },
+  "ownedStopReports": [
+    {
+      "path": "docs/evidence/NI1/native-initial-stop.json",
+      "pid": 65065,
+      "sha256": "fc363f195e09a63dce82f05b43506d0ca15ef8e52346eb4ca0fca01927b26195",
+      "allStopOraclesPassed": true
+    },
+    {
+      "path": "docs/evidence/NI1/native-restart-stop.json",
+      "pid": 65161,
+      "sha256": "26e3af8337e7e2b91c6c18c3c353dda5d1edef647d3ce2ac4b17e4bf6cf82d65",
+      "allStopOraclesPassed": true
+    },
+    {
+      "path": "docs/evidence/NI1/native-cold-context-stop.json",
+      "pid": 65337,
+      "sha256": "85b990c97c3de2ff0fc7dd17ffb0ca551e7c2e446eb021daf734b3a719f7c19d",
+      "allStopOraclesPassed": true
+    }
+  ],
+  "knownOwnedPIDsAbsent": {
+    "source": "precisely scoped approved readback in native-final-checks-first.json",
+    "pids": [
+      65065,
+      65161,
+      65337
+    ],
+    "absent": true
+  },
+  "finalListener3080": {
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "",
+    "absent": true
+  },
+  "temporaryNativeAccessAbsent": true,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "externalRecipientAttempts": 0,
+  "modelQuality": "NOT RUN; separate bounded real inference authorization required",
+  "independentCode": "HOLD; session flag; no retry or reroute",
+  "browser": "HOLD; no supported observation/control; no bypass",
+  "fullTicketsMVPAndPublication": "NOT ACCEPTED",
+  "NI2ThroughNI6": "REQUIRED; pending separate contract/design/implementation/proof",
+  "timestamp": "2026-10-04T20:04:44.908238+00:00"
+}

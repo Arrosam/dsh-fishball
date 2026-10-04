@@ -1,0 +1,57 @@
+{
+  "result": "passed",
+  "cycle": "initial",
+  "pid": 65065,
+  "entry": "dsh-fishball/installed",
+  "originalNativeAuth": true,
+  "physicalPackage": true,
+  "authentication": {
+    "tokenExchange": 303,
+    "anonymous": 401,
+    "forged": 401,
+    "foreignOrigin": 403,
+    "ownerRpc": 200
+  },
+  "setupProof": {
+    "preconsentFeaturesReady": false,
+    "preconsentDFWrites": false,
+    "rejectedConsentWrites": false,
+    "explicitSyntheticConfirmation": true,
+    "originalSetupEnvelopes": true
+  },
+  "memory": {
+    "revision": 1,
+    "privateFormulaVerified": true,
+    "emptyReadRevisionZero": true,
+    "sourceBoundExplicitMutation": true,
+    "decimalConfidenceAccepted": true,
+    "sameCommandReplay": true
+  },
+  "context": {
+    "actualEncryptedContext": true,
+    "currentGoalConstraintsPreserved": true,
+    "actualMemoryBackgroundIncluded": true,
+    "fractionalContextVectorAccepted": true,
+    "integerHeuristicCounts": true,
+    "utf8BytesSeparate": true,
+    "currentSourceTaskAuthMemory": true,
+    "recordDigestMatches": true
+  },
+  "lifecycle": {
+    "tenReloads": true,
+    "oldOwnReferencesDisposed": true,
+    "disabledReenabledBoundsChanged": true,
+    "protectedOverflowRefused": true,
+    "staleContextRefused": true,
+    "refusalTaskMemorySnapshotsUnchanged": true,
+    "sameNamespaceRevisionKeyMetadataDatabase": true
+  },
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "recipientAttempts": 0,
+  "ownerCredentialsConfigured": false,
+  "browserRendered": false,
+  "timestamp": "2026-10-04T19:42:50.280Z"
+}

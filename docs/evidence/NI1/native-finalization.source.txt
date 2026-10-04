@@ -1,0 +1,155 @@
+from pathlib import Path
+import base64
+import hashlib
+import json
+import re
+import subprocess
+from datetime import datetime, timezone
+
+repo = Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+out = repo / 'docs/evidence/NI1'
+fixture = repo / '.runtime/ni1-install'
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+def save(name, data):
+    (out / name).write_text(json.dumps(data, indent=2) + '\n')
+
+def verify_manifest(name, expected_count):
+    path = out / name
+    entries = []
+    for line in path.read_text().splitlines():
+        digest, relative = line.split('  ', 1)
+        assert sha((repo / relative).read_bytes()) == digest, relative
+        entries.append(relative)
+    assert len(entries) == expected_count
+    return {'path': str(path.relative_to(repo)), 'sha256': sha(path.read_bytes()),
+            'entries': len(entries), 'matched': len(entries)}
+
+checks = {
+    'executables': verify_manifest('root-executable-freeze.sha256', 96),
+    'publicProduct': verify_manifest('root-product-held.sha256', 49),
+    'independent': verify_manifest('istqb-held.sha256', 16),
+}
+held = json.loads((out / 'native-fixture-final-held.json').read_text())
+for item in held['helpers']:
+    assert sha((repo / item['privateExecutable']).read_bytes()) == item['sha256']
+    assert sha((repo / item['publishedSource']).read_bytes()) == item['sha256']
+checks['nativeHelpers'] = {'originalFinalHelpersMatched': len(held['helpers'])}
+supplements = [
+    ('replay-reopened.mjs', 'native-reopened-memory-replay.source.txt',
+     '2cf6789fc2aaa5e347f177c880a70181f161059f14521ebb1115071cf730513e'),
+    ('read-reopened-context.mjs', 'native-reopened-context-read.source.txt',
+     'bec457d67fc77fa42bf8729954b43d17054991869eb03b0e88edc93268b5825f'),
+]
+for executable, published, digest in supplements:
+    assert sha((fixture / executable).read_bytes()) == digest
+    assert sha((out / published).read_bytes()) == digest
+checks['nativeHelpers']['readbackSupplementsMatched'] = len(supplements)
+
+stops = []
+for file, pid in [('native-initial-stop.json', 65065),
+                  ('native-restart-stop.json', 65161),
+                  ('native-cold-context-stop.json', 65337)]:
+    stop = json.loads((out / file).read_text())
+    assert stop['pid'] == pid and stop['result'] == 'passed'
+    for field in ['ownedNativeChildExited', 'observerDisposed',
+                  'temporaryAccessRemoved', 'listener3080Absent',
+                  'databaseRetained', 'setupRetained']:
+        assert stop[field] is True, (file, field)
+    for field in ['sessions', 'providers', 'inferenceAttempts', 'toolAttempts']:
+        assert stop[field] == 0, (file, field)
+    stops.append({'path': str((out / file).relative_to(repo)), 'pid': pid,
+                  'sha256': sha((out / file).read_bytes()), 'allStopOraclesPassed': True})
+assert not (fixture / 'private/native-access.json').exists()
+listener = subprocess.run(['/usr/sbin/lsof', '-nP', '-iTCP:3080', '-sTCP:LISTEN'],
+                          capture_output=True, text=True)
+assert listener.returncode == 1 and listener.stdout == '' and listener.stderr == ''
+
+# The first final-consolidation attempt had already copied native reports,
+# checked holds and lsof, then stopped at a sandbox-denied ps execution.
+# Do not repeat that denied operation or substitute a process enumeration API.
+save('native-final-checks-first.json', {
+    'result': 'STOPPED at denied default-sandbox readback',
+    'defaultReadback': {
+        'command': '/bin/ps -p 65065,65161,65337 -o pid=,stat=',
+        'error': "PermissionError: [Errno 1] Operation not permitted: '/bin/ps'",
+        'executed': False,
+    },
+    'alreadyVerifiedBeforeDenial': ['native reports copied', '96 executable holds',
+        '49 public product holds', '16 independent holds', 'five native helpers',
+        'three owned stop reports', 'temporary access absent', 'no3080 listener'],
+    'privacyAndTraceChecksAtThatAttempt': 'NOT RUN',
+    'preciseApprovalRecovery': {
+        'command': '/bin/ps -p 65065,65161,65337 -o pid=,stat=',
+        'sandboxPermissions': 'require_escalated',
+        'scope': 'read only; these three known owned PIDs; pid/stat only; no changes',
+        'autoReview': 'approved', 'exitCode': 1, 'stdout': '', 'stderr': '',
+        'meaning': 'none of the three known owned PIDs was present',
+        'source': 'preceding approved exec_command result, preserved by root',
+    },
+    'blockedIndependentCodeAndBrowserExperimentsRetried': False,
+})
+
+source = repo / 'docs/reference/approved-ticket-review.zh.txt'
+source_bytes = source.read_bytes()
+assert sha(source_bytes) == 'cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3'
+assert len(source_bytes.decode('utf-8').splitlines()) == 529
+trace = (repo / 'docs/acceptance-traceability.md').read_text()
+original_ac = sorted(set(re.findall(r'BUB\d{3}-\d{2}', trace)))
+contract_ac = sorted(set(re.findall(r'DF010-C\d{2}', trace)))
+assert len(original_ac) == 82 and len(contract_ac) == 5
+raw_paths = subprocess.check_output(['git', 'ls-files', '--cached', '--others',
+                                     '--exclude-standard', '-z'], cwd=repo)
+public_paths = sorted({p.decode() for p in raw_paths.split(b'\0')
+                       if p and (repo / p.decode()).is_file()})
+assert not any(p.startswith('.runtime/') for p in public_paths)
+key_paths = [repo / '.runtime/onboarding-install/home/profiles/web/df-data/runtime.sqlite.df-setup/key.bin',
+             fixture / 'home/profiles/web/df-data/runtime.sqlite.df-setup/key.bin']
+own_patterns = []
+for key_path in key_paths:
+    key = key_path.read_bytes()
+    assert len(key) == 32
+    own_patterns += [key, key.hex().encode(), base64.b64encode(key)]
+for relative in public_paths:
+    data = (repo / relative).read_bytes()
+    assert not any(pattern in data for pattern in own_patterns), relative
+save('native-trace-privacy.json', {
+    'result': 'passed', 'approvedSourceLines': 529,
+    'approvedSourceSha256': sha(source_bytes),
+    'originalACUniqueCount': len(original_ac), 'currentContractACUniqueCount': len(contract_ac),
+    'publicFilesScanned': len(public_paths),
+    'publicScope': 'cached plus unignored untracked regular files at this observation',
+    'knownOwnSyntheticDFKeysChecked': len(key_paths), 'representations': ['raw', 'hex', 'base64'],
+    'knownOwnSyntheticDFKeysFound': 0, 'ignoredRuntimeFilesInPublicScope': 0,
+    'credentialContentsRead': False, 'personalFishballDataInspected': False,
+    'nativeAccessAndPrivateBaselineCopied': False,
+    'timestamp': datetime.now(timezone.utc).isoformat(),
+})
+package = json.loads((out / 'native-package-artifact.json').read_text())
+assert sha((repo / package['artifact']).read_bytes()) == package['artifactSha256']
+assert (repo / package['artifact']).stat().st_size == package['artifactBytes']
+save('native-final-checks.json', {
+    'result': 'bounded NI1 physical-package native proof passed',
+    'package': {'sourceCommit': package['sourceCommit'],
+                'artifactSha256': package['artifactSha256'],
+                'artifactBytes': package['artifactBytes'], 'regularFiles': package['archiveFiles']},
+    'sourceAndFixtureChecks': checks, 'ownedStopReports': stops,
+    'knownOwnedPIDsAbsent': {'source': 'precisely scoped approved readback in native-final-checks-first.json',
+                            'pids': [65065, 65161, 65337], 'absent': True},
+    'finalListener3080': {'exitCode': listener.returncode, 'stdout': '', 'stderr': '', 'absent': True},
+    'temporaryNativeAccessAbsent': True,
+    'inferenceAttempts': 0, 'toolAttempts': 0, 'externalRecipientAttempts': 0,
+    'modelQuality': 'NOT RUN; separate bounded real inference authorization required',
+    'independentCode': 'HOLD; session flag; no retry or reroute',
+    'browser': 'HOLD; no supported observation/control; no bypass',
+    'fullTicketsMVPAndPublication': 'NOT ACCEPTED',
+    'NI2ThroughNI6': 'REQUIRED; pending separate contract/design/implementation/proof',
+    'timestamp': datetime.now(timezone.utc).isoformat(),
+})
+print(json.dumps({'result': 'passed', 'currentHolds': [96, 49, 16],
+                  'originalNativeHelpers': 5, 'readbackSupplements': 2,
+                  'allThreeOwnedStopReports': 'passed', 'listener3080': 'absent',
+                  'traceability': [529, 82, 5], 'publicFilesScanned': len(public_paths),
+                  'ownSyntheticDFKeysInPublicFiles': 0}))
