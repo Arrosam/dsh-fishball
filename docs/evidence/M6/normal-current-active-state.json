@@ -1,0 +1,55 @@
+{
+  "phase": "observer-active",
+  "pid": 60670,
+  "entry": "dsh-fishball/installed",
+  "setupAvailable": true,
+  "runtimeAvailable": true,
+  "setupLoads": 1,
+  "runtimeLoads": 1,
+  "withdrawals": [],
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "databaseExists": true,
+  "setupNamespaceExists": true,
+  "routes": {
+    "setup": true,
+    "runtime": true
+  },
+  "nativeEntries": [
+    {
+      "name": "dsh-fishball/installed",
+      "disabled": false,
+      "fiberState": 2
+    }
+  ],
+  "runtimeDiagnostic": {
+    "target": "dsh-web-0.2.1-alpha.1",
+    "supported": true,
+    "schemaVersion": 4,
+    "channel": "/df-rpc",
+    "identityBridge": "connection-operator",
+    "permissionBridge": "trusted-policy-required",
+    "automationBridge": "unavailable",
+    "scheduleBridge": "unavailable",
+    "chatBridge": "unavailable",
+    "notificationBridge": "unavailable",
+    "capabilities": {
+      "memory": false,
+      "preview": false,
+      "worker": false,
+      "delivery": false,
+      "reviewer": false,
+      "automation": false,
+      "notifications": false
+    }
+  },
+  "setupDiagnostic": {
+    "phase": "ready",
+    "executionEnabled": false,
+    "storage": {
+      "location": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/onboarding-install/home/profiles/web/df-data/runtime.sqlite"
+    }
+  }
+}

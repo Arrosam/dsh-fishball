@@ -1,0 +1,52 @@
+{
+  "result": "passed",
+  "cycle": "restart",
+  "pid": 60670,
+  "entry": "dsh-fishball/installed",
+  "target": "DSH Web 0.2.1-alpha.1",
+  "originalNativeAuth": true,
+  "normalPhysicalPackage": true,
+  "nativeAuthentication": {
+    "tokenExchange": 303,
+    "anonymous": 401,
+    "forged": 401,
+    "crossOrigin": 403,
+    "ownerRpc": 200
+  },
+  "setupProof": {
+    "existingReady": true,
+    "noNewConfirmation": true,
+    "sameNamespaceKeyMetadataDatabase": true
+  },
+  "capabilities": {
+    "memory": false,
+    "preview": false,
+    "worker": false,
+    "delivery": false,
+    "reviewer": false,
+    "automation": false,
+    "notifications": false
+  },
+  "task": {
+    "taskRef": "5c12bd7797e06c2705c0165b26d3c2d95952f25f85ccca6926f5aaa761b4e3b4",
+    "firstDeduplicated": true,
+    "duplicateDeduplicated": true,
+    "entries": 1,
+    "control": "paused",
+    "status": "queued",
+    "actions": 0,
+    "workers": 0,
+    "executions": 0,
+    "encryptedGoalAbsent": true,
+    "privateKeyExcluded": true
+  },
+  "lifecycle": null,
+  "providers": 0,
+  "sessions": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "recipientAttempts": 0,
+  "ownerCredentialsConfigured": false,
+  "scope": "isolated explicit synthetic local-storage consent; no owner profile, inference, tools, recipient or browser render",
+  "timestamp": "2026-10-04T18:12:29.886Z"
+}

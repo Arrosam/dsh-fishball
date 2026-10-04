@@ -1,0 +1,29 @@
+{
+  "result": "passed",
+  "sourceCommit": "7c7e115",
+  "artifact": ".runtime/onboarding-current-7c7e115/artifacts/dsh-fishball-0.1.0-preview.1.tgz",
+  "artifactSha256": "d155c126a62bb229b3c6b877e2d9b36cd3d30a7efca12c9d4ec8d9c358e3e5e6",
+  "artifactBytes": 1589807,
+  "archiveFiles": 571,
+  "publicFilesCompared": 47,
+  "publicFilesMatch": true,
+  "regressionFreezeFilesMatched": 91,
+  "physicalNormalPackage": true,
+  "pluginRelativeRuntimeAbsent": true,
+  "sourceCheckoutLink": false,
+  "ownerProfileUsed": false,
+  "ownerCredentialsConfigured": false,
+  "offline": true,
+  "ignoreScripts": true,
+  "packageVersion": "0.1.0-preview.1",
+  "clientBundleSha256": "341b7b9d679fd74cb2b5ee6cff9ed5388c809a1dc8cc55415ced4eb612733301",
+  "profileEntry": "dsh-fishball/installed",
+  "fixtureRecipeFirstFailure": {
+    "code": "WRONG_PACK_WORKING_DIRECTORY",
+    "output": "zsh:10: no such file or directory: ../../onboarding-install/evidence/current-package-pack.json",
+    "npmExecuted": false,
+    "productChanged": false,
+    "correction": "same command run in committed source archive directory"
+  },
+  "timestamp": "2026-10-04T18:11:41.516372+00:00"
+}
