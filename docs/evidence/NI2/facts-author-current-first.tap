@@ -1,0 +1,87 @@
+TAP version 13
+# (node:77089) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: explicit original facts derive generic unknown pricing with no files, sessions or registration changes
+ok 1 - explicit original facts derive generic unknown pricing with no files, sessions or registration changes
+  ---
+  duration_ms: 86.20325
+  type: 'test'
+  ...
+# Subtest: actual broader original backend is unavailable without replacement or directory creation
+ok 2 - actual broader original backend is unavailable without replacement or directory creation
+  ---
+  duration_ms: 23.042542
+  type: 'test'
+  ...
+# Subtest: leaf claim is exclusive, descriptor safe and retains approved absent digest only in this lifetime
+ok 3 - leaf claim is exclusive, descriptor safe and retains approved absent digest only in this lifetime
+  ---
+  duration_ms: 109.382458
+  type: 'test'
+  ...
+# Subtest: raced existing leaf and original entry/lifecycle loss deny without adopting native storage
+ok 4 - raced existing leaf and original entry/lifecycle loss deny without adopting native storage
+  ---
+  duration_ms: 75.132292
+  type: 'test'
+  ...
+# Subtest: exact invocation guard is rechecked after original awaited model resolution and raw errors stay bounded
+ok 5 - exact invocation guard is rechecked after original awaited model resolution and raw errors stay bounded
+  ---
+  duration_ms: 20.222
+  type: 'test'
+  ...
+# Subtest: withdrawn actual original factory entry and changed actual backend config invalidate prior facts
+ok 6 - withdrawn actual original factory entry and changed actual backend config invalidate prior facts
+  ---
+  duration_ms: 75.012167
+  type: 'test'
+  ...
+# Subtest: profile provenance and owner-only parent mode must remain actual and current
+ok 7 - profile provenance and owner-only parent mode must remain actual and current
+  ---
+  duration_ms: 53.746208
+  type: 'test'
+  ...
+# Subtest: only actual owned provider entry registration supplies source zero; later topology update invalidates facts
+ok 8 - only actual owned provider entry registration supplies source zero; later topology update invalidates facts
+  ---
+  duration_ms: 80.976959
+  type: 'test'
+  ...
+# Subtest: own provider disabled and explicit reload reject the retained observation and require fresh facts
+not ok 9 - own provider disabled and explicit reload reject the retained observation and require fresh facts
+  ---
+  duration_ms: 103.936875
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-facts.test.mjs:80:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected "actual" to be strictly unequal to:
+    
+    '5cdadfb7007720b52ea5f9bda31af947a079087493927525b07a7ab889c075aa'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '5cdadfb7007720b52ea5f9bda31af947a079087493927525b07a7ab889c075aa'
+  actual: '5cdadfb7007720b52ea5f9bda31af947a079087493927525b07a7ab889c075aa'
+  operator: 'notStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-facts.test.mjs:83:145)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: same provider/model labels from a foreign original adapter cannot prove owned source zero
+ok 10 - same provider/model labels from a foreign original adapter cannot prove owned source zero
+  ---
+  duration_ms: 21.394583
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 9
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 830.346

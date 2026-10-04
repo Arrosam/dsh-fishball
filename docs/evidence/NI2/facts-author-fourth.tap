@@ -1,0 +1,42 @@
+TAP version 13
+# (node:76608) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: explicit original facts derive generic unknown pricing with no files, sessions or registration changes
+ok 1 - explicit original facts derive generic unknown pricing with no files, sessions or registration changes
+  ---
+  duration_ms: 80.954125
+  type: 'test'
+  ...
+# Subtest: actual broader original backend is unavailable without replacement or directory creation
+ok 2 - actual broader original backend is unavailable without replacement or directory creation
+  ---
+  duration_ms: 16.790791
+  type: 'test'
+  ...
+# Subtest: leaf claim is exclusive, descriptor safe and retains approved absent digest only in this lifetime
+ok 3 - leaf claim is exclusive, descriptor safe and retains approved absent digest only in this lifetime
+  ---
+  duration_ms: 87.793292
+  type: 'test'
+  ...
+# Subtest: raced existing leaf and original entry/lifecycle loss deny without adopting native storage
+ok 4 - raced existing leaf and original entry/lifecycle loss deny without adopting native storage
+  ---
+  duration_ms: 60.779791
+  type: 'test'
+  ...
+# Subtest: exact invocation guard is rechecked after original awaited model resolution and raw errors stay bounded
+ok 5 - exact invocation guard is rechecked after original awaited model resolution and raw errors stay bounded
+  ---
+  duration_ms: 16.049875
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 459.335708
