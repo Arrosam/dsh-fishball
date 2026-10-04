@@ -1,0 +1,548 @@
+TAP version 13
+# (node:73212) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent schema4 memory: exact private owner/workspace identity, raw/ref and generation roles remain isolated
+ok 1 - independent schema4 memory: exact private owner/workspace identity, raw/ref and generation roles remain isolated
+  ---
+  duration_ms: 29.63925
+  type: 'test'
+  ...
+# Subtest: independent schema4 memory: old command receipts replay exactly after new revisions and tombstones without resurrection
+ok 2 - independent schema4 memory: old command receipts replay exactly after new revisions and tombstones without resurrection
+  ---
+  duration_ms: 13.832625
+  type: 'test'
+  ...
+# Subtest: independent schema4 memory: complete4MiB UTF-8 N-1/N/N+1 writes and source-list limits are atomic
+ok 3 - independent schema4 memory: complete4MiB UTF-8 N-1/N/N+1 writes and source-list limits are atomic
+  ---
+  duration_ms: 247.538583
+  type: 'test'
+  ...
+# Subtest: independent schema4 memory: namespace15/16/17 cap retains tombstones and scopes capacity separately
+ok 4 - independent schema4 memory: namespace15/16/17 cap retains tombstones and scopes capacity separately
+  ---
+  duration_ms: 82.3725
+  type: 'test'
+  ...
+# Subtest: independent schema4 memory: live metadata relabeling and reopen reject authenticated fact changes with exact bytes
+ok 5 - independent schema4 memory: live metadata relabeling and reopen reject authenticated fact changes with exact bytes
+  ---
+  duration_ms: 109.924334
+  type: 'test'
+  ...
+# Subtest: independent schema4 memory: secret, malformed UTF-8 and hostile source descriptors reject before write
+ok 6 - independent schema4 memory: secret, malformed UTF-8 and hostile source descriptors reject before write
+  ---
+  duration_ms: 4.646625
+  type: 'test'
+  ...
+# Subtest: independent schema4 events: exact age and clock-order boundaries reject without rate/task/cursor mutation
+ok 7 - independent schema4 events: exact age and clock-order boundaries reject without rate/task/cursor mutation
+  ---
+  duration_ms: 60.298042
+  type: 'test'
+  ...
+# Subtest: independent schema4 events: duplicate immutable association consumes no quota and cannot change digest or goal
+ok 8 - independent schema4 events: duplicate immutable association consumes no quota and cannot change digest or goal
+  ---
+  duration_ms: 14.114875
+  type: 'test'
+  ...
+# Subtest: independent schema4 events: rate-window N-1/N/N+1 resets exactly while rejected work remains unregistered
+ok 9 - independent schema4 events: rate-window N-1/N/N+1 resets exactly while rejected work remains unregistered
+  ---
+  duration_ms: 69.486875
+  type: 'test'
+  ...
+# Subtest: independent schema4 events: source31/32/33 and subscription127/128/129 enforce hard workspace bounds
+ok 10 - independent schema4 events: source31/32/33 and subscription127/128/129 enforce hard workspace bounds
+  ---
+  duration_ms: 183.398542
+  type: 'test'
+  ...
+# Subtest: independent schema4 events: revoked/stale binding and foreign/fake actors refuse before encrypted ingress
+ok 11 - independent schema4 events: revoked/stale binding and foreign/fake actors refuse before encrypted ingress
+  ---
+  duration_ms: 7.218125
+  type: 'test'
+  ...
+# Subtest: independent schema4 chat: exact original private route permits control while each changed route component denies
+ok 12 - independent schema4 chat: exact original private route permits control while each changed route component denies
+  ---
+  duration_ms: 65.599417
+  type: 'test'
+  ...
+# Subtest: independent schema4 chat: quota-only reconfiguration preserves route access and group cannot become private owner control
+ok 13 - independent schema4 chat: quota-only reconfiguration preserves route access and group cannot become private owner control
+  ---
+  duration_ms: 15.331583
+  type: 'test'
+  ...
+# Subtest: independent schema4 clock: host cannot approve missed effects and verification cannot be silently skipped
+ok 14 - independent schema4 clock: host cannot approve missed effects and verification cannot be silently skipped
+  ---
+  duration_ms: 11.400208
+  type: 'test'
+  ...
+# Subtest: independent actual processes: duplicate event identity commits one immutable task/goal/rate fact
+ok 15 - independent actual processes: duplicate event identity commits one immutable task/goal/rate fact
+  ---
+  duration_ms: 198.915292
+  type: 'test'
+  ...
+# Subtest: independent actual processes: memory CAS has one winner, no lost update and exact third-process ciphertext readback
+ok 16 - independent actual processes: memory CAS has one winner, no lost update and exact third-process ciphertext readback
+  ---
+  duration_ms: 192.911916
+  type: 'test'
+  ...
+# Subtest: independent actual process crash: event beforecommit/postack cuts preserve distinct registration, goal and rate facts
+ok 17 - independent actual process crash: event beforecommit/postack cuts preserve distinct registration, goal and rate facts
+  ---
+  duration_ms: 203.620667
+  type: 'test'
+  ...
+# Subtest: independent schema4 migration: actual crypto2 schema3 requires runtime key, exactbackup and refuses unknown metadata
+ok 18 - independent schema4 migration: actual crypto2 schema3 requires runtime key, exactbackup and refuses unknown metadata
+  ---
+  duration_ms: 69.245042
+  type: 'test'
+  ...
+# Subtest: independent current command receipts: historical result and complete row bindings reject live/reopen tampering
+ok 19 - independent current command receipts: historical result and complete row bindings reject live/reopen tampering
+  ---
+  duration_ms: 77.899375
+  type: 'test'
+  ...
+# Subtest: independent genuine schema3 plain receipts: migration preserves unverified bytes and refuses replay; marker stripping fails closed
+ok 20 - independent genuine schema3 plain receipts: migration preserves unverified bytes and refuses replay; marker stripping fails closed
+  ---
+  duration_ms: 92.21975
+  type: 'test'
+  ...
+# Subtest: independent actual processes: different events race the last rate/queue slot without consuming the losing quota
+ok 21 - independent actual processes: different events race the last rate/queue slot without consuming the losing quota
+  ---
+  duration_ms: 402.752084
+  type: 'test'
+  ...
+# Subtest: independent actual processes: source/subscription revoke and ingest have both explicit commit orders
+ok 22 - independent actual processes: source/subscription revoke and ingest have both explicit commit orders
+  ---
+  duration_ms: 803.716625
+  type: 'test'
+  ...
+# Subtest: independent actual processes: two already-open hosts consume one held context intent and reopen never replays
+ok 23 - independent actual processes: two already-open hosts consume one held context intent and reopen never replays
+  ---
+  duration_ms: 122.894125
+  type: 'test'
+  ...
+# Subtest: independent actual processes: revoke versus context consume both orders preserve original unknown ownership
+ok 24 - independent actual processes: revoke versus context consume both orders preserve original unknown ownership
+  ---
+  duration_ms: 239.007709
+  type: 'test'
+  ...
+# Subtest: independent prepared context: current instructions and complete authenticated memory provenance survive envelope/decryption
+ok 25 - independent prepared context: current instructions and complete authenticated memory provenance survive envelope/decryption
+  ---
+  duration_ms: 19.325833
+  type: 'test'
+  ...
+# Subtest: independent atomic context memory guards: true absence, live revision and tombstone are distinct before write
+ok 26 - independent atomic context memory guards: true absence, live revision and tombstone are distinct before write
+  ---
+  duration_ms: 30.863292
+  type: 'test'
+  ...
+# Subtest: independent audit: one passed requirement cannot satisfy another and a wrong-target reviewer cannot certify it
+ok 27 - independent audit: one passed requirement cannot satisfy another and a wrong-target reviewer cannot certify it
+  ---
+  duration_ms: 28.048125
+  type: 'test'
+  ...
+# Subtest: independent audit: each changed semantic material invalidates success even for identical old artifact bytes
+ok 28 - independent audit: each changed semantic material invalidates success even for identical old artifact bytes
+  ---
+  duration_ms: 98.121208
+  type: 'test'
+  ...
+# Subtest: independent audit: fatal resolved assertion, unknown and budget remain required after known release and reopen
+ok 29 - independent audit: fatal resolved assertion, unknown and budget remain required after known release and reopen
+  ---
+  duration_ms: 73.701708
+  type: 'test'
+  ...
+# Subtest: independent audit: omitted repair lineage or configuredzero admits no charge, claim or effect
+ok 30 - independent audit: omitted repair lineage or configuredzero admits no charge, claim or effect
+  ---
+  duration_ms: 36.618583
+  type: 'test'
+  ...
+# Subtest: independent audit: requirements15/16/17 reject overflow without losing existing mandatory gates
+ok 31 - independent audit: requirements15/16/17 reject overflow without losing existing mandatory gates
+  ---
+  duration_ms: 34.937917
+  type: 'test'
+  ...
+# Subtest: independent schema4 event retention:4095/4096/4097 retains full dedup knowledge and refuses without eviction
+ok 32 - independent schema4 event retention:4095/4096/4097 retains full dedup knowledge and refuses without eviction
+  ---
+  duration_ms: 27610.936791
+  type: 'test'
+  ...
+# Subtest: independent notifications: hostile dispatch descriptors reject before caller reads, traps or transport
+ok 33 - independent notifications: hostile dispatch descriptors reject before caller reads, traps or transport
+  ---
+  duration_ms: 4.506459
+  type: 'test'
+  ...
+# Subtest: independent result provenance: trailing-line digest references cannot become an admitted progress report
+ok 34 - independent result provenance: trailing-line digest references cannot become an admitted progress report
+  ---
+  duration_ms: 30.8855
+  type: 'test'
+  ...
+# (node:73213) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: schema3 crypto2 migration validates source before exact backup and preserves ciphertext
+ok 35 - schema3 crypto2 migration validates source before exact backup and preserves ciphertext
+  ---
+  duration_ms: 46.14425
+  type: 'test'
+  ...
+# Subtest: encrypted memory CAS, registered secrets, exact replay and tombstone/absence guards
+ok 36 - encrypted memory CAS, registered secrets, exact replay and tombstone/absence guards
+  ---
+  duration_ms: 14.097834
+  type: 'test'
+  ...
+# Subtest: atomic event intake/dedup/rate/version faults retain complete ingress and original association
+ok 37 - atomic event intake/dedup/rate/version faults retain complete ingress and original association
+  ---
+  duration_ms: 20.438166
+  type: 'test'
+  ...
+# Subtest: chat source original private route authorizes read/control but changed pairing and unrelated supplement fail
+ok 38 - chat source original private route authorizes read/control but changed pairing and unrelated supplement fail
+  ---
+  duration_ms: 16.633708
+  type: 'test'
+  ...
+# Subtest: missed-run verification cannot advance cursor or ingest before exact private owner approval
+ok 39 - missed-run verification cannot advance cursor or ingest before exact private owner approval
+  ---
+  duration_ms: 15.321208
+  type: 'test'
+  ...
+# Subtest: context wakeup consumes one immutable intent, duplicates/restart never admit again and reservations remain held
+ok 40 - context wakeup consumes one immutable intent, duplicates/restart never admit again and reservations remain held
+  ---
+  duration_ms: 27.536583
+  type: 'test'
+  ...
+# Subtest: two already-open independent processes race final context consume and exactly one gets fresh admission
+ok 41 - two already-open independent processes race final context consume and exactly one gets fresh admission
+  ---
+  duration_ms: 155.304375
+  type: 'test'
+  ...
+# Subtest: new authenticated workspace routing, memory and once-only inverse markers reject corruption without rewriting originals
+ok 42 - new authenticated workspace routing, memory and once-only inverse markers reject corruption without rewriting originals
+  ---
+  duration_ms: 106.237459
+  type: 'test'
+  ...
+# Subtest: complete signed memory receipts retain historical truth and reject live edits, stripping and removed boundaries
+ok 43 - complete signed memory receipts retain historical truth and reject live edits, stripping and removed boundaries
+  ---
+  duration_ms: 119.995833
+  type: 'test'
+  ...
+# Subtest: genuine schema3 plaintext receipt history migrates preserved but never becomes trusted replay
+ok 44 - genuine schema3 plaintext receipt history migrates preserved but never becomes trusted replay
+  ---
+  duration_ms: 32.811084
+  type: 'test'
+  ...
+# Subtest: notification quiet/merge windows, explicit emergency exception and zero frequency gate under claim
+ok 45 - notification quiet/merge windows, explicit emergency exception and zero frequency gate under claim
+  ---
+  duration_ms: 178.898
+  type: 'test'
+  ...
+# Subtest: notification pending group survives revision/new progress/reopen; delivered facts dedup by digest and failed retries require release
+ok 46 - notification pending group survives revision/new progress/reopen; delivered facts dedup by digest and failed retries require release
+  ---
+  duration_ms: 106.754875
+  type: 'test'
+  ...
+# Subtest: two independent processes atomically compete for last notification frequency slot
+ok 47 - two independent processes atomically compete for last notification frequency slot
+  ---
+  duration_ms: 179.334791
+  type: 'test'
+  ...
+# Subtest: composite handoff branch updates semantic requirements while holding pending ownership
+ok 48 - composite handoff branch updates semantic requirements while holding pending ownership
+  ---
+  duration_ms: 13.445667
+  type: 'test'
+  ...
+# Subtest: notification claim faults roll back outbox/counters/ownership and deleted authoritative associations preserve rejection bytes
+ok 49 - notification claim faults roll back outbox/counters/ownership and deleted authoritative associations preserve rejection bytes
+  ---
+  duration_ms: 115.104042
+  type: 'test'
+  ...
+# (node:73214) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+ok 50 - exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+  ---
+  duration_ms: 29.553583
+  type: 'test'
+  ...
+# Subtest: explicit context execution requires exact final consume and observes its own committed native result once
+ok 51 - explicit context execution requires exact final consume and observes its own committed native result once
+  ---
+  duration_ms: 20.756209
+  type: 'test'
+  ...
+# Subtest: denied or forged execution consume, changed environment and wrong immutable context never wake a native provider
+ok 52 - denied or forged execution consume, changed environment and wrong immutable context never wake a native provider
+  ---
+  duration_ms: 63.3755
+  type: 'test'
+  ...
+# Subtest: actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay
+ok 53 - actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay
+  ---
+  duration_ms: 261.505084
+  type: 'test'
+  ...
+# Subtest: native default permission, changed environment, exact model effort and session binding fail before create
+ok 54 - native default permission, changed environment, exact model effort and session binding fail before create
+  ---
+  duration_ms: 19.961208
+  type: 'test'
+  ...
+# Subtest: resume requires trusted original session binding and unload closes borrowed adapter immediately
+ok 55 - resume requires trusted original session binding and unload closes borrowed adapter immediately
+  ---
+  duration_ms: 6.920625
+  type: 'test'
+  ...
+# Subtest: native creation requires opaque claimed ticket and fresh synchronous publication guard
+ok 56 - native creation requires opaque claimed ticket and fresh synchronous publication guard
+  ---
+  duration_ms: 7.188292
+  type: 'test'
+  ...
+# Subtest: actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+ok 57 - actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+  ---
+  duration_ms: 8.7305
+  type: 'test'
+  ...
+# Subtest: native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+ok 58 - native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+  ---
+  duration_ms: 9.888375
+  type: 'test'
+  ...
+# Subtest: resume uses exact trusted original ID on genuine public registry API with mock persistence
+ok 59 - resume uses exact trusted original ID on genuine public registry API with mock persistence
+  ---
+  duration_ms: 12.20175
+  type: 'test'
+  ...
+# Subtest: genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+ok 60 - genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+  ---
+  duration_ms: 10.076583
+  type: 'test'
+  ...
+# Subtest: native handoff retains bound original claim and safe context; no permission or environment switch is minted
+ok 61 - native handoff retains bound original claim and safe context; no permission or environment switch is minted
+  ---
+  duration_ms: 8.18725
+  type: 'test'
+  ...
+# Subtest: actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+ok 62 - actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+  ---
+  duration_ms: 72.540875
+  type: 'test'
+  ...
+# Subtest: actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+ok 63 - actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+  ---
+  duration_ms: 57.016166
+  type: 'test'
+  ...
+# Subtest: message native admission defaults deny even for a live owned worker and well-formed queued body
+ok 64 - message native admission defaults deny even for a live owned worker and well-formed queued body
+  ---
+  duration_ms: 13.21975
+  type: 'test'
+  ...
+# Subtest: genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+ok 65 - genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+  ---
+  duration_ms: 46.777
+  type: 'test'
+  ...
+# Subtest: genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+ok 66 - genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+  ---
+  duration_ms: 63.863792
+  type: 'test'
+  ...
+# Subtest: actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard
+ok 67 - actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard
+  ---
+  duration_ms: 9.837458
+  type: 'test'
+  ...
+# Subtest: public owned-session navigation reads survive permission denial but disappear after native teardown
+ok 68 - public owned-session navigation reads survive permission denial but disappear after native teardown
+  ---
+  duration_ms: 7.858959
+  type: 'test'
+  ...
+# (node:73215) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installed native hooks keep original creation idle, bind one actual request, validate scoped persisted output and stop only owned handle
+ok 69 - installed native hooks keep original creation idle, bind one actual request, validate scoped persisted output and stop only owned handle
+  ---
+  duration_ms: 124.412875
+  type: 'test'
+  ...
+# Subtest: false final unpublished hook never publishes an owned agent or mints execution permit
+ok 70 - false final unpublished hook never publishes an owned agent or mints execution permit
+  ---
+  duration_ms: 21.747833
+  type: 'test'
+  ...
+# Subtest: false execution hook after durable admission never enters source-owned adapter
+ok 71 - false execution hook after durable admission never enters source-owned adapter
+  ---
+  duration_ms: 51.905959
+  type: 'test'
+  ...
+# Subtest: finish refuses uncaptured native output and does not dispose the original live worker
+ok 72 - finish refuses uncaptured native output and does not dispose the original live worker
+  ---
+  duration_ms: 92.029
+  type: 'test'
+  ...
+# Subtest: shared factual finish requires private validated capture, releases only actual stopped usage, survives revoked grant and deduplicates exact command
+ok 73 - shared factual finish requires private validated capture, releases only actual stopped usage, survives revoked grant and deduplicates exact command
+  ---
+  duration_ms: 166.837792
+  type: 'test'
+  ...
+# Subtest: throwing durability callback refuses capture with a stable code and leaves the owned worker live
+ok 74 - throwing durability callback refuses capture with a stable code and leaves the owned worker live
+  ---
+  duration_ms: 76.180875
+  type: 'test'
+  ...
+# (node:73216) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: durable submitted boundary precedes native create; creation does not prove running or complete task
+ok 75 - durable submitted boundary precedes native create; creation does not prove running or complete task
+  ---
+  duration_ms: 3.798542
+  type: 'test'
+  ...
+# Subtest: create timeout holds original claim; late receipt reconciles same generation without recreation
+ok 76 - create timeout holds original claim; late receipt reconciles same generation without recreation
+  ---
+  duration_ms: 4.341875
+  type: 'test'
+  ...
+# Subtest: restart cannot recover ownership by JSON or create again; wrong mapping cannot query
+ok 77 - restart cannot recover ownership by JSON or create again; wrong mapping cannot query
+  ---
+  duration_ms: 0.550375
+  type: 'test'
+  ...
+# Subtest: cancel commits control first; native stop retains reservation and needs separate effect settlement
+ok 78 - cancel commits control first; native stop retains reservation and needs separate effect settlement
+  ---
+  duration_ms: 0.724125
+  type: 'test'
+  ...
+# Subtest: cancel during unresolved create stops late publication without releasing held outcomes
+ok 79 - cancel during unresolved create stops late publication without releasing held outcomes
+  ---
+  duration_ms: 3.450041
+  type: 'test'
+  ...
+# Subtest: preparation denial and payload spoof reject before any durable claim or native effect
+ok 80 - preparation denial and payload spoof reject before any durable claim or native effect
+  ---
+  duration_ms: 0.464625
+  type: 'test'
+  ...
+# Subtest: actual SQLite runtime preserves original complete intent, owned mapping and accountable stop until settlement
+ok 81 - actual SQLite runtime preserves original complete intent, owned mapping and accountable stop until settlement
+  ---
+  duration_ms: 41.0375
+  type: 'test'
+  ...
+# Subtest: actual SQLite restart retains uncertain executor and rejects repeated dispatch
+ok 82 - actual SQLite restart retains uncertain executor and rejects repeated dispatch
+  ---
+  duration_ms: 26.805459
+  type: 'test'
+  ...
+# Subtest: dispatch snapshots complete input before awaiting preparation and rejects forged cross-action receipt
+ok 83 - dispatch snapshots complete input before awaiting preparation and rejects forged cross-action receipt
+  ---
+  duration_ms: 2.03
+  type: 'test'
+  ...
+# Subtest: actual SQLite same task/action/generation refs in another owner scope cannot retrieve or control cached worker
+ok 84 - actual SQLite same task/action/generation refs in another owner scope cannot retrieve or control cached worker
+  ---
+  duration_ms: 24.381375
+  type: 'test'
+  ...
+# Subtest: execution persists one intent and final consume before native send; duplicate command cannot wake again
+ok 85 - execution persists one intent and final consume before native send; duplicate command cannot wake again
+  ---
+  duration_ms: 0.871334
+  type: 'test'
+  ...
+# Subtest: execution denial and foreign completion are redacted unknowns retaining exact reservation
+ok 86 - execution denial and foreign completion are redacted unknowns retaining exact reservation
+  ---
+  duration_ms: 0.64075
+  type: 'test'
+  ...
+# Subtest: execution timeout holds ownership; late final consume denial prevents send and duplicate replay
+ok 87 - execution timeout holds ownership; late final consume denial prevents send and duplicate replay
+  ---
+  duration_ms: 2.959375
+  type: 'test'
+  ...
+# Subtest: execution immutable context and scoped claim mismatch reject before durable intent
+ok 88 - execution immutable context and scoped claim mismatch reject before durable intent
+  ---
+  duration_ms: 0.467167
+  type: 'test'
+  ...
+1..88
+# tests 88
+# suites 0
+# pass 88
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 31406.320667

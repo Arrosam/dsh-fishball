@@ -1,0 +1,150 @@
+{
+  "manifest_sha256": "d3822fd69dcd9e462ed7edab4f84bceba1c368535d8cd6248f9ad6dc899e3a7f",
+  "entries": [
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e",
+      "match": true
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "match": true
+    },
+    {
+      "path": "test/native-hooks.test.mjs",
+      "sha256": "b2327ce422063a48de6601e768a14c4dd3ff44d2ebf5ac071622dd266dc84541",
+      "match": true
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "match": true
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "match": true
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "match": true
+    },
+    {
+      "path": "test/native-adapter.test.mjs",
+      "sha256": "37bf80e517d6ec4b15d719dab5cde68e25a969efdad0fae2b222eecb4dd7e039",
+      "match": true
+    },
+    {
+      "path": "test/worker.test.mjs",
+      "sha256": "55fbb01acc926ee97c23eaad473e3a9e30dd7e144de7c28f823189b41e2eb15b",
+      "match": true
+    },
+    {
+      "path": "test/automation-store.test.mjs",
+      "sha256": "94d1c784461216cc6528df03cbf9fdc6696144d4150d745a248a95c7146c80ae",
+      "match": true
+    },
+    {
+      "path": "test/automation-adversarial.test.mjs",
+      "sha256": "f42a7ab100dfcc5ff02ff82e6ab6f3b76971aeb35c832e123b25303042cb09a9",
+      "match": true
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/host-interface-findings.md",
+      "sha256": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-hold.md",
+      "sha256": "0b61aff6c46af69dd2c82d7f6522ca11ce00b7cd8a3a49bd6333cd3795506add",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-checks.json",
+      "sha256": "1f190669eb55aa8f35f0c9d64cd5c79f703ca9124846cc691057d62be5649b32",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-first.tap",
+      "sha256": "9f71df4651e0cd9efed89b6e6362c519c939299b04519848bf783cd4ebcf0e5f",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-affected.tap",
+      "sha256": "f66b6a2887f580cb3c3d23233a93d74a840b5118b7162e72264d0c99118295d7",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-native-first.tap",
+      "sha256": "5c65d1764c738ed9ec0db6b635bdb6bf8e356c21c355e0ea90f51d354a25438c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-native-second.tap",
+      "sha256": "30c20351a9ba8cc30fe13df6558e504cc0095e8883cc20fe53daeeabce1f159f",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-third.tap",
+      "sha256": "1c7f2cb86d4a3baf27227002b591c0120ca9d77f802b33dcf025e16273fdc9ea",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-core-first.tap",
+      "sha256": "222fb37d8495654dd24cbb305fdcae9df320df97ef0f1716d878fc0ce0380ff9",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-before-input-fence.tap",
+      "sha256": "9509333b7ac18839b66cb9fe3818287f0fd75c8183d8ee5b3243834f08c80c81",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-before-usage-fence.tap",
+      "sha256": "7886d1cb509a8ab788bdb118b8a1aa2168adf0ea14c1e97a215b249540b37104",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-before-immutable-fence.tap",
+      "sha256": "a61de19ca7224c4beb1e0440c6f76cc8ad8cb6a188756dc565789c18f9c17b58",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-final.tap",
+      "sha256": "5859b9fbc43ed6474ee08d118f8a7b6ffdf940565f16dc6451cd826d612332d4",
+      "match": true
+    }
+  ],
+  "all_match": true,
+  "author_tests": {
+    "tests": 88,
+    "pass": 88,
+    "fail": 0,
+    "skip": 0
+  },
+  "root_reexecution": "none; inspected exact held source/actual raw TAP and author boundary report",
+  "scope": "optional original-native hooks and source-derived capture/factual finish primitives only",
+  "pending": [
+    "independent functional execution",
+    "full installed composer/private authority",
+    "product persisted-log validation",
+    "authenticated twelve commands",
+    "native physical package",
+    "required resume/schema7",
+    "CODE",
+    "browser",
+    "useful-model/full acceptance"
+  ]
+}

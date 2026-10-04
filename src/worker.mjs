@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { WorkerError, workerFail, workerDigest, workerRecord, workerRef, workerInteger } from './environment.mjs';
 
+const freezeReceipt = value => { const copy = structuredClone(value); const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; }; return freeze(copy); };
+
 // Process-private orchestration. The store supplies identity, approval and
 // transaction authority; no payload role/scope/verified field is accepted.
 export class WorkerManager {
@@ -174,6 +176,55 @@ export class WorkerManager {
       executionRef, inputDigest: result.dataDigest, cursor: result.cursor, resultDigest: result.digest,
     }, content: result.content });
     return this.#store.writeArtifact(caller, { ...artifact, producerClaimRef: claimRef, content });
+  }
+  async captureValidatedResult(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'artifactRef', 'version']);
+    input = Object.freeze({ ...input });
+    const before = this.#snapshot(caller, workerRef(input.taskRef)).task;
+    if (before.version !== input.expectedTaskVersion || before.authEpoch !== input.expectedAuthEpoch) workerFail('STALE_VERSION');
+    const entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || typeof this.#adapter.validateResult !== 'function') workerFail('WORKER_RESULT_UNAVAILABLE');
+    await this.#adapter.validateResult(entry.ticket, workerRef(input.executionRef));
+    this.#alive();
+    const after = this.#snapshot(caller, input.taskRef).task;
+    if (after.version !== before.version || after.authEpoch !== before.authEpoch) workerFail('STALE_VERSION');
+    const receipt = this.captureResult(caller, input);
+    entry.captured = Object.freeze({ executionRef: input.executionRef, artifactRef: input.artifactRef, version: input.version, receipt });
+    return receipt;
+  }
+  async finishExecution(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    for (const key of ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef']) workerRef(input[key]);
+    workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
+    input = Object.freeze({ ...input });
+    const snapshot = this.#snapshot(caller, input.taskRef), entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || !entry.captured || entry.captured.executionRef !== input.executionRef || entry.captured.version !== 1 || typeof this.#adapter.finishExecution !== 'function' || typeof this.#store.settleAction !== 'function') workerFail('WORKER_FINISH_UNAVAILABLE');
+    const commandDigest = workerDigest('finish-command', input);
+    if (entry.finished) {
+      if (entry.finished.commandDigest !== commandDigest) workerFail('WORKER_FINISH_UNAVAILABLE');
+      return entry.finished.receipt;
+    }
+    if (entry.finishPending) workerFail('WORKER_FINISH_UNAVAILABLE');
+    if (snapshot.task.version !== input.expectedTaskVersion || snapshot.task.authEpoch !== input.expectedAuthEpoch) workerFail('STALE_VERSION');
+    entry.finishPending = true;
+    try {
+      const result = await this.#adapter.finishExecution(entry.ticket, input.executionRef);
+      this.#alive();
+      workerRecord(result, ['worker', 'usageUnits', 'evidenceRef']); workerInteger(result.usageUnits, 0, 100000000); workerRef(result.evidenceRef);
+      if (result.worker.phase !== 'stopped') workerFail('WORKER_FINISH_UNAVAILABLE');
+      this.#observation(entry, result.worker);
+      this.#snapshot(caller, input.taskRef); // Recheck caller scope; factual cleanup survives later grant revocation.
+      const receipt = this.#store.settleAction(this.#host, { taskRef: input.taskRef, claimRef: input.claimRef, generationRef: input.generationRef, commandRef: input.commandRef, outcome: 'completed', evidenceRef: result.evidenceRef, usage: { state: 'actual', units: result.usageUnits } });
+      entry.finished = Object.freeze({ commandDigest, receipt: freezeReceipt(receipt) });
+      return entry.finished.receipt;
+    } catch (error) {
+      // A failed stop/settlement is never replayed. Durable held facts remain
+      // queryable; this manager cannot mint another execution or stop proof.
+      if (error instanceof WorkerError) throw error;
+      workerFail('WORKER_FINISH_UNAVAILABLE');
+    }
   }
   handoff(caller, input) {
     this.#alive();

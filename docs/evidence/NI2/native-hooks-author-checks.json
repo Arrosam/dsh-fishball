@@ -1,0 +1,39 @@
+{
+  "node": "22.22.2",
+  "commands": [
+    {
+      "command": "/opt/homebrew/bin/node --test test/native-hooks.test.mjs test/native-adapter.test.mjs test/worker.test.mjs test/automation-store.test.mjs test/automation-adversarial.test.mjs",
+      "tap": "native-hooks-author-final.tap",
+      "tests": 88,
+      "pass": 88,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check src/native-adapter.mjs",
+      "exit": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check src/worker.mjs",
+      "exit": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check test/native-hooks.test.mjs",
+      "exit": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node scripts/build-client.mjs --check",
+      "exit": 0
+    }
+  ],
+  "scope": "authored typed and original public no-listener synthetic functional composition",
+  "remaining": [
+    "private normal composer and runtime receipt observer",
+    "authenticated twelve commands/status",
+    "normal owner UI",
+    "independent native hooks execution",
+    "physical original CLI/package proof",
+    "required separate resume implementation",
+    "CODE/browser/model quality/full acceptance HOLD"
+  ]
+}

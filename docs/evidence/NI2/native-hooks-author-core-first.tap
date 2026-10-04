@@ -1,0 +1,42 @@
+TAP version 13
+# (node:73057) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installed native hooks keep original creation idle, bind one actual request, validate scoped persisted output and stop only owned handle
+ok 1 - installed native hooks keep original creation idle, bind one actual request, validate scoped persisted output and stop only owned handle
+  ---
+  duration_ms: 101.661417
+  type: 'test'
+  ...
+# Subtest: false final unpublished hook never publishes an owned agent or mints execution permit
+ok 2 - false final unpublished hook never publishes an owned agent or mints execution permit
+  ---
+  duration_ms: 19.444291
+  type: 'test'
+  ...
+# Subtest: false execution hook after durable admission never enters source-owned adapter
+ok 3 - false execution hook after durable admission never enters source-owned adapter
+  ---
+  duration_ms: 39.832791
+  type: 'test'
+  ...
+# Subtest: finish refuses uncaptured native output and does not dispose the original live worker
+ok 4 - finish refuses uncaptured native output and does not dispose the original live worker
+  ---
+  duration_ms: 52.59025
+  type: 'test'
+  ...
+# Subtest: shared factual finish requires private validated capture, releases only actual stopped usage, survives revoked grant and deduplicates exact command
+ok 5 - shared factual finish requires private validated capture, releases only actual stopped usage, survives revoked grant and deduplicates exact command
+  ---
+  duration_ms: 121.909375
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 534.766625
