@@ -1,0 +1,110 @@
+// Validation observation only. This module neither selects a product factory
+// nor supplies identity, key, credential, provider or permission callbacks.
+import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const base=fileURLToPath(new URL('./',import.meta.url));
+const statePath=`${base}evidence/observer-state.json`, accessPath=`${base}private/native-access.json`, controlPath=`${base}private/lifecycle-command.json`;
+export const name='df-ni1-memory-observer';
+export const inject=['sessions','approval','agents','llm','tools','connection','webServer','loader'];
+export function apply(ctx, config) {
+  const state={phase:'observer-active',pid:process.pid,entry:'dsh-fishball/installed',setupAvailable:false,runtimeAvailable:false,setupLoads:0,runtimeLoads:0,withdrawals:[],sessions:0,providers:0,inferenceAttempts:0,toolAttempts:0};
+  let setup, runtime, pending=false, active=true;
+  const completed=new Set();
+  const write=()=>{
+    state.sessions=ctx.sessions.list().length;state.providers=ctx.llm.listProviders().length;
+    state.databaseExists=existsSync(config.databasePath);state.setupNamespaceExists=existsSync(config.databasePath+'.df-setup');
+    state.routes={setup:ctx.webServer.prefixes.has('/df-setup'),runtime:ctx.webServer.prefixes.has('/df-rpc')};
+    const entries=[...ctx.loader.entries()].filter(entry=>entry.options.id==='df-installed');
+    state.nativeEntries=entries.map(entry=>({name:entry.options.name,disabled:entry.disabled,fiberState:entry.fiber?.state??null}));
+    writeFileSync(`${statePath}.tmp`,JSON.stringify(state,null,2)+'\n',{mode:0o600});renameSync(`${statePath}.tmp`,statePath);
+  };
+  const stale=service=>{try{service.diagnostics();return 'active-at-observer-cleanup';}catch(error){return error.code??'UNAVAILABLE';}};
+  const runLifecycle=async command=>{
+    const entries=[...ctx.loader.entries()].filter(entry=>entry.options.id==='df-installed');
+    if(entries.length!==1 || entries[0].options.name!=='dsh-fishball/installed')throw new Error('NATIVE_ENTRY_SELECTION');
+    const entry=entries[0], result={id:command.id,operation:command.operation,cycles:[]};
+    state.lifecycle=result;write();
+    if(command.operation==='reload10'){
+      for(let i=0;i<10 && active;i++){
+        const previousSetup=setup, previousRuntime=runtime;
+        const disposing=entry.update({disabled:true});
+        const immediateSetup=stale(previousSetup), immediateRuntime=stale(previousRuntime);
+        await disposing;await ctx.loader.await();
+        await new Promise(resolve=>setImmediate(resolve));
+        const removed=!state.setupAvailable&&!state.runtimeAvailable;
+        await entry.update({disabled:false});await ctx.loader.await();
+        const deadline=Date.now()+5000;
+        while(active && (!state.setupAvailable||!state.runtimeAvailable) && Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,20));
+        const diagnostic=runtime.diagnostics(), setupDiagnostic=setup.diagnostics();
+        const cycle={cycle:i+1,immediateSetup,immediateRuntime,removed,setupPhase:setupDiagnostic.phase,hostSupported:diagnostic.supported,capabilities:diagnostic.capabilities,sessions:ctx.sessions.list().length,providers:ctx.llm.listProviders().length};
+        result.cycles.push(cycle);write();
+        if(immediateSetup!=='SERVICE_DISPOSED'||immediateRuntime!=='SERVICE_DISPOSED'||!removed||setupDiagnostic.phase!=='ready'||!diagnostic.supported||Object.entries(diagnostic.capabilities).some(([key,value])=>value!==(key==='memory'&&entry.options.config.memory?.enabled===true))||cycle.sessions||cycle.providers)throw new Error('NATIVE_RELOAD_ORACLE');
+      }
+      if(result.cycles.length!==10)throw new Error('NATIVE_RELOAD_INCOMPLETE');
+    }else if(['memory-cycle','memory-tiny','memory-restore'].includes(command.operation)){
+      const choices=command.operation==='memory-tiny'?[{enabled:true,byteLimit:1,tokenLimit:1}]:command.operation==='memory-restore'?[{enabled:true,byteLimit:32768,tokenLimit:4096}]:[{enabled:false},{enabled:true,byteLimit:65536,tokenLimit:8192},{enabled:true,byteLimit:32768,tokenLimit:4096}];
+      for(const selected of choices){
+        const previousSetup=setup,previousRuntime=runtime;
+        await entry.update({disabled:true});
+        const immediateSetup=stale(previousSetup),immediateRuntime=stale(previousRuntime);
+        await ctx.loader.await();await new Promise(resolve=>setImmediate(resolve));
+        await entry.update({config:{databasePath:config.databasePath,memory:selected},disabled:false});await ctx.loader.await();
+        const deadline=Date.now()+5000;
+        while(active&&(!state.setupAvailable||!state.runtimeAvailable)&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,20));
+        const diagnostic=runtime.diagnostics(),setupDiagnostic=setup.diagnostics();
+        const cycle={cycle:result.cycles.length+1,memoryEnabled:selected.enabled,immediateSetup,immediateRuntime,setupPhase:setupDiagnostic.phase,capabilities:diagnostic.capabilities,sessions:ctx.sessions.list().length,providers:ctx.llm.listProviders().length};
+        result.cycles.push(cycle);write();
+        if(immediateSetup!=='SERVICE_DISPOSED'||immediateRuntime!=='SERVICE_DISPOSED'||setupDiagnostic.phase!=='ready'||!diagnostic.supported||Object.entries(diagnostic.capabilities).some(([key,value])=>value!==(key==='memory'&&selected.enabled===true))||cycle.sessions||cycle.providers)throw new Error('NI1_NATIVE_MEMORY_CYCLE_ORACLE');
+      }
+    }else if(command.operation==='uninstall'){
+      const previousSetup=setup,previousRuntime=runtime;
+      // This tree owns local IDs; the generated Entry.id includes ancestors.
+      entry.parent.tree.remove(entry.options.id);
+      result.immediateSetup=stale(previousSetup);result.immediateRuntime=stale(previousRuntime);
+      await ctx.loader.await();await new Promise(resolve=>setImmediate(resolve));
+      result.servicesRemoved=!state.setupAvailable&&!state.runtimeAvailable;
+      result.routesRemoved=!ctx.webServer.prefixes.has('/df-setup')&&!ctx.webServer.prefixes.has('/df-rpc');
+      result.entryRemoved=![...ctx.loader.entries()].some(value=>value.options.id==='df-installed');
+      result.dataRetained=existsSync(config.databasePath)&&existsSync(config.databasePath+'.df-setup');
+      if(result.immediateSetup!=='SERVICE_DISPOSED'||result.immediateRuntime!=='SERVICE_DISPOSED'||!result.servicesRemoved||!result.routesRemoved||!result.entryRemoved||!result.dataRetained)throw new Error('NATIVE_UNINSTALL_ORACLE');
+    }else throw new Error('NATIVE_COMMAND_INVALID');
+    result.result='passed';write();
+  };
+  ctx.on('agent/request',()=>{state.inferenceAttempts++;write();throw new Error('NORMAL_SETUP_INFERENCE_DISABLED');});
+  ctx.tools.guard(()=>{state.toolAttempts++;write();return 'NORMAL_SETUP_TOOLS_DISABLED';});
+  writeFileSync(accessPath,JSON.stringify({url:ctx.connection.authenticatedUrl(`http://127.0.0.1:${ctx.webServer.port}`)})+'\n',{mode:0o600});
+  ctx.inject(['dfSetup'],child=>{
+    const borrowed=child.dfSetup;setup=borrowed;state.setupAvailable=true;state.setupLoads++;
+    try{state.setupDiagnostic=borrowed.diagnostics();}catch(error){state.setupDiagnosticCode=error.code??'UNAVAILABLE';}
+    write();
+    child.effect(()=>()=>{state.setupAvailable=false;state.withdrawals.push({service:'setup',code:stale(borrowed)});write();},'df.setup-observer-presence');
+  });
+  ctx.inject(['df'],child=>{
+    const borrowed=child.df;runtime=borrowed;state.runtimeAvailable=true;state.runtimeLoads++;
+    try{state.runtimeDiagnostic=borrowed.diagnostics();}catch(error){state.runtimeDiagnosticCode=error.code??'UNAVAILABLE';}
+    write();
+    child.effect(()=>()=>{state.runtimeAvailable=false;state.withdrawals.push({service:'runtime',code:stale(borrowed)});write();},'df.runtime-observer-presence');
+  });
+  const timer=setInterval(()=>{
+    if(!active)return;
+    if(setup&&state.setupAvailable)try{state.setupDiagnostic=setup.diagnostics();}catch(error){state.setupDiagnosticCode=error.code??'UNAVAILABLE';}
+    write();
+    if(!pending&&existsSync(controlPath)){
+      let command;try{command=JSON.parse(readFileSync(controlPath,'utf8'));}catch{return;}
+      if(!command||Object.keys(command).sort().join(',')!=='id,operation'||typeof command.id!=='string'||!/^[a-z0-9-]{1,40}$/.test(command.id)||!['reload10','uninstall','memory-cycle','memory-tiny','memory-restore'].includes(command.operation)||completed.has(command.id))return;
+      completed.add(command.id);pending=true;
+      runLifecycle(command).catch(()=>{state.lifecycle={...state.lifecycle,result:'failed',code:'NATIVE_LIFECYCLE_ORACLE_FAILED'};try{write();}catch{}}).finally(()=>{
+        // Consume this validation command so a subsequent real host restart
+        // does not replay instrumentation. This is never product task ingress.
+        try{const current=JSON.parse(readFileSync(controlPath,'utf8'));if(current.id===command.id)unlinkSync(controlPath);}catch{}
+        pending=false;
+      });
+    }
+  },250);
+  ctx.effect(()=>()=>{clearInterval(timer);state.phase='disposed';state.setupCleanupCode=setup?stale(setup):'unavailable';state.runtimeCleanupCode=runtime?stale(runtime):'unavailable';try{unlinkSync(accessPath);}catch{}
+    // Parent disposal may precede a sibling product's own closure. These codes
+    // describe observation order; controlled own unload is the fencing oracle.
+    active=false;try{write();}catch{}
+  },'df.normal-setup-observer');
+  write();
+}

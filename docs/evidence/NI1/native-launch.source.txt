@@ -1,0 +1,12 @@
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { createSafeOutput } from '../../scripts/dsh-web.mjs';
+const base=fileURLToPath(new URL('./',import.meta.url));
+const child=spawn(process.execPath,["/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/portable-install/host"+`/node_modules/@deepseek-ai/dsh/lib/bin.js`,'--profile','web','--host','127.0.0.1','--port','3080','--no-open'],{cwd:`${base}workspace`,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',DSH_HOME:`${base}home`,DSH_AGENTS_HOME:`${base}agents`,DSH_TELEMETRY_DISABLED:'1',DSH_PERMISSION_MODE:'read-only'},stdio:['ignore','pipe','pipe']});
+const stdout=createSafeOutput(value=>process.stdout.write(value)), stderr=createSafeOutput(value=>process.stderr.write(value));
+child.stdout.on('data',value=>stdout.write(value));child.stderr.on('data',value=>stderr.write(value));
+child.stdout.on('end',()=>stdout.end());child.stderr.on('end',()=>stderr.end());
+console.log(JSON.stringify({result:'launched',pid:child.pid,target:'DSH Web 0.2.1-alpha.1',profile:'normal installed package in fresh isolated host',url:'http://127.0.0.1:3080'}));
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));
+child.on('error',()=>{console.error('NORMAL_INSTALL_LAUNCH_FAILED');process.exitCode=1;});
+child.on('exit',code=>{process.exitCode=code??1;});

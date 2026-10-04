@@ -1,0 +1,11 @@
+{
+  "scope": "public product files only; independent test hold and final regression freeze pending",
+  "sourceHead": "4f12d427785ecab58517dbe9fd9698801db2bced",
+  "files": 49,
+  "manifestSha256": "60f0c3a3ebad7e08e4bc7badea9d587ceb50e342662b9230e3607ae8f42e6d30",
+  "hostTarget": "DSH Web 0.2.1-alpha.1",
+  "hostWholeLockSha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+  "codeReview": "HOLD; no retry or reroute",
+  "browser": "HOLD; unsupported observation/control",
+  "timestamp": "2026-10-04T19:11:44.119924+00:00"
+}
