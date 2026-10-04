@@ -148,7 +148,7 @@ test('independent portability declares the complete bounded consumed peer set wi
   const alpha = ['dsh', 'dsh-session', 'dsh-user-approval', 'dsh-web-app', 'dsh-host-webserver',
     'dsh-client-connection', 'dsh-client-ui-renderer', 'dsh-client-ui-layout', 'dsh-client-ui-sidebar',
     'dsh-client-ui-workspace', 'dsh-agent', 'dsh-agent-loop', 'dsh-llm', 'dsh-scope', 'dsh-tools',
-    'dsh-session-persistence', 'dsh-session-persistence-jsonl'];
+    'dsh-session-persistence', 'dsh-session-persistence-jsonl', 'dsh-token-meter'];
   const expected = Object.fromEntries(alpha.map(name => [`@deepseek-ai/${name}`, '0.2.1-alpha.1']));
   expected['@deepseek-ai/cordis'] = '4.0.5-alpha.1';
   expected['@deepseek-ai/node-addon-system'] = expected['@deepseek-ai/node-addon-system-darwin-arm64'] = '0.1.2';

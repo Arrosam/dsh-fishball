@@ -1,0 +1,434 @@
+{
+  "old18": {
+    "ref": "a43979e",
+    "manifestSha256": "361b4e8b76fec9db107864beeeaaf401aceb614ddbf954ca1d8bf4ff35adfbbc",
+    "entries": [
+      {
+        "path": "src/installed-config.mjs",
+        "expected": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "historical": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "historicalMatches": true,
+        "current": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "currentMatches": true,
+        "after": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "afterMatches": true
+      },
+      {
+        "path": "src/installed-memory.mjs",
+        "expected": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "historical": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "historicalMatches": true,
+        "current": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "currentMatches": true,
+        "after": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "afterMatches": true
+      },
+      {
+        "path": "src/installed-plugin.mjs",
+        "expected": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "historical": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "historicalMatches": true,
+        "current": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "currentMatches": true,
+        "after": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "afterMatches": true
+      },
+      {
+        "path": "package.json",
+        "expected": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "historical": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "historicalMatches": true,
+        "current": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "currentMatches": true,
+        "after": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "afterMatches": true
+      },
+      {
+        "path": "test/installed-memory.test.mjs",
+        "expected": "03037962e879cb4d4e391bea1dbd221fc9c2a7b051d371edff2d6c8e349405a0",
+        "historical": "03037962e879cb4d4e391bea1dbd221fc9c2a7b051d371edff2d6c8e349405a0",
+        "historicalMatches": true,
+        "current": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+        "currentMatches": false,
+        "after": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+        "afterMatches": false
+      },
+      {
+        "path": "src/config.mjs",
+        "expected": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "historical": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "historicalMatches": true,
+        "current": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "currentMatches": true,
+        "after": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "afterMatches": true
+      },
+      {
+        "path": "src/setup-state.mjs",
+        "expected": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "historical": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "historicalMatches": true,
+        "current": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "currentMatches": true,
+        "after": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "afterMatches": true
+      },
+      {
+        "path": "src/context.mjs",
+        "expected": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "historical": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "historicalMatches": true,
+        "current": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "currentMatches": true,
+        "after": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "afterMatches": true
+      },
+      {
+        "path": "src/memory.mjs",
+        "expected": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "historical": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "historicalMatches": true,
+        "current": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "currentMatches": true,
+        "after": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "afterMatches": true
+      },
+      {
+        "path": "src/runtime-plugin.mjs",
+        "expected": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "historical": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "historicalMatches": true,
+        "current": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "currentMatches": true,
+        "after": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "afterMatches": true
+      },
+      {
+        "path": "src/operator-bridge.mjs",
+        "expected": "38f8fb1b43139ecb3ccc4fd3857a37bd01f2c7c99ba56a4233ef547c882dbd71",
+        "historical": "38f8fb1b43139ecb3ccc4fd3857a37bd01f2c7c99ba56a4233ef547c882dbd71",
+        "historicalMatches": true,
+        "current": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96",
+        "currentMatches": false,
+        "after": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96",
+        "afterMatches": false
+      },
+      {
+        "path": "src/host-probe.mjs",
+        "expected": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "historical": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "historicalMatches": true,
+        "current": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "currentMatches": true,
+        "after": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "afterMatches": true
+      },
+      {
+        "path": "scripts/dsh-web-runtime-lock.json",
+        "expected": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "historical": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "historicalMatches": true,
+        "current": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "currentMatches": true,
+        "after": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "afterMatches": true
+      },
+      {
+        "path": "test/installation.test.mjs",
+        "expected": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "historical": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "historicalMatches": true,
+        "current": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "currentMatches": true,
+        "after": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "afterMatches": true
+      },
+      {
+        "path": "test/installation-adversarial.test.mjs",
+        "expected": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "historical": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "historicalMatches": true,
+        "current": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "currentMatches": true,
+        "after": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "afterMatches": true
+      },
+      {
+        "path": "test/portability-adversarial.test.mjs",
+        "expected": "aa4a4f745c9f6ff5ed3daee15a2a4c2083c9b93db6a183ca98f4b7f82dc942f8",
+        "historical": "aa4a4f745c9f6ff5ed3daee15a2a4c2083c9b93db6a183ca98f4b7f82dc942f8",
+        "historicalMatches": true,
+        "current": "aa4a4f745c9f6ff5ed3daee15a2a4c2083c9b93db6a183ca98f4b7f82dc942f8",
+        "currentMatches": true,
+        "after": "cc7a3040498a0cd159206d741df74d3e486aefbe777f7390847b74626c9fc2ee",
+        "afterMatches": false
+      },
+      {
+        "path": "docs/normal-entry-integration-plan.md",
+        "expected": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "historical": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "historicalMatches": true,
+        "current": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "currentMatches": true,
+        "after": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "afterMatches": true
+      },
+      {
+        "path": "docs/evidence/NI1/test-design.md",
+        "expected": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "historical": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "historicalMatches": true,
+        "current": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "currentMatches": true,
+        "after": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "afterMatches": true
+      }
+    ]
+  },
+  "corrected24": {
+    "ref": "3bc81c2",
+    "manifestSha256": "5935fae13866e900685f1a9af2702aa809b17e1bf0242af269233a6087efe3bd",
+    "entries": [
+      {
+        "path": "src/operator-bridge.mjs",
+        "expected": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96",
+        "historical": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96",
+        "historicalMatches": true,
+        "current": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96",
+        "currentMatches": true,
+        "after": "968daa6bd54af89ae554acb21560c75a0cf98cd8eb046a26944733b24c7b2e96",
+        "afterMatches": true
+      },
+      {
+        "path": "test/installed-memory.test.mjs",
+        "expected": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+        "historical": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+        "historicalMatches": true,
+        "current": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+        "currentMatches": true,
+        "after": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+        "afterMatches": true
+      },
+      {
+        "path": "test/operator-memory-numeric.test.mjs",
+        "expected": "c0de1b23a9857dc355e334208a0bbb1eacce0074ae6b9c951c8f87350ab40bc2",
+        "historical": "c0de1b23a9857dc355e334208a0bbb1eacce0074ae6b9c951c8f87350ab40bc2",
+        "historicalMatches": true,
+        "current": "c0de1b23a9857dc355e334208a0bbb1eacce0074ae6b9c951c8f87350ab40bc2",
+        "currentMatches": true,
+        "after": "c0de1b23a9857dc355e334208a0bbb1eacce0074ae6b9c951c8f87350ab40bc2",
+        "afterMatches": true
+      },
+      {
+        "path": "src/installed-config.mjs",
+        "expected": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "historical": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "historicalMatches": true,
+        "current": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "currentMatches": true,
+        "after": "85e40efd59e65adcf9e37647dd63cc135aafb35de045c648337d482c1ab7e7b2",
+        "afterMatches": true
+      },
+      {
+        "path": "src/installed-memory.mjs",
+        "expected": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "historical": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "historicalMatches": true,
+        "current": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "currentMatches": true,
+        "after": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "afterMatches": true
+      },
+      {
+        "path": "src/installed-plugin.mjs",
+        "expected": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "historical": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "historicalMatches": true,
+        "current": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "currentMatches": true,
+        "after": "f8b8d6d8248f1f86d4a18aed1474195295ef7441afcfe3172a5cf4ddf5f68ae9",
+        "afterMatches": true
+      },
+      {
+        "path": "package.json",
+        "expected": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "historical": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "historicalMatches": true,
+        "current": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "currentMatches": true,
+        "after": "741094460eab1e41f1743e12237d8193a49e81f623d02e0c969b24fb3f5cf027",
+        "afterMatches": true
+      },
+      {
+        "path": "src/config.mjs",
+        "expected": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "historical": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "historicalMatches": true,
+        "current": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "currentMatches": true,
+        "after": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "afterMatches": true
+      },
+      {
+        "path": "src/setup-state.mjs",
+        "expected": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "historical": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "historicalMatches": true,
+        "current": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "currentMatches": true,
+        "after": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "afterMatches": true
+      },
+      {
+        "path": "src/context.mjs",
+        "expected": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "historical": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "historicalMatches": true,
+        "current": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "currentMatches": true,
+        "after": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+        "afterMatches": true
+      },
+      {
+        "path": "src/memory.mjs",
+        "expected": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "historical": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "historicalMatches": true,
+        "current": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "currentMatches": true,
+        "after": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "afterMatches": true
+      },
+      {
+        "path": "src/runtime-plugin.mjs",
+        "expected": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "historical": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "historicalMatches": true,
+        "current": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "currentMatches": true,
+        "after": "a80aee8e12b0e98fb7723f041957db0d3574ba96309d275338af8012b128de40",
+        "afterMatches": true
+      },
+      {
+        "path": "src/host-probe.mjs",
+        "expected": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "historical": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "historicalMatches": true,
+        "current": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "currentMatches": true,
+        "after": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "afterMatches": true
+      },
+      {
+        "path": "scripts/dsh-web-runtime-lock.json",
+        "expected": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "historical": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "historicalMatches": true,
+        "current": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "currentMatches": true,
+        "after": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "afterMatches": true
+      },
+      {
+        "path": "test/operator-bridge.test.mjs",
+        "expected": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+        "historical": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+        "historicalMatches": true,
+        "current": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+        "currentMatches": true,
+        "after": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+        "afterMatches": true
+      },
+      {
+        "path": "test/installation.test.mjs",
+        "expected": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "historical": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "historicalMatches": true,
+        "current": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "currentMatches": true,
+        "after": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+        "afterMatches": true
+      },
+      {
+        "path": "test/installation-adversarial.test.mjs",
+        "expected": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "historical": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "historicalMatches": true,
+        "current": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "currentMatches": true,
+        "after": "3a0cca0b3030fa70ab01a02cf4b2bd2f0a235cf72f1f049f96c9b7c193dea756",
+        "afterMatches": true
+      },
+      {
+        "path": "test/portability-adversarial.test.mjs",
+        "expected": "aa4a4f745c9f6ff5ed3daee15a2a4c2083c9b93db6a183ca98f4b7f82dc942f8",
+        "historical": "aa4a4f745c9f6ff5ed3daee15a2a4c2083c9b93db6a183ca98f4b7f82dc942f8",
+        "historicalMatches": true,
+        "current": "aa4a4f745c9f6ff5ed3daee15a2a4c2083c9b93db6a183ca98f4b7f82dc942f8",
+        "currentMatches": true,
+        "after": "cc7a3040498a0cd159206d741df74d3e486aefbe777f7390847b74626c9fc2ee",
+        "afterMatches": false
+      },
+      {
+        "path": "docs/normal-entry-integration-plan.md",
+        "expected": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "historical": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "historicalMatches": true,
+        "current": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "currentMatches": true,
+        "after": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+        "afterMatches": true
+      },
+      {
+        "path": "docs/evidence/NI1/test-design.md",
+        "expected": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "historical": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "historicalMatches": true,
+        "current": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "currentMatches": true,
+        "after": "701efb747c86570653ed72023f34d7c04e7c58dfedff185d44bfe718cb639cc8",
+        "afterMatches": true
+      },
+      {
+        "path": "docs/normal-memory-numeric-addendum.md",
+        "expected": "a900e3ce65ae904785b0d837b17ba5dc69b9c321896869456514bded0f30c603",
+        "historical": "a900e3ce65ae904785b0d837b17ba5dc69b9c321896869456514bded0f30c603",
+        "historicalMatches": true,
+        "current": "a900e3ce65ae904785b0d837b17ba5dc69b9c321896869456514bded0f30c603",
+        "currentMatches": true,
+        "after": "a900e3ce65ae904785b0d837b17ba5dc69b9c321896869456514bded0f30c603",
+        "afterMatches": true
+      },
+      {
+        "path": "docs/evidence/NI1/numeric-test-design.md",
+        "expected": "f7f33025a730bc5c12f732158baf8283597b23c3dc010ca1b0a0101bb43e399c",
+        "historical": "f7f33025a730bc5c12f732158baf8283597b23c3dc010ca1b0a0101bb43e399c",
+        "historicalMatches": true,
+        "current": "f7f33025a730bc5c12f732158baf8283597b23c3dc010ca1b0a0101bb43e399c",
+        "currentMatches": true,
+        "after": "f7f33025a730bc5c12f732158baf8283597b23c3dc010ca1b0a0101bb43e399c",
+        "afterMatches": true
+      },
+      {
+        "path": "docs/evidence/NI1/operator-before-fractional.txt",
+        "expected": "38f8fb1b43139ecb3ccc4fd3857a37bd01f2c7c99ba56a4233ef547c882dbd71",
+        "historical": "38f8fb1b43139ecb3ccc4fd3857a37bd01f2c7c99ba56a4233ef547c882dbd71",
+        "historicalMatches": true,
+        "current": "38f8fb1b43139ecb3ccc4fd3857a37bd01f2c7c99ba56a4233ef547c882dbd71",
+        "currentMatches": true,
+        "after": "38f8fb1b43139ecb3ccc4fd3857a37bd01f2c7c99ba56a4233ef547c882dbd71",
+        "afterMatches": true
+      },
+      {
+        "path": "docs/evidence/NI1/installed-memory-before-numeric.txt",
+        "expected": "03037962e879cb4d4e391bea1dbd221fc9c2a7b051d371edff2d6c8e349405a0",
+        "historical": "03037962e879cb4d4e391bea1dbd221fc9c2a7b051d371edff2d6c8e349405a0",
+        "historicalMatches": true,
+        "current": "03037962e879cb4d4e391bea1dbd221fc9c2a7b051d371edff2d6c8e349405a0",
+        "currentMatches": true,
+        "after": "03037962e879cb4d4e391bea1dbd221fc9c2a7b051d371edff2d6c8e349405a0",
+        "afterMatches": true
+      }
+    ]
+  }
+}

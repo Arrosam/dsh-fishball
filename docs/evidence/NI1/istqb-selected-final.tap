@@ -1,0 +1,511 @@
+TAP version 13
+# (node:64080) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI1-01/02 independent closed installed-only config retains exact detached integer choices
+ok 1 - NI1-01/02 independent closed installed-only config retains exact detached integer choices
+  ---
+  duration_ms: 3.638542
+  type: 'test'
+  ...
+# Subtest: NI1-01 independent hidden nested config and revoked Proxy cannot invoke supplied hooks
+ok 2 - NI1-01 independent hidden nested config and revoked Proxy cannot invoke supplied hooks
+  ---
+  duration_ms: 0.164333
+  type: 'test'
+  ...
+# Subtest: NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unambiguous private namespaces
+ok 3 - NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unambiguous private namespaces
+  ---
+  duration_ms: 7.978291
+  type: 'test'
+  ...
+# Subtest: NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import
+    # Subtest: canonical
+    ok 1 - canonical
+      ---
+      duration_ms: 97.87575
+      type: 'test'
+      ...
+    # Subtest: missing
+    ok 2 - missing
+      ---
+      duration_ms: 92.492167
+      type: 'test'
+      ...
+    # Subtest: altered-source
+    ok 3 - altered-source
+      ---
+      duration_ms: 91.696875
+      type: 'test'
+      ...
+    # Subtest: conditional-alias
+    ok 4 - conditional-alias
+      ---
+      duration_ms: 93.392125
+      type: 'test'
+      ...
+    # Subtest: metadata-symlink
+    ok 5 - metadata-symlink
+      ---
+      duration_ms: 92.553833
+      type: 'test'
+      ...
+    # Subtest: foreign-root
+    ok 6 - foreign-root
+      ---
+      duration_ms: 96.833041
+      type: 'test'
+      ...
+    # Subtest: wrong-name
+    ok 7 - wrong-name
+      ---
+      duration_ms: 92.183167
+      type: 'test'
+      ...
+    1..7
+ok 4 - NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import
+  ---
+  duration_ms: 680.088792
+  type: 'test'
+  ...
+# Subtest: NI1-N01/N05/N06 independent exact classification preserves fractions but denies every other registered name
+ok 5 - NI1-N01/N05/N06 independent exact classification preserves fractions but denies every other registered name
+  ---
+  duration_ms: 2.048292
+  type: 'test'
+  ...
+# Subtest: NI1-N07/N08 independent recursive multibyte size, descriptor and pre-admission fences remain strict
+ok 6 - NI1-N07/N08 independent recursive multibyte size, descriptor and pre-admission fences remain strict
+  ---
+  duration_ms: 0.821542
+  type: 'test'
+  ...
+# Subtest: NI1-N09 independent captured decimals survive caller mutation and committed fact is not erased by late abort
+ok 7 - NI1-N09 independent captured decimals survive caller mutation and committed fact is not erased by late abort
+  ---
+  duration_ms: 0.234917
+  type: 'test'
+  ...
+# Subtest: NI1-05/08 actual encrypted empty memory and cross-workspace/profile identical query remain isolated
+ok 8 - NI1-05/08 actual encrypted empty memory and cross-workspace/profile identical query remain isolated
+  ---
+  duration_ms: 20.397208
+  type: 'test'
+  ...
+# Subtest: NI1-08 adapter-only encrypted correction/delete keeps fresh sourced revisions and historical replay after reopen
+ok 9 - NI1-08 adapter-only encrypted correction/delete keeps fresh sourced revisions and historical replay after reopen
+  ---
+  duration_ms: 21.0645
+  type: 'test'
+  ...
+# Subtest: NI1-09/10 public heuristic token N-1/N/N+1 removes optional records whole including separators
+ok 10 - NI1-09/10 public heuristic token N-1/N/N+1 removes optional records whole including separators
+  ---
+  duration_ms: 2.617333
+  type: 'test'
+  ...
+# Subtest: NI1-N04 actual store domain rejection after fractional transport leaves every row and receipt unchanged
+ok 11 - NI1-N04 actual store domain rejection after fractional transport leaves every row and receipt unchanged
+  ---
+  duration_ms: 15.014458
+  type: 'test'
+  ...
+# Subtest: NI1-08/10 actual sourced envelope protects current instructions and integer accounting against memory authority claims
+ok 12 - NI1-08/10 actual sourced envelope protects current instructions and integer accounting against memory authority claims
+  ---
+  duration_ms: 19.946209
+  type: 'test'
+  ...
+# Subtest: NI1-10 actual public-accounted complete encrypted envelope accepts65535/65536 and refuses65537 without a write
+    # Subtest: complete-envelope-65535
+    ok 1 - complete-envelope-65535
+      ---
+      duration_ms: 26.282208
+      type: 'test'
+      ...
+    # Subtest: complete-envelope-65536
+    ok 2 - complete-envelope-65536
+      ---
+      duration_ms: 24.193625
+      type: 'test'
+      ...
+    # Subtest: complete-envelope-65537
+    ok 3 - complete-envelope-65537
+      ---
+      duration_ms: 28.156209
+      type: 'test'
+      ...
+    1..3
+ok 13 - NI1-10 actual public-accounted complete encrypted envelope accepts65535/65536 and refuses65537 without a write
+  ---
+  duration_ms: 94.836375
+  type: 'test'
+  ...
+# Subtest: NI1-10 actual rendered protected minimum N-1 refuses and exactN/N+1 preserve text
+ok 14 - NI1-10 actual rendered protected minimum N-1 refuses and exactN/N+1 preserve text
+  ---
+  duration_ms: 18.559458
+  type: 'test'
+  ...
+# Subtest: NI1-11 actual async namespace and task/auth races refuse stale prepared writes
+    # Subtest: memory
+    ok 1 - memory
+      ---
+      duration_ms: 29.3575
+      type: 'test'
+      ...
+    # Subtest: task
+    ok 2 - task
+      ---
+      duration_ms: 31.4685
+      type: 'test'
+      ...
+    1..2
+ok 15 - NI1-11 actual async namespace and task/auth races refuse stale prepared writes
+  ---
+  duration_ms: 61.064791
+  type: 'test'
+  ...
+# Subtest: NI1-14 actual registered secret is refused before memory/context persistence
+ok 16 - NI1-14 actual registered secret is refused before memory/context persistence
+  ---
+  duration_ms: 12.755167
+  type: 'test'
+  ...
+# Subtest: NI1-06/07 public native features before consent are closed read-only metadata, never memory authority
+ok 17 - NI1-06/07 public native features before consent are closed read-only metadata, never memory authority
+  ---
+  duration_ms: 80.352167
+  type: 'test'
+  ...
+# Subtest: NI1-N02/N03 public native decimal domains, exact receipts and encrypted context survive disable/re-enable own closure
+ok 18 - NI1-N02/N03 public native decimal domains, exact receipts and encrypted context survive disable/re-enable own closure
+  ---
+  duration_ms: 164.447125
+  type: 'test'
+  ...
+# Subtest: NI1-11/13 independent already-open processes deduplicate one decimal command and retain abrupt acknowledgement
+ok 19 - NI1-11/13 independent already-open processes deduplicate one decimal command and retain abrupt acknowledgement
+  ---
+  duration_ms: 380.7365
+  type: 'test'
+  ...
+# (node:64081) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installed config preserves base validation, ordinary/null prototypes, detached frozen choices and disabled default
+ok 20 - installed config preserves base validation, ordinary/null prototypes, detached frozen choices and disabled default
+  ---
+  duration_ms: 2.242208
+  type: 'test'
+  ...
+# Subtest: closed memory flags and exact enabled integer boundary partitions
+    # Subtest: byteLimit accepts 1
+    ok 1 - byteLimit accepts 1
+      ---
+      duration_ms: 0.116833
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 2
+    ok 2 - byteLimit accepts 2
+      ---
+      duration_ms: 0.137916
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 65535
+    ok 3 - byteLimit accepts 65535
+      ---
+      duration_ms: 0.06
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 65536
+    ok 4 - byteLimit accepts 65536
+      ---
+      duration_ms: 0.051
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 1
+    ok 5 - tokenLimit accepts 1
+      ---
+      duration_ms: 0.05575
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 2
+    ok 6 - tokenLimit accepts 2
+      ---
+      duration_ms: 0.042
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 131071
+    ok 7 - tokenLimit accepts 131071
+      ---
+      duration_ms: 0.20275
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 131072
+    ok 8 - tokenLimit accepts 131072
+      ---
+      duration_ms: 0.175709
+      type: 'test'
+      ...
+    1..8
+ok 21 - closed memory flags and exact enabled integer boundary partitions
+  ---
+  duration_ms: 3.182125
+  type: 'test'
+  ...
+# Subtest: hostile config descriptors/prototypes never invoke hooks or reveal supplied canaries
+ok 22 - hostile config descriptors/prototypes never invoke hooks or reveal supplied canaries
+  ---
+  duration_ms: 1.423583
+  type: 'test'
+  ...
+# Subtest: actual public estimate has exact UTF-16 heuristic and private stable namespace across bounds/scope partitions
+ok 23 - actual public estimate has exact UTF-16 heuristic and private stable namespace across bounds/scope partitions
+  ---
+  duration_ms: 6.709083
+  type: 'test'
+  ...
+# Subtest: rendered accounting boundaries drop whole backgrounds and protect exact instructions
+ok 24 - rendered accounting boundaries drop whole backgrounds and protect exact instructions
+  ---
+  duration_ms: 5.475125
+  type: 'test'
+  ...
+# Subtest: canonical public estimator provenance refuses missing/mixed/aliased/source/lock mutations without fallback
+ok 25 - canonical public estimator provenance refuses missing/mixed/aliased/source/lock mutations without fallback
+  ---
+  duration_ms: 781.785042
+  type: 'test'
+  ...
+# Subtest: normal native disabled/omitted config retains exact carriers and cannot enable later features
+ok 26 - normal native disabled/omitted config retains exact carriers and cannot enable later features
+  ---
+  duration_ms: 247.21825
+  type: 'test'
+  ...
+# Subtest: normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context
+ok 27 - normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context
+  ---
+  duration_ms: 303.586584
+  type: 'test'
+  ...
+# Subtest: actual encrypted context refuses protected overflow and stale CAS without a context write
+ok 28 - actual encrypted context refuses protected overflow and stale CAS without a context write
+  ---
+  duration_ms: 9.925959
+  type: 'test'
+  ...
+# Subtest: independent processes race one encrypted memory revision and preserve the acknowledged receipt on abrupt exit
+ok 29 - independent processes race one encrypted memory revision and preserve the acknowledged receipt on abrupt exit
+  ---
+  duration_ms: 248.524959
+  type: 'test'
+  ...
+# Subtest: only the DSH admitted operator can reach trusted closures
+ok 30 - only the DSH admitted operator can reach trusted closures
+  ---
+  duration_ms: 1.380375
+  type: 'test'
+  ...
+# Subtest: payload accessors, proxies, sparse arrays and authority prototypes never run
+ok 31 - payload accessors, proxies, sparse arrays and authority prototypes never run
+  ---
+  duration_ms: 0.475458
+  type: 'test'
+  ...
+# Subtest: capture disconnects mutable input and abort fences only new admission
+ok 32 - capture disconnects mutable input and abort fences only new admission
+  ---
+  duration_ms: 0.866583
+  type: 'test'
+  ...
+# Subtest: disposal closes captured handlers immediately and secret errors stay redacted
+ok 33 - disposal closes captured handlers immediately and secret errors stay redacted
+  ---
+  duration_ms: 0.343708
+  type: 'test'
+  ...
+# Subtest: exact registered memory capture preserves finite fractions and safe integers through frozen recursive data
+ok 34 - exact registered memory capture preserves finite fractions and safe integers through frozen recursive data
+  ---
+  duration_ms: 3.088834
+  type: 'test'
+  ...
+# Subtest: unrelated and registered near-name operations cannot select fractional mode from payload claims
+ok 35 - unrelated and registered near-name operations cannot select fractional mode from payload claims
+  ---
+  duration_ms: 0.35
+  type: 'test'
+  ...
+# Subtest: unregistered endpoint variants deny before capture, never resolving a memory operation by resemblance
+ok 36 - unregistered endpoint variants deny before capture, never resolving a memory operation by resemblance
+  ---
+  duration_ms: 0.231666
+  type: 'test'
+  ...
+# Subtest: operator/signal/own deactivation fences precede even hostile fractional payload inspection
+ok 37 - operator/signal/own deactivation fences precede even hostile fractional payload inspection
+  ---
+  duration_ms: 0.135
+  type: 'test'
+  ...
+# Subtest: fractional mode preserves depth, key, array, string and total body boundaries
+ok 38 - fractional mode preserves depth, key, array, string and total body boundaries
+  ---
+  duration_ms: 2.9005
+  type: 'test'
+  ...
+# Subtest: fractional mode preserves accessor/Proxy/symbol/hidden/prototype/sparse/cycle/dangerous-key refusal
+ok 39 - fractional mode preserves accessor/Proxy/symbol/hidden/prototype/sparse/cycle/dangerous-key refusal
+  ---
+  duration_ms: 0.362625
+  type: 'test'
+  ...
+# Subtest: captured fractions detach before async closure and arbitrary exception prose stays redacted
+ok 40 - captured fractions detach before async closure and arbitrary exception prose stays redacted
+  ---
+  duration_ms: 0.333875
+  type: 'test'
+  ...
+# Subtest: independent portability metadata retains normal exports, preview, MIT and native client dependencies
+ok 41 - independent portability metadata retains normal exports, preview, MIT and native client dependencies
+  ---
+  duration_ms: 20.744709
+  type: 'test'
+  ...
+# Subtest: independent portability metadata retains exact official peer pins
+ok 42 - independent portability metadata retains exact official peer pins
+  ---
+  duration_ms: 15.148625
+  type: 'test'
+  ...
+# Subtest: independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+ok 43 - independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+  ---
+  duration_ms: 96.469667
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers cannot obtain a supported probe from the development checkout
+ok 44 - independent portability missing peers cannot obtain a supported probe from the development checkout
+  ---
+  duration_ms: 100.596125
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers deny foundation admission before identity callbacks or storage
+ok 45 - independent portability missing peers deny foundation admission before identity callbacks or storage
+  ---
+  duration_ms: 105.602667
+  type: 'test'
+  ...
+# Subtest: independent portability declares the complete bounded consumed peer set without changing platform capability gates
+ok 46 - independent portability declares the complete bounded consumed peer set without changing platform capability gates
+  ---
+  duration_ms: 15.099792
+  type: 'test'
+  ...
+# Subtest: independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts
+    # Subtest: genuine native class and every resolved public source belong to copied host, with all exact provenance checks true
+    ok 1 - genuine native class and every resolved public source belong to copied host, with all exact provenance checks true
+      ---
+      duration_ms: 174.145084
+      type: 'test'
+      ...
+    # Subtest: same-version physical duplicate dsh-session service fails with the genuine correct Context before identity or storage
+    ok 2 - same-version physical duplicate dsh-session service fails with the genuine correct Context before identity or storage
+      ---
+      duration_ms: 116.678542
+      type: 'test'
+      ...
+    # Subtest: same-version physical duplicate dsh-user-approval service fails with the genuine correct Context before identity or storage
+    ok 3 - same-version physical duplicate dsh-user-approval service fails with the genuine correct Context before identity or storage
+      ---
+      duration_ms: 110.975792
+      type: 'test'
+      ...
+    # Subtest: actual native Context missing sessions cannot invoke identity or create storage
+    ok 4 - actual native Context missing sessions cannot invoke identity or create storage
+      ---
+      duration_ms: 107.706583
+      type: 'test'
+      ...
+    # Subtest: actual native Context missing approval cannot invoke identity or create storage
+    ok 5 - actual native Context missing approval cannot invoke identity or create storage
+      ---
+      duration_ms: 108.023917
+      type: 'test'
+      ...
+    # Subtest: unselected physical duplicates do not override the coherent selected service origin
+    ok 6 - unselected physical duplicates do not override the coherent selected service origin
+      ---
+      duration_ms: 105.681459
+      type: 'test'
+      ...
+    # Subtest: helper rejects closed relative-source and package-name partitions with stable output
+    ok 7 - helper rejects closed relative-source and package-name partitions with stable output
+      ---
+      duration_ms: 97.178083
+      type: 'test'
+      ...
+    # Subtest: metadata-alias refuses source provenance without exposing private path or doing work
+    ok 8 - metadata-alias refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 101.581291
+      type: 'test'
+      ...
+    # Subtest: dangling-source refuses source provenance without exposing private path or doing work
+    ok 9 - dangling-source refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 102.240291
+      type: 'test'
+      ...
+    # Subtest: outside-source refuses source provenance without exposing private path or doing work
+    ok 10 - outside-source refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 100.440042
+      type: 'test'
+      ...
+    # Subtest: a missing approval peer is refused rather than replaced by another same-version installation
+    ok 11 - a missing approval peer is refused rather than replaced by another same-version installation
+      ---
+      duration_ms: 103.712125
+      type: 'test'
+      ...
+    # Subtest: strict whole-lock policy rejects valid root metadata edits before identity and storage
+    ok 12 - strict whole-lock policy rejects valid root metadata edits before identity and storage
+      ---
+      duration_ms: 113.523667
+      type: 'test'
+      ...
+    # Subtest: ten owned installed-origin reloads keep one deduped entry, private scope and no orphan session
+    ok 13 - ten owned installed-origin reloads keep one deduped entry, private scope and no orphan session
+      ---
+      duration_ms: 152.559458
+      type: 'test'
+      ...
+    # Subtest: default foundation has no payload identity while a second installed-origin process preserves acknowledged scope and dedup
+    ok 14 - default foundation has no payload identity while a second installed-origin process preserves acknowledged scope and dedup
+      ---
+      duration_ms: 307.007375
+      type: 'test'
+      ...
+    # Subtest: separate installed-origin process retains unknown action reservation without automatic replay or new permission
+    ok 15 - separate installed-origin process retains unknown action reservation without automatic replay or new permission
+      ---
+      duration_ms: 191.936375
+      type: 'test'
+      ...
+    1..15
+ok 47 - independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts
+  ---
+  duration_ms: 8790.178083
+  type: 'test'
+  ...
+1..47
+# tests 82
+# suites 0
+# pass 82
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9249.767583
