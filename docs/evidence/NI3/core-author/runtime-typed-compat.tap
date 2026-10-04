@@ -1,0 +1,120 @@
+TAP version 13
+# (node:83442) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: complete ingress dedup, supplemental ingress, raw ref bridge and immutable command receipts
+ok 1 - complete ingress dedup, supplemental ingress, raw ref bridge and immutable command receipts
+  ---
+  duration_ms: 17.406
+  type: 'test'
+  ...
+# Subtest: authenticated encrypted data, key mismatch and secret redaction across store/export/errors
+ok 2 - authenticated encrypted data, key mismatch and secret redaction across store/export/errors
+  ---
+  duration_ms: 8.909458
+  type: 'test'
+  ...
+# Subtest: worker/reviewer minimum data binding and descriptor rejection
+ok 3 - worker/reviewer minimum data binding and descriptor rejection
+  ---
+  duration_ms: 5.668167
+  type: 'test'
+  ...
+# Subtest: weighted role admission, unknown holds, revocation, cancellation and exact terminal release
+ok 4 - weighted role admission, unknown holds, revocation, cancellation and exact terminal release
+  ---
+  duration_ms: 17.066709
+  type: 'test'
+  ...
+# Subtest: restart uncertainty retains exact mappings without replay and supports scoped reconciliation
+ok 5 - restart uncertainty retains exact mappings without replay and supports scoped reconciliation
+  ---
+  duration_ms: 18.265833
+  type: 'test'
+  ...
+# Subtest: policy downshift preserves held units and zero/unknown budget dispatch fails closed
+ok 6 - policy downshift preserves held units and zero/unknown budget dispatch fails closed
+  ---
+  duration_ms: 18.585042
+  type: 'test'
+  ...
+# Subtest: atomic message outbox requires exact intent grant and retains held slot despite terminal worker
+ok 7 - atomic message outbox requires exact intent grant and retains held slot despite terminal worker
+  ---
+  duration_ms: 18.556042
+  type: 'test'
+  ...
+# Subtest: actual second-process stale consent and process reopen serialize authoritative state
+ok 8 - actual second-process stale consent and process reopen serialize authoritative state
+  ---
+  duration_ms: 101.055583
+  type: 'test'
+  ...
+# Subtest: explicit malformed constructor values/proxies reject before opening storage or executing traps
+ok 9 - explicit malformed constructor values/proxies reject before opening storage or executing traps
+  ---
+  duration_ms: 1.171083
+  type: 'test'
+  ...
+# Subtest: control noops and reversible toggles cannot consume protected reconciliation history
+ok 10 - control noops and reversible toggles cannot consume protected reconciliation history
+  ---
+  duration_ms: 29.843208
+  type: 'test'
+  ...
+# Subtest: two real independent processes race the final weighted shared slot
+ok 11 - two real independent processes race the final weighted shared slot
+  ---
+  duration_ms: 113.196
+  type: 'test'
+  ...
+# Subtest: actual abrupt runtime process cuts preserve before-commit atomicity and after-claim uncertainty
+ok 12 - actual abrupt runtime process cuts preserve before-commit atomicity and after-claim uncertainty
+  ---
+  duration_ms: 204.799
+  type: 'test'
+  ...
+# Subtest: actual SQLITE_FULL rolls back encrypted data and leaves existing claimed reservation intact
+ok 13 - actual SQLITE_FULL rolls back encrypted data and leaves existing claimed reservation intact
+  ---
+  duration_ms: 17.060667
+  type: 'test'
+  ...
+# Subtest: pending typed handoff retains reservation after stopped executor and known outcome until exact resolution
+ok 14 - pending typed handoff retains reservation after stopped executor and known outcome until exact resolution
+  ---
+  duration_ms: 15.108
+  type: 'test'
+  ...
+# Subtest: composite artifact content/version and progress capacity reject with no partial task/data commit
+ok 15 - composite artifact content/version and progress capacity reject with no partial task/data commit
+  ---
+  duration_ms: 14.669042
+  type: 'test'
+  ...
+# Subtest: composite handoff content and pending authority commit or roll back together
+ok 16 - composite handoff content and pending authority commit or roll back together
+  ---
+  duration_ms: 20.284875
+  type: 'test'
+  ...
+# Subtest: new command IDs for repeated terminal facts cannot starve exact known release
+ok 17 - new command IDs for repeated terminal facts cannot starve exact known release
+  ---
+  duration_ms: 24.729125
+  type: 'test'
+  ...
+# Subtest: malformed Unicode rejects before receipts/CAS/data while valid UTF-8 retains every scalar including BOM
+ok 18 - malformed Unicode rejects before receipts/CAS/data while valid UTF-8 retains every scalar including BOM
+  ---
+  duration_ms: 7.651
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 762.245917

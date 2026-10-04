@@ -1,0 +1,25 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "--test-name-pattern=final consume rechecks|protects the last|core32 ceiling",
+    "test/normal-audit-core.test.mjs"
+  ],
+  "exitCode": 1,
+  "before": {
+    "src/ledger.mjs": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "src/runtime-store.mjs": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "test/normal-audit-core.test.mjs": "4cf6755a7407459628f2a3f5f2525fd92287df9884b31857420d270ef6bd5e45"
+  },
+  "after": {
+    "src/ledger.mjs": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "src/runtime-store.mjs": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "test/normal-audit-core.test.mjs": "4cf6755a7407459628f2a3f5f2525fd92287df9884b31857420d270ef6bd5e45"
+  }
+}

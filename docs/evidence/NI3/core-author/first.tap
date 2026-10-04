@@ -1,0 +1,90 @@
+TAP version 13
+# (node:82217) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: audit preparation preserves semantic/task versions, includes all immutable material, and replays without new data
+ok 1 - audit preparation preserves semantic/task versions, includes all immutable material, and replays without new data
+  ---
+  duration_ms: 27.701792
+  type: 'test'
+  ...
+# Subtest: no constructor audit bounds permits no preparation and creates no input/receipt
+ok 2 - no constructor audit bounds permits no preparation and creates no input/receipt
+  ---
+  duration_ms: 11.13
+  type: 'test'
+  ...
+# Subtest: approved artifact and full native input remain separate, one consume admits and duplicates cannot wake up
+ok 3 - approved artifact and full native input remain separate, one consume admits and duplicates cannot wake up
+  ---
+  duration_ms: 37.465917
+  type: 'test'
+  ...
+# Subtest: actual captured JSON atomically commits report and source-bound artifact verification
+ok 4 - actual captured JSON atomically commits report and source-bound artifact verification
+  ---
+  duration_ms: 63.093917
+  type: 'test'
+  ...
+# Subtest: raw owner/native-looking output and an advanced reviewer cannot submit a normal report
+ok 5 - raw owner/native-looking output and an advanced reviewer cannot submit a normal report
+  ---
+  duration_ms: 25.792625
+  type: 'test'
+  ...
+# Subtest: coverage, unknown, budget and fatal findings produce truthful nonaccepted verification
+ok 6 - coverage, unknown, budget and fatal findings produce truthful nonaccepted verification
+  ---
+  duration_ms: 134.385
+  type: 'test'
+  ...
+# Subtest: prose, extra response fields, wrong digest and incomplete partitions cannot certify
+ok 7 - prose, extra response fields, wrong digest and incomplete partitions cannot certify
+  ---
+  duration_ms: 116.56525
+  type: 'test'
+  ...
+# Subtest: revoke after consume can retain late output but cannot certify or erase held reservations
+ok 8 - revoke after consume can retain late output but cannot certify or erase held reservations
+  ---
+  duration_ms: 25.008666
+  type: 'test'
+  ...
+# Subtest: selected result byte cap, Unicode and registered secrets reject before any capture association
+ok 9 - selected result byte cap, Unicode and registered secrets reject before any capture association
+  ---
+  duration_ms: 19.964292
+  type: 'test'
+  ...
+# Subtest: before-commit captured-output fault rolls back data, inverse marker and acknowledgement
+ok 10 - before-commit captured-output fault rolls back data, inverse marker and acknowledgement
+  ---
+  duration_ms: 23.011375
+  type: 'test'
+  ...
+# Subtest: derived audit inputs remain ledger-visible but are excluded before ordinary context reads
+ok 11 - derived audit inputs remain ledger-visible but are excluded before ordinary context reads
+  ---
+  duration_ms: 11.745333
+  type: 'test'
+  ...
+# Subtest: repair requires atomic bounded prior-report lineage before idle native preparation or consume
+ok 12 - repair requires atomic bounded prior-report lineage before idle native preparation or consume
+  ---
+  duration_ms: 86.077667
+  type: 'test'
+  ...
+# Subtest: claim refuses when admitted audit output could exhaust the last data slot
+ok 13 - claim refuses when admitted audit output could exhaust the last data slot
+  ---
+  duration_ms: 13.186042
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 695.807916

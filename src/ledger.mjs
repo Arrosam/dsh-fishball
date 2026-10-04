@@ -8,7 +8,7 @@ export class FoundationError extends Error {
   constructor(code) { super(code); this.name = 'FoundationError'; this.code = code; }
 }
 export const fail = code => { throw new FoundationError(code); };
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 const BASE = {
   tasks: 'CREATE TABLE tasks (owner TEXT NOT NULL, workspace TEXT NOT NULL, id TEXT NOT NULL, status TEXT NOT NULL, version INTEGER NOT NULL, auth_epoch INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,id))',
   ingress: 'CREATE TABLE ingress (owner TEXT NOT NULL, workspace TEXT NOT NULL, provider TEXT NOT NULL, source TEXT NOT NULL, event TEXT NOT NULL, task TEXT NOT NULL, received_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,provider,source,event), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
@@ -48,7 +48,7 @@ function preflight(path, existed) {
     if (read!==header.length || !header.subarray(0,16).equals(Buffer.from('SQLite format 3\0','ascii'))) fail('STORAGE_UNAVAILABLE');
     const version=header.readInt32BE(60);
     if (version>SCHEMA_VERSION) fail('SCHEMA_FUTURE');
-    if (version!==1 && version!==2 && version!==3 && version!==SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
+    if (![1,2,3,4,SCHEMA_VERSION].includes(version)) fail('SCHEMA_UNSUPPORTED');
     if (header[18]!==1 || header[19]!==1) fail('SCHEMA_UNSUPPORTED');
     const pageSize=header.readUInt16BE(16)===1 ? 65536 : header.readUInt16BE(16);
     if (pageSize<512 || pageSize>65536 || (pageSize & (pageSize-1))!==0 || info.size<pageSize || info.size%pageSize!==0 || pageSize-header[20]<480 || header[21]!==64 || header[22]!==32 || header[23]!==32) fail('STORAGE_UNAVAILABLE');
@@ -99,8 +99,8 @@ export class Ledger {
         this.db.exec('BEGIN EXCLUSIVE');
         try { this.version(0); if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) fail('SCHEMA_UNSUPPORTED'); for (const sql of Object.values({ ...BASE, ...EXTRA, ...RUNTIME, ...AUTOMATION })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
         catch (error) { this.db.exec('ROLLBACK'); throw error; }
-      } else if (version === 1 || version === 2 || version === 3) {
-        const sourceSchema=version===1 ? BASE : version===2 ? {...BASE,...EXTRA} : {...BASE,...EXTRA,...RUNTIME};
+      } else if ([1,2,3,4].includes(version)) {
+        const sourceSchema=version===1 ? BASE : version===2 ? {...BASE,...EXTRA} : version===3 ? {...BASE,...EXTRA,...RUNTIME} : {...BASE,...EXTRA,...RUNTIME,...AUTOMATION};
         this.verify(sourceSchema);
         if (this.db.prepare('PRAGMA journal_mode').get().journal_mode !== 'delete') fail('SCHEMA_UNSUPPORTED');
         this.db.exec('BEGIN EXCLUSIVE');
@@ -108,9 +108,9 @@ export class Ledger {
           // Validate source under the exclusive lock before any backup or schema write.
           this.version(version);
           this.verify(sourceSchema);
-          this.validateRows(version>=2,version===3);
-          if(version===3){
-            this.validateRuntimeRows();
+          this.validateRows(version>=2,version>=3);
+          if(version>=3){
+            this.validateRuntimeRows(version);
             if(this.db.prepare("SELECT 1 FROM runtime_data WHERE json_extract(metadata,'$.cryptoVersion') IS NOT 2 LIMIT 1").get())fail('CRYPTO_LEGACY_UNVERIFIED');
             if(validateMigration)validateMigration(this);
             else if(this.db.prepare('SELECT 1 FROM runtime_data LIMIT 1').get())fail('RUNTIME_MIGRATION_REQUIRED');
@@ -122,12 +122,14 @@ export class Ledger {
           try { fsyncSync(backupFd); } finally { closeSync(backupFd); }
           const directoryFd=openSync(dirname(path),'r');
           try { fsyncSync(directoryFd); } finally { closeSync(directoryFd); }
-          for (const sql of Object.values(version===1 ? {...EXTRA,...RUNTIME,...AUTOMATION} : version===2 ? {...RUNTIME,...AUTOMATION} : AUTOMATION)) this.db.exec(sql);
+          for (const sql of Object.values(version===1 ? {...EXTRA,...RUNTIME,...AUTOMATION} : version===2 ? {...RUNTIME,...AUTOMATION} : version===3 ? AUTOMATION : {})) this.db.exec(sql);
           if(initializeMigration)initializeMigration(this,version);
           if (migrationFault) { try { migrationFault(); } catch { fail('STORAGE_UNAVAILABLE'); } }
           this.verify({ ...BASE, ...EXTRA, ...RUNTIME, ...AUTOMATION });
           this.validateRows(true,true); this.validateRuntimeRows();
-          this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`);
+          this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}`);
+          if(validateMigration)validateMigration(this);
+          this.db.exec('COMMIT');
         } catch (error) { this.db.exec('ROLLBACK'); throw error; }
       } else if (version !== SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
       this.db.exec('BEGIN IMMEDIATE');
@@ -174,9 +176,10 @@ export class Ledger {
     if(this.db.prepare('SELECT 1 FROM grants g JOIN tasks t ON t.owner=g.owner AND t.workspace=g.workspace AND t.id=g.task WHERE g.auth_epoch>t.auth_epoch OR g.task_version>t.version LIMIT 1').get()) fail('STORAGE_INVALID');
     if(this.db.prepare("SELECT 1 FROM reservations r JOIN tasks t ON t.owner=r.owner AND t.workspace=r.workspace AND t.id=r.task WHERE t.status IN ('completed','failed','cancelled','deleted') LIMIT 1").get()) fail('STORAGE_INVALID');
   }
-  validateRuntimeRows() {
+  validateRuntimeRows(version=SCHEMA_VERSION) {
     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()){
-      if(this.db.prepare("SELECT 1 FROM automation_records WHERE kind NOT IN ('source','subscription','event','clock','semantic','audit','report','repair','execution','receipt_policy','legacy_command','notification_policy','notification_window','notification_group','notification_fact','notification_claim') OR NOT json_valid(payload) LIMIT 1").get()||this.db.prepare('SELECT 1 FROM workspace_memory WHERE revision<1 OR NOT json_valid(metadata) LIMIT 1').get())fail('STORAGE_INVALID');
+      const auditKinds=version>=5?",'audit_input','audit_result'":'';
+      if(this.db.prepare(`SELECT 1 FROM automation_records WHERE kind NOT IN ('source','subscription','event','clock','semantic','audit','report','repair','execution','receipt_policy','legacy_command','notification_policy','notification_window','notification_group','notification_fact','notification_claim'${auditKinds}) OR NOT json_valid(payload) LIMIT 1`).get()||this.db.prepare('SELECT 1 FROM workspace_memory WHERE revision<1 OR NOT json_valid(metadata) LIMIT 1').get())fail('STORAGE_INVALID');
     }
     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()&&this.db.prepare("SELECT 1 FROM automation_records a WHERE a.task IS NOT NULL AND NOT EXISTS(SELECT 1 FROM runtime_tasks t WHERE t.owner=a.owner AND t.workspace=a.workspace AND t.task=a.task) LIMIT 1").get())fail('STORAGE_INVALID');
     if(this.db.prepare("SELECT 1 FROM runtime_tasks WHERE control NOT IN ('active','paused','cancel_requested') LIMIT 1").get()) fail('STORAGE_INVALID');

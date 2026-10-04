@@ -1,0 +1,83 @@
+{
+  "before": {
+    "src/ledger.mjs": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "src/runtime-store.mjs": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "test/normal-audit-core.test.mjs": "83a550d99c52dd96d364b32f4503857729bc60f4640f4cf2a98e437a2001d770"
+  },
+  "after": {
+    "src/ledger.mjs": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "src/runtime-store.mjs": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "test/normal-audit-core.test.mjs": "83a550d99c52dd96d364b32f4503857729bc60f4640f4cf2a98e437a2001d770"
+  },
+  "results": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "test/normal-audit-core.test.mjs"
+      ],
+      "exitCode": 0,
+      "tap": ".runtime/ni3-core-executable/author-final.tap",
+      "sha256": "dbb06030f250d9824ee58115960725b0f1b01f77e1e4d35998ef138672877c31"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "test/context.test.mjs",
+        "test/memory.test.mjs",
+        "test/audit.test.mjs"
+      ],
+      "exitCode": 0,
+      "tap": ".runtime/ni3-core-executable/context-memory-audit-compat.tap",
+      "sha256": "b5fd098ddfb9b44b9586b558a13a4448055b2ac7d84248da1fdfac4faa222694"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^(?:complete\\ ingress\\ dedup,\\ supplemental\\ ingress,\\ raw\\ ref\\ bridge\\ and\\ immutable\\ command\\ receipts|authenticated\\ encrypted\\ data,\\ key\\ mismatch\\ and\\ secret\\ redaction\\ across\\ store/export/errors|worker/reviewer\\ minimum\\ data\\ binding\\ and\\ descriptor\\ rejection|weighted\\ role\\ admission,\\ unknown\\ holds,\\ revocation,\\ cancellation\\ and\\ exact\\ terminal\\ release|restart\\ uncertainty\\ retains\\ exact\\ mappings\\ without\\ replay\\ and\\ supports\\ scoped\\ reconciliation|policy\\ downshift\\ preserves\\ held\\ units\\ and\\ zero/unknown\\ budget\\ dispatch\\ fails\\ closed|atomic\\ message\\ outbox\\ requires\\ exact\\ intent\\ grant\\ and\\ retains\\ held\\ slot\\ despite\\ terminal\\ worker|actual\\ second\\-process\\ stale\\ consent\\ and\\ process\\ reopen\\ serialize\\ authoritative\\ state|explicit\\ malformed\\ constructor\\ values/proxies\\ reject\\ before\\ opening\\ storage\\ or\\ executing\\ traps|control\\ noops\\ and\\ reversible\\ toggles\\ cannot\\ consume\\ protected\\ reconciliation\\ history|two\\ real\\ independent\\ processes\\ race\\ the\\ final\\ weighted\\ shared\\ slot|actual\\ abrupt\\ runtime\\ process\\ cuts\\ preserve\\ before\\-commit\\ atomicity\\ and\\ after\\-claim\\ uncertainty|actual\\ SQLITE_FULL\\ rolls\\ back\\ encrypted\\ data\\ and\\ leaves\\ existing\\ claimed\\ reservation\\ intact|pending\\ typed\\ handoff\\ retains\\ reservation\\ after\\ stopped\\ executor\\ and\\ known\\ outcome\\ until\\ exact\\ resolution|composite\\ artifact\\ content/version\\ and\\ progress\\ capacity\\ reject\\ with\\ no\\ partial\\ task/data\\ commit|composite\\ handoff\\ content\\ and\\ pending\\ authority\\ commit\\ or\\ roll\\ back\\ together|new\\ command\\ IDs\\ for\\ repeated\\ terminal\\ facts\\ cannot\\ starve\\ exact\\ known\\ release|malformed\\ Unicode\\ rejects\\ before\\ receipts/CAS/data\\ while\\ valid\\ UTF\\-8\\ retains\\ every\\ scalar\\ including\\ BOM)$",
+        "test/runtime-store.test.mjs"
+      ],
+      "exitCode": 0,
+      "tap": ".runtime/ni3-core-executable/runtime-typed-compat.tap",
+      "sha256": "bb1c2dbd90b3c4163da9426410d60d7c3f06ff03c989f44a7ed303b621aab3e9"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^(?:durable\\ full\\ ingress\\ identity\\ and\\ scoped\\ CAS/history/tombstone\\ survive\\ reopen|trusted\\ exact\\ capability,\\ scope,\\ expiry,\\ epoch,\\ CAS,\\ host\\ denial\\ and\\ altered\\ binding\\ fail\\ closed|action\\ completion\\ preserves\\ separate\\ task\\ authority\\ and\\ other\\ requested\\ actions|unknown\\ and\\ cancellation\\ keep\\ reservations;\\ termination\\ settles,\\ late\\ evidence\\ preserves\\ newer\\ authority|queue,\\ units,\\ attempts\\ and\\ record\\ budgets\\ enforce\\ exact\\ boundaries|fixture\\ faults\\ and\\ actual\\ abrupt\\ process\\ cuts\\ recover\\ without\\ replay|actual\\ SQLite\\ full\\ failure\\ rolls\\ back\\ and\\ restricts\\ new\\ durable\\ work|all\\ identifiers\\ hash\\ before\\ persistence;\\ unknown\\ fields,\\ getters,\\ proxies\\ and\\ exceptions\\ reveal\\ no\\ synthetic\\ secrets|independent\\ process\\ last\\ queue\\ and\\ active\\ slot\\ races\\ cannot\\ over\\-admit|history\\ admission\\ reserves\\ bounded\\ recovery,\\ cancellation\\ and\\ settlement\\ capacity|old\\ consent\\ cannot\\ restore\\ revoked\\ or\\ replaced\\ approval\\ authority)$",
+        "test/core.test.mjs"
+      ],
+      "exitCode": 0,
+      "tap": ".runtime/ni3-core-executable/foundation-typed-compat.tap",
+      "sha256": "a915aea1255da30638401d2b133c2f6c783174994e52e25a78ca0a27d32d23ab"
+    }
+  ],
+  "excluded": {
+    "runtime": [
+      "real schema2 migration",
+      "inverse runtime links",
+      "schema2 migration validates",
+      "live immutable spec corruption",
+      "v2 authenticates every",
+      "genuine prior-v1",
+      "actual spilled DELETE crash journal"
+    ],
+    "core": [
+      "migration backs up",
+      "corrupt legacy",
+      "unsupported crash-left WAL",
+      "header preflight",
+      "supported DELETE hot",
+      "concurrent future version"
+    ]
+  }
+}

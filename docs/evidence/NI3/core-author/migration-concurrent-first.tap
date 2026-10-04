@@ -1,0 +1,18 @@
+TAP version 13
+# (node:83653) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: migration exclusive lock includes an acknowledged concurrent genuine4 typed write in its exact backup
+ok 1 - migration exclusive lock includes an acknowledged concurrent genuine4 typed write in its exact backup
+  ---
+  duration_ms: 273.961667
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 381.4845

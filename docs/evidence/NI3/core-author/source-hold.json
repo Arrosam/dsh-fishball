@@ -1,0 +1,139 @@
+{
+  "status": "AUTHOR HOLD; independent review/native consumers/global acceptance pending",
+  "schemaVersion": 5,
+  "nodeVersion": "v22.22.2",
+  "source4Origin": ".runtime/ni3-source4/source-hold.json",
+  "source4OriginSHA256": "d74f0e0225add1b7c3ee80897ac5b13254bd63355f62306f6b8f7245d1db6d92",
+  "promotion": "docs/evidence/NI3/source5-promotion-preflight.json",
+  "files": [
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "ownership": "NI3 author unit"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+      "bytes": 186703,
+      "ownership": "NI3 author unit"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "ownership": "NI3 author unit"
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "ownership": "NI3 author unit"
+    },
+    {
+      "path": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111,
+      "ownership": "unchanged dependency"
+    },
+    {
+      "path": "test/normal-audit-core.test.mjs",
+      "sha256": "c491f5385b438cc270f4c03f6ce874966bbdadb70d0a9a74c1f2ebab696b26d8",
+      "bytes": 45177,
+      "ownership": "NI3 author unit"
+    },
+    {
+      "path": "docs/evidence/NI3/core-author-progress.md",
+      "sha256": "7d14612d37a15d878f7d5c7e250a8453451d42a3b4b977e7793f06d30198aa66",
+      "bytes": 15552,
+      "ownership": "NI3 author unit"
+    }
+  ],
+  "assertions": {
+    "NI3": 23,
+    "unchangedContextMemoryAudit": 83,
+    "selectedUnchangedRuntime": 18,
+    "selectedUnchangedFoundation": 11,
+    "distinctPass": 135,
+    "fail": 0,
+    "skip": 0
+  },
+  "firstFailuresPreserved": "Two newly authored policy fixture calls omitted required modelPolicy; only fixture calls corrected; raw bounds-first.tap retained. Product source unchanged after promotion.",
+  "evidence": [
+    {
+      "path": ".runtime/ni3-core-executable/author-final.tap",
+      "sha256": "dbb06030f250d9824ee58115960725b0f1b01f77e1e4d35998ef138672877c31"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/author-held-source.json",
+      "sha256": "ce3ba215af2e92d5290182b2c94621b39f49398b52f296cc8f3a53be3459b4ff"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/author-held.tap",
+      "sha256": "129aab6471989fea200c1b6218ed3e294b60f1f1abb90fd8f779b7b0353cc1b8"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/bounds-correction-source.json",
+      "sha256": "95129d9dbef9124a060ec6f1e4f20752ce9b332d97a537718aabe3d9d03f7c71"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/bounds-correction.tap",
+      "sha256": "01155c829cdaaaa2c046a6c8dbba39fb629036a8bcaca6ff22f66b724396dd0b"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/bounds-first-source.json",
+      "sha256": "ed1da3e3a1056c8a383bcb885508374915c42d4ff22c79c46959ebf709dcf547"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/bounds-first.tap",
+      "sha256": "4b0fdba6dfc96f71b03262229568392268b1429612ad540a231a8deefc702680"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/compatibility-source.json",
+      "sha256": "86f58dfb8fe57e97c04aa15a2354bcb04ba2e74df3bf7ca7daf86c9aa25d339e"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/context-memory-audit-compat.tap",
+      "sha256": "b5fd098ddfb9b44b9586b558a13a4448055b2ac7d84248da1fdfac4faa222694"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/first-source.json",
+      "sha256": "59e37009e47c52782fdcd2d23c81de38da8e670b40c7b7b75d180048ddfccd4a"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/first.tap",
+      "sha256": "a62b76cdc3608c7514e1a9b79ff0fb0c0b840dd05d684f2e8f27209be6f5da87"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/foundation-typed-compat.tap",
+      "sha256": "a915aea1255da30638401d2b133c2f6c783174994e52e25a78ca0a27d32d23ab"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/migration-concurrent-first-source.json",
+      "sha256": "dd0438f8c6000ddb23aa6641aa771c3eb8156524a9a1d1ee7f88c6b16bd5e3e9"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/migration-concurrent-first.tap",
+      "sha256": "a651a6fbcdfee8fccc30e8a5f4fea86c4f0856bb40faf71bd82881d39d2e7fb4"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/migration-first-source.json",
+      "sha256": "834250f4f6c4fb26c54be491dab1b6ed371f808e8994e765f681fcb342db47a7"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/migration-first.tap",
+      "sha256": "98e66b603db82f2596c5d7515049d9575fca8ab82f7e7621638b84a1f6380b5e"
+    },
+    {
+      "path": ".runtime/ni3-core-executable/runtime-typed-compat.tap",
+      "sha256": "bb1c2dbd90b3c4163da9426410d60d7c3f06ff03c989f44a7ed303b621aab3e9"
+    }
+  ],
+  "limitations": [
+    "No readAuditInput source addition",
+    "No schema6/7",
+    "No installed native reviewer/repair quality proof",
+    "No full acceptance or CODE verdict",
+    "Blocked protected plaintext-row corruption experiment not executed"
+  ]
+}

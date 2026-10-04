@@ -157,7 +157,10 @@ export class ContextAssembler {
     let now;
     try { now = integer(this.#clock(), 0, Number.MAX_SAFE_INTEGER); } catch { fail('CLOCK_UNAVAILABLE'); }
     const selected = new Set(input.recordRefs ?? []);
-    const candidates = snapshot.data.filter(meta => ['goal', 'constraints', 'clarification', 'context'].includes(meta.kind));
+    // Derived audit inputs are authenticated core associations, never ordinary
+    // background or task instructions. Keep their actual context kind visible
+    // in the ledger; exclude them here before any plaintext read or assembly.
+    const candidates = snapshot.data.filter(meta => meta.auditInputRef === undefined && ['goal', 'constraints', 'clarification', 'context'].includes(meta.kind));
     if (input.recordRefs?.some(recordRef => !candidates.some(meta => meta.recordRef === recordRef))) fail('SOURCE_UNAVAILABLE');
     const records = candidates.filter(meta => {
       if (meta.generationRef && meta.generationRef !== input.generationRef) {

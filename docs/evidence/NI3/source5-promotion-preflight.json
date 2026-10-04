@@ -1,0 +1,64 @@
+{
+  "status": "Promoted exact schema5 source-only candidate; all executable tests and migrations NOT RUN at this checkpoint",
+  "sourceBase": "c9beefa03e2f2d0cadd8b49996487badce541a9d",
+  "sourceSchema": 4,
+  "targetSchema": 5,
+  "candidateHoldDigest": "326bb09a6939bfea12755358e1cb284529fa7d4650ff7e4bdb97939b7470e995",
+  "source4HoldDigest": "d74f0e0225add1b7c3ee80897ac5b13254bd63355f62306f6b8f7245d1db6d92",
+  "preservedSource4": [
+    {
+      "path": ".runtime/ni3-source4/src/ledger.mjs",
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "origin": "src/ledger.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "origin": "src/runtime-store.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/runtime-security.mjs",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "origin": "src/runtime-security.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "origin": "src/foundation.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/context.mjs",
+      "sha256": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+      "origin": "src/context.mjs"
+    }
+  ],
+  "promotedSources": [
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "candidate": ".runtime/ni3-core-candidate/src/ledger.mjs"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "candidate": ".runtime/ni3-core-candidate/src/runtime-security.mjs"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+      "candidate": ".runtime/ni3-core-candidate/src/runtime-store.mjs"
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "candidate": ".runtime/ni3-core-candidate/src/context.mjs"
+    }
+  ],
+  "authoredTest": {
+    "path": "test/normal-audit-core.test.mjs",
+    "sha256": "7de9f19a4843b6c9b233f9297b65bf194bb359b4306eb68c670090932eca2ff4"
+  },
+  "foundationUnchanged": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+  "factsRuntimeNI5SourceLeases": "explicitly released before promotion",
+  "codeBrowserMVPRelease": "HOLD"
+}

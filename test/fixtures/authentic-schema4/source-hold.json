@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 4,
+  "sourceCommit": "c9beefa03e2f2d0cadd8b49996487badce541a9d",
+  "purpose": "Exact supported authentic schema4 writer and old-reader source; no product import executed by preservation",
+  "files": [
+    {
+      "path": ".runtime/ni3-source4/src/ledger.mjs",
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "origin": "src/ledger.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "origin": "src/runtime-store.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/runtime-security.mjs",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "origin": "src/runtime-security.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "origin": "src/foundation.mjs"
+    },
+    {
+      "path": ".runtime/ni3-source4/src/context.mjs",
+      "sha256": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+      "origin": "src/context.mjs"
+    }
+  ]
+}

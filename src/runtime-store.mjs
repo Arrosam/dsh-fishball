@@ -11,6 +11,7 @@ import {
   RuntimeError, reference, canonicalDigest, canonical, exact, ref, integer, normalizedSpec, hash
 }
 from './runtime-security.mjs';
+import { validateExecutionContext } from './context.mjs';
 export {
   RuntimeError, reference, canonicalDigest
 };
@@ -59,14 +60,23 @@ export class RuntimeStore {
   #limits;
   #fixture;
   #fault;
+  #auditBounds=null;
+  #auditBindings=new Map();
   constructor(options) {
-    exact(options,['databasePath','encryptionKey','principals','limits','clock','hostPermission','forbiddenSecrets','fixtureMode','fixtureFaults','migrationFault','fixtureMaxPageCount'],['databasePath','encryptionKey','principals']);
+    exact(options,['databasePath','encryptionKey','principals','limits','clock','hostPermission','forbiddenSecrets','fixtureMode','fixtureFaults','migrationFault','fixtureMaxPageCount','auditExecutionBounds'],['databasePath','encryptionKey','principals']);
     const {
       databasePath,encryptionKey,principals,clock=Date.now,hostPermission=()=>false,forbiddenSecrets=[],fixtureMode=false,fixtureFaults,migrationFault,fixtureMaxPageCount
     }
     =options;
     if(types.isProxy(encryptionKey)||!Buffer.isBuffer(encryptionKey)||encryptionKey.length!==32||typeof clock!=='function'||typeof hostPermission!=='function'||typeof fixtureMode!=='boolean'||(!fixtureMode&&(fixtureFaults||migrationFault||fixtureMaxPageCount!==undefined))||(fixtureFaults!==undefined&&typeof fixtureFaults!=='function'))fail('INVALID_CONFIG');
     this.#limits=Object.freeze(limits(options.limits===undefined?{}:options.limits));
+    if(options.auditExecutionBounds!==undefined){
+      exact(options.auditExecutionBounds,['inputByteLimit','resultByteLimit']);
+      this.#auditBounds=Object.freeze({
+        inputByteLimit:integer(options.auditExecutionBounds.inputByteLimit,1,Math.min(65536,this.#limits.maxDataBytes)),
+        resultByteLimit:integer(options.auditExecutionBounds.resultByteLimit,1,Math.min(65536,this.#limits.maxDataBytes))
+      });
+    }
     this.#key=Buffer.from(encryptionKey);
     this.#clock=clock;
     this.#permission=hostPermission;
@@ -90,7 +100,7 @@ export class RuntimeStore {
       this.#ledger=new Ledger(databasePath,{
         migrationFault,maxPageCount:fixtureMaxPageCount,
         validateMigration:source=>{const original=this.#ledger;this.#ledger=source;try{this.#validateOpen();}finally{this.#ledger=original;}},
-        initializeMigration:source=>{const original=this.#ledger;this.#ledger=source;try{this.#initializeReceiptPolicies();}finally{this.#ledger=original;}},
+        initializeMigration:(source,version)=>{const original=this.#ledger;this.#ledger=source;try{if(version<4)this.#initializeReceiptPolicies();}finally{this.#ledger=original;}},
         validateSnapshot:snapshot=>{
           const original=this.#ledger;
           this.#ledger=snapshot;
@@ -131,6 +141,12 @@ export class RuntimeStore {
     const c=handle&&typeof handle==='object'?this.#principals.get(handle):null;
     if(!c||roles&&!roles.includes(c.role)||taskRef&&c.taskRef&&c.taskRef!==taskRef)fail('UNAUTHORIZED');
     if(taskRef)ref(taskRef);
+    if(c.auditClaimRef){
+      const binding=this.#auditBindings.get(c.auditClaimRef);
+      const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,c.taskRef),c.auditClaimRef);
+      const t=this.#task(c,c.taskRef);
+      if(!binding||binding.principalRef!==c.principalRef||!worker||parse(worker.payload).generationRef!==c.generationRef||parse(worker.payload).terminalEvidenceRef||t.auth_epoch!==c.auditAuthEpoch||TERMINAL.has(t.status)||['cancel_requested','recovery_required'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,c.taskRef))?.control!=='active'||!this.#ledger.one('SELECT 1 FROM reservations WHERE owner=? AND workspace=? AND task=? AND claim_id=?',...this.#keys(c,c.taskRef),binding.claimId))fail('UNAUTHORIZED');
+    }
     return c;
   }
   context(handle,taskRef) {
@@ -227,7 +243,8 @@ export class RuntimeStore {
       if(old){
         const receipt=this.#commandReceipt(old);
         if(old.digest!==digest&&old.digest!==legacyDigest||old.operation!==operation)fail('IDEMPOTENCY_CONFLICT');
-        if(operation==='beginContextExecution')return{...this.#auto(c,'execution',receipt.claimRef),deduplicated:true};
+        if(['beginContextExecution','beginAuditExecution'].includes(operation))return{...this.#auto(c,'execution',receipt.claimRef),deduplicated:true};
+        if(['prepareAuditInput','captureAuditResult'].includes(operation))return{...receipt,deduplicated:true};
         if(operation==='ingestEvent')return{...receipt,deduplicated:true,task:taskRecord(this.#task(c,receipt.taskRef))};
         return receipt;
       }
@@ -312,8 +329,9 @@ export class RuntimeStore {
     return false;
   }
   #terminalProgress(c,input,operation){
-    if(operation==='reportAudit'){const req=this.#auto(c,'audit',input.auditRef);return !!req&&!req.reportRef;}
-    if(operation==='beginContextExecution')return !this.#auto(c,'execution',input.claimRef);
+    if(operation==='reportAudit'||operation==='submitAuditResult'){const req=this.#auto(c,'audit',input.auditRef);return !!req&&!req.reportRef;}
+    if(operation==='beginContextExecution'||operation==='beginAuditExecution')return !this.#auto(c,'execution',input.claimRef);
+    if(operation==='captureAuditResult')return !this.#auto(c,'audit_result',input.executionRef);
     if(operation==='control'||operation==='chatControl')return input.kind==='confirm_cancel';
     if(operation==='messageObservation'){const message=this.#record(c,input.taskRef,'message',input.messageRef);return !['consumed','rejected'].includes(message.state);}
     if(operation==='deliveryObservation'){const delivery=this.#record(c,input.taskRef,'delivery',input.deliveryRef);return !['delivered','failed'].includes(delivery.state);}
@@ -376,17 +394,23 @@ export class RuntimeStore {
     const c=this.#ctx(handle,undefined,['owner','coordinator','host']);
     return this.#ledger.query('SELECT * FROM tasks WHERE owner=? AND workspace=? ORDER BY created_at,id',c.ownerRef,c.workspaceRef).map(taskRecord);
   }
-  #data(c,t,input){
+  #auditReserve(c,task,reviewOnly=false){
+    return this.#ledger.query('SELECT x.spec FROM runtime_actions x JOIN reservations r ON r.owner=x.owner AND r.workspace=x.workspace AND r.task=x.task AND r.action=x.action WHERE x.owner=? AND x.workspace=? AND x.task=?',...this.#keys(c,task)).filter(row=>{
+      const spec=normalizedSpec(parse(row.spec));
+      return spec.executionInput&&(!reviewOnly||spec.kind==='review');
+    }).length;
+  }
+  #data(c,t,input,protectedWrite=false){
     if(!DATA_KINDS.includes(input.kind)||typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
     ref(input.sourceRef);
     if(Buffer.byteLength(input.content)>this.#limits.maxDataBytes)fail('INPUT_TOO_LARGE');
     if(this.#secrets.some(s=>input.content.includes(s)))fail('SECRET_REJECTED');
     const keys=this.#keys(c,t.id);
-    if(this.#ledger.one('SELECT count(*) AS n FROM runtime_data WHERE owner=? AND workspace=? AND task=?',...keys).n>=this.#limits.maxRecordsPerTask)fail('RECORD_LIMIT');
+    if(this.#ledger.one('SELECT count(*) AS n FROM runtime_data WHERE owner=? AND workspace=? AND task=?',...keys).n>=this.#limits.maxRecordsPerTask-(protectedWrite?0:this.#auditReserve(c,t.id)))fail('RECORD_LIMIT');
     const id=canonicalDigest({
       commandRef:input.commandRef,kind:input.kind
     }),digest=hash(input.content),metadata={
-      recordRef:id,digest,kind:input.kind,sourceRef:input.sourceRef,taskVersion:t.version,authEpoch:t.auth_epoch,generationRef:c.generationRef||null,createdAt:this.#now(),byteLength:Buffer.byteLength(input.content),cryptoVersion:2,...(input.kind==='context'?{sourceTaskVersion:input.expectedTaskVersion??t.version,sourceAuthEpoch:input.expectedAuthEpoch??t.auth_epoch,semanticRevision:this.#semantic(c,t.id),...(input.expectedMemory?{memoryNamespaceRef:input.expectedMemory.namespaceRef,memoryRevision:input.expectedMemory.revision}:{})}:{})
+      recordRef:id,digest,kind:input.kind,sourceRef:input.sourceRef,taskVersion:t.version,authEpoch:t.auth_epoch,generationRef:c.generationRef||null,createdAt:this.#now(),byteLength:Buffer.byteLength(input.content),cryptoVersion:2,...(input.kind==='context'?{sourceTaskVersion:input.expectedTaskVersion??t.version,sourceAuthEpoch:input.expectedAuthEpoch??t.auth_epoch,semanticRevision:this.#semantic(c,t.id),...(input.expectedMemory?{memoryNamespaceRef:input.expectedMemory.namespaceRef,memoryRevision:input.expectedMemory.revision}:{})}:{}),...(input.auditInput?{auditInputRef:id}:{}),...(input.auditResultRef?{auditResultRef:ref(input.auditResultRef)}:{})
     };
     const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',this.#key,nonce);
     cipher.setAAD(Buffer.from(canonical({
@@ -411,6 +435,17 @@ export class RuntimeStore {
     });
   }
   #readAllowed(c,m){
+    if(m.auditInputRef&&!['owner','coordinator','host'].includes(c.role)){
+      if(c.role==='reviewer'){
+        if(c.auditInputRecordRef!==m.recordRef||!c.auditClaimRef)fail('UNAUTHORIZED');
+      }else{
+        const admitted=this.#ledger.query('SELECT x.spec,x.metadata FROM runtime_actions x JOIN reservations r ON r.owner=x.owner AND r.workspace=x.workspace AND r.task=x.task AND r.action=x.action WHERE x.owner=? AND x.workspace=? AND x.task=?',...this.#keys(c,c.taskRef)).some(row=>{
+          const spec=normalizedSpec(parse(row.spec));
+          return spec.executionInput?.recordRef===m.recordRef&&spec.kind==='repair'&&spec.executor.generationRef===c.generationRef&&spec.executor.sessionRef===c.sessionRef;
+        });
+        if(c.role!=='worker'||!admitted)fail('UNAUTHORIZED');
+      }
+    }
     if(c.role==='reviewer'){
       if(!c.readRecordRefs.includes(m.recordRef)&&!(m.generationRef===c.generationRef&&['verification','progress'].includes(m.kind)))fail('UNAUTHORIZED');
     }
@@ -422,7 +457,7 @@ export class RuntimeStore {
     const metadata=parse(row.metadata);
     if(metadata.cryptoVersion!==2)fail('CRYPTO_LEGACY_UNVERIFIED');
     try{
-      exact(metadata,['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion','sourceTaskVersion','sourceAuthEpoch','semanticRevision','memoryNamespaceRef','memoryRevision'],['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion']);
+      exact(metadata,['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion','sourceTaskVersion','sourceAuthEpoch','semanticRevision','memoryNamespaceRef','memoryRevision','auditInputRef','auditResultRef'],['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion']);
       for(const key of ['recordRef','digest','sourceRef'])ref(metadata[key]);
       if(metadata.generationRef!==null)ref(metadata.generationRef);
       for(const k of ['sourceTaskVersion','semanticRevision'])if(metadata[k]!==undefined)integer(metadata[k],1);if(metadata.sourceAuthEpoch!==undefined)integer(metadata.sourceAuthEpoch);if(metadata.memoryNamespaceRef!==undefined){ref(metadata.memoryNamespaceRef);integer(metadata.memoryRevision);}else if(metadata.memoryRevision!==undefined)fail('STORAGE_INVALID');if(metadata.kind!=='context'&&['sourceTaskVersion','sourceAuthEpoch','semanticRevision','memoryNamespaceRef','memoryRevision'].some(k=>metadata[k]!==undefined))fail('STORAGE_INVALID');
@@ -440,6 +475,17 @@ export class RuntimeStore {
       if(bytes.length!==metadata.byteLength||hash(bytes)!==row.digest)fail('STORAGE_INVALID');
       const content=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);
       if(!content.isWellFormed())fail('STORAGE_INVALID');
+      if(metadata.auditInputRef!==undefined){
+        if(metadata.auditInputRef!==row.id||metadata.kind!=='context'||metadata.auditResultRef!==undefined)fail('STORAGE_INVALID');
+        const input=this.#auto(c,'audit_input',metadata.auditInputRef);
+        if(!input||input.taskRef!==row.task||input.recordRef!==row.id||input.digest!==row.digest)fail('STORAGE_INVALID');
+      }
+      if(metadata.auditResultRef!==undefined){
+        ref(metadata.auditResultRef);
+        if(metadata.kind!=='verification')fail('STORAGE_INVALID');
+        const result=this.#auto(c,'audit_result',metadata.auditResultRef);
+        if(!result||result.taskRef!==row.task||result.recordRef!==row.id||result.digest!==row.digest)fail('STORAGE_INVALID');
+      }
       return {metadata,content};
     }
     catch{
@@ -539,6 +585,13 @@ export class RuntimeStore {
       if(['cancel_requested','recovery_required'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys)?.control==='paused')fail('TASK_BLOCKED');
       if(this.#ledger.one('SELECT count(*) AS n FROM actions WHERE owner=? AND workspace=? AND task=?',...keys).n>=this.#limits.maxActionsPerTask)fail('ACTION_LIMIT');
       if(this.#ledger.one('SELECT 1 FROM actions WHERE owner=? AND workspace=? AND task=? AND id=?',...keys,spec.actionRef))fail('IDEMPOTENCY_CONFLICT');
+      if(spec.executionInput){
+        this.#auditSpec(c,t.id,spec,true);
+        if(this.#ledger.query('SELECT spec FROM runtime_actions WHERE owner=? AND workspace=?',c.ownerRef,c.workspaceRef).some(row=>{
+          const other=normalizedSpec(parse(row.spec));
+          return other.executor.generationRef===spec.executor.generationRef||other.executor.sessionRef===spec.executor.sessionRef;
+        }))fail('REVIEW_NOT_INDEPENDENT');
+      }
       this.#managed(t);
       const digest=canonicalDigest({
         ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,taskVersion:t.version,authEpoch:t.auth_epoch,spec
@@ -604,6 +657,12 @@ export class RuntimeStore {
       if(a.digest!==ref(input.actionDigest))fail('SPEC_MISMATCH');
       if(!['queued','running','waiting','blocked'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys)?.control!=='active')fail('TASK_BLOCKED');
       if(a.state!=='requested')fail('ACTION_ALREADY_DISPATCHED');
+      if(a.spec.executionInput)this.#auditSpec(c,t.id,a.spec,true);
+      if(a.spec.executionInput){
+        const dataCount=this.#ledger.one('SELECT count(*) AS n FROM runtime_data WHERE owner=? AND workspace=? AND task=?',...keys).n;
+        const recordCount=this.#ledger.one('SELECT count(*) AS n FROM runtime_records WHERE owner=? AND workspace=? AND task=?',...keys).n;
+        if(dataCount+this.#auditReserve(c,input.taskRef)+1>this.#limits.maxRecordsPerTask||a.spec.kind==='review'&&recordCount+this.#auditReserve(c,input.taskRef,true)+1>this.#limits.maxRecordsPerTask)fail('RECORD_LIMIT');
+      }
       if(input.auditRepair)this.#repairBinding(c,{...input,...input.auditRepair},a);
       else if(a.spec.kind==='repair'&&this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='audit'",...keys).some(r=>this.#auto(c,'audit',r.id).bindingDigest===a.spec.targetDigest))fail('AUDIT_BINDING_MISMATCH');
       const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,a.action);
@@ -695,6 +754,13 @@ export class RuntimeStore {
       if(a.digest!==ref(input.actionDigest)||a.claim_epoch!==t.auth_epoch||!['queued','running','waiting','blocked'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active')fail('CLAIM_REVOKED');
       const g=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);
       if(!g||g.revoked||g.auth_epoch!==t.auth_epoch||this.#now()>=g.expires_at)fail('APPROVAL_INVALID');
+      if(a.spec.executionInput){
+        const material=this.#auditSpec(c,t.id,a.spec,true);
+        if(material.purpose==='audit_repair'){
+          const repair=this.#auto(c,'repair',w.claimRef);
+          if(!repair||repair.auditRef!==material.auditRef||repair.previousReportRef!==material.previousReportRef||repair.round!==material.round)fail('AUDIT_BINDING_MISMATCH');
+        }
+      }
       return{
         claimRef:w.claimRef,actionDigest:a.digest,generationRef:w.generationRef,task:taskRecord(t)
       };
@@ -861,15 +927,17 @@ export class RuntimeStore {
     else if(kind==='delivery'){if(payload.notification&&canonical(payload.notification)!==canonical(payload.intent.notification))fail('STORAGE_INVALID');const {currentAccess,...rest}=payload;original={...rest,state:'accepted',claimRef:null,reservationRef:null,generationRef:null,observations:[]};if(payload.targetDigest!==canonicalDigest({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,...payload.intent}))fail('STORAGE_INVALID');}
     else if(kind==='artifact')original={...payload,verification:null};
     else original=payload;
-    if(row.digest!==canonicalDigest(original))fail('STORAGE_INVALID');return payload;
+    if(row.digest!==canonicalDigest(original))fail('STORAGE_INVALID');
+    if(kind==='artifact')this.#validateArtifactVerification(c,task,payload);
+    return payload;
   }
   #saveRecord(c,task,kind,id,payload){
     this.#ledger.run('UPDATE runtime_records SET payload=? WHERE owner=? AND workspace=? AND task=? AND kind=? AND id=?',this.#check(payload),...this.#keys(c,task),kind,id);
   }
-  #newRecord(c,task,kind,id,payload){
+  #newRecord(c,task,kind,id,payload,protectedWrite=false){
     ref(id);
     const keys=this.#keys(c,task);
-    if(this.#ledger.one('SELECT count(*) AS n FROM runtime_records WHERE owner=? AND workspace=? AND task=?',...keys).n>=this.#limits.maxRecordsPerTask)fail('RECORD_LIMIT');
+    if(this.#ledger.one('SELECT count(*) AS n FROM runtime_records WHERE owner=? AND workspace=? AND task=?',...keys).n>=this.#limits.maxRecordsPerTask-(protectedWrite?0:this.#auditReserve(c,task,true)))fail('RECORD_LIMIT');
     const digest=canonicalDigest(payload),old=this.#ledger.one('SELECT digest FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind=? AND id=?',...keys,kind,id);
     if(old){
       if(old.digest!==digest)fail('IDEMPOTENCY_CONFLICT');
@@ -997,6 +1065,10 @@ export class RuntimeStore {
       if(!a||a.version!==input.version||a.digest!==input.digest)fail('STALE_ARTIFACT');
       this.#dataMeta(c,input.taskRef,a.recordRef,a.digest);
       if(a.producerRef===c.principalRef||a.generationRef===c.generationRef)fail('REVIEW_NOT_INDEPENDENT');
+      if(c.auditClaimRef||a.verification?.resultRef||this.#ledger.query('SELECT spec FROM runtime_actions WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,input.taskRef)).some(row=>{
+        const spec=normalizedSpec(parse(row.spec));
+        return spec.executionInput&&spec.executor.generationRef===c.generationRef;
+      }))fail('AUDIT_RESULT_REQUIRED');
       const charged=this.#ledger.query('SELECT x.spec,x.metadata FROM runtime_actions x JOIN reservations r ON r.owner=x.owner AND r.workspace=x.workspace AND r.task=x.task AND r.action=x.action WHERE x.owner=? AND x.workspace=? AND x.task=?',...this.#keys(c,input.taskRef)).some(row=>{const spec=parse(row.spec);return spec.role==='review'&&spec.kind==='review'&&spec.executor.generationRef===c.generationRef&&spec.dataDigest===a.digest;});
       if(!charged)fail('REVIEW_NOT_ADMITTED');
       const result={
@@ -1651,6 +1723,154 @@ export class RuntimeStore {
       return this.#control(c,input);
     },input.kind==='cancel');
   }
+  #requireAuditBounds(){
+    if(!this.#auditBounds)fail('AUDIT_EXECUTION_UNAVAILABLE');
+    return this.#auditBounds;
+  }
+  #auditData(c,task,recordRef){
+    const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,task),ref(recordRef));
+    if(!row)fail('RECORD_NOT_FOUND');
+    return this.#openData(c,row);
+  }
+  #auditContext(c,task,recordRef,current=true){
+    const data=this.#auditData(c,task,recordRef),m=data.metadata;
+    if(m.kind!=='context'||m.sourceTaskVersion===undefined||m.sourceAuthEpoch===undefined||m.semanticRevision===undefined)fail('AUDIT_BINDING_MISMATCH');
+    try{
+      const body=validateExecutionContext(parse(data.content),{
+        scope:{ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:task},
+        maxTaskVersion:m.sourceTaskVersion,maxAuthEpoch:m.sourceAuthEpoch,maxGeneratedAt:m.createdAt,
+        knownSecrets:this.#secrets
+      });
+      if(body.sourceTaskVersion!==m.sourceTaskVersion||body.sourceAuthEpoch!==m.sourceAuthEpoch)fail('AUDIT_BINDING_MISMATCH');
+    }catch{fail('AUDIT_BINDING_MISMATCH');}
+    if(current){
+      if(m.semanticRevision!==this.#semantic(c,task))fail('AUDIT_STALE');
+      if(m.memoryNamespaceRef)this.#memoryGuard(c,{namespaceRef:m.memoryNamespaceRef,revision:m.memoryRevision});
+    }
+    return data;
+  }
+  #auditInput(c,recordRef){
+    const value=this.#auto(c,'audit_input',ref(recordRef));
+    if(!value)fail('AUDIT_INPUT_REQUIRED');
+    try{
+      exact(value,['contractVersion','ownerRef','workspaceRef','taskRef','auditRef','auditRevision','round','purpose','recordRef','digest','byteLength','bindingDigest','materialDigest','artifactRef','artifactVersion','artifactDigest','semanticRevision','sourceTaskVersion','sourceAuthEpoch','contextRecordRef','contextDigest','previousReportRef','material','inputByteLimit','resultByteLimit','createdAt']);
+      if(value.contractVersion!=='df.audit-input-association/v1'||value.ownerRef!==c.ownerRef||value.workspaceRef!==c.workspaceRef||value.recordRef!==recordRef||!['audit_review','audit_repair'].includes(value.purpose))fail('STORAGE_INVALID');
+      for(const key of ['taskRef','auditRef','recordRef','digest','bindingDigest','materialDigest','artifactRef','artifactDigest','contextRecordRef','contextDigest'])ref(value[key]);
+      for(const key of ['auditRevision','artifactVersion','semanticRevision','sourceTaskVersion'])integer(value[key],1);
+      integer(value.round,0,8);integer(value.sourceAuthEpoch);integer(value.createdAt);
+      integer(value.inputByteLimit,1,65536);integer(value.resultByteLimit,1,65536);
+      integer(value.byteLength,1,Math.min(value.inputByteLimit,this.#limits.maxDataBytes));
+      if(value.purpose==='audit_repair')ref(value.previousReportRef);else if(value.previousReportRef!==null)fail('STORAGE_INVALID');
+      canonical(value.material);
+      if(!Array.isArray(value.material)||value.material.length<2||value.material.length>16||new Set(value.material.map(item=>item.recordRef)).size!==value.material.length)fail('STORAGE_INVALID');
+      for(const item of value.material){exact(item,['recordRef','digest']);ref(item.recordRef);ref(item.digest);}
+      if(canonical(value.material)!==canonical([...value.material].sort((a,b)=>a.recordRef.localeCompare(b.recordRef)))||canonicalDigest(value.material)!==value.materialDigest)fail('STORAGE_INVALID');
+      const data=this.#auditData(c,value.taskRef,recordRef),m=data.metadata,body=parse(data.content);
+      exact(body,['contractVersion','purpose','ownerRef','workspaceRef','taskRef','auditRef','auditRevision','round','semanticRevision','artifact','bindingDigest','materialDigest','policy','material','contextRecordRef','contextDigest','previousReport','responseContract']);
+      exact(body.artifact,['artifactRef','version','recordRef','digest']);
+      exact(body.policy,['policyRef','blockingSeverities','maxRepairRounds']);
+      ref(body.policy.policyRef);integer(body.policy.maxRepairRounds,0,8);canonical(body.policy.blockingSeverities);
+      if(!Array.isArray(body.policy.blockingSeverities)||body.policy.blockingSeverities.length>4||new Set(body.policy.blockingSeverities).size!==body.policy.blockingSeverities.length||body.policy.blockingSeverities.some(severity=>!['fatal','blocking','warning','info'].includes(severity)))fail('STORAGE_INVALID');
+      if(body.contractVersion!=='df.audit-input/v1'||body.responseContract!=='df.audit-response/v1'||m.kind!=='context'||m.auditInputRef!==value.recordRef||m.digest!==value.digest||m.byteLength!==value.byteLength||m.semanticRevision!==value.semanticRevision||m.sourceTaskVersion!==value.sourceTaskVersion||m.sourceAuthEpoch!==value.sourceAuthEpoch||m.taskVersion!==value.sourceTaskVersion||m.authEpoch!==value.sourceAuthEpoch||m.generationRef!==null||m.createdAt!==value.createdAt||m.sourceRef!==value.auditRef)fail('STORAGE_INVALID');
+      for(const key of ['purpose','ownerRef','workspaceRef','taskRef','auditRef','auditRevision','round','semanticRevision','bindingDigest','materialDigest','contextRecordRef','contextDigest'])if(body[key]!==value[key])fail('STORAGE_INVALID');
+      if(body.artifact.artifactRef!==value.artifactRef||body.artifact.version!==value.artifactVersion||body.artifact.digest!==value.artifactDigest)fail('STORAGE_INVALID');
+      if(!Array.isArray(body.material)||body.material.length!==value.material.length)fail('STORAGE_INVALID');
+      for(let index=0;index<body.material.length;index++){
+        const item=body.material[index],expected=value.material[index];
+        exact(item,['recordRef','digest','kind','content']);
+        if(item.recordRef!==expected.recordRef||item.digest!==expected.digest||!DATA_KINDS.includes(item.kind)||typeof item.content!=='string'||!item.content.isWellFormed()||hash(item.content)!==item.digest)fail('STORAGE_INVALID');
+        const original=this.#auditData(c,value.taskRef,item.recordRef);
+        if(original.metadata.digest!==item.digest||original.metadata.kind!==item.kind||original.content!==item.content)fail('STORAGE_INVALID');
+      }
+      if(value.previousReportRef===null?body.previousReport!==null:body.previousReport?.reportRef!==value.previousReportRef)fail('STORAGE_INVALID');
+      const historicalBinding={ownerRef:value.ownerRef,workspaceRef:value.workspaceRef,taskRef:value.taskRef,auditRef:value.auditRef,auditRevision:value.auditRevision,artifactRef:value.artifactRef,artifactVersion:value.artifactVersion,digest:value.artifactDigest,material:value.material,policyRef:body.policy.policyRef,blockingSeverities:body.policy.blockingSeverities,maxRepairRounds:body.policy.maxRepairRounds,round:value.purpose==='audit_repair'?value.round-1:value.round,semanticRevision:value.semanticRevision};
+      if(canonicalDigest(historicalBinding)!==value.bindingDigest)fail('STORAGE_INVALID');
+      if(value.previousReportRef&&canonical(body.previousReport)!==canonical(this.#auto(c,'report',value.previousReportRef)))fail('STORAGE_INVALID');
+      if(!this.#auto(c,'audit',value.auditRef)||!value.material.some(item=>item.recordRef===value.contextRecordRef&&item.digest===value.contextDigest)||!value.material.some(item=>item.recordRef===body.artifact.recordRef&&item.digest===value.artifactDigest))fail('STORAGE_INVALID');
+      this.#auditContext(c,value.taskRef,value.contextRecordRef,false);
+      return value;
+    }catch{fail('STORAGE_INVALID');}
+  }
+  #auditSpec(c,task,spec,current){
+    if(!spec.executionInput)fail('AUDIT_INPUT_REQUIRED');
+    const input=this.#auditInput(c,spec.executionInput.recordRef),binding=spec.executionInput;
+    if(input.taskRef!==task||input.digest!==binding.digest||input.purpose!==binding.purpose||input.auditRef!==binding.auditRef||input.bindingDigest!==binding.bindingDigest||input.materialDigest!==binding.materialDigest||spec.targetDigest!==input.bindingDigest||spec.dataDigest!==input.artifactDigest||(binding.previousReportRef??null)!==input.previousReportRef)fail('AUDIT_BINDING_MISMATCH');
+    if(current){
+      const req=this.#auto(c,'audit',input.auditRef);
+      if(!req||req.taskRef!==task||req.auditRevision!==input.auditRevision||(input.purpose==='audit_repair'?req.round+1:req.round)!==input.round||req.bindingDigest!==input.bindingDigest||req.materialDigest!==input.materialDigest||req.semanticRevision!==input.semanticRevision)fail('AUDIT_STALE');
+      this.#auditCurrent(c,req);
+      this.#auditContext(c,task,input.contextRecordRef);
+      if(input.purpose==='audit_review'&&req.reportRef)fail('AUDIT_REPORT_CONFLICT');
+      if(input.purpose==='audit_repair'&&req.reportRef!==input.previousReportRef)fail('AUDIT_BINDING_MISMATCH');
+      const bounds=this.#requireAuditBounds();
+      if(input.byteLength>bounds.inputByteLimit||input.byteLength>this.#limits.maxDataBytes)fail('INPUT_TOO_LARGE');
+    }
+    return input;
+  }
+  prepareAuditInput(handle,input){
+    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','auditRef','expectedAuditRevision','purpose','round','previousReportRef'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','auditRef','expectedAuditRevision','purpose','round']);
+    const bounds=this.#requireAuditBounds();
+    ref(input.auditRef);integer(input.expectedAuditRevision,1);integer(input.round,0,8);
+    if(!['audit_review','audit_repair'].includes(input.purpose))fail('INVALID_INPUT');
+    if(input.purpose==='audit_repair')ref(input.previousReportRef);else if(input.previousReportRef!==undefined)fail('INVALID_INPUT');
+    return this.#mut(handle,input,OWNER,'prepareAuditInput',c=>{
+      const t=this.#cas(c,input),req=this.#auto(c,'audit',input.auditRef);
+      if(!req||req.taskRef!==t.id||req.auditRevision!==input.expectedAuditRevision)fail('AUDIT_BINDING_MISMATCH');
+      if(this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active'||['cancel_requested','recovery_required'].includes(t.status))fail('TASK_BLOCKED');
+      if(!req.contextRecordRef||!req.contextDigest)fail('AUDIT_CONTEXT_REQUIRED');
+      if(input.purpose==='audit_review'?(input.round!==req.round||!!req.reportRef):(input.round!==req.round+1||input.round>req.maxRepairRounds||req.reportRef!==input.previousReportRef||req.state==='passed'||!!req.pendingRepair))fail('AUDIT_REPAIR_LIMIT');
+      const artifact=this.#auditCurrent(c,req),protectedContext=this.#auditContext(c,t.id,req.contextRecordRef);
+      if(protectedContext.metadata.digest!==req.contextDigest)fail('AUDIT_BINDING_MISMATCH');
+      const material=req.material.map(item=>{
+        const data=this.#auditData(c,t.id,item.recordRef);
+        if(data.metadata.digest!==item.digest||this.#secrets.some(secret=>data.content.includes(secret)))fail('SECRET_REJECTED');
+        return{...item,kind:data.metadata.kind,content:data.content};
+      });
+      const previousReport=input.purpose==='audit_repair'?this.#auto(c,'report',input.previousReportRef):null;
+      if(input.purpose==='audit_repair'&&!previousReport)fail('AUDIT_BINDING_MISMATCH');
+      const body={
+        contractVersion:'df.audit-input/v1',purpose:input.purpose,ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,auditRef:req.auditRef,auditRevision:req.auditRevision,round:input.round,semanticRevision:req.semanticRevision,
+        artifact:{artifactRef:artifact.artifactRef,version:artifact.version,recordRef:artifact.recordRef,digest:artifact.digest},bindingDigest:req.bindingDigest,materialDigest:req.materialDigest,
+        policy:{policyRef:req.policyRef,blockingSeverities:[...req.blockingSeverities],maxRepairRounds:req.maxRepairRounds},material,contextRecordRef:req.contextRecordRef,contextDigest:req.contextDigest,previousReport,responseContract:'df.audit-response/v1'
+      };
+      const content=this.#check(body,Math.min(bounds.inputByteLimit,this.#limits.maxDataBytes));
+      const data=this.#data(c,t,{kind:'context',content,sourceRef:req.auditRef,commandRef:input.commandRef,expectedTaskVersion:t.version,expectedAuthEpoch:t.auth_epoch,auditInput:true});
+      const association={
+        contractVersion:'df.audit-input-association/v1',ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,auditRef:req.auditRef,auditRevision:req.auditRevision,round:input.round,purpose:input.purpose,
+        recordRef:data.recordRef,digest:data.digest,byteLength:data.byteLength,bindingDigest:req.bindingDigest,materialDigest:req.materialDigest,artifactRef:req.artifactRef,artifactVersion:req.artifactVersion,artifactDigest:req.digest,semanticRevision:req.semanticRevision,
+        sourceTaskVersion:t.version,sourceAuthEpoch:t.auth_epoch,contextRecordRef:req.contextRecordRef,contextDigest:req.contextDigest,previousReportRef:input.previousReportRef??null,material:req.material,inputByteLimit:bounds.inputByteLimit,resultByteLimit:bounds.resultByteLimit,createdAt:data.createdAt
+      };
+      this.#saveAuto(c,'audit_input',data.recordRef,t.id,association);
+      return{recordRef:data.recordRef,digest:data.digest,byteLength:data.byteLength,auditRef:req.auditRef,auditRevision:req.auditRevision,round:input.round,bindingDigest:req.bindingDigest,materialDigest:req.materialDigest,purpose:input.purpose,task:taskRecord(t),deduplicated:false};
+    });
+  }
+  bindAuditReviewer(host,handle,input){
+    exact(input,['taskRef','auditRef','claimRef','generationRef','sessionRef']);
+    if(!handle||typeof handle!=='object'||types.isProxy(handle)||this.#principals.has(handle))fail('INVALID_CONFIG');
+    const c=this.#ctx(host,input.taskRef,HOST);
+    return this.#ledger.transaction(()=>{
+      const claimed=this.#claim(c,input);
+      const {a,w,t}=this.#executionAdmission(c,{...input,actionDigest:claimed.a.digest}),association=this.#auditSpec(c,t.id,a.spec,true);
+      if(association.purpose!=='audit_review'||association.auditRef!==ref(input.auditRef)||w.generationRef!==ref(input.generationRef)||w.sessionRef!==ref(input.sessionRef)||!['created','ready','running'].includes(w.phase)||w.terminalEvidenceRef)fail('UNAUTHORIZED');
+      const artifact=this.#artifact(c,t.id,association.artifactRef);
+      if(artifact.generationRef===w.generationRef)fail('REVIEW_NOT_INDEPENDENT');
+      if(artifact.producerClaimRef){
+        const producer=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,t.id),artifact.producerClaimRef);
+        if(producer&&parse(producer.payload).sessionRef===w.sessionRef)fail('REVIEW_NOT_INDEPENDENT');
+      }
+      for(const [id,binding] of this.#auditBindings){
+        const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(binding,binding.taskRef),id);
+        if(!worker||parse(worker.payload).terminalEvidenceRef||!this.#ledger.one('SELECT 1 FROM reservations WHERE claim_id=?',binding.claimId))this.#auditBindings.delete(id);
+      }
+      if(this.#auditBindings.has(w.claimRef)||this.#auditBindings.size>=32)fail('REVIEWER_LIMIT');
+      const binding={role:'reviewer',ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,generationRef:w.generationRef,sessionRef:w.sessionRef,readRecordRefs:[...association.material.map(item=>item.recordRef),association.recordRef],auditRef:association.auditRef,auditClaimRef:w.claimRef,auditInputRecordRef:association.recordRef,auditAuthEpoch:t.auth_epoch};
+      binding.principalRef=canonicalDigest(binding);
+      if(artifact.producerRef===binding.principalRef)fail('REVIEW_NOT_INDEPENDENT');
+      this.#principals.set(handle,Object.freeze(binding));
+      this.#auditBindings.set(w.claimRef,Object.freeze({...binding,claimId:a.claim_id}));
+      return{taskRef:t.id,auditRef:association.auditRef,claimRef:w.claimRef,generationRef:w.generationRef,sessionRef:w.sessionRef};
+    });
+  }
   #executionAdmission(c,input){
     const{
       a,w,t
@@ -1675,9 +1895,11 @@ export class RuntimeStore {
     };
   }
   #executionContext(c,input,a){
+    if(a.spec.executionInput)fail('AUDIT_INPUT_REQUIRED');
     const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,input.taskRef),ref(input.contextRecordRef));
     if(!row)fail('RECORD_NOT_FOUND');
     const m=this.#openData(c,row).metadata;
+    if(m.auditInputRef)fail('AUDIT_INPUT_REQUIRED');
     if(m.kind!=='context'||m.digest!==a.spec.dataDigest||m.semanticRevision!==this.#semantic(c,input.taskRef)||m.sourceTaskVersion>a.metadata.plannedTaskVersion||m.sourceAuthEpoch>a.metadata.plannedAuthEpoch||m.generationRef!==null&&m.generationRef!==input.generationRef)fail('SPEC_MISMATCH');
     if(m.memoryNamespaceRef)this.#memoryGuard(c,{
       namespaceRef:m.memoryNamespaceRef,revision:m.memoryRevision
@@ -1714,6 +1936,46 @@ export class RuntimeStore {
       };
     },'terminal');
   }
+  #executionMaterial(c,record,a,current=true){
+    if(record.actionRef!==a.action||record.actionDigest!==a.digest||a.metadata.executionRef!==record.executionRef||a.metadata.claimRef!==record.claimRef||a.metadata.generationRef!==record.generationRef)fail('SPEC_MISMATCH');
+    if(record.kind!==undefined){
+      if(record.kind!=='audit_input'||!a.spec.executionInput)fail('SPEC_MISMATCH');
+      const material=this.#auditSpec(c,record.taskRef,a.spec,current);
+      for(const [key,value] of Object.entries({inputRecordRef:material.recordRef,inputDigest:material.digest,dataDigest:material.artifactDigest,auditRef:material.auditRef,bindingDigest:material.bindingDigest,materialDigest:material.materialDigest,purpose:material.purpose,semanticRevision:material.semanticRevision,sessionRef:a.spec.executor.sessionRef}))if(record[key]!==value)fail('SPEC_MISMATCH');
+      if(material.purpose==='audit_repair'){
+        const repair=this.#auto(c,'repair',record.claimRef);
+        if(!repair||repair.auditRef!==material.auditRef||repair.round!==material.round||repair.previousReportRef!==material.previousReportRef||repair.generationRef!==record.generationRef||repair.bindingDigest!==material.bindingDigest)fail('AUDIT_BINDING_MISMATCH');
+      }
+      return material;
+    }
+    const context=this.#executionContext(c,{taskRef:record.taskRef,generationRef:record.generationRef,contextRecordRef:record.contextRecordRef},a);
+    if(context.digest!==record.dataDigest||context.semanticRevision!==record.semanticRevision)fail('SPEC_MISMATCH');
+    return context;
+  }
+  beginAuditExecution(handle,input){
+    exact(input,['taskRef','actionRef','actionDigest','claimRef','generationRef','inputRecordRef','commandRef','expectedTaskVersion','expectedAuthEpoch']);
+    for(const key of ['taskRef','actionRef','actionDigest','claimRef','generationRef','inputRecordRef','commandRef'])ref(input[key]);
+    return this.#mut(handle,input,HOST,'beginAuditExecution',c=>{
+      const existing=this.#auto(c,'execution',input.claimRef);
+      if(existing){
+        if(existing.kind!=='audit_input'||existing.actionRef!==input.actionRef||existing.actionDigest!==input.actionDigest||existing.inputRecordRef!==input.inputRecordRef||existing.taskRef!==input.taskRef||existing.generationRef!==input.generationRef)fail('IDEMPOTENCY_CONFLICT');
+        return{...existing,deduplicated:true};
+      }
+      this.#cas(c,input);
+      const {a,w}=this.#executionAdmission(c,input),material=this.#auditSpec(c,input.taskRef,a.spec,true);
+      if(a.metadata.executionRef||a.action!==input.actionRef||material.recordRef!==input.inputRecordRef||w.sessionRef!==a.spec.executor.sessionRef||!['created','ready','running'].includes(w.phase))fail('SPEC_MISMATCH');
+      const record={
+        kind:'audit_input',executionRef:canonicalDigest({claimRef:input.claimRef,commandRef:input.commandRef,inputRecordRef:input.inputRecordRef}),
+        taskRef:input.taskRef,actionRef:a.action,actionDigest:a.digest,claimRef:input.claimRef,generationRef:input.generationRef,sessionRef:w.sessionRef,
+        inputRecordRef:material.recordRef,inputDigest:material.digest,dataDigest:material.artifactDigest,auditRef:material.auditRef,bindingDigest:material.bindingDigest,materialDigest:material.materialDigest,purpose:material.purpose,semanticRevision:material.semanticRevision,
+        commandRef:input.commandRef,state:'intent_committed',createdAt:this.#now()
+      };
+      this.#saveAuto(c,'execution',input.claimRef,input.taskRef,record);
+      this.#saveAction(c,input.taskRef,a.action,{...a.metadata,executionRef:record.executionRef});
+      this.#executionMaterial(c,record,this.#action(c,input.taskRef,a.action));
+      return{...record,deduplicated:false};
+    },'terminal');
+  }
   assertExecutionCurrent(handle,input){
     exact(input,['taskRef','claimRef','generationRef','actionDigest','executionRef']);
     const c=this.#ctx(handle,input.taskRef,HOST);
@@ -1726,9 +1988,7 @@ export class RuntimeStore {
       const{
         a
       }=this.#executionAdmission(c,input);
-      this.#executionContext(c,{
-        ...input,contextRecordRef:record.contextRecordRef
-      },a);
+      this.#executionMaterial(c,record,a);
       const next={
         ...record,state:'dispatch_intent',admittedAt:this.#now()
       };
@@ -1747,12 +2007,121 @@ export class RuntimeStore {
       if(!record||record.taskRef!==input.taskRef||record.claimRef!==input.claimRef||record.generationRef!==input.generationRef||record.actionDigest!==input.actionDigest||record.executionRef!==input.executionRef||record.state!=='dispatch_intent')fail('SPEC_MISMATCH');
       const {a}=this.#executionAdmission(c,input);
       if(a.metadata.executionRef!==record.executionRef||a.action!==record.actionRef)fail('SPEC_MISMATCH');
-      const context=this.#executionContext(c,{...input,contextRecordRef:record.contextRecordRef},a);
-      if(context.digest!==record.dataDigest||context.semanticRevision!==record.semanticRevision)fail('SPEC_MISMATCH');
+      this.#executionMaterial(c,record,a);
       // A late native fence reads the already-consumed signed intent. It never
       // consumes again, renews consent, changes a row or mints a stream permit.
       return JSON.parse(canonical(record));
     });
+  }
+  #auditResult(c,resultRef){
+    const value=this.#auto(c,'audit_result',ref(resultRef));
+    if(!value)fail('AUDIT_RESULT_REQUIRED');
+    try{
+      exact(value,['contractVersion','ownerRef','workspaceRef','taskRef','resultRef','recordRef','digest','byteLength','inputDigest','inputRecordRef','executionRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','auditRef','bindingDigest','materialDigest','purpose','inputCursor','cursor','evidenceRef','state','createdAt']);
+      if(value.contractVersion!=='df.audit-result-association/v1'||value.ownerRef!==c.ownerRef||value.workspaceRef!==c.workspaceRef||value.resultRef!==resultRef||value.resultRef!==value.executionRef||value.state!=='captured')fail('STORAGE_INVALID');
+      for(const key of ['taskRef','resultRef','recordRef','digest','inputDigest','inputRecordRef','executionRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','auditRef','bindingDigest','materialDigest','evidenceRef'])ref(value[key]);
+      integer(value.inputCursor);integer(value.cursor,value.inputCursor+1);integer(value.createdAt);
+      const execution=this.#auto(c,'execution',value.claimRef),material=this.#auditInput(c,value.inputRecordRef);
+      if(!execution||execution.kind!=='audit_input'||execution.resultRef!==value.resultRef||execution.executionRef!==value.executionRef)fail('STORAGE_INVALID');
+      for(const key of ['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','inputRecordRef','inputDigest','auditRef','bindingDigest','materialDigest','purpose'])if(value[key]!==execution[key])fail('STORAGE_INVALID');
+      if(value.purpose!==material.purpose||value.inputDigest!==material.digest)fail('STORAGE_INVALID');
+      if(execution.reportRef){
+        const report=this.#auto(c,'report',execution.reportRef);
+        if(!report?.native||report.native.resultRef!==value.resultRef||report.claimRef!==value.claimRef||report.taskRef!==value.taskRef)fail('STORAGE_INVALID');
+      }
+      integer(value.byteLength,0,Math.min(material.resultByteLimit,this.#limits.maxDataBytes));
+      const data=this.#auditData(c,value.taskRef,value.recordRef),m=data.metadata;
+      if(m.kind!=='verification'||m.auditResultRef!==value.resultRef||m.digest!==value.digest||m.byteLength!==value.byteLength||m.generationRef!==value.generationRef||m.sourceRef!==value.auditRef||m.createdAt!==value.createdAt)fail('STORAGE_INVALID');
+      return{association:value,content:data.content};
+    }catch{fail('STORAGE_INVALID');}
+  }
+  captureAuditResult(handle,input){
+    exact(input,['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','inputCursor','cursor','content','evidenceRef']);
+    for(const key of ['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','evidenceRef'])ref(input[key]);
+    integer(input.inputCursor);integer(input.cursor,input.inputCursor+1);
+    if(typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
+    const bounds=this.#requireAuditBounds();
+    if(Buffer.byteLength(input.content)>bounds.resultByteLimit)fail('INPUT_TOO_LARGE');
+    return this.#mut(handle,input,HOST,'captureAuditResult',c=>{
+      const {a,w,t}=this.#claim(c,input),execution=this.#auto(c,'execution',input.claimRef);
+      if(!execution||execution.kind!=='audit_input'||execution.executionRef!==input.executionRef||execution.actionRef!==a.action||execution.actionDigest!==a.digest||execution.generationRef!==input.generationRef||execution.sessionRef!==input.sessionRef||w.sessionRef!==input.sessionRef||!['dispatch_intent','unknown'].includes(execution.state))fail('SPEC_MISMATCH');
+      const material=this.#auditSpec(c,t.id,a.spec,false);
+      if(Buffer.byteLength(input.content)>material.resultByteLimit)fail('INPUT_TOO_LARGE');
+      const old=this.#auto(c,'audit_result',input.executionRef);
+      if(old){
+        const result=this.#auditResult(c,input.executionRef);
+        if(result.content!==input.content||old.inputCursor!==input.inputCursor||old.cursor!==input.cursor||old.evidenceRef!==input.evidenceRef)fail('IDEMPOTENCY_CONFLICT');
+        return{...old,deduplicated:true};
+      }
+      if(execution.resultRef)fail('STORAGE_INVALID');
+      const data=this.#data({...c,generationRef:w.generationRef},t,{kind:'verification',content:input.content,sourceRef:material.auditRef,commandRef:input.commandRef,auditResultRef:input.executionRef},true);
+      const record={contractVersion:'df.audit-result-association/v1',ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,resultRef:input.executionRef,recordRef:data.recordRef,digest:data.digest,byteLength:data.byteLength,
+        inputDigest:material.digest,inputRecordRef:material.recordRef,executionRef:input.executionRef,actionRef:a.action,actionDigest:a.digest,claimRef:w.claimRef,generationRef:w.generationRef,sessionRef:w.sessionRef,auditRef:material.auditRef,bindingDigest:material.bindingDigest,materialDigest:material.materialDigest,purpose:material.purpose,
+        inputCursor:input.inputCursor,cursor:input.cursor,evidenceRef:input.evidenceRef,state:'captured',createdAt:data.createdAt};
+      this.#saveAuto(c,'audit_result',record.resultRef,t.id,record);
+      this.#saveAuto(c,'execution',w.claimRef,t.id,{...execution,resultRef:record.resultRef});
+      this.#auditResult(c,record.resultRef);
+      return{...record,deduplicated:false};
+    },'terminal');
+  }
+  #reportFields(input){
+    canonical(input.coverageRefs);canonical(input.unexaminedRefs);canonical(input.findings);
+    if(!['passed','failed','unknown','budget_exhausted'].includes(input.verdict)||!Array.isArray(input.coverageRefs)||!Array.isArray(input.unexaminedRefs)||input.coverageRefs.length>16||input.unexaminedRefs.length>16||!Array.isArray(input.findings)||input.findings.length>16)fail('INVALID_INPUT');
+    for(const value of [...input.coverageRefs,...input.unexaminedRefs])ref(value);
+    for(const finding of input.findings){
+      exact(finding,['findingRef','severity','code','evidenceRef','resolved']);
+      ref(finding.findingRef);ref(finding.evidenceRef);
+      if(!['fatal','blocking','warning','info'].includes(finding.severity)||!['scope_violation','permission_bypass','secret_exposure','artifact_mismatch','coverage_gap','review_failure','other'].includes(finding.code)||typeof finding.resolved!=='boolean')fail('INVALID_INPUT');
+    }
+  }
+  #commitAuditReport(c,input,native){
+    const req=this.#auto(c,'audit',input.auditRef);
+    if(!req||req.taskRef!==input.taskRef)fail('AUDIT_BINDING_MISMATCH');
+    this.#auditCurrent(c,req);
+    const {a,w,t}=this.#claim(c,input),artifact=this.#artifact(c,t.id,req.artifactRef);
+    if(a.spec.executionInput&&!native)fail('AUDIT_RESULT_REQUIRED');
+    if(['cancel_requested','recovery_required'].includes(t.status)||a.spec.kind!=='review'||a.spec.role!=='review'||a.spec.targetDigest!==req.bindingDigest||a.spec.dataDigest!==req.digest||c.generationRef!==w.generationRef||artifact.producerRef===c.principalRef||artifact.generationRef===c.generationRef||req.material.some(m=>!c.readRecordRefs.includes(m.recordRef)))fail('UNAUTHORIZED');
+    if(input.artifactVersion!==req.artifactVersion||input.digest!==req.digest||input.materialDigest!==req.materialDigest)fail('AUDIT_BINDING_MISMATCH');
+    if(req.reportRef)fail('AUDIT_REPORT_CONFLICT');
+    const all=[...input.coverageRefs,...input.unexaminedRefs];
+    if(new Set(all).size!==all.length||all.length!==req.material.length||all.some(r=>!req.material.some(m=>m.recordRef===r))||new Set(input.findings.map(f=>f.findingRef)).size!==input.findings.length)fail('AUDIT_BINDING_MISMATCH');
+    const reports=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='report'",...this.#keys(c,t.id)).map(row=>this.#auto(c,'report',row.id)).filter(report=>report.auditRef===req.auditRef);
+    if(reports.length>=9)fail('RECORD_LIMIT');
+    const blocking=input.findings.some(f=>f.severity==='fatal'||req.blockingSeverities.includes(f.severity));
+    const state=input.verdict==='passed'&&input.unexaminedRefs.length===0&&!blocking?'passed':input.verdict==='unknown'||input.verdict==='budget_exhausted'?input.verdict:'failed';
+    const report={...input,reportRef:input.commandRef,auditRevision:req.auditRevision,round:req.round,bindingDigest:req.bindingDigest,semanticRevision:req.semanticRevision,reviewerRef:c.principalRef,state,...(native?{native}: {})};
+    this.#saveAuto(c,'report',input.commandRef,t.id,report);
+    this.#saveAuto(c,'audit',req.auditRef,t.id,{...req,reportRef:input.commandRef,state});
+    return report;
+  }
+  submitAuditResult(handle,input){
+    exact(input,['taskRef','commandRef','auditRef','executionRef','resultRef']);
+    for(const key of Object.keys(input))ref(input[key]);
+    return this.#mut(handle,input,['reviewer'],'submitAuditResult',c=>{
+      if(!c.auditClaimRef||c.auditRef!==input.auditRef)fail('UNAUTHORIZED');
+      const result=this.#auditResult(c,input.resultRef),source=result.association;
+      if(source.taskRef!==input.taskRef||source.auditRef!==input.auditRef||source.executionRef!==input.executionRef||source.claimRef!==c.auditClaimRef||source.generationRef!==c.generationRef||source.sessionRef!==c.sessionRef||source.purpose!=='audit_review')fail('AUDIT_BINDING_MISMATCH');
+      const {a}=this.#executionAdmission(c,{taskRef:input.taskRef,claimRef:source.claimRef,generationRef:source.generationRef,actionDigest:source.actionDigest});
+      const execution=this.#auto(c,'execution',source.claimRef);
+      if(execution.state!=='dispatch_intent')fail('CLAIM_REVOKED');
+      this.#executionMaterial(c,execution,a);
+      if(Buffer.byteLength(result.content)>this.#requireAuditBounds().resultByteLimit)fail('INPUT_TOO_LARGE');
+      let response;
+      try{response=JSON.parse(result.content);}catch{fail('AUDIT_RESPONSE_INVALID');}
+      try{
+        exact(response,['contractVersion','bindingDigest','materialDigest','inputDigest','verdict','coverageRefs','unexaminedRefs','findings']);
+        if(response.contractVersion!=='df.audit-response/v1'||response.bindingDigest!==source.bindingDigest||response.materialDigest!==source.materialDigest||response.inputDigest!==source.inputDigest)fail('AUDIT_RESPONSE_INVALID');
+        this.#reportFields(response);
+      }catch{fail('AUDIT_RESPONSE_INVALID');}
+      const req=this.#auto(c,'audit',source.auditRef),native={resultRef:source.resultRef,recordRef:source.recordRef,digest:source.digest,executionRef:source.executionRef,inputDigest:source.inputDigest,sessionRef:source.sessionRef};
+      const artifact=this.#artifact(c,input.taskRef,req.artifactRef);
+      const report=this.#commitAuditReport(c,{taskRef:input.taskRef,commandRef:input.commandRef,auditRef:source.auditRef,artifactVersion:req.artifactVersion,digest:req.digest,materialDigest:source.materialDigest,claimRef:source.claimRef,generationRef:source.generationRef,coverageRefs:response.coverageRefs,unexaminedRefs:response.unexaminedRefs,verdict:response.verdict,findings:response.findings,evidenceRef:source.evidenceRef},native);
+      const verification=this.#nativeVerification(c,report);
+      this.#newRecord(c,input.taskRef,'review',input.commandRef,{artifactRef:artifact.artifactRef,version:artifact.version,digest:artifact.digest,...verification},true);
+      this.#saveRecord(c,input.taskRef,'artifact',canonicalDigest({artifactRef:artifact.artifactRef,version:artifact.version}),{...artifact,verification});
+      this.#saveAuto(c,'execution',source.claimRef,input.taskRef,{...execution,reportRef:report.reportRef});
+      return{report,verification};
+    },'terminal');
   }
   #auditCurrent(c,req){
     const artifact=this.#artifact(c,req.taskRef,req.artifactRef);
@@ -1760,10 +2129,16 @@ export class RuntimeStore {
     for(const item of req.material){
       const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,req.taskRef),item.recordRef);
       if(!row||this.#openData(c,row).metadata.digest!==item.digest)fail('AUDIT_BINDING_MISMATCH');
-    }     return artifact;
+    }
+    if(req.contextRecordRef){
+      const context=this.#auditContext(c,req.taskRef,req.contextRecordRef);
+      if(context.metadata.digest!==req.contextDigest)fail('AUDIT_BINDING_MISMATCH');
+    }
+    return artifact;
   }
   configureAudit(handle,input){
-    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','auditRef','expectedAuditRevision','artifactRef','artifactVersion','digest','material','policyRef','blockingSeverities','maxRepairRounds']);
+    const required=['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','auditRef','expectedAuditRevision','artifactRef','artifactVersion','digest','material','policyRef','blockingSeverities','maxRepairRounds'];
+    exact(input,[...required,'contextRecordRef'],required);
     for(const k of ['auditRef','artifactRef','digest','policyRef'])ref(input[k]);
     integer(input.expectedAuditRevision);
     integer(input.artifactVersion,1);
@@ -1789,12 +2164,18 @@ export class RuntimeStore {
         ...m
       })).sort((a,b)=>a.recordRef.localeCompare(b.recordRef));
       for(const m of material)this.#dataMeta(c,t.id,m.recordRef,m.digest);
+      let protectedContext;
+      if(input.contextRecordRef!==undefined){
+        protectedContext=this.#auditContext(c,t.id,ref(input.contextRecordRef));
+        if(!material.some(m=>m.recordRef===protectedContext.metadata.recordRef&&m.digest===protectedContext.metadata.digest))fail('AUDIT_BINDING_MISMATCH');
+      }
       t=this.#update(t,t.status,'progress');
       const binding={
         ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,auditRef:input.auditRef,auditRevision:input.expectedAuditRevision+1,artifactRef:input.artifactRef,artifactVersion:input.artifactVersion,digest:input.digest,material,policyRef:input.policyRef,blockingSeverities:[...input.blockingSeverities].sort(),maxRepairRounds:input.maxRepairRounds,round:old?.pendingRepair?.round??old?.round??0,semanticRevision:this.#semantic(c,t.id)
       };
       const record={
-        ...binding,materialDigest:canonicalDigest(material),bindingDigest:canonicalDigest(binding),state:'pending',reportRef:null,previousReportRef:old?.reportRef||null
+        ...binding,materialDigest:canonicalDigest(material),bindingDigest:canonicalDigest(binding),state:'pending',reportRef:null,previousReportRef:old?.reportRef||null,
+        ...(protectedContext?{contextRecordRef:protectedContext.metadata.recordRef,contextDigest:protectedContext.metadata.digest}:{})
       };
       this.#auditCurrent(c,record);
       this.#saveAuto(c,'audit',input.auditRef,t.id,record);
@@ -1832,48 +2213,19 @@ export class RuntimeStore {
   }
   reportAudit(handle,input){
     exact(input,['taskRef','commandRef','auditRef','artifactVersion','digest','materialDigest','claimRef','generationRef','coverageRefs','unexaminedRefs','verdict','findings','evidenceRef']);
-    for(const k of ['auditRef','digest','materialDigest','claimRef','generationRef','evidenceRef'])ref(input[k]);
+    for(const key of ['auditRef','digest','materialDigest','claimRef','generationRef','evidenceRef'])ref(input[key]);
     integer(input.artifactVersion,1);
-    canonical(input.coverageRefs);
-    canonical(input.unexaminedRefs);
-    canonical(input.findings);
-    if(!['passed','failed','unknown','budget_exhausted'].includes(input.verdict)||!Array.isArray(input.coverageRefs)||!Array.isArray(input.unexaminedRefs)||input.coverageRefs.length>16||input.unexaminedRefs.length>16||!Array.isArray(input.findings)||input.findings.length>16)fail('INVALID_INPUT');
-    for(const f of input.findings){
-      exact(f,['findingRef','severity','code','evidenceRef','resolved']);
-      ref(f.findingRef);
-      ref(f.evidenceRef);
-      if(!['fatal','blocking','warning','info'].includes(f.severity)||!['scope_violation','permission_bypass','secret_exposure','artifact_mismatch','coverage_gap','review_failure','other'].includes(f.code)||typeof f.resolved!=='boolean')fail('INVALID_INPUT');
-    }     return this.#mut(handle,input,['reviewer'],'reportAudit',c=>{
-      const req=this.#auto(c,'audit',input.auditRef);
-      if(!req||req.taskRef!==input.taskRef)fail('AUDIT_BINDING_MISMATCH');
-      this.#auditCurrent(c,req);
-      const{
-        a,w,t
-      }=this.#claim(c,input),artifact=this.#artifact(c,t.id,req.artifactRef);
-      if(['cancel_requested','recovery_required'].includes(t.status)||a.spec.kind!=='review'||a.spec.role!=='review'||a.spec.targetDigest!==req.bindingDigest||a.spec.dataDigest!==req.digest||c.generationRef!==w.generationRef||artifact.producerRef===c.principalRef||artifact.generationRef===c.generationRef||req.material.some(m=>!c.readRecordRefs.includes(m.recordRef)))fail('UNAUTHORIZED');
-      if(input.artifactVersion!==req.artifactVersion||input.digest!==req.digest||input.materialDigest!==req.materialDigest)fail('AUDIT_BINDING_MISMATCH');
-      if(req.reportRef)fail('AUDIT_REPORT_CONFLICT');
-      const all=[...input.coverageRefs,...input.unexaminedRefs];
-      all.forEach(ref);
-      if(new Set(all).size!==all.length||all.length!==req.material.length||all.some(r=>!req.material.some(m=>m.recordRef===r))||new Set(input.findings.map(f=>f.findingRef)).size!==input.findings.length)fail('AUDIT_BINDING_MISMATCH');
-      const reports=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='report'",...this.#keys(c,t.id)).map(r=>this.#auto(c,'report',r.id)).filter(r=>r.auditRef===req.auditRef);
-      if(reports.length>=9)fail('RECORD_LIMIT');
-      const blocking=input.findings.some(f=>f.severity==='fatal'||req.blockingSeverities.includes(f.severity));
-      const state=input.verdict==='passed'&&input.unexaminedRefs.length===0&&!blocking?'passed':input.verdict==='unknown'||input.verdict==='budget_exhausted'?input.verdict:'failed';
-      const report={
-        ...input,reportRef:input.commandRef,auditRevision:req.auditRevision,round:req.round,bindingDigest:req.bindingDigest,semanticRevision:req.semanticRevision,reviewerRef:c.principalRef,state
-      };
-      this.#saveAuto(c,'report',input.commandRef,t.id,report);
-      this.#saveAuto(c,'audit',req.auditRef,t.id,{
-        ...req,reportRef:input.commandRef,state
-      });
-      return report;
-    },'terminal');
+    this.#reportFields(input);
+    return this.#mut(handle,input,['reviewer'],'reportAudit',c=>this.#commitAuditReport(c,input),'terminal');
   }
   #repairBinding(c,input,a){
     const req=this.#auto(c,'audit',ref(input.auditRef));
     if(!req||req.taskRef!==input.taskRef||req.reportRef!==ref(input.previousReportRef)||req.state==='passed'||req.pendingRepair||integer(input.round,1,8)!==req.round+1||input.round>req.maxRepairRounds)fail('AUDIT_REPAIR_LIMIT');
     if(a.spec.kind!=='repair'||a.spec.role!=='repair'||a.spec.targetDigest!==req.bindingDigest||a.spec.dataDigest!==req.digest)fail('AUDIT_BINDING_MISMATCH');
+    if(a.spec.executionInput){
+      const material=this.#auditSpec(c,input.taskRef,a.spec,true);
+      if(material.auditRef!==input.auditRef||material.round!==input.round||material.previousReportRef!==input.previousReportRef||material.purpose!=='audit_repair')fail('AUDIT_BINDING_MISMATCH');
+    }
     ref(input.evidenceRef);
     return req;
   }
@@ -1894,6 +2246,7 @@ export class RuntimeStore {
       const{
         a,w
       }=this.#claim(c,input),old=this.#auto(c,'repair',w.claimRef);
+      if(a.spec.executionInput&&!old)fail('AUDIT_BINDING_MISMATCH');
       if(old){
         if(old.auditRef!==input.auditRef||old.round!==input.round||old.previousReportRef!==input.previousReportRef||old.evidenceRef!==input.evidenceRef)fail('IDEMPOTENCY_CONFLICT');
         return old;
@@ -1947,14 +2300,121 @@ export class RuntimeStore {
       }
     }
     if(row.kind==='subscription'&&!this.#auto(c,'source',value.sourceRef))fail('STORAGE_INVALID');
-    if(row.kind==='execution'&&!this.#ledger.one('SELECT 1 FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',row.owner,row.workspace,row.task,value.claimRef))fail('STORAGE_INVALID');
+    if(row.kind==='audit_input'){
+      const input=this.#auditInput(c,row.id);
+      if(input.taskRef!==row.task)fail('STORAGE_INVALID');
+    }
+    if(row.kind==='audit_result'){
+      if(this.#auditResult(c,row.id).association.taskRef!==row.task)fail('STORAGE_INVALID');
+    }
+    if(row.kind==='report'&&value.native)this.#validateNativeReport(c,value);
+    if(row.kind==='execution'){
+      if(!this.#ledger.one('SELECT 1 FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',row.owner,row.workspace,row.task,value.claimRef))fail('STORAGE_INVALID');
+      if(value.kind!==undefined)this.#validateAuditExecution(c,value);
+    }
+  }
+  #validateAuditExecution(c,execution){
+    try{
+      const required=['kind','executionRef','taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','inputRecordRef','inputDigest','dataDigest','auditRef','bindingDigest','materialDigest','purpose','semanticRevision','commandRef','state','createdAt'];
+      exact(execution,[...required,'admittedAt','resultRef','reportRef','outcomeEvidenceRef','terminalEvidenceRef'],required);
+      if(execution.kind!=='audit_input'||!['intent_committed','dispatch_intent','unknown','completed','failed','cancelled'].includes(execution.state))fail('STORAGE_INVALID');
+      for(const key of ['executionRef','taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','inputRecordRef','inputDigest','dataDigest','auditRef','bindingDigest','materialDigest','commandRef'])ref(execution[key]);
+      integer(execution.semanticRevision,1);integer(execution.createdAt);
+      if(execution.admittedAt!==undefined)integer(execution.admittedAt,execution.createdAt);
+      if(execution.state==='dispatch_intent'&&execution.admittedAt===undefined)fail('STORAGE_INVALID');
+      for(const key of ['outcomeEvidenceRef','terminalEvidenceRef'])if(execution[key]!==undefined&&execution[key]!==null)ref(execution[key]);
+      if(['completed','failed','cancelled'].includes(execution.state)&&(!execution.outcomeEvidenceRef||!execution.terminalEvidenceRef))fail('STORAGE_INVALID');
+      if(execution.executionRef!==canonicalDigest({claimRef:execution.claimRef,commandRef:execution.commandRef,inputRecordRef:execution.inputRecordRef}))fail('STORAGE_INVALID');
+      const a=this.#action(c,execution.taskRef,execution.actionRef);
+      if(a.digest!==execution.actionDigest||a.metadata.executionRef!==execution.executionRef||a.metadata.claimRef!==execution.claimRef||a.spec.executor.generationRef!==execution.generationRef||a.spec.executor.sessionRef!==execution.sessionRef)fail('STORAGE_INVALID');
+      this.#executionMaterial(c,execution,a,false);
+      const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,execution.taskRef),execution.claimRef);
+      if(!worker||parse(worker.payload).sessionRef!==execution.sessionRef)fail('STORAGE_INVALID');
+      if(execution.resultRef)this.#auditResult(c,execution.resultRef);
+      if(execution.reportRef){ref(execution.reportRef);if(!execution.resultRef)fail('STORAGE_INVALID');}
+      const command=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,execution.commandRef);
+      if(!command||command.operation!=='beginAuditExecution')fail('STORAGE_INVALID');
+      const receipt=this.#commandReceipt(command);
+      if(receipt.executionRef!==execution.executionRef||receipt.claimRef!==execution.claimRef||receipt.inputRecordRef!==execution.inputRecordRef||receipt.inputDigest!==execution.inputDigest)fail('STORAGE_INVALID');
+    }catch{fail('STORAGE_INVALID');}
+  }
+  #nativeVerification(c,report){
+    const source=this.#auditResult(c,report.native.resultRef).association;
+    const body=parse(this.#auditData(c,report.taskRef,source.inputRecordRef).content);
+    const blocking=report.findings.some(finding=>finding.severity==='fatal'||body.policy.blockingSeverities.includes(finding.severity));
+    const verdict=report.state==='passed'?'accepted':blocking||report.verdict==='failed'?'rejected':'unknown';
+    return{verdict,evidenceRef:report.evidenceRef,reviewerRef:report.reviewerRef,generationRef:report.generationRef,reportRef:report.reportRef,resultRef:report.native.resultRef};
+  }
+  #validateNativeReport(c,report){
+    try{
+      exact(report.native,['resultRef','recordRef','digest','executionRef','inputDigest','sessionRef']);
+      const source=this.#auditResult(c,report.native.resultRef).association;
+      if(this.#auto(c,'execution',source.claimRef)?.reportRef!==report.reportRef)fail('STORAGE_INVALID');
+      const response=parse(this.#auditResult(c,report.native.resultRef).content);
+      exact(response,['contractVersion','bindingDigest','materialDigest','inputDigest','verdict','coverageRefs','unexaminedRefs','findings']);
+      this.#reportFields(response);
+      if(response.contractVersion!=='df.audit-response/v1'||response.inputDigest!==source.inputDigest)fail('STORAGE_INVALID');
+      for(const key of ['bindingDigest','materialDigest','verdict','coverageRefs','unexaminedRefs','findings'])if(canonical(response[key])!==canonical(report[key]))fail('STORAGE_INVALID');
+      for(const key of ['resultRef','recordRef','digest','executionRef','inputDigest','sessionRef'])if(report.native[key]!==source[key])fail('STORAGE_INVALID');
+      for(const key of ['taskRef','auditRef','bindingDigest','materialDigest','claimRef','generationRef','evidenceRef'])if(report[key]!==source[key])fail('STORAGE_INVALID');
+      const material=this.#auditInput(c,source.inputRecordRef);
+      if(source.purpose!=='audit_review'||report.artifactVersion!==material.artifactVersion||report.digest!==material.artifactDigest||report.auditRevision!==material.auditRevision||report.round!==material.round||report.semanticRevision!==material.semanticRevision)fail('STORAGE_INVALID');
+      const review=this.#record(c,report.taskRef,'review',report.reportRef);
+      if(canonical(review)!==canonical({artifactRef:material.artifactRef,version:material.artifactVersion,digest:material.artifactDigest,...this.#nativeVerification(c,report)}))fail('STORAGE_INVALID');
+      const artifact=this.#artifact(c,report.taskRef,material.artifactRef,material.artifactVersion);
+      if(!artifact||artifact.digest!==material.artifactDigest)fail('STORAGE_INVALID');
+    }catch{fail('STORAGE_INVALID');}
+  }
+  #validateArtifactVerification(c,task,artifact){
+    if(!this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){
+      if(artifact.verification?.resultRef)fail('STORAGE_INVALID');
+      return;
+    }
+    for(const row of this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='audit_result'",...this.#keys(c,task))){
+      const source=this.#auditResult(c,row.id).association,material=this.#auditInput(c,source.inputRecordRef),execution=this.#auto(c,'execution',source.claimRef);
+      if(execution.reportRef&&material.artifactRef===artifact.artifactRef&&material.artifactVersion===artifact.version&&(!artifact.verification?.resultRef||!this.#auto(c,'report',execution.reportRef)))fail('STORAGE_INVALID');
+    }
+    const reports=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='report'",...this.#keys(c,task)).map(row=>this.#auto(c,'report',row.id)).filter(report=>report.native&&report.artifactVersion===artifact.version&&report.digest===artifact.digest&&this.#auditInput(c,this.#auditResult(c,report.native.resultRef).association.inputRecordRef).artifactRef===artifact.artifactRef);
+    if(artifact.verification?.resultRef){
+      const report=this.#auto(c,'report',artifact.verification.reportRef);
+      if(!report?.native||report.taskRef!==task||report.artifactVersion!==artifact.version||report.digest!==artifact.digest||!reports.some(item=>item.reportRef===report.reportRef)||canonical(artifact.verification)!==canonical(this.#nativeVerification(c,report)))fail('STORAGE_INVALID');
+    }else if(reports.length)fail('STORAGE_INVALID');
   }
   #validate(){
+    const version=this.#ledger.one('PRAGMA user_version').user_version;
+    if(version<5){
+      for(const row of this.#ledger.query('SELECT spec FROM runtime_actions'))if(parse(row.spec).executionInput!==undefined)fail('SCHEMA_UNSUPPORTED');
+      if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){
+        if(this.#ledger.one("SELECT 1 FROM automation_records WHERE kind IN ('audit_input','audit_result') LIMIT 1"))fail('SCHEMA_UNSUPPORTED');
+      for(const row of this.#ledger.query("SELECT payload FROM automation_records WHERE kind IN ('execution','report','audit')")){
+        const value=parse(row.payload).data;
+        if(value?.kind==='audit_input'||value?.native!==undefined||value?.contextRecordRef!==undefined)fail('SCHEMA_UNSUPPORTED');
+      }
+      }
+      for(const row of this.#ledger.query('SELECT metadata FROM runtime_data')){
+        const metadata=parse(row.metadata);
+        if(metadata.auditInputRef!==undefined||metadata.auditResultRef!==undefined)fail('SCHEMA_UNSUPPORTED');
+      }
+    }
     if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){
       for(const row of this.#ledger.query('SELECT * FROM automation_records'))this.#validateAutomation(row);
       for(const row of this.#ledger.query('SELECT * FROM workspace_memory'))this.#memory({ownerRef:row.owner,workspaceRef:row.workspace},row.namespace);
     }
-    for(const row of this.#ledger.query('SELECT * FROM runtime_commands'))this.#commandReceipt(row,false,true);
+    for(const row of this.#ledger.query('SELECT * FROM runtime_commands')){
+      const receipt=this.#commandReceipt(row,false,true),c={ownerRef:row.owner,workspaceRef:row.workspace};
+      if(row.operation==='prepareAuditInput'){
+        const input=this.#auditInput(c,receipt.recordRef);
+        if(input.taskRef!==row.task||input.digest!==receipt.digest||input.auditRef!==receipt.auditRef)fail('STORAGE_INVALID');
+      }
+      if(row.operation==='captureAuditResult'){
+        const result=this.#auditResult(c,receipt.resultRef).association;
+        if(result.taskRef!==row.task||result.digest!==receipt.digest||result.recordRef!==receipt.recordRef)fail('STORAGE_INVALID');
+      }
+      if(row.operation==='submitAuditResult'){
+        const report=this.#auto(c,'report',row.id);
+        if(!report||canonical(report)!==canonical(receipt.report)||canonical(this.#nativeVerification(c,report))!==canonical(receipt.verification))fail('STORAGE_INVALID');
+      }
+    }
     for(const row of this.#ledger.query('SELECT metadata FROM runtime_data'))if(parse(row.metadata).cryptoVersion!==2)fail('CRYPTO_LEGACY_UNVERIFIED');
     for(const table of ['runtime_commands','runtime_data','runtime_actions','runtime_workers','runtime_records']){
       const rows=this.#ledger.query(`SELECT * FROM ${table}`);
@@ -1972,6 +2432,7 @@ export class RuntimeStore {
     for(const r of this.#ledger.query('SELECT * FROM runtime_actions')){
       const spec=normalizedSpec(parse(r.spec)),m=parse(r.metadata),action=this.#ledger.one('SELECT * FROM actions WHERE owner=? AND workspace=? AND task=? AND id=?',r.owner,r.workspace,r.task,r.action);
       if(!action||spec.actionRef!==r.action||spec.kind!==action.kind||spec.units!==action.units||spec.targetDigest!==action.target_digest||spec.dataDigest!==action.data_digest||r.digest!==canonicalDigest({ownerRef:r.owner,workspaceRef:r.workspace,taskRef:r.task,taskVersion:m.plannedTaskVersion,authEpoch:m.plannedAuthEpoch,spec}))fail('STORAGE_INVALID');
+      if(spec.executionInput)this.#auditSpec({ownerRef:r.owner,workspaceRef:r.workspace},r.task,spec,false);
       if(m.executionRef){const execution=this.#auto({ownerRef:r.owner,workspaceRef:r.workspace},'execution',m.claimRef);if(!execution||execution.executionRef!==m.executionRef||execution.actionRef!==r.action||execution.actionDigest!==r.digest||execution.generationRef!==m.generationRef)fail('STORAGE_INVALID');}
       if(action.claim_id){if(m.claimRef!==reference(action.claim_id)||m.generationRef!==spec.executor.generationRef)fail('STORAGE_INVALID');const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',r.owner,r.workspace,r.task,m.claimRef);if(!worker)fail('STORAGE_INVALID');const w=parse(worker.payload);if(w.claimRef!==m.claimRef||w.actionRef!==r.action||w.actionDigest!==r.digest||w.reservationRef!==m.reservationRef||w.generationRef!==m.generationRef)fail('STORAGE_INVALID');if(m.releaseEvidenceRef&&['unknown','dispatch_intent'].includes(action.state)||!m.releaseEvidenceRef&&!['unknown','dispatch_intent'].includes(action.state))fail('STORAGE_INVALID');}
     }

@@ -31,7 +31,8 @@ export function canonical(value,depth=0) {
 }
 export const canonicalDigest = value => hash(canonical(value));
 export function normalizedSpec(spec) {
- exact(spec,['actionRef','kind','role','targetDigest','dataDigest','units','charges','attemptGroupRef','attemptIndex','resourcePolicyVersion','modelPolicyVersion','model','executor']);
+ const required=['actionRef','kind','role','targetDigest','dataDigest','units','charges','attemptGroupRef','attemptIndex','resourcePolicyVersion','modelPolicyVersion','model','executor'];
+ exact(spec,[...required,'executionInput'],required);
  for(const k of ['actionRef','targetDigest','dataDigest','attemptGroupRef']) ref(spec[k]);
  if(!['read','write','review','repair'].includes(spec.kind)||!['worker','review','repair'].includes(spec.role)) fail('INVALID_INPUT');
  for(const k of ['units','attemptIndex','resourcePolicyVersion','modelPolicyVersion']) integer(spec[k],1);
@@ -41,5 +42,14 @@ export function normalizedSpec(spec) {
  if(!['create','resume','none'].includes(spec.executor.mode)) fail('INVALID_INPUT');
  for(const [k,v] of Object.entries(spec.executor)) if(k!=='mode') ref(v);
  if(spec.executor.mode==='resume'&&!spec.executor.sessionRef) fail('INVALID_INPUT');
+ if(spec.executionInput!==undefined) {
+  const input=spec.executionInput;
+  exact(input,['recordRef','digest','purpose','auditRef','bindingDigest','materialDigest','previousReportRef'],['recordRef','digest','purpose','auditRef','bindingDigest','materialDigest']);
+  for(const key of ['recordRef','digest','auditRef','bindingDigest','materialDigest'])ref(input[key]);
+  if(!['audit_review','audit_repair'].includes(input.purpose)||spec.executor.mode!=='create'||!spec.executor.sessionRef)fail('INVALID_INPUT');
+  const repair=input.purpose==='audit_repair',kind=repair?'repair':'review';
+  if(spec.kind!==kind||spec.role!==kind||spec.targetDigest!==input.bindingDigest)fail('INVALID_INPUT');
+  if(repair)ref(input.previousReportRef);else if(input.previousReportRef!==undefined)fail('INVALID_INPUT');
+ }
  return JSON.parse(canonical(spec));
 }
