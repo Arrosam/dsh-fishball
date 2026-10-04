@@ -1,0 +1,88 @@
+{
+  "status": "HELD; required fractional-confidence integration correction pending separate frozen addendum/GO",
+  "node": "v22.22.2",
+  "accounting": "dsh-fixed-density-text/v1",
+  "estimator": {
+    "package": "@deepseek-ai/dsh-token-meter",
+    "version": "0.2.1-alpha.1",
+    "publicExport": "./estimate",
+    "source": "lib/types/estimate.js",
+    "sha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f"
+  },
+  "ownedExecutableFiles": [
+    "src/installed-config.mjs",
+    "src/installed-memory.mjs",
+    "src/installed-plugin.mjs",
+    "package.json",
+    "test/installed-memory.test.mjs"
+  ],
+  "heldSupportingPaths": [
+    "src/config.mjs",
+    "src/setup-state.mjs",
+    "src/context.mjs",
+    "src/memory.mjs",
+    "src/runtime-plugin.mjs",
+    "src/operator-bridge.mjs",
+    "src/host-probe.mjs",
+    "scripts/dsh-web-runtime-lock.json",
+    "test/installation.test.mjs",
+    "test/installation-adversarial.test.mjs",
+    "test/portability-adversarial.test.mjs",
+    "docs/normal-entry-integration-plan.md",
+    "docs/evidence/NI1/test-design.md"
+  ],
+  "manifestSha256": "361b4e8b76fec9db107864beeeaaf401aceb614ddbf954ca1d8bf4ff35adfbbc",
+  "results": [
+    {
+      "file": "author-first.tap",
+      "pass": 17,
+      "fail": 1,
+      "disposition": "Required fractional confidence0.9 rejected by unchanged native integer-only JSON capture; reproduced integration gap."
+    },
+    {
+      "file": "author-second.tap",
+      "pass": 17,
+      "fail": 1,
+      "disposition": "Long memory preference did not meet existing Jaccard threshold for short query English; author corrected query to exact stored preference, no product algorithm change."
+    },
+    {
+      "file": "author-third.tap",
+      "pass": 18,
+      "fail": 0,
+      "disposition": "Supported explicit confidence1 normal context plus retained fractional no-write negative; not closure of required fractional-confidence gap."
+    },
+    {
+      "file": "author-affected-final.tap",
+      "pass": 144,
+      "fail": 0
+    },
+    {
+      "file": "author-onboarding.tap",
+      "pass": 72,
+      "fail": 0
+    },
+    {
+      "file": "author-portability-first.tap",
+      "pass": 30,
+      "fail": 1,
+      "disposition": "Unchanged independent exact20-peer-set assertion differs only by authorized new exact token-meter peer; separate reviewer expectation correction pending."
+    }
+  ],
+  "nativeScope": "Original public Cordis/Loader/Connection/BrowserAuth/OperatorPeer and WebServer constructor without init/listen; synthetic module request/response streams; not actual HTTP/CLI or packed positive proof.",
+  "unauthorizedActions": {
+    "hostLaunches": 0,
+    "listeners": 0,
+    "externalInference": 0,
+    "tools": 0,
+    "recipientActions": 0,
+    "downloads": 0
+  },
+  "remaining": [
+    "fractional-confidence normal-RPC correction",
+    "independent NI1 adversarial execution on held tree",
+    "root actual physical packed normal entry and CLI proof",
+    "NI2-NI6",
+    "final independent CODE HOLD",
+    "browser/visual HOLD"
+  ]
+}

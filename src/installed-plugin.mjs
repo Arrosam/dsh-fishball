@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
-import { Config, validateConfig } from './config.mjs';
+import { Config, validateInstalledConfig } from './installed-config.mjs';
+import { MEMORY_ACCOUNTING, prepareInstalledMemory } from './installed-memory.mjs';
 import { requireHost, resolveHostSource } from './host-probe.mjs';
 import { createRuntimePlugin } from './runtime-plugin.mjs';
 import { SETUP_BOUNDS, SetupError, SetupState } from './setup-state.mjs';
@@ -12,7 +13,10 @@ export const name = 'dsh-fishball-installed';
 export { Config };
 export const inject = Object.freeze(['connection', 'sessions', 'approval', 'webServer', 'profileContext']);
 export async function apply(ctx, input) {
-  const config = validateConfig(input); requireHost(ctx);
+  const installed = validateInstalledConfig(input);
+  const { memory, ...base } = installed, config = Object.freeze(base); requireHost(ctx);
+  const bindMemory = memory.enabled ? await prepareInstalledMemory(memory) : undefined;
+  if (![1, 2].includes(ctx.fiber.state) || ctx.fiber.uid === null) throw new SetupError('SERVICE_DISPOSED');
   if (!(ctx.connection instanceof HostConnectionService)) throw new SetupError('SETUP_UNAVAILABLE');
   const peer = ctx.connection.operator;
   if (!peer || !ctx.profileContext) throw new SetupError('SETUP_UNAVAILABLE');
@@ -24,7 +28,9 @@ export async function apply(ctx, input) {
     currentProfile: () => ({ dir: ctx.profileContext.dir, name: ctx.profileContext.name }),
     activate: async ({ identity, encryptionKey }) => {
       if (!alive()) throw new SetupError('SERVICE_DISPOSED');
-      const current = ctx.plugin(createRuntimePlugin({ identity: () => identity, encryptionKey: () => encryptionKey, hostPermission: () => false }), config); child = current;
+      const options = { identity: () => identity, encryptionKey: () => encryptionKey, hostPermission: () => false,
+        ...(bindMemory ? { memory: bindMemory(identity, { dir: ctx.profileContext.dir, name: ctx.profileContext.name }) } : {}) };
+      const current = ctx.plugin(createRuntimePlugin(options), config); child = current;
       try { await current; if (!alive()) throw new SetupError('SERVICE_DISPOSED'); current.ctx.df.diagnostics(); }
       catch { await current.dispose(); if (child === current) child = undefined; throw new SetupError(alive() ? 'SETUP_RECOVERY_REQUIRED' : 'SERVICE_DISPOSED'); }
       return () => { if (child === current) child = undefined; return current.dispose(); };
@@ -46,10 +52,19 @@ export async function apply(ctx, input) {
     if (admittedPeer !== peer) return rejected('OPERATOR_REQUIRED');
     if (signal?.aborted) return rejected('REQUEST_ABORTED');
     try {
-      if (!['v1/status', 'v1/prepare', 'v1/confirm'].includes(endpoint)) return rejected('ENDPOINT_NOT_FOUND');
+      if (!['v1/status', 'v1/prepare', 'v1/confirm', 'v1/features'].includes(endpoint)) return rejected('ENDPOINT_NOT_FOUND');
       record(payload, endpoint === 'v1/confirm' ? ['previewRef', 'planDigest', 'accept'] : [], 'SETUP_INVALID_INPUT');
       if (Buffer.byteLength(JSON.stringify(payload)) > SETUP_BOUNDS.inputBytes) throw new SetupError('SETUP_INVALID_INPUT');
-      const value = endpoint === 'v1/status' ? state.status(payload) : endpoint === 'v1/prepare' ? state.prepare(payload) : await state.confirm(payload, { signal });
+      let value;
+      if (endpoint === 'v1/features') {
+        let ready = false;
+        if (memory.enabled && state.status({}).phase === 'ready' && child?.state === 2 && child.uid !== null) {
+          try { ready = child.ctx.df.diagnostics().capabilities.memory === true; } catch { /* Closed/unavailable child is never ready. */ }
+        }
+        value = Object.freeze({ memory: Object.freeze({ enabled: memory.enabled, ready,
+          accounting: memory.enabled ? MEMORY_ACCOUNTING : null,
+          bounds: memory.enabled ? Object.freeze({ byteLimit: memory.byteLimit, tokenLimit: memory.tokenLimit }) : null }) });
+      } else value = endpoint === 'v1/status' ? state.status(payload) : endpoint === 'v1/prepare' ? state.prepare(payload) : await state.confirm(payload, { signal });
       return { ok: true, value };
     } catch (error) { const field = error && !types.isProxy(error) && Object.getOwnPropertyDescriptor(error, 'code'); return rejected(field && Object.hasOwn(field, 'value') && codes.has(field.value) ? field.value : 'SETUP_UNAVAILABLE'); }
   });
