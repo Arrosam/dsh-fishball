@@ -291,6 +291,37 @@ test('independent: real concurrent processes serialize revoke/cancel versus disp
   });
 });
 
+test('independent: concurrent process CAS and duplicate intake produce one authoritative durable winner', { timeout: 15000 }, async t => {
+  await t.test('same-version task updates', async t => {
+    const f = fixture(t);
+    f.core.intake(scope, ingress());
+    const results = await processRace(t, f.databasePath, [
+      `return core.transition(scope,'task',{expectedVersion:1,status:'waiting',reason:'fixture'});`,
+      `return core.transition(scope,'task',{expectedVersion:1,status:'blocked',reason:'fixture'});`,
+    ]);
+    assert.equal(results.filter(result => result.accepted).length, 1);
+    assert.equal(results.find(result => !result.accepted).code, 'STALE_VERSION');
+    const final = f.core.exportTask(scope, 'task');
+    assert.equal(final.task.version, 2);
+    assert.equal(final.history.length, 2);
+    assert.equal(final.history[1].version, 2);
+    assert.equal(final.history[1].status, final.task.status);
+  });
+  await t.test('same full source identity through two intake processes', async t => {
+    const f = fixture(t);
+    const results = await processRace(t, f.databasePath, [
+      `return core.intake(scope,${JSON.stringify(ingress('one', 'shared-event'))});`,
+      `return core.intake(scope,${JSON.stringify(ingress('two', 'shared-event'))});`,
+    ]);
+    assert.equal(results.every(result => result.accepted), true);
+    assert.deepEqual(results.map(result => result.value.deduplicated).sort(), [false, true]);
+    assert.equal(results[0].value.task.taskRef, results[1].value.task.taskRef);
+    assert.equal(f.core.listTasks(scope).length, 1);
+    assert.equal(sql(f.databasePath, 'SELECT count(*) AS count FROM ingress')[0].count, 1);
+    assert.equal(sql(f.databasePath, 'SELECT count(*) AS count FROM events')[0].count, 1);
+  });
+});
+
 test('independent: complete source identity deduplicates, distinct scopes/events remain independent and tombstones persist', t => {
   const f = fixture(t);
   const first = f.core.intake(scope, ingress('same-task', 'same-event'));
