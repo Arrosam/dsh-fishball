@@ -1,0 +1,5 @@
+# Root checkpoint: required resumed-work candidate
+
+Root reviewed the held resume contract `fce0b6567eb550be2e96e0c4a8aedf696cf5ad0aa8897cf5dae91abaed68e14e`, author notes `3049517d96b2f09b6007b9bc4bf8a873e9a52f4d4739ff7f28a631148a0280f3`, independent design `a9b36b634a43e623d42dec26029dac3ca3f721de47d2c83b52ce328d8a7743f1` and checks `d95e668ad84ee7c80b5a9132160bbc24aed3532bd6e57c19695b3c023e25829e`.
+
+This is a docs-only candidate for mandatory genuine signed native-origin/resume graphs and useful same-session continuation. It is not source GO or acceptance. Before source GO, root must resolve acknowledged-finish cold duplicate reconciliation in a separate exact addendum, bind the coherent final create/runtime graph, complete genuine schema5/6, and freeze the explicit schema7 discriminator and any combined context-check graph. Source7 cannot silently overwrite this candidate or add normal-origin authority to caller JSON. Original source-AC and CODE/browser/publication gates remain pending.
