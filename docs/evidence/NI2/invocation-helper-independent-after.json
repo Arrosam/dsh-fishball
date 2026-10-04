@@ -1,0 +1,137 @@
+{
+  "scope": "standalone helper functional lease only; no native/store/composer/provider imports",
+  "recordedAtUTC": "2026-10-04T23:39:17.619240+00:00",
+  "node": "v22.22.2",
+  "moduleClosure": [
+    "src/installed-invocation.mjs",
+    "src/config.mjs"
+  ],
+  "nodeBuiltins": [
+    "node:async_hooks",
+    "node:path",
+    "node:util"
+  ],
+  "authorManifestSHA256": "3ef3d7ab22c0bb662846e537703af2d643a98ed7a9f8799394b18db2e89cb1e8",
+  "authorChecks": [
+    {
+      "path": "src/installed-invocation.mjs",
+      "expected": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "actual": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "matches": true
+    },
+    {
+      "path": "test/installed-invocation.test.mjs",
+      "expected": "054b07a7479c4962c8b93026e9c71463ee868e490bbbc343591231839f84eada",
+      "actual": "054b07a7479c4962c8b93026e9c71463ee868e490bbbc343591231839f84eada",
+      "matches": true
+    },
+    {
+      "path": "src/config.mjs",
+      "expected": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "actual": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/invocation-helper-author-first.tap",
+      "expected": "38a440969ba0ce623e76a2a6f70f3cf87b967f42598cfacf56d96a917be4d513",
+      "actual": "38a440969ba0ce623e76a2a6f70f3cf87b967f42598cfacf56d96a917be4d513",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/invocation-helper-author-hold.md",
+      "expected": "7359b7dc21c3bfcbb865d209a3973ecc3c636d813249a5cad95ed3ee3988c3a5",
+      "actual": "7359b7dc21c3bfcbb865d209a3973ecc3c636d813249a5cad95ed3ee3988c3a5",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/manager-invocation-source-clarification.md",
+      "expected": "5f1dabb6c93f3d770f6e60c76c7882144d07659ee11ef08fe3530a4ff15a0b9d",
+      "actual": "5f1dabb6c93f3d770f6e60c76c7882144d07659ee11ef08fe3530a4ff15a0b9d",
+      "matches": true
+    },
+    {
+      "path": "docs/evidence/NI2/manager-invocation-test-addendum.md",
+      "expected": "c954473efb3012f16ac76bca2cfd7d31820e5bd28616bd71dff24cbe8a3fd208",
+      "actual": "c954473efb3012f16ac76bca2cfd7d31820e5bd28616bd71dff24cbe8a3fd208",
+      "matches": true
+    }
+  ],
+  "rows": [
+    {
+      "path": "src/installed-invocation.mjs",
+      "bytes": 2341,
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+    },
+    {
+      "path": "test/installed-invocation.test.mjs",
+      "bytes": 3830,
+      "sha256": "054b07a7479c4962c8b93026e9c71463ee868e490bbbc343591231839f84eada"
+    },
+    {
+      "path": "src/config.mjs",
+      "bytes": 2918,
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "path": "docs/evidence/NI2/invocation-helper-author-first.tap",
+      "bytes": 1462,
+      "sha256": "38a440969ba0ce623e76a2a6f70f3cf87b967f42598cfacf56d96a917be4d513"
+    },
+    {
+      "path": "docs/evidence/NI2/invocation-helper-author-hold.md",
+      "bytes": 2238,
+      "sha256": "7359b7dc21c3bfcbb865d209a3973ecc3c636d813249a5cad95ed3ee3988c3a5"
+    },
+    {
+      "path": "docs/evidence/NI2/manager-invocation-source-clarification.md",
+      "bytes": 9390,
+      "sha256": "5f1dabb6c93f3d770f6e60c76c7882144d07659ee11ef08fe3530a4ff15a0b9d"
+    },
+    {
+      "path": "docs/evidence/NI2/manager-invocation-test-addendum.md",
+      "bytes": 25915,
+      "sha256": "c954473efb3012f16ac76bca2cfd7d31820e5bd28616bd71dff24cbe8a3fd208"
+    },
+    {
+      "path": "docs/evidence/NI2/invocation-helper-author.sha256",
+      "bytes": 760,
+      "sha256": "3ef3d7ab22c0bb662846e537703af2d643a98ed7a9f8799394b18db2e89cb1e8"
+    },
+    {
+      "path": "docs/evidence/NI2/manager-invocation-root-freeze.md",
+      "bytes": 2692,
+      "sha256": "b02777a261ad95487a5214d8e1947a33eb2b9c49190ca0b93d36985c47a6bf2a"
+    },
+    {
+      "path": "docs/evidence/NI2/manager-invocation-design-checks.json",
+      "bytes": 68607,
+      "sha256": "8bbd82f9493e2196ed030235b5a215ab1fc8ccf9101ca45c8cd534e97d1f0e5e"
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "bytes": 69293,
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea"
+    },
+    {
+      "path": "docs/acceptance-traceability.md",
+      "bytes": 37983,
+      "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "bytes": 5304,
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "bytes": 84640,
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/lib/libnode.127.dylib",
+      "bytes": 41264656,
+      "sha256": "81cf1016801a1cd9f41cff171a703d3f392b0ce888add8aef66e012b3c0f64d5"
+    }
+  ],
+  "sameBeforeAfter": true
+}

@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: missing or wrong exact context denies without caller JSON authority
+ok 1 - missing or wrong exact context denies without caller JSON authority
+  ---
+  duration_ms: 1.311417
+  type: 'test'
+  ...
+# Subtest: distinct awaited invocation carriers retain their own exact guard
+ok 2 - distinct awaited invocation carriers retain their own exact guard
+  ---
+  duration_ms: 0.242334
+  type: 'test'
+  ...
+# Subtest: first stable guard denial survives manager wrapping and subsequent callback recovery
+ok 3 - first stable guard denial survives manager wrapping and subsequent callback recovery
+  ---
+  duration_ms: 0.305042
+  type: 'test'
+  ...
+# Subtest: outer recheck rejects success or failure after transport loss without replay
+ok 4 - outer recheck rejects success or failure after transport loss without replay
+  ---
+  duration_ms: 0.287
+  type: 'test'
+  ...
+# Subtest: captured execute gate reentry uses original carrier while later requests remain independent
+ok 5 - captured execute gate reentry uses original carrier while later requests remain independent
+  ---
+  duration_ms: 0.157208
+  type: 'test'
+  ...
+# Subtest: unbounded thrown details and accessor error code never enter stable projection
+ok 6 - unbounded thrown details and accessor error code never enter stable projection
+  ---
+  duration_ms: 0.2445
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 103.276583

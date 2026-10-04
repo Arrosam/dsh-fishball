@@ -1,0 +1,68 @@
+{
+  "scope": "standalone typed helper; actual Node ALS; callback/context/counter/Map doubles",
+  "verdict": "BOUNDED_HELPER_FUNCTIONAL_PASS",
+  "aggregateAcceptance": "HOLD",
+  "executionLease": "helper-only released after final manifest hold; schema5 source work independent",
+  "recordedAtUTC": "2026-10-04T23:43:33.523116+00:00",
+  "helperSHA256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+  "testSHA256": "d26d41bfb01c57e068b87e4babf18697a3097b6dc20ceaebd5f634ee5b820f6b",
+  "firstSourceSameAsCurrent": true,
+  "productCounterexample": false,
+  "fixtureCorrection": false,
+  "repeatedIndependentRun": false,
+  "independentFamilies": 15,
+  "nestedTAPNodes": 75,
+  "totalTAPNodes": 90,
+  "leafTests": 79,
+  "authorPinMatches": 7,
+  "stableScopedRows": 15,
+  "moduleClosure": [
+    "src/installed-invocation.mjs",
+    "src/config.mjs"
+  ],
+  "builtins": [
+    "node:async_hooks",
+    "node:path",
+    "node:util"
+  ],
+  "ordinaryGetterCalls": 0,
+  "guardProxyDescriptorReflectionCalls": 1,
+  "domainErrorsPassPrivatelyUnchanged": true,
+  "nativeStoreFacadeEvidence": false,
+  "commands": [
+    {
+      "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test test/invocation-helper-functional.test.mjs",
+      "raw": "invocation-helper-independent-first.tap",
+      "exitCode": 0,
+      "tests": 90,
+      "pass": 90,
+      "fail": 0,
+      "skip": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "durationMs": 129.294833,
+      "attribution": "new independent15 families/75 nested/79leaf; first and only run",
+      "rawSHA256": "42a1affec0be49f98951566e3aab25b4355504d7225bf3cb2f6d40f7d8d15eb7"
+    },
+    {
+      "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test test/installed-invocation.test.mjs",
+      "raw": "invocation-helper-independent-authored.tap",
+      "exitCode": 0,
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "skip": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "durationMs": 105.16425,
+      "attribution": "authored cases executed independently; not additional independent design",
+      "rawSHA256": "2dbce14f0efdb46b88aa184fa730c5a19569ef6cee29a1c67a0b08fa397af5d0"
+    },
+    {
+      "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --check test/invocation-helper-functional.test.mjs",
+      "raw": "invocation-helper-independent-syntax.txt",
+      "exitCode": 0,
+      "rawSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}
