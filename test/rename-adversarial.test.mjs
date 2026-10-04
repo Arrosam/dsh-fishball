@@ -262,7 +262,7 @@ test('independent rename native session: exact prebound legacy/current refs surv
   const base = { actionRef: sha('action'), kind: 'write', role: 'worker', targetDigest: sha('target'), dataDigest: sha('data'), units: 1, charges: { runtimeMs: 1, usageUnits: 0, costEstimateMicros: 0 }, attemptGroupRef: sha('group'), attemptIndex: 1, resourcePolicyVersion: 1, modelPolicyVersion: 1,
     executor: { mode: 'create', generationRef, environmentRef: entry.environmentRef, bindingDigest: entry.bindingDigest, toolsDigest: entry.toolsDigest, permissionPolicyDigest: entry.permissionPolicyDigest },
     model: { catalogEvidenceRef: sha('catalog'), modelRef: entry.modelRef, reasoningRef: entry.reasoningRef, presetRef: entry.presetRef } };
-  const adapter = new NativeAdapter(ctx, { environments, permission: () => true });
+  const adapter = new NativeAdapter(ctx, { environments, permission: () => true, toolGuard: () => true });
   for (const prefix of ['bubbles-', 'df-', undefined]) {
     const sessionRef = sha(`${prefix ?? 'df-'}${generationRef}`), spec = { ...base, executor: { ...base.executor, ...(prefix === undefined ? {} : { sessionRef }) } }, original = structuredClone(spec);
     const ticket = await adapter.prepare(spec, task, actionDigest), receipt = adapter.query(ticket);
@@ -271,7 +271,7 @@ test('independent rename native session: exact prebound legacy/current refs surv
   }
   await assert.rejects(adapter.prepare({ ...base, executor: { ...base.executor, sessionRef: sha('unrelated-session') } }, task, actionDigest), { code: 'SESSION_MISMATCH' });
   await assert.rejects(adapter.prepare({ ...base, executor: { ...base.executor, mode: 'resume', sessionRef: sha(`bubbles-${generationRef}`) } }, task, actionDigest), { code: 'SESSION_UNAVAILABLE' });
-  const denied = new NativeAdapter(ctx, { environments }); await assert.rejects(denied.prepare(base, task, actionDigest), { code: 'HOST_PERMISSION_DENIED' });
+  const denied = new NativeAdapter(ctx, { environments, toolGuard: () => true }); await assert.rejects(denied.prepare(base, task, actionDigest), { code: 'HOST_PERMISSION_DENIED' });
   assert.equal(creates, 0); assert.equal(streams, 0); assert.equal(ctx.agents.list().length, 0); assert.equal(ctx.sessions.list().length, 0);
 });
 

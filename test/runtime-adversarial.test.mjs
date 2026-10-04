@@ -670,7 +670,7 @@ test('independent durable migration: exact schema2 source, preexisting backup an
     const capability = {}, foundation = new Foundation({ databasePath: f.config.databasePath, trustedOperators: [{ scope: fixtureScope, capability }], hostPermission: () => true });
     foundation.intake(fixtureScope, { taskId: 'legacy-task', provider: 'fixture', source: 'legacy-inbox', eventId: 'legacy-event' }); foundation.close();
     const db = new DatabaseSync(f.config.databasePath);
-    try { for (const row of db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) db.exec(`DROP TABLE ${row.name}`); db.exec('PRAGMA user_version=2'); } finally { db.close(); }
+    try { db.exec('DROP TABLE automation_records; DROP TABLE workspace_memory'); for (const row of db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) db.exec(`DROP TABLE ${row.name}`); db.exec('PRAGMA user_version=2'); assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2); } finally { db.close(); }
     const original = readFileSync(f.config.databasePath), backup = `${f.config.databasePath}.schema-2.backup`;
     if (fault === 'occupied-backup') writeFileSync(backup, 'synthetic preexisting backup sentinel');
     if (fault === 'none') {
@@ -948,6 +948,8 @@ test('independent durable format: genuine unverified v1 ciphertext rejects befor
       const cipher = createCipheriv('aes-256-gcm', fixtureKey, row.nonce); cipher.setAAD(aad);
       const ciphertext = Buffer.concat([cipher.update(content, 'utf8'), cipher.final()]), tag = cipher.getAuthTag();
       db.prepare('UPDATE runtime_data SET ciphertext=?,tag=?,metadata=? WHERE id=?').run(ciphertext, tag, JSON.stringify(metadata), row.id);
+      db.exec('DROP TABLE automation_records; DROP TABLE workspace_memory; PRAGMA user_version=3');
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3, 'genuine prior crypto format also retains genuine schema3 topology');
       const verify = createDecipheriv('aes-256-gcm', fixtureKey, row.nonce); verify.setAAD(aad); verify.setAuthTag(tag);
       assert.equal(Buffer.concat([verify.update(ciphertext), verify.final()]).toString('utf8'), content, 'genuine legacy ciphertext is decryptable under its original format');
       assert.equal(sha(content), row.digest);
@@ -1013,6 +1015,8 @@ test('independent actual crash journal: unverified legacy, wrong key and relabel
         const cipher = createCipheriv('aes-256-gcm', fixtureKey, row.nonce); cipher.setAAD(aad);
         const ciphertext = Buffer.concat([cipher.update(first.content, 'utf8'), cipher.final()]), tag = cipher.getAuthTag();
         db.prepare('UPDATE runtime_data SET ciphertext=?,tag=?,metadata=? WHERE id=?').run(ciphertext, tag, JSON.stringify(metadata), row.id);
+        db.exec('DROP TABLE automation_records; DROP TABLE workspace_memory; PRAGMA user_version=3');
+        assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
         const oracle = createDecipheriv('aes-256-gcm', fixtureKey, row.nonce); oracle.setAAD(aad); oracle.setAuthTag(tag);
         assert.equal(Buffer.concat([oracle.update(ciphertext), oracle.final()]).toString('utf8'), first.content);
       } else if (mode === 'metadata-edit') {

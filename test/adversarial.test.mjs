@@ -612,20 +612,22 @@ test('independent: supported schema1 migration preserves actual acknowledged tas
 });
 
 test('independent: unsupported crash-left WAL rejects without changing main, WAL or SHM bytes or committed facts', { timeout: 15000 }, async t => {
-  for (const version of [99, 1, 2, SCHEMA_VERSION]) await t.test(`schema ${version}; abrupt exit73 with uncheckpointed WAL`, t => {
+  for (const version of [99, 1, 2, 3, SCHEMA_VERSION]) await t.test(`schema ${version}; abrupt exit73 with uncheckpointed WAL`, t => {
     const directory = mkdtempSync(join(tmpdir(), 'df-independent-wal-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const databasePath = join(directory, 'ledger.sqlite');
     const keys = [digest(scope.ownerId), digest(scope.workspaceId), digest('wal-task')];
-    if (version === 2 || version === SCHEMA_VERSION) {
+    if (version === 2 || version === 3 || version === SCHEMA_VERSION) {
       const initial = new Foundation({ databasePath, clock: () => 1000 });
       initial.intake(scope, ingress('wal-task', 'wal-event'));
       initial.close();
-      if (version === 2) {
+      if (version === 2 || version === 3) {
         const legacy = new DatabaseSync(databasePath);
         try {
-          for (const row of legacy.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) legacy.exec(`DROP TABLE ${row.name}`);
-          legacy.exec('PRAGMA user_version=2');
+          legacy.exec('DROP TABLE automation_records; DROP TABLE workspace_memory');
+          if (version === 2) for (const row of legacy.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) legacy.exec(`DROP TABLE ${row.name}`);
+          legacy.exec(`PRAGMA user_version=${version}`);
+          assert.equal(legacy.prepare('PRAGMA user_version').get().user_version, version);
         } finally { legacy.close(); }
       }
     }
@@ -644,7 +646,7 @@ test('independent: unsupported crash-left WAL rejects without changing main, WAL
         db.prepare('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)').run(...keys,1,1,'queued','intake',1000);
         db.exec('COMMIT');
       }
-      if(version===2||version===${SCHEMA_VERSION}){db.prepare('UPDATE tasks SET updated_at=2000 WHERE owner=? AND workspace=? AND id=?').run(...keys);}
+      if(version===2||version===3||version===${SCHEMA_VERSION}){db.prepare('UPDATE tasks SET updated_at=2000 WHERE owner=? AND workspace=? AND id=?').run(...keys);}
       process.exit(73);
     `;
     const child = spawnSync(process.execPath, ['--input-type=module', '-e', writer, databasePath], { encoding: 'utf8', timeout: 5000 });
@@ -699,8 +701,10 @@ test('independent: WAL header without sidecars and opaque sidecars beside DELETE
     f.core.intake(scope, ingress()); f.core.close();
     const legacy = new DatabaseSync(f.databasePath);
     try {
+      legacy.exec('DROP TABLE automation_records; DROP TABLE workspace_memory');
       for (const row of legacy.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) legacy.exec(`DROP TABLE ${row.name}`);
       legacy.exec('PRAGMA user_version=2');
+      assert.equal(legacy.prepare('PRAGMA user_version').get().user_version, 2);
     } finally { legacy.close(); }
     writeFileSync(`${f.databasePath}${suffix}`, `synthetic-opaque${suffix}-preserve`);
     const original = [readFileSync(f.databasePath), readFileSync(`${f.databasePath}${suffix}`)];
