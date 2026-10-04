@@ -1,0 +1,92 @@
+TAP version 13
+# (node:47721) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+ok 1 - actual public Cordis/Connection bridge routes owner intake, blocks carrier rejection and payload authority
+  ---
+  duration_ms: 36.552292
+  type: 'test'
+  ...
+# Subtest: native runtime reload preserves encrypted intake and missing key/identity fails before storage
+ok 2 - native runtime reload preserves encrypted intake and missing key/identity fails before storage
+  ---
+  duration_ms: 17.424583
+  type: 'test'
+  ...
+# Subtest: unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+ok 3 - unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants
+  ---
+  duration_ms: 17.773042
+  type: 'test'
+  ...
+# Subtest: partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+ok 4 - partial settings and throwing private reviewer installer reject with stable errors rather than callback prose
+  ---
+  duration_ms: 7.948458
+  type: 'test'
+  ...
+# Subtest: trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+ok 5 - trusted automation installer is closed synchronous composition; invalid returns and callback failures expose no authority or error prose
+  ---
+  duration_ms: 13.870375
+  type: 'test'
+  ...
+# Subtest: scoped Web runtime requires real public WebServer registration and seals old scopes on service loss
+ok 6 - scoped Web runtime requires real public WebServer registration and seals old scopes on service loss
+  ---
+  duration_ms: 12.6095
+  type: 'test'
+  ...
+# (node:47722) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: separate actual-Web fixture manifest pins isolated env, explicit runtime factory and no secret YAML
+ok 7 - separate actual-Web fixture manifest pins isolated env, explicit runtime factory and no secret YAML
+  ---
+  duration_ms: 2.099208
+  type: 'test'
+  ...
+# Subtest: genuine public BrowserAuth token exchange and OperatorPeer admission use only synthetic JSON0600 credential backing
+ok 8 - genuine public BrowserAuth token exchange and OperatorPeer admission use only synthetic JSON0600 credential backing
+  ---
+  duration_ms: 32.320042
+  type: 'test'
+  ...
+# Subtest: private auth persistence rejects unsafe mode, locks, unknown record formats and callback secrets without fallback
+ok 9 - private auth persistence rejects unsafe mode, locks, unknown record formats and callback secrets without fallback
+  ---
+  duration_ms: 2.076833
+  type: 'test'
+  ...
+# Subtest: synthetic integer tokenizer assembles an actual protected scoped execution context without a model
+ok 10 - synthetic integer tokenizer assembles an actual protected scoped execution context without a model
+  ---
+  duration_ms: 14.426208
+  type: 'test'
+  ...
+# Subtest: dangling native auth entries fail before read/mutation and cleanup faults stay redacted
+ok 11 - dangling native auth entries fail before read/mutation and cleanup faults stay redacted
+  ---
+  duration_ms: 3.033042
+  type: 'test'
+  ...
+# Subtest: nested synthetic profile directory boundaries preflight existing and dangling symlinks before writes
+ok 12 - nested synthetic profile directory boundaries preflight existing and dangling symlinks before writes
+  ---
+  duration_ms: 10.567125
+  type: 'test'
+  ...
+# Subtest: public native Connection Web composition preserves original exports/auth and binds the exact injected provider scope
+ok 13 - public native Connection Web composition preserves original exports/auth and binds the exact injected provider scope
+  ---
+  duration_ms: 44.160125
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 312.731625

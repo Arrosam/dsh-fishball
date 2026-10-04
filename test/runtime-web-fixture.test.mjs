@@ -1,16 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, chmodSync, lstatSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, chmodSync, existsSync, lstatSync, mkdirSync, realpathSync, readFileSync, readlinkSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
 import { FixtureCredentialProvider } from '../scripts/runtime-web-credentials.mjs';
+import * as RuntimeWebConnection from '../scripts/runtime-web-connection.mjs';
+import { createRuntimePlugin } from '../src/runtime-plugin.mjs';
+import { Readable, Writable } from 'node:stream';
 import { fixtureTokenCount } from '../scripts/runtime-web-fixture.mjs';
 import { RuntimeStore } from '../src/runtime-store.mjs';
 import { MemoryAdapter } from '../src/memory.mjs';
 import { ContextAssembler } from '../src/context.mjs';
-import { runtimePaths, runtimeFiles, runtimeWebEnvironment, runtimeProfilePatch, verifyRuntimeFixtureHost } from '../scripts/runtime-web.mjs';
+import { prepareRuntimeDirectories, runtimePaths, runtimeFiles, runtimeWebEnvironment, runtimeProfilePatch, verifyRuntimeFixtureHost } from '../scripts/runtime-web.mjs';
 const root = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const { Context } = await import(`${root}/cordis/lib/index.js`);
 const Connection = await import(`${root}/dsh-client-connection/lib/index.js`);
@@ -92,4 +95,87 @@ test('synthetic integer tokenizer assembles an actual protected scoped execution
     assert.equal(JSON.parse(data.content).content.includes('Synthetic protected context'), true);
     const snapshot = store.snapshot(owner, { taskRef: registered.task.taskRef }); assert.equal(snapshot.actions.length, 0); assert.equal(snapshot.workers.length, 0); assert.equal(snapshot.executions.length, 0);
   } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+
+test('dangling native auth entries fail before read/mutation and cleanup faults stay redacted', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'df-runtime-auth-boundary-')), ctx = new Context(), path = join(directory, 'auth.json'); ctx.logger.exporters?.clear?.();
+  try {
+    const provider = new FixtureCredentialProvider(ctx, path), key = 'client-connection/browser-session';
+    const absent = join(directory, 'missing.json'); symlinkSync(absent, path); let calls = 0;
+    await assert.rejects(provider.readRecord(key), { message: 'FIXTURE_CREDENTIAL_UNAVAILABLE' });
+    await assert.rejects(provider.modifyRecord(key, async () => { calls++; return undefined; }), { message: 'FIXTURE_CREDENTIAL_UNAVAILABLE' });
+    assert.equal(calls, 0); assert.equal(readlinkSync(path), absent); assert.equal(existsSync(absent), false); unlinkSync(path);
+    const original = { kind: 'grant', payload: { version: 1, secret: randomBytes(32).toString('base64url') } };
+    await provider.modifyRecord(key, async () => original); const before = digest(readFileSync(path));
+    await assert.rejects(provider.modifyRecord(key, async () => { unlinkSync(`${path}.lock`); throw new Error('SYNTHETIC_CALLBACK_CANARY'); }), { message: 'FIXTURE_CREDENTIAL_UNAVAILABLE' });
+    assert.equal(digest(readFileSync(path)), before);
+    // A replaced lock belongs to neither this operation nor its cleanup.
+    await assert.rejects(provider.modifyRecord(key, async () => { unlinkSync(`${path}.lock`); writeFileSync(`${path}.lock`, 'synthetic-other-lock', { mode: 0o600 }); throw new Error('SYNTHETIC_CALLBACK_CANARY'); }), { message: 'FIXTURE_CREDENTIAL_UNAVAILABLE' });
+    assert.equal(readFileSync(`${path}.lock`, 'utf8'), 'synthetic-other-lock'); assert.equal(digest(readFileSync(path)), before);
+  } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('nested synthetic profile directory boundaries preflight existing and dangling symlinks before writes', () => {
+  for (const boundary of ['home', 'home/profiles', 'home/profiles/web']) for (const dangling of [false, true]) {
+    const directory = mkdtempSync(join(realpathSync(tmpdir()), 'df-runtime-path-boundary-'));
+    try {
+      const base = join(directory, 'fixture'), outside = join(directory, 'outside');
+      mkdirSync(base); if (!dangling) mkdirSync(outside);
+      const path = join(base, boundary); mkdirSync(join(path, '..'), { recursive: true }); symlinkSync(outside, path);
+      const paths = { base, home: join(base, 'home'), agents: join(base, 'agents'), workspace: join(base, 'workspace'), private: join(base, 'private'), evidence: join(base, 'evidence') };
+      assert.throws(() => prepareRuntimeDirectories(paths), { message: 'FIXTURE_PATH_INVALID' });
+      assert.equal(readlinkSync(path), outside); assert.equal(existsSync(join(base, 'agents')), false);
+      assert.equal(existsSync(join(outside, 'web')), false); assert.equal(existsSync(join(outside, 'package.json')), false);
+    } finally { rmSync(directory, { recursive: true, force: true }); }
+  }
+  const directory = mkdtempSync(join(realpathSync(tmpdir()), 'df-runtime-path-positive-'));
+  try {
+    const base = join(directory, 'fixture'), paths = { base, home: join(base, 'home'), agents: join(base, 'agents'), workspace: join(base, 'workspace'), private: join(base, 'private'), evidence: join(base, 'evidence') };
+    prepareRuntimeDirectories(paths); prepareRuntimeDirectories(paths);
+    for (const path of [...Object.values(paths), join(paths.home, 'profiles'), join(paths.home, 'profiles/web')]) assert.equal(lstatSync(path).mode & 0o777, 0o700);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+
+test('public native Connection Web composition preserves original exports/auth and binds the exact injected provider scope', async () => {
+  assert.equal(RuntimeWebConnection.Config, Connection.Config); assert.equal(RuntimeWebConnection.apply, Connection.apply);
+  assert.deepEqual(RuntimeWebConnection.inject, ['credentials', 'webServer']); assert.deepEqual(Connection.inject, ['credentials']);
+  const { WebServer } = await import(`${root}/dsh-host-webserver/lib/index.js`);
+  const { default: SessionStore } = await import(`${root}/dsh-session/lib/index.js`);
+  const { default: ApprovalService } = await import(`${root}/dsh-user-approval/lib/index.js`);
+  const directory = mkdtempSync(join(tmpdir(), 'df-runtime-original-web-')), ctx = new Context(); ctx.logger.exporters.clear();
+  try {
+    const authPath = join(directory, 'auth.json');
+    await ctx.plugin({ apply(c) { new FixtureCredentialProvider(c, authPath); } });
+    await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
+    const mount = async () => { let server; const fiber = ctx.plugin({ apply(c) { server = new WebServer(c, { host: '127.0.0.1', port: 3080, compression: 'none' }); } }); await fiber; assert.equal(server.server, undefined); return { server, fiber }; };
+    const first = await mount(); const unwrapped = ctx.plugin(Connection); await unwrapped;
+    // Preserve the actual pinned upstream incompatibility as a negative gate.
+    const failingConsumer = ctx.plugin({ inject: ['connection', 'webServer'], apply(c) { c.connection.rpc.handle('/synthetic-unwrapped', () => ({})); } });
+    await assert.rejects(Promise.resolve(failingConsumer), /cannot get property "webServer" without inject/); await failingConsumer.dispose();
+    assert.equal(first.server.prefixes.has('/synthetic-unwrapped'), false); const authBefore = digest(readFileSync(authPath)); await unwrapped.dispose();
+    const connection = ctx.plugin(RuntimeWebConnection); await connection;
+    let runtime; const parent = ctx.plugin({ inject: ['connection', 'sessions', 'approval', 'webServer'], async apply(c) {
+      runtime = c.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'original-native-owner', workspaceId: 'original-native-workspace' }), encryptionKey: () => Buffer.alloc(32, 11) }), { databasePath: join(directory, 'ledger.sqlite') }); await runtime;
+    } }); await parent;
+    assert.equal(first.server.prefixes.has('/api'), true); assert.equal(first.server.prefixes.has('/df-rpc'), true);
+    const url = new URL(ctx.connection.authenticatedUrl('http://127.0.0.1:3080')); let cookie;
+    ctx.connection.authorizeIndex({ method: 'GET', url: url.pathname + url.search, headers: { host: url.host } }, { writeHead(status, headers) { assert.equal(status, 303); assert.equal(headers.location, './'); cookie = headers['set-cookie'].split(';')[0]; }, end() {} });
+    class Response extends Writable { constructor() { super(); this.parts = []; } _write(chunk, encoding, done) { this.parts.push(Buffer.from(chunk)); done(); } writeHead(status) { this.status = status; } }
+    const request = async (route, overrides = {}) => {
+      const req = Readable.from([Buffer.from(JSON.stringify({ type: 'client-request', rpcId: 'synthetic-web-rpc', method: 'v1/list', payload: {} }))]);
+      Object.assign(req, { method: 'POST', url: '/df-rpc/v1/list', headers: { host: url.host, origin: url.origin, cookie, 'content-type': 'application/json', ...overrides } });
+      const res = new Response(); await route.handler(req, res); return { status: res.status, ...(res.status === 200 ? { result: JSON.parse(Buffer.concat(res.parts).toString('utf8')).result } : {}) };
+    };
+    const oldRoute = first.server.prefixes.get('/df-rpc'); assert.equal((await request(oldRoute)).result.ok, true);
+    assert.equal((await request(oldRoute, { cookie: undefined })).status, 401); assert.equal((await request(oldRoute, { origin: 'http://synthetic.invalid' })).status, 403);
+    const borrowed = ctx.df, removing = first.fiber.dispose(); assert.equal((await request(oldRoute)).result.error.code, 'SERVICE_DISPOSED'); await removing;
+    assert.equal(first.server.prefixes.size, 0); assert.throws(() => borrowed.diagnostics(), { code: 'SERVICE_DISPOSED' });
+    const second = await mount(); await connection; await parent; await runtime;
+    assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.ok, true); assert.equal((await request(oldRoute)).result.error.code, 'SERVICE_DISPOSED');
+    assert.equal(digest(readFileSync(authPath)), authBefore); assert.equal(ctx.sessions.list().length, 0);
+    const shutdown = parent.dispose(); assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.error.code, 'SERVICE_DISPOSED'); await shutdown;
+    assert.equal(second.server.prefixes.has('/df-rpc'), false); assert.equal(second.server.server, undefined); cookie = undefined;
+  } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }); }
 });

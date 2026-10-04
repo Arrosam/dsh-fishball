@@ -13,6 +13,7 @@ const packages = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const { Context } = await import(pathToFileURL(`${packages}/cordis/lib/index.js`).href);
 const { default: SessionStore } = await import(pathToFileURL(`${packages}/dsh-session/lib/index.js`).href);
 const { default: ApprovalService } = await import(pathToFileURL(`${packages}/dsh-user-approval/lib/index.js`).href);
+const { WebServer } = await import(pathToFileURL(`${packages}/dsh-host-webserver/lib/index.js`).href);
 const { HostConnectionService } = await import(pathToFileURL(`${packages}/dsh-client-connection/lib/index.js`).href);
 
 class CapturedResponse extends Writable {
@@ -23,13 +24,16 @@ class CapturedResponse extends Writable {
 }
 async function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), 'df-runtime-native-'));
-  const ctx = new Context(), routes = new Map();
+  const ctx = new Context();
+  let server;
+  await ctx.plugin({ apply(webCtx) { server = new WebServer(webCtx, { host: '127.0.0.1', port: 3080, compression: 'none' }); } });
+  const routes = server.prefixes;
+  assert.equal(server.server, undefined);
   ctx.logger.exporters?.clear?.();
   t.after(async () => { try { await ctx.fiber.dispose(); } finally { rmSync(directory, { recursive: true, force: true }); } });
-  ctx.provide('webServer', { register(route) { assert.equal(routes.has(route.path), false); routes.set(route.path, route); return () => { routes.delete(route.path); }; } });
   await ctx.plugin(SessionStore);
   await ctx.plugin(ApprovalService, { policy: 'never' });
-  await ctx.plugin({ name: 'synthetic-connection', apply(connectionCtx) {
+  await ctx.plugin({ name: 'synthetic-connection', inject: ['webServer'], apply(connectionCtx) {
     // The exported native Connection owns the actual peer/trust fence/RPC
     // framing. BrowserAuth is a private synthetic double, without credentials,
     // server listener, cookies, browser, provider or external model calls.
@@ -131,4 +135,41 @@ test('trusted automation installer is closed synchronous composition; invalid re
     await assert.rejects(Promise.resolve(fiber), { code: 'RUNTIME_ADAPTER_INVALID' }); await fiber.dispose();
     assert.equal(f.routes.has('/df-rpc'), false); assert.equal(JSON.stringify(messages).includes('SYNTHETIC_AUTOMATION_INSTALLER_CANARY'), false); f.ctx.logger.exporters?.delete?.(exporter);
   }
+});
+
+
+test('scoped Web runtime requires real public WebServer registration and seals old scopes on service loss', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'df-runtime-scoped-web-')), ctx = new Context();
+  ctx.logger.exporters?.clear?.();
+  t.after(async () => { try { await ctx.fiber.dispose(); } finally { rmSync(directory, { recursive: true, force: true }); } });
+  await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
+  const connection = ctx.plugin({ inject: ['webServer'], apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: () => true }); } });
+  const databasePath = join(directory, 'ledger.sqlite'); let runtime;
+  const parent = ctx.plugin({ inject: ['connection', 'sessions', 'approval', 'webServer'], async apply(scopedCtx) {
+    runtime = scopedCtx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'scoped-owner', workspaceId: 'scoped-workspace' }), encryptionKey: () => Buffer.alloc(32, 17) }), { databasePath });
+    await runtime;
+  } });
+  assert.equal(parent.state, 0); assert.equal(ctx.get('df'), undefined); assert.equal(existsSync(databasePath), false);
+  async function mount() {
+    let server;
+    const fiber = ctx.plugin({ apply(webCtx) { server = new WebServer(webCtx, { host: '127.0.0.1', port: 3080, compression: 'none' }); } });
+    await fiber; await connection; await parent; await runtime;
+    // Constructing the real class registers its service, but this wrapper
+    // never invokes [Service.init]/listen or ctx.plugin(WebServer).
+    assert.equal(server.server, undefined); assert.equal(server.prefixes.size, 1);
+    return { fiber, server, route: server.prefixes.get('/df-rpc') };
+  }
+  async function request(route) {
+    const req = Readable.from([Buffer.from(JSON.stringify({ type: 'client-request', rpcId: 'scoped-rpc', method: 'v1/list', payload: {} }))]);
+    Object.assign(req, { method: 'POST', url: '/df-rpc/v1/list', headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080', 'content-type': 'application/json' } });
+    const response = new CapturedResponse(); await route.handler(req, response); return JSON.parse(response.text()).result;
+  }
+  const first = await mount(); assert.equal((await request(first.route)).ok, true); const borrowed = ctx.df;
+  const removal = first.fiber.dispose();
+  assert.equal((await request(first.route)).error.code, 'SERVICE_DISPOSED'); assert.throws(() => borrowed.diagnostics(), { code: 'SERVICE_DISPOSED' });
+  await removal; assert.equal(first.server.prefixes.size, 0); assert.equal(ctx.get('df'), undefined);
+  const second = await mount(); assert.equal((await request(second.route)).ok, true);
+  assert.equal((await request(first.route)).error.code, 'SERVICE_DISPOSED', 'old scope cannot regain authority after remount');
+  const shutdown = parent.dispose(); assert.equal((await request(second.route)).error.code, 'SERVICE_DISPOSED');
+  await shutdown; assert.equal(second.server.prefixes.size, 0); await second.fiber.dispose();
 });

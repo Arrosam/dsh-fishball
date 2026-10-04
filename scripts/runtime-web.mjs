@@ -1,7 +1,7 @@
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { chmodSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import { dirname, parse, relative, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
 import { createSafeOutput } from './dsh-web.mjs';
@@ -38,24 +38,44 @@ export function runtimeProfilePatch() {
     { id: 'web-runtime', config: { openBrowser: false, printUrl: false, surfaceContext: true, trustedHosts: [] } },
     { id: 'approval', config: { policy: 'never' } },
     ...disabled.map(id => ({ id, disabled: true })),
+    { id: 'connection', name: fileURLToPath(new URL('./runtime-web-connection.mjs', import.meta.url)), config: { trustedHosts: [] } },
     { id: 'credentials', name: fileURLToPath(new URL('./runtime-web-credentials.mjs', import.meta.url)), config: {} },
     { insert: [{ id: 'df-runtime-synthetic-fixture', name: fileURLToPath(new URL('./runtime-web-fixture.mjs', import.meta.url)), config: {} }] },
   ], null, 2) + '\n';
 }
+function entry(path) {
+  try { return lstatSync(path); } catch (error) { if (error?.code === 'ENOENT') return undefined; throw new Error('FIXTURE_PATH_INVALID'); }
+}
+// Trusted fixture setup only. Preflight every ancestor before creating any
+// directory; dangling symlinks are existing unsafe entries, not absence.
+export function prepareRuntimeDirectories(paths) {
+  try {
+    const base = resolve(paths.base), planned = [...Object.values(paths), `${paths.home}/profiles`, `${paths.home}/profiles/web`].map(path => resolve(path));
+    if (planned.some(path => { const tail = relative(base, path); return tail === '..' || tail.startsWith('../') || tail.startsWith('/'); })) throw new Error();
+    const ancestors = new Set();
+    for (const path of planned) {
+      let cursor = path;
+      while (cursor !== parse(cursor).root) { ancestors.add(cursor); cursor = dirname(cursor); }
+    }
+    for (const path of ancestors) {
+      const current = entry(path);
+      if (current && (!current.isDirectory() || current.isSymbolicLink())) throw new Error();
+    }
+    for (const path of [...ancestors].sort((a, b) => a.length - b.length)) {
+      if (!entry(path)) mkdirSync(path, { mode: 0o700 });
+    }
+    for (const path of planned) { if (realpathSync(path) !== path) throw new Error(); chmodSync(path, 0o700); }
+  } catch { throw new Error('FIXTURE_PATH_INVALID'); }
+}
 export function prepareRuntimeWeb() {
   verifyRuntimeFixtureHost();
-  for (const path of Object.values(runtimePaths)) {
-    if (existsSync(path) && (!lstatSync(path).isDirectory() || lstatSync(path).isSymbolicLink())) throw new Error('FIXTURE_PATH_INVALID');
-    mkdirSync(path, { recursive: true, mode: 0o700 });
-    if (realpathSync(path) !== resolve(path)) throw new Error('FIXTURE_PATH_INVALID');
-    chmodSync(path, 0o700);
-  }
-  if (!existsSync(runtimeFiles.key)) writeFileSync(runtimeFiles.key, randomBytes(32), { flag: 'wx', mode: 0o600 });
-  checkPrivateFile(runtimeFiles.key, 32);
-  for (const file of [runtimeFiles.auth, runtimeFiles.access, runtimeFiles.state]) if (existsSync(file)) checkPrivateFile(file);
+  prepareRuntimeDirectories(runtimePaths);
   const profile = `${runtimePaths.home}/profiles/web`;
-  mkdirSync(profile, { recursive: true, mode: 0o700 });
-  for (const file of ['package.json', 'cordis.patch.yml']) if (existsSync(`${profile}/${file}`) && !lstatSync(`${profile}/${file}`).isFile()) throw new Error('FIXTURE_PATH_INVALID');
+  for (const file of [runtimeFiles.key, runtimeFiles.auth, runtimeFiles.access, runtimeFiles.state, `${profile}/package.json`, `${profile}/cordis.patch.yml`]) {
+    if (entry(file)) { try { checkPrivateFile(file, file === runtimeFiles.key ? 32 : undefined); } catch { throw new Error('FIXTURE_PRIVATE_FILE_INVALID'); } }
+  }
+  if (!entry(runtimeFiles.key)) writeFileSync(runtimeFiles.key, randomBytes(32), { flag: 'wx', mode: 0o600 });
+  checkPrivateFile(runtimeFiles.key, 32);
   writeFileSync(`${profile}/package.json`, JSON.stringify({ name: 'dsh-profile-web', private: true, dependencies: {}, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } } }, null, 2) + '\n', { mode: 0o600 });
   writeFileSync(`${profile}/cordis.patch.yml`, runtimeProfilePatch(), { mode: 0o600 });
 }

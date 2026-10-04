@@ -251,10 +251,10 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
           notificationBridge: notifier ? 'explicit-policy-review-grant' : 'unavailable',
           capabilities: Object.freeze({ memory: !!projection, preview: !!preview, worker: !!manager, delivery: !!pipeline, reviewer: !!reviewerInstaller, automation: !!router, notifications: !!notifier }) });
       } }));
-      yield () => { active = false; bridge.deactivate(); };
+      yield () => { active = false; bridge?.deactivate(); };
     }, 'df.runtime.lifecycle');
   }
-  return Object.freeze({ name: 'dsh-fishball', inject: Object.freeze(['connection', 'sessions', 'approval', ...(worker ? ['agents', 'llm', 'tools'] : [])]), Config, apply });
+  return Object.freeze({ name: 'dsh-fishball', inject: Object.freeze(['connection', 'sessions', 'approval', 'webServer', ...(worker ? ['agents', 'llm', 'tools'] : [])]), Config, apply });
 }
 
 function referenceCheck(value) {
