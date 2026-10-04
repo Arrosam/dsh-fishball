@@ -1,0 +1,14 @@
+{
+  "sourceHead": "a5a088145eaee7db11918d73400d2263096a7d8c",
+  "branch": "feat/S3-integrations",
+  "executableFiles": 96,
+  "freezeSha256": "9e528b13766c51da9bbc8c75d0007fdcd353d9f1b6b8ed96ff374e82c307df35",
+  "productFreezeSha256": "60f0c3a3ebad7e08e4bc7badea9d587ceb50e342662b9230e3607ae8f42e6d30",
+  "independentFreezeSha256": "a460cd84c45d183e4963c30bf3298d235bb29e62063e8e90aae36ee948edeac3",
+  "hostWholeLockSha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+  "independentProductAndTestHoldsMatch": true,
+  "regression": "FROZEN; NOT RUN",
+  "codeReview": "HOLD",
+  "browser": "HOLD",
+  "timestamp": "2026-10-04T19:36:59.375270+00:00"
+}
