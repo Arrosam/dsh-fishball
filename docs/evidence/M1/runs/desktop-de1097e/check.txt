@@ -1,0 +1,10 @@
+Command: npm run check
+Snapshot: de1097e42fe08a34484c50bd34a240804e4ca52e
+Exit: 0
+
+
+> bubbles@0.1.0-preview.1 check
+> node scripts/check.mjs
+
+Syntax checked 10 ESM files.
+

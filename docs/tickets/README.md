@@ -1,16 +1,16 @@
 # Local ticket backlog
 
-Planning IDs and approved AC are preserved. This is local tracking; no remote issues/Project are claimed.
+Planning IDs and approved AC are preserved. All tickets follow the newer [exact official Web baseline](../compatibility.md); Desktop/Electron are owner-excluded and old host results historical. This is local tracking; no remote issues/Project are claimed.
 
 | ID | Scope | Wave | Status |
 |---|---|---|---|
-| [BUB001](BUB001.md) | Native plugin bootstrap, config and version checks | W1 bounded; full-ticket host/profile gates later | triaged bounded subset |
+| [BUB001](BUB001.md) | Native plugin bootstrap, config and version checks | W1 bounded Web foundation; remaining product gates later | triaged bounded subset |
 | [BUB002](BUB002.md) | Main conversation, intake and interruptions | W2 | planned |
 | [BUB003](BUB003.md) | Durable tasks and recovery | W1 bounded; integration/retention gates later | triaged bounded subset |
 | [BUB004](BUB004.md) | Worker DSH lifecycle | W2 | planned |
 | [BUB005](BUB005.md) | Scoped intersession messaging | W2 | planned |
 | [BUB006](BUB006.md) | Authorization, identity, secrets and security | W1 bounded; live identity and destination gates later | triaged bounded subset |
-| [BUB007A](BUB007A.md) | fishball extraction, portability and license | W3 gated by license/source choice | planned |
+| [BUB007A](BUB007A.md) | fishball extraction, portability and license | W3 after triage/source pin; license review parallel, redistribution gated | planned |
 | [BUB007B](BUB007B.md) | Memory adapter, isolation and retrieval | W3 after007A; isolation contracts fromW1 | planned |
 | [BUB008](BUB008.md) | Context, summaries and continuity | W2 basic; W3 memory integration | planned |
 | [BUB009](BUB009.md) | Events, schedules and webhooks | W4 | planned |
