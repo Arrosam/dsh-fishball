@@ -7,4 +7,3 @@ Exit: 0
 > node scripts/check.mjs
 
 Syntax checked 10 ESM files.
-
