@@ -1,0 +1,563 @@
+// Independent NI2 functional execution. These explicit fixture doubles supply
+// authority and result-validation callbacks; they are not the installed composer.
+// Original public factories, AgentLoop, SessionStore and JSONL remain unchanged.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
+import { resolveHostSource } from '../src/host-probe.mjs';
+import { NativeAdapter } from '../src/native-adapter.mjs';
+import { WorkerManager } from '../src/worker.mjs';
+import { RuntimeStore } from '../src/runtime-store.mjs';
+import { EnvironmentRegistry, workerDigest } from '../src/environment.mjs';
+import { MemoryAdapter } from '../src/memory.mjs';
+import { ContextAssembler } from '../src/context.mjs';
+import { getTestingProviderBinding, TESTING_ACCOUNTING, TESTING_SYSTEM_PROMPT } from '../src/testing-provider.mjs';
+
+const hash = value => createHash('sha256').update(value).digest('hex');
+const ref = label => workerDigest('NI2-independent-native-functional', label);
+const load = name => import(pathToFileURL(resolveHostSource(`@deepseek-ai/${name}`)).href);
+const { Context, symbols } = await load('cordis');
+const { default: Loader } = await load('cordis-plugin-loader');
+const { default: Sessions } = await load('dsh-session');
+const { default: Projection } = await load('dsh-session-projection');
+const { default: Approval, setApprovalPolicy } = await load('dsh-user-approval');
+const { default: Jsonl } = await load('dsh-session-persistence-jsonl');
+const { AgentRegistry } = await load('dsh-agent');
+const { LlmRuntime, LlmAdapter, expandAssistantStream } = await load('dsh-llm');
+const { default: SystemPrompt } = await load('dsh-system-prompt');
+const { default: Tools } = await load('dsh-tools');
+const { default: AgentLoop } = await load('dsh-agent-loop');
+const original = value => value?.[symbols.original] ?? value;
+const options = { timeout: 15000 };
+
+function barrier() {
+  let enter, release;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const released = new Promise(resolve => { release = resolve; });
+  return { entered, release, async wait() { enter(); await released; } };
+}
+
+function sqlFacts(path) {
+  const db = new DatabaseSync(path, { readOnly: true });
+  try {
+    const count = table => db.prepare(`SELECT count(*) AS n FROM ${table}`).get().n;
+    return { reservations: count('reservations'), commands: count('runtime_commands'), artifacts: db.prepare("SELECT count(*) AS n FROM runtime_records WHERE kind='artifact'").get().n };
+  } finally { db.close(); }
+}
+
+function byteHashes(directory) {
+  const result = {};
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) for (const [child, value] of Object.entries(byteHashes(path))) result[`${entry.name}/${child}`] = value;
+    else if (entry.isFile()) result[entry.name] = hash(readFileSync(path));
+  }
+  return result;
+}
+
+// A separate deterministic adapter is used only for the preserved, advanced
+// absent-hooks control. It is registered through the original public LLM API.
+class OrdinaryFixtureAdapter extends LlmAdapter {
+  constructor(trace) { super(); this.trace = trace; }
+  async resolveModel(provider, model) { return { provider, id: model, name: 'Independent ordinary fixture', context: { contextWindow: 65536 } }; }
+  async *stream(request) {
+    this.trace.push({ maxTokens: request.maxTokens, messages: structuredClone(request.messages) });
+    yield { type: 'text-delta', index: 0, text: 'Ordinary advanced fixture output' };
+    yield { type: 'usage', usage: { inputTokens: 7, outputTokens: 5, totalTokens: 12 } };
+    yield { type: 'finish', reason: { kind: 'stop' } };
+  }
+}
+
+async function fixture(t, { ledger = true, hooks = true, goal = 'CURRENT_PROTECTED_GOAL 中文🚀 "quote"\nline', usageUnits = 32768 } = {}) {
+  const directory = mkdtempSync(join(realpathSync(tmpdir()), 'df-ni2-independent-native-'));
+  const ctx = new Context(), fibers = [], foreignHandles = [], tickets = [];
+  const trace = { setup: [], commits: 0, binds: 0, providerRequests: [], validationReads: [], flush: [], stops: 0, ordinary: [] };
+  const controls = { permission: true, currentEnvironment: ref('current-environment'), commit: true, bind: true, setupGate: null, validationGate: null, stopGate: null, streamGate: null, afterTextGate: null, factsTransform: facts => facts, readOffset: 0, readLength: 128, expectedCursor: null, failCommits: false };
+  const gates = [];
+  let providerEntry, nativeFiber, persistenceFiber, nativeCtx, adapter, provider, manager, store, owner, host, task, prepared, spec, directTicket, directExecution, directBody;
+  const databasePath = join(directory, 'runtime.sqlite'), encryptionKey = Buffer.alloc(32, 67), now = 1900000000000;
+  const storeOptions = () => ({ databasePath, encryptionKey, clock: () => now, fixtureMode: true, fixtureFaults(point) { if (point === 'before_commit' && controls.failCommits) throw new Error('INDEPENDENT_STORAGE_CUT'); }, principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'ni2-independent-owner', workspaceId: 'ni2-independent-workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'ni2-independent-owner', workspaceId: 'ni2-independent-workspace' } }], hostPermission: () => controls.permission });
+  const currentInput = label => {
+    const current = store.task(owner, task.taskRef);
+    return { taskRef: task.taskRef, commandRef: ref(label), expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch };
+  };
+  t.after(async () => {
+    for (const gate of gates) gate.release();
+    controls.failCommits = false;
+    await manager?.close();
+    for (const ticket of tickets) await adapter?.shutdown(ticket);
+    for (const handle of foreignHandles) await handle.dispose();
+    await nativeFiber?.dispose();
+    await providerEntry?.fiber.dispose();
+    for (const fiber of [...fibers].reverse()) await fiber.dispose();
+    store?.close();
+    rmSync(directory, { recursive: true, force: true });
+  });
+  ctx.logger.exporters.clear();
+  async function install(plugin, config) { const fiber = ctx.plugin(plugin, config); fibers.push(fiber); await fiber; return fiber; }
+  await install(Projection);
+  await install(Sessions);
+  await install(Approval, { policy: 'never' });
+  persistenceFiber = await install(Jsonl, { root: join(directory, 'df-sessions'), compression: 'none' });
+  await install(AgentRegistry);
+  await install(LlmRuntime);
+  await install(SystemPrompt, {});
+  await install(Tools, {});
+  await install(AgentLoop, { agents: [], maxParallelToolCalls: 1 });
+  if (!hooks) ctx.llm.registerAdapter(['independent-ordinary'], new OrdinaryFixtureAdapter(trace.ordinary));
+  await install(Loader, { baseUrl: new URL('../', import.meta.url).href });
+  if (hooks) {
+    const entryId = await ctx.loader.create({ name: 'dsh-fishball/testing-provider', config: {} });
+    await ctx.loader.await();
+    providerEntry = ctx.loader.resolve(entryId);
+    provider = getTestingProviderBinding(ctx);
+  }
+  ctx.on('llm/stream', (request, next) => (async function* () {
+    if (controls.streamGate) await controls.streamGate.wait();
+    for await (const chunk of next()) {
+      yield chunk;
+      if (chunk.type === 'text-delta' && controls.afterTextGate) await controls.afterTextGate.wait();
+    }
+  })());
+  let contextContent, ledgerTask;
+  if (ledger) {
+    owner = {}; host = {};
+    store = new RuntimeStore(storeOptions());
+    task = store.intake(owner, { taskId: 'independent-native-task', provider: 'synthetic-local', source: 'functional-fixture', eventId: 'event-one', commandRef: ref('intake'), goal }).task;
+    store.policy(owner, { commandRef: ref('policy'), expectedVersion: 1, limits: { maxActive: 1, maxAttempts: 1, maxTotalAttempts: 1, maxUsageUnits: usageUnits, maxCostEstimateMicros: 0 }, modelPolicy: { version: 1, presetRefs: [ref('preset')], catalogEvidenceRef: ref('catalog') } });
+    const tokenize = text => Buffer.byteLength(text);
+    const memory = new MemoryAdapter({ store, handle: owner, namespaceRef: ref('memory'), tokenize, contextAssembler: new ContextAssembler({ store, tokenize }) });
+    prepared = await memory.prepareExecutionContext({ ...currentInput('prepare-context'), terms: [], now });
+    contextContent = store.readData(owner, { taskRef: task.taskRef, recordRef: prepared.recordRef }).content;
+    ledgerTask = store.task(owner, task.taskRef);
+  } else {
+    contextContent = JSON.stringify({ contractVersion: 'independent.fixture-context/v1', content: goal });
+    ledgerTask = { taskRef: ref('direct-task'), workspaceRef: ref('direct-workspace'), version: 1, authEpoch: 0 };
+  }
+  const env = { environmentRef: ref('environment'), workspaceRef: ledgerTask.workspaceRef, bindingDigest: ref('binding'), toolsDigest: ref('empty-tools'), permissionPolicyDigest: ref('permission-policy'), root: directory, cwd: directory, provider: hooks ? 'df-testing-local' : 'independent-ordinary', model: hooks ? 'df-testing-worker-v1' : 'ordinary-fixture', ...(hooks ? { reasoningEffort: 'deterministic' } : {}), modelRef: ref('model'), reasoningRef: ref('reasoning'), presetRef: ref('preset') };
+  const registry = new EnvironmentRegistry({ entries: [env], currentState: () => controls.currentEnvironment });
+  const environments = { bind: (...args) => registry.bind(...args), assertCurrent: token => registry.assertCurrent(token), inspect: (token, callback) => registry.inspect(token, config => callback({ ...config, maxOutputTokens: 128 })) };
+  spec = { actionRef: ref('action'), kind: 'write', role: 'worker', targetDigest: ref('target'), dataDigest: hash(contextContent), units: 1, charges: { runtimeMs: 1000, usageUnits, costEstimateMicros: 0 }, attemptGroupRef: ref('attempt-group'), attemptIndex: 1, resourcePolicyVersion: 2, modelPolicyVersion: 1, executor: { mode: 'create', generationRef: ref(directory), environmentRef: env.environmentRef, bindingDigest: env.bindingDigest, toolsDigest: env.toolsDigest, permissionPolicyDigest: env.permissionPolicyDigest }, model: { modelRef: env.modelRef, reasoningRef: env.reasoningRef, presetRef: env.presetRef, catalogEvidenceRef: ref('catalog') } };
+  let permit, executionBinding, bodyBinding, lastResult, persistedEvents;
+  const fixtureDoubles = {
+    async setupAgent(agentCtx, agent, binding) {
+      trace.setup.push({ sessionId: agent.id, published: ctx.agents.get(agent.id) !== undefined, maxTokens: binding.options.maxTokens });
+      if (controls.setupGate) await controls.setupGate.wait();
+      agentCtx.tools.restrict({ allow: [] });
+      agentCtx.systemPrompt.section({ name: 'independent-fixed-worker', order: 1, text: TESTING_SYSTEM_PROMPT, complete: true, interpolate: false });
+      agentCtx.systemPrompt.suppressRuntimeContext();
+      setApprovalPolicy(agent.session, 'never');
+      agentCtx.effect(() => async () => { trace.stops++; if (controls.stopGate) await controls.stopGate.wait(); }, 'independent.stop-observation');
+    },
+    commitAgent() { trace.commits++; return controls.commit; },
+    bindExecution(agent, execution, context) {
+      trace.binds++;
+      if (!controls.bind) return false;
+      executionBinding = execution; bodyBinding = context;
+      permit = provider.issue({ agent, executionRef: execution.executionRef, content: context.content, maxOutputTokens: 128, requestBytes: 32768, resultBytes: 128, usageUnits, assertCurrent(request) {
+        if (ledger) store.assertNativeRequestCurrent(host, { taskRef: execution.taskRef, claimRef: execution.claimRef, generationRef: execution.generationRef, actionDigest: execution.actionDigest, executionRef: execution.executionRef });
+        else if (!controls.permission) return false;
+        trace.providerRequests.push({ provider: request.provider, model: request.model, reasoningEffort: request.reasoningEffort, maxTokens: request.maxTokens, messages: structuredClone(request.messages), tools: structuredClone(request.tools), toolHistory: structuredClone(request.toolHistory), sessionId: request.sessionId });
+        return true;
+      } });
+      return true;
+    },
+    async validateResult(agent, result) {
+      lastResult = result;
+      if (controls.validationGate) await controls.validationGate.wait();
+      const participated = await ctx.sessions.flush(agent.session);
+      trace.flush.push({ id: agent.id, exactSession: original(ctx.sessions.get(agent.id)) === original(agent.session), participated });
+      if (participated !== true) throw new Error('INDEPENDENT_FLUSH_UNAVAILABLE');
+      const persistence = ctx.reflect.get('sessionPersistence');
+      const observed = await persistence.stat(agent.id);
+      if (!observed || observed.sizeBytes > 1048576) throw new Error('INDEPENDENT_SIZE_UNAVAILABLE');
+      const read = await persistence.open(agent.id, 'read');
+      trace.validationReads.push({ id: read.id, access: read.access });
+      try { persistedEvents = (await read.read(controls.readOffset, controls.readLength)).events; }
+      finally { await read.close(); }
+      const input = persistedEvents.filter(event => event.type === 'user/message' && event.data.id === result.executionRef);
+      const output = persistedEvents.filter(event => event.seq === (controls.expectedCursor ?? result.cursor) && event.type === 'assistant/message');
+      if (input.length !== 1 || output.length !== 1 || input[0].seq >= output[0].seq || input[0].data.source.kind !== 'df-context' || input[0].data.source.form !== 'local' || input[0].data.content.length !== 1 || input[0].data.content[0].text !== bodyBinding.content || hash(input[0].data.content[0].text) !== result.dataDigest) throw new Error('INDEPENDENT_CURSOR_UNAVAILABLE');
+      const assistant = output[0].data;
+      const text = assistant.message.content.map(block => block.text).join('');
+      const usage = permit?.usage();
+      if (text !== result.content || hash(text) !== result.digest || assistant.interrupted || !usage || !assistant.usage || usage.accounting !== TESTING_ACCOUNTING || usage.resultDigest !== result.digest || usage.inputUnits + usage.outputUnits !== usage.totalUnits || assistant.usage.inputTokens !== usage.inputUnits || assistant.usage.outputTokens !== usage.outputUnits || assistant.usage.totalTokens !== usage.totalUnits) throw new Error('INDEPENDENT_USAGE_UNAVAILABLE');
+      if (!persistedEvents.some(event => event.type === 'step/end' && event.data.turn === assistant.turn && event.data.step === assistant.step) || !persistedEvents.some(event => event.type === 'turn/end' && event.data.turn === assistant.turn)) throw new Error('INDEPENDENT_TURN_UNAVAILABLE');
+      return controls.factsTransform({ usageUnits: usage.totalUnits, evidenceRef: ref(`owned-persisted:${agent.id}:${result.cursor}:${result.digest}`), resultDigest: result.digest });
+    },
+  };
+  nativeFiber = ctx.plugin({ name: 'independent-native-owner', inject: ['sessions', 'approval'], apply(scope) {
+    nativeCtx = scope;
+    adapter = new NativeAdapter(scope, { environments, permission: () => controls.permission, toolGuard: ({ schemas }) => schemas.length === 0, ...(hooks ? { nativeHooks: fixtureDoubles } : {}) });
+  } });
+  await nativeFiber;
+  assert.ok(adapter, 'original optional native services must permit this noninjecting owner scope');
+  let action, worker, executed, executeCommand;
+  if (ledger) {
+    manager = new WorkerManager({ store, hostHandle: host, adapter });
+    action = store.planAction(owner, { ...currentInput('plan-action'), spec });
+    store.grantAction(owner, { ...currentInput('grant-action'), actionRef: action.actionRef, actionDigest: action.actionDigest, expiresAt: now + 60000 });
+  } else {
+    directTicket = await adapter.prepare(spec, ledgerTask, ref('direct-action-digest'));
+    tickets.push(directTicket);
+    adapter.bindClaim(directTicket, { actionRef: spec.actionRef, claimRef: ref('direct-claim'), reservationRef: ref('direct-reservation'), actionDigest: ref('direct-action-digest'), generationRef: spec.executor.generationRef }, () => controls.permission);
+    directExecution = { executionRef: ref('direct-execution'), taskRef: ledgerTask.taskRef, claimRef: ref('direct-claim'), generationRef: spec.executor.generationRef, contextRecordRef: ref('direct-context'), actionDigest: ref('direct-action-digest'), dataDigest: spec.dataDigest };
+    directBody = { recordRef: directExecution.contextRecordRef, kind: 'context', content: contextContent, digest: spec.dataDigest, byteLength: Buffer.byteLength(contextContent) };
+  }
+  return {
+    directory, ctx, nativeCtx, nativeFiber, persistenceFiber, adapter, manager, store, owner, host, task, prepared, spec, trace, controls, databasePath, contextContent, directTicket, directExecution, directBody,
+    gate(key) { const value = barrier(); controls[key] = value; gates.push(value); return value; },
+    usage: () => permit?.usage(), result: () => lastResult, persistedEvents: () => persistedEvents, execution: () => executed,
+    binding: currentInput,
+    snapshot: () => store.snapshot(owner, { taskRef: task.taskRef }),
+    async create(extra = {}) { worker = ledger ? await manager.dispatch(owner, { ...currentInput('create-worker'), actionRef: action.actionRef, actionDigest: action.actionDigest, ...extra }) : await adapter.create(directTicket); return worker; },
+    async execute(extra = {}) { if (ledger) executeCommand ??= { ...currentInput('execute-worker'), actionRef: action.actionRef, actionDigest: action.actionDigest, claimRef: worker.claimRef, generationRef: worker.generationRef, contextRecordRef: prepared.recordRef }; executed = ledger ? await manager.executeContext(owner, { ...executeCommand, ...extra }) : await adapter.executeContext(directTicket, directExecution, directBody, () => ({ ...directExecution, admitted: true, state: 'dispatch_intent' })); return executed; },
+    refs() { return { taskRef: task.taskRef, actionRef: action.actionRef, claimRef: worker.claimRef, generationRef: worker.generationRef, executionRef: executed.executionRef }; },
+    captureInput(label = 'capture-worker') { return { ...this.refs(), ...currentInput(label), artifactRef: ref('captured-artifact'), version: 1 }; },
+    finishInput(label = 'finish-worker') { return { ...this.refs(), ...currentInput(label) }; },
+    async capture(input) { return manager.captureValidatedResult(owner, input ?? this.captureInput()); },
+    async finish(input) { return manager.finishExecution(owner, input ?? this.finishInput()); },
+    revoke() { return store.revokeAction(owner, { ...currentInput('revoke-worker'), actionRef: action.actionRef, actionDigest: action.actionDigest }); },
+    async foreign() {
+      const handle = await ctx.agents.create({ sessionId: 'independent-unrelated-native', meta: { cwd: directory }, agentOptions: { provider: 'df-testing-local', model: 'df-testing-worker-v1', reasoningEffort: 'deterministic', maxTokens: 128 } });
+      foreignHandles.push(handle);
+      handle.agent.session.append('user/message', { id: 'independent-unrelated-input', role: 'user', content: [{ type: 'text', text: 'UNRELATED_NATIVE_TRANSCRIPT_CANARY' }], source: { kind: 'independent-fixture', form: 'local' } }, { surfaceOp: 'append' });
+      await ctx.sessions.flush(handle.agent.session);
+      return handle;
+    },
+    async reopenRead(captured) {
+      await manager.close();
+      store.close();
+      store = new RuntimeStore(storeOptions());
+      const artifact = store.artifact(owner, { taskRef: task.taskRef, artifactRef: captured.artifactRef, version: 1 });
+      const data = store.readData(owner, { taskRef: task.taskRef, recordRef: artifact.recordRef });
+      return { artifact, data, snapshot: store.snapshot(owner, { taskRef: task.taskRef }) };
+    },
+  };
+}
+
+function held(f) {
+  const snapshot = f.snapshot();
+  assert.equal(sqlFacts(f.databasePath).reservations, 1);
+  assert.equal(snapshot.actions[0].releaseEvidenceRef, null);
+  assert.equal(snapshot.actions[0].attempts, 1);
+  assert.equal(snapshot.policy.limits.maxTotalAttempts, 1);
+  return snapshot;
+}
+
+async function readyExecuted(t, settings) {
+  const f = await fixture(t, settings);
+  assert.equal((await f.create()).phase, 'ready');
+  assert.equal((await f.execute()).state, 'committed');
+  return f;
+}
+
+async function failedAttemptFacts(f) {
+  const id = `df-${f.spec.executor.generationRef}`, session = f.ctx.sessions.get(id);
+  if (session) assert.equal(await f.ctx.sessions.flush(session), true);
+  const read = await f.ctx.sessionPersistence.open(id, 'read');
+  let events;
+  try { events = (await read.read(0, 128)).events; } finally { await read.close(); }
+  const users = events.filter(e => e.type === 'user/message');
+  const attempts = events.filter(e => e.type === 'assistant/attempt');
+  const messages = events.filter(e => e.type === 'assistant/message');
+  assert.equal(users.length, 1); assert.equal(users[0].data.content[0].text, f.contextContent);
+  assert.equal(attempts.length, 1); assert.equal(messages.length, 0);
+  const chunks = attempts.flatMap(e => expandAssistantStream(e.data.stream).map(record => record.chunk));
+  assert.equal(chunks.filter(chunk => ['text-delta', 'reasoning-delta', 'tool-call-delta', 'usage'].includes(chunk.type)).length, 0);
+  const end = events.find(e => e.type === 'turn/end');
+  return { eventTypes: events.map(e => e.type), userMessages: users.length, assistantAttempts: attempts.length, assistantMessages: messages.length, attemptChunkTypes: chunks.map(c => c.type), turnEndKind: end?.data.reason.kind, turnEndFailureCode: end?.data.reason.failure?.code ?? null };
+}
+
+test('N2-09/10/11/17: idle zero streams; exact actual UTF-8 request/output; encrypted capture survives reopen without replay', options, async t => {
+  const f = await fixture(t);
+  assert.equal(existsSync(join(f.directory, 'df-sessions')), false);
+  assert.equal((await f.create()).phase, 'ready');
+  assert.deepEqual(f.trace.setup, [{ sessionId: `df-${f.spec.executor.generationRef}`, published: false, maxTokens: 128 }]);
+  assert.equal(f.trace.providerRequests.length, 0); assert.equal(f.usage(), undefined);
+  assert.equal(f.snapshot().executions.length, 0);
+  await f.foreign();
+  f.store.intake(f.owner, { taskId: 'independent-other-task', provider: 'synthetic-local', source: 'functional-fixture', eventId: 'event-two', commandRef: ref('other-intake'), goal: 'OTHER_TASK_CANARY' });
+  assert.equal((await f.execute()).state, 'committed');
+  assert.equal(f.trace.binds, 1); assert.equal(f.trace.providerRequests.length, 1);
+  const request = f.trace.providerRequests[0];
+  assert.deepEqual([request.provider, request.model, request.reasoningEffort, request.maxTokens], ['df-testing-local', 'df-testing-worker-v1', 'deterministic', 128]);
+  assert.deepEqual(request.messages.map(message => message.role), ['system', 'user']);
+  assert.deepEqual(request.messages[0].content, [{ type: 'text', text: TESTING_SYSTEM_PROMPT }]);
+  assert.equal(request.messages[1].content[0].text, f.contextContent);
+  assert.equal(request.messages[1].source.kind, 'df-context');
+  assert.equal(request.messages[1].source.form, 'local');
+  assert.deepEqual(request.tools ?? [], []);
+  assert.deepEqual(request.toolHistory ?? { tools: [], updates: [] }, { tools: [], updates: [] });
+  assert.equal(JSON.stringify(request.messages).includes('UNRELATED_NATIVE_TRANSCRIPT_CANARY'), false);
+  assert.equal(JSON.stringify(request.messages).includes('OTHER_TASK_CANARY'), false);
+  const actualInputUnits = Buffer.byteLength(JSON.stringify(request.messages));
+  const expectedText = `Synthetic local result; approved input SHA-256: ${hash(f.contextContent)}.`;
+  assert.equal(f.usage().inputUnits, actualInputUnits);
+  assert.equal(f.usage().outputUnits, Buffer.byteLength(expectedText));
+  assert.equal(f.usage().totalUnits, actualInputUnits + Buffer.byteLength(expectedText));
+  assert.equal(f.usage().accounting, TESTING_ACCOUNTING);
+  const capture = await f.capture();
+  held(f);
+  assert.equal(capture.verification, null);
+  assert.deepEqual(f.trace.validationReads, [{ id: request.sessionId, access: 'read' }]);
+  assert.deepEqual(f.trace.flush, [{ id: request.sessionId, exactSession: true, participated: true }]);
+  const stored = f.store.readData(f.owner, { taskRef: f.task.taskRef, recordRef: capture.recordRef });
+  const envelope = JSON.parse(stored.content);
+  assert.equal(envelope.contractVersion, 'df.native-result/v1');
+  assert.equal(envelope.content, expectedText);
+  assert.equal(envelope.source.resultDigest, hash(expectedText));
+  assert.equal(envelope.source.inputDigest, hash(f.contextContent));
+  assert.equal(envelope.source.sessionRef, hash(request.sessionId));
+  assert.equal(envelope.source.cursor, f.persistedEvents().find(event => event.type === 'assistant/message').seq);
+  const repeated = await f.execute(); assert.equal(repeated.admitted, false);
+  assert.equal(f.trace.providerRequests.length, 1);
+  assert.equal(f.snapshot().executions.length, 1);
+  const reopened = await f.reopenRead(capture);
+  assert.equal(reopened.data.content, stored.content); assert.equal(reopened.data.digest, stored.digest);
+  assert.equal(reopened.artifact.verification, null);
+  assert.equal(reopened.snapshot.actions[0].releaseEvidenceRef, null);
+  assert.equal(f.trace.providerRequests.length, 1);
+  assert.notEqual(reopened.snapshot.task.status, 'completed');
+});
+
+test('N2-17/A13: capture is held; revoked-grant finish stops only owned handle, drains original writer, keeps attempt and exact immutable dedup', options, async t => {
+  const f = await readyExecuted(t);
+  const foreign = await f.foreign();
+  const foreignStat = await f.ctx.sessionPersistence.stat(foreign.agent.id);
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  assert.equal(f.ctx.agents.list().length, 2);
+  const captured = await f.capture(); held(f);
+  assert.equal(captured.verification, null);
+  assert.equal(await f.ctx.sessionPersistence.stat(foreign.agent.id).then(s => s.revision), foreignStat.revision);
+  assert.equal(f.trace.validationReads.every(read => read.id !== foreign.agent.id), true);
+  f.revoke();
+  const command = f.finishInput(), receipt = await f.finish(command);
+  assert.equal(receipt.reservationHeld, false); assert.equal(receipt.outcome, 'completed');
+  assert.equal(sqlFacts(f.databasePath).reservations, 0);
+  assert.equal(f.ctx.agents.get(f.trace.providerRequests[0].sessionId), undefined);
+  assert.equal(f.ctx.sessions.get(f.trace.providerRequests[0].sessionId), undefined);
+  assert.equal(original(f.ctx.agents.get(foreign.agent.id)), original(foreign.agent));
+  assert.equal(original(f.ctx.sessions.get(foreign.agent.id)), original(foreign.agent.session));
+  const writer = await f.ctx.sessionPersistence.open(f.trace.providerRequests[0].sessionId, 'write');
+  assert.equal((await writer.read(0, 128)).events.find(e => e.type === 'assistant/message').data.message.content[0].text, JSON.parse(f.store.readData(f.owner, { taskRef: f.task.taskRef, recordRef: captured.recordRef }).content).content);
+  await writer.close();
+  await assert.rejects(f.ctx.sessionPersistence.open(foreign.agent.id, 'write'));
+  const finished = f.snapshot();
+  assert.equal(finished.actions[0].usageState, 'actual');
+  assert.equal(finished.actions[0].usageUnits, f.usage().totalUnits);
+  assert.equal(finished.actions[0].attempts, 1); assert.equal(finished.policy.limits.maxTotalAttempts, 1);
+  assert.notEqual(finished.task.status, 'completed'); assert.equal(finished.artifacts[0].verification, null);
+  const stops = f.trace.stops, count = sqlFacts(f.databasePath).commands;
+  assert.equal(Object.isFrozen(receipt), true); assert.equal(Object.isFrozen(receipt.task), true);
+  assert.throws(() => { receipt.reservationHeld = true; }, TypeError);
+  assert.deepEqual(await f.finish(command), receipt);
+  assert.equal(f.trace.stops, stops); assert.equal(sqlFacts(f.databasePath).commands, count);
+  await assert.rejects(f.finish({ ...command, commandRef: ref('changed-finish-command') }), { code: 'WORKER_FINISH_UNAVAILABLE' });
+});
+
+test('N2-17: actual native stop cannot release the reservation while a separately committed handoff remains pending', options, async t => {
+  const f = await readyExecuted(t); await f.capture();
+  const { executionRef, actionRef, ...workerRefs } = f.refs();
+  const handoff = f.store.putHandoff(f.owner, { ...workerRefs, ...f.binding('handoff'), actionDigest: f.snapshot().actions[0].actionDigest, content: 'Independent pending environment handoff', sourceRef: actionRef });
+  const command = f.finishInput(), receipt = await f.finish(command);
+  assert.equal(receipt.outcome, 'completed'); assert.equal(receipt.reservationHeld, true);
+  assert.equal(f.ctx.agents.list().length, 0); assert.equal(f.ctx.sessions.list().length, 0);
+  assert.equal(f.snapshot().workers[0].handoff.handoffRef, handoff.handoffRef);
+  assert.equal(f.snapshot().workers[0].handoff.state, 'pending'); held(f);
+  assert.equal(f.snapshot().actions[0].usageState, 'actual');
+  assert.deepEqual(await f.finish(command), receipt);
+});
+
+for (const [name, transform, code] of [
+  ['missing usage', facts => { const { usageUnits, ...rest } = facts; return rest; }, 'WORKER_INVALID'],
+  ['wrong result digest', facts => ({ ...facts, resultDigest: ref('wrong-result') }), 'WORKER_RESULT_UNAVAILABLE'],
+  ['fractional usage', facts => ({ ...facts, usageUnits: 1.5 }), 'WORKER_INVALID'],
+  ['unsafe usage', facts => ({ ...facts, usageUnits: Number.MAX_SAFE_INTEGER + 1 }), 'WORKER_INVALID'],
+  ['usage exceeds approved reservation', facts => ({ ...facts, usageUnits: 32769 }), 'WORKER_RESULT_UNAVAILABLE'],
+]) test(`N2-17: rejecting fixture facts (${name}) cannot create an artifact or grant finish`, options, async t => {
+  const f = await readyExecuted(t); f.controls.factsTransform = transform;
+  await f.ctx.sessions.flush(f.ctx.sessions.get(f.trace.providerRequests[0].sessionId));
+  const before = f.snapshot(), counts = sqlFacts(f.databasePath), bytes = byteHashes(f.directory);
+  await assert.rejects(f.capture(), { code });
+  assert.deepEqual(f.snapshot(), before); assert.deepEqual(sqlFacts(f.databasePath), counts); assert.deepEqual(byteHashes(f.directory), bytes);
+  held(f); await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  assert.equal(f.ctx.agents.list().length, 1);
+});
+
+for (const [name, modify] of [
+  ['bounded read omits actual input/output', f => { f.controls.readLength = 1; }],
+  ['stale assistant cursor', f => { f.controls.expectedCursor = f.execution().result.cursor - 1; }],
+  ['wrong assistant cursor', f => { f.controls.expectedCursor = f.execution().result.cursor + 1; }],
+]) test(`N2-17/A12: independent owned-log validator rejects ${name} without a shadow persistence read`, options, async t => {
+  const f = await readyExecuted(t); modify(f);
+  const before = f.snapshot(); await assert.rejects(f.capture(), { code: 'WORKER_RESULT_UNAVAILABLE' });
+  assert.deepEqual(f.snapshot(), before); assert.equal(sqlFacts(f.databasePath).artifacts, 0); held(f);
+  assert.equal(f.trace.validationReads[0].access, 'read');
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+});
+
+test('N2-17/A11: throwing original scoped flush listener is awaited and redacted; it is not captured as durable success', options, async t => {
+  const f = await readyExecuted(t);
+  const agent = f.ctx.agents.get(f.trace.providerRequests[0].sessionId);
+  let calls = 0;
+  agent.ctx.on('session/flush', session => { assert.equal(original(session), original(agent.session)); calls++; throw new Error('PRIVATE_FLUSH_CANARY'); });
+  await assert.rejects(f.capture(), error => error.code === 'WORKER_RESULT_UNAVAILABLE' && !String(error).includes('PRIVATE_FLUSH_CANARY'));
+  assert.equal(calls, 1); assert.equal(f.trace.validationReads.length, 0); held(f);
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+});
+
+test('N2-17/A11: actual durability listener loss yields false participation and cannot create capture proof', options, async t => {
+  const f = await readyExecuted(t);
+  await f.persistenceFiber.dispose();
+  await assert.rejects(f.capture(), { code: 'WORKER_RESULT_UNAVAILABLE' });
+  assert.equal(f.trace.flush[0].participated, false); assert.equal(f.trace.validationReads.length, 0);
+  assert.equal(sqlFacts(f.databasePath).artifacts, 0); held(f);
+});
+
+test('N2-17/A11: exact capture input is detached before awaited validation; mutation cannot redirect the artifact', options, async t => {
+  const f = await readyExecuted(t), gate = f.gate('validationGate');
+  const input = f.captureInput(), originalInput = { ...input }, before = f.snapshot();
+  const pending = f.capture(input); await gate.entered;
+  input.artifactRef = ref('mutated-artifact'); input.commandRef = ref('mutated-capture-command'); input.executionRef = ref('mutated-execution'); input.generationRef = ref('mutated-generation');
+  gate.release(); const captured = await pending;
+  assert.equal(captured.artifactRef, originalInput.artifactRef); assert.equal(captured.generationRef, originalInput.generationRef);
+  assert.equal(f.snapshot().artifacts.length, 1); assert.equal(f.snapshot().task.version, before.task.version + 1);
+  assert.equal(JSON.parse(f.store.readData(f.owner, { taskRef: f.task.taskRef, recordRef: captured.recordRef }).content).source.executionRef, originalInput.executionRef);
+  held(f);
+});
+
+test('N2-12/17/A11: revoke during validator await invalidates capture CAS and leaves the already committed result held', options, async t => {
+  const f = await readyExecuted(t), gate = f.gate('validationGate');
+  const pending = f.capture(); await gate.entered; f.revoke(); gate.release();
+  await assert.rejects(pending, { code: 'STALE_VERSION' });
+  assert.equal(sqlFacts(f.databasePath).artifacts, 0); held(f);
+  assert.equal(f.usage().totalUnits > 0, true); assert.equal(f.trace.validationReads.length, 1);
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+});
+
+test('N2-17/A13: pending finish has no early release; submitted input mutation and duplicate cannot change or repeat the exact cleanup', options, async t => {
+  const f = await readyExecuted(t); await f.capture();
+  const gate = f.gate('stopGate'), input = f.finishInput(), originalInput = { ...input };
+  const pending = f.finish(input); await gate.entered;
+  held(f);
+  await assert.rejects(f.finish(originalInput), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  input.commandRef = ref('mutable-finish-command'); input.taskRef = ref('mutable-finish-task'); input.claimRef = ref('mutable-finish-claim');
+  gate.release(); const receipt = await pending;
+  assert.equal(receipt.claimRef, originalInput.claimRef); assert.equal(receipt.task.taskRef, originalInput.taskRef);
+  assert.equal(receipt.reservationHeld, false); assert.equal(f.trace.stops, 1);
+  assert.deepEqual(await f.finish(originalInput), receipt); assert.equal(f.trace.stops, 1);
+});
+
+test('N2-13/17: real transaction fault after native stop retains reservation and permanently rejects manager finish retry', options, async t => {
+  const f = await readyExecuted(t); await f.capture();
+  const before = f.snapshot(); f.controls.failCommits = true;
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  f.controls.failCommits = false;
+  assert.equal(f.ctx.agents.list().length, 0); assert.equal(f.ctx.sessions.list().length, 0);
+  assert.equal(f.snapshot().actions[0].releaseEvidenceRef, before.actions[0].releaseEvidenceRef); held(f);
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  await assert.rejects(f.finish(f.finishInput('finish-after-fault')), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  assert.equal(f.trace.stops, 1); assert.equal(f.trace.providerRequests.length, 1);
+});
+
+for (const [name, change] of [
+  ['permission revocation', f => { f.controls.permission = false; }],
+  ['environment revision', f => { f.controls.currentEnvironment = ref('replacement-environment'); }],
+]) test(`N2-09/12/A4: ${name} during original unpublished setup blocks publication and permit`, options, async t => {
+  const f = await fixture(t, { ledger: false }), gate = f.gate('setupGate');
+  const creating = f.create(); await gate.entered; change(f); gate.release();
+  await assert.rejects(creating, { code: 'WORKER_CREATE_UNKNOWN' });
+  assert.equal(f.trace.commits, 0); assert.equal(f.trace.binds, 0); assert.equal(f.usage(), undefined);
+  assert.equal(f.ctx.agents.list().length, 0); assert.equal(f.ctx.sessions.list().length, 0);
+});
+
+test('N2-12/A14: owner fiber disposal during original setup cannot publish from a late callback', options, async t => {
+  const f = await fixture(t, { ledger: false }), gate = f.gate('setupGate');
+  const creating = f.create(); await gate.entered;
+  const disposed = f.nativeFiber.dispose(); gate.release();
+  await assert.rejects(creating, { code: 'WORKER_CREATE_UNKNOWN' }); await disposed;
+  assert.equal(f.ctx.agents.list().length, 0); assert.equal(f.ctx.sessions.list().length, 0);
+  assert.equal(f.trace.commits, 0); assert.equal(f.usage(), undefined);
+});
+
+test('N2-10/12/A9: revoke after durable send but before delayed inner iterator denies output while intent and reservation remain consumed', options, async t => {
+  const f = await fixture(t); await f.create(); const gate = f.gate('streamGate');
+  const running = f.execute(); await gate.entered;
+  assert.equal(f.snapshot().executions[0].state, 'dispatch_intent');
+  f.revoke(); gate.release();
+  const observed = await running;
+  assert.equal(f.usage(), null); assert.equal(f.trace.providerRequests.length, 0);
+  const state = held(f); assert.equal(state.executions.length, 1); assert.equal(state.executions[0].state, 'dispatch_intent');
+  await assert.rejects(f.capture(), { code: 'WORKER_RESULT_UNAVAILABLE' });
+  assert.equal(sqlFacts(f.databasePath).artifacts, 0);
+  const persisted = await failedAttemptFacts(f);
+  // Existing NativeAdapter state describes the native event commit, including
+  // an assistant/attempt. It never substitutes for text/usage/capture success.
+  assert.equal(observed.state, 'committed'); assert.equal(observed.result.eventType, 'assistant/attempt');
+  t.diagnostic(JSON.stringify({ reportedState: observed.state, receiptEventType: observed.result.eventType, sourceOwnedRequests: f.trace.providerRequests.length, sourceOwnedUsage: f.usage(), reservations: 1, artifacts: 0, ledgerExecution: state.executions[0].state, persisted }));
+});
+
+test('N2-10/12/A10: revoke after first real output preserves late committed output and permits factual captured cleanup', options, async t => {
+  const f = await fixture(t); await f.create(); const gate = f.gate('afterTextGate');
+  const running = f.execute(); await gate.entered;
+  assert.equal(f.usage().totalUnits > 0, true); f.revoke(); gate.release();
+  assert.equal((await running).state, 'committed');
+  const captured = await f.capture(); assert.equal(captured.verification, null); held(f);
+  assert.equal((await f.finish()).reservationHeld, false); assert.equal(f.trace.providerRequests.length, 1);
+});
+
+test('N2-12/A9: cancel before delayed actual provider consumption yields no extra stream and factual stop still keeps unresolved work held', options, async t => {
+  const f = await fixture(t); await f.create(); const gate = f.gate('streamGate');
+  const running = f.execute(); await gate.entered;
+  const cancelling = f.manager.cancel(f.owner, f.binding('cancel-worker'));
+  gate.release(); await cancelling;
+  const observed = await running;
+  assert.equal(f.usage(), null); assert.equal(f.trace.providerRequests.length, 0);
+  assert.equal(f.ctx.agents.list().length, 0); assert.equal(f.ctx.sessions.list().length, 0); held(f);
+  await assert.rejects(f.capture(), { code: 'WORKER_RESULT_UNAVAILABLE' });
+  assert.equal(sqlFacts(f.databasePath).artifacts, 0);
+  const persisted = await failedAttemptFacts(f);
+  assert.equal(observed.state, 'committed'); assert.equal(observed.result.eventType, 'assistant/attempt');
+  t.diagnostic(JSON.stringify({ reportedState: observed.state, receiptEventType: observed.result.eventType, sourceOwnedRequests: f.trace.providerRequests.length, sourceOwnedUsage: f.usage(), reservations: 1, artifacts: 0, ledgerExecution: f.snapshot().executions[0].state, persisted }));
+});
+
+test('N2-12/17/A14: disposed owner scope cannot publish a late validated capture or manufacture finish', options, async t => {
+  const f = await readyExecuted(t), gate = f.gate('validationGate');
+  const pending = f.capture(); await gate.entered;
+  const rejected = assert.rejects(pending, { code: 'WORKER_RESULT_UNAVAILABLE' });
+  await f.nativeFiber.dispose(); gate.release(); await rejected;
+  assert.equal(sqlFacts(f.databasePath).artifacts, 0); held(f);
+  assert.equal(f.ctx.agents.list().length, 0); assert.equal(f.ctx.sessions.list().length, 0);
+});
+
+test('N2-09/10/A6: native execution binding and body survive caller mutation immediately after the real resolve await', options, async t => {
+  const f = await fixture(t, { ledger: false }); await f.create();
+  const execution = { ...f.directExecution }, body = { ...f.directBody };
+  const running = f.adapter.executeContext(f.directTicket, execution, body, () => ({ ...f.directExecution, admitted: true, state: 'dispatch_intent' }));
+  execution.executionRef = ref('mutated-native-execution'); body.content = 'MUTATED_CONTEXT_CANARY'; body.digest = hash(body.content);
+  assert.equal((await running).state, 'committed');
+  assert.equal(f.trace.providerRequests[0].messages[1].id, f.directExecution.executionRef);
+  assert.equal(f.trace.providerRequests[0].messages[1].content[0].text, f.directBody.content);
+  assert.equal(f.trace.providerRequests.length, 1);
+});
+
+test('N2-02/18: optional public ReflectService access keeps a native owner without native inject declarations working; absent-hooks advanced options remain unchanged', options, async t => {
+  const f = await fixture(t, { ledger: false, hooks: false });
+  assert.equal(original(f.nativeCtx.reflect.get('agents')), original(f.ctx.agents));
+  assert.equal(original(f.nativeCtx.reflect.get('llm')), original(f.ctx.llm));
+  assert.equal(original(f.nativeCtx.reflect.get('tools')), original(f.ctx.tools));
+  assert.equal(f.nativeCtx.reflect.get('independent-absent-service'), undefined);
+  assert.equal((await f.create()).phase, 'created'); assert.equal(f.trace.ordinary.length, 0);
+  assert.equal((await f.execute()).state, 'committed'); assert.equal(f.trace.ordinary.length, 1);
+  assert.equal(f.trace.ordinary[0].maxTokens, undefined, 'optional hooks cannot impose installed maxTokens on an advanced caller');
+  assert.equal(f.adapter.readResult(f.directTicket, f.directExecution.executionRef).content, 'Ordinary advanced fixture output');
+  await assert.rejects(f.adapter.validateResult(f.directTicket, f.directExecution.executionRef), { code: 'WORKER_RESULT_UNAVAILABLE' });
+  await assert.rejects(f.adapter.finishExecution(f.directTicket, f.directExecution.executionRef), { code: 'WORKER_FINISH_UNAVAILABLE' });
+  assert.equal((await f.adapter.dispose(f.directTicket)).phase, 'stopped');
+});

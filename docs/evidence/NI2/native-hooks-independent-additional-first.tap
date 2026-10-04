@@ -1,0 +1,73 @@
+TAP version 13
+# (node:76318) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: N2-11/17: an owner-written identical result envelope cannot create the manager private capture or finish authority
+ok 1 - N2-11/17: an owner-written identical result envelope cannot create the manager private capture or finish authority
+  ---
+  duration_ms: 150.179666
+  type: 'test'
+  ...
+# Subtest: N2-17: a validated version2 advanced capture cannot inherit the frozen version1 finish path
+ok 2 - N2-17: a validated version2 advanced capture cannot inherit the frozen version1 finish path
+  ---
+  duration_ms: 105.359542
+  type: 'test'
+  ...
+# Subtest: N2-11/17: changed execution capture and mismatched finish references fail without writes or consuming valid cleanup
+not ok 3 - N2-11/17: changed execution capture and mismatched finish references fail without writes or consuming valid cleanup
+  ---
+  duration_ms: 108.276625
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-hooks-functional.test.mjs:587:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      Comparison {
+    +   code: 'UNAUTHORIZED'
+    -   code: 'INVALID_CALLER'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 'INVALID_CALLER'
+  actual:
+  error: 'UNAUTHORIZED'
+  stack: |-
+    fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs:10:37)
+    #ctx (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs:132:84)
+    RuntimeStore.snapshot (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs:1189:22)
+    #snapshot (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/worker.mjs:17:40)
+    WorkerManager.finishExecution (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/worker.mjs:202:36)
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-hooks-functional.test.mjs:599:34)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-hooks-functional.test.mjs:599:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: N2-09/A4: false final setup hook after an actual durable claim yields no publication or execution permit and preserves the charged reservation
+ok 4 - N2-09/A4: false final setup hook after an actual durable claim yields no publication or execution permit and preserves the charged reservation
+  ---
+  duration_ms: 37.195667
+  type: 'test'
+  ...
+# Subtest: N2-10/A6: failed binding after durable execution consumption makes no send, native attempt or source-owned permit
+ok 5 - N2-10/A6: failed binding after durable execution consumption makes no send, native attempt or source-owned permit
+  ---
+  duration_ms: 63.960334
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 672.148459

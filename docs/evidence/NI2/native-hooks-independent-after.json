@@ -1,0 +1,2212 @@
+{
+  "created": "2026-10-04T22:13:15.808Z",
+  "identity": "/root/native_functional",
+  "node": "v22.22.2",
+  "sqlite": "3.53.2",
+  "platform": "darwin",
+  "arch": "arm64",
+  "sanitisedEnvironmentKeys": [
+    "PATH",
+    "TZ",
+    "__CF_USER_TEXT_ENCODING"
+  ],
+  "baselineHead": "f57f85f6eba2a7c6ea1b9a9bcd86beedbe677125",
+  "currentHead": "345cc300322d000053b01a110531e9b6942cae98",
+  "checked": 274,
+  "drift": [],
+  "allMatch": true,
+  "files": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "actual": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/diff.d.ts",
+      "sha256": "384a3adf345bf14d5160cd89a8f7098e9278289fb76af208b9c0a6dde0afe60e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/diff.d.ts",
+      "actual": "384a3adf345bf14d5160cd89a8f7098e9278289fb76af208b9c0a6dde0afe60e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/entry.d.ts",
+      "sha256": "047a95a352588e566336593969e4a3a7164b3a6ef1bd0ca16a1eb6b766b1c6a5",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/entry.d.ts",
+      "actual": "047a95a352588e566336593969e4a3a7164b3a6ef1bd0ca16a1eb6b766b1c6a5",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/group.d.ts",
+      "sha256": "4fccac47dcb65b6f9a7ed674b97a72ed6e5340ab01deebd1320e7fb926d7db02",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/group.d.ts",
+      "actual": "4fccac47dcb65b6f9a7ed674b97a72ed6e5340ab01deebd1320e7fb926d7db02",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/isolate.d.ts",
+      "sha256": "f7123a5bbd90991856db9709d84f46ed08d7174aef6312523fa8a0e7d8c752dc",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/isolate.d.ts",
+      "actual": "f7123a5bbd90991856db9709d84f46ed08d7174aef6312523fa8a0e7d8c752dc",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts",
+      "sha256": "82c2812f98f18b377d7ffffe1c8576a54fde3b1704d79761b3e58961d430c520",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts",
+      "actual": "82c2812f98f18b377d7ffffe1c8576a54fde3b1704d79761b3e58961d430c520",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/utils.d.ts",
+      "sha256": "cb8240b40ff2d5c8509857179e3da91cc34a6bd56b5311cc56a5fd000b1d3677",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/utils.d.ts",
+      "actual": "cb8240b40ff2d5c8509857179e3da91cc34a6bd56b5311cc56a5fd000b1d3677",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+      "sha256": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+      "actual": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/internal.d.ts",
+      "sha256": "5c1bfdad5775e0f4abb5e7552b8359196fb69477986df9678a7a27b010ffd1b1",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/internal.d.ts",
+      "actual": "5c1bfdad5775e0f4abb5e7552b8359196fb69477986df9678a7a27b010ffd1b1",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+      "sha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+      "actual": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/bin.js",
+      "sha256": "cf84978c7e4165bf090b0d50c34c1986d06577f2ada27c902660783a142c3f81",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/bin.js",
+      "actual": "cf84978c7e4165bf090b0d50c34c1986d06577f2ada27c902660783a142c3f81",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "actual": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+      "sha256": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+      "actual": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts",
+      "sha256": "f72cc0e13b57c436817ab8199268bc7defc609c7121f8fda49018ca919bf84c9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts",
+      "actual": "f72cc0e13b57c436817ab8199268bc7defc609c7121f8fda49018ca919bf84c9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+      "sha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+      "actual": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts",
+      "sha256": "51237bf92ef225c92c897c5fb0aa8e4482267a5ae6ff1cf768726a40c9a7db86",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts",
+      "actual": "51237bf92ef225c92c897c5fb0aa8e4482267a5ae6ff1cf768726a40c9a7db86",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts",
+      "sha256": "fcc969c54b945c21a4ad9a9e4565ae0d535f45c1755910a882826c5785f160f8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts",
+      "actual": "fcc969c54b945c21a4ad9a9e4565ae0d535f45c1755910a882826c5785f160f8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts",
+      "sha256": "84a46d00b1a6528add43e0f27c1f27bab158f1454d8d05c7ea120a0907a6dc7b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts",
+      "actual": "84a46d00b1a6528add43e0f27c1f27bab158f1454d8d05c7ea120a0907a6dc7b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts",
+      "sha256": "1188a67702253930766e6b03670b8f906e87ac11623c9aa69012215552a6f354",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts",
+      "actual": "1188a67702253930766e6b03670b8f906e87ac11623c9aa69012215552a6f354",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/service.d.ts",
+      "sha256": "1bb754c0d12ad9f1b371e9a1496e0caba5b5a7a750796c5de81e123750e2fb09",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/service.d.ts",
+      "actual": "1bb754c0d12ad9f1b371e9a1496e0caba5b5a7a750796c5de81e123750e2fb09",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts",
+      "sha256": "87149646f2227b818f9bdef4980fedc0539572b4574b63d75e1bbb7702390acb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts",
+      "actual": "87149646f2227b818f9bdef4980fedc0539572b4574b63d75e1bbb7702390acb",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "actual": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "actual": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/agent.d.ts",
+      "sha256": "66131a86c5f024fabb77e99103f3f07cdca5818cbce7d6aaecb058197c66589e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/agent.d.ts",
+      "actual": "66131a86c5f024fabb77e99103f3f07cdca5818cbce7d6aaecb058197c66589e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/assistant-stream.d.ts",
+      "sha256": "e81ae829fe3f4cf470fd18c7dee019d0643c13b6df5a2b620698b62f1f809b8d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/assistant-stream.d.ts",
+      "actual": "e81ae829fe3f4cf470fd18c7dee019d0643c13b6df5a2b620698b62f1f809b8d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/constants.d.ts",
+      "sha256": "e57529f7cc7e9e4200b8a6c2c4bd48a927872d490a5c40163d9ba34b1278b466",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/constants.d.ts",
+      "actual": "e57529f7cc7e9e4200b8a6c2c4bd48a927872d490a5c40163d9ba34b1278b466",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/inbox.d.ts",
+      "sha256": "171b98369d8562c15133d5355ea1764643f832a3e4f3f35a202dd7bbdf24ec1b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/inbox.d.ts",
+      "actual": "171b98369d8562c15133d5355ea1764643f832a3e4f3f35a202dd7bbdf24ec1b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "sha256": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "actual": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/runtime-context.d.ts",
+      "sha256": "a19ba3e5f5e2f1c1ef6ef1f1b508967ed71d42bad7210abd82e8f5dc2848ad35",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/runtime-context.d.ts",
+      "actual": "a19ba3e5f5e2f1c1ef6ef1f1b508967ed71d42bad7210abd82e8f5dc2848ad35",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/tool-calls.d.ts",
+      "sha256": "b0e76195f04a2163f6c201cf6ea3afa7ccaf3e9da0b227c4072b7311cd01884a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/tool-calls.d.ts",
+      "actual": "b0e76195f04a2163f6c201cf6ea3afa7ccaf3e9da0b227c4072b7311cd01884a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json",
+      "sha256": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json",
+      "actual": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "actual": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/archive-admission.d.ts",
+      "sha256": "60211b691d2075776d34c13448194051acdbf35282462368ebf22413ad013b06",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/archive-admission.d.ts",
+      "actual": "60211b691d2075776d34c13448194051acdbf35282462368ebf22413ad013b06",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/archive-admission.js",
+      "sha256": "d42fbc10fbf357f1343d4c57eab55d3c7a6bd53fe20a29469cf0b1b67e55c4dd",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/archive-admission.js",
+      "actual": "d42fbc10fbf357f1343d4c57eab55d3c7a6bd53fe20a29469cf0b1b67e55c4dd",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/consumed-work.d.ts",
+      "sha256": "a31f9a50593553d85af6d217bb06b70364753a56025c84a665854118756269ce",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/consumed-work.d.ts",
+      "actual": "a31f9a50593553d85af6d217bb06b70364753a56025c84a665854118756269ce",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/consumed-work.js",
+      "sha256": "e20ac9e88d81db3f5e25908a50ad4532cd1d93f410ad5ec4933ef9aa24da5c2d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/consumed-work.js",
+      "actual": "e20ac9e88d81db3f5e25908a50ad4532cd1d93f410ad5ec4933ef9aa24da5c2d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/dispatch.d.ts",
+      "sha256": "eab5517bdeca9dc752bccf2a6fc305c8dc330ce6d51c71273806ea449137912b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/dispatch.d.ts",
+      "actual": "eab5517bdeca9dc752bccf2a6fc305c8dc330ce6d51c71273806ea449137912b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/dispatch.js",
+      "sha256": "f29567a8eb2f04aaf34523e597d52e46f0fb5bed273db4bf7fa25bc38e2877da",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/dispatch.js",
+      "actual": "f29567a8eb2f04aaf34523e597d52e46f0fb5bed273db4bf7fa25bc38e2877da",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "actual": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.js",
+      "sha256": "7e7c47fc0b82f0718b73e1705c07ad9496cfdbc21598db94de858f718cd23490",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.js",
+      "actual": "7e7c47fc0b82f0718b73e1705c07ad9496cfdbc21598db94de858f718cd23490",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/model-selection.d.ts",
+      "sha256": "5ba6099d4dd5f4616324fa59f46ebe6736fcabe8f8d2b5b97c6cb9a76c2af7be",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/model-selection.d.ts",
+      "actual": "5ba6099d4dd5f4616324fa59f46ebe6736fcabe8f8d2b5b97c6cb9a76c2af7be",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/model-selection.js",
+      "sha256": "47f758ea21ebf7544b4633d2ef8cbe5afafddf3b4aaf9892276cda9e98af11e7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/model-selection.js",
+      "actual": "47f758ea21ebf7544b4633d2ef8cbe5afafddf3b4aaf9892276cda9e98af11e7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/projection.d.ts",
+      "sha256": "0e006d59620c00f562a105f8a23ffa645be62dbb6d50a9e9b56c808e663f8aa2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/projection.d.ts",
+      "actual": "0e006d59620c00f562a105f8a23ffa645be62dbb6d50a9e9b56c808e663f8aa2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/projection.js",
+      "sha256": "43ab89acd14b20b3c2a85c8307f236b38dfa27671dd31b703554777270abc534",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/projection.js",
+      "actual": "43ab89acd14b20b3c2a85c8307f236b38dfa27671dd31b703554777270abc534",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts",
+      "sha256": "7c03f0f92be4a48cc7960ac02fc040b2088b462ae790eab1427e50bfe5e74b31",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts",
+      "actual": "7c03f0f92be4a48cc7960ac02fc040b2088b462ae790eab1427e50bfe5e74b31",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.js",
+      "sha256": "72347f43fb79c35cff8565b6428c6d7b96a78267cf8994ea3ffd0830a83a21d2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.js",
+      "actual": "72347f43fb79c35cff8565b6428c6d7b96a78267cf8994ea3ffd0830a83a21d2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/types.d.ts",
+      "sha256": "5a081173f2064e948b5652f9090ccdc41351fc3ef49d3f9b9e9f11e7ce18bbf7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/types.d.ts",
+      "actual": "5a081173f2064e948b5652f9090ccdc41351fc3ef49d3f9b9e9f11e7ce18bbf7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/types.js",
+      "sha256": "f4ef7228255d5f64ba546ed2a2b6be63601b77c7b58ac3a58a74f4e8f970cb30",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/types.js",
+      "actual": "f4ef7228255d5f64ba546ed2a2b6be63601b77c7b58ac3a58a74f4e8f970cb30",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+      "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+      "actual": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "actual": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.host.d.ts",
+      "sha256": "5e2d26ee86d0fe170dac8cd3f5854e67bdea334c57f40a5766ace57b8304c17d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.host.d.ts",
+      "actual": "5e2d26ee86d0fe170dac8cd3f5854e67bdea334c57f40a5766ace57b8304c17d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.host.js",
+      "sha256": "ff4ebba21bb85e34a8efe6015e0f31b6bc7b58b51a182a74b98ae561380041ad",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.host.js",
+      "actual": "ff4ebba21bb85e34a8efe6015e0f31b6bc7b58b51a182a74b98ae561380041ad",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.remote-client.d.ts",
+      "sha256": "915dbdeff4f5da8cdd9baecf7052681a7814653a294d869f36eb817fd8ef6da1",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.remote-client.d.ts",
+      "actual": "915dbdeff4f5da8cdd9baecf7052681a7814653a294d869f36eb817fd8ef6da1",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.remote-client.js",
+      "sha256": "8d43104d2738f5f7884aa52eb4e5b9b7f06584fe56ce7b990eed46cdccc9e779",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/typert.remote-client.js",
+      "actual": "8d43104d2738f5f7884aa52eb4e5b9b7f06584fe56ce7b990eed46cdccc9e779",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/adapter-failure.d.ts",
+      "sha256": "805483d2fe272d6b43b6d89548748052b56942c678153110836a1ea5e325336f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/adapter-failure.d.ts",
+      "actual": "805483d2fe272d6b43b6d89548748052b56942c678153110836a1ea5e325336f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/adapter-failure.js",
+      "sha256": "f1213f11f11e0f20aae26c09a5e0cf3d72512c1f1519e1b3f107edf64af43c28",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/adapter-failure.js",
+      "actual": "f1213f11f11e0f20aae26c09a5e0cf3d72512c1f1519e1b3f107edf64af43c28",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/api-key.d.ts",
+      "sha256": "8863fb95ed595a5a8891c38c0fee6cdcedf2929963f1285429a5a27856ef9caa",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/api-key.d.ts",
+      "actual": "8863fb95ed595a5a8891c38c0fee6cdcedf2929963f1285429a5a27856ef9caa",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/api-key.js",
+      "sha256": "254b774234c0bd38dd759765c0fd1e60788651a22106f5559ec2760a39935f2d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/api-key.js",
+      "actual": "254b774234c0bd38dd759765c0fd1e60788651a22106f5559ec2760a39935f2d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assembler.d.ts",
+      "sha256": "c5eb8c0da60d6410daa171134014bf77cde759d1a7a914fe0ec63d800cc8034d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assembler.d.ts",
+      "actual": "c5eb8c0da60d6410daa171134014bf77cde759d1a7a914fe0ec63d800cc8034d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assembler.js",
+      "sha256": "35a4754ab854055942b9142934c595c3e6358a717947daa2d8d89847aef988f7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assembler.js",
+      "actual": "35a4754ab854055942b9142934c595c3e6358a717947daa2d8d89847aef988f7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assistant-stream.d.ts",
+      "sha256": "0bb9bdf2ae67cf51e1a08742238b6780d0dded4786b8ae9c970e1b452b29ddaa",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assistant-stream.d.ts",
+      "actual": "0bb9bdf2ae67cf51e1a08742238b6780d0dded4786b8ae9c970e1b452b29ddaa",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assistant-stream.js",
+      "sha256": "7e0cc96a4d60aed34381b552f9cb4549d70df36dbd28c0630da4cd93fa44b7a1",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/assistant-stream.js",
+      "actual": "7e0cc96a4d60aed34381b552f9cb4549d70df36dbd28c0630da4cd93fa44b7a1",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/attribution.d.ts",
+      "sha256": "d076c35cccae45cc0db194a24bdf99688b0725fb0bf68dab919b8f8285aec2d7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/attribution.d.ts",
+      "actual": "d076c35cccae45cc0db194a24bdf99688b0725fb0bf68dab919b8f8285aec2d7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/attribution.js",
+      "sha256": "62f546a0434b4ab70860db3d7c768f515b5f4895f41b3b1399afc9d0d02c7add",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/attribution.js",
+      "actual": "62f546a0434b4ab70860db3d7c768f515b5f4895f41b3b1399afc9d0d02c7add",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/brand.d.ts",
+      "sha256": "ca26380812d76282ca09554f6ddcddda3442f6f2f7b3cedf453332638b08fa6e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/brand.d.ts",
+      "actual": "ca26380812d76282ca09554f6ddcddda3442f6f2f7b3cedf453332638b08fa6e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/brand.js",
+      "sha256": "6b70219e0478d3307d865309523e7e7be3f169b06c04f4eef0d49b54aaef72a2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/brand.js",
+      "actual": "6b70219e0478d3307d865309523e7e7be3f169b06c04f4eef0d49b54aaef72a2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/call-config.d.ts",
+      "sha256": "48a4a04965d22c77f95833cdbf54dd9c0438a50af6abf1d1169b40869f4afd46",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/call-config.d.ts",
+      "actual": "48a4a04965d22c77f95833cdbf54dd9c0438a50af6abf1d1169b40869f4afd46",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/call-config.js",
+      "sha256": "170f3ce7c7136b93087e2f5d50faa8b69815894ec3ebdf26c36d57e4c7a17a03",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/call-config.js",
+      "actual": "170f3ce7c7136b93087e2f5d50faa8b69815894ec3ebdf26c36d57e4c7a17a03",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/content.d.ts",
+      "sha256": "824a2495e5b81c38cf2dbf086dd9ea31a2747d603e71db5537ecf0d56d227a8d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/content.d.ts",
+      "actual": "824a2495e5b81c38cf2dbf086dd9ea31a2747d603e71db5537ecf0d56d227a8d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/content.js",
+      "sha256": "79802e2e6bece64114c8f6857943c2cd23742bd2c20b067cd06298d397f9b85e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/content.js",
+      "actual": "79802e2e6bece64114c8f6857943c2cd23742bd2c20b067cd06298d397f9b85e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/error.d.ts",
+      "sha256": "faeeb5e1d7b303a52d842a6e964bc9aaad1fcd94f1a838c4fb2d5822fc4f84c4",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/error.d.ts",
+      "actual": "faeeb5e1d7b303a52d842a6e964bc9aaad1fcd94f1a838c4fb2d5822fc4f84c4",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/error.js",
+      "sha256": "103b72873eafc3512d717593f802bbf09230c52b7fcd31aa6ec10b5fd147e1cb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/error.js",
+      "actual": "103b72873eafc3512d717593f802bbf09230c52b7fcd31aa6ec10b5fd147e1cb",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "actual": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.js",
+      "sha256": "825553a8446c9721ba5189f5aa2506c8dd8e0c9d04a1a28fb03751dfec59c411",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.js",
+      "actual": "825553a8446c9721ba5189f5aa2506c8dd8e0c9d04a1a28fb03751dfec59c411",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/message.d.ts",
+      "sha256": "c1e9b9f05fc0eab9bb791d6cbfc42828e608539ba16cd0e441164aff005b9775",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/message.d.ts",
+      "actual": "c1e9b9f05fc0eab9bb791d6cbfc42828e608539ba16cd0e441164aff005b9775",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/message.js",
+      "sha256": "c87812f77a2afd284f271af071575edcadfde3daa7b6554d77b96810ce4688e0",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/message.js",
+      "actual": "c87812f77a2afd284f271af071575edcadfde3daa7b6554d77b96810ce4688e0",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/retry-policy.d.ts",
+      "sha256": "67b3a7b21f5224d849a008135bbd6102eda6a517d1362809a140e64085e8ae20",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/retry-policy.d.ts",
+      "actual": "67b3a7b21f5224d849a008135bbd6102eda6a517d1362809a140e64085e8ae20",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/retry-policy.js",
+      "sha256": "f0a8fe075ac24c56ed2aa5d5e359a85539f5ffa237af54b68d3f4fc5124b5d83",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/retry-policy.js",
+      "actual": "f0a8fe075ac24c56ed2aa5d5e359a85539f5ffa237af54b68d3f4fc5124b5d83",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/types.d.ts",
+      "sha256": "6b7f5b81f6b680b1bf33346950f43e1cb760182f14d54cb71f5f0c1f2ce20352",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/types.d.ts",
+      "actual": "6b7f5b81f6b680b1bf33346950f43e1cb760182f14d54cb71f5f0c1f2ce20352",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/types.js",
+      "sha256": "14106d660103de2db746964fbb5be90c5eb2a7ff736779e2501e9faff956cbf5",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/types.js",
+      "actual": "14106d660103de2db746964fbb5be90c5eb2a7ff736779e2501e9faff956cbf5",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+      "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+      "actual": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "actual": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/index.d.ts",
+      "sha256": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/index.d.ts",
+      "actual": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/store.d.ts",
+      "sha256": "20406af558195dde255de42fbec68cbde95f7488d7ab845dbbd2df58db7cc1eb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/store.d.ts",
+      "actual": "20406af558195dde255de42fbec68cbde95f7488d7ab845dbbd2df58db7cc1eb",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "sha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "actual": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "actual": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/catalog-migration.d.ts",
+      "sha256": "dee8e830dca13ab3aaef72c61a0aad5881089ab99095e27dd826dd72386d94a7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/catalog-migration.d.ts",
+      "actual": "dee8e830dca13ab3aaef72c61a0aad5881089ab99095e27dd826dd72386d94a7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/format.d.ts",
+      "sha256": "deccb6e31d3a84a11122b2fb5f4b244aefe5dd3c8d34fe598da7ff4e6b58d294",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/format.d.ts",
+      "actual": "deccb6e31d3a84a11122b2fb5f4b244aefe5dd3c8d34fe598da7ff4e6b58d294",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/generation.d.ts",
+      "sha256": "98e0a24166a91a4c737ab0ea62d2ba0b795aa10a4939f3c3d2db3ed522aacb9c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/generation.d.ts",
+      "actual": "98e0a24166a91a4c737ab0ea62d2ba0b795aa10a4939f3c3d2db3ed522aacb9c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts",
+      "sha256": "806dfa610c3ed3ce80ffac89900993288d7013d4278ab21e2b55b193c542f79a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts",
+      "actual": "806dfa610c3ed3ce80ffac89900993288d7013d4278ab21e2b55b193c542f79a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/lease.d.ts",
+      "sha256": "2b80f7691290130b2815dadcb4eb4fabfaad4b6eb1a93ba818084d41a5e6526e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/lease.d.ts",
+      "actual": "2b80f7691290130b2815dadcb4eb4fabfaad4b6eb1a93ba818084d41a5e6526e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/migration-verifier.d.ts",
+      "sha256": "52cf0fcb2c48a8338f8073c866b3df684eb21f48290fefb1212ffc0c22014015",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/migration-verifier.d.ts",
+      "actual": "52cf0fcb2c48a8338f8073c866b3df684eb21f48290fefb1212ffc0c22014015",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/storage.d.ts",
+      "sha256": "e88eb76a2aca69172209a75a240c811b448b4746b2fef2bad554a32b8b64c119",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/storage.d.ts",
+      "actual": "e88eb76a2aca69172209a75a240c811b448b4746b2fef2bad554a32b8b64c119",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/testing/generation.d.ts",
+      "sha256": "1da765e30572ce0f285798831ec8d3dbc3ecadd6f7a797a4fd735254d1ea06c5",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/testing/generation.d.ts",
+      "actual": "1da765e30572ce0f285798831ec8d3dbc3ecadd6f7a797a4fd735254d1ea06c5",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/win32.d.ts",
+      "sha256": "364e6b54a78280ef60dd3a93b521284c1ba52bd640fe7c6e7ddccb096855dcf9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/win32.d.ts",
+      "actual": "364e6b54a78280ef60dd3a93b521284c1ba52bd640fe7c6e7ddccb096855dcf9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/worker.d.ts",
+      "sha256": "31b66ee58ecf78c8f3ca920919d5fb1226d4bd4056e0c10d2040a13082067d85",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/worker.d.ts",
+      "actual": "31b66ee58ecf78c8f3ca920919d5fb1226d4bd4056e0c10d2040a13082067d85",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/zstd-private-decoder.d.ts",
+      "sha256": "3ac7e1537b6c11ec9cd9e5961311e1e356f704512871ea7006fd8243ec9ac332",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/zstd-private-decoder.d.ts",
+      "actual": "3ac7e1537b6c11ec9cd9e5961311e1e356f704512871ea7006fd8243ec9ac332",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/zstd-public-decoder.d.ts",
+      "sha256": "3155e2b6185842374fb0d4f4dd66fd4999d64131e9e17556b8e0bd67d7a777e9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/zstd-public-decoder.d.ts",
+      "actual": "3155e2b6185842374fb0d4f4dd66fd4999d64131e9e17556b8e0bd67d7a777e9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/zstd.d.ts",
+      "sha256": "4b1f793d0a1d12b242f0c9eb239ab6f67c2e8e38a3fc4ca4e0f0c0fadf120630",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/zstd.d.ts",
+      "actual": "4b1f793d0a1d12b242f0c9eb239ab6f67c2e8e38a3fc4ca4e0f0c0fadf120630",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json",
+      "sha256": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json",
+      "actual": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/index.js",
+      "sha256": "cc0b6d3a224133af611b428d5a49020e300f86c3b4ba28037aeb219029bde3eb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/index.js",
+      "actual": "cc0b6d3a224133af611b428d5a49020e300f86c3b4ba28037aeb219029bde3eb",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/errors.d.ts",
+      "sha256": "05f55d1e3f2a80ea89562ee327e50f2a6fe200611e51ec38c7715f4c97bdbdb9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/errors.d.ts",
+      "actual": "05f55d1e3f2a80ea89562ee327e50f2a6fe200611e51ec38c7715f4c97bdbdb9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/handle.d.ts",
+      "sha256": "0218ad845fb8191dc46c507a41bc56587321236cb6a2a9ac25ef78f83a4ddcc5",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/handle.d.ts",
+      "actual": "0218ad845fb8191dc46c507a41bc56587321236cb6a2a9ac25ef78f83a4ddcc5",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/index.d.ts",
+      "sha256": "405eed914b242e16a07c8343004e134669b8948b26d1067e300fb222baf10b96",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/index.d.ts",
+      "actual": "405eed914b242e16a07c8343004e134669b8948b26d1067e300fb222baf10b96",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/revision.d.ts",
+      "sha256": "c2e32b7f71b4c39652b7d1bdb78203e46d56fb7a42f9a2bcbc83232cdd7a937f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/revision.d.ts",
+      "actual": "c2e32b7f71b4c39652b7d1bdb78203e46d56fb7a42f9a2bcbc83232cdd7a937f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/storage-contract.d.ts",
+      "sha256": "44be027eb9dfd3bc55c801d1b804b9699127ae238f5d1e56b5056094f115d80d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/storage-contract.d.ts",
+      "actual": "44be027eb9dfd3bc55c801d1b804b9699127ae238f5d1e56b5056094f115d80d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/package.json",
+      "sha256": "ba6bd5ccbf6bb722de342973294bf4a9e1d0c68e7977fe7e7a53e118a04b0c32",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/package.json",
+      "actual": "ba6bd5ccbf6bb722de342973294bf4a9e1d0c68e7977fe7e7a53e118a04b0c32",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "actual": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.d.ts",
+      "sha256": "f29f3512b31036e12c5adf45f5ea7ef7dac319cf3a110f12ea2ac56de494fe16",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.d.ts",
+      "actual": "f29f3512b31036e12c5adf45f5ea7ef7dac319cf3a110f12ea2ac56de494fe16",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.js",
+      "sha256": "f3daccbaa1cc82749411fadc7923ff9275cc96b7ec594e65f3e01a3dbbe29444",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.js",
+      "actual": "f3daccbaa1cc82749411fadc7923ff9275cc96b7ec594e65f3e01a3dbbe29444",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/types.d.ts",
+      "sha256": "e543ffb1370a873b063415456f53eb680f653b6bf086d4a4a4cc83fa7a3be96b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/types.d.ts",
+      "actual": "e543ffb1370a873b063415456f53eb680f653b6bf086d4a4a4cc83fa7a3be96b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/types.js",
+      "sha256": "d6b9f7a57fe4dacd7b1a6403a34e6cd1ccd088c2e024e02cbf577166faca6ffb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/types.js",
+      "actual": "d6b9f7a57fe4dacd7b1a6403a34e6cd1ccd088c2e024e02cbf577166faca6ffb",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+      "sha256": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+      "actual": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "actual": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/fork.d.ts",
+      "sha256": "9b2c19802c8d3f1d40cab23105a0892a8f7a0c9b921af108b1dfcdf2b22a9712",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/fork.d.ts",
+      "actual": "9b2c19802c8d3f1d40cab23105a0892a8f7a0c9b921af108b1dfcdf2b22a9712",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/fork.js",
+      "sha256": "72ca7ae2cce506eb607e565f2e6b15fc6e3c2663de8403f79e37fc3a469e34cf",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/fork.js",
+      "actual": "72ca7ae2cce506eb607e565f2e6b15fc6e3c2663de8403f79e37fc3a469e34cf",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "actual": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.js",
+      "sha256": "5dd1772de7b4052d4700d8725759169152eaaecaa681f9f0c9db2540a3f43565",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.js",
+      "actual": "5dd1772de7b4052d4700d8725759169152eaaecaa681f9f0c9db2540a3f43565",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.d.ts",
+      "sha256": "6cf20e965e779aa12958f963814381351da2cf9497b2f1f2216a73f23cc9a33a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.d.ts",
+      "actual": "6cf20e965e779aa12958f963814381351da2cf9497b2f1f2216a73f23cc9a33a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.js",
+      "sha256": "8f38e6fc9439bb4e47f2bd3aa21c86d5141ef9679f41181c9d9a48765c67d3be",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.js",
+      "actual": "8f38e6fc9439bb4e47f2bd3aa21c86d5141ef9679f41181c9d9a48765c67d3be",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/preparation.d.ts",
+      "sha256": "68d4989dc05cee14dbe6e653488b4c2e5413d03a3bebf0f7cc1035d10885e2b3",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/preparation.d.ts",
+      "actual": "68d4989dc05cee14dbe6e653488b4c2e5413d03a3bebf0f7cc1035d10885e2b3",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/preparation.js",
+      "sha256": "78dea29f5e11a4d220945a572b3eb26cb66460e6a368a423bf597c3ef05a5faa",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/preparation.js",
+      "actual": "78dea29f5e11a4d220945a572b3eb26cb66460e6a368a423bf597c3ef05a5faa",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/repair.d.ts",
+      "sha256": "b273d04d155f944ce374a71b01f408a60ee33db36cafe566e0c50b7b0151233f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/repair.d.ts",
+      "actual": "b273d04d155f944ce374a71b01f408a60ee33db36cafe566e0c50b7b0151233f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/repair.js",
+      "sha256": "ee2e02d4e924bf01af621c38c27e030b89eaa8e0abfdf801a6220eca95aa2038",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/repair.js",
+      "actual": "ee2e02d4e924bf01af621c38c27e030b89eaa8e0abfdf801a6220eca95aa2038",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/request-header.d.ts",
+      "sha256": "83641242078a38eb0ff6c1a3d79a7b62a7733d1789423e9557187f44bd93f9a0",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/request-header.d.ts",
+      "actual": "83641242078a38eb0ff6c1a3d79a7b62a7733d1789423e9557187f44bd93f9a0",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/request-header.js",
+      "sha256": "3f73ee59af794df50df159a9c45c606f0fbce364c482b371831d1e8f26b87aea",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/request-header.js",
+      "actual": "3f73ee59af794df50df159a9c45c606f0fbce364c482b371831d1e8f26b87aea",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/seq-ranges.d.ts",
+      "sha256": "4ba712f10f632fb2e1f337f0557f97e2c5475917103d6c95c0eddbbf5eb32b0b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/seq-ranges.d.ts",
+      "actual": "4ba712f10f632fb2e1f337f0557f97e2c5475917103d6c95c0eddbbf5eb32b0b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/seq-ranges.js",
+      "sha256": "68a127c76affa98edeeb50e302eb43f154f4d24f7d04cb95ba8b323e88f3d09e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/seq-ranges.js",
+      "actual": "68a127c76affa98edeeb50e302eb43f154f4d24f7d04cb95ba8b323e88f3d09e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.d.ts",
+      "sha256": "bdeda5e930c9e5f839089aaed2bbe23296a8d06523b6e8300e21e5ca9259ef8b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.d.ts",
+      "actual": "bdeda5e930c9e5f839089aaed2bbe23296a8d06523b6e8300e21e5ca9259ef8b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+      "sha256": "ebe8920a22fca8d987cbacab94c9db92f71df44863f58370a1be559155be734e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+      "actual": "ebe8920a22fca8d987cbacab94c9db92f71df44863f58370a1be559155be734e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/tool-history.d.ts",
+      "sha256": "d271c952a40f46baffac120de4a124395ec7bdd4803cd94bff30260da103bc09",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/tool-history.d.ts",
+      "actual": "d271c952a40f46baffac120de4a124395ec7bdd4803cd94bff30260da103bc09",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/tool-history.js",
+      "sha256": "2d2c4f4cbb6717aa2f487af52ce6a81e2002ce2c768cb5a4210c867ec49a0e95",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/tool-history.js",
+      "actual": "2d2c4f4cbb6717aa2f487af52ce6a81e2002ce2c768cb5a4210c867ec49a0e95",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.d.ts",
+      "sha256": "d46f867afad2ce27298dcc99762dc241d803e6d2102a4587587fddccedf1c733",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.d.ts",
+      "actual": "d46f867afad2ce27298dcc99762dc241d803e6d2102a4587587fddccedf1c733",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.js",
+      "sha256": "a03acad09eec657b94441109af0da31b5b29668feae35d1b9e72fd99beca505f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.js",
+      "actual": "a03acad09eec657b94441109af0da31b5b29668feae35d1b9e72fd99beca505f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "actual": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "actual": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts",
+      "sha256": "954717f76586dc0e824f74bb51378529cf4963aff4582e3d25a7bc3c8142727d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts",
+      "actual": "954717f76586dc0e824f74bb51378529cf4963aff4582e3d25a7bc3c8142727d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "sha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "actual": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "actual": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts",
+      "sha256": "3536b173ec22361dcda85c05281921fc850db49984813b138d05395c4fe4510f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts",
+      "actual": "3536b173ec22361dcda85c05281921fc850db49984813b138d05395c4fe4510f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.js",
+      "sha256": "05d701b98fa465ad159555dedeee7470ac63f8fcd67d94a6ecc2c6570cbe9f4b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.js",
+      "actual": "05d701b98fa465ad159555dedeee7470ac63f8fcd67d94a6ecc2c6570cbe9f4b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.d.ts",
+      "sha256": "2496af10d1d7deae9513749aa58ba19384a9623befe40e9ca9729ee30b81de7b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.d.ts",
+      "actual": "2496af10d1d7deae9513749aa58ba19384a9623befe40e9ca9729ee30b81de7b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.js",
+      "sha256": "912e04e68c2455cbb77651031449574f992720c90311e6cbecb1d35020bc1072",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.js",
+      "actual": "912e04e68c2455cbb77651031449574f992720c90311e6cbecb1d35020bc1072",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/presentation.d.ts",
+      "sha256": "47d33a8f4456cef893ed047635cba3d2dc4ca83eb1226d775b4e365c88fc1429",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/presentation.d.ts",
+      "actual": "47d33a8f4456cef893ed047635cba3d2dc4ca83eb1226d775b4e365c88fc1429",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/presentation.js",
+      "sha256": "253894265253e38fa9db12f3696d9dac9fd2bed1363c04ce3f95c0f19a6c16da",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/presentation.js",
+      "actual": "253894265253e38fa9db12f3696d9dac9fd2bed1363c04ce3f95c0f19a6c16da",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ptc.d.ts",
+      "sha256": "108f40744fa7c173be3c69ae053e08a951b99a978ff7023f79a6ae8a2bd4c9e8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ptc.d.ts",
+      "actual": "108f40744fa7c173be3c69ae053e08a951b99a978ff7023f79a6ae8a2bd4c9e8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ptc.js",
+      "sha256": "fc9fe9043f345b43ddb18a2ad42d9a9036374afb5f10c579e96718754456ab16",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ptc.js",
+      "actual": "fc9fe9043f345b43ddb18a2ad42d9a9036374afb5f10c579e96718754456ab16",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/py-types.d.ts",
+      "sha256": "c48a92c0a5406552f0c7a6cbaee609509f93e5d104ea7399bcb6c717d9071c22",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/py-types.d.ts",
+      "actual": "c48a92c0a5406552f0c7a6cbaee609509f93e5d104ea7399bcb6c717d9071c22",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/py-types.js",
+      "sha256": "edf770cdbb2ebddf501bdad8dc666160336259380fc63e6eedf7ddec44a5f06c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/py-types.js",
+      "actual": "edf770cdbb2ebddf501bdad8dc666160336259380fc63e6eedf7ddec44a5f06c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/schema.d.ts",
+      "sha256": "a6c5f7f616d33b5281a3b3daad8b8f2a0085808b1707f9f318716b87aa484318",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/schema.d.ts",
+      "actual": "a6c5f7f616d33b5281a3b3daad8b8f2a0085808b1707f9f318716b87aa484318",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/schema.js",
+      "sha256": "c3dd33029e3f80e6ab9ad9b0d853ba80b88177c1c2423080a94a2db91e6f33f9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/schema.js",
+      "actual": "c3dd33029e3f80e6ab9ad9b0d853ba80b88177c1c2423080a94a2db91e6f33f9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/testing.d.ts",
+      "sha256": "1da30cfb208ba84c8cca9eb843853dec6cb1619e14b6e65e42d84e8fd249acf0",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/testing.d.ts",
+      "actual": "1da30cfb208ba84c8cca9eb843853dec6cb1619e14b6e65e42d84e8fd249acf0",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/testing.js",
+      "sha256": "c6784f546e950dc38323baaad4009bb197eb25acf3a16adaa2893a44c7b7a650",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/testing.js",
+      "actual": "c6784f546e950dc38323baaad4009bb197eb25acf3a16adaa2893a44c7b7a650",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ts-types.d.ts",
+      "sha256": "f4eb85e8deabf2fc718b8ac17bfe25f84e8882e6e98318c0785ce1be08b3a452",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ts-types.d.ts",
+      "actual": "f4eb85e8deabf2fc718b8ac17bfe25f84e8882e6e98318c0785ce1be08b3a452",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ts-types.js",
+      "sha256": "42e48a4cc55ad1f189faee46925e22e3066fa2371bff6f1b02a1f395ca73b8e6",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/ts-types.js",
+      "actual": "42e48a4cc55ad1f189faee46925e22e3066fa2371bff6f1b02a1f395ca73b8e6",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/types.d.ts",
+      "sha256": "a86487c048054364103acaba94f29f437389f6107681d34d7ad9bc8f1ee58728",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/types.d.ts",
+      "actual": "a86487c048054364103acaba94f29f437389f6107681d34d7ad9bc8f1ee58728",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/types.js",
+      "sha256": "d53c54d32353419ece121f485a5534ee054842b74ebab7b4a4d3325545d0179a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/types.js",
+      "actual": "d53c54d32353419ece121f485a5534ee054842b74ebab7b4a4d3325545d0179a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "sha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "actual": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "actual": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+      "sha256": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+      "actual": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.js",
+      "sha256": "0b2e00fe1b2cedc9b6349a38e07e26a05a09492da838f069c10b76cf13f6d6e8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.js",
+      "actual": "0b2e00fe1b2cedc9b6349a38e07e26a05a09492da838f069c10b76cf13f6d6e8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/types.d.ts",
+      "sha256": "5f39fa9e221d6759acbb9dc1db473db0c431a2bdf48bbd8ffed8aa4194b1345f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/types.d.ts",
+      "actual": "5f39fa9e221d6759acbb9dc1db473db0c431a2bdf48bbd8ffed8aa4194b1345f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/types.js",
+      "sha256": "525e6f38c039c0b20c6d071bfe06799e8fbc41b2af2ce8db7b1feb3faebad75f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/types.js",
+      "actual": "525e6f38c039c0b20c6d071bfe06799e8fbc41b2af2ce8db7b1feb3faebad75f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+      "sha256": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+      "actual": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/bin/system.node",
+      "sha256": "9534cde445a865250eb7bc8cfe5e231f3f91d0fda3f4aaa694e81f3531ad1130",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/bin/system.node",
+      "actual": "9534cde445a865250eb7bc8cfe5e231f3f91d0fda3f4aaa694e81f3531ad1130",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/package.json",
+      "sha256": "29ebc197a0f0f5e6f7ffe80f686941239cf2a36c8d5385139a201a44417bed75",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/package.json",
+      "actual": "29ebc197a0f0f5e6f7ffe80f686941239cf2a36c8d5385139a201a44417bed75",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/prebuilds.json",
+      "sha256": "4e0f7c22a1e3cb2ba5f573e1251aedc8d692bd92665f27d7153f85037d0cd392",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/prebuilds.json",
+      "actual": "4e0f7c22a1e3cb2ba5f573e1251aedc8d692bd92665f27d7153f85037d0cd392",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.d.ts",
+      "sha256": "611643bff49ce94e74f126b06eeca6c2609c5c7a8a243d0d03bc1a1cb2f37f91",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.d.ts",
+      "actual": "611643bff49ce94e74f126b06eeca6c2609c5c7a8a243d0d03bc1a1cb2f37f91",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.js",
+      "sha256": "e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.js",
+      "actual": "e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/index.d.ts",
+      "sha256": "ae1e48734ebb3143c72778c5f8086ca602d2a45e96de8828156c4e8296226e73",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/index.d.ts",
+      "actual": "ae1e48734ebb3143c72778c5f8086ca602d2a45e96de8828156c4e8296226e73",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/index.js",
+      "sha256": "a0f04e2990b6fff091d6776c41e56dac8c630a37b944632e743fa8f2ee9c4813",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/index.js",
+      "actual": "a0f04e2990b6fff091d6776c41e56dac8c630a37b944632e743fa8f2ee9c4813",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/package.json",
+      "sha256": "e8aebe0548e3fd3e733b03476a0a6531076ba40678137421ecd7fb191792d50a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/package.json",
+      "actual": "e8aebe0548e3fd3e733b03476a0a6531076ba40678137421ecd7fb191792d50a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": ".runtime/dsh-web/package-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/package-lock.json",
+      "actual": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "8ada9c44581227ddf046ff763d79dba8e1a048366426132382611ddfecb94c26",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/AGENTS.md",
+      "actual": "8ada9c44581227ddf046ff763d79dba8e1a048366426132382611ddfecb94c26",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/contract-freeze.md",
+      "sha256": "53f89691a3f2a7006780bd9fbdf7aa5ad2054b8648a3215ec664598539c3913b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/contract-freeze.md",
+      "actual": "53f89691a3f2a7006780bd9fbdf7aa5ad2054b8648a3215ec664598539c3913b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/host-interface-findings.md",
+      "sha256": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/host-interface-findings.md",
+      "actual": "c14b6171214c4535fc3809d0cb8240f37ebd57f8ba94bfd87bf3835e7e81b7f8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-affected.tap",
+      "sha256": "f66b6a2887f580cb3c3d23233a93d74a840b5118b7162e72264d0c99118295d7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-affected.tap",
+      "actual": "f66b6a2887f580cb3c3d23233a93d74a840b5118b7162e72264d0c99118295d7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-before-immutable-fence.tap",
+      "sha256": "a61de19ca7224c4beb1e0440c6f76cc8ad8cb6a188756dc565789c18f9c17b58",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-before-immutable-fence.tap",
+      "actual": "a61de19ca7224c4beb1e0440c6f76cc8ad8cb6a188756dc565789c18f9c17b58",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-before-input-fence.tap",
+      "sha256": "9509333b7ac18839b66cb9fe3818287f0fd75c8183d8ee5b3243834f08c80c81",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-before-input-fence.tap",
+      "actual": "9509333b7ac18839b66cb9fe3818287f0fd75c8183d8ee5b3243834f08c80c81",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-before-usage-fence.tap",
+      "sha256": "7886d1cb509a8ab788bdb118b8a1aa2168adf0ea14c1e97a215b249540b37104",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-before-usage-fence.tap",
+      "actual": "7886d1cb509a8ab788bdb118b8a1aa2168adf0ea14c1e97a215b249540b37104",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-checks.json",
+      "sha256": "1f190669eb55aa8f35f0c9d64cd5c79f703ca9124846cc691057d62be5649b32",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-checks.json",
+      "actual": "1f190669eb55aa8f35f0c9d64cd5c79f703ca9124846cc691057d62be5649b32",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-core-first.tap",
+      "sha256": "222fb37d8495654dd24cbb305fdcae9df320df97ef0f1716d878fc0ce0380ff9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-core-first.tap",
+      "actual": "222fb37d8495654dd24cbb305fdcae9df320df97ef0f1716d878fc0ce0380ff9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-final.tap",
+      "sha256": "5859b9fbc43ed6474ee08d118f8a7b6ffdf940565f16dc6451cd826d612332d4",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-final.tap",
+      "actual": "5859b9fbc43ed6474ee08d118f8a7b6ffdf940565f16dc6451cd826d612332d4",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-first.tap",
+      "sha256": "9f71df4651e0cd9efed89b6e6362c519c939299b04519848bf783cd4ebcf0e5f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-first.tap",
+      "actual": "9f71df4651e0cd9efed89b6e6362c519c939299b04519848bf783cd4ebcf0e5f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-hold.md",
+      "sha256": "0b61aff6c46af69dd2c82d7f6522ca11ce00b7cd8a3a49bd6333cd3795506add",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-hold.md",
+      "actual": "0b61aff6c46af69dd2c82d7f6522ca11ce00b7cd8a3a49bd6333cd3795506add",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-native-first.tap",
+      "sha256": "5c65d1764c738ed9ec0db6b635bdb6bf8e356c21c355e0ea90f51d354a25438c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-native-first.tap",
+      "actual": "5c65d1764c738ed9ec0db6b635bdb6bf8e356c21c355e0ea90f51d354a25438c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-native-second.tap",
+      "sha256": "30c20351a9ba8cc30fe13df6558e504cc0095e8883cc20fe53daeeabce1f159f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-native-second.tap",
+      "actual": "30c20351a9ba8cc30fe13df6558e504cc0095e8883cc20fe53daeeabce1f159f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author-third.tap",
+      "sha256": "1c7f2cb86d4a3baf27227002b591c0120ca9d77f802b33dcf025e16273fdc9ea",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author-third.tap",
+      "actual": "1c7f2cb86d4a3baf27227002b591c0120ca9d77f802b33dcf025e16273fdc9ea",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-author.sha256",
+      "sha256": "d3822fd69dcd9e462ed7edab4f84bceba1c368535d8cd6248f9ad6dc899e3a7f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-author.sha256",
+      "actual": "d3822fd69dcd9e462ed7edab4f84bceba1c368535d8cd6248f9ad6dc899e3a7f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/native-hooks-root-hold.json",
+      "sha256": "c51d845e92219dcf7642ebbd005c747cdc7bfe1d7eaa563aade1b93ba388dcd9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/native-hooks-root-hold.json",
+      "actual": "c51d845e92219dcf7642ebbd005c747cdc7bfe1d7eaa563aade1b93ba388dcd9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-checks.json",
+      "sha256": "bd231d4e9310f10fe962537d383a7450c9f697c6562b8f10a56a7f386ab84f66",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-checks.json",
+      "actual": "bd231d4e9310f10fe962537d383a7450c9f697c6562b8f10a56a7f386ab84f66",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-final.tap",
+      "sha256": "f4c8b3b6132dbd3d20eee05e5849a2a34e4a5fd96806c3cbb1d2b90e1286a43b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-final.tap",
+      "actual": "f4c8b3b6132dbd3d20eee05e5849a2a34e4a5fd96806c3cbb1d2b90e1286a43b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-first.tap",
+      "sha256": "bb5693a732c994103ac9881fd75d568cb89152af5f45514148123e8d71b10ac2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-first.tap",
+      "actual": "bb5693a732c994103ac9881fd75d568cb89152af5f45514148123e8d71b10ac2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-fourth.tap",
+      "sha256": "19d716083ac23b2e578592b070388948adf1489c9a8e084df933cf29d8d5b7cb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-fourth.tap",
+      "actual": "19d716083ac23b2e578592b070388948adf1489c9a8e084df933cf29d8d5b7cb",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-hold.md",
+      "sha256": "f015ffccf1ed8ad417270e96273eb4fff3da2e4b02eb0c1fb62ceaed2931ecb7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-hold.md",
+      "actual": "f015ffccf1ed8ad417270e96273eb4fff3da2e4b02eb0c1fb62ceaed2931ecb7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-second.tap",
+      "sha256": "a25b7e1930c0c19fc9db6f873b112b70dd7f7ed99556bdebc9683f26cbe03ba7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-second.tap",
+      "actual": "a25b7e1930c0c19fc9db6f873b112b70dd7f7ed99556bdebc9683f26cbe03ba7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author-third.tap",
+      "sha256": "837f07b7008c7dda69aaaa41f84e2e4145a7751fc4f055d532b1f4c3d6a5732a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author-third.tap",
+      "actual": "837f07b7008c7dda69aaaa41f84e2e4145a7751fc4f055d532b1f4c3d6a5732a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-author.sha256",
+      "sha256": "4ec2fe0075a8d88d7cfbf5bb6ed0aec71f465aaccb0d67fdc5757cb2c6632162",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-author.sha256",
+      "actual": "4ec2fe0075a8d88d7cfbf5bb6ed0aec71f465aaccb0d67fdc5757cb2c6632162",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-metadata-author-final.tap",
+      "sha256": "89178ec7e01586e5ba426f4303524d5d9022a7e49271cf4898ed318e6d18d640",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-metadata-author-final.tap",
+      "actual": "89178ec7e01586e5ba426f4303524d5d9022a7e49271cf4898ed318e6d18d640",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-metadata-author-first.tap",
+      "sha256": "34909d876fe00af16b118efa492a57cf048a15a700dc73a5a95e958796f8c405",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-metadata-author-first.tap",
+      "actual": "34909d876fe00af16b118efa492a57cf048a15a700dc73a5a95e958796f8c405",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-metadata-fixture-finding.md",
+      "sha256": "8b35d4f38e977f40c5dadebc996b321b4b52e1213b5cbcb84efbca0282d5d978",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-metadata-fixture-finding.md",
+      "actual": "8b35d4f38e977f40c5dadebc996b321b4b52e1213b5cbcb84efbca0282d5d978",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/provider-root-hold.json",
+      "sha256": "0b1857fc7ef87397c1b15195f439f508e85a46fe4c37485cd8d7ab26eeaf9b2d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/provider-root-hold.json",
+      "actual": "0b1857fc7ef87397c1b15195f439f508e85a46fe4c37485cd8d7ab26eeaf9b2d",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI2/test-design.md",
+      "actual": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/normal-worker-contract.md",
+      "actual": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "package.json",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/package.json",
+      "actual": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/scripts/dsh-web-runtime-lock.json",
+      "actual": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/config.mjs",
+      "actual": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/context.mjs",
+      "actual": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/environment.mjs",
+      "actual": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/fishball-memory-core.mjs",
+      "actual": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs",
+      "actual": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs",
+      "actual": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs",
+      "actual": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/memory.mjs",
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/memory.mjs",
+      "actual": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/native-adapter.mjs",
+      "actual": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-security.mjs",
+      "actual": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs",
+      "actual": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/testing-provider.mjs",
+      "actual": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/worker.mjs",
+      "actual": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/adversarial.test.mjs",
+      "sha256": "96a32111eab27cbd9f07c973194068e29d560613a6e828445a2d094c4f9526ac",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/adversarial.test.mjs",
+      "actual": "96a32111eab27cbd9f07c973194068e29d560613a6e828445a2d094c4f9526ac",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/approval-preview-adversarial.test.mjs",
+      "sha256": "d817fb87346a324c6a425ac37cc1e8b96bb4b0752c1cf0adbb92e866ff527eb7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/approval-preview-adversarial.test.mjs",
+      "actual": "d817fb87346a324c6a425ac37cc1e8b96bb4b0752c1cf0adbb92e866ff527eb7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/approval-preview.test.mjs",
+      "sha256": "222197415eaed758d4e66dc81c2966854e93c05eca73359ec78f627017d9119a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/approval-preview.test.mjs",
+      "actual": "222197415eaed758d4e66dc81c2966854e93c05eca73359ec78f627017d9119a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/audit.test.mjs",
+      "sha256": "e0c24d1b1857565b927e5b731f53567f6ea35ed382ff18a3db528b09b60dc0ec",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/audit.test.mjs",
+      "actual": "e0c24d1b1857565b927e5b731f53567f6ea35ed382ff18a3db528b09b60dc0ec",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/automation-adversarial.test.mjs",
+      "sha256": "f42a7ab100dfcc5ff02ff82e6ab6f3b76971aeb35c832e123b25303042cb09a9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/automation-adversarial.test.mjs",
+      "actual": "f42a7ab100dfcc5ff02ff82e6ab6f3b76971aeb35c832e123b25303042cb09a9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/automation-store.test.mjs",
+      "sha256": "94d1c784461216cc6528df03cbf9fdc6696144d4150d745a248a95c7146c80ae",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/automation-store.test.mjs",
+      "actual": "94d1c784461216cc6528df03cbf9fdc6696144d4150d745a248a95c7146c80ae",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/bootstrap.test.mjs",
+      "sha256": "787cdf213b27bad3eeec4e4b2d0f4da7657f696d38b0e99f7f7d7e9c7c7ffea8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/bootstrap.test.mjs",
+      "actual": "787cdf213b27bad3eeec4e4b2d0f4da7657f696d38b0e99f7f7d7e9c7c7ffea8",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/chat.test.mjs",
+      "sha256": "5234574e4cc9ee9c0471d014bb85b3890e7e9da36bd0da669b7bb43d115c0620",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/chat.test.mjs",
+      "actual": "5234574e4cc9ee9c0471d014bb85b3890e7e9da36bd0da669b7bb43d115c0620",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/client-build.test.mjs",
+      "sha256": "f85a983f76634cea81d940496a109e49f77653372f88a806cfe05e11ddf675a3",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/client-build.test.mjs",
+      "actual": "f85a983f76634cea81d940496a109e49f77653372f88a806cfe05e11ddf675a3",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/client-feature-adversarial.test.mjs",
+      "sha256": "1a16cff79b85aa399f7c91e44eb430cb4a426ce529c5e1cce7c0f860a5607a5f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/client-feature-adversarial.test.mjs",
+      "actual": "1a16cff79b85aa399f7c91e44eb430cb4a426ce529c5e1cce7c0f860a5607a5f",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/client-features.test.mjs",
+      "sha256": "95492bd9d8de24cb15704b322d68c104512df1e852e265d276a43ff0ef434d8c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/client-features.test.mjs",
+      "actual": "95492bd9d8de24cb15704b322d68c104512df1e852e265d276a43ff0ef434d8c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/client.test.mjs",
+      "sha256": "f9ee68804002bbee98680981ccf6903fdf80a05fc41c13aeb2b7377b712934c7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/client.test.mjs",
+      "actual": "f9ee68804002bbee98680981ccf6903fdf80a05fc41c13aeb2b7377b712934c7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/context.test.mjs",
+      "sha256": "dce8ec648405579ea402e6d3d3d6e64e6d62699c798bd7db72b331d676347c42",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/context.test.mjs",
+      "actual": "dce8ec648405579ea402e6d3d3d6e64e6d62699c798bd7db72b331d676347c42",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/control.test.mjs",
+      "sha256": "c9ed87ff1af69f2522e4192f51c90b7fbbef50d3caf97fa907324b11bc9da271",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/control.test.mjs",
+      "actual": "c9ed87ff1af69f2522e4192f51c90b7fbbef50d3caf97fa907324b11bc9da271",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/coordinator.test.mjs",
+      "sha256": "43ebcaaebbaf541d50952bfe18a8d5b1bc99294f6328d618e53625686e4ff834",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/coordinator.test.mjs",
+      "actual": "43ebcaaebbaf541d50952bfe18a8d5b1bc99294f6328d618e53625686e4ff834",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/core.test.mjs",
+      "sha256": "e78beb00ef4471c9f7695375d9214627f9a3a709b982d1f7517a50438b2b541c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/core.test.mjs",
+      "actual": "e78beb00ef4471c9f7695375d9214627f9a3a709b982d1f7517a50438b2b541c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/environment.test.mjs",
+      "sha256": "150e043fb8598eb72b79a27bfd551f62f7bad3bca7fe6f30d12d2c730e98cf4a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/environment.test.mjs",
+      "actual": "150e043fb8598eb72b79a27bfd551f62f7bad3bca7fe6f30d12d2c730e98cf4a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/event-adapters-adversarial.test.mjs",
+      "sha256": "0193921ffd774d4190bff6fb79c7f89f22c10635d9c712a1da0a651d711f564c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs",
+      "actual": "0193921ffd774d4190bff6fb79c7f89f22c10635d9c712a1da0a651d711f564c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/event-clock.test.mjs",
+      "sha256": "61a17da02aa0a05a492eafd1d34e661c62f56d7aa29afb3eb3c8aa9ade58b9a9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-clock.test.mjs",
+      "actual": "61a17da02aa0a05a492eafd1d34e661c62f56d7aa29afb3eb3c8aa9ade58b9a9",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/events.test.mjs",
+      "sha256": "3a0ee1a7c1b60ab174f644d9713302cc5153d1643b9db151b13c544cf34c5320",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/events.test.mjs",
+      "actual": "3a0ee1a7c1b60ab174f644d9713302cc5153d1643b9db151b13c544cf34c5320",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/fishball-memory-core.test.mjs",
+      "sha256": "2f1382886b108b20195bed75d3aea1daef5a3f86cef7cf4ad829c5fe92a15e2e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/fishball-memory-core.test.mjs",
+      "actual": "2f1382886b108b20195bed75d3aea1daef5a3f86cef7cf4ad829c5fe92a15e2e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installation-adversarial.test.mjs",
+      "sha256": "206d3891b188886f5f25b0ec11a48a7006eeae79b3b9795072ed0aedbc3328e1",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installation-adversarial.test.mjs",
+      "actual": "206d3891b188886f5f25b0ec11a48a7006eeae79b3b9795072ed0aedbc3328e1",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installation.test.mjs",
+      "sha256": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installation.test.mjs",
+      "actual": "c071c0c3db05df1462f7fa1a135bb601adf665f49a42a7f3e3ac93a6c3cd0997",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installed-events.test.mjs",
+      "sha256": "fbf65fdef3afd641431a04eb2a511887ce2c7fe571cb22a786060726503a2118",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-events.test.mjs",
+      "actual": "fbf65fdef3afd641431a04eb2a511887ce2c7fe571cb22a786060726503a2118",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installed-memory-adversarial.test.mjs",
+      "sha256": "bbc497ee72321b73acfa8737afdf4f5cf7aa809843d2793314cc6bf6b055ad66",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs",
+      "actual": "bbc497ee72321b73acfa8737afdf4f5cf7aa809843d2793314cc6bf6b055ad66",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installed-memory.test.mjs",
+      "sha256": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory.test.mjs",
+      "actual": "c0214689abf7c64d903e7048c1ac3addb6859d9a3c482f6a36cec40ae123dcac",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installed-worker-config.test.mjs",
+      "sha256": "1a32585a3ea20ef5a917396faa528acb17d07d4d1a1045a603ee116e3580b86e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-config.test.mjs",
+      "actual": "1a32585a3ea20ef5a917396faa528acb17d07d4d1a1045a603ee116e3580b86e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/installed-worker-foundation-adversarial.test.mjs",
+      "sha256": "b180f9024febea5879825cb202f380c8b9d036092ce186311a0978be2693b1ef",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs",
+      "actual": "b180f9024febea5879825cb202f380c8b9d036092ce186311a0978be2693b1ef",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/memory.test.mjs",
+      "sha256": "0ea938dd1fbe179922bc3115f75970902ffddbc69366ef4237cee7b0af302d68",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/memory.test.mjs",
+      "actual": "0ea938dd1fbe179922bc3115f75970902ffddbc69366ef4237cee7b0af302d68",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/messages.test.mjs",
+      "sha256": "0644e40078a1520a8b9209237f09288a578e45c7b0d0037f4f51e189f23c5338",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/messages.test.mjs",
+      "actual": "0644e40078a1520a8b9209237f09288a578e45c7b0d0037f4f51e189f23c5338",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/native-adapter.test.mjs",
+      "sha256": "37bf80e517d6ec4b15d719dab5cde68e25a969efdad0fae2b222eecb4dd7e039",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-adapter.test.mjs",
+      "actual": "37bf80e517d6ec4b15d719dab5cde68e25a969efdad0fae2b222eecb4dd7e039",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/native-hooks.test.mjs",
+      "sha256": "b2327ce422063a48de6601e768a14c4dd3ff44d2ebf5ac071622dd266dc84541",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-hooks.test.mjs",
+      "actual": "b2327ce422063a48de6601e768a14c4dd3ff44d2ebf5ac071622dd266dc84541",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/native-request-current.test.mjs",
+      "sha256": "48c48575535328e32641330237d087d44e15373477e82e9aa471d48b663d93ba",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-request-current.test.mjs",
+      "actual": "48c48575535328e32641330237d087d44e15373477e82e9aa471d48b663d93ba",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/native-runtime-integration.test.mjs",
+      "sha256": "6c1c174b6d72f2f9ced0e2f305c5389e97897685b065c72091e3e97331597783",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-runtime-integration.test.mjs",
+      "actual": "6c1c174b6d72f2f9ced0e2f305c5389e97897685b065c72091e3e97331597783",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/notifications.test.mjs",
+      "sha256": "b473f780ac370fa61da7dd0771ed9153d5fdf9d6374653d9d65f8a807930843e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/notifications.test.mjs",
+      "actual": "b473f780ac370fa61da7dd0771ed9153d5fdf9d6374653d9d65f8a807930843e",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/onboarding-client-405-adversarial.test.mjs",
+      "sha256": "0775bb43e86cc3a9eaeced0c6e2c72fb7f3f0b3a13d2c03bf238951ca24d51b7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/onboarding-client-405-adversarial.test.mjs",
+      "actual": "0775bb43e86cc3a9eaeced0c6e2c72fb7f3f0b3a13d2c03bf238951ca24d51b7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/onboarding-client-adversarial.test.mjs",
+      "sha256": "43f08520d714f3058d77ce10072a127cd0e919e569f65fe20ef533d0564946d7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/onboarding-client-adversarial.test.mjs",
+      "actual": "43f08520d714f3058d77ce10072a127cd0e919e569f65fe20ef533d0564946d7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/onboarding-client.test.mjs",
+      "sha256": "f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/onboarding-client.test.mjs",
+      "actual": "f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/operator-bridge.test.mjs",
+      "sha256": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/operator-bridge.test.mjs",
+      "actual": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/operator-memory-numeric.test.mjs",
+      "sha256": "c0de1b23a9857dc355e334208a0bbb1eacce0074ae6b9c951c8f87350ab40bc2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/operator-memory-numeric.test.mjs",
+      "actual": "c0de1b23a9857dc355e334208a0bbb1eacce0074ae6b9c951c8f87350ab40bc2",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/portability-adversarial.test.mjs",
+      "sha256": "ab3470640041453a930ec30c023817351c9420194c973ee2809c86f6eedf786a",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/portability-adversarial.test.mjs",
+      "actual": "ab3470640041453a930ec30c023817351c9420194c973ee2809c86f6eedf786a",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/portability.test.mjs",
+      "sha256": "7eb9af8aeef99858aba862e56634573f10d93b0fe6f269c7cfd5edc0d9c9b188",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/portability.test.mjs",
+      "actual": "7eb9af8aeef99858aba862e56634573f10d93b0fe6f269c7cfd5edc0d9c9b188",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/rename-adversarial.test.mjs",
+      "sha256": "ed17a70a26f74e97852043d1752f0e26cd214e4e2d540984d1a1578250b7687c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/rename-adversarial.test.mjs",
+      "actual": "ed17a70a26f74e97852043d1752f0e26cd214e4e2d540984d1a1578250b7687c",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/rename-compatibility.test.mjs",
+      "sha256": "b26601ec05a1d12efefafa5a86f260c6e114b4909d388fad4d92014207b3e285",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/rename-compatibility.test.mjs",
+      "actual": "b26601ec05a1d12efefafa5a86f260c6e114b4909d388fad4d92014207b3e285",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/results.test.mjs",
+      "sha256": "8a9c62fe7fdbf4a883677dc78753561e76428392e801345f241070e6b4ef6cfe",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/results.test.mjs",
+      "actual": "8a9c62fe7fdbf4a883677dc78753561e76428392e801345f241070e6b4ef6cfe",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-adversarial.test.mjs",
+      "sha256": "50bf1789ca0dd5528a2aca4fe192067f87215822746044a876fa9773e0057bf7",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-adversarial.test.mjs",
+      "actual": "50bf1789ca0dd5528a2aca4fe192067f87215822746044a876fa9773e0057bf7",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-plugin.test.mjs",
+      "sha256": "fb95a539b3d2c39601c6f8127368aff9a5acff748b59751a31a33f1281cef876",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-plugin.test.mjs",
+      "actual": "fb95a539b3d2c39601c6f8127368aff9a5acff748b59751a31a33f1281cef876",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-store.test.mjs",
+      "sha256": "8beae3455fa939e1fca50e29a206b40501b7f7a989ffd6634e1101440ce91ef0",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-store.test.mjs",
+      "actual": "8beae3455fa939e1fca50e29a206b40501b7f7a989ffd6634e1101440ce91ef0",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-web-fixture-adversarial.test.mjs",
+      "sha256": "bbe2799014da6235ba683668bf531f5cb4aa88cef085005f803f7db05e9c7314",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-web-fixture-adversarial.test.mjs",
+      "actual": "bbe2799014da6235ba683668bf531f5cb4aa88cef085005f803f7db05e9c7314",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-web-fixture.test.mjs",
+      "sha256": "9e5707924376fbbba37e1b99e5a9d11fd4569a83defb9a49acbb5e94b1ced793",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-web-fixture.test.mjs",
+      "actual": "9e5707924376fbbba37e1b99e5a9d11fd4569a83defb9a49acbb5e94b1ced793",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-web-profile-adversarial.test.mjs",
+      "sha256": "d47d0c9c5053bcf0e29f485cee680d3d38a31a62efbe3070ba286a817df8e761",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-web-profile-adversarial.test.mjs",
+      "actual": "d47d0c9c5053bcf0e29f485cee680d3d38a31a62efbe3070ba286a817df8e761",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/runtime-web-profile.test.mjs",
+      "sha256": "6ef6f7c6d34a389b2f8942ff504cde14dea3110a2bda671ad570b9fce50d5d43",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-web-profile.test.mjs",
+      "actual": "6ef6f7c6d34a389b2f8942ff504cde14dea3110a2bda671ad570b9fce50d5d43",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/scheduler.test.mjs",
+      "sha256": "c699f764fce6f96676cec0922b042df15e02342631535b17624021474160a557",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/scheduler.test.mjs",
+      "actual": "c699f764fce6f96676cec0922b042df15e02342631535b17624021474160a557",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/testing-provider.test.mjs",
+      "sha256": "50b7f2022a8360fee2bdf5f325cd6be3fd50432612f5b8b375b01d04691a3baf",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/testing-provider.test.mjs",
+      "actual": "50b7f2022a8360fee2bdf5f325cd6be3fd50432612f5b8b375b01d04691a3baf",
+      "match": true,
+      "canonicalMatch": true
+    },
+    {
+      "path": "test/worker.test.mjs",
+      "sha256": "55fbb01acc926ee97c23eaad473e3a9e30dd7e144de7c28f823189b41e2eb15b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/worker.test.mjs",
+      "actual": "55fbb01acc926ee97c23eaad473e3a9e30dd7e144de7c28f823189b41e2eb15b",
+      "match": true,
+      "canonicalMatch": true
+    }
+  ]
+}
