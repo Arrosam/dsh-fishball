@@ -7,7 +7,7 @@ export class FoundationError extends Error {
   constructor(code) { super(code); this.name = 'FoundationError'; this.code = code; }
 }
 export const fail = code => { throw new FoundationError(code); };
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 const BASE = {
   tasks: 'CREATE TABLE tasks (owner TEXT NOT NULL, workspace TEXT NOT NULL, id TEXT NOT NULL, status TEXT NOT NULL, version INTEGER NOT NULL, auth_epoch INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,id))',
   ingress: 'CREATE TABLE ingress (owner TEXT NOT NULL, workspace TEXT NOT NULL, provider TEXT NOT NULL, source TEXT NOT NULL, event TEXT NOT NULL, task TEXT NOT NULL, received_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,provider,source,event), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
@@ -17,6 +17,16 @@ const EXTRA = {
   actions: 'CREATE TABLE actions (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, id TEXT NOT NULL, kind TEXT NOT NULL, target_digest TEXT NOT NULL, data_digest TEXT NOT NULL, units INTEGER NOT NULL, state TEXT NOT NULL, attempts INTEGER NOT NULL, claim_id TEXT, claim_epoch INTEGER, evidence_digest TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,task,id), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
   grants: 'CREATE TABLE grants (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, action TEXT NOT NULL, task_version INTEGER NOT NULL, auth_epoch INTEGER NOT NULL, target_digest TEXT NOT NULL, data_digest TEXT NOT NULL, units INTEGER NOT NULL, kind TEXT NOT NULL, expires_at INTEGER NOT NULL, revoked INTEGER NOT NULL, PRIMARY KEY(owner,workspace,task,action), FOREIGN KEY(owner,workspace,task,action) REFERENCES actions(owner,workspace,task,id))',
   reservations: 'CREATE TABLE reservations (claim_id TEXT PRIMARY KEY, owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, action TEXT NOT NULL, units INTEGER NOT NULL, created_at INTEGER NOT NULL, FOREIGN KEY(owner,workspace,task,action) REFERENCES actions(owner,workspace,task,id))',
+};
+const RUNTIME = {
+ runtime_tasks: 'CREATE TABLE runtime_tasks (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, control TEXT NOT NULL, PRIMARY KEY(owner,workspace,task), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
+ runtime_commands: 'CREATE TABLE runtime_commands (owner TEXT NOT NULL, workspace TEXT NOT NULL, id TEXT NOT NULL, task TEXT NOT NULL, digest TEXT NOT NULL, operation TEXT NOT NULL, receipt TEXT NOT NULL, PRIMARY KEY(owner,workspace,id))',
+ runtime_data: 'CREATE TABLE runtime_data (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, id TEXT NOT NULL, kind TEXT NOT NULL, digest TEXT NOT NULL, ciphertext BLOB NOT NULL, nonce BLOB NOT NULL, tag BLOB NOT NULL, metadata TEXT NOT NULL, PRIMARY KEY(owner,workspace,task,id), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
+ runtime_policy: 'CREATE TABLE runtime_policy (owner TEXT NOT NULL, workspace TEXT NOT NULL, version INTEGER NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(owner,workspace))',
+ runtime_actions: 'CREATE TABLE runtime_actions (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, action TEXT NOT NULL, digest TEXT NOT NULL, spec TEXT NOT NULL, metadata TEXT NOT NULL, PRIMARY KEY(owner,workspace,task,action), FOREIGN KEY(owner,workspace,task,action) REFERENCES actions(owner,workspace,task,id))',
+ runtime_workers: 'CREATE TABLE runtime_workers (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, claim TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(owner,workspace,task,claim), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
+ runtime_records: 'CREATE TABLE runtime_records (owner TEXT NOT NULL, workspace TEXT NOT NULL, task TEXT NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(owner,workspace,task,kind,id), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
+ runtime_security: 'CREATE TABLE runtime_security (id INTEGER PRIMARY KEY CHECK(id=1), key_digest TEXT NOT NULL)',
 };
 // Version 1 is a bounded task-only foundation; it cannot contain action authority.
 export const legacySchemaSql = Object.values(BASE).join(';') + '; PRAGMA user_version=1;';
@@ -33,7 +43,7 @@ function preflight(path, existed) {
     if (read!==header.length || !header.subarray(0,16).equals(Buffer.from('SQLite format 3\0','ascii'))) fail('STORAGE_UNAVAILABLE');
     const version=header.readInt32BE(60);
     if (version>SCHEMA_VERSION) fail('SCHEMA_FUTURE');
-    if (version!==1 && version!==SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
+    if (version!==1 && version!==2 && version!==SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
     if (header[18]!==1 || header[19]!==1) fail('SCHEMA_UNSUPPORTED');
     const pageSize=header.readUInt16BE(16)===1 ? 65536 : header.readUInt16BE(16);
     if (pageSize<512 || pageSize>65536 || (pageSize & (pageSize-1))!==0 || info.size<pageSize || info.size%pageSize!==0 || pageSize-header[20]<480 || header[21]!==64 || header[22]!==32 || header[23]!==32) fail('STORAGE_UNAVAILABLE');
@@ -60,33 +70,34 @@ export class Ledger {
       if (this.db.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') fail('STORAGE_INVALID');
       if (!existed) {
         this.db.exec('BEGIN EXCLUSIVE');
-        try { this.version(0); if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) fail('SCHEMA_UNSUPPORTED'); for (const sql of Object.values({ ...BASE, ...EXTRA })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
+        try { this.version(0); if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) fail('SCHEMA_UNSUPPORTED'); for (const sql of Object.values({ ...BASE, ...EXTRA, ...RUNTIME })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
         catch (error) { this.db.exec('ROLLBACK'); throw error; }
-      } else if (version === 1) {
-        this.verify(BASE);
+      } else if (version === 1 || version === 2) {
+        const sourceSchema=version===1 ? BASE : {...BASE,...EXTRA};
+        this.verify(sourceSchema);
         if (this.db.prepare('PRAGMA journal_mode').get().journal_mode !== 'delete') fail('SCHEMA_UNSUPPORTED');
         this.db.exec('BEGIN EXCLUSIVE');
         try {
           // Validate source under the exclusive lock before any backup or schema write.
-          this.version(1);
-          this.verify(BASE);
-          this.validateRows(false);
+          this.version(version);
+          this.verify(sourceSchema);
+          this.validateRows(version===2);
           // Lock out concurrent writes before making an exact recoverable copy.
-          this.backupPath = `${path}.schema-1.backup`;
+          this.backupPath = `${path}.schema-${version}.backup`;
           copyFileSync(path, this.backupPath, constants.COPYFILE_EXCL);
           const backupFd=openSync(this.backupPath,'r');
           try { fsyncSync(backupFd); } finally { closeSync(backupFd); }
           const directoryFd=openSync(dirname(path),'r');
           try { fsyncSync(directoryFd); } finally { closeSync(directoryFd); }
-          for (const sql of Object.values(EXTRA)) this.db.exec(sql);
+          for (const sql of Object.values(version===1 ? {...EXTRA,...RUNTIME} : RUNTIME)) this.db.exec(sql);
           if (migrationFault) { try { migrationFault(); } catch { fail('STORAGE_UNAVAILABLE'); } }
-          this.verify({ ...BASE, ...EXTRA });
+          this.verify({ ...BASE, ...EXTRA, ...RUNTIME });
           this.validateRows(true);
           this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`);
         } catch (error) { this.db.exec('ROLLBACK'); throw error; }
       } else if (version !== SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
       this.db.exec('BEGIN IMMEDIATE');
-      try { this.version(SCHEMA_VERSION); this.verify({ ...BASE, ...EXTRA }); this.validateRows(true); this.db.exec('COMMIT'); }
+      try { this.version(SCHEMA_VERSION); this.verify({ ...BASE, ...EXTRA, ...RUNTIME }); this.validateRows(true); this.db.exec('COMMIT'); }
       catch(error) { this.db.exec('ROLLBACK'); throw error; }
       if (maxPageCount !== undefined) this.db.exec(`PRAGMA max_page_count=${maxPageCount}`);
     } catch (error) {
@@ -117,7 +128,7 @@ export class Ledger {
     invalid('tasks',[...refs(['owner','workspace','id']),...integers(['version'],1),...integers(['auth_epoch','created_at','updated_at']),`status NOT IN (${states})`]);
     invalid('ingress',[...refs(['owner','workspace','provider','source','event','task']),...integers(['received_at'])]);
     invalid('events',[...refs(['owner','workspace','task']),...integers(['sequence','version'],1),...integers(['at']),`status NOT IN (${states})`,"reason NOT IN ('intake','progress','operator','recovery','fixture','delete','action_requested','grant','revoke','dispatch','cancel','settlement')"]);
-    if (this.db.prepare('SELECT 1 FROM tasks t WHERE (SELECT count(*) FROM ingress i WHERE i.owner=t.owner AND i.workspace=t.workspace AND i.task=t.id)!=1 OR NOT EXISTS (SELECT 1 FROM events e WHERE e.owner=t.owner AND e.workspace=t.workspace AND e.task=t.id AND e.sequence=(SELECT max(sequence) FROM events x WHERE x.owner=t.owner AND x.workspace=t.workspace AND x.task=t.id) AND e.version=t.version AND e.status=t.status) LIMIT 1').get()) fail('STORAGE_INVALID');
+    if (this.db.prepare('SELECT 1 FROM tasks t WHERE (SELECT count(*) FROM ingress i WHERE i.owner=t.owner AND i.workspace=t.workspace AND i.task=t.id)<1 OR NOT EXISTS (SELECT 1 FROM events e WHERE e.owner=t.owner AND e.workspace=t.workspace AND e.task=t.id AND e.sequence=(SELECT max(sequence) FROM events x WHERE x.owner=t.owner AND x.workspace=t.workspace AND x.task=t.id) AND e.version=t.version AND e.status=t.status) LIMIT 1').get()) fail('STORAGE_INVALID');
     if (this.db.prepare('SELECT 1 FROM events GROUP BY owner,workspace,task HAVING min(sequence)!=1 OR max(sequence)!=count(*) LIMIT 1').get()) fail('STORAGE_INVALID');
     if (!withActions) return;
     const kinds="'fixture','read','write','review','repair'";
@@ -129,6 +140,7 @@ export class Ledger {
     if(this.db.prepare('SELECT 1 FROM grants g JOIN tasks t ON t.owner=g.owner AND t.workspace=g.workspace AND t.id=g.task WHERE g.auth_epoch>t.auth_epoch OR g.task_version>t.version LIMIT 1').get()) fail('STORAGE_INVALID');
     if(this.db.prepare("SELECT 1 FROM reservations r JOIN tasks t ON t.owner=r.owner AND t.workspace=r.workspace AND t.id=r.task WHERE t.status IN ('completed','failed','cancelled','deleted') LIMIT 1").get()) fail('STORAGE_INVALID');
   }
+  runtimeManaged(keys) { return !!this.one('SELECT 1 FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys); }
   query(sql, ...params) { return this.guarded(() => this.db.prepare(sql).all(...params)); }
   one(sql, ...params) { return this.guarded(() => this.db.prepare(sql).get(...params)); }
   run(sql, ...params) { return this.guarded(() => this.db.prepare(sql).run(...params)); }

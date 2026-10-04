@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { types } from 'node:util';
-import { Ledger, FoundationError, fail } from './ledger.mjs';
+import { Ledger, FoundationError, fail, SCHEMA_VERSION } from './ledger.mjs';
 export { FoundationError } from './ledger.mjs';
 const DEFAULTS = Object.freeze({queueCapacity:32,maxActive:2,maxAttempts:3,maxTasks:1000,maxActionsPerTask:16,maxEventsPerTask:128,maxMetadataBytes:1024});
 const TERMINAL = new Set(['completed','failed','cancelled','deleted']);
@@ -55,7 +55,7 @@ export class Foundation {
   #operator(capability,scope) { const pair=scoped(scope); if (!capability || typeof capability!=='object' || this.#operators.get(capability)!==pair.join(':')) fail('UNAUTHORIZED'); return pair; }
   #keys(scope,taskId) { return [...scoped(scope),id(taskId)]; }
   #task(keys) { const row=this.#ledger.one('SELECT * FROM tasks WHERE owner=? AND workspace=? AND id=?',...keys); if(!row) fail('TASK_NOT_FOUND'); return row; }
-  #current(keys,version) { number(version,1); const task=this.#task(keys); if(task.version!==version) fail('STALE_VERSION'); if(TERMINAL.has(task.status)) fail('TASK_TERMINAL'); return task; }
+  #current(keys,version) { if(this.#ledger.runtimeManaged(keys)) fail('RUNTIME_MANAGED'); number(version,1); const task=this.#task(keys); if(task.version!==version) fail('STALE_VERSION'); if(TERMINAL.has(task.status)) fail('TASK_TERMINAL'); return task; }
   #action(keys,actionId) { const row=this.#ledger.one('SELECT * FROM actions WHERE owner=? AND workspace=? AND task=? AND id=?',...keys,id(actionId)); if(!row) fail('ACTION_NOT_FOUND'); return row; }
   #event(task,status,reason,at) {
     const keys=[task.owner,task.workspace,task.id];
@@ -99,7 +99,7 @@ export class Foundation {
     const ingress=this.#ledger.query('SELECT provider AS providerRef,source AS sourceRef,event AS eventRef,received_at AS receivedAt FROM ingress WHERE owner=? AND workspace=? AND task=?',...keys);
     const actions=this.#ledger.query('SELECT * FROM actions WHERE owner=? AND workspace=? AND task=? ORDER BY created_at,id',...keys).map(actionRecord);
     const grants=this.#ledger.query('SELECT action AS actionRef,task_version AS taskVersion,auth_epoch AS authEpoch,expires_at AS expiresAt,revoked FROM grants WHERE owner=? AND workspace=? AND task=?',...keys);
-    return {schemaVersion:2,task:taskRecord(task),ingress,history,actions,grants,deletionScope:'local-ledger-tombstone'};
+    return {schemaVersion:SCHEMA_VERSION,task:taskRecord(task),ingress,history,actions,grants,deletionScope:'local-ledger-tombstone'};
     });
   }
   #held(keys) { return this.#ledger.one('SELECT count(*) AS n FROM reservations WHERE owner=? AND workspace=? AND task=?',...keys).n; }
@@ -109,7 +109,7 @@ export class Foundation {
   }
   deleteTask(capability,scope,taskId,input) {
     this.#operator(capability,scope); exact(input,['expectedVersion']); const keys=this.#keys(scope,taskId),at=this.#now();
-    return this.#ledger.transaction(()=>{const task=this.#task(keys); number(input.expectedVersion,1); if(task.version!==input.expectedVersion) fail('STALE_VERSION'); if(task.status==='deleted') return taskRecord(task); if(this.#held(keys)) fail('RESERVATION_HELD'); this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=?',...keys); return taskRecord(this.#update(task,'deleted','delete',at,task.auth_epoch+1));});
+    return this.#ledger.transaction(()=>{if(this.#ledger.runtimeManaged(keys)) fail('RUNTIME_MANAGED'); const task=this.#task(keys); number(input.expectedVersion,1); if(task.version!==input.expectedVersion) fail('STALE_VERSION'); if(task.status==='deleted') return taskRecord(task); if(this.#held(keys)) fail('RESERVATION_HELD'); this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=?',...keys); return taskRecord(this.#update(task,'deleted','delete',at,task.auth_epoch+1));});
   }
   requestAction(scope,taskId,input) {
     exact(input,['actionId','kind','targetDigest','dataDigest','limits','expectedVersion']); exact(input.limits,['units']); if(!KINDS.has(input.kind)) fail('INVALID_INPUT'); hash(input.targetDigest);hash(input.dataDigest); number(input.limits.units,1,this.limits.maxActive);
@@ -122,7 +122,7 @@ export class Foundation {
   }
   revoke(capability,scope,taskId,actionId) {
     this.#operator(capability,scope); const keys=this.#keys(scope,taskId),at=this.#now();
-    return this.#ledger.transaction(()=>{const task=this.#task(keys),action=this.#action(keys,actionId); if(TERMINAL.has(task.status)) fail('TASK_TERMINAL'); const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); if(!grant || grant.revoked || grant.auth_epoch!==task.auth_epoch) return {authEpoch:task.auth_epoch,actionRef:action.id,state:action.state}; number(task.auth_epoch+1); this.#ledger.run('UPDATE tasks SET auth_epoch=auth_epoch+1 WHERE owner=? AND workspace=? AND id=?',...keys); this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); this.#event(task,task.status,'revoke',at); return {authEpoch:task.auth_epoch+1,actionRef:action.id,state:action.state};});
+    return this.#ledger.transaction(()=>{if(this.#ledger.runtimeManaged(keys)) fail('RUNTIME_MANAGED'); const task=this.#task(keys),action=this.#action(keys,actionId); if(TERMINAL.has(task.status)) fail('TASK_TERMINAL'); const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); if(!grant || grant.revoked || grant.auth_epoch!==task.auth_epoch) return {authEpoch:task.auth_epoch,actionRef:action.id,state:action.state}; number(task.auth_epoch+1); this.#ledger.run('UPDATE tasks SET auth_epoch=auth_epoch+1 WHERE owner=? AND workspace=? AND id=?',...keys); this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); this.#event(task,task.status,'revoke',at); return {authEpoch:task.auth_epoch+1,actionRef:action.id,state:action.state};});
   }
   claim(scope,taskId,actionId,input) {
     exact(input,['expectedVersion']); const keys=this.#keys(scope,taskId);
@@ -151,7 +151,7 @@ export class Foundation {
   settle(scope,taskId,actionId,input) {
     exact(input,['claimId','outcome','evidenceDigest']); if(typeof input.claimId!=='string'||!/^[a-f0-9-]{36}$/.test(input.claimId)||!['completed','failed','unknown','terminated'].includes(input.outcome)) fail('INVALID_INPUT'); hash(input.evidenceDigest);const keys=this.#keys(scope,taskId),at=this.#now();
     return this.#ledger.transaction(()=>{
-      const task=this.#task(keys),action=this.#action(keys,actionId);
+      if(this.#ledger.runtimeManaged(keys)) fail('RUNTIME_MANAGED'); const task=this.#task(keys),action=this.#action(keys,actionId);
       if(action.claim_id!==input.claimId || !['dispatch_intent','unknown'].includes(action.state)) fail('STALE_CLAIM');
       const held=this.#ledger.one('SELECT claim_id FROM reservations WHERE claim_id=? AND owner=? AND workspace=? AND task=? AND action=?',input.claimId,...keys,action.id); if(!held) fail('STALE_CLAIM');
       if(action.state==='unknown' && input.outcome==='unknown') return {task:taskRecord(task),action:actionRecord(action),reservationHeld:true};
@@ -169,7 +169,7 @@ export class Foundation {
   recover() {
     const at=this.#now();
     return this.#ledger.transaction(()=>{
-      const pending=this.#ledger.query("SELECT * FROM actions WHERE state='dispatch_intent'");
+      const pending=this.#ledger.query("SELECT * FROM actions a WHERE state='dispatch_intent' AND NOT EXISTS (SELECT 1 FROM runtime_tasks r WHERE r.owner=a.owner AND r.workspace=a.workspace AND r.task=a.task)");
       for(const action of pending) { const keys=[action.owner,action.workspace,action.task],task=this.#task(keys); this.#ledger.run("UPDATE actions SET state='unknown',updated_at=? WHERE owner=? AND workspace=? AND task=? AND id=?",at,...keys,action.id); if(task.status!=='cancel_requested'&&task.status!=='recovery_required') this.#update(task,'recovery_required','recovery',at); else this.#event(task,task.status,'recovery',at); }
       return {recoveryRequired:pending.length,reservationsHeld:this.#ledger.one('SELECT coalesce(sum(units),0) AS n FROM reservations').n};
     });
@@ -182,6 +182,6 @@ export class Foundation {
     this.#cut('post_effect');
     try { exact(evidence,['outcome','evidenceDigest']); return this.settle(scope,taskId,actionId,{claimId:claimed.claimId,...evidence}); } catch(error) { if(error instanceof FoundationError) throw error; fail('FIXTURE_RESULT_INVALID'); }
   }
-  diagnostics() { return {schemaVersion:2,restricted:this.#ledger.restricted,closed:this.#ledger.closed,limits:this.limits}; }
+  diagnostics() { return {schemaVersion:SCHEMA_VERSION,restricted:this.#ledger.restricted,closed:this.#ledger.closed,limits:this.limits}; }
   close() { this.#ledger.close(); }
 }

@@ -116,7 +116,7 @@ test('migration backs up exact supported schema and failures/future/corrupt/unav
  for(const [name,fault] of [['success',false],['failed',true]]) {
   const path=join(dir,name+'.db'),db=new DatabaseSync(path);db.exec(legacySchemaSql);db.close();const original=readFileSync(path);
   if(fault) {rejects(()=>new Foundation({databasePath:path,fixtureMode:true,migrationFault:()=>{throw Error('secret');}}),'STORAGE_UNAVAILABLE');assert.deepEqual(readFileSync(path),original);}
-  else {const core=new Foundation({databasePath:path});assert.equal(core.diagnostics().schemaVersion,2);core.close();}
+  else {const core=new Foundation({databasePath:path});assert.equal(core.diagnostics().schemaVersion,3);core.close();}
   assert.deepEqual(readFileSync(path+'.schema-1.backup'),original);
  }
  const wal=join(dir,'wal.db'),waldb=new DatabaseSync(wal);waldb.exec(legacySchemaSql);waldb.exec('PRAGMA journal_mode=WAL');waldb.close();const walOriginal=readFileSync(wal);rejects(()=>new Foundation({databasePath:wal}),'SCHEMA_UNSUPPORTED');assert.deepEqual(readFileSync(wal),walOriginal);assert.equal(existsSync(wal+'.schema-1.backup'),false);
@@ -198,9 +198,9 @@ test('old consent cannot restore revoked or replaced approval authority',t=>{
 
 test('unsupported crash-left WAL stores reject before SQLite touches main or sidecars',t=>{
  const dir=mkdtempSync(join(tmpdir(),'bubbles-wal-preflight-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
- for(const version of [99,1,2]) {
+ for(const version of [99,1,2,3]) {
   const path=join(dir,`schema-${version}.db`);
-  if(version===2){const core=new Foundation({databasePath:path});core.close();}
+  if(version===2||version===3){const core=new Foundation({databasePath:path});core.close();if(version===2){const legacy2=new DatabaseSync(path);for(const row of legacy2.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all())legacy2.exec('DROP TABLE '+row.name);legacy2.exec('PRAGMA user_version=2');legacy2.close();}}
   const seed=version===99 ? 'CREATE TABLE future(value INTEGER); PRAGMA user_version=99;' : version===1 ? legacySchemaSql : '';
   const insert=version===99 ? "db.exec('INSERT INTO future VALUES(1)');" : `db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run('${D}','${D}','${D}','queued',1,0,1000,1000);db.prepare('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)').run('${D}','${D}','${D}','${D}','${D}','${D}',1000);db.prepare('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)').run('${D}','${D}','${D}',1,1,'queued','intake',1000);`;
   const result=child(`import{DatabaseSync}from'node:sqlite';const db=new DatabaseSync(${JSON.stringify(path)});db.exec(${JSON.stringify(seed)});db.exec('PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0;');db.exec('BEGIN IMMEDIATE');${insert}db.exec('COMMIT');process.exit(73);`);
