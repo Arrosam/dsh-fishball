@@ -1,0 +1,154 @@
+{
+  "manifest_sha256": "181e9fc7e91bf608235a9443ded023c4ebb22974c508b1c1251697dad56978c2",
+  "entries": [
+    {
+      "path": "test/installed-worker-foundation-adversarial.test.mjs",
+      "sha256": "b180f9024febea5879825cb202f380c8b9d036092ce186311a0978be2693b1ef",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-review.md",
+      "sha256": "457c38457601d11425d1274dfb7541f161d0ad05840e37a2f704e5275442b04c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-before.json",
+      "sha256": "6bfd0528d4c51f93721d473dc4876264f3016f254b5284b1f9e238de4a76232f",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-first-source.json",
+      "sha256": "543a0b61dbf9d99d443880cf0f5f6dc44abd1533e0dffe6cfadf1344210c31d3",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-after.json",
+      "sha256": "7ec419e5403bec3bf8cdef6a37d7d6a19ae355023cb4a6a6b5c66f7f9db553f6",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-first-test.mjs.txt",
+      "sha256": "ed813b432b7052d1e730857859ca7a4f9a6c52adb1f86ad92f3f60da6cc864b0",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-path-retest-test.mjs.txt",
+      "sha256": "addbbfa0bdbd2c915b6d66fa7386100bcb9388b6c5acc1e818081cb0de09848f",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-first.tap",
+      "sha256": "a02c00157490c0c8a93bd2b543c11303bb36cd6afc5fd767e0ed6dbb7b572743",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-path-retest.tap",
+      "sha256": "7531ce2161ba095cdc3bac465cb9be629596aeb9c4e37667467208f775aa370d",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-final.tap",
+      "sha256": "647aef42ebf60736eabfa467d86591d7f92e7cc7a5d6509d4755fe3e5f9c2d7d",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-authored.tap",
+      "sha256": "0ad3d973e738faf397e2497afb962e74f7ae5feb5e50e36c37121f4052ba6a4c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/foundation-independent-syntax.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "match": true
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "match": true
+    },
+    {
+      "path": "src/installed-config.mjs",
+      "sha256": "3da0ed1c99cd1ed920e7093fad0dafc6ce5f1653bfd09879018a10dd8d02e5ed",
+      "match": true
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "match": true
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "match": true
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "match": true
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "match": true
+    },
+    {
+      "path": "test/installed-worker-config.test.mjs",
+      "sha256": "1a32585a3ea20ef5a917396faa528acb17d07d4d1a1045a603ee116e3580b86e",
+      "match": true
+    },
+    {
+      "path": "test/native-request-current.test.mjs",
+      "sha256": "48c48575535328e32641330237d087d44e15373477e82e9aa471d48b663d93ba",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "sha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/resume-design-proposal.md",
+      "sha256": "f0e21ced82011fcd6b29434b67e8e9b6f774fded940bf72c93feb824383525fd",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/config-current-author.sha256",
+      "sha256": "a5ee5bd6a9667af0483fe8c9cb408aa708080593a2ebaa5a2715a82ccdf0dddf",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/config-current-author-hold.md",
+      "sha256": "f5fba364f4c2a794bc83c96134d86e4df017fced44f24c7541e6f46e1690d256",
+      "match": true
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "match": true
+    }
+  ],
+  "root_verified_all": true,
+  "independent_tests": {
+    "tests": 48,
+    "pass": 48,
+    "fail": 0,
+    "skip": 0
+  },
+  "independent_authored_reexecution": {
+    "tests": 38,
+    "pass": 38,
+    "fail": 0,
+    "skip": 0
+  },
+  "source_release": "config/helper/current assertion held dependency closure released to existing NI2 author after actual final before/after proof",
+  "root_product_reexecution": "none; reviewed actual independent report/TAP/manifests",
+  "remaining_gates": [
+    "normal installed worker composer/execution",
+    "required schema7 origin/resume",
+    "original physical host lifecycle",
+    "CODE",
+    "browser",
+    "model quality",
+    "full82+5 acceptance"
+  ]
+}

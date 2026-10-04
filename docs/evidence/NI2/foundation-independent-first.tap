@@ -1,0 +1,317 @@
+TAP version 13
+# (node:72048) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI2 independent C01: disabled and malformed choices call no filesystem method
+ok 1 - NI2 independent C01: disabled and malformed choices call no filesystem method
+  ---
+  duration_ms: 5.235042
+  type: 'test'
+  ...
+# Subtest: NI2 independent C02: retained null-prototype base meanings and detached enabled choice create no persistence
+ok 2 - NI2 independent C02: retained null-prototype base meanings and detached enabled choice create no persistence
+  ---
+  duration_ms: 1.834167
+  type: 'test'
+  ...
+# Subtest: NI2 independent C03: caller authority and descriptor canaries are rejected before path lookup
+ok 3 - NI2 independent C03: caller authority and descriptor canaries are rejected before path lookup
+  ---
+  duration_ms: 3.163125
+  type: 'test'
+  ...
+# Subtest: NI2 independent C04: path prefix sibling, parent alias, file and dangling entry fail closed
+ok 4 - NI2 independent C04: path prefix sibling, parent alias, file and dangling entry fail closed
+  ---
+  duration_ms: 2.188625
+  type: 'test'
+  ...
+# Subtest: NI2 independent C05: existing canonical workspace UTF-8 path 1023/1024/1025 bytes
+    # Subtest: 1023 bytes
+    ok 1 - 1023 bytes
+      ---
+      duration_ms: 0.880917
+      type: 'test'
+      ...
+    # Subtest: 1024 bytes
+    not ok 2 - 1024 bytes
+      ---
+      duration_ms: 0.236958
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:205:51'
+      failureType: 'testCodeFailure'
+      error: "ENAMETOOLONG: name too long, mkdir '/private/tmp/df-ni2-independent-haPzrF/long/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'"
+      code: 'ENAMETOOLONG'
+      stack: |-
+        Object.mkdirSync (node:fs:1370:26)
+        pathAt (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:203:56)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:206:18)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:205:51)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: 1025 bytes
+    not ok 3 - 1025 bytes
+      ---
+      duration_ms: 0.062541
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:205:51'
+      failureType: 'testCodeFailure'
+      error: "ENAMETOOLONG: name too long, mkdir '/private/tmp/df-ni2-independent-haPzrF/long/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'"
+      code: 'ENAMETOOLONG'
+      stack: |-
+        Object.mkdirSync (node:fs:1370:26)
+        pathAt (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:203:56)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:206:18)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:205:51)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    1..3
+not ok 5 - NI2 independent C05: existing canonical workspace UTF-8 path 1023/1024/1025 bytes
+  ---
+  duration_ms: 3.392458
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-foundation-adversarial.test.mjs:197:1'
+  failureType: 'subtestsFailed'
+  error: '2 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: NI2 independent C06: maximum request/output reservation has an exact composite threshold
+    # Subtest: charge 135167
+    ok 1 - charge 135167
+      ---
+      duration_ms: 0.58925
+      type: 'test'
+      ...
+    # Subtest: charge 135168
+    ok 2 - charge 135168
+      ---
+      duration_ms: 0.16275
+      type: 'test'
+      ...
+    # Subtest: charge 135169
+    ok 3 - charge 135169
+      ---
+      duration_ms: 0.110708
+      type: 'test'
+      ...
+    1..3
+ok 6 - NI2 independent C06: maximum request/output reservation has an exact composite threshold
+  ---
+  duration_ms: 2.20475
+  type: 'test'
+  ...
+# Subtest: NI2 independent C07: byte and persistence-leaf boundaries keep exact text and create nothing
+    # Subtest: provider UTF-8 127
+    ok 1 - provider UTF-8 127
+      ---
+      duration_ms: 0.235292
+      type: 'test'
+      ...
+    # Subtest: provider UTF-8 128
+    ok 2 - provider UTF-8 128
+      ---
+      duration_ms: 0.192833
+      type: 'test'
+      ...
+    # Subtest: provider UTF-8 129
+    ok 3 - provider UTF-8 129
+      ---
+      duration_ms: 0.137583
+      type: 'test'
+      ...
+    1..3
+ok 7 - NI2 independent C07: byte and persistence-leaf boundaries keep exact text and create nothing
+  ---
+  duration_ms: 2.902292
+  type: 'test'
+  ...
+# Subtest: NI2 independent F01: consumed read fence preserves every row and main byte, returns no plaintext or new permit
+ok 8 - NI2 independent F01: consumed read fence preserves every row and main byte, returns no plaintext or new permit
+  ---
+  duration_ms: 36.135208
+  type: 'test'
+  ...
+# Subtest: NI2 independent F02: same-scope live tasks cannot swap any complete execution binding
+ok 9 - NI2 independent F02: same-scope live tasks cannot swap any complete execution binding
+  ---
+  duration_ms: 45.881375
+  type: 'test'
+  ...
+# Subtest: NI2 independent F03: role, raw/ref identity spoof and opaque handle clones have no authority
+ok 10 - NI2 independent F03: role, raw/ref identity spoof and opaque handle clones have no authority
+  ---
+  duration_ms: 35.786459
+  type: 'test'
+  ...
+# Subtest: NI2 independent F04: hidden/symbol/accessor/revoked Proxy bindings reject without callbacks or row changes
+ok 11 - NI2 independent F04: hidden/symbol/accessor/revoked Proxy bindings reject without callbacks or row changes
+  ---
+  duration_ms: 29.955208
+  type: 'test'
+  ...
+# Subtest: NI2 independent F05: permission requires literal synchronous true and suppresses callback canaries
+    # Subtest: truthy integer
+    ok 1 - truthy integer
+      ---
+      duration_ms: 3.189583
+      type: 'test'
+      ...
+    # Subtest: truthy string
+    ok 2 - truthy string
+      ---
+      duration_ms: 2.776583
+      type: 'test'
+      ...
+    # Subtest: boxed true
+    ok 3 - boxed true
+      ---
+      duration_ms: 2.736458
+      type: 'test'
+      ...
+    # Subtest: resolved Promise
+    ok 4 - resolved Promise
+      ---
+      duration_ms: 2.732666
+      type: 'test'
+      ...
+    # Subtest: undefined
+    ok 5 - undefined
+      ---
+      duration_ms: 3.55475
+      type: 'test'
+      ...
+    # Subtest: exported error canary
+    ok 6 - exported error canary
+      ---
+      duration_ms: 2.92975
+      type: 'test'
+      ...
+    1..6
+ok 12 - NI2 independent F05: permission requires literal synchronous true and suppresses callback canaries
+  ---
+  duration_ms: 36.866834
+  type: 'test'
+  ...
+# Subtest: NI2 independent F06: late expiry 1999/2000/2001 preserves consumed intent, grants and reservations
+    # Subtest: at 1999
+    ok 1 - at 1999
+      ---
+      duration_ms: 4.193
+      type: 'test'
+      ...
+    # Subtest: at 2000
+    ok 2 - at 2000
+      ---
+      duration_ms: 3.266416
+      type: 'test'
+      ...
+    # Subtest: at 2001
+    ok 3 - at 2001
+      ---
+      duration_ms: 3.050125
+      type: 'test'
+      ...
+    1..3
+ok 13 - NI2 independent F06: late expiry 1999/2000/2001 preserves consumed intent, grants and reservations
+  ---
+  duration_ms: 25.223625
+  type: 'test'
+  ...
+# Subtest: NI2 independent F07: progress version changes remain current; new protected constraints stale the exact context
+ok 14 - NI2 independent F07: progress version changes remain current; new protected constraints stale the exact context
+  ---
+  duration_ms: 23.734
+  type: 'test'
+  ...
+# Subtest: NI2 independent F08: memory equality, tombstone and foreign namespace changes use exact revision guards
+    # Subtest: same bytes new revision
+    ok 1 - same bytes new revision
+      ---
+      duration_ms: 20.385375
+      type: 'test'
+      ...
+    # Subtest: delete live revision
+    ok 2 - delete live revision
+      ---
+      duration_ms: 18.748
+      type: 'test'
+      ...
+    # Subtest: create then delete absent namespace
+    ok 3 - create then delete absent namespace
+      ---
+      duration_ms: 17.13075
+      type: 'test'
+      ...
+    # Subtest: unrelated namespace does not stale approved memory
+    ok 4 - unrelated namespace does not stale approved memory
+      ---
+      duration_ms: 17.728542
+      type: 'test'
+      ...
+    1..4
+ok 15 - NI2 independent F08: memory equality, tombstone and foreign namespace changes use exact revision guards
+  ---
+  duration_ms: 74.378667
+  type: 'test'
+  ...
+# Subtest: NI2 independent F09: pause then task resume cannot revive the consumed old grant
+ok 16 - NI2 independent F09: pause then task resume cannot revive the consumed old grant
+  ---
+  duration_ms: 19.086542
+  type: 'test'
+  ...
+# Subtest: NI2 independent F10: stopped and uncertain workers retain original holds and deny the late fence
+    # Subtest: cancel_requested
+    ok 1 - cancel_requested
+      ---
+      duration_ms: 16.935875
+      type: 'test'
+      ...
+    # Subtest: stopped
+    ok 2 - stopped
+      ---
+      duration_ms: 17.344083
+      type: 'test'
+      ...
+    # Subtest: unknown
+    ok 3 - unknown
+      ---
+      duration_ms: 19.418625
+      type: 'test'
+      ...
+    1..3
+ok 17 - NI2 independent F10: stopped and uncertain workers retain original holds and deny the late fence
+  ---
+  duration_ms: 53.962458
+  type: 'test'
+  ...
+# Subtest: NI2 independent F11: closed store and cold reopen preserve encrypted bytes and do not restore stream authority
+ok 18 - NI2 independent F11: closed store and cold reopen preserve encrypted bytes and do not restore stream authority
+  ---
+  duration_ms: 26.287792
+  type: 'test'
+  ...
+# Subtest: NI2 independent F12: already-open independent process observes revoke without a cached grant or row mutation
+ok 19 - NI2 independent F12: already-open independent process observes revoke without a cached grant or row mutation
+  ---
+  duration_ms: 121.255666
+  type: 'test'
+  ...
+1..19
+# tests 44
+# suites 0
+# pass 41
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 655.39225

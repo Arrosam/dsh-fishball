@@ -1,0 +1,433 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+import { createHash } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { validateInstalledConfig, Config } from '../src/installed-config.mjs';
+import { validateInstalledWorker } from '../src/installed-worker-config.mjs';
+import { RuntimeStore, RuntimeError, reference as r } from '../src/runtime-store.mjs';
+
+// This lease exercises only the held six-module configuration/store closure.
+// Native readiness, price provenance, provider permits and full NI2 are not oracles here.
+const sentinel = 'NI2_PRIVATE_CALLBACK_SENTINEL';
+const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+function temporary(t) {
+  const directory = fs.mkdtempSync(join(fs.realpathSync(tmpdir()), 'df-ni2-independent-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  return directory;
+}
+function configFixture(t) {
+  const directory = temporary(t), workspace = join(directory, 'workspace');
+  fs.mkdirSync(workspace); fs.mkdirSync(join(workspace, 'child'));
+  return {
+    directory,
+    input: {
+      databasePath: join(directory, 'uncreated-vault', 'runtime.sqlite'),
+      limits: { maxMetadataBytes: 4096 }, memory: { enabled: true, byteLimit: 65536, tokenLimit: 8192 },
+      worker: {
+        enabled: true,
+        selection: { provider: 'synthetic-selection', model: 'synthetic-model', agentPreset: 'selected-empty', reasoningEffort: null, maxOutputTokens: 128 },
+        environment: { root: workspace, cwd: join(workspace, 'child') },
+        persistence: { directory: join(directory, 'uncreated-vault', 'df-sessions'), compression: 'none', retention: 'owner-managed' },
+        bounds: { requestBytes: 512, resultBytes: 128 },
+        policy: { maxRuntimeMs: 60000, maxUsageUnits: 100000000, maxCostEstimateMicros: 0 },
+        charges: { runtimeMs: 1000, usageUnits: 640 }, previewTtlMs: 1, grantTtlMs: 60000,
+      },
+    },
+  };
+}
+function configInvalid(input) {
+  assert.throws(() => validateInstalledConfig(input), { code: 'CONFIG_INVALID', message: 'CONFIG_INVALID' });
+  assert.deepEqual(Config['~standard'].validate(input), { issues: [{ message: 'CONFIG_INVALID' }] });
+}
+function filesystemTripwire(body) {
+  const keys = ['lstatSync', 'realpathSync', 'mkdirSync', 'openSync', 'writeFileSync', 'chmodSync'];
+  const old = new Map(keys.map(key => [key, fs[key]]));
+  const calls = [];
+  for (const key of keys) fs[key] = () => { calls.push(key); throw Error(sentinel); };
+  syncBuiltinESMExports();
+  try { body(calls); } finally {
+    for (const [key, method] of old) fs[key] = method;
+    syncBuiltinESMExports();
+  }
+}
+function sqlState(databasePath) {
+  const db = new DatabaseSync(databasePath, { readOnly: true });
+  try {
+    const tables = db.prepare("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name").all().map(row => row.name);
+    const rows = tables.map(name => ({ name, rows: db.prepare(`SELECT * FROM "${name.replaceAll('"', '""')}"`).all().map(row => JSON.stringify(row)).sort() }));
+    return { rowDigest: sha(JSON.stringify(rows)), counts: Object.fromEntries(rows.map(row => [row.name, row.rows.length])) };
+  } finally { db.close(); }
+}
+function durableState(f) {
+  return {
+    sql: sqlState(f.databasePath), mainDigest: sha(fs.readFileSync(f.databasePath)),
+    entries: fs.readdirSync(f.directory).sort(),
+  };
+}
+function unchanged(f, body) {
+  const before = durableState(f), snapshot = f.store.snapshot(f.owner, { taskRef: f.taskRef });
+  const value = body();
+  assert.deepEqual(durableState(f), before, 'late fence changed rows, database bytes, or namespace entries');
+  assert.deepEqual(f.store.snapshot(f.owner, { taskRef: f.taskRef }), snapshot);
+  return value;
+}
+function storeFixture(t, { liveMemory = false, twoTasks = false, populate = true } = {}) {
+  const directory = temporary(t), databasePath = join(directory, 'runtime.sqlite');
+  const owner = {}, host = {}, coordinator = {}, foreignOwnerHost = {}, foreignWorkspaceHost = {}, worker = {}, reviewer = {};
+  const scope = { ownerId: 'independent-owner', workspaceId: 'independent-workspace' };
+  let at = 1000, permission = () => true, calls = 0, serial = 0, store;
+  const command = () => r(`independent-command-${++serial}`), namespaceRef = r('independent-memory');
+  const generationRef = r('independent-generation-one'), taskRef = r('independent-task-one');
+  const options = {
+    databasePath, encryptionKey: Buffer.alloc(32, 113), clock: () => at,
+    forbiddenSecrets: [sentinel],
+    hostPermission: facts => { calls++; return permission(facts); },
+    principals: [
+      { handle: owner, role: 'owner', scope }, { handle: host, role: 'host', scope },
+      { handle: coordinator, role: 'coordinator', scope },
+      { handle: foreignOwnerHost, role: 'host', scope: { ...scope, ownerId: 'foreign-owner' } },
+      { handle: foreignWorkspaceHost, role: 'host', scope: { ...scope, workspaceId: 'foreign-workspace' } },
+      { handle: worker, role: 'worker', scope, taskRef, generationRef },
+      { handle: reviewer, role: 'reviewer', scope, taskRef, generationRef, readRecordRefs: [] },
+    ],
+  };
+  store = new RuntimeStore(options);
+  t.after(() => store.close());
+  const f = {
+    directory, databasePath, owner, host, coordinator, foreignOwnerHost, foreignWorkspaceHost, worker, reviewer,
+    options, namespaceRef, command, taskRef,
+    get store() { return store; },
+    tick(value) { at = value; }, allow(fn) { permission = fn; calls = 0; },
+    permissionCalls() { return calls; }, resetCalls() { calls = 0; },
+    reopen() { store.close(); store = new RuntimeStore(options); calls = 0; return store; },
+  };
+  function populateStore() {
+    if (liveMemory) store.putMemory(owner, { namespaceRef, commandRef: command(), expectedRevision: 0, content: 'OWNED_ENCRYPTED_MEMORY', sourceRefs: [r('memory-source')] });
+    const policy = store.policy(owner, {
+      commandRef: command(), expectedVersion: 1, limits: { maxActive: twoTasks ? 2 : 1 },
+      modelPolicy: { version: 1, presetRefs: [r('core-fixture-preset')], catalogEvidenceRef: r('core-fixture-catalog') },
+    });
+    function entry(index) {
+      const task = store.intake(owner, { taskId: `independent-task-${index}`, provider: 'fixture', source: 'independent', eventId: `event-${index}`, commandRef: command(), goal: `OWNED_GOAL_${index}` }).task;
+      const content = `OWNED_ENCRYPTED_CONTEXT_${index}_中文_🙂`;
+      const data = store.putData(owner, { taskRef: task.taskRef, commandRef: command(), expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch, kind: 'context', sourceRef: r(`source-${index}`), content, expectedMemory: { namespaceRef, revision: liveMemory ? 1 : 0 } });
+      const spec = {
+        actionRef: command(), kind: 'write', role: 'worker', targetDigest: r(`core-target-${index}`), dataDigest: data.digest,
+        units: 1, charges: { runtimeMs: 1, usageUnits: 1, costEstimateMicros: 0 },
+        attemptGroupRef: command(), attemptIndex: 1, resourcePolicyVersion: policy.version, modelPolicyVersion: 1,
+        model: { presetRef: r('core-fixture-preset'), modelRef: r('core-fixture-model'), reasoningRef: r('core-fixture-reasoning'), catalogEvidenceRef: r('core-fixture-catalog') },
+        executor: { mode: 'create', generationRef: r(`independent-generation-${index}`), environmentRef: r('core-environment'), bindingDigest: r('core-binding'), toolsDigest: r('core-tools'), permissionPolicyDigest: r('core-permission') },
+      };
+      const plan = store.planAction(owner, { taskRef: task.taskRef, commandRef: command(), expectedTaskVersion: data.task.version, expectedAuthEpoch: data.task.authEpoch, spec });
+      const grant = store.grantAction(owner, { taskRef: task.taskRef, commandRef: command(), expectedTaskVersion: data.task.version, expectedAuthEpoch: data.task.authEpoch, actionRef: plan.actionRef, actionDigest: plan.actionDigest, expiresAt: 2000 });
+      const claim = store.claimAction(host, { taskRef: task.taskRef, commandRef: command(), expectedTaskVersion: grant.task.version, expectedAuthEpoch: grant.authEpoch, actionRef: plan.actionRef, actionDigest: plan.actionDigest });
+      store.workerObservation(host, { taskRef: task.taskRef, commandRef: command(), claimRef: claim.claimRef, generationRef: claim.generationRef, phase: 'ready', sessionRef: r(`observed-session-${index}`), evidenceRef: r(`ready-evidence-${index}`) });
+      const current = store.task(owner, task.taskRef);
+      const intent = store.beginContextExecution(host, { taskRef: task.taskRef, commandRef: command(), expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch, actionRef: plan.actionRef, actionDigest: plan.actionDigest, claimRef: claim.claimRef, generationRef: claim.generationRef, contextRecordRef: data.recordRef });
+      const binding = { taskRef: task.taskRef, claimRef: claim.claimRef, generationRef: claim.generationRef, actionDigest: plan.actionDigest, executionRef: intent.executionRef };
+      return { taskRef: task.taskRef, content, data, spec, plan, grant, claim, intent, binding };
+    }
+    Object.assign(f, entry('one'));
+    if (twoTasks) f.otherTask = entry('two');
+    calls = 0;
+  }
+  f.populate = populateStore;
+  if (populate) populateStore();
+  return f;
+}
+function consume(f, entry = f) { assert.equal(f.store.assertExecutionCurrent(f.host, entry.binding).admitted, true); f.resetCalls(); }
+function control(f, kind) {
+  const current = f.store.task(f.owner, f.taskRef);
+  return f.store.control(f.owner, { taskRef: f.taskRef, commandRef: f.command(), expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch, kind });
+}
+
+test('NI2 independent C01: disabled and malformed choices call no filesystem method', t => {
+  const { input } = configFixture(t), base = { databasePath: input.databasePath };
+  filesystemTripwire(calls => {
+    const absent = validateInstalledConfig(base), disabled = validateInstalledConfig({ ...base, worker: { enabled: false } });
+    assert.deepEqual(absent, disabled); assert.ok(Object.isFrozen(disabled.worker));
+    assert.equal(validateInstalledWorker(undefined), validateInstalledWorker({ enabled: false }));
+    for (const worker of [{ enabled: false, environment: input.worker.environment }, { enabled: true }, { enabled: 1 }, { enabled: null }]) configInvalid({ ...base, worker });
+    assert.deepEqual(calls, []);
+  });
+});
+
+test('NI2 independent C02: retained null-prototype base meanings and detached enabled choice create no persistence', t => {
+  const { input, directory } = configFixture(t);
+  const supplied = Object.assign(Object.create(null), input);
+  supplied.memory = Object.assign(Object.create(null), input.memory); supplied.limits = Object.assign(Object.create(null), input.limits);
+  const accepted = validateInstalledConfig(supplied), expected = structuredClone(input.worker);
+  input.worker.environment.cwd = '/changed'; input.worker.persistence.directory = '/changed'; input.worker.charges.usageUnits = 1;
+  assert.deepEqual(accepted.worker, expected);
+  for (const record of [accepted, accepted.worker, ...Object.values(accepted.worker).filter(value => value && typeof value === 'object')]) assert.ok(Object.isFrozen(record));
+  assert.equal(fs.existsSync(join(directory, 'uncreated-vault')), false);
+  configInvalid({ ...supplied, worker: Object.assign(Object.create(null), expected) });
+});
+
+test('NI2 independent C03: caller authority and descriptor canaries are rejected before path lookup', t => {
+  const { input } = configFixture(t); let traps = 0;
+  const changed = new Proxy(input.worker, { get() { traps++; throw Error(sentinel); }, ownKeys() { traps++; throw Error(sentinel); } });
+  const getter = Object.defineProperty({ ...input.worker }, 'enabled', { enumerable: true, get() { traps++; throw Error(sentinel); } });
+  const revoked = Proxy.revocable(input.worker, {}); revoked.revoke();
+  filesystemTripwire(calls => {
+    for (const worker of [changed, getter, revoked.proxy, { ...input.worker, ownerRef: r('forged-owner') }, { ...input.worker, hostPermission: () => true }, { ...input.worker, sourceZero: true }]) configInvalid({ ...input, worker });
+    assert.deepEqual(calls, []); assert.equal(traps, 0);
+  });
+});
+
+test('NI2 independent C04: path prefix sibling, parent alias, file and dangling entry fail closed', t => {
+  const { input, directory } = configFixture(t), workspace = input.worker.environment.root;
+  fs.mkdirSync(join(directory, 'workspace-other')); fs.writeFileSync(join(directory, 'not-directory'), 'synthetic');
+  fs.symlinkSync(workspace, join(directory, 'parent-alias')); fs.symlinkSync(join(directory, 'absent'), join(directory, 'dangling'));
+  for (const environment of [
+    { root: workspace, cwd: join(directory, 'workspace-other') },
+    { root: workspace, cwd: join(directory, 'parent-alias', 'child') },
+    { root: join(directory, 'not-directory'), cwd: join(directory, 'not-directory') },
+    { root: join(directory, 'dangling'), cwd: join(directory, 'dangling') },
+  ]) configInvalid({ ...input, worker: { ...input.worker, environment } });
+  assert.equal(fs.existsSync(dirname(input.databasePath)), false);
+});
+
+test('NI2 independent C05: real filesystem capacity and separately typed path ceilings at 1023/1024/1025 bytes', async t => {
+  const { input, directory } = configFixture(t);
+  function pathAt(bytes) {
+    let result = join(directory, 'long');
+    while (bytes - Buffer.byteLength(result) > 201) result += '/' + 'x'.repeat(199);
+    result += '/' + 'x'.repeat(bytes - Buffer.byteLength(result) - 1);
+    assert.equal(Buffer.byteLength(result), bytes); return result;
+  }
+  // The retained first TAP proves this macOS rejects mkdir at 1024/1025 bytes.
+  // Do not retry or bypass that OS capacity. Only the 1023-byte positive is real.
+  fs.mkdirSync(pathAt(1023), { recursive: true });
+  for (const bytes of [1023, 1024, 1025]) await t.test(`real filesystem ${bytes} bytes`, () => {
+    const root = pathAt(bytes), candidate = { ...input, worker: { ...input.worker, environment: { root, cwd: root } } };
+    if (bytes > 1023) configInvalid(candidate); else assert.equal(validateInstalledConfig(candidate).worker.environment.root, root);
+  });
+  for (const bytes of [1023, 1024, 1025]) await t.test(`typed filesystem facts ${bytes} bytes`, () => {
+    const root = pathAt(bytes), candidate = { ...input, worker: { ...input.worker, environment: { root, cwd: root } } };
+    const fact = fs.lstatSync(input.worker.environment.root), originalLstat = fs.lstatSync, originalRealpath = fs.realpathSync, calls = [];
+    fs.lstatSync = value => { assert.equal(value, root); calls.push('lstat'); return fact; };
+    fs.realpathSync = value => { assert.equal(value, root); calls.push('realpath'); return value; };
+    syncBuiltinESMExports();
+    try {
+      if (bytes > 1024) { configInvalid(candidate); assert.deepEqual(calls, []); }
+      else { assert.equal(validateInstalledConfig(candidate).worker.environment.root, root); assert.deepEqual(calls, ['lstat', 'realpath', 'lstat', 'realpath']); }
+    } finally { fs.lstatSync = originalLstat; fs.realpathSync = originalRealpath; syncBuiltinESMExports(); }
+  });
+  assert.equal(fs.existsSync(dirname(input.databasePath)), false);
+});
+
+test('NI2 independent C06: maximum request/output reservation has an exact composite threshold', async t => {
+  const { input } = configFixture(t);
+  input.worker.bounds.requestBytes = 131072; input.worker.bounds.resultBytes = 16384; input.worker.selection.maxOutputTokens = 4096;
+  const minimum = 131072 + 4096;
+  for (const usageUnits of [minimum - 1, minimum, minimum + 1]) await t.test(`charge ${usageUnits}`, () => {
+    const candidate = structuredClone(input); candidate.worker.charges.usageUnits = usageUnits; candidate.worker.policy.maxUsageUnits = usageUnits;
+    if (usageUnits < minimum) configInvalid(candidate); else assert.equal(validateInstalledConfig(candidate).worker.charges.usageUnits, usageUnits);
+  });
+  const overPolicy = structuredClone(input); overPolicy.worker.charges.usageUnits = minimum + 1; overPolicy.worker.policy.maxUsageUnits = minimum; configInvalid(overPolicy);
+  const runtime = structuredClone(input); runtime.worker.charges.usageUnits = minimum; runtime.worker.charges.runtimeMs = 60000; runtime.worker.policy.maxRuntimeMs = 60000;
+  assert.equal(validateInstalledConfig(runtime).worker.policy.maxCostEstimateMicros, 0);
+  runtime.worker.policy.maxRuntimeMs = 59999; configInvalid(runtime);
+});
+
+test('NI2 independent C07: byte and persistence-leaf boundaries keep exact text and create nothing', async t => {
+  const { input } = configFixture(t);
+  for (const bytes of [127, 128, 129]) await t.test(`provider UTF-8 ${bytes}`, () => {
+    const provider = '例'.repeat(42) + 'a'.repeat(bytes - 126), candidate = structuredClone(input);
+    assert.equal(Buffer.byteLength(provider), bytes); candidate.worker.selection.provider = provider;
+    if (bytes === 129) configInvalid(candidate); else assert.equal(validateInstalledConfig(candidate).worker.selection.provider, provider);
+  });
+  for (const suffix of ['a' + '-'.repeat(30), 'a' + '-'.repeat(31), 'a' + '-'.repeat(32)]) {
+    const candidate = structuredClone(input); candidate.worker.persistence.directory += '-' + suffix;
+    if (suffix.length === 33) configInvalid(candidate); else assert.equal(validateInstalledConfig(candidate).worker.persistence.directory, candidate.worker.persistence.directory);
+  }
+  assert.equal(fs.existsSync(dirname(input.databasePath)), false);
+});
+
+test('NI2 independent F01: consumed read fence preserves every row and main byte, returns no plaintext or new permit', t => {
+  const f = storeFixture(t);
+  unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'SPEC_MISMATCH' }));
+  assert.equal(f.permissionCalls(), 0); consume(f);
+  const value = unchanged(f, () => f.store.assertNativeRequestCurrent(f.host, f.binding));
+  assert.equal(value.state, 'dispatch_intent'); assert.equal(value.dataDigest, f.data.digest);
+  assert.equal(Object.hasOwn(value, 'admitted'), false); assert.equal(Object.hasOwn(value, 'content'), false);
+  assert.equal(JSON.stringify(value).includes(f.content), false); assert.equal(fs.readFileSync(f.databasePath).includes(Buffer.from(f.content)), false);
+  assert.equal(f.store.readData(f.owner, { taskRef: f.taskRef, recordRef: f.data.recordRef }).content, f.content);
+  value.executionRef = r('mutated-return'); value.state = 'intent_committed';
+  unchanged(f, () => assert.equal(f.store.assertNativeRequestCurrent(f.host, f.binding).executionRef, f.intent.executionRef));
+  unchanged(f, () => assert.equal(f.store.assertExecutionCurrent(f.host, f.binding).admitted, false));
+});
+
+test('NI2 independent F02: same-scope live tasks cannot swap any complete execution binding', t => {
+  const f = storeFixture(t, { twoTasks: true }); consume(f); consume(f, f.otherTask);
+  for (const key of Object.keys(f.binding)) unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, { ...f.binding, [key]: f.otherTask.binding[key] }), { code: 'SPEC_MISMATCH' }));
+  assert.equal(f.permissionCalls(), 0);
+  unchanged(f, () => assert.equal(f.store.assertNativeRequestCurrent(f.host, f.otherTask.binding).dataDigest, f.otherTask.data.digest));
+  assert.equal(f.store.snapshot(f.owner, { taskRef: f.otherTask.taskRef }).executions[0].state, 'dispatch_intent');
+});
+
+test('NI2 independent F03: role, raw/ref identity spoof and opaque handle clones have no authority', t => {
+  const f = storeFixture(t); consume(f);
+  for (const handle of [f.owner, f.coordinator, f.worker, f.reviewer, { role: 'host', ...f.store.context(f.host) }, { ...f.host }]) unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(handle, f.binding), { code: 'UNAUTHORIZED' }));
+  for (const handle of [f.foreignOwnerHost, f.foreignWorkspaceHost]) unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(handle, f.binding), { code: 'SPEC_MISMATCH' }));
+  assert.equal(f.permissionCalls(), 0);
+});
+
+test('NI2 independent F04: hidden/symbol/accessor/revoked Proxy bindings reject without callbacks or row changes', t => {
+  const f = storeFixture(t); consume(f); let traps = 0;
+  const revoked = Proxy.revocable(f.binding, {}); revoked.revoke();
+  const inputs = [
+    Object.defineProperty({ ...f.binding }, 'current', { value: true }),
+    { ...f.binding, [Symbol(sentinel)]: true },
+    Object.defineProperty({ ...f.binding }, 'claimRef', { enumerable: true, get() { traps++; throw Error(sentinel); } }),
+    new Proxy(f.binding, { getPrototypeOf() { traps++; throw Error(sentinel); }, ownKeys() { traps++; throw Error(sentinel); } }),
+    revoked.proxy, { ...f.binding, grant: { allowed: true } },
+  ];
+  for (const input of inputs) unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, input), { code: 'INVALID_INPUT', message: 'INVALID_INPUT' }));
+  assert.equal(traps, 0); assert.equal(f.permissionCalls(), 0);
+});
+
+test('NI2 independent F05: permission requires literal synchronous true and suppresses callback canaries', async t => {
+  const f = storeFixture(t); consume(f);
+  for (const [name, permission] of [
+    ['truthy integer', () => 1], ['truthy string', () => 'true'], ['boxed true', () => new Boolean(true)],
+    ['resolved Promise', () => Promise.resolve(true)], ['undefined', () => undefined],
+    ['exported error canary', () => { throw new RuntimeError(sentinel); }],
+  ]) await t.test(name, () => {
+    f.allow(permission); unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'HOST_DENIED', message: 'HOST_DENIED' })); assert.equal(f.permissionCalls(), 1);
+  });
+  f.allow(facts => {
+    assert.ok(Object.isFrozen(facts)); facts.spec.model.modelRef = r('callback-mutated-model'); facts.spec.executor.generationRef = r('callback-mutated-generation'); return true;
+  });
+  unchanged(f, () => assert.equal(f.store.assertNativeRequestCurrent(f.host, f.binding).state, 'dispatch_intent'));
+  assert.equal(f.store.snapshot(f.owner, { taskRef: f.taskRef }).actions[0].spec.model.modelRef, f.spec.model.modelRef);
+});
+
+test('NI2 independent F06: late expiry 1999/2000/2001 preserves consumed intent, grants and reservations', async t => {
+  const f = storeFixture(t); consume(f);
+  for (const at of [1999, 2000, 2001]) await t.test(`at ${at}`, () => {
+    f.tick(at); f.resetCalls();
+    unchanged(f, () => at < 2000 ? assert.equal(f.store.assertNativeRequestCurrent(f.host, f.binding).state, 'dispatch_intent') : assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'APPROVAL_INVALID' }));
+    assert.equal(f.permissionCalls(), at < 2000 ? 1 : 0);
+    const snapshot = f.store.snapshot(f.owner, { taskRef: f.taskRef }); assert.equal(snapshot.actions[0].releaseEvidenceRef, null); assert.equal(snapshot.executions[0].state, 'dispatch_intent');
+  });
+});
+
+test('NI2 independent F07: progress version changes remain current; new protected constraints stale the exact context', t => {
+  const f = storeFixture(t); consume(f);
+  const write = (kind, content) => {
+    const current = f.store.task(f.owner, f.taskRef);
+    return f.store.putData(f.owner, { taskRef: f.taskRef, commandRef: f.command(), expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch, kind, content, sourceRef: r(`new-${kind}`) });
+  };
+  const before = f.store.snapshot(f.owner, { taskRef: f.taskRef });
+  const progress = write('progress', 'Actual ordinary progress; unchanged instructions');
+  assert.equal(progress.task.version, before.task.version + 1); assert.equal(progress.task.authEpoch, before.task.authEpoch);
+  assert.equal(f.store.snapshot(f.owner, { taskRef: f.taskRef }).semanticRevision, before.semanticRevision);
+  unchanged(f, () => assert.equal(f.store.assertNativeRequestCurrent(f.host, f.binding).state, 'dispatch_intent'));
+  const constraints = write('constraints', 'NEW_PROTECTED_CONSTRAINT_DO_NOT_REUSE_OLD_CONTEXT');
+  assert.equal(constraints.task.authEpoch, before.task.authEpoch);
+  assert.equal(f.store.snapshot(f.owner, { taskRef: f.taskRef }).semanticRevision, before.semanticRevision + 1);
+  unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'SPEC_MISMATCH' }));
+});
+
+test('NI2 independent F08: memory equality, tombstone and unrelated namespace changes use exact revision guards', async t => {
+  for (const kind of ['same bytes new revision', 'delete live revision', 'create then delete absent namespace']) await t.test(kind, t => {
+    const f = storeFixture(t, { liveMemory: kind !== 'create then delete absent namespace' }); consume(f);
+    if (kind === 'same bytes new revision') f.store.putMemory(f.owner, { namespaceRef: f.namespaceRef, commandRef: f.command(), expectedRevision: 1, content: 'OWNED_ENCRYPTED_MEMORY', sourceRefs: [r('memory-source')] });
+    else {
+      if (kind === 'create then delete absent namespace') f.store.putMemory(f.owner, { namespaceRef: f.namespaceRef, commandRef: f.command(), expectedRevision: 0, content: 'NEW_MEMORY_AFTER_CONTEXT', sourceRefs: [r('memory-source')] });
+      f.store.deleteMemory(f.owner, { namespaceRef: f.namespaceRef, commandRef: f.command(), expectedRevision: 1 });
+      assert.equal(f.store.getMemory(f.owner, { namespaceRef: f.namespaceRef }).deleted, true);
+    }
+    unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'STALE_MEMORY' }));
+  });
+  await t.test('unrelated namespace does not stale approved memory', t => {
+    const f = storeFixture(t, { liveMemory: true }); consume(f);
+    f.store.putMemory(f.owner, { namespaceRef: r('different-memory'), commandRef: f.command(), expectedRevision: 0, content: 'UNRELATED_MEMORY', sourceRefs: [r('memory-source')] });
+    unchanged(f, () => assert.equal(f.store.assertNativeRequestCurrent(f.host, f.binding).state, 'dispatch_intent'));
+  });
+});
+
+test('NI2 independent F09: pause then task resume cannot revive the consumed old grant', t => {
+  const f = storeFixture(t); consume(f); const epoch = f.store.task(f.owner, f.taskRef).authEpoch;
+  control(f, 'pause'); control(f, 'resume');
+  const snapshot = f.store.snapshot(f.owner, { taskRef: f.taskRef }); assert.equal(snapshot.control, 'active'); assert.equal(snapshot.task.authEpoch, epoch + 2);
+  unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'CLAIM_REVOKED' }));
+  assert.equal(snapshot.actions[0].releaseEvidenceRef, null); assert.equal(snapshot.executions[0].state, 'dispatch_intent');
+});
+
+test('NI2 independent F10: stopped and uncertain workers retain original holds and deny the late fence', async t => {
+  for (const phase of ['cancel_requested', 'stopped', 'unknown']) await t.test(phase, t => {
+    const f = storeFixture(t); consume(f);
+    f.store.workerObservation(f.host, { taskRef: f.taskRef, commandRef: f.command(), claimRef: f.claim.claimRef, generationRef: f.claim.generationRef, phase, evidenceRef: r(`observed-${phase}`) });
+    unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: phase === 'unknown' ? 'CLAIM_REVOKED' : 'WORKER_NOT_READY' }));
+    assert.equal(sqlState(f.databasePath).counts.reservations, 1); assert.equal(f.store.snapshot(f.owner, { taskRef: f.taskRef }).actions[0].releaseEvidenceRef, null);
+  });
+});
+
+test('NI2 independent F11: closed store and cold reopen preserve encrypted bytes and do not restore stream authority', t => {
+  const f = storeFixture(t); consume(f); f.store.close();
+  const closed = durableState(f);
+  assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'CLOSED' }); assert.deepEqual(durableState(f), closed);
+  f.reopen(); const recovered = f.store.snapshot(f.owner, { taskRef: f.taskRef });
+  assert.equal(recovered.task.status, 'recovery_required'); assert.equal(recovered.executions[0].state, 'unknown');
+  assert.equal(recovered.actions[0].releaseEvidenceRef, null); assert.equal(sqlState(f.databasePath).counts.reservations, 1);
+  assert.equal(f.store.readData(f.owner, { taskRef: f.taskRef, recordRef: f.data.recordRef }).content, f.content);
+  unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'SPEC_MISMATCH' }));
+  unchanged(f, () => assert.equal(f.store.assertExecutionCurrent(f.host, f.binding).admitted, false)); assert.equal(f.permissionCalls(), 0);
+});
+
+test('NI2 independent F13: explicit zero-capacity policy downshift denies old currentness without releasing its slot', t => {
+  const f = storeFixture(t); consume(f);
+  const policy = f.store.getPolicy(f.owner);
+  f.store.policy(f.owner, { commandRef: f.command(), expectedVersion: policy.version, limits: { maxActive: 0 }, modelPolicy: policy.modelPolicy });
+  const current = f.store.snapshot(f.owner, { taskRef: f.taskRef });
+  assert.equal(current.policy.limits.maxActive, 0); assert.equal(current.policy.modelPolicy.version, policy.modelPolicy.version);
+  assert.equal(current.actions[0].spec.resourcePolicyVersion, policy.version);
+  unchanged(f, () => assert.throws(() => f.store.assertNativeRequestCurrent(f.host, f.binding), { code: 'STALE_POLICY' }));
+  assert.equal(f.permissionCalls(), 0); assert.equal(sqlState(f.databasePath).counts.reservations, 1);
+  assert.equal(current.actions[0].releaseEvidenceRef, null); assert.equal(current.executions[0].state, 'dispatch_intent');
+});
+
+const childSource = `
+import { RuntimeStore } from ${JSON.stringify(new URL('../src/runtime-store.mjs', import.meta.url).href)};
+const owner={},host={};
+const scope={ownerId:'independent-owner',workspaceId:'independent-workspace'};
+const store=new RuntimeStore({databasePath:process.argv[1],encryptionKey:Buffer.alloc(32,113),principals:[{handle:owner,role:'owner',scope},{handle:host,role:'host',scope}],clock:()=>1000,hostPermission:()=>true});
+process.on('message', message=>{
+ if(message.kind==='read'){
+   try{const record=store.assertNativeRequestCurrent(host,message.binding);process.send({id:message.id,state:record.state,executionRef:record.executionRef});}
+   catch(error){process.send({id:message.id,code:error.code});}
+ }else if(message.kind==='close'){store.close();process.disconnect();}
+});
+process.send({ready:true});
+`;
+test('NI2 independent F12: already-open independent process observes revoke without a cached grant or row mutation', async t => {
+  const f = storeFixture(t, { populate: false });
+  const child = spawn(process.execPath, ['--input-type=module', '-e', childSource, f.databasePath], { env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+  let stdout = '', stderr = '', serial = 0;
+  child.stdout.on('data', bytes => { stdout += bytes; }); child.stderr.on('data', bytes => { stderr += bytes; });
+  t.after(async () => { if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM'); await new Promise(resolve => child.exitCode !== null || child.signalCode !== null ? resolve() : child.once('exit', resolve)); assert.equal(stdout, ''); assert.equal(stderr.includes(sentinel), false); });
+  const message = predicate => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { child.off('message', receive); reject(Error('INDEPENDENT_CHILD_BARRIER_TIMEOUT')); }, 5000);
+    function receive(value) { if (!predicate(value)) return; clearTimeout(timer); child.off('message', receive); resolve(value); }
+    child.on('message', receive);
+  });
+  await message(value => value.ready === true);
+  f.populate(); consume(f);
+  async function read() { const id = ++serial, reply = message(value => value.id === id); child.send({ kind: 'read', id, binding: f.binding }); return reply; }
+  const beforeCurrent = durableState(f), current = await read();
+  assert.equal(current.state, 'dispatch_intent'); assert.equal(current.executionRef, f.intent.executionRef); assert.deepEqual(durableState(f), beforeCurrent);
+  const now = f.store.task(f.owner, f.taskRef);
+  f.store.revokeAction(f.owner, { taskRef: f.taskRef, commandRef: f.command(), expectedTaskVersion: now.version, expectedAuthEpoch: now.authEpoch, actionRef: f.plan.actionRef, actionDigest: f.plan.actionDigest });
+  const afterRevoke = durableState(f), refused = await read();
+  assert.equal(refused.code, 'CLAIM_REVOKED'); assert.deepEqual(durableState(f), afterRevoke);
+  assert.equal(afterRevoke.sql.counts.reservations, 1); assert.equal(f.store.snapshot(f.owner, { taskRef: f.taskRef }).actions[0].releaseEvidenceRef, null);
+  const exit = new Promise(resolve => child.once('exit', resolve)); child.send({ kind: 'close' }); await exit;
+});

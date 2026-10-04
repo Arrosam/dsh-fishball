@@ -1,0 +1,301 @@
+TAP version 13
+# (node:72194) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI2 independent C01: disabled and malformed choices call no filesystem method
+ok 1 - NI2 independent C01: disabled and malformed choices call no filesystem method
+  ---
+  duration_ms: 5.288125
+  type: 'test'
+  ...
+# Subtest: NI2 independent C02: retained null-prototype base meanings and detached enabled choice create no persistence
+ok 2 - NI2 independent C02: retained null-prototype base meanings and detached enabled choice create no persistence
+  ---
+  duration_ms: 3.075208
+  type: 'test'
+  ...
+# Subtest: NI2 independent C03: caller authority and descriptor canaries are rejected before path lookup
+ok 3 - NI2 independent C03: caller authority and descriptor canaries are rejected before path lookup
+  ---
+  duration_ms: 2.915167
+  type: 'test'
+  ...
+# Subtest: NI2 independent C04: path prefix sibling, parent alias, file and dangling entry fail closed
+ok 4 - NI2 independent C04: path prefix sibling, parent alias, file and dangling entry fail closed
+  ---
+  duration_ms: 2.198959
+  type: 'test'
+  ...
+# Subtest: NI2 independent C05: real filesystem capacity and separately typed path ceilings at 1023/1024/1025 bytes
+    # Subtest: real filesystem 1023 bytes
+    ok 1 - real filesystem 1023 bytes
+      ---
+      duration_ms: 0.498625
+      type: 'test'
+      ...
+    # Subtest: real filesystem 1024 bytes
+    ok 2 - real filesystem 1024 bytes
+      ---
+      duration_ms: 0.238292
+      type: 'test'
+      ...
+    # Subtest: real filesystem 1025 bytes
+    ok 3 - real filesystem 1025 bytes
+      ---
+      duration_ms: 0.174625
+      type: 'test'
+      ...
+    # Subtest: typed filesystem facts 1023 bytes
+    ok 4 - typed filesystem facts 1023 bytes
+      ---
+      duration_ms: 0.379833
+      type: 'test'
+      ...
+    # Subtest: typed filesystem facts 1024 bytes
+    ok 5 - typed filesystem facts 1024 bytes
+      ---
+      duration_ms: 0.3975
+      type: 'test'
+      ...
+    # Subtest: typed filesystem facts 1025 bytes
+    ok 6 - typed filesystem facts 1025 bytes
+      ---
+      duration_ms: 0.321625
+      type: 'test'
+      ...
+    1..6
+ok 5 - NI2 independent C05: real filesystem capacity and separately typed path ceilings at 1023/1024/1025 bytes
+  ---
+  duration_ms: 5.003167
+  type: 'test'
+  ...
+# Subtest: NI2 independent C06: maximum request/output reservation has an exact composite threshold
+    # Subtest: charge 135167
+    ok 1 - charge 135167
+      ---
+      duration_ms: 0.274
+      type: 'test'
+      ...
+    # Subtest: charge 135168
+    ok 2 - charge 135168
+      ---
+      duration_ms: 0.184125
+      type: 'test'
+      ...
+    # Subtest: charge 135169
+    ok 3 - charge 135169
+      ---
+      duration_ms: 0.144834
+      type: 'test'
+      ...
+    1..3
+ok 6 - NI2 independent C06: maximum request/output reservation has an exact composite threshold
+  ---
+  duration_ms: 2.810125
+  type: 'test'
+  ...
+# Subtest: NI2 independent C07: byte and persistence-leaf boundaries keep exact text and create nothing
+    # Subtest: provider UTF-8 127
+    ok 1 - provider UTF-8 127
+      ---
+      duration_ms: 0.332875
+      type: 'test'
+      ...
+    # Subtest: provider UTF-8 128
+    ok 2 - provider UTF-8 128
+      ---
+      duration_ms: 0.120292
+      type: 'test'
+      ...
+    # Subtest: provider UTF-8 129
+    ok 3 - provider UTF-8 129
+      ---
+      duration_ms: 0.119375
+      type: 'test'
+      ...
+    1..3
+ok 7 - NI2 independent C07: byte and persistence-leaf boundaries keep exact text and create nothing
+  ---
+  duration_ms: 1.881583
+  type: 'test'
+  ...
+# Subtest: NI2 independent F01: consumed read fence preserves every row and main byte, returns no plaintext or new permit
+ok 8 - NI2 independent F01: consumed read fence preserves every row and main byte, returns no plaintext or new permit
+  ---
+  duration_ms: 36.151416
+  type: 'test'
+  ...
+# Subtest: NI2 independent F02: same-scope live tasks cannot swap any complete execution binding
+ok 9 - NI2 independent F02: same-scope live tasks cannot swap any complete execution binding
+  ---
+  duration_ms: 43.698709
+  type: 'test'
+  ...
+# Subtest: NI2 independent F03: role, raw/ref identity spoof and opaque handle clones have no authority
+ok 10 - NI2 independent F03: role, raw/ref identity spoof and opaque handle clones have no authority
+  ---
+  duration_ms: 35.242916
+  type: 'test'
+  ...
+# Subtest: NI2 independent F04: hidden/symbol/accessor/revoked Proxy bindings reject without callbacks or row changes
+ok 11 - NI2 independent F04: hidden/symbol/accessor/revoked Proxy bindings reject without callbacks or row changes
+  ---
+  duration_ms: 30.495
+  type: 'test'
+  ...
+# Subtest: NI2 independent F05: permission requires literal synchronous true and suppresses callback canaries
+    # Subtest: truthy integer
+    ok 1 - truthy integer
+      ---
+      duration_ms: 3.181292
+      type: 'test'
+      ...
+    # Subtest: truthy string
+    ok 2 - truthy string
+      ---
+      duration_ms: 2.857167
+      type: 'test'
+      ...
+    # Subtest: boxed true
+    ok 3 - boxed true
+      ---
+      duration_ms: 2.805041
+      type: 'test'
+      ...
+    # Subtest: resolved Promise
+    ok 4 - resolved Promise
+      ---
+      duration_ms: 2.73125
+      type: 'test'
+      ...
+    # Subtest: undefined
+    ok 5 - undefined
+      ---
+      duration_ms: 3.473416
+      type: 'test'
+      ...
+    # Subtest: exported error canary
+    ok 6 - exported error canary
+      ---
+      duration_ms: 2.589125
+      type: 'test'
+      ...
+    1..6
+ok 12 - NI2 independent F05: permission requires literal synchronous true and suppresses callback canaries
+  ---
+  duration_ms: 35.175166
+  type: 'test'
+  ...
+# Subtest: NI2 independent F06: late expiry 1999/2000/2001 preserves consumed intent, grants and reservations
+    # Subtest: at 1999
+    ok 1 - at 1999
+      ---
+      duration_ms: 3.812583
+      type: 'test'
+      ...
+    # Subtest: at 2000
+    ok 2 - at 2000
+      ---
+      duration_ms: 3.31375
+      type: 'test'
+      ...
+    # Subtest: at 2001
+    ok 3 - at 2001
+      ---
+      duration_ms: 3.27875
+      type: 'test'
+      ...
+    1..3
+ok 13 - NI2 independent F06: late expiry 1999/2000/2001 preserves consumed intent, grants and reservations
+  ---
+  duration_ms: 25.740209
+  type: 'test'
+  ...
+# Subtest: NI2 independent F07: progress version changes remain current; new protected constraints stale the exact context
+ok 14 - NI2 independent F07: progress version changes remain current; new protected constraints stale the exact context
+  ---
+  duration_ms: 25.475333
+  type: 'test'
+  ...
+# Subtest: NI2 independent F08: memory equality, tombstone and unrelated namespace changes use exact revision guards
+    # Subtest: same bytes new revision
+    ok 1 - same bytes new revision
+      ---
+      duration_ms: 19.443333
+      type: 'test'
+      ...
+    # Subtest: delete live revision
+    ok 2 - delete live revision
+      ---
+      duration_ms: 18.326167
+      type: 'test'
+      ...
+    # Subtest: create then delete absent namespace
+    ok 3 - create then delete absent namespace
+      ---
+      duration_ms: 18.219958
+      type: 'test'
+      ...
+    # Subtest: unrelated namespace does not stale approved memory
+    ok 4 - unrelated namespace does not stale approved memory
+      ---
+      duration_ms: 17.9515
+      type: 'test'
+      ...
+    1..4
+ok 15 - NI2 independent F08: memory equality, tombstone and unrelated namespace changes use exact revision guards
+  ---
+  duration_ms: 74.303125
+  type: 'test'
+  ...
+# Subtest: NI2 independent F09: pause then task resume cannot revive the consumed old grant
+ok 16 - NI2 independent F09: pause then task resume cannot revive the consumed old grant
+  ---
+  duration_ms: 18.119792
+  type: 'test'
+  ...
+# Subtest: NI2 independent F10: stopped and uncertain workers retain original holds and deny the late fence
+    # Subtest: cancel_requested
+    ok 1 - cancel_requested
+      ---
+      duration_ms: 17.682041
+      type: 'test'
+      ...
+    # Subtest: stopped
+    ok 2 - stopped
+      ---
+      duration_ms: 18.223375
+      type: 'test'
+      ...
+    # Subtest: unknown
+    ok 3 - unknown
+      ---
+      duration_ms: 18.007875
+      type: 'test'
+      ...
+    1..3
+ok 17 - NI2 independent F10: stopped and uncertain workers retain original holds and deny the late fence
+  ---
+  duration_ms: 54.188167
+  type: 'test'
+  ...
+# Subtest: NI2 independent F11: closed store and cold reopen preserve encrypted bytes and do not restore stream authority
+ok 18 - NI2 independent F11: closed store and cold reopen preserve encrypted bytes and do not restore stream authority
+  ---
+  duration_ms: 25.904458
+  type: 'test'
+  ...
+# Subtest: NI2 independent F12: already-open independent process observes revoke without a cached grant or row mutation
+ok 19 - NI2 independent F12: already-open independent process observes revoke without a cached grant or row mutation
+  ---
+  duration_ms: 120.605666
+  type: 'test'
+  ...
+1..19
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 656.48925

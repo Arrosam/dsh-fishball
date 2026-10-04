@@ -1,0 +1,243 @@
+TAP version 13
+# Subtest: omitted and exact disabled worker retain memory/base meanings and perform no path work
+ok 1 - omitted and exact disabled worker retain memory/base meanings and perform no path work
+  ---
+  duration_ms: 4.4135
+  type: 'test'
+  ...
+# Subtest: enabled worker requires explicit memory and existing 4096 metadata ceiling; closed detached nested choices
+ok 2 - enabled worker requires explicit memory and existing 4096 metadata ceiling; closed detached nested choices
+  ---
+  duration_ms: 2.962791
+  type: 'test'
+  ...
+# Subtest: all worker numeric boundary classes with resource/request cross-checks
+    # Subtest: selection.maxOutputTokens boundary 128
+    ok 1 - selection.maxOutputTokens boundary 128
+      ---
+      duration_ms: 0.334291
+      type: 'test'
+      ...
+    # Subtest: selection.maxOutputTokens boundary 4096
+    ok 2 - selection.maxOutputTokens boundary 4096
+      ---
+      duration_ms: 0.144208
+      type: 'test'
+      ...
+    # Subtest: bounds.requestBytes boundary 512
+    ok 3 - bounds.requestBytes boundary 512
+      ---
+      duration_ms: 0.151584
+      type: 'test'
+      ...
+    # Subtest: bounds.requestBytes boundary 131072
+    ok 4 - bounds.requestBytes boundary 131072
+      ---
+      duration_ms: 0.231958
+      type: 'test'
+      ...
+    # Subtest: bounds.resultBytes boundary 128
+    ok 5 - bounds.resultBytes boundary 128
+      ---
+      duration_ms: 0.353209
+      type: 'test'
+      ...
+    # Subtest: bounds.resultBytes boundary 16384
+    ok 6 - bounds.resultBytes boundary 16384
+      ---
+      duration_ms: 0.23175
+      type: 'test'
+      ...
+    # Subtest: policy.maxRuntimeMs boundary 1
+    ok 7 - policy.maxRuntimeMs boundary 1
+      ---
+      duration_ms: 0.206208
+      type: 'test'
+      ...
+    # Subtest: policy.maxRuntimeMs boundary 3600000
+    ok 8 - policy.maxRuntimeMs boundary 3600000
+      ---
+      duration_ms: 0.126584
+      type: 'test'
+      ...
+    # Subtest: policy.maxUsageUnits boundary 1
+    ok 9 - policy.maxUsageUnits boundary 1
+      ---
+      duration_ms: 0.156667
+      type: 'test'
+      ...
+    # Subtest: policy.maxUsageUnits boundary 100000000
+    ok 10 - policy.maxUsageUnits boundary 100000000
+      ---
+      duration_ms: 0.079167
+      type: 'test'
+      ...
+    # Subtest: policy.maxCostEstimateMicros boundary 0
+    ok 11 - policy.maxCostEstimateMicros boundary 0
+      ---
+      duration_ms: 0.076583
+      type: 'test'
+      ...
+    # Subtest: policy.maxCostEstimateMicros boundary 100000000
+    ok 12 - policy.maxCostEstimateMicros boundary 100000000
+      ---
+      duration_ms: 0.096708
+      type: 'test'
+      ...
+    # Subtest: charges.runtimeMs boundary 1
+    ok 13 - charges.runtimeMs boundary 1
+      ---
+      duration_ms: 0.079416
+      type: 'test'
+      ...
+    # Subtest: charges.runtimeMs boundary 60000
+    ok 14 - charges.runtimeMs boundary 60000
+      ---
+      duration_ms: 0.07975
+      type: 'test'
+      ...
+    # Subtest: charges.usageUnits boundary 1
+    ok 15 - charges.usageUnits boundary 1
+      ---
+      duration_ms: 0.213459
+      type: 'test'
+      ...
+    # Subtest: charges.usageUnits boundary 100000000
+    ok 16 - charges.usageUnits boundary 100000000
+      ---
+      duration_ms: 0.090875
+      type: 'test'
+      ...
+    # Subtest: worker.previewTtlMs boundary 1
+    ok 17 - worker.previewTtlMs boundary 1
+      ---
+      duration_ms: 0.158958
+      type: 'test'
+      ...
+    # Subtest: worker.previewTtlMs boundary 60000
+    ok 18 - worker.previewTtlMs boundary 60000
+      ---
+      duration_ms: 0.138041
+      type: 'test'
+      ...
+    # Subtest: worker.grantTtlMs boundary 1
+    ok 19 - worker.grantTtlMs boundary 1
+      ---
+      duration_ms: 0.094708
+      type: 'test'
+      ...
+    # Subtest: worker.grantTtlMs boundary 60000
+    ok 20 - worker.grantTtlMs boundary 60000
+      ---
+      duration_ms: 0.082208
+      type: 'test'
+      ...
+    1..20
+ok 3 - all worker numeric boundary classes with resource/request cross-checks
+  ---
+  duration_ms: 16.960083
+  type: 'test'
+  ...
+# Subtest: worker objects refuse getters/proxies/hidden/symbol/inherited/unknown authority without executing them
+ok 4 - worker objects refuse getters/proxies/hidden/symbol/inherited/unknown authority without executing them
+  ---
+  duration_ms: 3.436833
+  type: 'test'
+  ...
+# Subtest: exact text caps, effort/null, persistence choices and closed worker records
+ok 5 - exact text caps, effort/null, persistence choices and closed worker records
+  ---
+  duration_ms: 5.57525
+  type: 'test'
+  ...
+# Subtest: canonical owned workspace and exact sibling persistence selection refuse aliases/escapes without files
+ok 6 - canonical owned workspace and exact sibling persistence selection refuse aliases/escapes without files
+  ---
+  duration_ms: 3.118167
+  type: 'test'
+  ...
+# (node:72312) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: late current assertion is host-only, requires consumed intent, and never consumes or mutates it
+ok 7 - late current assertion is host-only, requires consumed intent, and never consumes or mutates it
+  ---
+  duration_ms: 32.521584
+  type: 'test'
+  ...
+# Subtest: late fence validates every immutable binding and refuses authority/descriptor spoof without hooks
+ok 8 - late fence validates every immutable binding and refuses authority/descriptor spoof without hooks
+  ---
+  duration_ms: 19.09225
+  type: 'test'
+  ...
+# Subtest: expiry after durable consume denies late request without releasing reservation or renewing intent
+ok 9 - expiry after durable consume denies late request without releasing reservation or renewing intent
+  ---
+  duration_ms: 15.966625
+  type: 'test'
+  ...
+# Subtest: revocation after durable consume fences request and retains exact signed execution
+ok 10 - revocation after durable consume fences request and retains exact signed execution
+  ---
+  duration_ms: 16.522083
+  type: 'test'
+  ...
+# Subtest: control pause and policy drift after consume each refuse a late provider request
+    # Subtest: pause
+    ok 1 - pause
+      ---
+      duration_ms: 16.869833
+      type: 'test'
+      ...
+    # Subtest: cancel
+    ok 2 - cancel
+      ---
+      duration_ms: 16.946167
+      type: 'test'
+      ...
+    # Subtest: policy
+    ok 3 - policy
+      ---
+      duration_ms: 16.127667
+      type: 'test'
+      ...
+    1..3
+ok 11 - control pause and policy drift after consume each refuse a late provider request
+  ---
+  duration_ms: 50.583416
+  type: 'test'
+  ...
+# Subtest: current native permission and memory revision are rechecked after consumed intent
+    # Subtest: permission
+    ok 1 - permission
+      ---
+      duration_ms: 14.779166
+      type: 'test'
+      ...
+    # Subtest: memory
+    ok 2 - memory
+      ---
+      duration_ms: 16.140541
+      type: 'test'
+      ...
+    1..2
+ok 12 - current native permission and memory revision are rechecked after consumed intent
+  ---
+  duration_ms: 31.216792
+  type: 'test'
+  ...
+# Subtest: restart cannot turn an uncertain consumed execution into current native authority
+ok 13 - restart cannot turn an uncertain consumed execution into current native authority
+  ---
+  duration_ms: 17.746666
+  type: 'test'
+  ...
+1..13
+# tests 38
+# suites 0
+# pass 38
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 291.040041
