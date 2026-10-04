@@ -1,0 +1,143 @@
+TAP version 13
+# Subtest: independent portability metadata retains normal exports, preview, MIT and native client dependencies
+ok 1 - independent portability metadata retains normal exports, preview, MIT and native client dependencies
+  ---
+  duration_ms: 17.263541
+  type: 'test'
+  ...
+# Subtest: independent portability metadata retains exact official peer pins
+ok 2 - independent portability metadata retains exact official peer pins
+  ---
+  duration_ms: 13.484417
+  type: 'test'
+  ...
+# Subtest: independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+ok 3 - independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+  ---
+  duration_ms: 97.628542
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers cannot obtain a supported probe from the development checkout
+ok 4 - independent portability missing peers cannot obtain a supported probe from the development checkout
+  ---
+  duration_ms: 104.580334
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers deny foundation admission before identity callbacks or storage
+ok 5 - independent portability missing peers deny foundation admission before identity callbacks or storage
+  ---
+  duration_ms: 110.111584
+  type: 'test'
+  ...
+# Subtest: independent portability declares the complete bounded consumed peer set without changing platform capability gates
+ok 6 - independent portability declares the complete bounded consumed peer set without changing platform capability gates
+  ---
+  duration_ms: 12.752125
+  type: 'test'
+  ...
+# Subtest: independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts
+    # Subtest: genuine native class and every resolved public source belong to copied host, with all exact provenance checks true
+    ok 1 - genuine native class and every resolved public source belong to copied host, with all exact provenance checks true
+      ---
+      duration_ms: 182.540125
+      type: 'test'
+      ...
+    # Subtest: same-version physical duplicate dsh-session service fails with the genuine correct Context before identity or storage
+    ok 2 - same-version physical duplicate dsh-session service fails with the genuine correct Context before identity or storage
+      ---
+      duration_ms: 127.145834
+      type: 'test'
+      ...
+    # Subtest: same-version physical duplicate dsh-user-approval service fails with the genuine correct Context before identity or storage
+    ok 3 - same-version physical duplicate dsh-user-approval service fails with the genuine correct Context before identity or storage
+      ---
+      duration_ms: 121.29675
+      type: 'test'
+      ...
+    # Subtest: actual native Context missing sessions cannot invoke identity or create storage
+    ok 4 - actual native Context missing sessions cannot invoke identity or create storage
+      ---
+      duration_ms: 120.726833
+      type: 'test'
+      ...
+    # Subtest: actual native Context missing approval cannot invoke identity or create storage
+    ok 5 - actual native Context missing approval cannot invoke identity or create storage
+      ---
+      duration_ms: 115.52375
+      type: 'test'
+      ...
+    # Subtest: unselected physical duplicates do not override the coherent selected service origin
+    ok 6 - unselected physical duplicates do not override the coherent selected service origin
+      ---
+      duration_ms: 112.7485
+      type: 'test'
+      ...
+    # Subtest: helper rejects closed relative-source and package-name partitions with stable output
+    ok 7 - helper rejects closed relative-source and package-name partitions with stable output
+      ---
+      duration_ms: 110.85225
+      type: 'test'
+      ...
+    # Subtest: metadata-alias refuses source provenance without exposing private path or doing work
+    ok 8 - metadata-alias refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 113.982167
+      type: 'test'
+      ...
+    # Subtest: dangling-source refuses source provenance without exposing private path or doing work
+    ok 9 - dangling-source refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 110.549708
+      type: 'test'
+      ...
+    # Subtest: outside-source refuses source provenance without exposing private path or doing work
+    ok 10 - outside-source refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 113.105417
+      type: 'test'
+      ...
+    # Subtest: a missing approval peer is refused rather than replaced by another same-version installation
+    ok 11 - a missing approval peer is refused rather than replaced by another same-version installation
+      ---
+      duration_ms: 111.338458
+      type: 'test'
+      ...
+    # Subtest: strict whole-lock policy rejects valid root metadata edits before identity and storage
+    ok 12 - strict whole-lock policy rejects valid root metadata edits before identity and storage
+      ---
+      duration_ms: 125.588417
+      type: 'test'
+      ...
+    # Subtest: ten owned installed-origin reloads keep one deduped entry, private scope and no orphan session
+    ok 13 - ten owned installed-origin reloads keep one deduped entry, private scope and no orphan session
+      ---
+      duration_ms: 167.572333
+      type: 'test'
+      ...
+    # Subtest: default foundation has no payload identity while a second installed-origin process preserves acknowledged scope and dedup
+    ok 14 - default foundation has no payload identity while a second installed-origin process preserves acknowledged scope and dedup
+      ---
+      duration_ms: 367.899792
+      type: 'test'
+      ...
+    # Subtest: separate installed-origin process retains unknown action reservation without automatic replay or new permission
+    ok 15 - separate installed-origin process retains unknown action reservation without automatic replay or new permission
+      ---
+      duration_ms: 229.024708
+      type: 'test'
+      ...
+    1..15
+ok 7 - independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts
+  ---
+  duration_ms: 14113.103917
+  type: 'test'
+  ...
+1..7
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14582.314583

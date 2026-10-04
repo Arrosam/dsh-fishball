@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: independent portability metadata retains normal exports, preview, MIT and native client dependencies
+ok 1 - independent portability metadata retains normal exports, preview, MIT and native client dependencies
+  ---
+  duration_ms: 22.357459
+  type: 'test'
+  ...
+# Subtest: independent portability metadata retains exact official peer pins
+ok 2 - independent portability metadata retains exact official peer pins
+  ---
+  duration_ms: 11.272208
+  type: 'test'
+  ...
+# Subtest: independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+ok 3 - independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+  ---
+  duration_ms: 85.009708
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers cannot obtain a supported probe from the development checkout
+ok 4 - independent portability missing peers cannot obtain a supported probe from the development checkout
+  ---
+  duration_ms: 99.575709
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers deny foundation admission before identity callbacks or storage
+ok 5 - independent portability missing peers deny foundation admission before identity callbacks or storage
+  ---
+  duration_ms: 97.407917
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 407.982792
