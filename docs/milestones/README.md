@@ -1,4 +1,6 @@
-# Proposed milestones
+# Development milestones and acceptance gates
+
+The [three-stage plan](../three-stage-development.md) maps these six implementation/acceptance milestones to the approved three development stages. At08:46UTC on2026-10-04, the owner authorized continued implementation and consolidated functional/visual regression after Stage3. Exit evidence below remains required for acceptance; reviewed local development integrations may precede deferred final regression.
 
 | Milestone | Tickets/stages | Exit evidence |
 |---|---|---|

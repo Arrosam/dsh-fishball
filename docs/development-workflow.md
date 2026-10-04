@@ -2,12 +2,14 @@
 
 Adapted from Hydrogen integration docs read on 2026-10-04, not its project-specific runtime, remote-first setup or release automation.
 
+Current scheduling override: the owner approved completing [three development stages](three-stage-development.md) before consolidated cross-stage functional/visual regression on2026-10-04 08:46UTC. Steps4 and ticket reviews continue during development; step5's full regression is deferred with explicit [acceptance debt](evidence/acceptance-debt.md). Reviewed local squash integrations may proceed without claiming acceptance or release.
+
 1. **Inspiration.** Link the owner instruction and approved behavior review. Record the observable need; suggestions are not authorization.
 2. **Triage and AC.** Freeze bounded scope, numbered acceptance criteria, identity/data boundaries, failure/cancellation semantics, limits, migrations, rollback and unresolved decisions. Continue independent safe work.
 3. **Development.** Record starting local main SHA and feature branch. Review dependency/runtime policy before builds. Implement bounded logical units with granular commits and synthetic fixtures.
 4. **Tests and independent reviews.** Map every AC to test evidence; use ISTQB equivalence partitions, boundary values, decision tables and state transitions according to risk. A separate agent reviews code and another reviews test design. They must not be the implementing author. Findings return to that ticket, then final code is retested and reviewed.
 5. **Actual functional/visual validation.** Exercise the exact pinned official DSH Web host with inference disabled, a project-local synthetic profile and loopback browser; supplement with controlled public-service fixtures and separate-process durable recovery tests. A public Cordis fixture alone is not a real Web-profile/UI claim. Record actual Web visual checks separately from later bubbles task-UI and external-provider acceptance. Desktop/Electron are excluded by the newer owner baseline. Record blocked/not-run gates.
-6. **Report and integrate.** Record final code tree, reviewer sessions, AC results, commands/environment, limitations and follow-up decisions. Squash the reviewed branch into local main, retaining its logical commits and refs. Report implemented/tested/accepted/released independently.
+6. **Report and integrate.** Record final code tree, reviewer sessions, AC results, commands/environment, limitations and follow-up decisions. Squash the reviewed branch into local main as a development integration, retaining its logical commits and refs and any deferred acceptance debt. Report implemented/tested/accepted/released independently. Final acceptance and publication require the consolidated regression gate.
 
 ## Local ticket tracking
 [The backlog](tickets/README.md) and individual ticket cards are the source of local planning status. Preserve BUB001–016 and BUB007A/007B; BUB010A is a provider subtask of BUB010. Cards hold source AC; milestone cards select bounded subsets and add executable M1 criteria without marking the complete source ticket done.

@@ -2,6 +2,8 @@
 
 Planning IDs and approved AC are preserved. All tickets follow the newer [exact official Web baseline](../compatibility.md); Desktop/Electron are owner-excluded and old host results historical. This is local tracking; no remote issues/Project are claimed.
 
+Current owner scheduling: [three development stages](../three-stage-development.md), unit/module tests and independent reviews throughout, consolidated cross-stage functional/visual regression after Stage3. Browser debts are [deferred](../evidence/acceptance-debt.md), not passed. Source AC are unchanged.
+
 | ID | Scope | Wave | Status |
 |---|---|---|---|
 | [BUB001](BUB001.md) | Native plugin bootstrap, config and version checks | W1 bounded Web foundation; remaining product gates later | implemented/tested subset; M1 browser hold |

@@ -6,7 +6,7 @@ A native DeepSeek Harness (DSH) personal-assistant plugin, currently in local st
 
 M1 foundation covers bounded BUB001, BUB003, BUB006 and the minimum BUB012 admission controls. It is not the complete MVP. The owner authorized installing the latest official DSH Web in project-local isolation and testing its loopback browser/profile. No real model invocation, live chat/webhook account, personal profile/credential change or publication is authorized in M1.
 
-The implementation is frozen at `1072381` on local `feat/M1-foundation`: 109 tests pass, with actual Web-profile reload/restart/stop evidence. Aggregate M1 acceptance is held because both permitted browser surfaces block loopback with `ERR_BLOCKED_BY_CLIENT`; see [current validation](docs/evidence/M1/validation.md). Local main remains the setup baseline until this gate is resolved and the reviewed squash merge can occur.
+The reviewed foundation at `1072381` has109 passing tests and actual Web-profile reload/restart/stop evidence; granular `feat/M1-foundation` history is retained. Browser rendering/control/close acceptance remains deferred. The owner approved continuing [all three development stages](docs/three-stage-development.md) and consolidating full functional/visual regression after Stage3. Reviewed local squash integrations can proceed with explicit [acceptance debt](docs/evidence/acceptance-debt.md); main is not a release or acceptance designation.
 
 The full proposed preview MVP spans every ticket in [the local backlog](docs/tickets/README.md). All stages require independent development code/test review and actual supported functional validation. UI stages additionally require actual visual validation.
 
