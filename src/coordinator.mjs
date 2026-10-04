@@ -7,6 +7,11 @@ export class CoordinatorError extends Error {
 }
 const fail = code => { throw new CoordinatorError(code); };
 const command = (...parts) => createHash('sha256').update(JSON.stringify(parts)).digest('hex');
+function frozenReceipt(value) {
+  const copy = structuredClone(value);
+  const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; };
+  return freeze(copy);
+}
 function record(value, keys, required = keys) {
   if (!value || typeof value !== 'object' || types.isProxy(value) || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) fail('COORDINATOR_INVALID');
   const fields = Object.getOwnPropertyDescriptors(value);
@@ -16,7 +21,7 @@ function ref(value) { if (typeof value !== 'string' || value.length !== 64 || !/
 function sequence(value, max) {
   if (!Array.isArray(value) || types.isProxy(value) || Object.getPrototypeOf(value) !== Array.prototype || value.length > max) fail('COORDINATOR_INVALID');
   const fields = Object.getOwnPropertyDescriptors(value);
-  if (Reflect.ownKeys(fields).some(key => key !== 'length' && (typeof key !== 'string' || !/^(0|[1-9][0-9]*)$/.test(key) || !fields[key].enumerable || !Object.hasOwn(fields[key], 'value')))) fail('COORDINATOR_INVALID');
+  if (Reflect.ownKeys(fields).some(key => key !== 'length' && (typeof key !== 'string' || !/^(0|[1-9][0-9]*)$/.test(key) || !Number.isSafeInteger(Number(key)) || Number(key) >= value.length || !fields[key].enumerable || !Object.hasOwn(fields[key], 'value')))) fail('COORDINATOR_INVALID');
   for (let i = 0; i < value.length; i++) if (!Object.hasOwn(fields, String(i))) fail('COORDINATOR_INVALID');
   return value;
 }
@@ -58,14 +63,15 @@ export class Coordinator {
   // Registration is returned immediately. An async classifier/session cannot
   // hold the inbox or status path; classified metadata uses the receipt CAS.
   receive(handle, input) {
-    const receipt = this.register(handle, input);
+    const receipt = frozenReceipt(this.register(handle, input));
+    const commandRef = input.commandRef;
     const classification = !this.#classifier || receipt.deduplicated ? Promise.resolve({ state: 'registered' }) : Promise.resolve().then(async () => {
       let disposition;
       try { disposition = await this.#classifier(Object.freeze({ task: receipt.task })); }
       catch { return { state: 'unknown', code: 'CLASSIFICATION_UNAVAILABLE' }; }
       if (!['new_task', 'supplement', 'control', 'clarification'].includes(disposition)) return { state: 'unknown', code: 'CLASSIFICATION_INVALID' };
       try {
-        const saved = this.#store.putData(handle, { taskRef: receipt.task.taskRef, commandRef: command('classify', input.commandRef), kind: 'branch', content: JSON.stringify({ classification: disposition }), sourceRef: input.commandRef, expectedTaskVersion: receipt.task.version, expectedAuthEpoch: receipt.task.authEpoch });
+        const saved = this.#store.putData(handle, { taskRef: receipt.task.taskRef, commandRef: command('classify', commandRef), kind: 'branch', content: JSON.stringify({ classification: disposition }), sourceRef: commandRef, expectedTaskVersion: receipt.task.version, expectedAuthEpoch: receipt.task.authEpoch });
         return { state: 'classified', classification: disposition, record: saved };
       } catch { return { state: 'unknown', code: 'CLASSIFICATION_STALE' }; }
     });
@@ -162,8 +168,9 @@ export class Coordinator {
   }
   stop(handle, input) {
     record(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    input = Object.freeze({ ...input });
     // Core control commits before the deferred native cancellation callback.
-    const receipt = this.#store.control(handle, { ...input, kind: 'cancel' });
+    const receipt = frozenReceipt(this.#store.control(handle, { ...input, kind: 'cancel' }));
     const settled = Promise.resolve().then(async () => {
       if (!this.#cancel) return { cancellation: 'unknown', code: 'CANCELLATION_UNAVAILABLE' };
       try { await this.#cancel(Object.freeze({ taskRef: input.taskRef, receipt })); }

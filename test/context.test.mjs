@@ -39,6 +39,10 @@ test('stored reference fields reject trailing line terminators', () => {
   for (const ending of ['\n', '\r', '\u2028', '\u2029']) rejects(() => compactContext({ protectedText: 'safe', backgrounds: [{ ref: ref(1) + ending, text: 'safe background' }], byteLimit: 100, tokenLimit: 100, tokenize: count }), 'CONTEXT_INVALID');
 });
 
+test('optional context arrays reject non-index numeric own fields rather than discard them', () => {
+  rejects(() => compactContext({ protectedText: 'safe', backgrounds: Object.assign([], { 4294967295: { ref: ref(1), text: 'extra' } }), byteLimit: 100, tokenLimit: 100, tokenize: count }), 'CONTEXT_INVALID');
+});
+
 function assembledFixture() {
   const task = { ownerRef: ref(1), workspaceRef: ref(2), taskRef: ref(3), version: 4, authEpoch: 0, status: 'queued' };
   const content = ['latest goal', 'FRONT deny\nMIDDLE protected\nEND latest', JSON.stringify({ materialKind: 'summary', sourceScope: { ownerRef: ref(1), workspaceRef: ref(2), taskRef: ref(3) }, sourceTaskVersion: 1, sourceAuthEpoch: 0, generatedAt: 1, sourceRefs: [ref(10)], content: 'OLD goal APPROVED completed repeat step' })];
@@ -68,4 +72,22 @@ test('assembly rejects wrong source owner/workspace/task, missing provenance, ge
   }
   const x = assembledFixture();
   await assert.rejects(new ContextAssembler({ store: x.store, tokenize: count, clock: () => 100 }).assemble({}, { taskRef: x.task.taskRef, expectedTaskVersion: 4, expectedAuthEpoch: 0, generationRef: ref(55) }), error => error.code === 'STALE_GENERATION');
+});
+
+test('async assembly captures request versions and nested references before host query awaits', async () => {
+  const x = assembledFixture(), material = JSON.parse(x.records[2].content);
+  Object.assign(material, { materialKind: 'host_snapshot', content: 'old host snapshot' });
+  x.records[2].content = JSON.stringify(material); x.records[2].digest = createHash('sha256').update(x.records[2].content).digest('hex');
+  let finish; const query = new Promise(resolve => { finish = resolve; });
+  const input = { taskRef: x.task.taskRef, expectedTaskVersion: 4, expectedAuthEpoch: 0, recordRefs: [ref(12)] };
+  const pending = new ContextAssembler({ store: x.store, tokenize: count, clock: () => 100, staleAfterMs: 0, queryHost: () => query }).assemble({}, input);
+  x.task.version = 5; input.expectedTaskVersion = 5; input.recordRefs[0] = ref(99);
+  finish({ content: 'queried host snapshot', observedAt: 100 });
+  await assert.rejects(pending, error => error.code === 'STALE_VERSION');
+});
+
+test('final authoritative snapshot is checked even if version changes after final task read', async () => {
+  const x = assembledFixture(), original = x.store.snapshot; let reads = 0;
+  x.store.snapshot = () => { if (++reads === 2) x.task.version++; return original(); };
+  await assert.rejects(new ContextAssembler({ store: x.store, tokenize: count, clock: () => 100 }).assemble({}, { taskRef: x.task.taskRef, expectedTaskVersion: 4, expectedAuthEpoch: 0 }), error => error.code === 'STALE_VERSION');
 });

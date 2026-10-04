@@ -34,6 +34,10 @@ test('clarification planning bundles necessary decisions and dependent branches,
   rejects(() => bundleDecisions([{ ...questions[0], question: '  ' }]), 'COORDINATOR_INVALID');
 });
 
+test('clarification arrays reject extra numeric fields instead of losing supplied decisions', () => {
+  rejects(() => bundleDecisions(Object.assign([], { 4294967295: { decisionRef: ref(1), question: 'extra', branchRefs: [ref(2)] } })), 'COORDINATOR_INVALID');
+});
+
 test('inbox/status and stop claim-blocking commit do not wait for classifier or async worker', async () => {
   const store = adapter(), classify = deferred(), cancellation = deferred(); let cancelStarted = false;
   const coordinator = new Coordinator({ store, classify: () => classify.promise, cancelWorkers: () => { cancelStarted = true; assert.equal(store.state.status, 'cancel_requested'); return cancellation.promise; } });
@@ -191,4 +195,19 @@ test('actual encrypted source resolution excludes stale summary and rejects forg
   material.sourceScope.taskRef = ref(999);
   x.store.putData(x.coordinator, { taskRef: task.taskRef, commandRef: ref(193), kind: 'context', content: JSON.stringify(material), sourceRef: goal.recordRef, expectedTaskVersion: 3, expectedAuthEpoch: 0 });
   await assert.rejects(assembler.assemble(x.coordinator, { taskRef: task.taskRef, expectedTaskVersion: 4, expectedAuthEpoch: 0 }), error => error.code === 'CONTEXT_SCOPE');
+});
+
+test('deferred classifier and cancellation capture original request and immutable receipt facts', async () => {
+  const store = adapter(), waiting = deferred(); let saved, routed;
+  store.putData = (_handle, input) => { saved = input; return { recordRef: ref(2) }; };
+  const coordinator = new Coordinator({ store, classify: () => waiting.promise, cancelWorkers: async value => { routed = value; } });
+  const input = incoming('event', ref(901));
+  const received = coordinator.receive({}, input); input.commandRef = ref(902);
+  assert.throws(() => { received.receipt.task.version = 999; }, TypeError);
+  waiting.resolve('supplement'); await received.classification;
+  assert.equal(saved.sourceRef, ref(901)); assert.equal(saved.expectedTaskVersion, 1);
+  const stopInput = { taskRef: ref(1), commandRef: ref(903), expectedTaskVersion: 1, expectedAuthEpoch: 0 };
+  const stopped = coordinator.stop({}, stopInput); stopInput.taskRef = ref(99);
+  assert.throws(() => { stopped.receipt.task.taskRef = ref(99); }, TypeError);
+  await stopped.settled; assert.equal(routed.taskRef, ref(1)); assert.equal(routed.receipt.task.taskRef, ref(1));
 });

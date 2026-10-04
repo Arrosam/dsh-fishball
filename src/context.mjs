@@ -17,7 +17,7 @@ function plain(value, keys) {
 function list(value, max) {
   if (!Array.isArray(value) || types.isProxy(value) || Object.getPrototypeOf(value) !== Array.prototype || value.length > max) fail('CONTEXT_INVALID');
   const fields = Object.getOwnPropertyDescriptors(value);
-  if (Reflect.ownKeys(fields).some(key => key !== 'length' && (typeof key !== 'string' || !/^(0|[1-9][0-9]*)$/.test(key) || !fields[key].enumerable || !Object.hasOwn(fields[key], 'value')))) fail('CONTEXT_INVALID');
+  if (Reflect.ownKeys(fields).some(key => key !== 'length' && (typeof key !== 'string' || !/^(0|[1-9][0-9]*)$/.test(key) || !Number.isSafeInteger(Number(key)) || Number(key) >= value.length || !fields[key].enumerable || !Object.hasOwn(fields[key], 'value')))) fail('CONTEXT_INVALID');
   for (let i = 0; i < value.length; i++) if (!Object.hasOwn(fields, String(i))) fail('CONTEXT_INVALID');
 }
 
@@ -92,6 +92,7 @@ export class ContextAssembler {
     reference(input.taskRef); integer(input.expectedTaskVersion, 1, Number.MAX_SAFE_INTEGER); integer(input.expectedAuthEpoch, 0, Number.MAX_SAFE_INTEGER);
     if (input.generationRef !== undefined) reference(input.generationRef);
     if (input.recordRefs !== undefined) { list(input.recordRefs, 64); input.recordRefs.forEach(reference); }
+    input = Object.freeze({ ...input, ...(input.recordRefs === undefined ? {} : { recordRefs: Object.freeze([...input.recordRefs]) }) });
     const snapshot = this.#store.snapshot(handle, { taskRef: input.taskRef });
     const task = snapshot.task;
     const check = current => {
@@ -186,6 +187,7 @@ export class ContextAssembler {
     // tokenizer callback that itself changes the core. No stale input escapes.
     check(this.#store.task(handle, task.taskRef));
     const finalSnapshot = this.#store.snapshot(handle, { taskRef: task.taskRef });
+    check(finalSnapshot.task);
     if (input.generationRef !== undefined && !finalSnapshot.workers.some(worker => worker.generationRef === input.generationRef && !['stopped', 'not_created'].includes(worker.phase))) fail('STALE_GENERATION');
     return Object.freeze({ ...result, taskVersion: task.version, authEpoch: task.authEpoch, generationRef: input.generationRef ?? null, conflicts: Object.freeze(conflicts), provenance: Object.freeze(provenance), verification: 'module_assembled_input_only' });
   }
