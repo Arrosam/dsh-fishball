@@ -1,0 +1,5 @@
+{"result":"launched","pid":54026,"target":"DSH Web 0.2.1-alpha.1","profile":"normal installed package in fresh isolated host","url":"http://127.0.0.1:3080"}
+(node:54024) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54026) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

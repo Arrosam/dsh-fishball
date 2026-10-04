@@ -1,0 +1,82 @@
+{
+  "case": "first corrected-package native foundation launch",
+  "sourceCommit": "154c31a",
+  "pid": 53928,
+  "execSession": 24154,
+  "state": {
+    "phase": "lifecycle-failed",
+    "pid": 53928,
+    "pluginEntryName": "dsh-fishball",
+    "pluginAvailable": true,
+    "loads": 2,
+    "cycles": [],
+    "sessions": 0,
+    "providers": 0,
+    "inferenceAttempts": 0,
+    "toolAttempts": 0,
+    "host": "127.0.0.1",
+    "port": 3080,
+    "diagnostic": {
+      "target": "dsh-web-0.2.1-alpha.1",
+      "supported": true,
+      "runtime": {
+        "node": "v22.22.2",
+        "sqlite": "3.53.2"
+      },
+      "versions": {
+        "harness": "0.2.1-alpha.1",
+        "cordis": "4.0.5-alpha.1",
+        "sessions": "0.2.1-alpha.1",
+        "approval": "0.2.1-alpha.1",
+        "web": "0.2.1-alpha.1",
+        "webServer": "0.2.1-alpha.1"
+      },
+      "hashes": {
+        "harness": "1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f",
+        "cordis": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+        "sessions": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+        "approval": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b",
+        "web": "c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85",
+        "webServer": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5",
+        "runtimeLock": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      "checks": {
+        "harnessVersion": true,
+        "harnessSource": true,
+        "cordisVersion": true,
+        "cordisSource": true,
+        "sessionsVersion": true,
+        "sessionsSource": true,
+        "approvalVersion": true,
+        "approvalSource": true,
+        "webVersion": true,
+        "webSource": true,
+        "webServerVersion": true,
+        "webServerSource": true,
+        "nativeContext": true,
+        "sessionsProvenance": true,
+        "approvalProvenance": true,
+        "context.provide": true,
+        "context.effect": true,
+        "context.on": true,
+        "sessions.create": true,
+        "sessions.get": true,
+        "sessions.list": true,
+        "approval.request": true,
+        "approval.effectivePolicy": true,
+        "runtimeVersion": true,
+        "runtimeLock": true,
+        "sqlite": true
+      },
+      "failures": [],
+      "identityBridge": "pending",
+      "permissionBridge": "deny-all"
+    },
+    "pluginState": "active",
+    "identityProbe": "IDENTITY_UNAVAILABLE",
+    "lifecycleCode": "NORMAL_INSTALL_LIFECYCLE_FAILED"
+  },
+  "result": "foundation resolved and active; diagnostic observer failed before cycle recording",
+  "instrumentationDiagnosis": "observer used ctx.df outside its injected child scope after successful first disable/reload; use the borrowed service from ctx.inject and observe child cleanup",
+  "productSourceChanged": false
+}

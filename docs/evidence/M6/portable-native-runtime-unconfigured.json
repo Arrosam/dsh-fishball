@@ -1,0 +1,43 @@
+{
+  "sourceCommit": "154c31a",
+  "artifactSHA256": "7b29b63d40d500b03c0f0e10d1077d6754891407c6114a117afa0d45125f7e08",
+  "pid": 54163,
+  "execSession": 66279,
+  "entry": "dsh-fishball/runtime",
+  "result": "imports normally then RUNTIME_ADAPTER_UNAVAILABLE before storage",
+  "runtimeDatabaseCreated": false,
+  "observerState": {
+    "phase": "observer-active",
+    "pid": 54163,
+    "pluginEntryName": "dsh-fishball/runtime",
+    "pluginAvailable": false,
+    "loads": 0,
+    "cycles": [],
+    "sessions": 0,
+    "providers": 0,
+    "inferenceAttempts": 0,
+    "toolAttempts": 0,
+    "host": "127.0.0.1",
+    "port": 3080
+  },
+  "scope": "unfinished product bootstrap; model choices alone cannot provide trusted identity/key callbacks",
+  "productSourceChangedForCase": false,
+  "stopExitCode": 0,
+  "observerAfterStop": {
+    "phase": "disposed",
+    "pid": 54163,
+    "pluginEntryName": "dsh-fishball/runtime",
+    "pluginAvailable": false,
+    "loads": 0,
+    "cycles": [],
+    "sessions": 0,
+    "providers": 0,
+    "inferenceAttempts": 0,
+    "toolAttempts": 0,
+    "host": "127.0.0.1",
+    "port": 3080,
+    "staleReference": "unavailable",
+    "sessionObservation": "queried-at-disposal"
+  },
+  "temporaryAccessRemoved": true
+}
