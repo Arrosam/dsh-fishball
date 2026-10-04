@@ -1,0 +1,36 @@
+TAP version 13
+# (node:46210) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: separate actual-Web fixture manifest pins isolated env, explicit runtime factory and no secret YAML
+ok 1 - separate actual-Web fixture manifest pins isolated env, explicit runtime factory and no secret YAML
+  ---
+  duration_ms: 2.839
+  type: 'test'
+  ...
+# Subtest: genuine public BrowserAuth token exchange and OperatorPeer admission use only synthetic JSON0600 credential backing
+ok 2 - genuine public BrowserAuth token exchange and OperatorPeer admission use only synthetic JSON0600 credential backing
+  ---
+  duration_ms: 35.194834
+  type: 'test'
+  ...
+# Subtest: private auth persistence rejects unsafe mode, locks, unknown record formats and callback secrets without fallback
+ok 3 - private auth persistence rejects unsafe mode, locks, unknown record formats and callback secrets without fallback
+  ---
+  duration_ms: 2.441375
+  type: 'test'
+  ...
+# Subtest: synthetic integer tokenizer assembles an actual protected scoped execution context without a model
+ok 4 - synthetic integer tokenizer assembles an actual protected scoped execution context without a model
+  ---
+  duration_ms: 15.989959
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 246.112709
