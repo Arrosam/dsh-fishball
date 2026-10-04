@@ -1,0 +1,162 @@
+{
+  "created": "2026-10-04T22:38:09.778Z",
+  "identity": "/root/native_functional",
+  "roots": [
+    "src/runtime-plugin.mjs",
+    "test/runtime-plugin.test.mjs",
+    "test/installed-worker-runtime.test.mjs",
+    "test/operator-bridge.test.mjs",
+    "test/operator-invocation.test.mjs",
+    "test/operator-invocation-adversarial.test.mjs",
+    "test/installed-runtime-seams-functional.test.mjs"
+  ],
+  "files": [
+    {
+      "path": "src/approval-preview.mjs",
+      "sha256": "921d8946bd76c76f08fd6a21dbd73254c75716abcb86d6d2aadd33694ab3aa30",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/approval-preview.mjs"
+    },
+    {
+      "path": "src/audit.mjs",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/audit.mjs"
+    },
+    {
+      "path": "src/chat.mjs",
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/chat.mjs"
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/config.mjs"
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "e2837f8ef709a09e928c49e8fa14ee4f34e6776ad2b6ab0ca598ab53b3a9525c",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/context.mjs"
+    },
+    {
+      "path": "src/coordinator.mjs",
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/coordinator.mjs"
+    },
+    {
+      "path": "src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/environment.mjs"
+    },
+    {
+      "path": "src/event-clock.mjs",
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/event-clock.mjs"
+    },
+    {
+      "path": "src/events.mjs",
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/events.mjs"
+    },
+    {
+      "path": "src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/fishball-memory-core.mjs"
+    },
+    {
+      "path": "src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs"
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs"
+    },
+    {
+      "path": "src/memory.mjs",
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/memory.mjs"
+    },
+    {
+      "path": "src/messages.mjs",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/messages.mjs"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/native-adapter.mjs"
+    },
+    {
+      "path": "src/notifications.mjs",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/notifications.mjs"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "sha256": "2150c4dae7db35f3cd66110c5526a9a0758dcc0d24e37f5c72f6ea1b74ca0f11",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/operator-bridge.mjs"
+    },
+    {
+      "path": "src/results.mjs",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/results.mjs"
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "f22415b60c9cdfb40fdfdb2bb6583e82cff34c7e590fbebfec05d641167eaf9b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-plugin.mjs"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-security.mjs"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs"
+    },
+    {
+      "path": "src/scheduler.mjs",
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/scheduler.mjs"
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/worker.mjs"
+    },
+    {
+      "path": "test/installed-runtime-seams-functional.test.mjs",
+      "sha256": "337ae0ba22a8a825ec1b08fb45aca8f1a886efa506546157f7c6cdd70a364bf4",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-runtime-seams-functional.test.mjs"
+    },
+    {
+      "path": "test/installed-worker-runtime.test.mjs",
+      "sha256": "6dca412f9154d143bef3d89e8cbf91a74506716e7244edfa9bdd19bf0062691b",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker-runtime.test.mjs"
+    },
+    {
+      "path": "test/operator-bridge.test.mjs",
+      "sha256": "dd131ed2c325b683dc749ca54cb65072a787e9d797b9fee2646563437297ad04",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/operator-bridge.test.mjs"
+    },
+    {
+      "path": "test/operator-invocation-adversarial.test.mjs",
+      "sha256": "b91bcaddea72bdd35e1c061a7c2ccd9e277cdd8b818e99e5f95eb90f149d51d9",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/operator-invocation-adversarial.test.mjs"
+    },
+    {
+      "path": "test/operator-invocation.test.mjs",
+      "sha256": "643d278256de96097fd16e811469a937de7158eb48944d3b3bdd9279a5691132",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/operator-invocation.test.mjs"
+    },
+    {
+      "path": "test/runtime-plugin.test.mjs",
+      "sha256": "fb95a539b3d2c39601c6f8127368aff9a5acff748b59751a31a33f1281cef876",
+      "canonical": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-plugin.test.mjs"
+    }
+  ],
+  "baselineMatched": 3642,
+  "authorPinsMatched": 17
+}
