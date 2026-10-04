@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { Foundation, FoundationError } from '../src/foundation.mjs';
-import { legacySchemaSql } from '../src/ledger.mjs';
+import { legacySchemaSql, SCHEMA_VERSION } from '../src/ledger.mjs';
 
 // Independently authored risk-based checks. Only synthetic data, temporary
 // local stores and the installed public no-profile Cordis fixture are used.
@@ -559,7 +559,7 @@ test('independent: migration failure, incomplete/future schema and backup collis
     db.exec(legacySchemaSql);
     if (scenario === 'orphan-foreign-key') db.exec('PRAGMA foreign_keys=OFF');
     if (scenario === 'incomplete') db.exec('DROP TABLE events');
-    if (scenario === 'future') db.exec('PRAGMA user_version=3');
+    if (scenario === 'future') db.exec(`PRAGMA user_version=${SCHEMA_VERSION + 1}`);
     if (scenario === 'orphan-foreign-key') db.prepare('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)').run(digest(scope.ownerId), digest(scope.workspaceId), digest('provider'), digest('source'), digest('event'), digest('missing-task'), 1000);
     if (scenario === 'invalid-row') db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(digest(scope.ownerId), digest(scope.workspaceId), digest('task'), 'unrecognized-state', 1, 0, 1000, 1000);
     db.close();
@@ -599,7 +599,7 @@ test('independent: supported schema1 migration preserves actual acknowledged tas
   const migrated = new Foundation({ databasePath, clock: () => 1500 });
   t.after(() => migrated.close());
   const exported = migrated.exportTask(scope, 'task');
-  assert.equal(exported.schemaVersion, 2);
+  assert.equal(exported.schemaVersion, SCHEMA_VERSION);
   assert.equal(exported.task.version, 1);
   assert.equal(exported.task.status, 'queued');
   assert.equal(exported.ingress[0].eventRef, digest('event'));
@@ -612,15 +612,22 @@ test('independent: supported schema1 migration preserves actual acknowledged tas
 });
 
 test('independent: unsupported crash-left WAL rejects without changing main, WAL or SHM bytes or committed facts', { timeout: 15000 }, async t => {
-  for (const version of [99, 1, 2]) await t.test(`schema ${version}; abrupt exit73 with uncheckpointed WAL`, t => {
+  for (const version of [99, 1, 2, SCHEMA_VERSION]) await t.test(`schema ${version}; abrupt exit73 with uncheckpointed WAL`, t => {
     const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-wal-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const databasePath = join(directory, 'ledger.sqlite');
     const keys = [digest(scope.ownerId), digest(scope.workspaceId), digest('wal-task')];
-    if (version === 2) {
+    if (version === 2 || version === SCHEMA_VERSION) {
       const initial = new Foundation({ databasePath, clock: () => 1000 });
       initial.intake(scope, ingress('wal-task', 'wal-event'));
       initial.close();
+      if (version === 2) {
+        const legacy = new DatabaseSync(databasePath);
+        try {
+          for (const row of legacy.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) legacy.exec(`DROP TABLE ${row.name}`);
+          legacy.exec('PRAGMA user_version=2');
+        } finally { legacy.close(); }
+      }
     }
     const writer = `
       import { DatabaseSync } from 'node:sqlite';
@@ -637,7 +644,7 @@ test('independent: unsupported crash-left WAL rejects without changing main, WAL
         db.prepare('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)').run(...keys,1,1,'queued','intake',1000);
         db.exec('COMMIT');
       }
-      if(version===2){db.prepare('UPDATE tasks SET updated_at=2000 WHERE owner=? AND workspace=? AND id=?').run(...keys);}
+      if(version===2||version===${SCHEMA_VERSION}){db.prepare('UPDATE tasks SET updated_at=2000 WHERE owner=? AND workspace=? AND id=?').run(...keys);}
       process.exit(73);
     `;
     const child = spawnSync(process.execPath, ['--input-type=module', '-e', writer, databasePath], { encoding: 'utf8', timeout: 5000 });
@@ -690,6 +697,11 @@ test('independent: WAL header without sidecars and opaque sidecars beside DELETE
   for (const suffix of ['-wal', '-shm']) await t.test(`opaque ${suffix} beside healthy DELETE schema2`, t => {
     const f = fixture(t);
     f.core.intake(scope, ingress()); f.core.close();
+    const legacy = new DatabaseSync(f.databasePath);
+    try {
+      for (const row of legacy.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all()) legacy.exec(`DROP TABLE ${row.name}`);
+      legacy.exec('PRAGMA user_version=2');
+    } finally { legacy.close(); }
     writeFileSync(`${f.databasePath}${suffix}`, `synthetic-opaque${suffix}-preserve`);
     const original = [readFileSync(f.databasePath), readFileSync(`${f.databasePath}${suffix}`)];
     assert.equal(original[0][18], 1); assert.equal(original[0][19], 1);

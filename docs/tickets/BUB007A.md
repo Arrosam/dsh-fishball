@@ -1,5 +1,7 @@
 # BUB007A — fishball extraction, portability and license
 
+Current alias: **DF007A**. Historical BUB IDs and approved source text below remain preserved. The [owner amendment](../owner-amendment-2026-10-04.md) controls current naming, MIT and chat-provider applicability.
+
 Status: planned.
 Wave: W3 gated by license/source choice.
 Source AC IDs retained: BUB007-01..02.

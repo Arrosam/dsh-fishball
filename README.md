@@ -1,38 +1,33 @@
-# bubbles
+# dsh-fishball (df)
 
-A native DeepSeek Harness (DSH) personal-assistant plugin, currently in local staged development. DSH owns tools, models, permissions and agent execution; bubbles owns bounded coordination and durable product state.
+A native DeepSeek Harness (DSH) implementation of fishball's memory domain and a bounded personal-assistant workflow. DSH owns tools, models, permissions and agent execution; df owns durable coordination, scoped memory and product state. There is no separate harness or daemon. Full DSH quit stops df.
 
-## Current milestone
+This is local staged development, not an accepted MVP or release. The intended eventual public repository is **Arrosam/dsh-fishball**; no remote exists and no push/publication is authorized before full agreed preview acceptance. The owner chose [MIT](LICENSE); [source and host notices](THIRD_PARTY_NOTICES.md) record the actual incorporated boundary.
 
-M1 foundation covers bounded BUB001, BUB003, BUB006 and the minimum BUB012 admission controls. It is not the complete MVP. The owner authorized installing the latest official DSH Web in project-local isolation and testing its loopback browser/profile. No real model invocation, live chat/webhook account, personal profile/credential change or publication is authorized in M1.
+The [latest owner amendment](docs/owner-amendment-2026-10-04.md) keeps a provider-neutral chat adapter contract in this phase and moves actual chat software/accounts/provider delivery to a future phase. Mobile fishball controlling DSH through Hydrogen tools is a much later ambition, outside current work. Native DSH execution is independent.
 
-The reviewed foundation at `1072381` has109 passing tests and actual Web-profile reload/restart/stop evidence; granular `feat/M1-foundation` history is retained. Browser rendering/control/close acceptance remains deferred. The owner approved continuing [all three development stages](docs/three-stage-development.md) and consolidating full functional/visual regression after Stage3. Reviewed local squash integrations can proceed with explicit [acceptance debt](docs/evidence/acceptance-debt.md); main is not a release or acceptance designation.
+## Current development
 
-The full proposed preview MVP spans every ticket in [the local backlog](docs/tickets/README.md). All stages require independent development code/test review and actual supported functional validation. UI stages additionally require actual visual validation.
+The owner approved [all three stages](docs/three-stage-development.md), with unit/module tests and separate independent code/ISTQB reviews throughout, followed by consolidated functional/visual regression after Stage3. Reviewed units squash into local main as development integrations while granular branches survive. Main is not an acceptance, stable or release designation.
 
-## Development
+Foundation covers bounded DF001/003/006 and minimum DF012. Stage2 implements the coordinator, durable task, native worker, scoped messages/context, resource controls and local result/control loop. Its final security review remains a development gate. Stage3 adds durable memory/events, chat contracts, results, actual native UI and runtime independent review/repair. All applicable full ticket criteria remain required; see [backlog and BUB aliases](docs/tickets/README.md) and [acceptance debt](docs/evidence/acceptance-debt.md).
 
-Read [AGENTS.md](AGENTS.md), [the workflow](docs/development-workflow.md), [M1 acceptance](docs/milestones/M1-foundation.md) and [the contracts](docs/foundation-contract.md) first. This is a new standalone local Git repository, separate from Hydrogen and fishball.
+The memory module translates pinned fishball memory search, TTL, similarity and snapshot/JSONL behavior into ESM. It is not compiled Kotlin/JS or reuse of the whole Kotlin core/application. [Provenance](docs/fishball-provenance.md) identifies exact source bytes, owner contributor history and semantic corrections. Personal fishball files are never inspected or automatically shared/imported. Memory summaries never authorize work; the transactional task/action/approval ledger is authoritative.
 
-License selection and redistributed fishball licensing remain owner decisions. No LICENSE is selected, no fishball source is copied, and no remote is configured. Future releases default to preview; stable needs an explicit owner designation.
+## Local workflow and checks
 
-## Local verification
+Read [AGENTS.md](AGENTS.md), [development workflow](docs/development-workflow.md), [runtime API](docs/runtime-api.md) and [stage mapping](docs/three-stage-development.md). Ticket files retain BUB names as historical aliases for same-suffix DF IDs; original approved source text stays intact.
 
-The current target is exact **official DSH Web 0.2.1-alpha.1**, the newest published official preview verified on 2026-10-04. [Compatibility](docs/compatibility.md) explains why the newer alpha is selected even though npm's `latest` tag still names an older release candidate. The host is acquired with reviewed lifecycle scripts disabled into project-controlled isolation; its exact dependency lock and setup evidence are recorded in [host evidence](docs/evidence/M1/host-interface.md). Shell Node 22.22.2 is the development runtime. The ledger uses Node built-ins.
+The pinned target is **official DSH Web 0.2.1-alpha.1**, verified as the newest published official preview on 2026-10-04. The isolated runtime uses its tracked exact dependency lock with install scripts disabled. Development uses Node22.22.2; the ledger/build use Node built-ins. No new build dependency, SDK runtime, DSH-X launcher, dsh-std, old Desktop shim or Electron acceptance is introduced. [Compatibility](docs/compatibility.md) records exact public API findings and limitations.
 
 ```sh
-npm run host:setup
 npm run check
-npm test
 npm run host:smoke
+# Full npm test regression follows completion of Stage3.
 ```
 
-`host:setup` is the explicit downloader and uses the tracked lock with all install scripts disabled. Launch/tests do not download dependencies. `test:host` is an alias for the same Node 22.22.2 suite. The syntax gate checks ESM directly; no transpilation/build dependency is required. Tests use temporary stores, synthetic identities and mocked effects. Real public Cordis fixtures and actual isolated Web-profile/browser checks are reported separately. Native identity/operator bridges remain unavailable and dispatch defaults deny.
+`host:setup` is the explicit reviewed downloader; launch/test never downloads dependencies. Tests use synthetic identities/secrets/stores and explicitly mocked providers. Genuine public Cordis/AgentLoop fixtures are distinguished from real external inference; no paid or external model call is authorized. Native owner operations use DSH's admitted operator peer; production identity/key/policy provisioning remains an explicit trusted composition boundary, with default-deny effects.
 
-For the authorized local host fixture, run `npm run host:web`, then `npm run host:profile-smoke` in another terminal. It binds only `127.0.0.1:3080`, sets separate project-local DSH_HOME and DSH_AGENTS_HOME, disables accounts/inference, and keeps synthetic browser access private. Ctrl-C stops the owned host. Managed approval may be required for registry acquisition or loopback listening; a rejected action must stop. Browser automation currently blocks that URL, so rendered UI is untested. All validation children are stopped in the delivered workspace.
+`host:web` and `host:profile-smoke` operate only on a project-local synthetic Web profile at127.0.0.1:3080. They do not use personal accounts/settings/credentials. Managed approval may be needed for loopback listening; denied actions stop. Current browser automation could not observe the page, and actual native UI/visual/window-close validation remains deferred. No validation host is left running.
 
-Old Desktop evidence is retained in [the historical record](docs/evidence/M1/historical-desktop-de1097e.md); it does not establish current compatibility. No backward compatibility shim or Electron/native-shell acceptance is part of this baseline. Future DSH breaking updates will be assessed explicitly before changing the pin.
-
-The owner cancelled `dsh-std` adoption. [Targeted rollback](docs/evidence/M1/rollback-dsh-std.md) confirms no active standard dependency, import or requirement remains.
-
-See [the exact host matrix](docs/evidence/M1/host-interface.md), [core contracts](docs/evidence/M1/core-design.md), [independent code review](docs/evidence/M1/code-review.md), [ISTQB review](docs/evidence/M1/test-review.md) and [explicit waves](docs/waves.md). Full source-ticket and MVP acceptance remain pending.
+The [rename/storage compatibility record](docs/rename-compatibility.md) explains current identifiers, preserved old data paths/contract aliases and any crypto recovery gate. Unsupported or unverifiable records fail closed and remain preserved. Default release channel is preview; stable requires an explicit owner request.
