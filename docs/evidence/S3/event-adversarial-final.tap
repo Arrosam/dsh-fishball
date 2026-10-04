@@ -1,0 +1,710 @@
+TAP version 13
+# (node:44384) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: paired contract admission stores encrypted original route/material, deduplicates, and survives reopen
+ok 1 - paired contract admission stores encrypted original route/material, deduplicates, and survives reopen
+  ---
+  duration_ms: 26.929875
+  type: 'test'
+  ...
+# Subtest: payload owner, forward, group and cross-task claims never replace admitted private pairing
+ok 2 - payload owner, forward, group and cross-task claims never replace admitted private pairing
+  ---
+  duration_ms: 14.577916
+  type: 'test'
+  ...
+# Subtest: new pairing revision or private window cannot inherit history; rate-only revision preserves original access
+ok 3 - new pairing revision or private window cannot inherit history; rate-only revision preserves original access
+  ---
+  duration_ms: 18.976416
+  type: 'test'
+  ...
+# Subtest: authenticated edits/deletes and same-ID replacement cannot rewrite an admitted instruction
+ok 4 - authenticated edits/deletes and same-ID replacement cannot rewrite an admitted instruction
+  ---
+  duration_ms: 13.82975
+  type: 'test'
+  ...
+# Subtest: private control proof binds exact task/version/kind and provider identity deduplicates control
+ok 5 - private control proof binds exact task/version/kind and provider identity deduplicates control
+  ---
+  duration_ms: 15.97925
+  type: 'test'
+  ...
+# Subtest: source revoke, auth loss and unload close asynchronous control without a late state mutation
+    # Subtest: disable
+    ok 1 - disable
+      ---
+      duration_ms: 13.368
+      type: 'test'
+      ...
+    # Subtest: permission
+    ok 2 - permission
+      ---
+      duration_ms: 11.879125
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 3 - dispose
+      ---
+      duration_ms: 13.398042
+      type: 'test'
+      ...
+    1..3
+ok 6 - source revoke, auth loss and unload close asynchronous control without a late state mutation
+  ---
+  duration_ms: 39.129292
+  type: 'test'
+  ...
+# Subtest: attachment descriptors and exact bytes are bound to admitted source/task and remain verifiable after reopen
+ok 7 - attachment descriptors and exact bytes are bound to admitted source/task and remain verifiable after reopen
+  ---
+  duration_ms: 15.65575
+  type: 'test'
+  ...
+# Subtest: unknown paths, descriptor quotas/digests/access and expiration refuse without a partial task
+    # Subtest: path
+    ok 1 - path
+      ---
+      duration_ms: 8.843458
+      type: 'test'
+      ...
+    # Subtest: bytes
+    ok 2 - bytes
+      ---
+      duration_ms: 8.306583
+      type: 'test'
+      ...
+    # Subtest: scope
+    ok 3 - scope
+      ---
+      duration_ms: 7.205167
+      type: 'test'
+      ...
+    # Subtest: access
+    ok 4 - access
+      ---
+      duration_ms: 8.093708
+      type: 'test'
+      ...
+    # Subtest: expired
+    ok 5 - expired
+      ---
+      duration_ms: 8.842666
+      type: 'test'
+      ...
+    # Subtest: duplicate
+    ok 6 - duplicate
+      ---
+      duration_ms: 7.850166
+      type: 'test'
+      ...
+    # Subtest: count
+    ok 7 - count
+      ---
+      duration_ms: 7.707208
+      type: 'test'
+      ...
+    1..7
+ok 8 - unknown paths, descriptor quotas/digests/access and expiration refuse without a partial task
+  ---
+  duration_ms: 57.297959
+  type: 'test'
+  ...
+# Subtest: owner-created context labels cannot mint trusted provider attachment proof
+ok 9 - owner-created context labels cannot mint trusted provider attachment proof
+  ---
+  duration_ms: 13.274375
+  type: 'test'
+  ...
+# Subtest: attachment provider mismatch, expiry and revoked permission after awaited download disclose no bytes
+    # Subtest: digest
+    ok 1 - digest
+      ---
+      duration_ms: 12.087958
+      type: 'test'
+      ...
+    # Subtest: revoke
+    ok 2 - revoke
+      ---
+      duration_ms: 11.277417
+      type: 'test'
+      ...
+    # Subtest: expire
+    ok 3 - expire
+      ---
+      duration_ms: 10.25
+      type: 'test'
+      ...
+    1..3
+ok 10 - attachment provider mismatch, expiry and revoked permission after awaited download disclose no bytes
+  ---
+  duration_ms: 33.864875
+  type: 'test'
+  ...
+# Subtest: outbound contract uses original private channel and separates sent, delivered and current access
+ok 11 - outbound contract uses original private channel and separates sent, delivered and current access
+  ---
+  duration_ms: 38.228125
+  type: 'test'
+  ...
+# Subtest: unknown send across reopen retains ownership and requires reconciliation before any retry
+ok 12 - unknown send across reopen retains ownership and requires reconciliation before any retry
+  ---
+  duration_ms: 40.895125
+  type: 'test'
+  ...
+# Subtest: wrong channel or disconnected outbound adapter performs zero callbacks and retains visible uncertainty
+    # Subtest: channel
+    ok 1 - channel
+      ---
+      duration_ms: 25.324584
+      type: 'test'
+      ...
+    # Subtest: disconnect
+    ok 2 - disconnect
+      ---
+      duration_ms: 28.419541
+      type: 'test'
+      ...
+    1..2
+ok 13 - wrong channel or disconnected outbound adapter performs zero callbacks and retains visible uncertainty
+  ---
+  duration_ms: 53.933833
+  type: 'test'
+  ...
+# Subtest: source rate refusal and malformed/secret payloads leave no partial task
+ok 14 - source rate refusal and malformed/secret payloads leave no partial task
+  ---
+  duration_ms: 10.557375
+  type: 'test'
+  ...
+# (node:44385) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent event registrations enforce 128 opaque entries and share 32 pending authenticate/ingest slots
+ok 15 - independent event registrations enforce 128 opaque entries and share 32 pending authenticate/ingest slots
+  ---
+  duration_ms: 25.716208
+  type: 'test'
+  ...
+# Subtest: independent event final currentness is synchronous strict true, errors stay redacted and pending slots release
+    # Subtest: promise
+    ok 1 - promise
+      ---
+      duration_ms: 16.734042
+      type: 'test'
+      ...
+    # Subtest: string
+    ok 2 - string
+      ---
+      duration_ms: 14.899833
+      type: 'test'
+      ...
+    # Subtest: throw
+    ok 3 - throw
+      ---
+      duration_ms: 15.036042
+      type: 'test'
+      ...
+    # Subtest: proof-provider
+    ok 4 - proof-provider
+      ---
+      duration_ms: 14.716708
+      type: 'test'
+      ...
+    # Subtest: proof-accessor
+    ok 5 - proof-accessor
+      ---
+      duration_ms: 13.144666
+      type: 'test'
+      ...
+    1..5
+ok 16 - independent event final currentness is synchronous strict true, errors stay redacted and pending slots release
+  ---
+  duration_ms: 75.0445
+  type: 'test'
+  ...
+# Subtest: independent event authenticate and ingress serialized UTF-8 boundary includes escaping and rejects N+1 before verification
+    # Subtest: 65535
+    ok 1 - 65535
+      ---
+      duration_ms: 15.139458
+      type: 'test'
+      ...
+    # Subtest: 65536
+    ok 2 - 65536
+      ---
+      duration_ms: 14.387125
+      type: 'test'
+      ...
+    # Subtest: 65537
+    ok 3 - 65537
+      ---
+      duration_ms: 9.553875
+      type: 'test'
+      ...
+    1..3
+ok 17 - independent event authenticate and ingress serialized UTF-8 boundary includes escaping and rejects N+1 before verification
+  ---
+  duration_ms: 39.662583
+  type: 'test'
+  ...
+# Subtest: independent event expiry is rechecked after normalization await and secret callback output cannot reach persistence
+    # Subtest: 99
+    ok 1 - 99
+      ---
+      duration_ms: 10.338125
+      type: 'test'
+      ...
+    # Subtest: 100
+    ok 2 - 100
+      ---
+      duration_ms: 10.091083
+      type: 'test'
+      ...
+    # Subtest: 101
+    ok 3 - 101
+      ---
+      duration_ms: 7.829125
+      type: 'test'
+      ...
+    # Subtest: secret
+    ok 4 - secret
+      ---
+      duration_ms: 7.623708
+      type: 'test'
+      ...
+    1..4
+ok 18 - independent event expiry is rechecked after normalization await and secret callback output cannot reach persistence
+  ---
+  duration_ms: 36.231959
+  type: 'test'
+  ...
+# Subtest: independent event normalizer await preserves captured payload and fences revoke/unregister/dispose before the ledger lock
+    # Subtest: capture
+    ok 1 - capture
+      ---
+      duration_ms: 8.491875
+      type: 'test'
+      ...
+    # Subtest: revoke
+    ok 2 - revoke
+      ---
+      duration_ms: 7.798042
+      type: 'test'
+      ...
+    # Subtest: unregister
+    ok 3 - unregister
+      ---
+      duration_ms: 6.270917
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 4 - dispose
+      ---
+      duration_ms: 6.333667
+      type: 'test'
+      ...
+    # Subtest: current
+    ok 5 - current
+      ---
+      duration_ms: 5.991292
+      type: 'test'
+      ...
+    1..5
+ok 19 - independent event normalizer await preserves captured payload and fences revoke/unregister/dispose before the ledger lock
+  ---
+  duration_ms: 35.219542
+  type: 'test'
+  ...
+# Subtest: independent event re-registration of the same provider identity under a new source cannot mint a second task or quota
+ok 20 - independent event re-registration of the same provider identity under a new source cannot mint a second task or quota
+  ---
+  duration_ms: 15.960083
+  type: 'test'
+  ...
+# Subtest: independent chat simultaneous exact provider control replies apply once; changing intent or chosen command never broadens authority
+ok 21 - independent chat simultaneous exact provider control replies apply once; changing intent or chosen command never broadens authority
+  ---
+  duration_ms: 16.958417
+  type: 'test'
+  ...
+# Subtest: independent chat status/control/attachment capture their 64KiB payload separately from exact request bindings
+    # Subtest: status:65535
+    ok 1 - status:65535
+      ---
+      duration_ms: 13.639792
+      type: 'test'
+      ...
+    # Subtest: status:65536
+    ok 2 - status:65536
+      ---
+      duration_ms: 12.233458
+      type: 'test'
+      ...
+    # Subtest: status:65537
+    ok 3 - status:65537
+      ---
+      duration_ms: 10.832
+      type: 'test'
+      ...
+    # Subtest: control:65535
+    ok 4 - control:65535
+      ---
+      duration_ms: 13.6595
+      type: 'test'
+      ...
+    # Subtest: control:65536
+    ok 5 - control:65536
+      ---
+      duration_ms: 14.488917
+      type: 'test'
+      ...
+    # Subtest: control:65537
+    ok 6 - control:65537
+      ---
+      duration_ms: 12.019125
+      type: 'test'
+      ...
+    # Subtest: attachment:65535
+    ok 7 - attachment:65535
+      ---
+      duration_ms: 12.691416
+      type: 'test'
+      ...
+    # Subtest: attachment:65536
+    ok 8 - attachment:65536
+      ---
+      duration_ms: 13.457333
+      type: 'test'
+      ...
+    # Subtest: attachment:65537
+    ok 9 - attachment:65537
+      ---
+      duration_ms: 10.781917
+      type: 'test'
+      ...
+    1..9
+ok 22 - independent chat status/control/attachment capture their 64KiB payload separately from exact request bindings
+  ---
+  duration_ms: 114.525584
+  type: 'test'
+  ...
+# Subtest: independent chat conflicting attachment descriptors in two authenticated event records stop before any download
+ok 23 - independent chat conflicting attachment descriptors in two authenticated event records stop before any download
+  ---
+  duration_ms: 13.8465
+  type: 'test'
+  ...
+# Subtest: independent chat attachment reads exact native view slots, copies bytes and ignores hostile view properties
+ok 24 - independent chat attachment reads exact native view slots, copies bytes and ignores hostile view properties
+  ---
+  duration_ms: 11.367834
+  type: 'test'
+  ...
+# Subtest: independent chat attachment expiry is exclusive and late private invalidation exposes no bytes
+    # Subtest: before
+    ok 1 - before
+      ---
+      duration_ms: 10.486167
+      type: 'test'
+      ...
+    # Subtest: exact
+    ok 2 - exact
+      ---
+      duration_ms: 11.957042
+      type: 'test'
+      ...
+    # Subtest: after
+    ok 3 - after
+      ---
+      duration_ms: 10.464583
+      type: 'test'
+      ...
+    # Subtest: revoke
+    ok 4 - revoke
+      ---
+      duration_ms: 8.786833
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 5 - dispose
+      ---
+      duration_ms: 8.379292
+      type: 'test'
+      ...
+    # Subtest: secret
+    ok 6 - secret
+      ---
+      duration_ms: 9.377417
+      type: 'test'
+      ...
+    1..6
+ok 25 - independent chat attachment expiry is exclusive and late private invalidation exposes no bytes
+  ---
+  duration_ms: 59.899
+  type: 'test'
+  ...
+# Subtest: independent chat outbound permission await cannot inherit a reconfigured route; already admitted outbox stays unknown-held
+ok 26 - independent chat outbound permission await cannot inherit a reconfigured route; already admitted outbox stays unknown-held
+  ---
+  duration_ms: 35.35325
+  type: 'test'
+  ...
+# Subtest: independent schedule registration and explicit timer cadence enforce their exact capacity and boundary values
+ok 27 - independent schedule registration and explicit timer cadence enforce their exact capacity and boundary values
+  ---
+  duration_ms: 28.1645
+  type: 'test'
+  ...
+# Subtest: independent schedule stop/unregister/dispose fences a fired timer awaiting permission before any durable admission
+    # Subtest: stop
+    ok 1 - stop
+      ---
+      duration_ms: 10.826791
+      type: 'test'
+      ...
+    # Subtest: restart
+    ok 2 - restart
+      ---
+      duration_ms: 10.00125
+      type: 'test'
+      ...
+    # Subtest: unregister
+    ok 3 - unregister
+      ---
+      duration_ms: 7.464834
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 4 - dispose
+      ---
+      duration_ms: 6.74975
+      type: 'test'
+      ...
+    1..4
+ok 28 - independent schedule stop/unregister/dispose fences a fired timer awaiting permission before any durable admission
+  ---
+  duration_ms: 35.423542
+  type: 'test'
+  ...
+# Subtest: independent schedule a callback already queued when stop clears its timer cannot begin authentication or reschedule
+ok 29 - independent schedule a callback already queued when stop clears its timer cannot begin authentication or reschedule
+  ---
+  duration_ms: 6.610083
+  type: 'test'
+  ...
+# Subtest: independent schedule persisted approved plan cannot cross a subscription revision after reopen
+ok 30 - independent schedule persisted approved plan cannot cross a subscription revision after reopen
+  ---
+  duration_ms: 12.490458
+  type: 'test'
+  ...
+# (node:44386) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: verified ingress commits encrypted task and complete identity once, survives reopen and does not consume duplicate quota
+ok 31 - verified ingress commits encrypted task and complete identity once, survives reopen and does not consume duplicate quota
+  ---
+  duration_ms: 24.407917
+  type: 'test'
+  ...
+# Subtest: same identity with edited content conflicts instead of replacing task intent
+ok 32 - same identity with edited content conflicts instead of replacing task intent
+  ---
+  duration_ms: 11.072625
+  type: 'test'
+  ...
+# Subtest: caller payload is captured before await; source revocation or callback currentness closes admission
+    # Subtest: mutate
+    ok 1 - mutate
+      ---
+      duration_ms: 11.258959
+      type: 'test'
+      ...
+    # Subtest: revoke
+    ok 2 - revoke
+      ---
+      duration_ms: 7.985416
+      type: 'test'
+      ...
+    # Subtest: currentness
+    ok 3 - currentness
+      ---
+      duration_ms: 7.197667
+      type: 'test'
+      ...
+    # Subtest: unload
+    ok 4 - unload
+      ---
+      duration_ms: 7.828708
+      type: 'test'
+      ...
+    1..4
+ok 33 - caller payload is captured before await; source revocation or callback currentness closes admission
+  ---
+  duration_ms: 34.661583
+  type: 'test'
+  ...
+# Subtest: identity flags, group claims and copied registration objects cannot replace private verifier admission
+ok 34 - identity flags, group claims and copied registration objects cannot replace private verifier admission
+  ---
+  duration_ms: 7.922333
+  type: 'test'
+  ...
+# Subtest: bad descriptors, malformed Unicode and known secrets reject before verification/persistence
+ok 35 - bad descriptors, malformed Unicode and known secrets reject before verification/persistence
+  ---
+  duration_ms: 9.001125
+  type: 'test'
+  ...
+# Subtest: expired, future and rate overflow fail with no partial task/quota commit
+ok 36 - expired, future and rate overflow fail with no partial task/quota commit
+  ---
+  duration_ms: 13.136667
+  type: 'test'
+  ...
+# Subtest: a registration with another source subscription cannot admit its privately verified event
+ok 37 - a registration with another source subscription cannot admit its privately verified event
+  ---
+  duration_ms: 9.835333
+  type: 'test'
+  ...
+# Subtest: missing provider identity is explicitly degraded to same command, without guaranteed resend deduplication
+ok 38 - missing provider identity is explicitly degraded to same command, without guaranteed resend deduplication
+  ---
+  duration_ms: 12.424625
+  type: 'test'
+  ...
+# Subtest: subscription changes cannot replay a complete original provider event into a new task
+ok 39 - subscription changes cannot replay a complete original provider event into a new task
+  ---
+  duration_ms: 12.658292
+  type: 'test'
+  ...
+# (node:44387) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: coalesced due ingress and cursor survive restart; no worker or effect is admitted by a clock
+ok 40 - coalesced due ingress and cursor survive restart; no worker or effect is admitted by a clock
+  ---
+  duration_ms: 44.085708
+  type: 'test'
+  ...
+# Subtest: missed verification is durable and only the exact private owner approval permits one ingress
+ok 41 - missed verification is durable and only the exact private owner approval permits one ingress
+  ---
+  duration_ms: 22.150292
+  type: 'test'
+  ...
+# Subtest: external-effect classification forces verification even under coalesce; approval still launches no effect
+ok 42 - external-effect classification forces verification even under coalesce; approval still launches no effect
+  ---
+  duration_ms: 15.856542
+  type: 'test'
+  ...
+# Subtest: skip and max-age expiry durably advance with no task or automatic catch-up
+    # Subtest: {"catchUp":"skip"}
+    ok 1 - {"catchUp":"skip"}
+      ---
+      duration_ms: 14.699458
+      type: 'test'
+      ...
+    # Subtest: {"maxAgeMs":0}
+    ok 2 - {"maxAgeMs":0}
+      ---
+      duration_ms: 14.561708
+      type: 'test'
+      ...
+    1..2
+ok 43 - skip and max-age expiry durably advance with no task or automatic catch-up
+  ---
+  duration_ms: 29.525791
+  type: 'test'
+  ...
+# Subtest: rate refusal keeps an approved missed plan and cursor intact for explicit reconciliation
+ok 44 - rate refusal keeps an approved missed plan and cursor intact for explicit reconciliation
+  ---
+  duration_ms: 12.840125
+  type: 'test'
+  ...
+# Subtest: source revision and revocation cannot inherit or approve an older missed-plan decision
+ok 45 - source revision and revocation cannot inherit or approve an older missed-plan decision
+  ---
+  duration_ms: 12.420791
+  type: 'test'
+  ...
+# Subtest: clock rollback and an over128 occurrence gap refuse without resetting a durable cursor
+ok 46 - clock rollback and an over128 occurrence gap refuse without resetting a durable cursor
+  ---
+  duration_ms: 11.656958
+  type: 'test'
+  ...
+# Subtest: an explicit future start remains idle through its boundary and admits only a later occurrence
+ok 47 - an explicit future start remains idle through its boundary and admits only a later occurrence
+  ---
+  duration_ms: 13.699875
+  type: 'test'
+  ...
+# Subtest: two independent driver instances race one durable occurrence into one task
+ok 48 - two independent driver instances race one durable occurrence into one task
+  ---
+  duration_ms: 12.177208
+  type: 'test'
+  ...
+# Subtest: permission, unload and source-disable races across asynchronous authentication admit nothing
+    # Subtest: permission
+    ok 1 - permission
+      ---
+      duration_ms: 7.815708
+      type: 'test'
+      ...
+    # Subtest: unload
+    ok 2 - unload
+      ---
+      duration_ms: 7.964583
+      type: 'test'
+      ...
+    # Subtest: disable
+    ok 3 - disable
+      ---
+      duration_ms: 8.056583
+      type: 'test'
+      ...
+    1..3
+ok 49 - permission, unload and source-disable races across asynchronous authentication admit nothing
+  ---
+  duration_ms: 24.096167
+  type: 'test'
+  ...
+# Subtest: host-scoped timer starts only on explicit request, uses bounded cadence, and cannot survive quit
+ok 50 - host-scoped timer starts only on explicit request, uses bounded cadence, and cannot survive quit
+  ---
+  duration_ms: 10.572959
+  type: 'test'
+  ...
+# Subtest: a failed status observer cannot turn admitted work into a second blocked notification
+ok 51 - a failed status observer cannot turn admitted work into a second blocked notification
+  ---
+  duration_ms: 10.796292
+  type: 'test'
+  ...
+# Subtest: copied registration, mutated policy and invalid binding cannot create private schedule authority
+ok 52 - copied registration, mutated policy and invalid binding cannot create private schedule authority
+  ---
+  duration_ms: 10.346416
+  type: 'test'
+  ...
+# Subtest: actual IANA fold planning plus durable restart does not repeat the first daily occurrence
+ok 53 - actual IANA fold planning plus durable restart does not repeat the first daily occurrence
+  ---
+  duration_ms: 66.525875
+  type: 'test'
+  ...
+1..53
+# tests 113
+# suites 0
+# pass 113
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 684.617833

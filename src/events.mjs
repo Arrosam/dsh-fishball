@@ -73,7 +73,9 @@ export class EventRouter {
     try { allowed = await entry.authorize(eventCapture({ ...binding, proof })); } catch { fail('EVENT_PERMISSION_DENIED'); }
     this.#check(entry); if (allowed !== true) fail('EVENT_PERMISSION_DENIED');
     this.assertAuthenticated(token, proof);
-    return eventCapture({ ...binding, proof, payload: captured, receivedAt });
+    // Each component was independently captured and recursively frozen above.
+    // Trusted envelope fields do not reduce the admitted payload byte limit.
+    return Object.freeze({ ...binding, proof, payload: captured, receivedAt });
   }
   async authenticate(token, payload) {
     this.#entry(token); if (this.#pending >= 32) fail('EVENT_ADAPTER_BUSY'); this.#pending++;
@@ -89,7 +91,9 @@ export class EventRouter {
     this.#entry(token); if (this.#pending >= 32) fail('EVENT_ADAPTER_BUSY'); this.#pending++;
     try {
       exact(input, ['commandRef', 'taskId', 'payload', 'clockRef', 'expectedCursor', 'scheduledAt', 'verificationPlanDigest'], ['commandRef', 'taskId', 'payload']);
-      ref(input.commandRef); reference(input.taskId); input = eventCapture(input, this.#secrets);
+      ref(input.commandRef); reference(input.taskId);
+      const { payload, ...metadata } = input;
+      input = Object.freeze({ ...eventCapture(metadata, this.#secrets), payload: eventCapture(payload, this.#secrets) });
       const authenticated = await this.#authenticate(token, input.payload), entry = this.#entry(token);
       if (authenticated.source.spec.kind === 'chat' && authenticated.proof.eventKind !== 'message') fail('EVENT_MUTATION_DENIED');
       let normalized;

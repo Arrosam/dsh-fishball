@@ -1,0 +1,258 @@
+TAP version 13
+# (node:43661) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent event registrations enforce 128 opaque entries and share 32 pending authenticate/ingest slots
+ok 1 - independent event registrations enforce 128 opaque entries and share 32 pending authenticate/ingest slots
+  ---
+  duration_ms: 28.085417
+  type: 'test'
+  ...
+# Subtest: independent event final currentness is synchronous strict true, errors stay redacted and pending slots release
+    # Subtest: promise
+    ok 1 - promise
+      ---
+      duration_ms: 15.206833
+      type: 'test'
+      ...
+    # Subtest: string
+    ok 2 - string
+      ---
+      duration_ms: 13.396417
+      type: 'test'
+      ...
+    # Subtest: throw
+    ok 3 - throw
+      ---
+      duration_ms: 14.641375
+      type: 'test'
+      ...
+    # Subtest: proof-provider
+    ok 4 - proof-provider
+      ---
+      duration_ms: 12.663209
+      type: 'test'
+      ...
+    # Subtest: proof-accessor
+    ok 5 - proof-accessor
+      ---
+      duration_ms: 11.906958
+      type: 'test'
+      ...
+    1..5
+ok 2 - independent event final currentness is synchronous strict true, errors stay redacted and pending slots release
+  ---
+  duration_ms: 68.275208
+  type: 'test'
+  ...
+# Subtest: independent event normalizer await preserves captured payload and fences revoke/unregister/dispose before the ledger lock
+    # Subtest: capture
+    ok 1 - capture
+      ---
+      duration_ms: 8.505125
+      type: 'test'
+      ...
+    # Subtest: revoke
+    ok 2 - revoke
+      ---
+      duration_ms: 6.882375
+      type: 'test'
+      ...
+    # Subtest: unregister
+    ok 3 - unregister
+      ---
+      duration_ms: 6.240667
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 4 - dispose
+      ---
+      duration_ms: 5.202042
+      type: 'test'
+      ...
+    # Subtest: current
+    ok 5 - current
+      ---
+      duration_ms: 4.986625
+      type: 'test'
+      ...
+    1..5
+ok 3 - independent event normalizer await preserves captured payload and fences revoke/unregister/dispose before the ledger lock
+  ---
+  duration_ms: 32.370833
+  type: 'test'
+  ...
+# Subtest: independent event re-registration of the same provider identity under a new source cannot mint a second task or quota
+ok 4 - independent event re-registration of the same provider identity under a new source cannot mint a second task or quota
+  ---
+  duration_ms: 13.430625
+  type: 'test'
+  ...
+# Subtest: independent chat simultaneous exact provider control replies apply once; changing intent or chosen command never broadens authority
+ok 5 - independent chat simultaneous exact provider control replies apply once; changing intent or chosen command never broadens authority
+  ---
+  duration_ms: 12.898875
+  type: 'test'
+  ...
+# Subtest: independent chat conflicting attachment descriptors in two authenticated event records stop before any download
+ok 6 - independent chat conflicting attachment descriptors in two authenticated event records stop before any download
+  ---
+  duration_ms: 15.575
+  type: 'test'
+  ...
+# Subtest: independent chat attachment reads exact native view slots, copies bytes and ignores hostile view properties
+ok 7 - independent chat attachment reads exact native view slots, copies bytes and ignores hostile view properties
+  ---
+  duration_ms: 11.035459
+  type: 'test'
+  ...
+# Subtest: independent chat attachment expiry is exclusive and late private invalidation exposes no bytes
+    # Subtest: before
+    ok 1 - before
+      ---
+      duration_ms: 10.131
+      type: 'test'
+      ...
+    # Subtest: exact
+    ok 2 - exact
+      ---
+      duration_ms: 9.617417
+      type: 'test'
+      ...
+    # Subtest: after
+    ok 3 - after
+      ---
+      duration_ms: 9.450208
+      type: 'test'
+      ...
+    # Subtest: revoke
+    ok 4 - revoke
+      ---
+      duration_ms: 9.349292
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 5 - dispose
+      ---
+      duration_ms: 9.209
+      type: 'test'
+      ...
+    # Subtest: secret
+    ok 6 - secret
+      ---
+      duration_ms: 10.662542
+      type: 'test'
+      ...
+    1..6
+ok 8 - independent chat attachment expiry is exclusive and late private invalidation exposes no bytes
+  ---
+  duration_ms: 58.895292
+  type: 'test'
+  ...
+# Subtest: independent chat outbound permission await cannot inherit a reconfigured route; already admitted outbox stays unknown-held
+ok 9 - independent chat outbound permission await cannot inherit a reconfigured route; already admitted outbox stays unknown-held
+  ---
+  duration_ms: 35.479
+  type: 'test'
+  ...
+# Subtest: independent schedule registration and explicit timer cadence enforce their exact capacity and boundary values
+ok 10 - independent schedule registration and explicit timer cadence enforce their exact capacity and boundary values
+  ---
+  duration_ms: 28.023666
+  type: 'test'
+  ...
+# Subtest: independent schedule stop/unregister/dispose fences a fired timer awaiting permission before any durable admission
+    # Subtest: stop
+    not ok 1 - stop
+      ---
+      duration_ms: 12.248958
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:296:65'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        unchangedIngress (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:72:40)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:303:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:296:57)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: unregister
+    ok 2 - unregister
+      ---
+      duration_ms: 7.2545
+      type: 'test'
+      ...
+    # Subtest: dispose
+    ok 3 - dispose
+      ---
+      duration_ms: 7.346125
+      type: 'test'
+      ...
+    1..3
+not ok 11 - independent schedule stop/unregister/dispose fences a fired timer awaiting permission before any durable admission
+  ---
+  duration_ms: 27.174291
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:295:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: independent schedule persisted approved plan cannot cross a subscription revision after reopen
+not ok 12 - independent schedule persisted approved plan cannot cross a subscription revision after reopen
+  ---
+  duration_ms: 10.382125
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:307:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      Comparison {
+    +   code: 'STALE_SOURCE'
+    -   code: 'NOT_FOUND'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 'NOT_FOUND'
+  actual:
+  error: 'STALE_SOURCE'
+  stack: |-
+    fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs:10:37)
+    #eventBinding (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs:1463:75)
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs:225:118
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs:203:58
+    Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs:198:18)
+    Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs:201:17)
+    #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs:224:25)
+    RuntimeStore.approveEventClock (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs:1620:21)
+    assert.throws.code (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:311:31)
+    getActual (node:assert:609:5)
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/event-adapters-adversarial.test.mjs:311:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..12
+# tests 31
+# suites 0
+# pass 28
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 471.584667

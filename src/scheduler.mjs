@@ -38,7 +38,8 @@ export class ScheduleDriver {
     if (!input.goal.trim() || typeof input.externalEffect !== 'boolean' || typeof input.authorize !== 'function' ||
         typeof input.isCurrent !== 'function') fail('SCHEDULE_REGISTRATION_INVALID');
     if (this.#entries.size >= 32) fail('SCHEDULE_CAPACITY');
-    const entry = { ...input, spec, scheduleDigest, active: true, busy: false, timer: null, polling: false };
+    const entry = { ...input, spec, scheduleDigest, active: true, busy: false, timer: null, polling: false,
+      pollEpoch: null, pendingPollEpoch: null };
     entry.clockRef = canonicalDigest({ sourceRef: entry.sourceRef, subscriptionRef: entry.subscriptionRef, scheduleDigest });
     entry.routerToken = this.#router.register({ sourceRef: entry.sourceRef, subscriptionRef: entry.subscriptionRef,
       adapterRef: entry.adapterRef, providerRef: entry.providerRef, sourceIdentityRef: entry.sourceIdentityRef,
@@ -49,7 +50,9 @@ export class ScheduleDriver {
         return { providerRef: entry.providerRef, sourceIdentityRef: entry.sourceIdentityRef,
           eventIdRef: payload.occurrenceRef, observedAt: payload.at };
       },
-      authorize: entry.authorize, isCurrent: proof => entry.active && entry.isCurrent(proof) === true,
+      authorize: entry.authorize, isCurrent: proof => entry.active &&
+        (entry.pendingPollEpoch === null || entry.polling && entry.pendingPollEpoch === entry.pollEpoch) &&
+        entry.isCurrent(proof) === true,
       normalize: () => ({ goal: entry.goal }) });
     const token = Object.freeze({});
     try { this.#binding(entry); this.#entries.set(token, entry); return token; }
@@ -75,9 +78,12 @@ export class ScheduleDriver {
       cursor: clock?.cursor ?? null, pendingVerification: clock?.pendingVerification ?? null,
       observedAt: now, polling: entry.polling });
   }
-  async tick(token) {
+  tick(token) { return this.#tick(token); }
+  async #tick(token, pollEpoch = null) {
     const entry = this.#entry(token); if (entry.busy) fail('SCHEDULE_BUSY'); entry.busy = true;
+    entry.pendingPollEpoch = pollEpoch;
     try {
+      if (pollEpoch !== null && (!entry.polling || entry.pollEpoch !== pollEpoch)) fail('SCHEDULE_STOPPED');
       const binding = this.#binding(entry), { source, subscription } = binding, now = this.#now();
       const clock = this.#store.eventClock(this.#host, { sourceRef: entry.sourceRef, subscriptionRef: entry.subscriptionRef, clockRef: entry.clockRef });
       const expectedCursor = clock?.cursor ?? null, after = expectedCursor ?? entry.startAfter;
@@ -119,31 +125,36 @@ export class ScheduleDriver {
         ...(clock?.pendingVerification ? { verificationPlanDigest: planDigest } : {}) });
       return eventCapture({ state: 'admitted', missedCount: occurrences.length, clockRef: entry.clockRef,
         occurrenceRef: due.occurrenceRef, scheduledAt: due.at, receipt });
-    } finally { entry.busy = false; }
+    } finally { entry.pendingPollEpoch = null; entry.busy = false; }
   }
   start(token, input) {
     const entry = this.#entry(token); exact(input, ['pollMs', 'onStatus']);
     integer(input.pollMs, 60000, 86400000); if (typeof input.onStatus !== 'function') fail('SCHEDULE_REGISTRATION_INVALID');
     const pollMs = input.pollMs, onStatus = input.onStatus;
     if (entry.polling) fail('SCHEDULE_ALREADY_RUNNING'); entry.polling = true;
+    const pollEpoch = Object.freeze({}); entry.pollEpoch = pollEpoch;
+    const current = () => entry.polling && entry.pollEpoch === pollEpoch;
     const schedule = () => {
-      this.#check(entry); if (!entry.polling) return;
+      this.#check(entry); if (!current()) return;
       entry.timer = this.#timers.set(async () => {
+        // A cleared callback may already be queued, or return after a restart.
+        // It must not clear, admit, publish or reschedule the new lifetime.
+        if (!current()) return;
         entry.timer = null;
         let result;
-        try { result = await this.tick(token); }
+        try { result = await this.#tick(token, pollEpoch); }
         catch { result = Object.freeze({ state: 'admission_blocked' }); }
-        try { this.#check(entry); if (entry.polling) onStatus(result); } catch {}
-        finally { try { if (entry.polling) schedule(); } catch { entry.polling = false; } }
+        try { this.#check(entry); if (current()) onStatus(result); } catch {}
+        finally { try { if (current()) schedule(); } catch { if (current()) { entry.polling = false; entry.pollEpoch = null; } } }
       }, pollMs);
       entry.timer?.unref?.();
     };
-    try { schedule(); } catch (error) { entry.polling = false; throw error; }
+    try { schedule(); } catch (error) { if (current()) { entry.polling = false; entry.pollEpoch = null; } throw error; }
   }
-  stop(token) { const entry = this.#entry(token); entry.polling = false; if (entry.timer !== null) this.#timers.clear(entry.timer); entry.timer = null; }
+  stop(token) { const entry = this.#entry(token); entry.polling = false; entry.pollEpoch = null; if (entry.timer !== null) this.#timers.clear(entry.timer); entry.timer = null; }
   unregister(token) {
     const entry = this.#entries.get(token); if (!entry) return;
-    entry.active = false; entry.polling = false; if (entry.timer !== null) this.#timers.clear(entry.timer);
+    entry.active = false; entry.polling = false; entry.pollEpoch = null; if (entry.timer !== null) this.#timers.clear(entry.timer);
     this.#router.unregister(entry.routerToken); this.#entries.delete(token);
   }
   dispose() { this.#active = false; for (const token of [...this.#entries.keys()]) this.unregister(token); }

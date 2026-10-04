@@ -12,6 +12,13 @@ const typedArray = Object.getPrototypeOf(Uint8Array.prototype);
 const arraySlot = key => Object.getOwnPropertyDescriptor(typedArray, key).get;
 const byteLength = arraySlot('byteLength'), byteOffset = arraySlot('byteOffset'), arrayBuffer = arraySlot('buffer');
 
+// Call only after the request's closed descriptors have been validated.
+// Payload quota excludes independently bounded task/control metadata.
+function captureRequest(input, secrets) {
+  const { payload, ...metadata } = input;
+  return Object.freeze({ ...eventCapture(metadata, secrets), payload: eventCapture(payload, secrets) });
+}
+
 export function chatChannel({ providerRef, sourceIdentityRef, route }) {
   ref(providerRef); ref(sourceIdentityRef); routeBinding(route);
   return canonicalDigest({ providerRef, sourceIdentityRef, principalRef: route.principalRef,
@@ -97,13 +104,13 @@ export class ChatAdapter {
     this.#check(); exact(input, ['commandRef', 'taskId', 'payload']); return this.#router.ingest(this.#token, input);
   }
   async status(input) {
-    this.#check(); exact(input, ['taskRef', 'payload']); input = eventCapture(input, this.#secrets);
+    this.#check(); exact(input, ['taskRef', 'payload']); input = captureRequest(input, this.#secrets);
     const admitted = await this.#authenticate(input.payload, 'status', { kind: 'status', taskRef: input.taskRef });
     return eventCapture(this.#store.chatTask(this.#host, this.#request(admitted, input.taskRef)), this.#secrets);
   }
   async control(input) {
     this.#check(); exact(input, ['taskRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'kind', 'payload']);
-    if (!['pause', 'resume', 'cancel'].includes(input.kind)) fail('CHAT_CONTROL_INVALID'); input = eventCapture(input, this.#secrets);
+    if (!['pause', 'resume', 'cancel'].includes(input.kind)) fail('CHAT_CONTROL_INVALID'); input = captureRequest(input, this.#secrets);
     const intent = { kind: 'control', taskRef: input.taskRef, expectedTaskVersion: input.expectedTaskVersion,
       expectedAuthEpoch: input.expectedAuthEpoch, control: input.kind };
     const admitted = await this.#authenticate(input.payload, 'control', intent);
@@ -115,7 +122,7 @@ export class ChatAdapter {
     return eventCapture(this.#store.chatControl(this.#host, { ...this.#request(admitted, input.taskRef), ...control, commandRef }), this.#secrets);
   }
   async readAttachment(input) {
-    this.#check(); exact(input, ['taskRef', 'attachmentRef', 'payload']); input = eventCapture(input, this.#secrets);
+    this.#check(); exact(input, ['taskRef', 'attachmentRef', 'payload']); input = captureRequest(input, this.#secrets);
     ref(input.attachmentRef); if (!this.#attachmentReader) fail('CHAT_ATTACHMENT_UNAVAILABLE');
     const admitted = await this.#authenticate(input.payload, 'attachment', { kind: 'attachment', taskRef: input.taskRef, attachmentRef: input.attachmentRef });
     const snapshot = this.#store.chatTask(this.#host, this.#request(admitted, input.taskRef));
