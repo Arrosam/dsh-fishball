@@ -347,9 +347,9 @@ test('independent installed original native owner carrier enforces no-write auth
   assert.equal(digest(readFileSync(statePaths(f).key)), keyHash); assert.equal(n.ctx.sessions.list().length, 0); assert.equal(n.server.server, undefined); await reload.dispose();
 });
 
-test('independent installed metadata is an explicit fourth export with original factory/client mappings unchanged', () => {
+test('independent installed and testing-provider metadata retains original factory/client mappings', () => {
   const metadata = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.deepEqual(metadata.exports, { '.': './src/index.mjs', './runtime': './src/runtime-plugin.mjs', './installed': './src/installed-plugin.mjs', './client': './lib/client.js' });
+  assert.deepEqual(metadata.exports, { '.': './src/index.mjs', './runtime': './src/runtime-plugin.mjs', './installed': './src/installed-plugin.mjs', './client': './lib/client.js', './testing-provider': './src/testing-provider.mjs' });
   assert.equal(metadata.name, 'dsh-fishball'); assert.equal(metadata.version, '0.1.0-preview.1'); assert.equal(metadata.license, 'MIT');
   assert.equal(Installed.default.apply, Installed.apply); assert.equal(Installed.default.Config, Installed.Config);
   assert.deepEqual(Installed.inject, ['connection', 'sessions', 'approval', 'webServer', 'profileContext']);

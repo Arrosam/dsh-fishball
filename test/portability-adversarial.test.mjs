@@ -76,9 +76,10 @@ test('independent portability metadata retains normal exports, preview, MIT and 
   const originalExports = { '.': './src/index.mjs', './runtime': './src/runtime-plugin.mjs', './client': './lib/client.js' };
   for (const [specifier, target] of Object.entries(originalExports)) assert.equal(metadata.exports[specifier], target);
   const installedExtension = Object.hasOwn(metadata.exports, './installed') ? { './installed': './src/installed-plugin.mjs' } : {};
-  // Explicit owner-authorized fourth entry; original artifact inputs retain
-  // their exact three-export contract. No arbitrary extra export is allowed.
-  assert.deepEqual(metadata.exports, { ...originalExports, ...installedExtension });
+  const testingExtension = Object.hasOwn(metadata.exports, './testing-provider') ? { './testing-provider': './src/testing-provider.mjs' } : {};
+  // Only the explicitly frozen installed and synthetic-provider additions;
+  // historical artifact inputs retain their exact former export contract.
+  assert.deepEqual(metadata.exports, { ...originalExports, ...installedExtension, ...testingExtension });
   for (const target of Object.values(metadata.exports)) {
     assert.equal(isAbsolute(target), false);
     const path = resolve(f.installed, target);
@@ -102,14 +103,14 @@ test('independent portability metadata retains exact official peer pins', t => {
 test('independent portability bare exports resolve inside a regular relocated package from an unrelated cwd', t => {
   const f = relocated(t);
   const result = child(f, `
-    const specifiers = ['dsh-fishball', 'dsh-fishball/runtime', 'dsh-fishball/client'${Object.hasOwn(packageMetadata.exports, './installed') ? ", 'dsh-fishball/installed'" : ''}];
+    const specifiers = ['dsh-fishball', 'dsh-fishball/runtime', 'dsh-fishball/client'${Object.hasOwn(packageMetadata.exports, './installed') ? ", 'dsh-fishball/installed'" : ''}${Object.hasOwn(packageMetadata.exports, './testing-provider') ? ", 'dsh-fishball/testing-provider'" : ''}];
     const resolved = specifiers.map(value => import.meta.resolve(value));
     assert.ok(resolved.every(value => value.startsWith(packageUrl) && !value.startsWith(new URL('file://' + original).href)));
     assert.equal(process.env.NODE_PATH, undefined);
     assert.equal(process.env.NODE_OPTIONS, undefined);
     console.log(JSON.stringify({ pathsInsideInstalledPackage: true, exports: resolved.length, hasNodePath: false }));
   `);
-  assert.deepEqual(result, { pathsInsideInstalledPackage: true, exports: Object.hasOwn(packageMetadata.exports, './installed') ? 4 : 3, hasNodePath: false });
+  assert.deepEqual(result, { pathsInsideInstalledPackage: true, exports: 3 + Number(Object.hasOwn(packageMetadata.exports, './installed')) + Number(Object.hasOwn(packageMetadata.exports, './testing-provider')), hasNodePath: false });
 });
 
 test('independent portability missing peers cannot obtain a supported probe from the development checkout', t => {
@@ -152,6 +153,11 @@ test('independent portability declares the complete bounded consumed peer set wi
   const expected = Object.fromEntries(alpha.map(name => [`@deepseek-ai/${name}`, '0.2.1-alpha.1']));
   expected['@deepseek-ai/cordis'] = '4.0.5-alpha.1';
   expected['@deepseek-ai/node-addon-system'] = expected['@deepseek-ai/node-addon-system-darwin-arm64'] = '0.1.2';
+  if (Object.hasOwn(packageMetadata.exports, './testing-provider')) {
+    expected['@deepseek-ai/cordis-plugin-loader'] = '1.0.6-alpha.1';
+    expected['@deepseek-ai/dsh-system-prompt'] = '0.2.1-alpha.1';
+    expected['@deepseek-ai/dsh-agent-preset-registry'] = '0.2.1-alpha.1';
+  }
   assert.deepEqual(metadata.peerDependencies, expected);
   assert.deepEqual(metadata.peerDependenciesMeta, { '@deepseek-ai/node-addon-system-darwin-arm64': { optional: true } });
 });

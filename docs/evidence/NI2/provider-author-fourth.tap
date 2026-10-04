@@ -1,0 +1,256 @@
+TAP version 13
+# (node:71507) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+ok 1 - exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+  ---
+  duration_ms: 28.338
+  type: 'test'
+  ...
+# Subtest: explicit context execution requires exact final consume and observes its own committed native result once
+ok 2 - explicit context execution requires exact final consume and observes its own committed native result once
+  ---
+  duration_ms: 22.39825
+  type: 'test'
+  ...
+# Subtest: denied or forged execution consume, changed environment and wrong immutable context never wake a native provider
+ok 3 - denied or forged execution consume, changed environment and wrong immutable context never wake a native provider
+  ---
+  duration_ms: 60.492042
+  type: 'test'
+  ...
+# Subtest: actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay
+ok 4 - actual encrypted context and JSONL session survive native teardown; resume is a new approved incarnation without replay
+  ---
+  duration_ms: 354.880166
+  type: 'test'
+  ...
+# Subtest: native default permission, changed environment, exact model effort and session binding fail before create
+ok 5 - native default permission, changed environment, exact model effort and session binding fail before create
+  ---
+  duration_ms: 12.354167
+  type: 'test'
+  ...
+# Subtest: resume requires trusted original session binding and unload closes borrowed adapter immediately
+ok 6 - resume requires trusted original session binding and unload closes borrowed adapter immediately
+  ---
+  duration_ms: 6.306958
+  type: 'test'
+  ...
+# Subtest: native creation requires opaque claimed ticket and fresh synchronous publication guard
+ok 7 - native creation requires opaque claimed ticket and fresh synchronous publication guard
+  ---
+  duration_ms: 8.149541
+  type: 'test'
+  ...
+# Subtest: actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+ok 8 - actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+  ---
+  duration_ms: 11.825916
+  type: 'test'
+  ...
+# Subtest: native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+ok 9 - native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+  ---
+  duration_ms: 9.926459
+  type: 'test'
+  ...
+# Subtest: resume uses exact trusted original ID on genuine public registry API with mock persistence
+ok 10 - resume uses exact trusted original ID on genuine public registry API with mock persistence
+  ---
+  duration_ms: 17.161542
+  type: 'test'
+  ...
+# Subtest: genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+ok 11 - genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+  ---
+  duration_ms: 10.715125
+  type: 'test'
+  ...
+# Subtest: native handoff retains bound original claim and safe context; no permission or environment switch is minted
+ok 12 - native handoff retains bound original claim and safe context; no permission or environment switch is minted
+  ---
+  duration_ms: 11.031917
+  type: 'test'
+  ...
+# Subtest: actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+ok 13 - actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+  ---
+  duration_ms: 100.719083
+  type: 'test'
+  ...
+# Subtest: actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+ok 14 - actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+  ---
+  duration_ms: 170.009375
+  type: 'test'
+  ...
+# Subtest: message native admission defaults deny even for a live owned worker and well-formed queued body
+ok 15 - message native admission defaults deny even for a live owned worker and well-formed queued body
+  ---
+  duration_ms: 16.237541
+  type: 'test'
+  ...
+# Subtest: genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+ok 16 - genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+  ---
+  duration_ms: 133.00775
+  type: 'test'
+  ...
+# Subtest: genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+ok 17 - genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+  ---
+  duration_ms: 163.75325
+  type: 'test'
+  ...
+# Subtest: actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard
+ok 18 - actual scoped monotonic guard vetoes late tools after extensible policy; changed schema blocks final execution and disposal removes only owned guard
+  ---
+  duration_ms: 12.196958
+  type: 'test'
+  ...
+# Subtest: public owned-session navigation reads survive permission denial but disappear after native teardown
+ok 19 - public owned-session navigation reads survive permission denial but disappear after native teardown
+  ---
+  duration_ms: 11.823125
+  type: 'test'
+  ...
+# (node:71509) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: testing-provider accepts only exact empty config without executing hostile descriptors
+ok 20 - testing-provider accepts only exact empty config without executing hostile descriptors
+  ---
+  duration_ms: 1.576584
+  type: 'test'
+  ...
+# Subtest: actual original Loader registration supplies bounded detached synthetic metadata and no boot session/files
+ok 21 - actual original Loader registration supplies bounded detached synthetic metadata and no boot session/files
+  ---
+  duration_ms: 31.637709
+  type: 'test'
+  ...
+# Subtest: private exact original owned request consumes once at actual iterator entry and records whole-request synthetic usage
+ok 22 - private exact original owned request consumes once at actual iterator entry and records whole-request synthetic usage
+  ---
+  duration_ms: 43.257083
+  type: 'test'
+  ...
+# Subtest: prepared stream after unrelated original adapter update loses synthetic binding before its iterator starts
+ok 23 - prepared stream after unrelated original adapter update loses synthetic binding before its iterator starts
+  ---
+  duration_ms: 28.985666
+  type: 'test'
+  ...
+# Subtest: late private seal and false/throw/promise current callbacks refuse output without raw canary
+    # Subtest: sealed
+    ok 1 - sealed
+      ---
+      duration_ms: 19.060417
+      type: 'test'
+      ...
+    # Subtest: false
+    ok 2 - false
+      ---
+      duration_ms: 22.015167
+      type: 'test'
+      ...
+    # Subtest: throw
+    ok 3 - throw
+      ---
+      duration_ms: 20.618666
+      type: 'test'
+      ...
+    # Subtest: promise
+    ok 4 - promise
+      ---
+      duration_ms: 23.940292
+      type: 'test'
+      ...
+    1..4
+ok 24 - late private seal and false/throw/promise current callbacks refuse output without raw canary
+  ---
+  duration_ms: 86.550042
+  type: 'test'
+  ...
+# Subtest: forged name/marker/direct request and mismatched real agent history never acquire a private permit
+ok 25 - forged name/marker/direct request and mismatched real agent history never acquire a private permit
+  ---
+  duration_ms: 27.42575
+  type: 'test'
+  ...
+# Subtest: current synthetic permit rejects changed exact input/options and retains no claimed usage
+    # Subtest: user-id
+    ok 1 - user-id
+      ---
+      duration_ms: 21.409042
+      type: 'test'
+      ...
+    # Subtest: user-text
+    ok 2 - user-text
+      ---
+      duration_ms: 24.914
+      type: 'test'
+      ...
+    # Subtest: system-text
+    ok 3 - system-text
+      ---
+      duration_ms: 23.872083
+      type: 'test'
+      ...
+    # Subtest: tool
+    ok 4 - tool
+      ---
+      duration_ms: 20.718916
+      type: 'test'
+      ...
+    # Subtest: purpose
+    ok 5 - purpose
+      ---
+      duration_ms: 21.511125
+      type: 'test'
+      ...
+    # Subtest: temperature
+    ok 6 - temperature
+      ---
+      duration_ms: 18.372291
+      type: 'test'
+      ...
+    # Subtest: stop
+    ok 7 - stop
+      ---
+      duration_ms: 19.014708
+      type: 'test'
+      ...
+    # Subtest: tokens
+    ok 8 - tokens
+      ---
+      duration_ms: 18.420084
+      type: 'test'
+      ...
+    # Subtest: session
+    ok 9 - session
+      ---
+      duration_ms: 20.126583
+      type: 'test'
+      ...
+    1..9
+ok 26 - current synthetic permit rejects changed exact input/options and retains no claimed usage
+  ---
+  duration_ms: 189.4165
+  type: 'test'
+  ...
+# Subtest: withdrawn original entry prevents both new bindings and already prepared iterator output
+ok 27 - withdrawn original entry prevents both new bindings and already prepared iterator output
+  ---
+  duration_ms: 19.460583
+  type: 'test'
+  ...
+1..27
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1357.560167

@@ -1,0 +1,448 @@
+TAP version 13
+# (node:71506) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent setup normal 0755 profile and parent are read-only until consent, then only private state is created
+ok 1 - independent setup normal 0755 profile and parent are read-only until consent, then only private state is created
+  ---
+  duration_ms: 78.68525
+  type: 'test'
+  ...
+# Subtest: independent setup relative depth 1 rejects, 2/15/16 allow volatile prepare, and 17 rejects without writes
+    # Subtest: depth-1
+    ok 1 - depth-1
+      ---
+      duration_ms: 0.862375
+      type: 'test'
+      ...
+    # Subtest: depth-2
+    ok 2 - depth-2
+      ---
+      duration_ms: 0.779875
+      type: 'test'
+      ...
+    # Subtest: depth-15
+    ok 3 - depth-15
+      ---
+      duration_ms: 1.022917
+      type: 'test'
+      ...
+    # Subtest: depth-16
+    ok 4 - depth-16
+      ---
+      duration_ms: 0.74625
+      type: 'test'
+      ...
+    # Subtest: depth-17
+    ok 5 - depth-17
+      ---
+      duration_ms: 0.517541
+      type: 'test'
+      ...
+    1..5
+ok 2 - independent setup relative depth 1 rejects, 2/15/16 allow volatile prepare, and 17 rejects without writes
+  ---
+  duration_ms: 6.278417
+  type: 'test'
+  ...
+# Subtest: independent setup lexical path-length 1023/1024/1025 and exact UTF-8 validity are separate from filesystem support
+    # Subtest: constructor-character-length-1023
+    ok 1 - constructor-character-length-1023
+      ---
+      duration_ms: 0.991208
+      type: 'test'
+      ...
+    # Subtest: constructor-character-length-1024
+    ok 2 - constructor-character-length-1024
+      ---
+      duration_ms: 0.843166
+      type: 'test'
+      ...
+    # Subtest: constructor-character-length-1025
+    ok 3 - constructor-character-length-1025
+      ---
+      duration_ms: 0.657833
+      type: 'test'
+      ...
+    1..3
+ok 3 - independent setup lexical path-length 1023/1024/1025 and exact UTF-8 validity are separate from filesystem support
+  ---
+  duration_ms: 7.308167
+  type: 'test'
+  ...
+# Subtest: independent setup hostile payloads are rejected without executing traps or persisting secret canaries
+ok 4 - independent setup hostile payloads are rejected without executing traps or persisting secret canaries
+  ---
+  duration_ms: 2.400458
+  type: 'test'
+  ...
+# Subtest: independent setup consent reference/digest are private-instance bound and require literal acceptance
+ok 5 - independent setup consent reference/digest are private-instance bound and require literal acceptance
+  ---
+  duration_ms: 68.035875
+  type: 'test'
+  ...
+# Subtest: independent setup final trusted callback expiry/abort and lifetime loss prevent the first write
+    # Subtest: expiry
+    ok 1 - expiry
+      ---
+      duration_ms: 2.266
+      type: 'test'
+      ...
+    # Subtest: abort
+    ok 2 - abort
+      ---
+      duration_ms: 1.774708
+      type: 'test'
+      ...
+    # Subtest: lifetime
+    ok 3 - lifetime
+      ---
+      duration_ms: 1.563542
+      type: 'test'
+      ...
+    1..3
+ok 6 - independent setup final trusted callback expiry/abort and lifetime loss prevent the first write
+  ---
+  duration_ms: 7.576209
+  type: 'test'
+  ...
+# Subtest: independent setup plan binds existing parent inode, profile identity and unsafe final mode
+    # Subtest: parent-inode
+    ok 1 - parent-inode
+      ---
+      duration_ms: 1.840791
+      type: 'test'
+      ...
+    # Subtest: profile-name
+    ok 2 - profile-name
+      ---
+      duration_ms: 1.191208
+      type: 'test'
+      ...
+    # Subtest: profile-writable
+    ok 3 - profile-writable
+      ---
+      duration_ms: 1.200583
+      type: 'test'
+      ...
+    1..3
+ok 7 - independent setup plan binds existing parent inode, profile identity and unsafe final mode
+  ---
+  duration_ms: 6.377083
+  type: 'test'
+  ...
+# Subtest: independent setup orphan sidecar links and directory entries refuse with exact preservation
+    # Subtest: dangling-wal
+    ok 1 - dangling-wal
+      ---
+      duration_ms: 2.13675
+      type: 'test'
+      ...
+    # Subtest: directory-shm
+    ok 2 - directory-shm
+      ---
+      duration_ms: 1.948958
+      type: 'test'
+      ...
+    # Subtest: hardlinked-journal
+    ok 3 - hardlinked-journal
+      ---
+      duration_ms: 2.60125
+      type: 'test'
+      ...
+    1..3
+ok 8 - independent setup orphan sidecar links and directory entries refuse with exact preservation
+  ---
+  duration_ms: 9.020208
+  type: 'test'
+  ...
+# Subtest: independent setup a real OS permission failure creates no ready state or replacement entries
+ok 9 - independent setup a real OS permission failure creates no ready state or replacement entries
+  ---
+  duration_ms: 3.115084
+  type: 'test'
+  ...
+# Subtest: independent setup late sidecar contender prevents target publication and partial state cannot replay
+ok 10 - independent setup late sidecar contender prevents target publication and partial state cannot replay
+  ---
+  duration_ms: 44.891042
+  type: 'test'
+  ...
+# Subtest: independent setup authenticated metadata byte boundary 4095/4096/4097 retains legitimate whitespace
+    # Subtest: metadata-bytes-4095
+    ok 1 - metadata-bytes-4095
+      ---
+      duration_ms: 73.152166
+      type: 'test'
+      ...
+    # Subtest: metadata-bytes-4096
+    ok 2 - metadata-bytes-4096
+      ---
+      duration_ms: 82.911375
+      type: 'test'
+      ...
+    # Subtest: metadata-bytes-4097
+    ok 3 - metadata-bytes-4097
+      ---
+      duration_ms: 78.322208
+      type: 'test'
+      ...
+    1..3
+ok 11 - independent setup authenticated metadata byte boundary 4095/4096/4097 retains legitimate whitespace
+  ---
+  duration_ms: 238.5215
+  type: 'test'
+  ...
+# Subtest: independent setup exact key length 31/32/33 and HMAC/format/private-file linkage reject without resealing
+    # Subtest: key31
+    ok 1 - key31
+      ---
+      duration_ms: 70.432042
+      type: 'test'
+      ...
+    # Subtest: key32
+    ok 2 - key32
+      ---
+      duration_ms: 67.737917
+      type: 'test'
+      ...
+    # Subtest: key33
+    ok 3 - key33
+      ---
+      duration_ms: 73.73175
+      type: 'test'
+      ...
+    # Subtest: bad-mac
+    ok 4 - bad-mac
+      ---
+      duration_ms: 70.771041
+      type: 'test'
+      ...
+    # Subtest: future-format
+    ok 5 - future-format
+      ---
+      duration_ms: 75.474292
+      type: 'test'
+      ...
+    # Subtest: key-hardlink
+    ok 6 - key-hardlink
+      ---
+      duration_ms: 73.416208
+      type: 'test'
+      ...
+    # Subtest: metadata-mode
+    ok 7 - metadata-mode
+      ---
+      duration_ms: 73.154916
+      type: 'test'
+      ...
+    1..7
+ok 12 - independent setup exact key length 31/32/33 and HMAC/format/private-file linkage reject without resealing
+  ---
+  duration_ms: 516.2215
+  type: 'test'
+  ...
+# Subtest: independent setup one pending confirmation, late disposal and callback errors preserve closed receipts and partial facts
+    # Subtest: throw-canary
+    ok 1 - throw-canary
+      ---
+      duration_ms: 62.9735
+      type: 'test'
+      ...
+    # Subtest: wrong-disposer
+    ok 2 - wrong-disposer
+      ---
+      duration_ms: 59.175
+      type: 'test'
+      ...
+    1..2
+ok 13 - independent setup one pending confirmation, late disposal and callback errors preserve closed receipts and partial facts
+  ---
+  duration_ms: 193.959916
+  type: 'test'
+  ...
+# Subtest: independent setup two already-prepared OS processes publish one namespace with no overwrite or extra key
+ok 14 - independent setup two already-prepared OS processes publish one namespace with no overwrite or extra key
+  ---
+  duration_ms: 251.656875
+  type: 'test'
+  ...
+# Subtest: independent setup actual process exits before commit and during staging preserve exact uncertainty boundary
+    # Subtest: precommit-crash
+    ok 1 - precommit-crash
+      ---
+      duration_ms: 92.451167
+      type: 'test'
+      ...
+    # Subtest: staging-crash
+    ok 2 - staging-crash
+      ---
+      duration_ms: 124.973334
+      type: 'test'
+      ...
+    1..2
+ok 15 - independent setup actual process exits before commit and during staging preserve exact uncertainty boundary
+  ---
+  duration_ms: 219.35725
+  type: 'test'
+  ...
+# Subtest: independent setup real post-ack abrupt exit retains one encrypted task, exact namespace/key and dedup without replay
+ok 16 - independent setup real post-ack abrupt exit retains one encrypted task, exact namespace/key and dedup without replay
+  ---
+  duration_ms: 171.441375
+  type: 'test'
+  ...
+# Subtest: independent installed original native owner carrier enforces no-write auth, explicit storage consent and own closure
+ok 17 - independent installed original native owner carrier enforces no-write auth, explicit storage consent and own closure
+  ---
+  duration_ms: 128.127458
+  type: 'test'
+  ...
+# Subtest: independent installed and testing-provider metadata retains original factory/client mappings
+ok 18 - independent installed and testing-provider metadata retains original factory/client mappings
+  ---
+  duration_ms: 0.281
+  type: 'test'
+  ...
+# Subtest: independent portability metadata retains normal exports, preview, MIT and native client dependencies
+ok 19 - independent portability metadata retains normal exports, preview, MIT and native client dependencies
+  ---
+  duration_ms: 23.505458
+  type: 'test'
+  ...
+# Subtest: independent portability metadata retains exact official peer pins
+ok 20 - independent portability metadata retains exact official peer pins
+  ---
+  duration_ms: 19.395458
+  type: 'test'
+  ...
+# Subtest: independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+ok 21 - independent portability bare exports resolve inside a regular relocated package from an unrelated cwd
+  ---
+  duration_ms: 115.013084
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers cannot obtain a supported probe from the development checkout
+ok 22 - independent portability missing peers cannot obtain a supported probe from the development checkout
+  ---
+  duration_ms: 140.947875
+  type: 'test'
+  ...
+# Subtest: independent portability missing peers deny foundation admission before identity callbacks or storage
+ok 23 - independent portability missing peers deny foundation admission before identity callbacks or storage
+  ---
+  duration_ms: 131.167416
+  type: 'test'
+  ...
+# Subtest: independent portability declares the complete bounded consumed peer set without changing platform capability gates
+ok 24 - independent portability declares the complete bounded consumed peer set without changing platform capability gates
+  ---
+  duration_ms: 68.196625
+  type: 'test'
+  ...
+# Subtest: independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts
+    # Subtest: genuine native class and every resolved public source belong to copied host, with all exact provenance checks true
+    ok 1 - genuine native class and every resolved public source belong to copied host, with all exact provenance checks true
+      ---
+      duration_ms: 186.05375
+      type: 'test'
+      ...
+    # Subtest: same-version physical duplicate dsh-session service fails with the genuine correct Context before identity or storage
+    ok 2 - same-version physical duplicate dsh-session service fails with the genuine correct Context before identity or storage
+      ---
+      duration_ms: 126.677791
+      type: 'test'
+      ...
+    # Subtest: same-version physical duplicate dsh-user-approval service fails with the genuine correct Context before identity or storage
+    ok 3 - same-version physical duplicate dsh-user-approval service fails with the genuine correct Context before identity or storage
+      ---
+      duration_ms: 117.976417
+      type: 'test'
+      ...
+    # Subtest: actual native Context missing sessions cannot invoke identity or create storage
+    ok 4 - actual native Context missing sessions cannot invoke identity or create storage
+      ---
+      duration_ms: 115.868667
+      type: 'test'
+      ...
+    # Subtest: actual native Context missing approval cannot invoke identity or create storage
+    ok 5 - actual native Context missing approval cannot invoke identity or create storage
+      ---
+      duration_ms: 115.604917
+      type: 'test'
+      ...
+    # Subtest: unselected physical duplicates do not override the coherent selected service origin
+    ok 6 - unselected physical duplicates do not override the coherent selected service origin
+      ---
+      duration_ms: 109.371083
+      type: 'test'
+      ...
+    # Subtest: helper rejects closed relative-source and package-name partitions with stable output
+    ok 7 - helper rejects closed relative-source and package-name partitions with stable output
+      ---
+      duration_ms: 101.934084
+      type: 'test'
+      ...
+    # Subtest: metadata-alias refuses source provenance without exposing private path or doing work
+    ok 8 - metadata-alias refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 107.688208
+      type: 'test'
+      ...
+    # Subtest: dangling-source refuses source provenance without exposing private path or doing work
+    ok 9 - dangling-source refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 107.23925
+      type: 'test'
+      ...
+    # Subtest: outside-source refuses source provenance without exposing private path or doing work
+    ok 10 - outside-source refuses source provenance without exposing private path or doing work
+      ---
+      duration_ms: 108.959708
+      type: 'test'
+      ...
+    # Subtest: a missing approval peer is refused rather than replaced by another same-version installation
+    ok 11 - a missing approval peer is refused rather than replaced by another same-version installation
+      ---
+      duration_ms: 109.037416
+      type: 'test'
+      ...
+    # Subtest: strict whole-lock policy rejects valid root metadata edits before identity and storage
+    ok 12 - strict whole-lock policy rejects valid root metadata edits before identity and storage
+      ---
+      duration_ms: 121.543834
+      type: 'test'
+      ...
+    # Subtest: ten owned installed-origin reloads keep one deduped entry, private scope and no orphan session
+    ok 13 - ten owned installed-origin reloads keep one deduped entry, private scope and no orphan session
+      ---
+      duration_ms: 165.33175
+      type: 'test'
+      ...
+    # Subtest: default foundation has no payload identity while a second installed-origin process preserves acknowledged scope and dedup
+    ok 14 - default foundation has no payload identity while a second installed-origin process preserves acknowledged scope and dedup
+      ---
+      duration_ms: 352.210792
+      type: 'test'
+      ...
+    # Subtest: separate installed-origin process retains unknown action reservation without automatic replay or new permission
+    ok 15 - separate installed-origin process retains unknown action reservation without automatic replay or new permission
+      ---
+      duration_ms: 221.078
+      type: 'test'
+      ...
+    1..15
+ok 25 - independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts
+  ---
+  duration_ms: 11076.229958
+  type: 'test'
+  ...
+1..25
+# tests 71
+# suites 0
+# pass 71
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11680.872084
