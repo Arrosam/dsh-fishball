@@ -1,0 +1,11 @@
+# Explicit owner approval preview: module checkpoint
+
+Root authored the private ApprovalPreview module and eight author tests. Separate code and ISTQB sessions reviewed it; their bounded verdicts and exact source hashes are in [code review](approval-preview-code-review.md) and [test review](approval-preview-test-review.md). This checkpoint covers the module only. Production encrypted/native/client composition is a separate integration gate.
+
+The owner sees exact scoped content and concrete trusted target/model/tools/environment/resource meaning before supplying an explicit grant expiry. Preparation has no grant or dispatch side effect. The originating private instance recognizes a preview reference but the reference supplies no operator identity. Grant rereads immutable data and current authority after awaited callbacks, serializes competing grants, and calls the sole authoritative store. Unknown cost remains unknown.
+
+The original author data-race test failed because the module did not reread data after the final resolver await; the final code does. Independent findings PREVIEW-CR01 (65 pending preparations exceeded capacity64) and PREVIEW-CR02 (callback-thrown exported error leaked an arbitrary code) were fixed with synchronous capacity reservations/finally and fixed callback error projection. Clock rollback and unload fence late callbacks. No failed oracle was removed or relaxed.
+
+Executed on2026-10-04 at11:47UTC: `node --test test/approval-preview.test.mjs test/approval-preview-adversarial.test.mjs`, Node22.22.2/macOS arm64. **31 PASS,0 FAIL,0 SKIP**, exit0,185.601958ms. This count includes eight author and23 independent cases; the code review's22 further fixture partitions overlap and are not added. Raw TAP and the exact executable/API manifest are retained beside this document.
+
+The store/resolver doubles check private handles and factual binding, and are not actual encryption, operator authentication, browser rendering, production catalog or dispatch proof. Final native composition must independently verify these against the pinned public host. No host process, provider/model, network, installation, account or remote Git operation occurred. Full ticket/MVP/regression/release acceptance remains pending.
