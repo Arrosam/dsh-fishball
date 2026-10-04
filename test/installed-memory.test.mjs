@@ -176,11 +176,22 @@ test('normal enabled native memory has no preconsent writes, exact owner admissi
   const intake = await f.good('intake', { taskId: 'synthetic-ni1-task', provider: 'fixture', source: 'synthetic', eventId: 'one', commandRef: reference('ni1-intake'), goal: 'Current synthetic goal; memory never approves work.' });
   const sourceSnapshot = await f.good('status', { taskRef: intake.task.taskRef });
   const sourceRef = sourceSnapshot.data.find(value => value.kind === 'goal').recordRef;
-  const fractional = await f.send('/df-rpc', 'memoryRemember', { commandRef: reference('ni1-fractional'), expectedRevision: 0, candidate: { kind: 'preference', content: { text: 'SYNTHETIC_FRACTIONAL_CONFIDENCE' }, sourceRefs: [sourceRef], observedAt: Date.now(), confidence: 0.9 } });
-  assert.equal(fractional.error.code, 'INVALID_INPUT'); assert.equal((await f.good('memoryRead')).revision, 0);
-  const remembered = await f.good('memoryRemember', { commandRef: reference('ni1-remember'), expectedRevision: 0, candidate: { kind: 'preference', content: { text: 'SYNTHETIC_NI1_MEMORY_PREFERENCE English' }, sourceRefs: [sourceRef], observedAt: Date.now(), confidence: 1 } }); assert.equal(remembered.revision, 1);
+  const request = { commandRef: reference('ni1-remember'), expectedRevision: 0, candidate: { kind: 'preference', content: { text: 'SYNTHETIC_NI1_MEMORY_PREFERENCE English' }, sourceRefs: [sourceRef], observedAt: Date.now(), confidence: 0.9, embedding: [-0.125, 0.5, 1] } };
+  const remembered = await f.good('memoryRemember', request); assert.equal(remembered.revision, 1);
+  const replay = await f.good('memoryRemember', request); assert.equal(replay.deduplicated, true); assert.equal(replay.revision, 1);
+  assert.equal((await f.send('/df-rpc', 'memoryRemember', { ...request, candidate: { ...request.candidate, confidence: 0.1 } })).error.code, 'IDEMPOTENCY_CONFLICT');
+  const memoryState = await f.good('memoryRead'); assert.equal(memoryState.revision, 1); assert.equal(memoryState.projection.facts[0].confidence, 0.9); assert.deepEqual(memoryState.projection.core.preferences[0].embedding, [-0.125, 0.5, 1]);
+  for (const invalid of [{ ...request, commandRef: reference('ni1-bad-revision'), expectedRevision: 1.5 }, { ...request, commandRef: reference('ni1-bad-time'), expectedRevision: 1, candidate: { ...request.candidate, observedAt: 1.5 } }, ...[-0.01, 1.01].map(confidence => ({ ...request, commandRef: reference(`ni1-bad-confidence-${confidence}`), expectedRevision: 1, candidate: { ...request.candidate, confidence } }))]) {
+    assert.equal((await f.send('/df-rpc', 'memoryRemember', invalid)).ok, false); assert.equal((await f.good('memoryRead')).revision, 1);
+  }
   const snapshot = await f.good('status', { taskRef: intake.task.taskRef });
-  const prepared = await f.good('prepareContext', { taskRef: snapshot.task.taskRef, commandRef: reference('ni1-prepare'), expectedTaskVersion: snapshot.task.version, expectedAuthEpoch: snapshot.task.authEpoch, terms: ['SYNTHETIC_NI1_MEMORY_PREFERENCE English'], now: Date.now() });
+  const prepare = { taskRef: snapshot.task.taskRef, commandRef: reference('ni1-prepare'), expectedTaskVersion: snapshot.task.version, expectedAuthEpoch: snapshot.task.authEpoch, terms: ['SYNTHETIC_NI1_MEMORY_PREFERENCE English'], vectors: [[-0.125, 0.5, 1]], now: Date.now() };
+  for (const field of ['expectedTaskVersion', 'expectedAuthEpoch', 'now', 'limit']) {
+    const rejected = await f.send('/df-rpc', 'prepareContext', { ...prepare, commandRef: reference(`ni1-bad-context-${field}`), [field]: 1.5 }); assert.equal(rejected.ok, false);
+    const current = await f.good('status', { taskRef: snapshot.task.taskRef }); assert.equal(current.task.version, snapshot.task.version); assert.equal(current.data.filter(value => value.kind === 'context').length, 0);
+  }
+  assert.equal((await f.send('/df-rpc', 'control', { taskRef: snapshot.task.taskRef, commandRef: reference('ni1-fractional-control'), expectedTaskVersion: snapshot.task.version + 0.5, expectedAuthEpoch: snapshot.task.authEpoch, kind: 'pause' })).error.code, 'INVALID_INPUT');
+  const prepared = await f.good('prepareContext', prepare);
   const after = await f.good('status', { taskRef: snapshot.task.taskRef }), detail = await f.good('detail', { taskRef: snapshot.task.taskRef, recordRef: prepared.recordRef, expectedTaskVersion: after.task.version, expectedAuthEpoch: after.task.authEpoch });
   const envelope = JSON.parse(detail.data.content); assert.equal(envelope.materialKind, 'execution_context'); assert.equal(envelope.memory.revision, 1); assert.ok(envelope.content.includes('Current synthetic goal')); assert.ok(envelope.content.includes('SYNTHETIC_NI1_MEMORY_PREFERENCE')); assert.equal(envelope.inputCounts.tokens, Math.ceil(envelope.content.length / 4) + 4);
   assert.equal(envelope.inputCounts.bytes, Buffer.byteLength(envelope.content)); assert.equal(digest(detail.data.content), prepared.digest); assert.equal(prepared.task.authEpoch, snapshot.task.authEpoch);
@@ -191,7 +202,7 @@ test('normal enabled native memory has no preconsent writes, exact owner admissi
   const disabled = f.ctx.plugin(Installed, { databasePath: f.databasePath }); await disabled; assert.equal((await f.send('/df-rpc', 'memoryRead')).error.code, 'CAPABILITY_UNAVAILABLE'); await disabled.dispose();
   for (let cycle = 0; cycle < 10; cycle++) {
     const current = f.ctx.plugin(Installed, { databasePath: f.databasePath, memory: { ...choice, tokenLimit: 8192 + cycle } }); await current;
-    const retained = await f.good('memoryRead'); assert.equal(retained.namespaceRef, read.namespaceRef); assert.equal(retained.revision, 1); assert.equal((await f.send('/df-setup', 'features')).value.memory.ready, true); assert.equal(f.ctx.sessions.list().length, 0); await current.dispose();
+    const retained = await f.good('memoryRead'); assert.equal(retained.namespaceRef, read.namespaceRef); assert.equal(retained.revision, 1); assert.equal(retained.projection.facts[0].confidence, 0.9); assert.deepEqual(retained.projection.core.preferences[0].embedding, [-0.125, 0.5, 1]); assert.equal((await f.send('/df-setup', 'features')).value.memory.ready, true); assert.equal(f.ctx.sessions.list().length, 0); await current.dispose();
   }
   assert.equal(digest(readFileSync(`${f.databasePath}.df-setup/key.bin`)), keyDigest); assert.equal(digest(readFileSync(`${f.databasePath}.df-setup/state.json`)), metadataDigest); assert.equal(f.server.server, undefined);
 });

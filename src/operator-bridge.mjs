@@ -29,11 +29,14 @@ for (const code of ['CLARIFICATION_STALE', 'CLARIFICATION_INCOMPLETE', 'CLARIFIC
 
 // Capture only JSON data. No accessor, proxy, inherited field or mutable caller
 // object can carry a capability into an asynchronous transport operation.
-function capture(value, depth = 0) {
+function capture(value, depth = 0, fractions = false) {
   if (depth > 12) fail('INPUT_TOO_LARGE');
   if (value === null || typeof value === 'boolean') return value;
   if (typeof value === 'string') { if (Buffer.byteLength(value) > 65536) fail('INPUT_TOO_LARGE'); return value; }
-  if (typeof value === 'number' && Number.isSafeInteger(value)) return value;
+  if (typeof value === 'number') {
+    if (Number.isSafeInteger(value) || fractions && Number.isFinite(value) && !Number.isInteger(value)) return value;
+    fail('INVALID_INPUT');
+  }
   if (!value || typeof value !== 'object' || types.isProxy(value)) fail('INVALID_INPUT');
   const array = Array.isArray(value), proto = Object.getPrototypeOf(value);
   if (proto !== (array ? Array.prototype : Object.prototype)) fail('INVALID_INPUT');
@@ -46,7 +49,7 @@ function capture(value, depth = 0) {
     const output = [];
     for (let i = 0; i < value.length; i++) {
       if (!Object.hasOwn(fields, String(i))) fail('INVALID_INPUT');
-      output.push(capture(fields[i].value, depth + 1));
+      output.push(capture(fields[i].value, depth + 1, fractions));
     }
     return Object.freeze(output);
   }
@@ -54,7 +57,7 @@ function capture(value, depth = 0) {
   for (const key of keys) {
     if (typeof key !== 'string' || !fields[key].enumerable || !Object.hasOwn(fields[key], 'value') ||
         ['__proto__', 'constructor', 'prototype'].includes(key)) fail('INVALID_INPUT');
-    output[key] = capture(fields[key].value, depth + 1);
+    output[key] = capture(fields[key].value, depth + 1, fractions);
   }
   return Object.freeze(output);
 }
@@ -84,10 +87,13 @@ export function installOperatorBridge({ connection, operations, isAlive = () => 
       if (!alive) return rejected('SERVICE_DISPOSED');
       if (admittedPeer !== peer) return rejected('OPERATOR_REQUIRED');
       if (signal?.aborted) return rejected('REQUEST_ABORTED');
-      const operation = typeof endpoint === 'string' && endpoint.startsWith(prefix) ? commands.get(endpoint.slice(prefix.length)) : undefined;
+      const name = typeof endpoint === 'string' && endpoint.startsWith(prefix) ? endpoint.slice(prefix.length) : undefined;
+      const operation = commands.get(name);
       if (!operation) return rejected('ENDPOINT_NOT_FOUND');
       try {
-        const input = capture(payload);
+        // Only the exact admitted installed operation selects this transport
+        // mode. Domain validators still reject fractional authority fields.
+        const input = capture(payload, 0, name === 'memoryRemember' || name === 'prepareContext');
         if (!input || Array.isArray(input) || typeof input !== 'object') fail('INVALID_INPUT');
         if (Buffer.byteLength(JSON.stringify(input)) > 65536) fail('INPUT_TOO_LARGE');
         // No awaits precede admission to the operation. Once an operation has
