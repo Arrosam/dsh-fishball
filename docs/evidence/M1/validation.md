@@ -63,6 +63,8 @@ The owner cancelled dsh-std before implementation and explicitly requested rollb
 
 Required rendered Web/visual and browser-window-close checks cannot run through the permitted tools: both browser surfaces return ERR_BLOCKED_BY_CLIENT. The Chrome blocker screenshot shows that client failure, not the DSH UI. No proxy, alternate port or security bypass was attempted. Root requested a permitted loopback testing surface; no answer/approval is inferred from elapsed time. Acceptance/squash waits for actual evidence or an explicit owner change to the gate.
 
+[Exact browser-blocker report](browser-blocker.md) records the surface operations, literal errors, policy-versus-reachability limits, affected AC and smallest missing capability requested by the parent.
+
 Once W1 convergence is accepted, proposed W2/M2 is coordinator → durable task → one native DSH worker → local artifact/result → independent check → native report/control. Freeze shared contracts before parallel002/008,004/011,005,012 and local013/014 work. Actual model inference needs separate bounded authorization; no model/profile-provider call is proposed as implicitly authorized here. Source-inspected agent/loop/sessionController APIs are candidates, not tested worker capability.
 
 All original001–016/007A/B/010A scope and Chinese source AC remain. Proposed W3 memory, W4 events/first chosen chat channel, W5 UI/results/runtime audit and W6 full preview MVP are mapped in [waves](../../waves.md). Provider selection, pinned fishball source/redistribution and main licenses, live identity/handoff, retention/event/UI/delivery and measured resource policies remain grouped in [decisions](../../decisions.md). No later scope is silently removed or called MVP.
