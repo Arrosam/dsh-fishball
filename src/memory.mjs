@@ -3,7 +3,7 @@
 import { types } from 'node:util';
 import { createHash } from 'node:crypto';
 import { FishballMemoryCore, MemoryError, migratePinnedFishball, preferenceFresh } from './fishball-memory-core.mjs';
-import { contextText, compactContext } from './context.mjs';
+import { contextText, compactContext, EXECUTION_CONTEXT_VERSION, validateExecutionContext } from './context.mjs';
 
 export const MEMORY_PROJECTION_VERSION = 'df.memory-projection/v1';
 export const LEGACY_MEMORY_PROJECTION_VERSION = 'bubbles.memory-projection/v1';
@@ -34,7 +34,7 @@ function ref(value) { if (typeof value !== 'string' || value.length !== 64 || !/
 function sources(value) { array(value); if (!value.length || new Set(value.map(ref)).size !== value.length) fail('MEMORY_INVALID'); return [...value]; }
 function confidence(value) { if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) fail('MEMORY_INVALID'); return value; }
 function freeze(value) { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; }
-const SAFE_CODES = new Set(['MEMORY_INVALID', 'MEMORY_LIMIT', 'MEMORY_CONFLICT', 'MEMORY_SCOPE', 'MEMORY_CORRUPT', 'MEMORY_DELETED', 'STALE_MEMORY', 'IDEMPOTENCY_CONFLICT', 'SECRET_REJECTED', 'KEY_MISMATCH', 'UNAUTHORIZED', 'STORAGE_INVALID', 'STORAGE_UNSUPPORTED', 'CAPACITY', 'COMMAND_CAPACITY', 'STALE_VERSION', 'STALE_AUTHORITY', 'STALE_GENERATION', 'TASK_NOT_FOUND', 'CONTEXT_LIMIT', 'CONTEXT_INVALID', 'TOKENIZER_UNAVAILABLE']);
+const SAFE_CODES = new Set(['MEMORY_INVALID', 'MEMORY_LIMIT', 'MEMORY_CONFLICT', 'MEMORY_SCOPE', 'MEMORY_CORRUPT', 'MEMORY_DELETED', 'STALE_MEMORY', 'IDEMPOTENCY_CONFLICT', 'SECRET_REJECTED', 'KEY_MISMATCH', 'UNAUTHORIZED', 'STORAGE_INVALID', 'STORAGE_UNSUPPORTED', 'CAPACITY', 'COMMAND_CAPACITY', 'STALE_VERSION', 'STALE_AUTHORITY', 'STALE_GENERATION', 'TASK_NOT_FOUND', 'CONTEXT_LIMIT', 'CONTEXT_INVALID', 'CONTEXT_RECURSION', 'SOURCE_UNAVAILABLE', 'CONTEXT_SCOPE', 'TOKENIZER_UNAVAILABLE', 'RECORD_LIMIT', 'INPUT_TOO_LARGE']);
 function guarded(call) { try { return call(); } catch (error) { fail(SAFE_CODES.has(error?.code) ? error.code : error instanceof MemoryError ? error.code : 'MEMORY_UNAVAILABLE'); } }
 
 export class MemoryAdapter {
@@ -243,10 +243,10 @@ export class MemoryAdapter {
     check(guarded(() => this.#store.task(this.#handle, input.taskRef)));
     return freeze({ authority: { task: clone(snapshot.task), actions: clone(snapshot.actions), currentInstructions: instructions }, memory, conflicts: memory.candidates.map(value => ({ id: value.fact.id, state: 'verify_against_current_authority', conflictRefs: value.provenance.conflictRefs })), verification: 'module_memory_projection_only' });
   }
-  async assembleContext(input) {
+  async #assemble(input) {
     exact(input, ['taskRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'generationRef', 'recordRefs', 'terms', 'vectors', 'now', 'limit'], ['taskRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'terms', 'now']);
     if (!this.#assembler || !this.#tokenize) fail('MEMORY_CONFIG');
-    ref(input.taskRef); integer(input.expectedTaskVersion, 1); integer(input.expectedAuthEpoch); integer(input.now); integer(input.limit ?? 10, 0, 256);
+    ref(input.taskRef); integer(input.expectedTaskVersion, 1); integer(input.expectedAuthEpoch); integer(input.now); integer(input.limit ?? 10, 0, 32);
     array(input.terms, 32); input.terms.forEach(value => this.#text(value, 8192));
     array(input.vectors ?? [], 32); for (const vector of input.vectors ?? []) { array(vector, 4096); if (vector.some(value => typeof value !== 'number' || !Number.isFinite(value) || !Number.isFinite(Math.fround(value)))) fail('MEMORY_INVALID'); }
     if (input.generationRef !== undefined) ref(input.generationRef);
@@ -261,6 +261,37 @@ export class MemoryAdapter {
     if (current.task.version !== input.expectedTaskVersion) fail('STALE_VERSION'); if (current.task.authEpoch !== input.expectedAuthEpoch) fail('STALE_AUTHORITY');
     if (input.generationRef !== undefined && !current.workers.some(worker => worker.generationRef === input.generationRef && !['stopped', 'not_created'].includes(worker.phase))) fail('STALE_GENERATION');
     if (this.#read().revision !== memory.revision) fail('STALE_MEMORY');
-    return freeze({ ...assembled, taskVersion: input.expectedTaskVersion, authEpoch: input.expectedAuthEpoch, namespaceRef: this.#namespace, memoryRevision: memory.revision, memoryProvenance: memory.candidates.map(value => value.provenance), conflicts: memory.candidates.map(value => ({ id: value.fact.id, state: 'verify_against_current_authority' })), verification: 'module_assembled_memory_input_only' });
+    return { input, context, memory, backgrounds, assembled, current };
+  }
+  #assemblyResult(unit, assembled = unit.assembled, additionallyDropped = []) {
+    const retained = new Set(assembled.retainedRefs);
+    const selectedMemory = unit.memory.candidates.filter((_candidate, index) => retained.has(unit.backgrounds[index].ref));
+    return { ...assembled, retainedRefs: [...new Set([...(unit.context.retainedRefs ?? []), ...assembled.retainedRefs])], droppedRefs: [...new Set([...(unit.context.droppedRefs ?? []), ...assembled.droppedRefs, ...additionallyDropped])], taskVersion: unit.input.expectedTaskVersion, authEpoch: unit.input.expectedAuthEpoch, namespaceRef: this.#namespace, memoryRevision: unit.memory.revision, memoryProvenance: selectedMemory.map(value => value.provenance), contextProvenance: unit.context.provenance, ledgerSnapshotDigest: unit.context.ledgerSnapshotDigest, conflicts: [...(unit.context.conflicts ?? []), ...unit.memory.candidates.map(value => ({ id: value.fact.id, state: 'verify_against_current_authority' }))], verification: 'module_assembled_memory_input_only' };
+  }
+  async assembleContext(input) { return freeze(this.#assemblyResult(await this.#assemble(input))); }
+  async prepareExecutionContext(input) {
+    exact(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'recordRefs', 'terms', 'vectors', 'now', 'limit'], ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'terms', 'now']);
+    ref(input.commandRef);
+    if (!['owner', 'coordinator'].includes(this.#binding.role) || typeof this.#store.putData !== 'function') fail('UNAUTHORIZED');
+    const commandRef = input.commandRef, assemblyInput = { ...input }; delete assemblyInput.commandRef;
+    const unit = await this.#assemble(assemblyInput), expectedMemory = { namespaceRef: this.#namespace, revision: unit.memory.revision };
+    if (unit.current.control !== 'active' || ['completed', 'failed', 'cancelled', 'deleted', 'cancel_requested', 'recovery_required'].includes(unit.current.task.status)) fail('EXECUTION_BLOCKED');
+    const generatedAt = integer(unit.current.observedAt), sourceScope = { ...this.#scope(), taskRef: unit.input.taskRef };
+    let assembled = unit.assembled; const backgrounds = [...unit.backgrounds], extraDropped = [];
+    let envelope, content, result;
+    for (;;) {
+      result = this.#assemblyResult(unit, assembled, extraDropped);
+      const sourceProvenance = clone(result.contextProvenance);
+      envelope = { contractVersion: EXECUTION_CONTEXT_VERSION, materialKind: 'execution_context', sourceScope, sourceTaskVersion: unit.input.expectedTaskVersion, sourceAuthEpoch: unit.input.expectedAuthEpoch, generatedAt, sourceRefs: sourceProvenance.map(source => source.recordRef), sourceProvenance, memory: { ...expectedMemory, provenance: clone(result.memoryProvenance) }, ledgerSnapshotDigest: result.ledgerSnapshotDigest, content: assembled.text, inputCounts: { bytes: assembled.bytes, tokens: assembled.tokens }, retainedRefs: result.retainedRefs, droppedRefs: result.droppedRefs, verification: 'module_prepared_execution_context_only' };
+      guarded(() => validateExecutionContext(envelope, { scope: sourceScope, maxTaskVersion: unit.input.expectedTaskVersion, maxAuthEpoch: unit.input.expectedAuthEpoch, maxGeneratedAt: generatedAt, knownSecrets: this.#secrets }));
+      content = JSON.stringify(envelope);
+      if (Buffer.byteLength(content, 'utf8') <= 65536) break;
+      const last = backgrounds.pop(); if (!last) fail('CONTEXT_LIMIT'); extraDropped.push(last.ref);
+      assembled = guarded(() => compactContext({ protectedText: unit.context.text, backgrounds, ...this.#limits, tokenize: this.#tokenize, knownSecrets: this.#secrets }));
+    }
+    this.#text(content);
+    const receipt = guarded(() => this.#store.putData(this.#handle, { taskRef: unit.input.taskRef, commandRef, kind: 'context', content, sourceRef: digest(JSON.stringify({ sourceScope, sourceTaskVersion: envelope.sourceTaskVersion, sourceAuthEpoch: envelope.sourceAuthEpoch, sourceRefs: envelope.sourceRefs, expectedMemory })), expectedTaskVersion: unit.input.expectedTaskVersion, expectedAuthEpoch: unit.input.expectedAuthEpoch, expectedMemory }));
+    if (receipt?.kind !== 'context' || receipt?.digest !== digest(content) || receipt?.byteLength !== Buffer.byteLength(content) || receipt?.task?.taskRef !== unit.input.taskRef || receipt?.task?.version !== unit.input.expectedTaskVersion + 1 || receipt?.task?.authEpoch !== unit.input.expectedAuthEpoch || receipt?.generationRef !== null || receipt?.sourceTaskVersion !== envelope.sourceTaskVersion || receipt?.sourceAuthEpoch !== envelope.sourceAuthEpoch || receipt?.memoryNamespaceRef !== expectedMemory.namespaceRef || receipt?.memoryRevision !== expectedMemory.revision || receipt?.cryptoVersion !== 2) fail('CONTEXT_UNCERTAIN');
+    return freeze({ recordRef: receipt.recordRef, digest: receipt.digest, kind: receipt.kind, byteLength: receipt.byteLength, cryptoVersion: receipt.cryptoVersion, sourceRef: receipt.sourceRef, task: clone(receipt.task), sourceTaskVersion: receipt.sourceTaskVersion, sourceAuthEpoch: receipt.sourceAuthEpoch, memory: expectedMemory, inputCounts: envelope.inputCounts, retainedRefs: envelope.retainedRefs, droppedRefs: envelope.droppedRefs, verification: 'module_prepared_execution_context_only' });
   }
 }

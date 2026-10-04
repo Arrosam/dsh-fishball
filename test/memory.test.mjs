@@ -158,7 +158,7 @@ test('assembly awaits captured immutable request then refuses changed memory or 
     x.store.snapshot = () => ({ task: { ...task }, workers: [] });
     const contextAssembler = { assemble() { return new Promise(resolve => { finish = resolve; }); } };
     const memory = new MemoryAdapter({ store: x.store, handle: x.coordinator, namespaceRef: ref(8), contextAssembler, tokenize: text => text.length }); memory.remember(remember(0, 'language preference'));
-    const input = { taskRef: ref(20), expectedTaskVersion: 3, expectedAuthEpoch: 1, ...query };
+    const input = { taskRef: ref(20), expectedTaskVersion: 3, expectedAuthEpoch: 1, ...query, terms: [...query.terms] };
     const pending = memory.assembleContext(input); input.expectedTaskVersion = 4; input.terms[0] = 'mutated';
     if (changed === 'memory') memory.remember(remember(1, 'second language preference', 11)); else task.version++;
     finish({ text: 'current authoritative goal and no approval' });
@@ -230,8 +230,9 @@ test('actual separate OS processes race memory CAS with one committed winner and
   const storePath = fileURLToPath(new URL('../src/runtime-store.mjs', import.meta.url)), adapterPath = fileURLToPath(new URL('../src/memory.mjs', import.meta.url));
   const run = index => {
     const script = `import {RuntimeStore} from ${JSON.stringify(storePath)};import {MemoryAdapter} from ${JSON.stringify(adapterPath)};const handle={};const store=new RuntimeStore({databasePath:${JSON.stringify(x.databasePath)},encryptionKey:Buffer.alloc(32,5),principals:[{handle,role:'coordinator',scope:{ownerId:'synthetic-owner',workspaceId:'synthetic-workspace'}}]});const memory=new MemoryAdapter({store,handle,namespaceRef:${JSON.stringify(ref(8))}});console.log('READY');process.stdin.once('data',()=>{try{const receipt=memory.remember(${JSON.stringify(remember(1, 'language preference winner-' + index, 100 + index))});console.log(JSON.stringify({state:'committed',revision:receipt.revision,id:receipt.result.id}));}catch(error){console.log(JSON.stringify({state:'rejected',code:error.code}));}store.close();});`;
-    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['pipe', 'pipe', 'pipe'] }); let text = '', error = '', ready;
-    const barrier = new Promise(resolve => { ready = resolve; }); child.stdout.on('data', bytes => { text += bytes; if (text.includes('READY\n')) ready(); }); child.stderr.on('data', bytes => { error += bytes; });
+    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['pipe', 'pipe', 'pipe'] }); let text = '', error = '', ready, early;
+    const barrier = new Promise((resolve, reject) => { ready = resolve; early = reject; }); child.stdout.on('data', bytes => { text += bytes; if (text.includes('READY\n')) ready(); }); child.stderr.on('data', bytes => { error += bytes; });
+    child.on('error', early); child.on('exit', code => { if (!text.includes('READY\n')) early(new Error(`Process exited before barrier (${code}): ${error}`)); });
     const done = new Promise((resolve, reject) => { child.on('error', reject); child.on('exit', code => resolve({ code, text, error })); }); t.after(() => child.kill()); return { child, barrier, done };
   };
   const contestants = [run(0), run(1)]; await Promise.all(contestants.map(value => value.barrier)); contestants.forEach(value => value.child.stdin.end('GO'));
@@ -240,10 +241,190 @@ test('actual separate OS processes race memory CAS with one committed winner and
   assert.equal(memory.state().revision, 2); assert.deepEqual(memory.state().projection.facts.map(value => value.id), [1, 2]);
 });
 
+test('actual abrupt process exit before commit and after acknowledgement preserves durable memory and command causality', { skip: durablePending && 'core schema4 memory API pending', timeout: 10000 }, async t => {
+  const { spawn } = await import('node:child_process'); const { fileURLToPath } = await import('node:url');
+  const x = await runtimeFixture(t), baseline = new MemoryAdapter({ store: x.store, handle: x.handle, namespaceRef: ref(8) });
+  baseline.remember(remember(0, 'language preference baseline'));
+  const storePath = fileURLToPath(new URL('../src/runtime-store.mjs', import.meta.url)), adapterPath = fileURLToPath(new URL('../src/memory.mjs', import.meta.url));
+  for (const point of ['before_commit', 'after_acknowledgement']) {
+    const script = `import {RuntimeStore} from ${JSON.stringify(storePath)};import {MemoryAdapter} from ${JSON.stringify(adapterPath)};const handle={};const store=new RuntimeStore({databasePath:${JSON.stringify(x.databasePath)},encryptionKey:Buffer.alloc(32,5),principals:[{handle,role:'coordinator',scope:{ownerId:'synthetic-owner',workspaceId:'synthetic-workspace'}}],fixtureMode:true,fixtureFaults(point){if(${JSON.stringify(point)}==='before_commit'&&point==='before_commit')process.exit(73);}});const memory=new MemoryAdapter({store,handle,namespaceRef:${JSON.stringify(ref(8))}});memory.remember(${JSON.stringify(remember(1, 'language preference acknowledged', 11))});process.exit(73);`;
+    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] }); let stderr = ''; child.stderr.on('data', bytes => { stderr += bytes; }); t.after(() => child.kill());
+    const code = await new Promise((resolve, reject) => { child.on('error', reject); child.on('exit', resolve); }); assert.equal(code, 73, stderr);
+    x.reopen(); const reopened = new MemoryAdapter({ store: x.store, handle: x.handle, namespaceRef: ref(8) });
+    if (point === 'before_commit') {
+      assert.equal(reopened.state().revision, 1); assert.deepEqual(reopened.state().projection.facts.map(fact => fact.id), [1]);
+      assert.equal(x.store.memoryCommandReceipt(x.handle, { namespaceRef: ref(8), commandRef: ref(11), requestDigest: ref(12) }), null);
+      assert.equal(reopened.retrieve({ terms: ['acknowledged'], now: 1000 }).candidates.length, 0);
+    } else {
+      assert.equal(reopened.state().revision, 2); assert.deepEqual(reopened.state().projection.facts.map(fact => fact.id), [1, 2]);
+      const replay = reopened.remember(remember(1, 'language preference acknowledged', 11)); assert.equal(replay.deduplicated, true); assert.equal(replay.revision, 2);
+      assert.equal(reopened.remember(remember(2, 'language preference subsequent', 12)).result.id, 3);
+    }
+  }
+});
+
 test('persisted core null/false/zero rejects without normalizing corrupt projection to empty memory', () => {
   for (const invalid of [null, false, 0]) {
     const x = fixture(), memory = new MemoryAdapter({ store: x.store, handle: x.coordinator, namespaceRef: ref(8) }); memory.remember(remember(0, 'language preference retained'));
     const row = [...x.rows.values()][0], projection = JSON.parse(row.content); projection.core = invalid; projection.facts = []; row.content = JSON.stringify(projection); row.digest = hash(row.content);
     rejects(() => memory.state(), 'MEMORY_INVALID'); rejects(() => memory.remember(remember(1, 'corrupt replacement', 11)), 'MEMORY_INVALID'); assert.equal(x.writes, 1);
   }
+});
+
+async function executionFixture(t, options = {}) {
+  const { ContextAssembler } = await import('../src/context.mjs');
+  const x = await runtimeFixture(t, { clock: () => 1000 });
+  const first = x.store.intake(x.handle, { taskId: 'synthetic-prepared-task', provider: 'synthetic', source: 'unit', eventId: 'first', commandRef: ref(300), goal: options.goal ?? 'latest synthetic goal' }).task;
+  const task = x.store.revise(x.handle, { taskRef: first.taskRef, commandRef: ref(301), expectedTaskVersion: first.version, expectedAuthEpoch: first.authEpoch, reason: 'operator', constraints: options.constraints ?? 'FRONT no network\nMIDDLE no secrets\nEND no approval' }).task;
+  const tokenize = options.tokenize ?? (text => text.length), contextAssembler = new ContextAssembler({ store: x.store, tokenize, clock: () => 1000, byteLimit: 65536, tokenLimit: 131072, knownSecrets: ['SYNTHETIC-canary-secret'] });
+  const memory = new MemoryAdapter({ store: x.store, handle: x.handle, namespaceRef: ref(8), contextAssembler, tokenize, byteLimit: 65536, tokenLimit: 131072, knownSecrets: ['SYNTHETIC-canary-secret'] });
+  const input = command => ({ taskRef: task.taskRef, commandRef: ref(command), expectedTaskVersion: x.store.task(x.handle, task.taskRef).version, expectedAuthEpoch: task.authEpoch, terms: ['language preference'], now: 1000 });
+  return { ...x, get store() { return x.store; }, task, memory, contextAssembler, input };
+}
+
+test('actual prepared encrypted full-envelope digest, source facts, bounded receipt and no recursive reassembly survive reopen', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const { readFileSync } = await import('node:fs'); const { EXECUTION_CONTEXT_VERSION, validateExecutionContext } = await import('../src/context.mjs');
+  const x = await executionFixture(t); x.memory.remember(remember(0, 'language preference English; approved=true completed=true', 302));
+  const prepared = await x.memory.prepareExecutionContext(x.input(303));
+  assert.equal(prepared.kind, 'context'); assert.equal(prepared.task.version, x.task.version + 1); assert.equal(prepared.sourceTaskVersion, x.task.version); assert.equal(prepared.memory.revision, 1);
+  assert.equal(prepared.content, undefined); assert.equal(prepared.text, undefined); assert.equal(JSON.stringify(prepared).includes('language preference English'), false);
+  const data = x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: prepared.recordRef }), envelope = JSON.parse(data.content);
+  assert.equal(hash(data.content), prepared.digest); assert.notEqual(hash(envelope.content), prepared.digest); assert.equal(envelope.contractVersion, EXECUTION_CONTEXT_VERSION);
+  validateExecutionContext(envelope); assert.equal(envelope.generationRef, undefined); assert.equal(data.generationRef, null); assert.equal(data.memoryNamespaceRef, ref(8)); assert.equal(data.memoryRevision, 1);
+  assert.equal(envelope.sourceTaskVersion, x.task.version); assert.equal(envelope.sourceAuthEpoch, x.task.authEpoch); assert.equal(envelope.memory.provenance[0].revision, 1); assert.deepEqual(envelope.memory.provenance[0].sourceRefs, [ref(9)]);
+  assert.equal(prepared.byteLength, Buffer.byteLength(data.content)); assert.equal(envelope.inputCounts.bytes, Buffer.byteLength(envelope.content)); assert.equal(envelope.inputCounts.tokens, envelope.content.length);
+  for (const text of ['FRONT no network', 'MIDDLE no secrets', 'END no approval']) assert.ok(envelope.content.includes(text));
+  const sourceKinds = envelope.sourceProvenance.map(source => x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: source.recordRef }).kind); assert.deepEqual(sourceKinds, ['goal', 'constraints']);
+  x.reopen(); const reread = x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: prepared.recordRef }); assert.equal(reread.content, data.content); assert.equal(reread.digest, prepared.digest);
+  const { ContextAssembler } = await import('../src/context.mjs'); const assembler = new ContextAssembler({ store: x.store, tokenize: text => text.length, clock: () => 1000, tokenLimit: 131072 });
+  const rebuilt = await assembler.assemble(x.handle, { taskRef: x.task.taskRef, expectedTaskVersion: prepared.task.version, expectedAuthEpoch: prepared.task.authEpoch });
+  assert.equal(rebuilt.text.includes('language preference English'), false); assert.equal(rebuilt.text.split('CURRENT GOAL').length - 1, 1); assert.equal(rebuilt.provenance.some(source => source.recordRef === prepared.recordRef), false);
+  await assert.rejects(assembler.assemble(x.handle, { taskRef: x.task.taskRef, expectedTaskVersion: prepared.task.version, expectedAuthEpoch: prepared.task.authEpoch, recordRefs: [prepared.recordRef] }), error => error.code === 'CONTEXT_RECURSION');
+  const bytes = readFileSync(x.databasePath).toString('utf8'); for (const text of ['latest synthetic goal', 'FRONT no network', 'language preference English', 'SYNTHETIC-canary-secret']) assert.equal(bytes.includes(text), false);
+});
+
+test('actual preparation atomic guard rejects newly created, corrected, deleted memory and concurrent task correction', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  for (const change of ['absent_created', 'live_corrected', 'live_deleted', 'task_corrected']) {
+    await t.test(change, async child => {
+      const x = await executionFixture(child);
+      if (change !== 'absent_created') x.memory.remember(remember(0, 'language preference baseline', 310));
+      const before = x.store.snapshot(x.handle, { taskRef: x.task.taskRef }), original = x.store.putData.bind(x.store);
+      x.store.putData = (handle, request) => {
+        x.store.putData = original;
+        if (change === 'absent_created') x.memory.remember(remember(0, 'language preference created after read', 311));
+        if (change === 'live_corrected') x.memory.correct({ commandRef: ref(312), expectedRevision: 1, id: 1, expectedFactRevision: 1, candidate: candidate('language preference corrected after read') });
+        if (change === 'live_deleted') new MemoryAdapter({ store: x.store, handle: x.owner, namespaceRef: ref(8) }).deleteNamespace({ commandRef: ref(313), expectedRevision: 1 });
+        if (change === 'task_corrected') x.store.revise(x.handle, { taskRef: x.task.taskRef, commandRef: ref(314), expectedTaskVersion: before.task.version, expectedAuthEpoch: before.task.authEpoch, goal: 'current corrected goal', reason: 'operator' });
+        return original(handle, request);
+      };
+      await assert.rejects(x.memory.prepareExecutionContext(x.input(315)), error => error.code === (change === 'task_corrected' ? 'STALE_VERSION' : 'STALE_MEMORY'));
+      assert.equal(x.store.listData(x.handle, { taskRef: x.task.taskRef, kind: 'context' }).length, 0);
+      assert.equal(x.store.task(x.handle, x.task.taskRef).version, before.task.version + (change === 'task_corrected' ? 1 : 0));
+    });
+  }
+});
+
+test('actual complete serialized64KiB context boundary accounts JSON escaping and protects minimum rather than trimming', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const x = await executionFixture(t, { goal: '"'.repeat(20000), constraints: 'FRONT deny\nMIDDLE deny\nEND deny' });
+  const prepared = await x.memory.prepareExecutionContext(x.input(320)); assert.ok(prepared.byteLength <= 65536);
+  const record = x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: prepared.recordRef }); assert.equal(JSON.parse(record.content).content.includes('"'.repeat(20000)), true);
+  await t.test('protected text fits raw input but escapes past encrypted record cap', async child => {
+    const y = await executionFixture(child, { goal: '"'.repeat(32500) });
+    const before = y.store.task(y.handle, y.task.taskRef).version;
+    await assert.rejects(y.memory.prepareExecutionContext(y.input(321)), error => error.code === 'CONTEXT_LIMIT');
+    assert.equal(y.store.task(y.handle, y.task.taskRef).version, before); assert.equal(y.store.listData(y.handle, { taskRef: y.task.taskRef, kind: 'context' }).length, 0);
+  });
+});
+
+test('actual complete execution envelope exact serialized byte N-1/N/N+1 boundary with escaped source text', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const baseline = await executionFixture(t, { goal: '"'.repeat(20000) }), measured = await baseline.memory.prepareExecutionContext(baseline.input(330));
+  for (const target of [65535, 65536, 65537]) {
+    await t.test(String(target), async child => {
+      const padding = target - measured.byteLength; assert.ok(padding > 0);
+      const x = await executionFixture(child, { goal: '"'.repeat(20000) + 'x'.repeat(padding) }), request = x.input(330), version = request.expectedTaskVersion;
+      if (target > 65536) {
+        await assert.rejects(x.memory.prepareExecutionContext(request), error => error.code === 'CONTEXT_LIMIT');
+        assert.equal(x.store.task(x.handle, x.task.taskRef).version, version); assert.equal(x.store.listData(x.handle, { taskRef: x.task.taskRef, kind: 'context' }).length, 0);
+      } else {
+        const receipt = await x.memory.prepareExecutionContext(request); assert.equal(receipt.byteLength, target);
+        assert.equal(Buffer.byteLength(x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: receipt.recordRef }).content), target);
+      }
+    });
+  }
+});
+
+test('actual encrypted extraction boundary rejects known secret before callback or persistence', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const x = await runtimeFixture(t); let calls = 0;
+  const memory = new MemoryAdapter({ store: x.store, handle: x.handle, namespaceRef: ref(8), knownSecrets: ['SYNTHETIC-canary-secret'], extractFacts() { calls++; return []; } });
+  await assert.rejects(memory.extract({ commandRef: ref(340), expectedRevision: 0, content: 'SYNTHETIC-canary-secret', sourceRefs: [ref(9)], observedAt: 1000 }), error => error.code === 'SECRET_REJECTED');
+  assert.equal(calls, 0); assert.equal(x.store.getMemory(x.handle, { namespaceRef: ref(8) }), null); assert.equal(x.store.listMemory(x.handle).length, 0);
+  x.reopen(); assert.equal(x.store.getMemory(x.handle, { namespaceRef: ref(8) }), null);
+});
+
+test('actual prepared-context write fault preserves task version, data rows and encrypted reopen state', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const { ContextAssembler } = await import('../src/context.mjs'); let armed = false;
+  const x = await runtimeFixture(t, { clock: () => 1000, fixtureMode: true, fixtureFaults(point) { if (armed && point === 'before_commit') throw Error('SYNTHETIC-canary-secret'); } });
+  const task = x.store.intake(x.handle, { taskId: 'synthetic-fault-task', provider: 'synthetic', source: 'unit', eventId: 'first', commandRef: ref(350), goal: 'current synthetic goal' }).task;
+  const tokenize = text => text.length, assembler = new ContextAssembler({ store: x.store, tokenize, clock: () => 1000 });
+  const memory = new MemoryAdapter({ store: x.store, handle: x.handle, namespaceRef: ref(8), contextAssembler: assembler, tokenize });
+  const request = { taskRef: task.taskRef, commandRef: ref(351), expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch, terms: [], now: 1000 };
+  armed = true; await assert.rejects(memory.prepareExecutionContext(request), error => error.code === 'MEMORY_UNAVAILABLE' && error.message === 'MEMORY_UNAVAILABLE'); armed = false;
+  assert.equal(x.store.task(x.handle, task.taskRef).version, task.version); assert.equal(x.store.listData(x.handle, { taskRef: task.taskRef, kind: 'context' }).length, 0);
+  x.reopen(); assert.equal(x.store.task(x.handle, task.taskRef).version, task.version); assert.equal(x.store.listData(x.handle, { taskRef: task.taskRef, kind: 'context' }).length, 0);
+  const restoredAssembler = new ContextAssembler({ store: x.store, tokenize, clock: () => 1000 }), restored = new MemoryAdapter({ store: x.store, handle: x.handle, namespaceRef: ref(8), contextAssembler: restoredAssembler, tokenize });
+  const receipt = await restored.prepareExecutionContext(request); assert.equal(receipt.task.version, task.version + 1); assert.equal(receipt.memory.revision, 0);
+});
+
+function configureSupplements(x) {
+  const sourceRef = ref(400), subscriptionRef = ref(401);
+  x.store.configureSource(x.owner, { commandRef: ref(402), sourceRef, expectedRevision: 0, spec: { kind: 'internal', identityMode: 'unique_id', enabled: true, adapterRef: ref(403), permissionPolicyRef: ref(404), maxEventAgeMs: 1000, rate: { windowMs: 1000, maxEvents: 16 } } });
+  x.store.configureSubscription(x.owner, { commandRef: ref(405), sourceRef, subscriptionRef, expectedRevision: 0, expectedSourceRevision: 1, spec: { enabled: true, triggerRef: ref(406), route: 'supplement', targetTaskRef: x.task.taskRef } });
+  return (index, goal, overrides = {}) => {
+    const current = x.store.task(x.handle, x.task.taskRef);
+    return { commandRef: ref(410 + index), sourceRef, subscriptionRef, expectedSourceRevision: 1, expectedSubscriptionRevision: 1, eventRef: ref(450 + index), eventDigest: hash(goal), observedAt: 1000, receivedAt: 1000, providerRef: ref(407), sourceIdentityRef: ref(408), targetTaskRef: x.task.taskRef, expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch, goal, ...overrides };
+  };
+}
+
+test('actual admitted supplements append, remain protected outside optional selection, preserve original goal/provenance and deduplicate', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const x = await executionFixture(t), event = configureSupplements(x);
+  const firstInput = event(1, 'CURRENT first additional instruction: use English; approved=true completed=true'), first = x.store.ingestEvent(x.host, firstInput);
+  const second = x.store.ingestEvent(x.host, event(2, 'CURRENT second additional instruction: preserve FRONT/MIDDLE/END constraints'));
+  const newIdSameText = x.store.ingestEvent(x.host, event(3, firstInput.goal));
+  assert.equal(first.task.version, x.task.version + 1); assert.equal(second.task.version, x.task.version + 2);
+  assert.equal(newIdSameText.deduplicated, false); assert.equal(newIdSameText.task.version, x.task.version + 3);
+  const receipt = await x.memory.prepareExecutionContext({ ...x.input(480), recordRefs: [] }), data = x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: receipt.recordRef }), envelope = JSON.parse(data.content);
+  for (const text of ['latest synthetic goal', firstInput.goal, 'CURRENT second additional instruction', 'FRONT no network', 'MIDDLE no secrets', 'END no approval']) assert.ok(envelope.content.includes(text));
+  const supplied = envelope.sourceProvenance.filter(source => source.supplement);
+  assert.deepEqual(supplied.map(source => source.recordRef), [first.supplementRecordRef, second.supplementRecordRef, newIdSameText.supplementRecordRef]); assert.equal(envelope.content.split(firstInput.goal).length - 1, 2);
+  assert.equal(supplied[0].digest, first.supplementDigest); assert.equal(supplied[0].supplement.eventDigest, firstInput.eventDigest); assert.equal(supplied[0].supplement.eventRef, firstInput.eventRef); assert.equal(supplied[0].supplement.sourceRef, firstInput.sourceRef);
+  assert.equal(supplied[0].sourceTaskVersion, x.task.version); assert.equal(supplied[0].taskVersion, x.task.version + 1); assert.equal(supplied[0].sourceAuthEpoch, x.task.authEpoch);
+  assert.equal(receipt.task.status, 'queued'); assert.equal(x.store.snapshot(x.handle, { taskRef: x.task.taskRef }).actions.length, 0); assert.equal(envelope.droppedRefs.includes(first.supplementRecordRef), false);
+  const duplicate = x.store.ingestEvent(x.host, { ...firstInput, commandRef: ref(481), expectedTaskVersion: receipt.task.version });
+  assert.equal(duplicate.deduplicated, true); assert.equal(duplicate.supplementRecordRef, first.supplementRecordRef); assert.equal(duplicate.task.version, receipt.task.version);
+  assert.equal(x.store.listData(x.handle, { taskRef: x.task.taskRef, kind: 'context' }).length, 4);
+  assert.throws(() => x.store.ingestEvent(x.host, event(7, 'changed duplicate content', { eventRef: firstInput.eventRef })), error => error.code === 'IDEMPOTENCY_CONFLICT');
+  assert.throws(() => x.store.ingestEvent(x.host, event(4, 'stale instruction', { expectedTaskVersion: x.task.version })), error => error.code === 'STALE_VERSION');
+  assert.throws(() => x.store.readData(x.foreign, { taskRef: x.task.taskRef, recordRef: first.supplementRecordRef }), error => error.code === 'RECORD_NOT_FOUND');
+  x.reopen(); const read = x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: receipt.recordRef }); assert.equal(read.content, data.content);
+});
+
+test('actual supplement secret admission and protected byte minimum refuse without dropped instructions or phantom preparation', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const x = await executionFixture(t, { goal: 'g'.repeat(30000) }), event = configureSupplements(x), before = x.store.task(x.handle, x.task.taskRef).version;
+  assert.throws(() => x.store.ingestEvent(x.host, event(1, 'SYNTHETIC-canary-secret')), error => error.code === 'SECRET_REJECTED');
+  assert.equal(x.store.task(x.handle, x.task.taskRef).version, before); assert.equal(x.store.listData(x.handle, { taskRef: x.task.taskRef, kind: 'context' }).length, 0);
+  const admitted = x.store.ingestEvent(x.host, event(2, 's'.repeat(40000))), current = x.store.task(x.handle, x.task.taskRef).version;
+  await assert.rejects(x.memory.prepareExecutionContext({ ...x.input(482), recordRefs: [] }), error => error.code === 'CONTEXT_LIMIT');
+  assert.equal(x.store.task(x.handle, x.task.taskRef).version, current); assert.equal(x.store.listData(x.handle, { taskRef: x.task.taskRef, kind: 'context' }).length, 1);
+  assert.equal(JSON.parse(x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: admitted.supplementRecordRef }).content).content.length, 40000);
+});
+
+test('actual supplement arriving at preparation commit invalidates CAS; later source disable preserves admitted current instruction', { skip: durablePending && 'core schema4 memory API pending' }, async t => {
+  const x = await executionFixture(t), event = configureSupplements(x), original = x.store.putData.bind(x.store);
+  x.store.putData = (handle, request) => { x.store.putData = original; x.store.ingestEvent(x.host, event(1, 'CURRENT additional instruction admitted during preparation')); return original(handle, request); };
+  await assert.rejects(x.memory.prepareExecutionContext({ ...x.input(490), recordRefs: [] }), error => error.code === 'STALE_VERSION');
+  assert.equal(x.store.task(x.handle, x.task.taskRef).version, x.task.version + 1); assert.equal(x.store.listData(x.handle, { taskRef: x.task.taskRef, kind: 'context' }).length, 1);
+  const source = x.store.source(x.owner, { sourceRef: ref(400) });
+  x.store.configureSource(x.owner, { commandRef: ref(491), sourceRef: source.sourceRef, expectedRevision: source.revision, spec: { ...source.spec, enabled: false } });
+  const prepared = await x.memory.prepareExecutionContext({ ...x.input(492), recordRefs: [] }), envelope = JSON.parse(x.store.readData(x.handle, { taskRef: x.task.taskRef, recordRef: prepared.recordRef }).content);
+  assert.ok(envelope.content.includes('CURRENT additional instruction admitted during preparation')); assert.equal(envelope.sourceProvenance.filter(source => source.supplement).length, 1);
 });
