@@ -1,0 +1,218 @@
+TAP version 13
+# (node:53194) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sanitized Web environment confines actual filesystem provider default roots
+not ok 1 - sanitized Web environment confines actual filesystem provider default roots
+  ---
+  duration_ms: 76.503708
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/bootstrap.test.mjs:10:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/package_json_reader:314
+      throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+            ^
+    
+    Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'undefined' imported from /Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/[eval1]
+        at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+        at packageResolve (node:internal/modules/esm/resolve:768:81)
+        at moduleResolve (node:internal/modules/esm/resolve:855:18)
+        at defaultResolve (node:internal/modules/esm/resolve:985:11)
+        at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+        at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+        at ModuleLoader.import (node:internal/modules/esm/loader:663:21) {
+      code: 'ERR_MODULE_NOT_FOUND'
+    }
+    
+    Node.js v22.22.2
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    packageResolve (node:internal/modules/esm/resolve:768:81)
+    moduleResolve (node:internal/modules/esm/resolve:855:18)
+    defaultResolve (node:internal/modules/esm/resolve:985:11)
+    #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+    ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+    onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+    TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    ModuleLoader.import (node:internal/modules/esm/loader:663:21) {
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/bootstrap.test.mjs:22:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: host output masks URL credentials across chunks and suppresses oversized lines
+ok 2 - host output masks URL credentials across chunks and suppresses oversized lines
+  ---
+  duration_ms: 0.34275
+  type: 'test'
+  ...
+# Subtest: configuration defaults are immutable and input remains unchanged
+ok 3 - configuration defaults are immutable and input remains unchanged
+  ---
+  duration_ms: 0.254292
+  type: 'test'
+  ...
+# Subtest: malformed config and unsupported targets fail with redacted stable codes
+ok 4 - malformed config and unsupported targets fail with redacted stable codes
+  ---
+  duration_ms: 0.689
+  type: 'test'
+  ...
+# Subtest: each limit rejects invalid type, zero, negatives and fractions
+ok 5 - each limit rejects invalid type, zero, negatives and fractions
+  ---
+  duration_ms: 1.105
+  type: 'test'
+  ...
+# Subtest: metadata minimum matches core at N-1, N and N+1 before storage opens
+ok 6 - metadata minimum matches core at N-1, N and N+1 before storage opens
+  ---
+  duration_ms: 0.720416
+  type: 'test'
+  ...
+# Subtest: hidden valid and invalid limits reject before defaults can weaken explicit caps
+ok 7 - hidden valid and invalid limits reject before defaults can weaken explicit caps
+  ---
+  duration_ms: 0.212875
+  type: 'test'
+  ...
+# Subtest: synchronous Cordis Standard Schema emits only stable issue codes
+ok 8 - synchronous Cordis Standard Schema emits only stable issue codes
+  ---
+  duration_ms: 0.073584
+  type: 'test'
+  ...
+# Subtest: operation record rejects hostile and revoked proxies before any traps run
+ok 9 - operation record rejects hostile and revoked proxies before any traps run
+  ---
+  duration_ms: 0.317291
+  type: 'test'
+  ...
+# Subtest: version strings and handmade capability lookalikes cannot pass native provenance
+ok 10 - version strings and handmade capability lookalikes cannot pass native provenance
+  ---
+  duration_ms: 1.062666
+  type: 'test'
+  ...
+# Subtest: installed public Cordis host fixture validates lifecycle and ten reloads
+not ok 11 - installed public Cordis host fixture validates lifecycle and ten reloads
+  ---
+  duration_ms: 87.564208
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/bootstrap.test.mjs:137:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    node:internal/modules/esm/resolve:275
+        throw new ERR_MODULE_NOT_FOUND(
+              ^
+    
+    Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/undefined/node_modules/@deepseek-ai/cordis/lib/index.js' imported from /Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/scripts/host-smoke.mjs
+        at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        at moduleResolve (node:internal/modules/esm/resolve:861:10)
+        at defaultResolve (node:internal/modules/esm/resolve:985:11)
+        at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+        at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+        at ModuleLoader.import (node:internal/modules/esm/loader:663:21)
+        at defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31) {
+      code: 'ERR_MODULE_NOT_FOUND',
+      url: 'file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/undefined/node_modules/@deepseek-ai/cordis/lib/index.js'
+    }
+    
+    Node.js v22.22.2
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    moduleResolve (node:internal/modules/esm/resolve:861:10)
+    defaultResolve (node:internal/modules/esm/resolve:985:11)
+    #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+    ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+    onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+    TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    ModuleLoader.import (node:internal/modules/esm/loader:663:21)
+    defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31) {
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/bootstrap.test.mjs:142:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs:28
+#   } catch { throw new BootstrapError('HOST_CAPABILITY_UNSUPPORTED'); }
+#                   ^
+# BootstrapError: HOST_CAPABILITY_UNSUPPORTED
+#     at resolveHostSource (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs:28:19)
+#     at file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/native-adapter.mjs:9:48 {
+#   code: 'HOST_CAPABILITY_UNSUPPORTED'
+# }
+# Node.js v22.22.2
+# Subtest: test/native-adapter.test.mjs
+not ok 2 - test/native-adapter.test.mjs
+  ---
+  duration_ms: 99.002792
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/native-adapter.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs:28
+#   } catch { throw new BootstrapError('HOST_CAPABILITY_UNSUPPORTED'); }
+#                   ^
+# BootstrapError: HOST_CAPABILITY_UNSUPPORTED
+#     at resolveHostSource (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/host-probe.mjs:28:19)
+#     at file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/native-adapter.mjs:9:48 {
+#   code: 'HOST_CAPABILITY_UNSUPPORTED'
+# }
+# Node.js v22.22.2
+# Subtest: test/runtime-plugin.test.mjs
+not ok 3 - test/runtime-plugin.test.mjs
+  ---
+  duration_ms: 100.39675
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/runtime-plugin.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 9
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 279.593292

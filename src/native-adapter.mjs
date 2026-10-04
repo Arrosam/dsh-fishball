@@ -1,16 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { DSH_WEB_RUNTIME_ROOT, requireHost } from './host-probe.mjs';
+import { DSH_WEB_RUNTIME_ROOT, requireHost, resolveHostSource } from './host-probe.mjs';
 import { WorkerError, workerFail, workerDigest, workerRef, workerInteger, workerRecord } from './environment.mjs';
 import { normalizedSpec } from './runtime-security.mjs';
 
 const root = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
-const agentModule = await import(pathToFileURL(`${root}/dsh-agent/lib/index.js`).href);
-const llmModule = await import(pathToFileURL(`${root}/dsh-llm/lib/index.js`).href);
-const scopeModule = await import(pathToFileURL(`${root}/dsh-scope/lib/index.js`).href);
-const toolsModule = await import(pathToFileURL(`${root}/dsh-tools/lib/index.js`).href);
-const persistenceModule = await import(pathToFileURL(`${root}/dsh-session-persistence-jsonl/lib/index.js`).href);
+const agentModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-agent')).href);
+const llmModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-llm')).href);
+const scopeModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-scope')).href);
+const toolsModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-tools')).href);
+const persistenceModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-session-persistence-jsonl')).href);
 const persistencePins = Object.freeze({
   'dsh-session-persistence-jsonl/lib/index.js': '0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b',
   'node-addon-system/lib/flock.js': 'e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646',
@@ -19,7 +19,7 @@ const persistencePins = Object.freeze({
 export function probePersistenceHost(ctx) {
   try {
     if (process.platform !== 'darwin' || process.arch !== 'arm64' || Number(process.versions.napi) < 8 || !(ctx.sessionPersistence instanceof persistenceModule.default)) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
-    for (const [path, hash] of Object.entries(persistencePins)) if (createHash('sha256').update(readFileSync(`${root}/${path}`)).digest('hex') !== hash) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    for (const [path, hash] of Object.entries(persistencePins)) if (createHash('sha256').update(readFileSync(resolveHostSource(`@deepseek-ai/${path.split('/')[0]}`, path.split('/').slice(1).join('/')))).digest('hex') !== hash) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
     for (const pkg of ['dsh-session-persistence', 'dsh-session-persistence-jsonl']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-alpha.1') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
     for (const pkg of ['node-addon-system', 'node-addon-system-darwin-arm64']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.1.2') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
     for (const method of ['create', 'open', 'flush', 'stat', 'list']) if (typeof ctx.sessionPersistence[method] !== 'function') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
@@ -37,7 +37,7 @@ const pins = Object.freeze({
 export function probeWorkerHost(ctx) {
   const report = requireHost(ctx);
   try {
-    for (const [path, hash] of Object.entries(pins)) if (createHash('sha256').update(readFileSync(`${root}/${path}`)).digest('hex') !== hash) workerFail('WORKER_HOST_UNSUPPORTED');
+    for (const [path, hash] of Object.entries(pins)) if (createHash('sha256').update(readFileSync(resolveHostSource(`@deepseek-ai/${path.split('/')[0]}`, path.split('/').slice(1).join('/')))).digest('hex') !== hash) workerFail('WORKER_HOST_UNSUPPORTED');
     for (const pkg of ['dsh-agent', 'dsh-agent-loop', 'dsh-llm']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-alpha.1') workerFail('WORKER_HOST_UNSUPPORTED');
     if (!(ctx.agents instanceof agentModule.AgentRegistry) || !(ctx.llm instanceof llmModule.LlmRuntime)) workerFail('WORKER_HOST_UNSUPPORTED');
     for (const method of ['create', 'resume', 'get']) if (typeof ctx.agents[method] !== 'function') workerFail('WORKER_HOST_UNSUPPORTED');
@@ -93,7 +93,7 @@ export class NativeAdapter {
   #tools(entry, agent) {
     try {
       if (!(this.#ctx.tools instanceof toolsModule.default) || typeof this.#ctx.tools.schemas !== 'function' || typeof this.#ctx.tools.guard !== 'function') workerFail('WORKER_TOOLS_UNAVAILABLE');
-      if (createHash('sha256').update(readFileSync(`${root}/dsh-tools/lib/index.js`)).digest('hex') !== '2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7') workerFail('WORKER_TOOLS_UNAVAILABLE');
+      if (createHash('sha256').update(readFileSync(resolveHostSource('@deepseek-ai/dsh-tools'))).digest('hex') !== '2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7') workerFail('WORKER_TOOLS_UNAVAILABLE');
       const schemas = this.#ctx.tools.schemas(agent);
       // Actual nonempty tool dispatch remains unaccepted in this phase. The
       // private installation guard must attest the empty scoped surface too.

@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { BootstrapError, Config, record, validateConfig } from './config.mjs';
-import { DSH_WEB_RUNTIME_ROOT, requireHost } from './host-probe.mjs';
+import { requireHost, resolveHostSource } from './host-probe.mjs';
 import { RuntimeStore, reference } from './runtime-store.mjs';
 import { Coordinator } from './coordinator.mjs';
 import { installOperatorBridge } from './operator-bridge.mjs';
@@ -17,7 +17,7 @@ import { ScheduleDriver } from './scheduler.mjs';
 import { ChatAdapter } from './chat.mjs';
 
 const { HostConnectionService } = await import(pathToFileURL(
-  `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js`).href);
+  resolveHostSource('@deepseek-ai/dsh-client-connection')).href);
 
 // These callbacks belong to trusted host composition. Cordis configuration and
 // RPC JSON never contain the key, raw identity or authority-bearing handles.
