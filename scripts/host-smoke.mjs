@@ -12,7 +12,7 @@ const packages = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const { Context } = await import(pathToFileURL(`${packages}/cordis/lib/index.js`).href);
 const { default: SessionStore } = await import(pathToFileURL(`${packages}/dsh-session/lib/index.js`).href);
 const { default: ApprovalService } = await import(pathToFileURL(`${packages}/dsh-user-approval/lib/index.js`).href);
-const temporary = mkdtempSync(join(tmpdir(), 'bubbles-host-smoke-'));
+const temporary = mkdtempSync(join(tmpdir(), 'df-host-smoke-'));
 const ctx = new Context();
 // Suppress host stack logging in negative fixtures; assertions still observe
 // exact stable codes. No untrusted input/exception is sent to a log sink.
@@ -51,8 +51,8 @@ try {
   // Default native identity is absent; JSON cannot authenticate an intake.
   const native = ctx.plugin(plugin, { databasePath: join(temporary, 'native.sqlite') });
   await native;
-  assert.throws(() => ctx.bubbles.intake({ taskId: 'spoof', provider: 'fixture', source: 'source', eventId: 'event', verified: true }), { code: 'IDENTITY_UNAVAILABLE' });
-  const nativeReference = ctx.bubbles;
+  assert.throws(() => ctx.df.intake({ taskId: 'spoof', provider: 'fixture', source: 'source', eventId: 'event', verified: true }), { code: 'IDENTITY_UNAVAILABLE' });
+  const nativeReference = ctx.df;
   await native.dispose();
   assert.throws(() => nativeReference.diagnostics(), { code: 'SERVICE_DISPOSED' });
 
@@ -62,7 +62,7 @@ try {
   for (let cycle = 0; cycle <= 10; cycle++) {
     const fiber = ctx.plugin(trustedFixture, { databasePath });
     await fiber;
-    const service = ctx.bubbles;
+    const service = ctx.df;
     identityInput.workspaceId = 'mutated-after-load';
     const input = { taskId: `task-${cycle}`, provider: 'fixture', source: 'synthetic-source', eventId: `event-${cycle}` };
     service.intake(input);
@@ -82,7 +82,7 @@ try {
     // state change, even while its disposer promises have not run yet.
     for (const method of Object.values(service)) assert.throws(() => method(), { code: 'SERVICE_DISPOSED' });
     await unloading;
-    assert.equal(ctx.bubbles, undefined);
+    assert.equal(ctx.df, undefined);
     assert.equal(ctx.registry.size, baselinePlugins, 'no plugin registrations leak');
     for (const method of Object.values(service)) assert.throws(() => method(), { code: 'SERVICE_DISPOSED' });
   }
@@ -94,33 +94,33 @@ try {
     const pendingPath = join(temporary, 'pending.sqlite');
     const pending = requiredContext.plugin(trustedFixture, { databasePath: pendingPath });
     await pending;
-    assert.equal(requiredContext.bubbles, undefined);
+    assert.equal(requiredContext.df, undefined);
     assert.equal(existsSync(pendingPath), false, 'both required services missing');
     const sessions = requiredContext.plugin(SessionStore);
     await sessions;
     await pending;
-    assert.equal(requiredContext.bubbles, undefined);
+    assert.equal(requiredContext.df, undefined);
     assert.equal(existsSync(join(temporary, 'pending.sqlite')), false);
     const approval = requiredContext.plugin(ApprovalService, { policy: 'never' });
     await approval;
     await pending;
-    const old = requiredContext.bubbles;
+    const old = requiredContext.df;
     assert.ok(old);
     const removingApproval = approval.dispose();
     assert.throws(() => old.listTasks(), { code: 'SERVICE_DISPOSED' });
     await removingApproval;
-    assert.equal(requiredContext.bubbles, undefined);
+    assert.equal(requiredContext.df, undefined);
     assert.throws(() => old.listTasks(), { code: 'SERVICE_DISPOSED' });
     const replacement = requiredContext.plugin(ApprovalService, { policy: 'never' });
     await replacement;
     await pending;
-    assert.ok(requiredContext.bubbles);
-    assert.notEqual(requiredContext.bubbles, old);
-    const beforeSessionRemoval = requiredContext.bubbles;
+    assert.ok(requiredContext.df);
+    assert.notEqual(requiredContext.df, old);
+    const beforeSessionRemoval = requiredContext.df;
     const removingSessions = sessions.dispose();
     assert.throws(() => beforeSessionRemoval.listTasks(), { code: 'SERVICE_DISPOSED' });
     await removingSessions;
-    assert.equal(requiredContext.bubbles, undefined);
+    assert.equal(requiredContext.df, undefined);
     await pending.dispose();
     await replacement.dispose();
   } finally { await requiredContext.fiber.dispose(); }

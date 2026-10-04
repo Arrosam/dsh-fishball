@@ -1,0 +1,206 @@
+TAP version 13
+# (node:34054) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+ok 1 - exact public services create owned session; created/ready/running/cancel/stopped are separate, zero stream calls
+  ---
+  duration_ms: 17.709541
+  type: 'test'
+  ...
+# Subtest: native default permission, changed environment, exact model effort and session binding fail before create
+ok 2 - native default permission, changed environment, exact model effort and session binding fail before create
+  ---
+  duration_ms: 9.586959
+  type: 'test'
+  ...
+# Subtest: resume requires trusted original session binding and unload closes borrowed adapter immediately
+ok 3 - resume requires trusted original session binding and unload closes borrowed adapter immediately
+  ---
+  duration_ms: 5.727458
+  type: 'test'
+  ...
+# Subtest: native creation requires opaque claimed ticket and fresh synchronous publication guard
+ok 4 - native creation requires opaque claimed ticket and fresh synchronous publication guard
+  ---
+  duration_ms: 4.802041
+  type: 'test'
+  ...
+# Subtest: actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+ok 5 - actual native event stream dedups offsets; missing frames retain uncertainty and omit synthetic content
+  ---
+  duration_ms: 5.923625
+  type: 'test'
+  ...
+# Subtest: native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+ok 6 - native message transport queues once without wakeup or consumption claim; validates exact recipient and bytes
+  ---
+  duration_ms: 6.09075
+  type: 'test'
+  ...
+# Subtest: resume uses exact trusted original ID on genuine public registry API with mock persistence
+ok 7 - resume uses exact trusted original ID on genuine public registry API with mock persistence
+  ---
+  duration_ms: 7.306416
+  type: 'test'
+  ...
+# Subtest: genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+ok 8 - genuine pinned AgentLoop owns idle worker creation and ordered cancellation/disposal without model or tools
+  ---
+  duration_ms: 10.396583
+  type: 'test'
+  ...
+# Subtest: native handoff retains bound original claim and safe context; no permission or environment switch is minted
+ok 9 - native handoff retains bound original claim and safe context; no permission or environment switch is minted
+  ---
+  duration_ms: 5.771167
+  type: 'test'
+  ...
+# Subtest: actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+ok 10 - actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable
+  ---
+  duration_ms: 39.194875
+  type: 'test'
+  ...
+# Subtest: actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+ok 11 - actual store→worker→broker→native inject uses current message grant and exact live recipient, zero model calls
+  ---
+  duration_ms: 40.946875
+  type: 'test'
+  ...
+# Subtest: message native admission defaults deny even for a live owned worker and well-formed queued body
+ok 12 - message native admission defaults deny even for a live owned worker and well-formed queued body
+  ---
+  duration_ms: 8.115625
+  type: 'test'
+  ...
+# Subtest: genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+ok 13 - genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls
+  ---
+  duration_ms: 41.54075
+  type: 'test'
+  ...
+# Subtest: genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+ok 14 - genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup
+  ---
+  duration_ms: 48.087042
+  type: 'test'
+  ...
+# (node:34055) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent rename paths: empty/current/legacy/both partitions never rewrite or silently select another store
+ok 15 - independent rename paths: empty/current/legacy/both partitions never rewrite or silently select another store
+  ---
+  duration_ms: 7.156334
+  type: 'test'
+  ...
+# Subtest: independent rename encrypted path: sole legacy basename reads existing v2 without rehashing IDs, new file or authority change
+ok 16 - independent rename encrypted path: sole legacy basename reads existing v2 without rehashing IDs, new file or authority change
+  ---
+  duration_ms: 11.529958
+  type: 'test'
+  ...
+# Subtest: independent rename memory: exact prior label normalizes in memory with IDs/session/facts preserved and zero persistence
+ok 17 - independent rename memory: exact prior label normalizes in memory with IDs/session/facts preserved and zero persistence
+  ---
+  duration_ms: 4.00075
+  type: 'test'
+  ...
+# Subtest: independent rename memory rejection: future/near-label/cross-owner/workspace and extra fields never gain compatibility
+ok 18 - independent rename memory rejection: future/near-label/cross-owner/workspace and extra fields never gain compatibility
+  ---
+  duration_ms: 1.331666
+  type: 'test'
+  ...
+# Subtest: independent rename projection: exact old/current label combinations preserve revisions/sources/tombstones without writes
+ok 19 - independent rename projection: exact old/current label combinations preserve revisions/sources/tombstones without writes
+  ---
+  duration_ms: 2.636666
+  type: 'test'
+  ...
+# Subtest: independent rename projection rejection: future/cross-scope/corrupt content is never persisted or silently relabeled
+ok 20 - independent rename projection rejection: future/cross-scope/corrupt content is never persisted or silently relabeled
+  ---
+  duration_ms: 2.181958
+  type: 'test'
+  ...
+# Subtest: independent rename public identities: MIT/private preview package, native plugin, lazy module and df panel agree
+ok 21 - independent rename public identities: MIT/private preview package, native plugin, lazy module and df panel agree
+  ---
+  duration_ms: 14.478167
+  type: 'test'
+  ...
+# Subtest: independent rename RPC: channel rename never admits JSON or cloned peers, aliases or disposed captured handlers
+ok 22 - independent rename RPC: channel rename never admits JSON or cloned peers, aliases or disposed captured handlers
+  ---
+  duration_ms: 0.419083
+  type: 'test'
+  ...
+# Subtest: independent rename native carrier: df diagnostics and RPC retain trusted scope, auth rejection and unload fencing
+ok 23 - independent rename native carrier: df diagnostics and RPC retain trusted scope, auth rejection and unload fencing
+  ---
+  duration_ms: 50.46625
+  type: 'test'
+  ...
+# Subtest: independent rename crypto boundary: genuine old v1 rejects unchanged independently of filename branding
+ok 24 - independent rename crypto boundary: genuine old v1 rejects unchanged independently of filename branding
+  ---
+  duration_ms: 14.790083
+  type: 'test'
+  ...
+# Subtest: independent rename paths: dangling/directory entries never select a blank store and both-entry ambiguity preserves every entry
+ok 25 - independent rename paths: dangling/directory entries never select a blank store and both-entry ambiguity preserves every entry
+  ---
+  duration_ms: 5.838333
+  type: 'test'
+  ...
+# Subtest: independent rename native session: exact prebound legacy/current refs survive without consent rewrite; only new unbound defaults df
+not ok 26 - independent rename native session: exact prebound legacy/current refs survive without consent rewrite; only new unbound defaults df
+  ---
+  duration_ms: 10.994833
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/bubbles/test/rename-adversarial.test.mjs:248:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    undefined !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/bubbles/test/rename-adversarial.test.mjs:275:62)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# (node:34056) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: new fixture paths preserve a sole legacy store and reject ambiguous stores without writing
+ok 27 - new fixture paths preserve a sole legacy store and reject ambiguous stores without writing
+  ---
+  duration_ms: 3.5145
+  type: 'test'
+  ...
+# Subtest: explicit legacy memory reads translate the label without persistence, identity loss or future-version acceptance
+ok 28 - explicit legacy memory reads translate the label without persistence, identity loss or future-version acceptance
+  ---
+  duration_ms: 1.958791
+  type: 'test'
+  ...
+# Subtest: legacy projection keeps revisions and source facts on a read, without overwriting stored content
+ok 29 - legacy projection keeps revisions and source facts on a read, without overwriting stored content
+  ---
+  duration_ms: 2.237292
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 28
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 418.399042

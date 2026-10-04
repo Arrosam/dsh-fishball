@@ -226,7 +226,7 @@ function bridgeFixture(operations, options = {}) {
 test('independent operator bridge: only the exact admitted fourth peer reaches the operation, never JSON authority', async () => {
   let calls = 0;
   const f = bridgeFixture({ status: () => { calls++; return { bounded: true }; } });
-  assert.equal(f.state.channel, '/bubbles-rpc');
+  assert.equal(f.state.channel, '/df-rpc');
   for (const forged of [{}, { role: 'owner', verified: true }, f.connection, null, undefined]) {
     const result = await f.state.handler('v1/status', { operator: f.peer, role: 'owner', isOwner: true }, undefined, forged);
     assert.equal(result.error.code, 'OPERATOR_REQUIRED');
@@ -239,7 +239,7 @@ test('independent operator bridge: only the exact admitted fourth peer reaches t
 test('independent operator bridge: namespace, unknown endpoint and prototype-looking names cannot select a closure', async () => {
   let calls = 0;
   const f = bridgeFixture({ status: () => { calls++; } });
-  for (const endpoint of [null, {}, 1, '/api', 'status', 'bubbles/v1/status', 'v1/status/extra', 'v1/mintOwner', 'v1/constructor', 'v1/__proto__']) {
+  for (const endpoint of [null, {}, 1, '/api', 'status', 'dsh-fishball/v1/status', 'v1/status/extra', 'v1/mintOwner', 'v1/constructor', 'v1/__proto__']) {
     assert.equal((await f.call(endpoint)).error.code, 'ENDPOINT_NOT_FOUND');
   }
   assert.equal(calls, 0);
@@ -327,7 +327,7 @@ const runtimeModule = new URL('../src/runtime-store.mjs', import.meta.url).href;
 const fixtureKey = Buffer.alloc(32, 73);
 const fixtureScope = { ownerId: 'independent-owner', workspaceId: 'independent-workspace' };
 function runtimeFixture(t, options = {}) {
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-s2-independent-'));
+  const directory = mkdtempSync(join(tmpdir(), 'df-s2-independent-'));
   const owner = {}, coordinator = {}, host = {}, foreignOwner = {}, foreignWorkspace = {};
   const principals = [
     { handle: owner, role: 'owner', scope: { ...fixtureScope } },
@@ -384,7 +384,7 @@ function assertMetadataOnly(f, taskRef, forbidden) {
 }
 
 test('independent durable authority: constructor rejects hostile principal arrays before any trap, secret error or storage creation', t => {
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-s2-config-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const directory = mkdtempSync(join(tmpdir(), 'df-s2-config-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
   let traps = 0;
   const entry = { handle: {}, role: 'owner', scope: fixtureScope }, hidden = [entry];
   Object.defineProperty(hidden, '0', { enumerable: false });
@@ -1042,7 +1042,7 @@ test('independent actual crash journal: unverified legacy, wrong key and relabel
     }
     // A separate copy recovers the journal and proves the original acknowledged
     // logical facts remain available. Opening the rejected original is avoided.
-    const copyDirectory = mkdtempSync(join(tmpdir(), 'bubbles-s2-independent-journal-copy-'));
+    const copyDirectory = mkdtempSync(join(tmpdir(), 'df-s2-independent-journal-copy-'));
     t.after(() => rmSync(copyDirectory, { recursive: true, force: true }));
     const copyPath = join(copyDirectory, 'oracle.sqlite');
     copyFileSync(f.config.databasePath, copyPath); copyFileSync(journalPath, `${copyPath}-journal`);

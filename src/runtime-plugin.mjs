@@ -19,7 +19,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
   function apply(ctx, input) {
     const config = validateConfig(input), host = requireHost(ctx);
     if (!(ctx.connection instanceof HostConnectionService)) throw new BootstrapError('CONNECTION_UNSUPPORTED');
-    if (ctx.reflect.get('bubbles') !== undefined) throw new BootstrapError('SERVICE_ALREADY_REGISTERED');
+    if (ctx.reflect.get('df') !== undefined) throw new BootstrapError('SERVICE_ALREADY_REGISTERED');
     if (!identity || !encryptionKey) throw new BootstrapError('RUNTIME_ADAPTER_UNAVAILABLE');
     let scope, key;
     try {
@@ -73,16 +73,16 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
       yield () => bridge.dispose();
       // Trusted Cordis consumers see diagnostics only. Neither a worker nor a
       // model-facing tool can borrow an owner command closure from the service.
-      ctx.provide('bubbles', Object.freeze({ diagnostics() {
+      ctx.provide('df', Object.freeze({ diagnostics() {
         if (!alive()) throw new BootstrapError('SERVICE_DISPOSED');
         return Object.freeze({ target: host.target, supported: host.supported,
-          schemaVersion: store.diagnostics().schemaVersion, channel: '/bubbles-rpc',
+          schemaVersion: store.diagnostics().schemaVersion, channel: '/df-rpc',
           identityBridge: 'connection-operator', permissionBridge: 'trusted-policy-required' });
       } }));
       yield () => { active = false; bridge.deactivate(); };
-    }, 'bubbles.runtime.lifecycle');
+    }, 'df.runtime.lifecycle');
   }
-  return Object.freeze({ name: 'bubbles', inject: Object.freeze(['connection', 'sessions', 'approval']), Config, apply });
+  return Object.freeze({ name: 'dsh-fishball', inject: Object.freeze(['connection', 'sessions', 'approval']), Config, apply });
 }
 
 function referenceCheck(value) {

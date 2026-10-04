@@ -4,7 +4,7 @@ import { requireHost } from './host-probe.mjs';
 
 export { Config, validateConfig } from './config.mjs';
 export { probeHost } from './host-probe.mjs';
-export const name = 'bubbles';
+export const name = 'dsh-fishball';
 export const inject = Object.freeze(['sessions', 'approval']);
 
 const argumentKeys = Object.freeze({
@@ -24,7 +24,7 @@ export function createPlugin({ identity } = {}) {
   function apply(ctx, input) {
     const config = validateConfig(input);
     const host = requireHost(ctx);
-    if (ctx.reflect.get('bubbles') !== undefined) throw new BootstrapError('SERVICE_ALREADY_REGISTERED');
+    if (ctx.reflect.get('df') !== undefined) throw new BootstrapError('SERVICE_ALREADY_REGISTERED');
     let boundScope;
     if (identity) {
       try {
@@ -69,11 +69,11 @@ export function createPlugin({ identity } = {}) {
       }
       // No grant/revoke/operator mint, tool, event ingress, timer, worker,
       // provider, model, transport, or raw Foundation handle is published.
-      ctx.provide('bubbles', Object.freeze(service));
+      ctx.provide('df', Object.freeze(service));
       // Unwind this first, before asynchronous service unregistration waits
       // for dependents: a borrowed service reference loses admission at once.
       yield () => { active = false; };
-    }, 'bubbles.lifecycle');
+    }, 'df.lifecycle');
   }
   return Object.freeze({ name, inject, Config, apply });
 }

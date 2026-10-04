@@ -43,7 +43,7 @@ export class NativeAdapter {
     ctx.on('session/event', (session, event) => {
       for (const entry of this.#entries) if (entry.handle?.agent.session === session && Number.isSafeInteger(event.seq)) this.#event(entry.handle.agent, event.seq, event.type);
     });
-    ctx.effect(() => () => { this.#active = false; }, 'bubbles.native-adapter');
+    ctx.effect(() => () => { this.#active = false; }, 'df.native-adapter');
   }
   #alive() { if (!this.#active || this.#ctx.fiber.state !== 2 || this.#ctx.fiber.uid === null) workerFail('WORKER_DISPOSED'); }
   #get(ticket) { this.#alive(); const entry = this.#tickets.get(ticket); if (!entry) workerFail('WORKER_INVALID'); return entry; }
@@ -79,7 +79,12 @@ export class NativeAdapter {
     } catch (error) { if (error instanceof WorkerError) throw error; workerFail('MODEL_UNAVAILABLE'); }
     this.#permit(entry);
     try {
-      entry.id = this.#resolve ? this.#resolve(Object.freeze({ mode: spec.executor.mode, generationRef: entry.generationRef, sessionRef: spec.executor.sessionRef })) : spec.executor.mode === 'create' ? `bubbles-${entry.generationRef}` : undefined;
+      // Preserve an exact previously approved preallocated native identity.
+      // Unbound new creates use df; existing action/session hashes are never
+      // rewritten for branding. Resume still requires the trusted resolver.
+      const legacyId = `bubbles-${entry.generationRef}`;
+      const defaultId = spec.executor.sessionRef === createHash('sha256').update(legacyId).digest('hex') ? legacyId : `df-${entry.generationRef}`;
+      entry.id = this.#resolve ? this.#resolve(Object.freeze({ mode: spec.executor.mode, generationRef: entry.generationRef, sessionRef: spec.executor.sessionRef })) : spec.executor.mode === 'create' ? defaultId : undefined;
       if (typeof entry.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(entry.id)) workerFail('SESSION_UNAVAILABLE');
       entry.sessionRef = createHash('sha256').update(entry.id).digest('hex');
       if (spec.executor.sessionRef !== undefined && spec.executor.sessionRef !== entry.sessionRef || spec.executor.mode === 'resume' && !spec.executor.sessionRef) workerFail('SESSION_MISMATCH');
@@ -168,7 +173,7 @@ export class NativeAdapter {
         if (record.state !== 'outbox_committed' || !(body?.kind === 'message' || body?.kind === 'verification' && record.immutableMetadata.category === 'review_result') || typeof body.content !== 'string' || body.digest !== record.bodyDigest || createHash('sha256').update(body.content).digest('hex') !== record.bodyDigest || Buffer.byteLength(body.content) !== record.byteLength || record.byteLength > 65536 || typeof entry.handle.agent.inject !== 'function') workerFail('MESSAGE_BODY_INVALID');
         if (delivered.size >= 1000) workerFail('WORKER_CAPACITY');
         delivered.set(record.messageRef, record.bodyDigest); // before arbitrary native effect
-        try { entry.handle.agent.inject({ id: record.messageRef, role: 'user', content: [{ type: 'text', text: body.content }], source: { kind: 'bubbles-relay', form: 'relay' } }); }
+        try { entry.handle.agent.inject({ id: record.messageRef, role: 'user', content: [{ type: 'text', text: body.content }], source: { kind: 'df-relay', form: 'relay' } }); }
         catch { return receipt(record, 'unknown'); }
         return receipt(record, 'sent'); // queue acceptance is not consumption
       },

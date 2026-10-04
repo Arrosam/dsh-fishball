@@ -5,7 +5,8 @@ import { createHash } from 'node:crypto';
 import { FishballMemoryCore, MemoryError, migratePinnedFishball, preferenceFresh } from './fishball-memory-core.mjs';
 import { contextText, compactContext } from './context.mjs';
 
-export const MEMORY_PROJECTION_VERSION = 'bubbles.memory-projection/v1';
+export const MEMORY_PROJECTION_VERSION = 'df.memory-projection/v1';
+export const LEGACY_MEMORY_PROJECTION_VERSION = 'bubbles.memory-projection/v1';
 export class MemoryAdapterError extends Error { constructor(code) { super(code); this.name = 'MemoryAdapterError'; this.code = code; } }
 const fail = code => { throw new MemoryAdapterError(code); };
 const MAX_BYTES = 4194304;
@@ -61,7 +62,7 @@ export class MemoryAdapter {
   }
   #validate(projection) {
     exact(projection, ['contractVersion', 'scope', 'core', 'facts']);
-    if (projection.contractVersion !== MEMORY_PROJECTION_VERSION) fail('MEMORY_CORRUPT');
+    if (![MEMORY_PROJECTION_VERSION, LEGACY_MEMORY_PROJECTION_VERSION].includes(projection.contractVersion)) fail('MEMORY_CORRUPT');
     exact(projection.scope, ['ownerRef', 'workspaceRef']);
     if (projection.scope.ownerRef !== this.#binding.ownerRef || projection.scope.workspaceRef !== this.#binding.workspaceRef) fail('MEMORY_SCOPE');
     exact(projection.core, ['contractVersion', 'scope', 'world', 'preferences', 'turns', 'idSeq', 'session']);

@@ -3,12 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { createPlugin } from '../src/index.mjs';
 import { record, validateConfig, BootstrapError } from '../src/config.mjs';
 
-export const name = 'bubbles-m1-local-fixture';
+export const name = 'df-m1-local-fixture';
 export const inject = ['sessions', 'approval', 'webServer', 'connection', 'agents'];
 const root = fileURLToPath(new URL('../.runtime/', import.meta.url));
 const statePath = `${root}dsh-web-evidence/state.json`;
 const privatePath = `${root}dsh-web-private/access.json`;
-export const Config = { '~standard': { version: 1, vendor: 'bubbles-fixture', validate(input) {
+export const Config = { '~standard': { version: 1, vendor: 'df-fixture', validate(input) {
   try {
     record(input, ['generation', 'databasePath'], 'CONFIG_INVALID');
     if (!Number.isSafeInteger(input.generation) || input.generation < 1 || input.generation > 100) throw new BootstrapError('CONFIG_INVALID');
@@ -35,7 +35,7 @@ export async function apply(ctx, config) {
   await fiber;
   // Public ad-hoc lookup intentionally borrows a reference for disposal tests;
   // this observer owns the child fiber and never publishes that reference.
-  const service = ctx.get('bubbles');
+  const service = ctx.get('df');
   const input = { taskId: 'web-fixture-task', provider: 'synthetic', source: 'web-fixture', eventId: 'web-fixture-event' };
   const intake = service.intake(input);
   const duplicate = service.intake(input);
@@ -62,5 +62,5 @@ export async function apply(ctx, config) {
     state.phase = 'disposed';
     writeState(state);
     try { unlinkSync(privatePath); } catch { /* ephemeral access already removed */ }
-  }, 'bubbles.fixture-observer');
+  }, 'df.fixture-observer');
 }

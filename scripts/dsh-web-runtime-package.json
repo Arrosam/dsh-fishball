@@ -1,5 +1,5 @@
 {
-  "name": "bubbles-dsh-web-runtime",
+  "name": "dsh-fishball-dsh-web-runtime",
   "private": true,
   "type": "module",
   "dependencies": {

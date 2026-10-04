@@ -22,7 +22,7 @@ class CapturedResponse extends Writable {
   text() { return Buffer.concat(this.parts).toString('utf8'); }
 }
 async function fixture(t) {
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-runtime-native-'));
+  const directory = mkdtempSync(join(tmpdir(), 'df-runtime-native-'));
   const ctx = new Context(), routes = new Map();
   ctx.logger.exporters?.clear?.();
   t.after(async () => { try { await ctx.fiber.dispose(); } finally { rmSync(directory, { recursive: true, force: true }); } });
@@ -38,10 +38,10 @@ async function fixture(t) {
   const send = async (command, payload = {}, headers = {}) => {
     const method = `v1/${command}`, envelope = { type: 'client-request', rpcId: 'fixture-rpc', method, payload };
     const request = Readable.from([Buffer.from(JSON.stringify(envelope))]);
-    Object.assign(request, { method: 'POST', url: `/bubbles-rpc/${method}`,
+    Object.assign(request, { method: 'POST', url: `/df-rpc/${method}`,
       headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080', 'content-type': 'application/json', 'x-synthetic-auth': 'approved', ...headers } });
     const response = new CapturedResponse();
-    const route = routes.get('/bubbles-rpc');
+    const route = routes.get('/df-rpc');
     assert.ok(route, 'public native route was registered');
     await route.handler(request, response);
     const text = response.text();
@@ -55,9 +55,9 @@ test('actual public Cordis/Connection bridge routes owner intake, blocks carrier
   const fiber = f.ctx.plugin(createRuntimePlugin({ identity: () => identity, encryptionKey: () => key,
     forbiddenSecrets: ['synthetic-canary'], runtimeLimits: { maxMetadataBytes: 8192 } }), { databasePath: join(f.directory, 'ledger.sqlite') });
   await fiber;
-  assert.equal(f.ctx.bubbles.diagnostics().identityBridge, 'connection-operator');
-  assert.deepEqual(Object.keys(f.ctx.bubbles), ['diagnostics']);
-  assert.equal(f.ctx.bubbles.store, undefined); assert.equal(f.ctx.bubbles.owner, undefined);
+  assert.equal(f.ctx.df.diagnostics().identityBridge, 'connection-operator');
+  assert.deepEqual(Object.keys(f.ctx.df), ['diagnostics']);
+  assert.equal(f.ctx.df.store, undefined); assert.equal(f.ctx.df.owner, undefined);
   identity.workspaceId = 'changed-after-load';
   const input = { taskId: 'native-task', provider: 'fixture', source: 'native-inbox', eventId: 'first', commandRef: reference('intake'), goal: 'synthetic scoped goal' };
   assert.equal((await f.send('intake', input, { 'x-synthetic-auth': 'denied' })).status, 401);
@@ -80,10 +80,10 @@ test('actual public Cordis/Connection bridge routes owner intake, blocks carrier
   assert.equal((await f.send('detail', { taskRef: task.taskRef, recordRef, expectedTaskVersion: task.version + 1, expectedAuthEpoch: task.authEpoch })).result.error.code, 'STALE_VERSION');
   assert.equal((await f.send('detail', { taskRef: reference('other-task'), recordRef, expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch })).result.ok, false);
   assert.equal(f.ctx.sessions.list().length, 0);
-  const borrowed = f.ctx.bubbles;
+  const borrowed = f.ctx.df;
   const disposing = fiber.dispose();
   assert.throws(() => borrowed.diagnostics(), { code: 'SERVICE_DISPOSED' });
-  await disposing; assert.equal(f.routes.has('/bubbles-rpc'), false);
+  await disposing; assert.equal(f.routes.has('/df-rpc'), false);
 });
 
 test('native runtime reload preserves encrypted intake and missing key/identity fails before storage', async t => {

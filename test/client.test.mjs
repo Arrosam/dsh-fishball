@@ -15,7 +15,7 @@ const success = value => ({ ok: true, value });
 function fixture() {
   let current = task(); const calls = [];
   const rpc = { async call(channel, endpoint, input, signal) {
-    calls.push({ channel, endpoint, input, signal }); assert.equal(channel, '/bubbles-rpc');
+    calls.push({ channel, endpoint, input, signal }); assert.equal(channel, '/df-rpc');
     if (endpoint === 'v1/list') return success([current]);
     if (endpoint === 'v1/status') return success(snapshot(current));
     if (endpoint === 'v1/detail') { assert.equal(input.expectedTaskVersion, current.version); assert.equal(input.expectedAuthEpoch, current.authEpoch); return success({ task: current, data: { recordRef: input.recordRef, content: '明确的合成任务 <script>not executable</script>', digest: d('goal') } }); }
@@ -34,7 +34,7 @@ test('native RPC list and scoped immutable detail paint one current CAS snapshot
   assert.deepEqual(f.calls.map(c => c.endpoint), ['v1/list', 'v1/status', 'v1/detail']);
   const tree = client.Panel({ model: f.model }), elements = nodes(tree);
   assert.equal(elements.some(n => n.type === 'nav' && n.props['aria-label'] === 'Tasks'), true);
-  assert.equal(elements.some(n => n.type === 'label' && n.props.htmlFor === 'bubbles-goal'), true);
+  assert.equal(elements.some(n => n.type === 'label' && n.props.htmlFor === 'df-goal'), true);
   assert.equal(elements.some(n => n.props.dangerouslySetInnerHTML), false);
   assert.equal(text(tree).includes('明确的合成任务'), true); f.model.dispose();
 });
@@ -89,7 +89,7 @@ test('native SlotCore registrations are additive and release with the owning fix
   ctx.provide('connection', { rpc: { call: async () => success([]) }, state: { subscribe: () => () => {} } }); ctx.provide('layout', {});
   ctx.provide('slots', { inject: (_key, fn) => ctx.effect(fn), register: (spec, component) => core.register(spec, component) });
   const fiber = ctx.plugin({ inject: client.inject, apply(ownerCtx) { client.apply({ connection: ownerCtx.connection, layout: ownerCtx.layout, slots: { inject: (_key, fn) => ownerCtx.effect(fn), register: (spec, component) => core.register(spec, component) }, effect: ownerCtx.effect.bind(ownerCtx), on: ownerCtx.on.bind(ownerCtx) }); } }); await fiber;
-  assert.equal(core.entries('main').length, 1); assert.equal(core.entries('main')[0].options.key, 'bubbles'); assert.equal(core.entries('sidebar.panellist').length, 1);
+  assert.equal(core.entries('main').length, 1); assert.equal(core.entries('main')[0].options.key, 'df'); assert.equal(core.entries('sidebar.panellist').length, 1);
   await fiber.dispose(); assert.equal(core.entries('main').length, 0); assert.equal(core.entries('sidebar.panellist').length, 0); assert.equal(core.entries('root').length, 1);
   removeRoot(); await ctx.fiber.dispose();
 });
@@ -105,7 +105,7 @@ test('client model crosses genuine public native owner RPC framing into encrypte
   const { default: SessionStore } = await import(`${root}/dsh-session/lib/index.js`);
   const { default: ApprovalService } = await import(`${root}/dsh-user-approval/lib/index.js`);
   const { HostConnectionService } = await import(`${root}/dsh-client-connection/lib/index.js`);
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-native-client-')), ctx = new Context(), routes = new Map(); ctx.logger.exporters?.clear?.();
+  const directory = mkdtempSync(join(tmpdir(), 'df-native-client-')), ctx = new Context(), routes = new Map(); ctx.logger.exporters?.clear?.();
   let count = 0;
   const model = client.createModel({ async call(channel, endpoint, payload) {
     const request = Readable.from([Buffer.from(JSON.stringify({ type: 'client-request', rpcId: 'synthetic-client-rpc', method: endpoint, payload }))]);
@@ -125,7 +125,7 @@ test('client model crosses genuine public native owner RPC framing into encrypte
     assert.equal(await model.control('resume'), true); assert.equal(model.getSnapshot().detail.control, 'active');
     assert.equal(await model.control('cancel'), true); assert.equal(model.getSnapshot().detail.task.status, 'cancel_requested');
     assert.equal(model.getSnapshot().tasks[0].version, model.getSnapshot().detail.task.version); assert.equal(ctx.sessions.list().length, 0);
-    model.dispose(); await plugin.dispose(); assert.equal(routes.has('/bubbles-rpc'), false);
+    model.dispose(); await plugin.dispose(); assert.equal(routes.has('/df-rpc'), false);
   } finally { model.dispose(); await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }); }
 });
 

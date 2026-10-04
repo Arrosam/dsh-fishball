@@ -1,10 +1,13 @@
-// Private semantic adaptation of the exact fishball revisions recorded in
-// docs/fishball-provenance.md. Redistribution is blocked pending license review.
+// Owner-authored ESM translation of the exact fishball revisions recorded in
+// docs/fishball-provenance.md. MIT; see LICENSE and THIRD_PARTY_NOTICES.md.
 // No task state, grants, caller authentication, inference or automatic imports.
 import { types } from 'node:util';
 
 export const FISHBALL_PINS = Object.freeze({ main: 'f4a887d37b4c60a65ccc7c22fd87b19639287a0a', release: '32ac8236bdb8d93c0a895b81557c4d915cf5e80c' });
-export const MEMORY_VERSION = 'bubbles.fishball-memory/v1';
+export const MEMORY_VERSION = 'df.fishball-memory/v1';
+// Only this exact historical contract is compatible. Reading translates the
+// label in memory; no file lookup or persistence happens on a constructor read.
+export const LEGACY_MEMORY_VERSION = 'bubbles.fishball-memory/v1';
 export const DAY_MS = 86400000;
 const WORLD_TTL = Object.freeze({ PERMANENT: null, ONE_YEAR: 365 * DAY_MS, ONE_MONTH: 30 * DAY_MS, ALWAYS_RESEARCH: 0 });
 const PREFERENCE_TTL = Object.freeze({ PERMANENT: null, SIX_MONTHS: 182 * DAY_MS, ONE_MONTH: 30 * DAY_MS });
@@ -119,7 +122,7 @@ function boundedData(value) {
 function whole(value, binding, forbidden = [], native = false) {
   boundedData(value);
   object(value, native ? ['contractVersion', 'scope', 'world', 'preferences', 'turns', 'idSeq', 'session'] : ['world', 'preferences', 'turns', 'idSeq', 'session']);
-  if (native && (value.contractVersion !== MEMORY_VERSION || JSON.stringify(scope(value.scope)) !== JSON.stringify(binding))) fail('MEMORY_SCOPE');
+  if (native && (![MEMORY_VERSION, LEGACY_MEMORY_VERSION].includes(value.contractVersion) || JSON.stringify(scope(value.scope)) !== JSON.stringify(binding))) fail('MEMORY_SCOPE');
   const result = { contractVersion: MEMORY_VERSION, scope: { ...binding }, world: array(value.world ?? []).map(worldFact), preferences: array(value.preferences ?? []).map(preference), turns: array(value.turns ?? [], 1024).map(turn), idSeq: number(value.idSeq ?? 0), session: session(value.session) };
   const seen = new Set();
   for (const item of [...result.world, ...result.preferences, ...result.turns]) { if (seen.has(item.id)) fail('MEMORY_CONFLICT'); seen.add(item.id); result.idSeq = Math.max(result.idSeq, item.id); }

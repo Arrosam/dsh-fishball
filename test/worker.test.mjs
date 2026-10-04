@@ -85,7 +85,7 @@ test('preparation denial and payload spoof reject before any durable claim or na
 });
 
 function runtimeFixture() {
-  const f = fixture(), directory = mkdtempSync(join(tmpdir(), 'bubbles-worker-ledger-')), otherOwner = {};
+  const f = fixture(), directory = mkdtempSync(join(tmpdir(), 'df-worker-ledger-')), otherOwner = {};
   const store = new RuntimeStore({ databasePath: join(directory, 'ledger.sqlite'), encryptionKey: Buffer.alloc(32, 9), principals: [{ handle: f.owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: f.host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: otherOwner, role: 'owner', scope: { ownerId: 'other-owner', workspaceId: 'other-workspace' } }], hostPermission: () => true });
   const registered = store.intake(f.owner, { taskId: 'synthetic-task', provider: 'fixture', source: 'source', eventId: 'event', commandRef: d('intake') });
   f.task.taskRef = registered.task.taskRef;

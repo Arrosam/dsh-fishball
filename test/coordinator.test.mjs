@@ -61,7 +61,7 @@ test('cancellation adapter failures remain redacted unknown rather than confirme
 
 async function durable(t, options = {}) {
   const { RuntimeStore, reference } = await import('../src/runtime-store.mjs');
-  const dir = mkdtempSync(join(tmpdir(), 'bubbles-coordinator-')), databasePath = join(dir, 'ledger.db');
+  const dir = mkdtempSync(join(tmpdir(), 'df-coordinator-')), databasePath = join(dir, 'ledger.db');
   const owner = {}, coordinator = {}, host = {}, foreign = {}, key = Buffer.alloc(32, 7);
   const principals = [{ handle: owner, role: 'owner', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: coordinator, role: 'coordinator', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: foreign, role: 'coordinator', scope: { ownerId: 'other', workspaceId: 'workspace' } }];
   let store = new RuntimeStore({ databasePath, encryptionKey: key, principals, clock: () => 1000, forbiddenSecrets: ['SYNTHETIC-secret-canary'], ...options });

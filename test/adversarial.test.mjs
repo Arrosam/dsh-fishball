@@ -23,7 +23,7 @@ const ingress = (taskId = 'task', eventId = taskId, overrides = {}) => ({
   taskId, provider: 'fixture', source: 'independent-source', eventId, ...overrides,
 });
 function fixture(t, options = {}) {
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-'));
+  const directory = mkdtempSync(join(tmpdir(), 'df-independent-'));
   const databasePath = join(directory, 'ledger.sqlite');
   const capability = {};
   let currentTime = 1000;
@@ -552,7 +552,7 @@ test('independent: immutable limits and private authority cannot be overwritten 
 
 test('independent: migration failure, incomplete/future schema and backup collision preserve source bytes', async t => {
   for (const scenario of ['migration-failure', 'incomplete', 'future', 'backup-collision', 'orphan-foreign-key', 'invalid-row']) await t.test(scenario, t => {
-    const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-schema-'));
+    const directory = mkdtempSync(join(tmpdir(), 'df-independent-schema-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const databasePath = join(directory, 'ledger.sqlite');
     const db = new DatabaseSync(databasePath);
@@ -585,7 +585,7 @@ test('independent: migration failure, incomplete/future schema and backup collis
 });
 
 test('independent: supported schema1 migration preserves actual acknowledged task/history/provenance in a recoverable backup', t => {
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-migration-'));
+  const directory = mkdtempSync(join(tmpdir(), 'df-independent-migration-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const databasePath = join(directory, 'legacy.sqlite');
   const db = new DatabaseSync(databasePath);
@@ -613,7 +613,7 @@ test('independent: supported schema1 migration preserves actual acknowledged tas
 
 test('independent: unsupported crash-left WAL rejects without changing main, WAL or SHM bytes or committed facts', { timeout: 15000 }, async t => {
   for (const version of [99, 1, 2, SCHEMA_VERSION]) await t.test(`schema ${version}; abrupt exit73 with uncheckpointed WAL`, t => {
-    const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-wal-'));
+    const directory = mkdtempSync(join(tmpdir(), 'df-independent-wal-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const databasePath = join(directory, 'ledger.sqlite');
     const keys = [digest(scope.ownerId), digest(scope.workspaceId), digest('wal-task')];
@@ -678,7 +678,7 @@ test('independent: unsupported crash-left WAL rejects without changing main, WAL
 
 test('independent: WAL header without sidecars and opaque sidecars beside DELETE header reject before SQLite open', async t => {
   await t.test('WAL header only', t => {
-    const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-wal-header-'));
+    const directory = mkdtempSync(join(tmpdir(), 'df-independent-wal-header-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const databasePath = join(directory, 'ledger.sqlite');
     const db = new DatabaseSync(databasePath);
@@ -743,7 +743,7 @@ test('independent: supported DELETE hot journal rolls back spilled uncommitted p
 });
 
 test('independent: a concurrent future schema commit between version read and lock cannot be migrated or downgraded', t => {
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-future-race-'));
+  const directory = mkdtempSync(join(tmpdir(), 'df-independent-future-race-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const databasePath = join(directory, 'legacy.sqlite');
   const seed = new DatabaseSync(databasePath);
@@ -862,7 +862,7 @@ test('independent: actual public Web Cordis rejects malicious identity adapters 
     const { Context } = await import(pathToFileURL(join(packagesRoot, 'cordis/lib/index.js')).href);
     const { default: SessionStore } = await import(pathToFileURL(join(packagesRoot, 'dsh-session/lib/index.js')).href);
     const { default: ApprovalService } = await import(pathToFileURL(join(packagesRoot, 'dsh-user-approval/lib/index.js')).href);
-    const directory = mkdtempSync(join(tmpdir(), 'bubbles-independent-host-'));
+    const directory = mkdtempSync(join(tmpdir(), 'df-independent-host-'));
     const ctx = new Context();
     ctx.logger.exporters?.clear?.();
     const scope = ${JSON.stringify(scope)};
@@ -886,7 +886,7 @@ test('independent: actual public Web Cordis rejects malicious identity adapters 
           assert.equal(error.message.includes('synthetic-getter-secret'), false);
           return /IDENTITY_UNAVAILABLE/.test(error.message);
         });
-        assert.equal(ctx.bubbles, undefined);
+        assert.equal(ctx.df, undefined);
         assert.equal(existsSync(databasePath), false);
         await fiber.dispose();
       }
@@ -902,7 +902,7 @@ test('independent: actual public Web Cordis rejects malicious identity adapters 
         let identityCalls = 0;
         const fiber = ctx.plugin(createPlugin({ identity: () => { identityCalls++; return mutableScope; } }), { databasePath, limits: { maxActive: 1 } });
         await fiber;
-        const held = ctx.bubbles;
+        const held = ctx.df;
         mutableScope.ownerId = 'changed-owner'; mutableScope.workspaceId = 'changed-workspace';
         assert.equal(held.getTask('task').status, 'recovery_required');
         assert.equal(held.exportTask('task').actions[0].state, 'unknown');
@@ -918,7 +918,7 @@ test('independent: actual public Web Cordis rejects malicious identity adapters 
         for (const fn of Object.values(held)) assert.throws(() => fn(), { code: 'SERVICE_DISPOSED' });
         await disposing;
         for (const fn of Object.values(held)) assert.throws(() => fn(), { code: 'SERVICE_DISPOSED' });
-        assert.equal(ctx.bubbles, undefined); assert.equal(ctx.registry.size, baseline);
+        assert.equal(ctx.df, undefined); assert.equal(ctx.registry.size, baseline);
       }
       const reopened = new Foundation({ databasePath, hostPermission: () => true, trustedOperators: [{ scope, capability }], limits: { maxActive: 1 } });
       try {

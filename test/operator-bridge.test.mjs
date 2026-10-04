@@ -16,7 +16,7 @@ function fixture(operations, options = {}) {
 test('only the DSH admitted operator can reach trusted closures', async () => {
   let calls = 0;
   const f = fixture({ status: input => { calls++; return { taskRef: input.taskRef }; } });
-  assert.equal(f.seen.channel, '/bubbles-rpc');
+  assert.equal(f.seen.channel, '/df-rpc');
   assert.equal((await f.call('status', { taskRef: 'a' })).ok, true);
   for (const peer of [undefined, {}, { role: 'owner' }, f.connection]) {
     const result = await f.seen.handler('v1/status', { role: 'owner', peer: {} }, undefined, peer);

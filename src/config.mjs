@@ -48,7 +48,7 @@ export function validateConfig(input) {
 
 // Cordis consumes a synchronous Standard Schema interface.
 export const Config = Object.freeze({ '~standard': Object.freeze({
-  version: 1, vendor: 'bubbles',
+  version: 1, vendor: 'df',
   validate(value) {
     try { return { value: validateConfig(value) }; }
     catch (error) { return { issues: [{ message: error.code }] }; }

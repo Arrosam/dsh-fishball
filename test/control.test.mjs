@@ -16,7 +16,7 @@ import { RuntimeStore, reference } from '../src/runtime-store.mjs';
 import { TaskControl } from '../src/control.mjs';
 const ref = reference;
 function fixture(t) {
- const dir = mkdtempSync(join(tmpdir(), 'bubbles-control-')), path = join(dir, 'ledger.db'), owner = {}, host = {}, worker = {}, other = {}, taskRef = ref('task'); let now = 1000;
+ const dir = mkdtempSync(join(tmpdir(), 'df-control-')), path = join(dir, 'ledger.db'), owner = {}, host = {}, worker = {}, other = {}, taskRef = ref('task'); let now = 1000;
  const options = { databasePath: path, encryptionKey: Buffer.alloc(32, 5), principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: worker, role: 'worker', scope: { ownerId: 'owner', workspaceId: 'workspace' }, taskRef, generationRef: ref('worker-generation'), sessionRef: ref('worker-session') }, { handle: other, role: 'owner', scope: { ownerId: 'other', workspaceId: 'workspace' } }], clock: () => now, hostPermission: () => true };
  let store = new RuntimeStore(options); t.after(() => { store.close(); rmSync(dir, { recursive: true, force: true }); });
  store.intake(owner, { taskId: 'task', provider: 'mock', source: 'source', eventId: 'event', commandRef: ref('intake') });

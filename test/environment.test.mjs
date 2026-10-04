@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { EnvironmentRegistry, workerDigest as d } from '../src/environment.mjs';
 
 function fixture() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'bubbles-env-')));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'df-env-')));
   let state = d('state'), now = 10;
   const entry = { environmentRef: d('env'), workspaceRef: d('workspace'), bindingDigest: d('binding'), toolsDigest: d('tools'), permissionPolicyDigest: d('permission'), cwd: root, root, provider: 'synthetic-provider', model: 'synthetic-model', reasoningEffort: 'fixture-effort', modelRef: d('model'), reasoningRef: d('reasoning'), presetRef: d('preset') };
   const environments = new EnvironmentRegistry({ entries: [entry], currentState: () => state, clock: () => now, knownSecrets: ['SYNTHETIC_SECRET'] });

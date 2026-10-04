@@ -126,11 +126,11 @@ test('native whole snapshot exact UTF-8 byte limit accepts N-1/N and refuses N+1
 // Parent requested this real public-library fixture only after independent
 // review. A skipped fixture is NOT a portability/native acceptance pass.
 test('review-gated installed public Cordis loads, writes encrypted synthetic memory and rereads after disposal/reload', {
-  skip: process.env.BUBBLES_FISHBALL_CORDIS_REVIEWED !== '1', timeout: 10000,
+  skip: process.env.DF_FISHBALL_CORDIS_REVIEWED !== '1', timeout: 10000,
 }, async () => {
   const { Context } = await import(new URL('../.runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js', import.meta.url));
   const { RuntimeStore, reference, canonicalDigest } = await import('../src/runtime-store.mjs');
-  const temporary = mkdtempSync(join(tmpdir(), 'bubbles-fishball-cordis-')), handle = {};
+  const temporary = mkdtempSync(join(tmpdir(), 'df-fishball-cordis-')), handle = {};
   const store = new RuntimeStore({ databasePath: join(temporary, 'ledger.db'), encryptionKey: Buffer.alloc(32, 9), principals: [{ handle, role: 'coordinator', scope: { ownerId: 'synthetic-memory-owner', workspaceId: 'synthetic-memory-space' } }] });
   const task = store.intake(handle, { taskId: 'memory-portability-fixture', provider: 'synthetic', source: 'fixture', eventId: 'event', commandRef: ref(900), goal: 'synthetic memory fixture only' }).task;
   const binding = { ownerRef: task.ownerRef, workspaceRef: task.workspaceRef };

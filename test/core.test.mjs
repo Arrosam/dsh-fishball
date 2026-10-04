@@ -11,7 +11,7 @@ import { legacySchemaSql } from '../src/ledger.mjs';
 const S={ownerId:'owner',workspaceId:'workspace'}, W={ownerId:'owner',workspaceId:'other'}, O={ownerId:'other',workspaceId:'workspace'};
 const D='1'.repeat(64), E='2'.repeat(64);
 const MODULE=fileURLToPath(new URL('../src/foundation.mjs',import.meta.url));
-function setup(t,options={}) { const dir=mkdtempSync(join(tmpdir(),'bubbles-core-')),databasePath=join(dir,'ledger.db'),capability={};let now=1000;const core=new Foundation({databasePath,clock:()=>now,hostPermission:()=>true,trustedOperators:[{scope:S,capability}],...options});t.after(()=>{core.close();rmSync(dir,{recursive:true,force:true});});return {core,dir,databasePath,capability,setTime:value=>now=value}; }
+function setup(t,options={}) { const dir=mkdtempSync(join(tmpdir(),'df-core-')),databasePath=join(dir,'ledger.db'),capability={};let now=1000;const core=new Foundation({databasePath,clock:()=>now,hostPermission:()=>true,trustedOperators:[{scope:S,capability}],...options});t.after(()=>{core.close();rmSync(dir,{recursive:true,force:true});});return {core,dir,databasePath,capability,setTime:value=>now=value}; }
 function intake(core,id='task',scope=S,eventId=id,more={}) {return core.intake(scope,{taskId:id,provider:'fixture',source:'source',eventId,...more});}
 function request(core,task='task',action='action',version=core.getTask(S,task).version,more={}) {return core.requestAction(S,task,{actionId:action,kind:'fixture',targetDigest:D,dataDigest:E,limits:{units:1},expectedVersion:version,...more});}
 function approved(x,task='task',action='action') {intake(x.core,task);request(x.core,task,action);x.core.grant(x.capability,S,task,action,{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000});}
@@ -112,7 +112,7 @@ test('fixture faults and actual abrupt process cuts recover without replay',asyn
 });
 
 test('migration backs up exact supported schema and failures/future/corrupt/unavailable stores preserve bytes',t=>{
- const dir=mkdtempSync(join(tmpdir(),'bubbles-migration-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const dir=mkdtempSync(join(tmpdir(),'df-migration-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
  for(const [name,fault] of [['success',false],['failed',true]]) {
   const path=join(dir,name+'.db'),db=new DatabaseSync(path);db.exec(legacySchemaSql);db.close();const original=readFileSync(path);
   if(fault) {rejects(()=>new Foundation({databasePath:path,fixtureMode:true,migrationFault:()=>{throw Error('secret');}}),'STORAGE_UNAVAILABLE');assert.deepEqual(readFileSync(path),original);}
@@ -135,7 +135,7 @@ test('actual SQLite full failure rolls back and restricts new durable work',t=>{
 });
 
 test('all identifiers hash before persistence; unknown fields, getters, proxies and exceptions reveal no synthetic secrets',t=>{
- const secret='sk_live_SYNTHETICSECRETM1',scope={ownerId:secret,workspaceId:secret},dir=mkdtempSync(join(tmpdir(),'bubbles-secret-')),path=join(dir,'ledger.db'),cap={};t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const secret='sk_live_SYNTHETICSECRETM1',scope={ownerId:secret,workspaceId:secret},dir=mkdtempSync(join(tmpdir(),'df-secret-')),path=join(dir,'ledger.db'),cap={};t.after(()=>rmSync(dir,{recursive:true,force:true}));
  const core=new Foundation({databasePath:path,trustedOperators:[{scope,capability:cap}],hostPermission:()=>{throw Error(secret);}});t.after(()=>core.close());
  core.intake(scope,{taskId:secret,provider:secret,source:secret,eventId:secret});
  core.requestAction(scope,secret,{actionId:secret,kind:'fixture',targetDigest:D,dataDigest:E,limits:{units:1},expectedVersion:1});core.grant(cap,scope,secret,secret,{expectedAuthEpoch:0,expectedVersion:1,expiresAt:Date.now()+10000});
@@ -176,7 +176,7 @@ test('history admission reserves bounded recovery, cancellation and settlement c
 });
 
 test('corrupt legacy foreign keys and semantic rows reject before migration and preserve exact original',t=>{
- const dir=mkdtempSync(join(tmpdir(),'bubbles-corrupt-legacy-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const dir=mkdtempSync(join(tmpdir(),'df-corrupt-legacy-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
  for(const kind of ['orphan','invalid-status']){
   const path=join(dir,kind+'.db'),db=new DatabaseSync(path);db.exec(legacySchemaSql);db.exec('PRAGMA foreign_keys=OFF');
   if(kind==='orphan')db.prepare('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)').run(D,D,D,D,D,E,1000);
@@ -197,7 +197,7 @@ test('old consent cannot restore revoked or replaced approval authority',t=>{
 
 
 test('unsupported crash-left WAL stores reject before SQLite touches main or sidecars',t=>{
- const dir=mkdtempSync(join(tmpdir(),'bubbles-wal-preflight-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const dir=mkdtempSync(join(tmpdir(),'df-wal-preflight-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
  for(const version of [99,1,2,3]) {
   const path=join(dir,`schema-${version}.db`);
   if(version===2||version===3){const core=new Foundation({databasePath:path});core.close();if(version===2){const legacy2=new DatabaseSync(path);for(const row of legacy2.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'runtime_%'").all())legacy2.exec('DROP TABLE '+row.name);legacy2.exec('PRAGMA user_version=2');legacy2.close();}}
@@ -241,7 +241,7 @@ test('supported DELETE hot rollback journal recovers acknowledged facts',t=>{
 });
 
 test('concurrent future version cannot be downgraded during migration or runtime mutation',t=>{
- const dir=mkdtempSync(join(tmpdir(),'bubbles-version-lock-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const dir=mkdtempSync(join(tmpdir(),'df-version-lock-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
  const legacy=join(dir,'legacy.db'),db=new DatabaseSync(legacy);db.exec(legacySchemaSql);db.close();
  const originalExec=DatabaseSync.prototype.exec;let changed=false;
  DatabaseSync.prototype.exec=function(sql){if(!changed&&sql==='BEGIN EXCLUSIVE'){changed=true;const writer=new DatabaseSync(legacy);writer.exec('PRAGMA user_version=99');writer.close();}return originalExec.call(this,sql);};

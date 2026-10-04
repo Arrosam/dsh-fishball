@@ -22,7 +22,7 @@ const { default: ToolRuntime } = await import(`${root}/dsh-tools/lib/index.js`);
 const { default: AgentLoop } = await import(`${root}/dsh-agent-loop/lib/index.js`);
 
 async function fixture({ actualLoop = false, deterministicStream = false, messageAdmission = () => true } = {}) {
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'bubbles-native-')));
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-native-')));
   const ctx = new Context(); ctx.logger.exporters?.clear?.();
   if (actualLoop) await ctx.plugin(SessionProjectionRegistry);
   await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
@@ -83,7 +83,7 @@ test('exact public services create owned session; created/ready/running/cancel/s
     f.adapter.bindClaim(ticket, {actionRef:d('action'),claimRef:d('claim'),reservationRef:d('reservation'),actionDigest:d('digest'),generationRef:d('gen')},()=>true);
     const created = await f.adapter.create(ticket); assert.equal(created.phase, 'created');
     assert.equal(f.adapter.query(ticket).phase, 'ready');
-    const agent = f.ctx.agents.get(`bubbles-${d('gen')}`); agent.status = 'running';
+    const agent = f.ctx.agents.get(`df-${d('gen')}`); agent.status = 'running';
     assert.equal(f.adapter.query(ticket).phase, 'running');
     assert.equal((await f.adapter.cancel(ticket)).phase, 'cancel_requested');
     assert.equal(f.adapter.query(ticket).phase, 'ready', 'idle is not terminal');
@@ -133,7 +133,7 @@ test('actual native event stream dedups offsets; missing frames retain uncertain
     const ticket = await f.adapter.prepare(f.spec, f.task, d('digest'));
     f.adapter.bindClaim(ticket, { actionRef: d('action'), claimRef: d('claim'), reservationRef: d('reservation'), actionDigest: d('digest'), generationRef: d('gen') }, () => true);
     await f.adapter.create(ticket);
-    const agent = f.ctx.agents.get(`bubbles-${d('gen')}`), observed = [];
+    const agent = f.ctx.agents.get(`df-${d('gen')}`), observed = [];
     f.adapter.observe(ticket, receipt => observed.push(receipt));
     const emit = frame => f.ctx.emit('agent/assistant-stream', { agent, frame });
     emit({ type: 'start', revision: 1, attemptId: 'synthetic-attempt', turn: 1, step: 1 });
@@ -208,7 +208,7 @@ test('native handoff retains bound original claim and safe context; no permissio
 });
 test('actual SQLite intent/claim and genuine AgentLoop integrate; pending encrypted handoff and stop remain accountable', async () => {
   const f = await fixture({ actualLoop: true }), owner = {}, host = {};
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'bubbles-native-ledger-')));
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-native-ledger-')));
   const store = new RuntimeStore({ databasePath: join(directory, 'ledger.sqlite'), encryptionKey: Buffer.alloc(32, 7), principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }], hostPermission: () => true });
   const manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter });
   try {
@@ -241,7 +241,7 @@ test('actual store→worker→broker→native inject uses current message grant 
     if (cancelBeforeInject) { const task = store.task(owner, message.taskRef); store.control(owner, { taskRef: task.taskRef, commandRef: d('vertical-cancel'), expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch, kind: 'cancel' }); }
     store.assertMessageCurrent(host, message); store.assertWorkerOwned(host, worker); return true;
   } });
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'bubbles-native-message-ledger-')));
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-native-message-ledger-')));
   store = new RuntimeStore({ databasePath: join(directory, 'ledger.sqlite'), encryptionKey: Buffer.alloc(32, 7), limits: { maxActive: 8 }, principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }, sessionRef: d('owner-session'), generationRef: d('owner-generation') }, { handle: host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }], hostPermission: () => true });
   const manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter });
   try {
@@ -287,7 +287,7 @@ test('message native admission defaults deny even for a live owned worker and we
 
 test('genuine AgentLoop observable local deterministic stream commits session facts with one scoped claim, no external calls', async () => {
   const f = await fixture({ actualLoop: true, deterministicStream: true }), owner = {}, host = {};
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'bubbles-local-loop-ledger-')));
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-local-loop-ledger-')));
   const store = new RuntimeStore({ databasePath: join(directory, 'ledger.sqlite'), encryptionKey: Buffer.alloc(32, 9), principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }], hostPermission: () => true });
   const manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter });
   const status = [], frames = [], events = [], errors = []; let timer;
@@ -301,8 +301,8 @@ test('genuine AgentLoop observable local deterministic stream commits session fa
     const planned = store.planAction(owner, { taskRef: task.taskRef, commandRef: d('local-loop-plan'), expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch, spec: f.spec });
     const grant = store.grantAction(owner, { taskRef: task.taskRef, actionRef: planned.actionRef, actionDigest: planned.actionDigest, commandRef: d('local-loop-grant'), expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch, expiresAt: Date.now() + 60000 });
     const worker = await manager.dispatch(owner, { taskRef: task.taskRef, actionRef: planned.actionRef, actionDigest: planned.actionDigest, commandRef: d('local-loop-dispatch'), expectedTaskVersion: grant.taskVersion, expectedAuthEpoch: grant.authEpoch });
-    const agent = f.ctx.agents.get(`bubbles-${worker.generationRef}`);
-    agent.send({ id: 'synthetic-local-turn', role: 'user', content: [{ type: 'text', text: 'Synthetic local task' }], source: { kind: 'bubbles-fixture', form: 'local' } }, 'next-turn', true);
+    const agent = f.ctx.agents.get(`df-${worker.generationRef}`);
+    agent.send({ id: 'synthetic-local-turn', role: 'user', content: [{ type: 'text', text: 'Synthetic local task' }], source: { kind: 'df-fixture', form: 'local' } }, 'next-turn', true);
     await Promise.race([agent.whenIdle(), new Promise((_resolve, reject) => { timer = setTimeout(() => { agent.cancel({ kind: 'user' }, { keepInbox: false }); reject(new Error('LOCAL_LOOP_TIMEOUT_UNKNOWN')); }, 2000); })]);
     clearTimeout(timer);
     assert.deepEqual(errors, []); assert.equal(f.stats().streams, 1); assert.equal(agent.status, 'idle'); assert.deepEqual(status, ['running', 'idle']);
@@ -318,7 +318,7 @@ test('genuine AgentLoop observable local deterministic stream commits session fa
 test('genuine store→worker→broker→AgentLoop consumes exact approved scoped message only after explicit local wakeup', async () => {
   const owner = {}, host = {}, recipient = {}; let store, timer;
   const f = await fixture({ actualLoop: true, deterministicStream: true, messageAdmission(message, worker) { store.assertMessageCurrent(host, message); store.assertWorkerOwned(host, worker); return true; } });
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'bubbles-broker-loop-ledger-')));
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'df-broker-loop-ledger-')));
   store = new RuntimeStore({ databasePath: join(directory, 'ledger.sqlite'), encryptionKey: Buffer.alloc(32, 17), limits: { maxActive: 8 }, principals: [{ handle: owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }, sessionRef: d('broker-loop-owner-session'), generationRef: d('broker-loop-owner-generation') }, { handle: host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }], hostPermission: () => true });
   const manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter }), inputs = [], frames = [], errors = [];
   f.ctx.on('session/event', (session, event) => { if (event.type === 'user/message' && typeof event.data.id === 'string') inputs.push({ sessionRef: createHash('sha256').update(session.id).digest('hex'), messageRef: d(event.data.id), seq: event.seq, bodyDigest: createHash('sha256').update(event.data.content.filter(block => block.type === 'text').map(block => block.text).join('')).digest('hex'), sourceKind: event.data.source?.kind, sourceForm: event.data.source?.form }); });
@@ -341,14 +341,14 @@ test('genuine store→worker→broker→AgentLoop consumes exact approved scoped
     const dispatch = { ...bind('broker-loop-message-dispatch'), messageRef: accepted.messageRef, actionRef: planned.actionRef, actionDigest: planned.actionDigest };
     const queued = await broker.dispatch(owner, dispatch); assert.equal(queued.message.state, 'sent'); assert.equal(f.stats().streams, 0);
     assert.equal(inputs.filter(input => input.messageRef === d(accepted.messageRef)).length, 0, 'native injection is queued without driver consumption');
-    const agent = f.ctx.agents.get(`bubbles-${worker.generationRef}`);
+    const agent = f.ctx.agents.get(`df-${worker.generationRef}`);
     // Explicitly authorized local fixture wakeup; production transport never
     // wakes a provider merely because its inbox accepted a message.
-    agent.send({ id: 'synthetic-broker-loop-wakeup', role: 'user', content: [{ type: 'text', text: 'Synthetic fixture wakeup' }], source: { kind: 'bubbles-fixture', form: 'local' } }, 'next-turn', true);
+    agent.send({ id: 'synthetic-broker-loop-wakeup', role: 'user', content: [{ type: 'text', text: 'Synthetic fixture wakeup' }], source: { kind: 'df-fixture', form: 'local' } }, 'next-turn', true);
     await Promise.race([agent.whenIdle(), new Promise((_resolve, reject) => { timer = setTimeout(() => { agent.cancel({ kind: 'user' }, { keepInbox: false }); reject(new Error('LOCAL_BROKER_LOOP_TIMEOUT_UNKNOWN')); }, 2000); })]); clearTimeout(timer);
     assert.deepEqual(errors, []); assert.equal(f.stats().streams, 1); assert.equal(agent.status, 'idle');
-    const consumption = inputs.filter(input => input.messageRef === d(accepted.messageRef)); assert.equal(consumption.length, 1); assert.equal(consumption[0].sessionRef, worker.sessionRef); assert.equal(consumption[0].bodyDigest, body.digest); assert.equal(consumption[0].sourceKind, 'bubbles-relay'); assert.equal(consumption[0].sourceForm, 'relay');
-    const providerInputs = f.requests().flat().filter(input => input.messageRef === d(accepted.messageRef)); assert.equal(providerInputs.length, 1); assert.equal(providerInputs[0].bodyDigest, body.digest); assert.equal(providerInputs[0].sourceKind, 'bubbles-relay');
+    const consumption = inputs.filter(input => input.messageRef === d(accepted.messageRef)); assert.equal(consumption.length, 1); assert.equal(consumption[0].sessionRef, worker.sessionRef); assert.equal(consumption[0].bodyDigest, body.digest); assert.equal(consumption[0].sourceKind, 'df-relay'); assert.equal(consumption[0].sourceForm, 'relay');
+    const providerInputs = f.requests().flat().filter(input => input.messageRef === d(accepted.messageRef)); assert.equal(providerInputs.length, 1); assert.equal(providerInputs[0].bodyDigest, body.digest); assert.equal(providerInputs[0].sourceKind, 'df-relay');
     assert.ok(frames.some(frame => frame.type === 'end' && frame.outcome === 'committed'));
     assert.equal(store.getMessage(owner, { taskRef: task.taskRef, messageRef: accepted.messageRef }).state, 'sent', 'observed native input alone is not an automatic production consumption receipt');
     const consumptionEvidence = d(JSON.stringify({ taskRef: task.taskRef, workerClaimRef: worker.claimRef, generationRef: worker.generationRef, messageRef: accepted.messageRef, bodyDigest: body.digest, observation: consumption[0] }));

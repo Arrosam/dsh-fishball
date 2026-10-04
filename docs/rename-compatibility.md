@@ -1,13 +1,13 @@
 # dsh-fishball rename and stored state
 
-Authority is the [owner amendment](owner-amendment-2026-10-04.md). Status: documentation/license/AC prepared; coordinated code and workspace rename follows the current Stage2 security remediation. Final commit and parity evidence will be recorded here. No remote repository exists.
+Authority is the [owner amendment](owner-amendment-2026-10-04.md). Status: current code uses the new names; independent parity review and the physical workspace move are pending. This unit follows reviewed Stage2 integration `3b136e1`. Final commit and parity evidence will be recorded here. No remote repository exists.
 
 | Boundary | Current target after coordinated rename |
 | --- | --- |
 | Package / intended public repository | `dsh-fishball` / `Arrosam/dsh-fishball` |
 | Abbreviation / private native service | `df` / `ctx.df` |
 | Admitted operator RPC channel | `/df-rpc`, same public DSH authentication carrier |
-| Native client module / task panel | `dsh-fishball/client.js`, df slot key, dsh-fishball display text |
+| Native client module / task panel | ModuleLoader ID `dsh-fishball`, bundle `lib/client.js`, df slot key, dsh-fishball display text |
 | New synthetic fixture/storage names | df fixture IDs; `dsh-fishball.sqlite` for a genuinely new fixture |
 | Historical tickets | DF same-suffix aliases; existing BUB filenames/AC/source text retained |
 | ESM memory contracts | `df.fishball-memory/v1`, `df.memory-projection/v1`; only exact known prior bubbles formats may be structurally translated |
@@ -27,3 +27,15 @@ Known legacy memory contract labels may normalize on explicit caller-supplied sn
 The independent Stage2 CR11 finding showed that the initial encrypted format did not authenticate generation metadata. The security fix is independent of branding: records use explicit `cryptoVersion:2` and unbranded `runtime-data/v2` AAD over all immutable metadata plus scope/id/kind/digest. Nonempty prior encrypted format cannot prove the original producer metadata; it fails closed as `CRYPTO_LEGACY_UNVERIFIED` before business recovery/writes, with original bytes preserved. There is no automatic resealing or fabricated provenance.
 
 Such a legacy store needs a separately authorized owner-provenance recovery step; the current native API provides no bypass. Empty/W1-only supported old schemas remain migratable. A prior-format rejection test is separate from the verified-v2 pre/post-brand compatibility test, so a security upgrade is not falsely attributed to the rename.
+
+## Current module verification
+
+The first renamed native-client batch passed14 of15 tests; exact host-capability validation correctly rejected the project-local runtime wrapper whose package name still used the prior brand. Root compared both wrapper lockfiles with only root wrapper-name fields omitted and verified all dependency entries identical, then synchronized those two project-owned wrapper metadata files. No install, download, dependency change or lifecycle script ran. The unchanged client/rename batch then passed15/15 with zero skips (`/tmp/df-rename-client-retest.tap`). Build reproducibility and51 JavaScript syntax checks passed. This does not count as the consolidated Stage3 regression.
+
+The focused retained Stage2/rename runtime batch passed169/169,0 skips. The affected Stage3 module batch passed50 with3 actual-store tests explicitly skipped pending schema4. The public host smoke passed11 loads/10 reloads, zero inference calls, and preserved denial. These commands are bounded change verification, not consolidated acceptance.
+
+## Independent corrective checks
+
+RENAME-CR01 preserved an exact prior approved native ID/sessionRef; only unbound new creations use df. RENAME-CR02 replaced target-existence checks with filesystem-entry checks: a sole nonregular entry rejects STORE_PATH_UNSUPPORTED, unexpected filesystem failure rejects STORE_PATH_UNAVAILABLE, and both names always reject STORE_PATH_AMBIGUOUS. No entry is overwritten or bypassed. Independent encrypted crypto2 basename parity passes on both names; genuine crypto1 refusal remains byte-preserving. The reviewer reports hold the exact oracles and final snapshot.
+
+Before the move the known stopped synthetic profile has fixture generation11, a sole legacy database, no3080 listener and database SHA256 `0144f7f05bd4e12fd9ecde786509437f3274d16b82d3184e7642d477c48bc7a1`. Root will rebase only its known fixture path/ID/database prefix after moving; all settings and database bytes must compare unchanged.

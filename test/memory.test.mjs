@@ -177,7 +177,7 @@ test('complete encrypted projection exact byte N-1/N/N+1 and future contract ref
     row.content = JSON.stringify(next); row.digest = hash(row.content); assert.equal(Buffer.byteLength(row.content), target);
     if (target > 4194304) rejects(() => memory.state(), 'CONTEXT_INVALID'); else assert.equal(memory.state().projection.core.turns.length, 64);
   }
-  const future = structuredClone(base); future.contractVersion = 'bubbles.memory-projection/future'; row.content = JSON.stringify(future); row.digest = hash(row.content);
+  const future = structuredClone(base); future.contractVersion = 'df.memory-projection/future'; row.content = JSON.stringify(future); row.digest = hash(row.content);
   rejects(() => memory.state(), 'MEMORY_CORRUPT'); assert.equal(x.writes, initialWrites);
 });
 
@@ -187,7 +187,7 @@ const { RuntimeStore } = await import('../src/runtime-store.mjs');
 const durablePending = typeof RuntimeStore.prototype.memoryBinding !== 'function' || typeof RuntimeStore.prototype.memoryCommandReceipt !== 'function';
 async function runtimeFixture(t, extra = {}) {
   const { mkdtempSync, rmSync } = await import('node:fs'); const { tmpdir } = await import('node:os'); const { join } = await import('node:path');
-  const directory = mkdtempSync(join(tmpdir(), 'bubbles-memory-adapter-')), databasePath = join(directory, 'ledger.db'), handle = {}, owner = {}, foreign = {}, host = {};
+  const directory = mkdtempSync(join(tmpdir(), 'df-memory-adapter-')), databasePath = join(directory, 'ledger.db'), handle = {}, owner = {}, foreign = {}, host = {};
   const principals = [{ handle, role: 'coordinator', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: owner, role: 'owner', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }, { handle: foreign, role: 'coordinator', scope: { ownerId: 'synthetic-foreign-owner', workspaceId: 'synthetic-workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' } }];
   const options = { databasePath, encryptionKey: Buffer.alloc(32, 5), principals, forbiddenSecrets: ['SYNTHETIC-canary-secret'], ...extra };
   let store = new RuntimeStore(options);

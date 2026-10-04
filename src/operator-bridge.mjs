@@ -59,7 +59,7 @@ export function installOperatorBridge({ connection, operations, isAlive = () => 
   const prefix = 'v1/';
   // /api has one official interceptor owner. A separate logical channel uses
   // the same native auth/admission policy without replacing that interceptor.
-  const unregister = connection.rpc.handle('/bubbles-rpc',
+  const unregister = connection.rpc.handle('/df-rpc',
     async (endpoint, payload, signal, admittedPeer) => {
       let alive = false;
       try { alive = active && isAlive() === true; } catch { /* stable failure below */ }

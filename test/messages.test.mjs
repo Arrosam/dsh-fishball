@@ -54,7 +54,7 @@ import { join } from 'node:path';
 import { RuntimeStore, reference } from '../src/runtime-store.mjs';
 import { MessageBroker } from '../src/messages.mjs';
 function fixture(t, transport) {
- const dir = mkdtempSync(join(tmpdir(), 'bubbles-messages-')), databasePath = join(dir, 'ledger.db');
+ const dir = mkdtempSync(join(tmpdir(), 'df-messages-')), databasePath = join(dir, 'ledger.db');
  const owner = {}, host = {}, recipient = {}, other = {}, taskRef = reference('task'); let now = 1000;
  const principals = [{ handle: owner, role: 'owner', scope: { ownerId: 'owner', workspaceId: 'workspace' }, sessionRef: ref('main-session'), generationRef: ref('main-generation') }, { handle: host, role: 'host', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: recipient, role: 'worker', scope: { ownerId: 'owner', workspaceId: 'workspace' }, taskRef, sessionRef: receiver.sessionRef, generationRef: receiver.generationRef }, { handle: other, role: 'owner', scope: { ownerId: 'other', workspaceId: 'workspace' }, sessionRef: ref('other-session'), generationRef: ref('other-generation') }];
  const options = { databasePath, encryptionKey: Buffer.alloc(32, 7), principals, clock: () => now, hostPermission: () => true, forbiddenSecrets: ['sk_synthetic_canary'], limits: { maxActive: 8 } };

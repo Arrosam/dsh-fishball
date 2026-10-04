@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdirSync, existsSync, lstatSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
@@ -11,6 +11,19 @@ export function webEnvironment() {
   return Object.freeze({ PATH: '/opt/homebrew/bin:/usr/bin:/bin', DSH_HOME: paths.home, DSH_AGENTS_HOME: paths.agents,
     DSH_TELEMETRY_DISABLED: '1', DSH_PERMISSION_MODE: 'read-only' });
 }
+export function fixtureDatabasePath(home = paths.home) {
+  const current = `${home}/dsh-fishball.sqlite`, legacy = `${home}/bubbles.sqlite`;
+  const entry = path => {
+    try { return lstatSync(path); }
+    catch (error) { if (error.code === 'ENOENT') return null; throw new Error('STORE_PATH_UNAVAILABLE'); }
+  };
+  const currentEntry = entry(current), legacyEntry = entry(legacy);
+  if (currentEntry && legacyEntry) throw new Error('STORE_PATH_AMBIGUOUS');
+  const selected = legacyEntry ? legacy : current;
+  const selectedEntry = legacyEntry ?? currentEntry;
+  if (selectedEntry && !selectedEntry.isFile()) throw new Error('STORE_PATH_UNSUPPORTED');
+  return selected;
+}
 export function profilePatch(generation = 1) {
   if (!Number.isSafeInteger(generation) || generation < 1 || generation > 100) throw new Error('GENERATION_INVALID');
   return JSON.stringify([
@@ -19,8 +32,8 @@ export function profilePatch(generation = 1) {
     { id: 'deepseek-account', disabled: true },
     { id: 'llm-deepseek-account', disabled: true },
     { id: 'account-controller', disabled: true },
-    { insert: [{ id: 'bubbles-m1-fixture', name: fileURLToPath(new URL('./web-fixture.mjs', import.meta.url)),
-      config: { generation, databasePath: `${paths.home}/bubbles.sqlite` } }] },
+    { insert: [{ id: 'df-m1-fixture', name: fileURLToPath(new URL('./web-fixture.mjs', import.meta.url)),
+      config: { generation, databasePath: fixtureDatabasePath() } }] },
   ], null, 2) + '\n';
 }
 export const patchPath = `${paths.home}/profiles/web/cordis.patch.yml`;

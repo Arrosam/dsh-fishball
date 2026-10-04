@@ -37,7 +37,7 @@ import { join } from 'node:path';
 import { RuntimeStore, reference } from '../src/runtime-store.mjs';
 import { ResultPipeline } from '../src/results.mjs';
 function fixture(t, adapter, policy = () => ({ quietUntil: 0, coalesceUntil: 0, allowObstaclesDuringQuiet: false }), overrides = {}) {
- const dir = mkdtempSync(join(tmpdir(), 'bubbles-results-')), databasePath = join(dir, 'ledger.db'), owner = {}, host = {}, other = {}, taskRef = reference('task'); let now = 1000;
+ const dir = mkdtempSync(join(tmpdir(), 'df-results-')), databasePath = join(dir, 'ledger.db'), owner = {}, host = {}, other = {}, taskRef = reference('task'); let now = 1000;
  const principals = [{ handle: owner, role: 'owner', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: host, role: 'host', scope: { ownerId: 'owner', workspaceId: 'workspace' } }, { handle: other, role: 'owner', scope: { ownerId: 'other', workspaceId: 'workspace' } }];
  const options = { databasePath, encryptionKey: Buffer.alloc(32, 9), principals, clock: () => now, hostPermission: () => true, forbiddenSecrets: ['sk_synthetic_canary'], ...overrides, limits: { maxActive: 8, ...overrides.limits } };
  let store = new RuntimeStore(options); t.after(() => { store.close(); rmSync(dir, { recursive: true, force: true }); });
