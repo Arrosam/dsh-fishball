@@ -1,0 +1,26 @@
+{
+  "vaultEntries": [
+    "key.bin",
+    "state.json"
+  ],
+  "vaultMode": "0o700",
+  "files": {
+    "runtime.sqlite": {
+      "mode": "0o600",
+      "nlink": 1
+    },
+    "key.bin": {
+      "mode": "0o600",
+      "nlink": 1
+    },
+    "state.json": {
+      "mode": "0o600",
+      "nlink": 1
+    }
+  },
+  "baselineEqual": {
+    "key": true,
+    "metadata": true,
+    "databaseInode": true
+  }
+}

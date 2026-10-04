@@ -1,0 +1,23 @@
+{
+  "phase": "disposed",
+  "pid": 58497,
+  "entry": "dsh-fishball/installed",
+  "setupAvailable": false,
+  "runtimeAvailable": false,
+  "setupLoads": 0,
+  "runtimeLoads": 0,
+  "withdrawals": [],
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "databaseExists": true,
+  "setupNamespaceExists": true,
+  "routes": {
+    "setup": false,
+    "runtime": false
+  },
+  "nativeEntries": [],
+  "setupCleanupCode": "unavailable",
+  "runtimeCleanupCode": "unavailable"
+}

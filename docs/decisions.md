@@ -18,3 +18,9 @@ The owner explicitly withdrew the proposed `dsh-std` requirement and requested f
 
 ## Source availability
 Approved Chinese review: Library DOCX libfile_13cd8b7e548881919b22d9e99bfddaf2, PDF libfile_6eb6b57373cc81918f1582c776b12ab5. Supported prepare-materialize returned transfers; consumer-local library_file_transfer.py returned exactly “library file transfer failed: download failed” for the DOCX. It provided no more specific cause; neither local DOCX nor PDF bytes are claimed. No guessed URLs/cloud paths or alternate bypass transfer was used. Complete DOCX text was read through the supported Library read route (529 lines); tracked source extraction and ticket cards retain its AC.
+
+## Normal setup and unfinished integration
+
+The authorized personal-local owner model needs no additional external account identity decision: original native DSH admitted operator/profile supplies authority,and explicit exact local-storage confirmation creates a private generated owner/workspace namespace. Code and tests for this flow are implemented;no owner persistent credentials/access were actually configured. See [normal installation](runtime-installation.md) and [actual bounded proof](evidence/M6/normal-native-lifecycle.md).
+
+Normal worker/model/environment/permission-policy/preview,memory/tokenizer,reviewer/repair,event/schedule and result/notification/recipient composition is still **unimplemented integration code**. Existing trusted factory/modules and synthetic capabilities do not make normal-use installers. D3/D10 model/catalog/context/tokenizer/cost/concurrency thresholds,D4retention,D5/D6allowed scopes/policy,D8/D9event/time/quiet and D11/D13result/audit policies also need concrete owner choices before corresponding execution. Live chat platforms/accounts remain OUT this phase. This is not solely a missing choice,and not accepted MVP scope reduction.

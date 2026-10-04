@@ -1,0 +1,62 @@
+{
+  "result": "passed",
+  "timing": "after final frozen full regression",
+  "manifests": [
+    {
+      "manifest": "docs/evidence/M6/normal-followup-executable-freeze.sha256",
+      "manifestSha256": "3c04ada75d2f2db36ab244376a69453bd9a1e2b88f089ea7d45ce8b40ff75605",
+      "files": 91,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/M6/portable-resolver-author.sha256",
+      "manifestSha256": "8e0a530a571bb25419fa5ae8ae462e009f3d36d399c6461f2cf39b00ee09bde4",
+      "files": 10,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/M6/installation-author.sha256",
+      "manifestSha256": "783f04c28910edc3f48a5e28d3e58a97a847e8a20885e539ce720e4d890aa5c1",
+      "files": 15,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/M6/installation-istqb.sha256",
+      "manifestSha256": "d54c0919e9dd7c429c1678401357c6a866318bd90b3af530a3e4f561c6059d16",
+      "files": 12,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/M6/onboarding-client-author.T01.sha256",
+      "manifestSha256": "be5cf8fef00fa017fd617157715fa0eb1d03b0c9dccd57d85af344a6adb2759e",
+      "files": 6,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/M6/onboarding-client-405-istqb.sha256",
+      "manifestSha256": "33873a405ff97b7369fe25b06bed05b6a1ddd9e58177ff4c38f81c7dfe0ca9ec",
+      "files": 18,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/M6/onboarding-client-istqb.sha256",
+      "manifestSha256": "9f4ef7f5b25cf626b13d85277c609f8ade5d737361fd332ad86c471d52096070",
+      "files": 8,
+      "allMatch": true,
+      "mismatch": []
+    },
+    {
+      "manifest": "docs/evidence/S3/istqb-final-archive.sha256",
+      "manifestSha256": "0c2ad4cb8069384b57566260e0f7b4687d1c3384ab8b36275b4769d4effe3535",
+      "files": 57,
+      "allMatch": true,
+      "mismatch": []
+    }
+  ]
+}

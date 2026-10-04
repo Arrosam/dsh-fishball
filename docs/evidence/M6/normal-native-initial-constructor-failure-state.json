@@ -1,0 +1,27 @@
+{
+  "phase": "observer-active",
+  "pid": 57616,
+  "entry": "dsh-fishball/installed",
+  "setupAvailable": false,
+  "runtimeAvailable": false,
+  "setupLoads": 0,
+  "runtimeLoads": 0,
+  "withdrawals": [],
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "databaseExists": false,
+  "setupNamespaceExists": false,
+  "routes": {
+    "setup": false,
+    "runtime": false
+  },
+  "nativeEntries": [
+    {
+      "name": "dsh-fishball/installed",
+      "disabled": false,
+      "fiberState": 3
+    }
+  ]
+}

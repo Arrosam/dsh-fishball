@@ -1,0 +1,21 @@
+{
+  "result": "passed",
+  "sourceCommit": "46b4969",
+  "artifact": ".runtime/onboarding-install/artifacts/dsh-fishball-0.1.0-preview.1.tgz",
+  "artifactSha256": "0a3375e0628ef8e3da0f9bc2429e5deb420d02e4a1a05ecd12c35a23c05026d2",
+  "artifactBytes": 1265261,
+  "archiveFiles": 443,
+  "publicFilesCompared": 47,
+  "publicFilesMatch": true,
+  "physicalNormalPackage": true,
+  "pluginRelativeRuntimeAbsent": true,
+  "sourceCheckoutLink": false,
+  "ownerProfileUsed": false,
+  "ownerCredentialsConfigured": false,
+  "ignoreScripts": true,
+  "offline": true,
+  "packageVersion": "0.1.0-preview.1",
+  "firstPackagingFailure": "two validation-only config paths pointed to same /dev/null; npm rejected duplicate load; preserved first output",
+  "configCorrection": "two distinct new empty private fixture configs; product unchanged",
+  "time": "2026-10-04T17:15:27.476991+00:00"
+}

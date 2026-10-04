@@ -1,0 +1,128 @@
+// Root functional validation only: original native HTTP carrier, isolated
+// synthetic profile, no factory/identity/key/authentication replacement.
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync, writeFileSync, renameSync, lstatSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { setTimeout } from 'node:timers/promises';
+const base=fileURLToPath(new URL('./',import.meta.url));
+const origin='http://127.0.0.1:3080', profile=`${base}home/profiles/web`, database=`${profile}/df-data/runtime.sqlite`, vault=database+'.df-setup';
+const statePath=`${base}evidence/observer-state.json`, baselinePath=`${base}private/retained-baseline.json`;
+const digest=value=>createHash('sha256').update(value).digest('hex');
+let stage='arguments';
+const state=()=>JSON.parse(readFileSync(statePath,'utf8'));
+const closed=()=>{const s=state();assert.equal(s.providers,0);assert.equal(s.sessions,0);assert.equal(s.inferenceAttempts,0);assert.equal(s.toolAttempts,0);return s;};
+async function waitFor(check,code){const deadline=Date.now()+15000;let result;while(Date.now()<deadline){try{result=check();if(result)return result;}catch{}await setTimeout(50);}throw new Error(code);}
+function persisted(){
+  const names=readdirSync(vault).sort();assert.deepEqual(names,['key.bin','state.json']);
+  const stats=[vault,database,`${vault}/key.bin`,`${vault}/state.json`].map(path=>lstatSync(path));
+  assert.equal(stats[0].mode&0o777,0o700);
+  for(const s of stats.slice(1)){assert.equal(s.mode&0o777,0o600);assert.equal(s.nlink,1);assert.equal(s.isSymbolicLink(),false);}
+  const key=readFileSync(`${vault}/key.bin`);assert.equal(key.length,32);
+  const snapshot={key:digest(key),metadata:digest(readFileSync(`${vault}/state.json`)),databaseInode:String(stats[1].ino)};
+  key.fill(0);return snapshot;
+}
+async function request(url,options={}){try{return await fetch(url,{...options,redirect:'manual',signal:AbortSignal.timeout(5000)});}catch{throw new Error('NORMAL_NATIVE_HTTP_UNAVAILABLE');}}
+async function ownerCalls(){
+  const access=JSON.parse(readFileSync(`${base}private/native-access.json`,'utf8')),url=new URL(access.url);
+  assert.equal(url.origin,origin);assert.equal(url.pathname,'/');assert.equal(url.searchParams.size,1);assert.equal(url.searchParams.has('token'),true);
+  const exchange=await request(url.href);assert.equal(exchange.status,303);assert.equal(exchange.headers.get('location'),'./');
+  let cookie=exchange.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+  return {
+    async routeStatus(channel,mode='owner'){
+      const response=await request(`${origin}/${channel}/v1/status`,{method:'POST',headers:{'content-type':'application/json',origin,...(mode==='anonymous'?{}:{cookie})},body:JSON.stringify({type:'client-request',rpcId:'normal-uninstalled-readback',method:'v1/status',payload:{}})});return response.status;
+    },
+    async call(channel,endpoint,payload={},mode='owner',expectOk=true){
+      const response=await request(`${origin}/${channel}/v1/${endpoint}`,{method:'POST',headers:{'content-type':'application/json',origin:mode==='cross-origin'?'http://synthetic.invalid':origin,...(mode==='anonymous'?{}:{cookie:mode==='forged'?'df-synthetic=forged':cookie})},body:JSON.stringify({type:'client-request',rpcId:'normal-install-synthetic',method:`v1/${endpoint}`,payload})});
+      if(mode!=='owner')return response.status;
+      assert.equal(response.status,200,'NATIVE_OWNER_RPC_STATUS');
+      const result=(await response.json()).result;assert.ok(result&&typeof result==='object','NATIVE_RPC_ENVELOPE');
+      const encoded=JSON.stringify(result);assert.equal(encoded.includes(cookie),false);assert.equal(encoded.includes(url.searchParams.get('token')),false);
+      if(expectOk){assert.equal(result.ok,true,`NATIVE_OPERATION_${channel}_${endpoint}_${result.error?.code??'INVALID'}`);return result.value;}
+      assert.equal(result.ok,false);assert.equal(Object.hasOwn(result,'value'),false);return result.error?.code;
+    },
+    clear(){cookie=undefined;}
+  };
+}
+async function taskRoundtrip(call,cycle){
+  const existing=await call('df-rpc','list');assert.equal(existing.length,cycle==='initial'?0:1);
+  const input={taskId:'normal-installed-synthetic-task',provider:'synthetic-native-http',source:'normal-installed-synthetic',eventId:'bounded-fixed-intake',goal:'Synthetic normal install encrypted task; no inference, tools or external effects.'};
+  const first=await call('df-rpc','intake',{...input,commandRef:digest(`normal-installed-${cycle}-first`)});assert.equal(first.deduplicated,cycle!=='initial');
+  const duplicate=await call('df-rpc','intake',{...input,commandRef:digest(`normal-installed-${cycle}-duplicate`)});assert.equal(duplicate.deduplicated,true);
+  let snapshot=await call('df-rpc','status',{taskRef:first.task.taskRef});
+  const goal=snapshot.data.find(record=>record.kind==='goal');assert.ok(goal);
+  const detail=await call('df-rpc','detail',{taskRef:first.task.taskRef,recordRef:goal.recordRef,expectedTaskVersion:snapshot.task.version,expectedAuthEpoch:snapshot.task.authEpoch});assert.equal(detail.data.content,input.goal);
+  if(cycle==='initial')await call('df-rpc','control',{taskRef:first.task.taskRef,commandRef:digest('normal-installed-pause'),expectedTaskVersion:snapshot.task.version,expectedAuthEpoch:snapshot.task.authEpoch,kind:'pause'});
+  snapshot=await call('df-rpc','status',{taskRef:first.task.taskRef});assert.equal(snapshot.control,'paused');assert.equal(snapshot.task.status,'queued');
+  for(const name of ['actions','workers','executions'])assert.equal(snapshot[name].length,0);
+  assert.equal((await call('df-rpc','list')).length,1);
+  const key=readFileSync(`${vault}/key.bin`),publicRead=JSON.stringify({first,duplicate,snapshot,detail});
+  assert.equal(publicRead.includes(key.toString('hex')),false);assert.equal(publicRead.includes(key.toString('base64')),false);
+  for(const path of [database,`${database}-wal`,`${database}-shm`,`${vault}/state.json`])if(existsSync(path)){
+    const raw=readFileSync(path);assert.equal(raw.includes(Buffer.from(input.goal)),false);assert.equal(raw.includes(key),false);
+  }
+  key.fill(0);closed();return {taskRef:first.task.taskRef,firstDeduplicated:first.deduplicated,duplicateDeduplicated:true,entries:1,control:snapshot.control,status:snapshot.task.status,actions:0,workers:0,executions:0,encryptedGoalAbsent:true,privateKeyExcluded:true};
+}
+async function lifecycle(operation,id){
+  writeFileSync(`${base}private/lifecycle-command.json.tmp`,JSON.stringify({operation,id})+'\n',{mode:0o600});renameSync(`${base}private/lifecycle-command.json.tmp`,`${base}private/lifecycle-command.json`);
+  const result=await waitFor(()=>{const current=state().lifecycle;return current?.id===id&&current.result?current:null;},'NORMAL_NATIVE_LIFECYCLE_TIMEOUT');
+  assert.equal(result.result,'passed',result.code??'NORMAL_NATIVE_LIFECYCLE_FAILED');closed();return result;
+}
+async function run(cycle,pid){
+  assert.ok(['initial','restart','uninstall','uninstalled','removed-profile'].includes(cycle));assert.ok(Number.isSafeInteger(pid)&&pid>1);
+  stage='setup-service-presence';await waitFor(()=>{const s=state();return s.phase==='observer-active'&&s.pid===pid&&(['uninstalled','removed-profile'].includes(cycle)||s.setupAvailable)?s:null;},'NORMAL_NATIVE_SETUP_UNAVAILABLE');closed();
+  stage='native-owner-auth';
+  const {call,clear,routeStatus}=await ownerCalls();
+  try{
+    if(['uninstalled','removed-profile'].includes(cycle)){
+      stage='uninstall-status-only-reconciliation';const current=closed();
+      assert.equal(current.setupAvailable,false);assert.equal(current.runtimeAvailable,false);assert.deepEqual(current.nativeEntries,[]);assert.deepEqual(current.routes,{setup:false,runtime:false});
+      if(cycle==='uninstalled'){assert.equal(current.lifecycle.result,'passed');assert.equal(current.lifecycle.operation,'uninstall');}
+      stage='uninstall-retained-state';assert.deepEqual(persisted(),JSON.parse(readFileSync(baselinePath,'utf8')));
+      stage='uninstall-http-route-status';
+      const routeStatusCodes={ownerSetup:await routeStatus('df-setup'),ownerRuntime:await routeStatus('df-rpc'),anonymousSetup:await routeStatus('df-setup','anonymous')};
+      writeFileSync(`${base}evidence/uninstall-route-observation.json`,JSON.stringify(routeStatusCodes,null,2)+'\n',{mode:0o600});
+      assert.deepEqual(routeStatusCodes,{ownerSetup:405,ownerRuntime:405,anonymousSetup:405});
+      const report={result:'passed',cycle,pid,entry:'dsh-fishball/installed',uninstallCommitted:current.lifecycle??null,routeStatusCodes,routeOracle:'exact original native Web POST fallback with both authoritative prefixes/services/entry absent',sameNamespaceKeyMetadataDatabase:true,noUninstallReplay:true,sessions:0,providers:0,inferenceAttempts:0,toolAttempts:0,ownerCredentialsConfigured:false,timestamp:new Date().toISOString()};
+      writeFileSync(`${base}evidence/${cycle==='uninstalled'?'uninstall-reconciled':'removed-profile-smoke'}.json`,JSON.stringify(report,null,2)+'\n',{mode:0o600});return report;
+    }
+    const auth={tokenExchange:303,anonymous:await call('df-setup','status',{},'anonymous'),forged:await call('df-setup','status',{},'forged'),crossOrigin:await call('df-setup','status',{},'cross-origin'),ownerRpc:200};
+    assert.deepEqual(auth,{tokenExchange:303,anonymous:401,forged:401,crossOrigin:403,ownerRpc:200});
+    stage='setup-status';let status=await call('df-setup','status');assert.equal(status.executionEnabled,false);assert.equal(status.storage.location,database);
+    let setupProof;
+    if(cycle==='initial'){
+      assert.equal(status.phase,'setup_required');assert.equal(existsSync(database),false);assert.equal(existsSync(vault),false);assert.equal(state().runtimeAvailable,false);
+      stage='no-write-preview';const preview=await call('df-setup','prepare');assert.deepEqual(preview.description,{operation:'create-local-storage',databaseLocation:database,identityMode:'native-dsh-owner',encrypted:true,permissions:'owner-only',externalExecution:false});
+      assert.match(preview.previewRef,/^[a-f0-9]{64}$/);assert.match(preview.planDigest,/^[a-f0-9]{64}$/);assert.ok(preview.expiresAt>Date.now());assert.equal(existsSync(database),false);assert.equal(existsSync(vault),false);
+      stage='rejected-acceptance';const rejected=await call('df-setup','confirm',{previewRef:preview.previewRef,planDigest:preview.planDigest,accept:false},'owner',false);
+      assert.equal(rejected,'SETUP_CONFIRMATION_REQUIRED');assert.equal(existsSync(database),false);assert.equal(existsSync(vault),false);
+      stage='unknown-field-acceptance';const unknown=await call('df-setup','confirm',{previewRef:preview.previewRef,planDigest:preview.planDigest,accept:true,owner:'synthetic-payload-role'},'owner',false);
+      assert.equal(unknown,'SETUP_INVALID_INPUT');assert.equal(existsSync(database),false);assert.equal(existsSync(vault),false);
+      stage='explicit-synthetic-consent';const fresh=await call('df-setup','prepare');
+      status=await call('df-setup','confirm',{previewRef:fresh.previewRef,planDigest:fresh.planDigest,accept:true});assert.equal(status.phase,'ready');assert.equal(status.executionEnabled,false);
+      await waitFor(()=>state().runtimeAvailable,'NORMAL_NATIVE_CHILD_UNAVAILABLE');
+      stage='private-persistence';const record=persisted();writeFileSync(baselinePath,JSON.stringify(record)+'\n',{mode:0o600});
+      setupProof={firstStatus:'setup_required',firstLoadWrites:false,prepareWrites:false,rejectedConsentWrites:false,unknownAuthorityFieldsWrites:false,explicitSyntheticConsent:true,actualRuntimeReady:true,privateModes:true};
+    }else{
+      stage='same-state-reopen';assert.equal(status.phase,'ready');await waitFor(()=>state().runtimeAvailable,'NORMAL_NATIVE_REOPEN_UNAVAILABLE');
+      assert.deepEqual(persisted(),JSON.parse(readFileSync(baselinePath,'utf8')));setupProof={existingReady:true,noNewConfirmation:true,sameNamespaceKeyMetadataDatabase:true};
+    }
+    stage='closed-capabilities';const diagnostic=state().runtimeDiagnostic;assert.equal(diagnostic.supported,true);assert.equal(Object.values(diagnostic.capabilities).every(value=>value===false),true);
+    assert.equal(Object.keys(diagnostic.capabilities).length,7);
+    stage='native-encrypted-task';const task=await taskRoundtrip(call,cycle);
+    let lifecycleResult;
+    if(cycle==='initial'){
+      stage='ten-native-reloads';lifecycleResult=await lifecycle('reload10','first-ten-reloads');
+      assert.deepEqual(persisted(),JSON.parse(readFileSync(baselinePath,'utf8')));
+      assert.equal((await call('df-rpc','list')).length,1);assert.equal((await call('df-setup','status')).phase,'ready');
+    }else if(cycle==='uninstall'){
+      stage='public-native-uninstall';lifecycleResult=await lifecycle('uninstall','public-native-uninstall');
+      assert.deepEqual(persisted(),JSON.parse(readFileSync(baselinePath,'utf8')));
+      assert.equal(await routeStatus('df-setup'),405);
+    }
+    const report={result:'passed',cycle,pid,entry:'dsh-fishball/installed',target:'DSH Web 0.2.1-alpha.1',originalNativeAuth:true,normalPhysicalPackage:true,nativeAuthentication:auth,setupProof,capabilities:diagnostic.capabilities,task,lifecycle:lifecycleResult??null,providers:0,sessions:0,inferenceAttempts:0,toolAttempts:0,recipientAttempts:0,ownerCredentialsConfigured:false,scope:'isolated explicit synthetic local-storage consent; no owner profile, inference, tools, recipient or browser render',timestamp:new Date().toISOString()};
+    writeFileSync(`${base}evidence/${cycle}-smoke.json`,JSON.stringify(report,null,2)+'\n',{mode:0o600});return report;
+  }finally{clear();}
+}
+try{console.log(JSON.stringify(await run(process.argv[2],Number(process.argv[3]))));}
+catch(error){const code=typeof error.code==='string'&&/^[A-Z_]+$/.test(error.code)?error.code:'NORMAL_NATIVE_SMOKE_FAILED';console.error(JSON.stringify({result:'failed',code,stage}));process.exitCode=1;}

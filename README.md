@@ -23,13 +23,18 @@ The pinned target is **official DSH Web 0.2.1-alpha.1**, verified as the newest 
 ```sh
 npm run check
 npm run host:smoke
-# Full npm test regression follows completion of Stage3.
+# Complete runnable regression against the existing reviewed public host.
+DF_FISHBALL_CORDIS_REVIEWED=1 node --test --test-concurrency=4 test/*.test.mjs
 ```
 
-`host:setup` is the explicit reviewed downloader; launch/test never downloads dependencies. Tests use synthetic identities/secrets/stores and explicitly mocked providers. Genuine public Cordis/AgentLoop fixtures are distinguished from real external inference; no paid or external model call is authorized. Native owner operations use DSH's admitted operator peer; production identity/key/policy provisioning remains an explicit trusted composition boundary, with default-deny effects.
+`host:setup` is the explicit reviewed downloader; launch/test never downloads dependencies. Direct Node development now uses normal peer resolution: after authorized setup, link the ignored `node_modules/@deepseek-ai` namespace to `../.runtime/dsh-web/node_modules/@deepseek-ai`; keep any existing matching link and do not replace an unrelated dependency tree. The actual installed package uses official profile resolution into a separate physical host. Tests use synthetic identities/secrets/stores and explicitly mocked providers. Genuine public Cordis/AgentLoop fixtures are distinguished from real external inference; no paid or external model call is authorized. Native owner operations use DSH's admitted operator peer; effects remain deny by default.
 
 `host:web` and `host:profile-smoke` operate only on a project-local synthetic Web profile at127.0.0.1:3080. They do not use personal accounts/settings/credentials. Managed approval may be needed for loopback listening; denied actions stop. Current browser automation could not observe the page, and actual native UI/visual/window-close validation remains deferred. No validation host is left running.
 
-Package root loads the bounded foundation (`src/index.mjs`); Stage3 uses the separate `dsh-fishball/runtime` factory with trusted private identity/key/policy and explicitly configured adapters. Its unconfigured default returns unavailable. A foundation-only smoke does not validate the Stage3 assistant. See [runtime installation boundaries](docs/runtime-installation.md) and [per-criterion traceability](docs/acceptance-traceability.md).
+Package root loads the bounded foundation (`src/index.mjs`). The normal `dsh-fishball/installed` entry now uses original native owner/profile interfaces for explicit local encrypted-storage setup: first load/preview writes nothing,then separate current confirmation can initialize that exact target. Actual physical-package setup,ten reloads,quit/restart and uninstall have [bounded native evidence](docs/evidence/M6/normal-native-lifecycle.md);no personal credentials were configured. The existing `dsh-fishball/runtime` factory retains its trusted advanced identity/key/policy contract and unconfigured refusal.
+
+Normal setup provides encrypted task intake/query/control with effects denied. Connecting its worker/model/policy/preview,memory/reviewer/events and result/notification installers is unfinished integration code,with production choices also pending. Actual browser and independent final CODE remain blocked;this is not a full usable assistant/MVP. See [runtime installation boundaries](docs/runtime-installation.md) and [per-criterion traceability](docs/acceptance-traceability.md).
+
+The current [normal-installation regression](docs/evidence/M6/normal-followup-regression.md) passes919/919 runnable tests at a91-file freeze. Independent setup49/65 and corrected carrier18/72 pass with first failures retained. These bounded results do not replace the remaining normal feature integration or final CODE/browser acceptance.
 
 The [rename/storage compatibility record](docs/rename-compatibility.md) explains current identifiers, preserved old data paths/contract aliases and any crypto recovery gate. Unsupported or unverifiable records fail closed and remain preserved. Default release channel is preview; stable requires an explicit owner request.

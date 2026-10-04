@@ -1,0 +1,14 @@
+{
+  "firstDatabasePathRelativeDepth": 1,
+  "requiredRelativeDepth": [
+    2,
+    16
+  ],
+  "correctedRelativeDepth": 2,
+  "productSourceChanged": false,
+  "databaseExists": false,
+  "setupExists": false,
+  "newParentExists": false,
+  "configSha256": "44b95d8bb535b3e4cde7f97c54d32180e216844991b512ee956f9a5531f1e1ec",
+  "smokeSha256": "4c4b5e9f5adaef7d4e60ae037e2153696341c3cd98dc0b50163d25eac9f516ea"
+}

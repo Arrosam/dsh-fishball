@@ -1,0 +1,333 @@
+{
+  "phase": "observer-active",
+  "pid": 57713,
+  "entry": "dsh-fishball/installed",
+  "setupAvailable": true,
+  "runtimeAvailable": true,
+  "setupLoads": 11,
+  "runtimeLoads": 11,
+  "withdrawals": [
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    }
+  ],
+  "sessions": 0,
+  "providers": 0,
+  "inferenceAttempts": 0,
+  "toolAttempts": 0,
+  "databaseExists": true,
+  "setupNamespaceExists": true,
+  "routes": {
+    "setup": true,
+    "runtime": true
+  },
+  "nativeEntries": [
+    {
+      "name": "dsh-fishball/installed",
+      "disabled": false,
+      "fiberState": 2
+    }
+  ],
+  "setupDiagnostic": {
+    "phase": "ready",
+    "executionEnabled": false,
+    "storage": {
+      "location": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/onboarding-install/home/profiles/web/df-data/runtime.sqlite"
+    }
+  },
+  "runtimeDiagnostic": {
+    "target": "dsh-web-0.2.1-alpha.1",
+    "supported": true,
+    "schemaVersion": 4,
+    "channel": "/df-rpc",
+    "identityBridge": "connection-operator",
+    "permissionBridge": "trusted-policy-required",
+    "automationBridge": "unavailable",
+    "scheduleBridge": "unavailable",
+    "chatBridge": "unavailable",
+    "notificationBridge": "unavailable",
+    "capabilities": {
+      "memory": false,
+      "preview": false,
+      "worker": false,
+      "delivery": false,
+      "reviewer": false,
+      "automation": false,
+      "notifications": false
+    }
+  },
+  "lifecycle": {
+    "id": "first-ten-reloads",
+    "operation": "reload10",
+    "cycles": [
+      {
+        "cycle": 1,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 2,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 3,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 4,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 5,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 6,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 7,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 8,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 9,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      },
+      {
+        "cycle": 10,
+        "immediateSetup": "SERVICE_DISPOSED",
+        "immediateRuntime": "SERVICE_DISPOSED",
+        "removed": true,
+        "setupPhase": "ready",
+        "hostSupported": true,
+        "capabilities": {
+          "memory": false,
+          "preview": false,
+          "worker": false,
+          "delivery": false,
+          "reviewer": false,
+          "automation": false,
+          "notifications": false
+        },
+        "sessions": 0,
+        "providers": 0
+      }
+    ],
+    "result": "passed"
+  }
+}
