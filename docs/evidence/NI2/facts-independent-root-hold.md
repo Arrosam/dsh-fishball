@@ -1,0 +1,9 @@
+# Root binding of the historical genuine4 facts checkpoint
+
+Root read the complete independent report and verified all392 supporting manifest rows on2026-10-04. The manifest is `816e71003405c5110259be7292d03430f0b61fa378a4ef1aca8258e5a64d2f3f`; the independent test is `5021ff1ee5a608d7eaf2017a94036270618ffdcf886c2132c81598c290c5235c`. This is the separately authorized functional/ISTQB lane, not CODE acceptance.
+
+The checkpoint was completed and its schema4 lease explicitly released before root promoted schema5. Three manifest source paths have consequently changed: ledger, runtime-security and runtime-store. Root verified their exact historical bytes against the preserved authentic supported4 source capsule `.runtime/ni3-source4/src`, created before promotion at c9beefa. All389 other manifest rows remain unchanged at this binding; all392 historical pins reconcile without rewriting the manifest. No product execution or fresh schema5 acceptance is implied by this read-only check.
+
+The first independent run remains61 TAP nodes with59 passes and2 fixture failures. The corrected F14/F17 subset passed2/2; the other59 nodes were not repeated. The unchanged authored facts suite passed10/10 independently. Root preserves every first failure, scanner correction and source snapshot. No combined final61/61 or new global suite total is invented.
+
+This binds the bounded facts-module evidence only. Normal owner composition, genuine5/6/7 persistence, original installed native execution/resume, full quit/recovery, rendered UI, useful model quality, CODE and complete82+5 acceptance remain pending or blocked as recorded in the acceptance register. The CODE platform denial and browser limitation remain separate blockers. All Git stays local; this binding authorizes no publication, remote, S3 merge or stable release.

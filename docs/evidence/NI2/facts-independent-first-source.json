@@ -1,0 +1,41 @@
+{
+  "scope": "first independent source; no functional run performed yet",
+  "node": "v22.22.2",
+  "rows": [
+    {
+      "path": "test/installed-worker-facts-functional.test.mjs",
+      "bytes": 30022,
+      "sha256": "f1bcc7a4b1c87f33a24fa14bb4788fa6e840df67b339c1e48ce0ffabd466caa6"
+    },
+    {
+      "path": "src/installed-worker-facts.mjs",
+      "bytes": 20368,
+      "sha256": "22cb737371b43575a81eaf5281027a0cfae5c90b7fdbb89895d501f5dabc18b8"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "bytes": 141707,
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca"
+    },
+    {
+      "path": "src/ledger.mjs",
+      "bytes": 21225,
+      "sha256": "64cc42e1a834701263c260f311d05d113c6e34af67017901cfd7a95f22c9b650"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "bytes": 4464,
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07"
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "bytes": 12872,
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7"
+    },
+    {
+      "path": "docs/evidence/NI2/facts-author.sha256",
+      "bytes": 11030,
+      "sha256": "bb0d3887cf124630e2fac2286a84d6190d5c2968045f203295c9d80e96825b2a"
+    }
+  ]
+}
