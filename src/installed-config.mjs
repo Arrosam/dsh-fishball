@@ -1,9 +1,10 @@
 import { BootstrapError, record, validateConfig } from './config.mjs';
+import { validateInstalledWorker, validateWorkerStorageSelection } from './installed-worker-config.mjs';
 
 export function validateInstalledConfig(input) {
   try {
-    record(input, ['databasePath', 'hostTarget', 'limits', 'memory']);
-    const { memory: supplied, ...baseInput } = input;
+    record(input, ['databasePath', 'hostTarget', 'limits', 'memory', 'worker']);
+    const { memory: supplied, worker: suppliedWorker, ...baseInput } = input;
     const base = validateConfig(baseInput);
     let memory = Object.freeze({ enabled: false });
     if (Object.hasOwn(input, 'memory')) {
@@ -18,7 +19,11 @@ export function validateInstalledConfig(input) {
         memory = Object.freeze({ enabled: true, byteLimit: supplied.byteLimit, tokenLimit: supplied.tokenLimit });
       }
     }
-    return Object.freeze({ ...base, memory });
+    if (Object.hasOwn(input, 'worker') && suppliedWorker === undefined) throw new BootstrapError('CONFIG_INVALID');
+    const worker = validateInstalledWorker(suppliedWorker);
+    if (worker.enabled && (!memory.enabled || base.limits.maxMetadataBytes !== 4096 || !Object.hasOwn(baseInput.limits ?? {}, 'maxMetadataBytes'))) throw new BootstrapError('CONFIG_INVALID');
+    validateWorkerStorageSelection(worker, base.databasePath);
+    return Object.freeze({ ...base, memory, worker });
   } catch (error) {
     throw error instanceof BootstrapError ? error : new BootstrapError('CONFIG_INVALID');
   }

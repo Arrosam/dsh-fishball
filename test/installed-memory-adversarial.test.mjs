@@ -128,7 +128,7 @@ test('NI1-03 independent physical public-export origins refuse executable/source
     await t.test(variant, () => {
       const root = join(directory, variant), host = join(root, 'host'), peers = join(host, 'node_modules/@deepseek-ai'), plugin = join(host, 'node_modules/dsh-fishball');
       mkdirSync(join(plugin, 'src'), { recursive: true }); mkdirSync(join(plugin, 'scripts'));
-      for (const name of ['config.mjs', 'installed-config.mjs', 'host-probe.mjs', 'installed-memory.mjs']) copyFileSync(new URL(`../src/${name}`, import.meta.url), join(plugin, 'src', name));
+      for (const name of ['config.mjs', 'installed-config.mjs', 'installed-worker-config.mjs', 'host-probe.mjs', 'installed-memory.mjs']) copyFileSync(new URL(`../src/${name}`, import.meta.url), join(plugin, 'src', name));
       copyFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url), join(plugin, 'scripts/dsh-web-runtime-lock.json'));
       for (const name of ['dsh', 'dsh-token-meter']) { mkdirSync(join(peers, name), { recursive: true }); copyFileSync(resolveHostSource('@deepseek-ai/' + name, 'package.json'), join(peers, name, 'package.json')); }
       const meter = join(peers, 'dsh-token-meter'), source = join(meter, 'lib/types/estimate.js'), metadata = join(meter, 'package.json');

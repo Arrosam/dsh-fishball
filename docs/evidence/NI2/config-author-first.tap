@@ -1,0 +1,1193 @@
+TAP version 13
+# (node:69548) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent setup normal 0755 profile and parent are read-only until consent, then only private state is created
+ok 1 - independent setup normal 0755 profile and parent are read-only until consent, then only private state is created
+  ---
+  duration_ms: 83.739584
+  type: 'test'
+  ...
+# Subtest: independent setup relative depth 1 rejects, 2/15/16 allow volatile prepare, and 17 rejects without writes
+    # Subtest: depth-1
+    ok 1 - depth-1
+      ---
+      duration_ms: 0.789083
+      type: 'test'
+      ...
+    # Subtest: depth-2
+    ok 2 - depth-2
+      ---
+      duration_ms: 1.0365
+      type: 'test'
+      ...
+    # Subtest: depth-15
+    ok 3 - depth-15
+      ---
+      duration_ms: 1.059541
+      type: 'test'
+      ...
+    # Subtest: depth-16
+    ok 4 - depth-16
+      ---
+      duration_ms: 1.253
+      type: 'test'
+      ...
+    # Subtest: depth-17
+    ok 5 - depth-17
+      ---
+      duration_ms: 0.803833
+      type: 'test'
+      ...
+    1..5
+ok 2 - independent setup relative depth 1 rejects, 2/15/16 allow volatile prepare, and 17 rejects without writes
+  ---
+  duration_ms: 7.505541
+  type: 'test'
+  ...
+# Subtest: independent setup lexical path-length 1023/1024/1025 and exact UTF-8 validity are separate from filesystem support
+    # Subtest: constructor-character-length-1023
+    ok 1 - constructor-character-length-1023
+      ---
+      duration_ms: 0.883834
+      type: 'test'
+      ...
+    # Subtest: constructor-character-length-1024
+    ok 2 - constructor-character-length-1024
+      ---
+      duration_ms: 0.947208
+      type: 'test'
+      ...
+    # Subtest: constructor-character-length-1025
+    ok 3 - constructor-character-length-1025
+      ---
+      duration_ms: 0.495458
+      type: 'test'
+      ...
+    1..3
+ok 3 - independent setup lexical path-length 1023/1024/1025 and exact UTF-8 validity are separate from filesystem support
+  ---
+  duration_ms: 21.265416
+  type: 'test'
+  ...
+# Subtest: independent setup hostile payloads are rejected without executing traps or persisting secret canaries
+ok 4 - independent setup hostile payloads are rejected without executing traps or persisting secret canaries
+  ---
+  duration_ms: 2.753083
+  type: 'test'
+  ...
+# Subtest: independent setup consent reference/digest are private-instance bound and require literal acceptance
+ok 5 - independent setup consent reference/digest are private-instance bound and require literal acceptance
+  ---
+  duration_ms: 79.160208
+  type: 'test'
+  ...
+# Subtest: independent setup final trusted callback expiry/abort and lifetime loss prevent the first write
+    # Subtest: expiry
+    ok 1 - expiry
+      ---
+      duration_ms: 2.058041
+      type: 'test'
+      ...
+    # Subtest: abort
+    ok 2 - abort
+      ---
+      duration_ms: 1.571334
+      type: 'test'
+      ...
+    # Subtest: lifetime
+    ok 3 - lifetime
+      ---
+      duration_ms: 1.547708
+      type: 'test'
+      ...
+    1..3
+ok 6 - independent setup final trusted callback expiry/abort and lifetime loss prevent the first write
+  ---
+  duration_ms: 6.850917
+  type: 'test'
+  ...
+# Subtest: independent setup plan binds existing parent inode, profile identity and unsafe final mode
+    # Subtest: parent-inode
+    ok 1 - parent-inode
+      ---
+      duration_ms: 1.929292
+      type: 'test'
+      ...
+    # Subtest: profile-name
+    ok 2 - profile-name
+      ---
+      duration_ms: 1.62075
+      type: 'test'
+      ...
+    # Subtest: profile-writable
+    ok 3 - profile-writable
+      ---
+      duration_ms: 1.050167
+      type: 'test'
+      ...
+    1..3
+ok 7 - independent setup plan binds existing parent inode, profile identity and unsafe final mode
+  ---
+  duration_ms: 12.305125
+  type: 'test'
+  ...
+# Subtest: independent setup orphan sidecar links and directory entries refuse with exact preservation
+    # Subtest: dangling-wal
+    ok 1 - dangling-wal
+      ---
+      duration_ms: 6.443375
+      type: 'test'
+      ...
+    # Subtest: directory-shm
+    ok 2 - directory-shm
+      ---
+      duration_ms: 3.695792
+      type: 'test'
+      ...
+    # Subtest: hardlinked-journal
+    ok 3 - hardlinked-journal
+      ---
+      duration_ms: 2.173458
+      type: 'test'
+      ...
+    1..3
+ok 8 - independent setup orphan sidecar links and directory entries refuse with exact preservation
+  ---
+  duration_ms: 14.736875
+  type: 'test'
+  ...
+# Subtest: independent setup a real OS permission failure creates no ready state or replacement entries
+ok 9 - independent setup a real OS permission failure creates no ready state or replacement entries
+  ---
+  duration_ms: 6.683417
+  type: 'test'
+  ...
+# Subtest: independent setup late sidecar contender prevents target publication and partial state cannot replay
+ok 10 - independent setup late sidecar contender prevents target publication and partial state cannot replay
+  ---
+  duration_ms: 53.643959
+  type: 'test'
+  ...
+# Subtest: independent setup authenticated metadata byte boundary 4095/4096/4097 retains legitimate whitespace
+    # Subtest: metadata-bytes-4095
+    ok 1 - metadata-bytes-4095
+      ---
+      duration_ms: 90.2195
+      type: 'test'
+      ...
+    # Subtest: metadata-bytes-4096
+    ok 2 - metadata-bytes-4096
+      ---
+      duration_ms: 92.360958
+      type: 'test'
+      ...
+    # Subtest: metadata-bytes-4097
+    ok 3 - metadata-bytes-4097
+      ---
+      duration_ms: 91.095542
+      type: 'test'
+      ...
+    1..3
+ok 11 - independent setup authenticated metadata byte boundary 4095/4096/4097 retains legitimate whitespace
+  ---
+  duration_ms: 289.020292
+  type: 'test'
+  ...
+# Subtest: independent setup exact key length 31/32/33 and HMAC/format/private-file linkage reject without resealing
+    # Subtest: key31
+    ok 1 - key31
+      ---
+      duration_ms: 85.774667
+      type: 'test'
+      ...
+    # Subtest: key32
+    ok 2 - key32
+      ---
+      duration_ms: 92.4015
+      type: 'test'
+      ...
+    # Subtest: key33
+    ok 3 - key33
+      ---
+      duration_ms: 101.946125
+      type: 'test'
+      ...
+    # Subtest: bad-mac
+    ok 4 - bad-mac
+      ---
+      duration_ms: 106.335125
+      type: 'test'
+      ...
+    # Subtest: future-format
+    ok 5 - future-format
+      ---
+      duration_ms: 107.000709
+      type: 'test'
+      ...
+    # Subtest: key-hardlink
+    ok 6 - key-hardlink
+      ---
+      duration_ms: 101.726083
+      type: 'test'
+      ...
+    # Subtest: metadata-mode
+    ok 7 - metadata-mode
+      ---
+      duration_ms: 121.3885
+      type: 'test'
+      ...
+    1..7
+ok 12 - independent setup exact key length 31/32/33 and HMAC/format/private-file linkage reject without resealing
+  ---
+  duration_ms: 766.739125
+  type: 'test'
+  ...
+# Subtest: independent setup one pending confirmation, late disposal and callback errors preserve closed receipts and partial facts
+    # Subtest: throw-canary
+    ok 1 - throw-canary
+      ---
+      duration_ms: 118.000542
+      type: 'test'
+      ...
+    # Subtest: wrong-disposer
+    ok 2 - wrong-disposer
+      ---
+      duration_ms: 79.198125
+      type: 'test'
+      ...
+    1..2
+ok 13 - independent setup one pending confirmation, late disposal and callback errors preserve closed receipts and partial facts
+  ---
+  duration_ms: 317.237667
+  type: 'test'
+  ...
+# Subtest: independent setup two already-prepared OS processes publish one namespace with no overwrite or extra key
+ok 14 - independent setup two already-prepared OS processes publish one namespace with no overwrite or extra key
+  ---
+  duration_ms: 246.593583
+  type: 'test'
+  ...
+# Subtest: independent setup actual process exits before commit and during staging preserve exact uncertainty boundary
+    # Subtest: precommit-crash
+    ok 1 - precommit-crash
+      ---
+      duration_ms: 93.447125
+      type: 'test'
+      ...
+    # Subtest: staging-crash
+    ok 2 - staging-crash
+      ---
+      duration_ms: 117.698625
+      type: 'test'
+      ...
+    1..2
+ok 15 - independent setup actual process exits before commit and during staging preserve exact uncertainty boundary
+  ---
+  duration_ms: 221.67725
+  type: 'test'
+  ...
+# Subtest: independent setup real post-ack abrupt exit retains one encrypted task, exact namespace/key and dedup without replay
+ok 16 - independent setup real post-ack abrupt exit retains one encrypted task, exact namespace/key and dedup without replay
+  ---
+  duration_ms: 169.355458
+  type: 'test'
+  ...
+# Subtest: independent installed original native owner carrier enforces no-write auth, explicit storage consent and own closure
+ok 17 - independent installed original native owner carrier enforces no-write auth, explicit storage consent and own closure
+  ---
+  duration_ms: 124.738917
+  type: 'test'
+  ...
+# Subtest: independent installed metadata is an explicit fourth export with original factory/client mappings unchanged
+ok 18 - independent installed metadata is an explicit fourth export with original factory/client mappings unchanged
+  ---
+  duration_ms: 0.328542
+  type: 'test'
+  ...
+# (node:69549) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: read-only first status/preview and strict consent denials never create persistent entries
+ok 19 - read-only first status/preview and strict consent denials never create persistent entries
+  ---
+  duration_ms: 6.710542
+  type: 'test'
+  ...
+# Subtest: preview supersession, exact expiry, rollback and precommit abort have zero writes
+ok 20 - preview supersession, exact expiry, rollback and precommit abort have zero writes
+  ---
+  duration_ms: 82.396042
+  type: 'test'
+  ...
+# Subtest: clock crossing expiry during final trusted path recheck refuses the first persistent write
+ok 21 - clock crossing expiry during final trusted path recheck refuses the first persistent write
+  ---
+  duration_ms: 1.483042
+  type: 'test'
+  ...
+# Subtest: consented same-schema encrypted core, private state, one-use preview and retained namespace reopen
+ok 22 - consented same-schema encrypted core, private state, one-use preview and retained namespace reopen
+  ---
+  duration_ms: 93.090875
+  type: 'test'
+  ...
+# Subtest: retained target, every sidecar, dangling entries and lexical/path/mode drift preserve bytes
+ok 23 - retained target, every sidecar, dangling entries and lexical/path/mode drift preserve bytes
+  ---
+  duration_ms: 18.885458
+  type: 'test'
+  ...
+# Subtest: publication contender, callback secrets and activation failure preserve accountable partials
+ok 24 - publication contender, callback secrets and activation failure preserve accountable partials
+  ---
+  duration_ms: 174.422459
+  type: 'test'
+  ...
+# Subtest: activation awaits recheck key/metadata/inode and own disposal, without replay or false ready
+ok 25 - activation awaits recheck key/metadata/inode and own disposal, without replay or false ready
+  ---
+  duration_ms: 321.175375
+  type: 'test'
+  ...
+# Subtest: postcommit request abort retains valid ready state and cannot undo consent or initialize twice
+ok 26 - postcommit request abort retains valid ready state and cannot undo consent or initialize twice
+  ---
+  duration_ms: 100.244417
+  type: 'test'
+  ...
+# Subtest: future/corrupt/partial retained setup refuses repair or key replacement
+ok 27 - future/corrupt/partial retained setup refuses repair or key replacement
+  ---
+  duration_ms: 667.461375
+  type: 'test'
+  ...
+# Subtest: exact inode and profile binding refuse same-byte replacement without following retained state
+ok 28 - exact inode and profile binding refuse same-byte replacement without following retained state
+  ---
+  duration_ms: 276.185
+  type: 'test'
+  ...
+# Subtest: unload before trusted activation and corrupt ready-state read seals child admission
+ok 29 - unload before trusted activation and corrupt ready-state read seals child admission
+  ---
+  duration_ms: 47.048125
+  type: 'test'
+  ...
+# Subtest: two genuine processes prepare before barrier and only one publishes the owned namespace
+ok 30 - two genuine processes prepare before barrier and only one publishes the owned namespace
+  ---
+  duration_ms: 241.336875
+  type: 'test'
+  ...
+# Subtest: genuine abrupt child exits at six durable cuts preserve partial facts and never resume or replay
+ok 31 - genuine abrupt child exits at six durable cuts preserve partial facts and never resume or replay
+  ---
+  duration_ms: 758.638875
+  type: 'test'
+  ...
+# Subtest: original public native owner setup has zero preconsent writes, actual child readiness, encrypted dedup and ten reloads
+ok 32 - original public native owner setup has zero preconsent writes, actual child readiness, encrypted dedup and ten reloads
+  ---
+  duration_ms: 229.457792
+  type: 'test'
+  ...
+# Subtest: native startup future-schema refusal preserves setup/database facts and mounts no task route
+ok 33 - native startup future-schema refusal preserves setup/database facts and mounts no task route
+  ---
+  duration_ms: 64.400083
+  type: 'test'
+  ...
+# Subtest: installed entry missing concrete carrier remains pending before any storage or runtime
+ok 34 - installed entry missing concrete carrier remains pending before any storage or runtime
+  ---
+  duration_ms: 1.089833
+  type: 'test'
+  ...
+# (node:69550) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI1-01/02 independent closed installed-only config retains exact detached integer choices
+ok 35 - NI1-01/02 independent closed installed-only config retains exact detached integer choices
+  ---
+  duration_ms: 3.75825
+  type: 'test'
+  ...
+# Subtest: NI1-01 independent hidden nested config and revoked Proxy cannot invoke supplied hooks
+ok 36 - NI1-01 independent hidden nested config and revoked Proxy cannot invoke supplied hooks
+  ---
+  duration_ms: 0.173208
+  type: 'test'
+  ...
+# Subtest: NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unambiguous private namespaces
+ok 37 - NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unambiguous private namespaces
+  ---
+  duration_ms: 7.787375
+  type: 'test'
+  ...
+# Subtest: NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import
+    # Subtest: canonical
+    not ok 1 - canonical
+      ---
+      duration_ms: 89.551667
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/canonical/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/canonical/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/canonical/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+        Test.postRun (node:internal/test_runner/test:1173:19)
+      ...
+    # Subtest: missing
+    not ok 2 - missing
+      ---
+      duration_ms: 110.915083
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/missing/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/missing/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/missing/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: altered-source
+    not ok 3 - altered-source
+      ---
+      duration_ms: 104.873709
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/altered-source/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/altered-source/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/altered-source/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: conditional-alias
+    not ok 4 - conditional-alias
+      ---
+      duration_ms: 124.698917
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/conditional-alias/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/conditional-alias/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/conditional-alias/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: metadata-symlink
+    not ok 5 - metadata-symlink
+      ---
+      duration_ms: 112.563875
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/metadata-symlink/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/metadata-symlink/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/metadata-symlink/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: foreign-root
+    not ok 6 - foreign-root
+      ---
+      duration_ms: 131.147625
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/foreign-root/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/foreign-root/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/foreign-root/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: wrong-name
+    not ok 7 - wrong-name
+      ---
+      duration_ms: 127.685583
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        node:internal/modules/esm/resolve:275
+            throw new ERR_MODULE_NOT_FOUND(
+                  ^
+        
+        Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/wrong-name/host/node_modules/dsh-fishball/src/installed-worker-config.mjs' imported from /private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/wrong-name/host/node_modules/dsh-fishball/src/installed-config.mjs
+            at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+            at moduleResolve (node:internal/modules/esm/resolve:861:10)
+            at defaultResolve (node:internal/modules/esm/resolve:985:11)
+            at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+            at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+            at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+            at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+          code: 'ERR_MODULE_NOT_FOUND',
+          url: 'file:///private/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-ni1-istqb-tnDGaG/wrong-name/host/node_modules/dsh-fishball/src/installed-worker-config.mjs'
+        }
+        
+        Node.js v22.22.2
+        
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        finalizeResolution (node:internal/modules/esm/resolve:275:11)
+        moduleResolve (node:internal/modules/esm/resolve:861:10)
+        defaultResolve (node:internal/modules/esm/resolve:985:11)
+        #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+        ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+        ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+        ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:146:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        TestContext.test (node:internal/test_runner/test:373:20)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:128:13)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    1..7
+not ok 38 - NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import
+  ---
+  duration_ms: 929.838875
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-memory-adversarial.test.mjs:125:1'
+  failureType: 'subtestsFailed'
+  error: '7 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: NI1-N01/N05/N06 independent exact classification preserves fractions but denies every other registered name
+ok 39 - NI1-N01/N05/N06 independent exact classification preserves fractions but denies every other registered name
+  ---
+  duration_ms: 2.288125
+  type: 'test'
+  ...
+# Subtest: NI1-N07/N08 independent recursive multibyte size, descriptor and pre-admission fences remain strict
+ok 40 - NI1-N07/N08 independent recursive multibyte size, descriptor and pre-admission fences remain strict
+  ---
+  duration_ms: 0.981125
+  type: 'test'
+  ...
+# Subtest: NI1-N09 independent captured decimals survive caller mutation and committed fact is not erased by late abort
+ok 41 - NI1-N09 independent captured decimals survive caller mutation and committed fact is not erased by late abort
+  ---
+  duration_ms: 0.290209
+  type: 'test'
+  ...
+# Subtest: NI1-05/08 actual encrypted empty memory and cross-workspace/profile identical query remain isolated
+ok 42 - NI1-05/08 actual encrypted empty memory and cross-workspace/profile identical query remain isolated
+  ---
+  duration_ms: 51.749042
+  type: 'test'
+  ...
+# Subtest: NI1-08 adapter-only encrypted correction/delete keeps fresh sourced revisions and historical replay after reopen
+ok 43 - NI1-08 adapter-only encrypted correction/delete keeps fresh sourced revisions and historical replay after reopen
+  ---
+  duration_ms: 90.963583
+  type: 'test'
+  ...
+# Subtest: NI1-09/10 public heuristic token N-1/N/N+1 removes optional records whole including separators
+ok 44 - NI1-09/10 public heuristic token N-1/N/N+1 removes optional records whole including separators
+  ---
+  duration_ms: 3.269625
+  type: 'test'
+  ...
+# Subtest: NI1-N04 actual store domain rejection after fractional transport leaves every row and receipt unchanged
+ok 45 - NI1-N04 actual store domain rejection after fractional transport leaves every row and receipt unchanged
+  ---
+  duration_ms: 46.107834
+  type: 'test'
+  ...
+# Subtest: NI1-08/10 actual sourced envelope protects current instructions and integer accounting against memory authority claims
+ok 46 - NI1-08/10 actual sourced envelope protects current instructions and integer accounting against memory authority claims
+  ---
+  duration_ms: 94.215083
+  type: 'test'
+  ...
+# Subtest: NI1-10 actual public-accounted complete encrypted envelope accepts65535/65536 and refuses65537 without a write
+    # Subtest: complete-envelope-65535
+    ok 1 - complete-envelope-65535
+      ---
+      duration_ms: 83.475125
+      type: 'test'
+      ...
+    # Subtest: complete-envelope-65536
+    ok 2 - complete-envelope-65536
+      ---
+      duration_ms: 88.430875
+      type: 'test'
+      ...
+    # Subtest: complete-envelope-65537
+    ok 3 - complete-envelope-65537
+      ---
+      duration_ms: 70.63425
+      type: 'test'
+      ...
+    1..3
+ok 47 - NI1-10 actual public-accounted complete encrypted envelope accepts65535/65536 and refuses65537 without a write
+  ---
+  duration_ms: 338.781791
+  type: 'test'
+  ...
+# Subtest: NI1-10 actual rendered protected minimum N-1 refuses and exactN/N+1 preserve text
+ok 48 - NI1-10 actual rendered protected minimum N-1 refuses and exactN/N+1 preserve text
+  ---
+  duration_ms: 65.144084
+  type: 'test'
+  ...
+# Subtest: NI1-11 actual async namespace and task/auth races refuse stale prepared writes
+    # Subtest: memory
+    ok 1 - memory
+      ---
+      duration_ms: 55.527333
+      type: 'test'
+      ...
+    # Subtest: task
+    ok 2 - task
+      ---
+      duration_ms: 36.501834
+      type: 'test'
+      ...
+    1..2
+ok 49 - NI1-11 actual async namespace and task/auth races refuse stale prepared writes
+  ---
+  duration_ms: 92.234791
+  type: 'test'
+  ...
+# Subtest: NI1-14 actual registered secret is refused before memory/context persistence
+ok 50 - NI1-14 actual registered secret is refused before memory/context persistence
+  ---
+  duration_ms: 18.741458
+  type: 'test'
+  ...
+# Subtest: NI1-06/07 public native features before consent are closed read-only metadata, never memory authority
+ok 51 - NI1-06/07 public native features before consent are closed read-only metadata, never memory authority
+  ---
+  duration_ms: 86.960458
+  type: 'test'
+  ...
+# Subtest: NI1-N02/N03 public native decimal domains, exact receipts and encrypted context survive disable/re-enable own closure
+ok 52 - NI1-N02/N03 public native decimal domains, exact receipts and encrypted context survive disable/re-enable own closure
+  ---
+  duration_ms: 131.5395
+  type: 'test'
+  ...
+# Subtest: NI1-11/13 independent already-open processes deduplicate one decimal command and retain abrupt acknowledgement
+ok 53 - NI1-11/13 independent already-open processes deduplicate one decimal command and retain abrupt acknowledgement
+  ---
+  duration_ms: 372.304583
+  type: 'test'
+  ...
+# (node:69551) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installed config preserves base validation, ordinary/null prototypes, detached frozen choices and disabled default
+ok 54 - installed config preserves base validation, ordinary/null prototypes, detached frozen choices and disabled default
+  ---
+  duration_ms: 2.246167
+  type: 'test'
+  ...
+# Subtest: closed memory flags and exact enabled integer boundary partitions
+    # Subtest: byteLimit accepts 1
+    ok 1 - byteLimit accepts 1
+      ---
+      duration_ms: 0.083041
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 2
+    ok 2 - byteLimit accepts 2
+      ---
+      duration_ms: 0.135875
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 65535
+    ok 3 - byteLimit accepts 65535
+      ---
+      duration_ms: 0.05375
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 65536
+    ok 4 - byteLimit accepts 65536
+      ---
+      duration_ms: 0.045917
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 1
+    ok 5 - tokenLimit accepts 1
+      ---
+      duration_ms: 0.05525
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 2
+    ok 6 - tokenLimit accepts 2
+      ---
+      duration_ms: 0.039792
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 131071
+    ok 7 - tokenLimit accepts 131071
+      ---
+      duration_ms: 0.199041
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 131072
+    ok 8 - tokenLimit accepts 131072
+      ---
+      duration_ms: 0.176
+      type: 'test'
+      ...
+    1..8
+ok 55 - closed memory flags and exact enabled integer boundary partitions
+  ---
+  duration_ms: 3.721375
+  type: 'test'
+  ...
+# Subtest: hostile config descriptors/prototypes never invoke hooks or reveal supplied canaries
+ok 56 - hostile config descriptors/prototypes never invoke hooks or reveal supplied canaries
+  ---
+  duration_ms: 0.645541
+  type: 'test'
+  ...
+# Subtest: actual public estimate has exact UTF-16 heuristic and private stable namespace across bounds/scope partitions
+ok 57 - actual public estimate has exact UTF-16 heuristic and private stable namespace across bounds/scope partitions
+  ---
+  duration_ms: 8.021292
+  type: 'test'
+  ...
+# Subtest: rendered accounting boundaries drop whole backgrounds and protect exact instructions
+ok 58 - rendered accounting boundaries drop whole backgrounds and protect exact instructions
+  ---
+  duration_ms: 3.269625
+  type: 'test'
+  ...
+# Subtest: canonical public estimator provenance refuses missing/mixed/aliased/source/lock mutations without fallback
+ok 59 - canonical public estimator provenance refuses missing/mixed/aliased/source/lock mutations without fallback
+  ---
+  duration_ms: 1104.104541
+  type: 'test'
+  ...
+# Subtest: normal native disabled/omitted config retains exact carriers and cannot enable later features
+ok 60 - normal native disabled/omitted config retains exact carriers and cannot enable later features
+  ---
+  duration_ms: 324.724917
+  type: 'test'
+  ...
+# Subtest: normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context
+ok 61 - normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context
+  ---
+  duration_ms: 386.578417
+  type: 'test'
+  ...
+# Subtest: actual encrypted context refuses protected overflow and stale CAS without a context write
+ok 62 - actual encrypted context refuses protected overflow and stale CAS without a context write
+  ---
+  duration_ms: 9.9105
+  type: 'test'
+  ...
+# Subtest: independent processes race one encrypted memory revision and preserve the acknowledged receipt on abrupt exit
+ok 63 - independent processes race one encrypted memory revision and preserve the acknowledged receipt on abrupt exit
+  ---
+  duration_ms: 249.217833
+  type: 'test'
+  ...
+# Subtest: omitted and exact disabled worker retain memory/base meanings and perform no path work
+ok 64 - omitted and exact disabled worker retain memory/base meanings and perform no path work
+  ---
+  duration_ms: 5.064042
+  type: 'test'
+  ...
+# Subtest: enabled worker requires explicit memory and existing 4096 metadata ceiling; closed detached nested choices
+ok 65 - enabled worker requires explicit memory and existing 4096 metadata ceiling; closed detached nested choices
+  ---
+  duration_ms: 3.533458
+  type: 'test'
+  ...
+# Subtest: all worker numeric boundary classes with resource/request cross-checks
+    # Subtest: selection.maxOutputTokens boundary 128
+    ok 1 - selection.maxOutputTokens boundary 128
+      ---
+      duration_ms: 0.729792
+      type: 'test'
+      ...
+    # Subtest: selection.maxOutputTokens boundary 4096
+    ok 2 - selection.maxOutputTokens boundary 4096
+      ---
+      duration_ms: 0.173041
+      type: 'test'
+      ...
+    # Subtest: bounds.requestBytes boundary 512
+    ok 3 - bounds.requestBytes boundary 512
+      ---
+      duration_ms: 0.144708
+      type: 'test'
+      ...
+    # Subtest: bounds.requestBytes boundary 131072
+    ok 4 - bounds.requestBytes boundary 131072
+      ---
+      duration_ms: 0.273167
+      type: 'test'
+      ...
+    # Subtest: bounds.resultBytes boundary 128
+    ok 5 - bounds.resultBytes boundary 128
+      ---
+      duration_ms: 0.3115
+      type: 'test'
+      ...
+    # Subtest: bounds.resultBytes boundary 16384
+    ok 6 - bounds.resultBytes boundary 16384
+      ---
+      duration_ms: 0.249333
+      type: 'test'
+      ...
+    # Subtest: policy.maxRuntimeMs boundary 1
+    ok 7 - policy.maxRuntimeMs boundary 1
+      ---
+      duration_ms: 0.343167
+      type: 'test'
+      ...
+    # Subtest: policy.maxRuntimeMs boundary 3600000
+    ok 8 - policy.maxRuntimeMs boundary 3600000
+      ---
+      duration_ms: 0.156667
+      type: 'test'
+      ...
+    # Subtest: policy.maxUsageUnits boundary 1
+    ok 9 - policy.maxUsageUnits boundary 1
+      ---
+      duration_ms: 0.229
+      type: 'test'
+      ...
+    # Subtest: policy.maxUsageUnits boundary 100000000
+    ok 10 - policy.maxUsageUnits boundary 100000000
+      ---
+      duration_ms: 0.108958
+      type: 'test'
+      ...
+    # Subtest: policy.maxCostEstimateMicros boundary 0
+    ok 11 - policy.maxCostEstimateMicros boundary 0
+      ---
+      duration_ms: 0.153166
+      type: 'test'
+      ...
+    # Subtest: policy.maxCostEstimateMicros boundary 100000000
+    ok 12 - policy.maxCostEstimateMicros boundary 100000000
+      ---
+      duration_ms: 0.139875
+      type: 'test'
+      ...
+    # Subtest: charges.runtimeMs boundary 1
+    ok 13 - charges.runtimeMs boundary 1
+      ---
+      duration_ms: 0.136791
+      type: 'test'
+      ...
+    # Subtest: charges.runtimeMs boundary 60000
+    ok 14 - charges.runtimeMs boundary 60000
+      ---
+      duration_ms: 0.107958
+      type: 'test'
+      ...
+    # Subtest: charges.usageUnits boundary 1
+    ok 15 - charges.usageUnits boundary 1
+      ---
+      duration_ms: 0.23425
+      type: 'test'
+      ...
+    # Subtest: charges.usageUnits boundary 100000000
+    ok 16 - charges.usageUnits boundary 100000000
+      ---
+      duration_ms: 0.104375
+      type: 'test'
+      ...
+    # Subtest: worker.previewTtlMs boundary 1
+    ok 17 - worker.previewTtlMs boundary 1
+      ---
+      duration_ms: 0.119875
+      type: 'test'
+      ...
+    # Subtest: worker.previewTtlMs boundary 60000
+    ok 18 - worker.previewTtlMs boundary 60000
+      ---
+      duration_ms: 0.099417
+      type: 'test'
+      ...
+    # Subtest: worker.grantTtlMs boundary 1
+    ok 19 - worker.grantTtlMs boundary 1
+      ---
+      duration_ms: 0.125833
+      type: 'test'
+      ...
+    # Subtest: worker.grantTtlMs boundary 60000
+    ok 20 - worker.grantTtlMs boundary 60000
+      ---
+      duration_ms: 0.102167
+      type: 'test'
+      ...
+    1..20
+ok 66 - all worker numeric boundary classes with resource/request cross-checks
+  ---
+  duration_ms: 21.995917
+  type: 'test'
+  ...
+# Subtest: worker objects refuse getters/proxies/hidden/symbol/inherited/unknown authority without executing them
+ok 67 - worker objects refuse getters/proxies/hidden/symbol/inherited/unknown authority without executing them
+  ---
+  duration_ms: 4.240375
+  type: 'test'
+  ...
+# Subtest: exact text caps, effort/null, persistence choices and closed worker records
+ok 68 - exact text caps, effort/null, persistence choices and closed worker records
+  ---
+  duration_ms: 6.841916
+  type: 'test'
+  ...
+# Subtest: canonical owned workspace and exact sibling persistence selection refuse aliases/escapes without files
+ok 69 - canonical owned workspace and exact sibling persistence selection refuse aliases/escapes without files
+  ---
+  duration_ms: 3.167625
+  type: 'test'
+  ...
+1..69
+# tests 140
+# suites 0
+# pass 132
+# fail 8
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3353.712292

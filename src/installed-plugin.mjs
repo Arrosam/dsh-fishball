@@ -14,7 +14,7 @@ export { Config };
 export const inject = Object.freeze(['connection', 'sessions', 'approval', 'webServer', 'profileContext']);
 export async function apply(ctx, input) {
   const installed = validateInstalledConfig(input);
-  const { memory, ...base } = installed, config = Object.freeze(base); requireHost(ctx);
+  const { memory, worker, ...base } = installed, config = Object.freeze(base); requireHost(ctx);
   const bindMemory = memory.enabled ? await prepareInstalledMemory(memory) : undefined;
   if (![1, 2].includes(ctx.fiber.state) || ctx.fiber.uid === null) throw new SetupError('SERVICE_DISPOSED');
   if (!(ctx.connection instanceof HostConnectionService)) throw new SetupError('SETUP_UNAVAILABLE');
