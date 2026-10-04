@@ -1,0 +1,473 @@
+{
+  "createdAt": "2026-10-04T22:59:25.208610+00:00",
+  "identity": "/root/native_functional",
+  "role": "independent docs-only DC02 functional/ISTQB binding, not CODE review",
+  "ownedWrites": [
+    "docs/evidence/NI2/resume-cold-finish-test-addendum.md",
+    "docs/evidence/NI2/resume-cold-finish-design-checks.json"
+  ],
+  "heldDocuments": [
+    {
+      "path": "docs/evidence/NI2/resume-cold-finish-addendum.md",
+      "expectedSha256": "5b5de10f9acc350e4217a8ba8ee5d0e508be2dadf324016017c65003e069278e",
+      "observedSha256": "5b5de10f9acc350e4217a8ba8ee5d0e508be2dadf324016017c65003e069278e",
+      "match": true
+    },
+    {
+      "path": "docs/normal-worker-resume-contract.md",
+      "expectedSha256": "fce0b6567eb550be2e96e0c4a8aedf696cf5ad0aa8897cf5dae91abaed68e14e",
+      "observedSha256": "fce0b6567eb550be2e96e0c4a8aedf696cf5ad0aa8897cf5dae91abaed68e14e",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/resume-test-design.md",
+      "expectedSha256": "a9b36b634a43e623d42dec26029dac3ca3f721de47d2c83b52ce328d8a7743f1",
+      "observedSha256": "a9b36b634a43e623d42dec26029dac3ca3f721de47d2c83b52ce328d8a7743f1",
+      "match": true
+    }
+  ],
+  "supersededProposalObserved": {
+    "path": "docs/evidence/NI2/resume-cold-finish-addendum.md",
+    "sha256": "de90f248d9ccd542978b2240f4ed0fab59f9ab6fe385d36ec3c6efebe273f1e4",
+    "status": "inspected before explicit root clarification; no execution/source GO"
+  },
+  "authorCoreAcknowledgementScope": "root reports author/core acknowledged de90 proposal; current5b5 acknowledgement and separate combined root freeze still required",
+  "sourceObservations": [
+    {
+      "path": "src/worker.mjs",
+      "sha256": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "interpretation": "read-only point-in-time source observation; not a coherent source7/execution hold",
+      "locations": [
+        {
+          "anchor": "async finishExecution(",
+          "line": 196,
+          "excerpt": "async finishExecution(caller, input) {"
+        },
+        {
+          "anchor": "const commandDigest =",
+          "line": 204,
+          "excerpt": "const commandDigest = workerDigest('finish-command', input);"
+        },
+        {
+          "anchor": "this.#store.settleAction(",
+          "line": 219,
+          "excerpt": "const receipt = this.#store.settleAction(this.#host, { taskRef: input.taskRef, claimRef: input.claimRef, generationRef: input.generationRef, commandRef: input.commandRef, outcome: 'completed', evidenceRef: result.evidenceRef, usage: { state: 'actual', units: result.usageUnits } });"
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "interpretation": "read-only point-in-time source observation; not a coherent source7/execution hold",
+      "locations": [
+        {
+          "anchor": "#bind(entry)",
+          "line": 112,
+          "excerpt": "#bind(entry) {"
+        },
+        {
+          "anchor": "#ctx(handle,taskRef,roles)",
+          "line": 130,
+          "excerpt": "#ctx(handle,taskRef,roles) {"
+        },
+        {
+          "anchor": "#mut(handle,input,roles,operation,fn,protectedOp=false)",
+          "line": 209,
+          "excerpt": "#mut(handle,input,roles,operation,fn,protectedOp=false){"
+        },
+        {
+          "anchor": "digest=hash(c.principalRef+operation+text)",
+          "line": 220,
+          "excerpt": "const text=this.#check(material),digest=hash(c.principalRef+operation+text);"
+        },
+        {
+          "anchor": "#receiptMac(row,data)",
+          "line": 248,
+          "excerpt": "#receiptMac(row,data){"
+        },
+        {
+          "anchor": "#commandReceipt(row,migration=false,history=false)",
+          "line": 287,
+          "excerpt": "#commandReceipt(row,migration=false,history=false){"
+        },
+        {
+          "anchor": "memoryCommandReceipt(handle,input)",
+          "line": 1328,
+          "excerpt": "memoryCommandReceipt(handle,input){"
+        },
+        {
+          "anchor": "settleAction(handle,input)",
+          "line": 774,
+          "excerpt": "settleAction(handle,input){"
+        }
+      ]
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "sha256": "8ad5aa8d081ff51d9d09bf496a79cb78a5adb4eba178ed0bb6b5d8a2f8a4db4f",
+      "interpretation": "read-only point-in-time source observation; not a coherent source7/execution hold",
+      "locations": [
+        {
+          "anchor": "const check =",
+          "line": 51,
+          "excerpt": "const check = () => { if (!alive()) fail('SERVICE_DISPOSED'); return assertInstalledWorkerInvocation(ctx); };"
+        },
+        {
+          "anchor": "function cas(value)",
+          "line": 68,
+          "excerpt": "function cas(value) { const snap = snapshot(value.taskRef); if (snap.task.version !== value.expectedTaskVersion) fail('STALE_VERSION'); if (snap.task.authEpoch !== value.expectedAuthEpoch) fail('STALE_AUTHORITY'); return snap; }"
+        },
+        {
+          "anchor": "function planCurrent(",
+          "line": 84,
+          "excerpt": "function planCurrent(taskRef, actionRef, digest, cleanup = false) {"
+        },
+        {
+          "anchor": "async workerFinish(",
+          "line": 206,
+          "excerpt": "async workerFinish(value){value=input(value,executionCAS);cas(value);planCurrent(value.taskRef,value.actionRef,undefined,true);if(!native)fail('WORKER_FINISH_UNAVAILABLE');const row=agents.get('df-'+value.generationRef);if(!row||row.binding.taskRef!==value.taskRef||row.binding.claimRef!==value.claimRef||row.execution?.executionRef!==value.executionRef)fail('WORKER_FINISH_UNAVAILABLE');row.permit?.seal();const result=await native.finishExecution(value);check();return result;},"
+        },
+        {
+          "anchor": "runInstalledWorkerInvocation(",
+          "line": 210,
+          "excerpt": "return runInstalledWorkerInvocation(ctx,context.assertCurrent,()=>{check();return method(value);});"
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "6edf9f8a544444169f9190fc5e24230ab3a0928ea8d7c295f1b085824c91ac07",
+      "interpretation": "read-only point-in-time source observation; not a coherent source7/execution hold",
+      "locations": [
+        {
+          "anchor": "export const hash",
+          "line": 5,
+          "excerpt": "export const hash = value => createHash('sha256').update(value).digest('hex');"
+        },
+        {
+          "anchor": "export const integer",
+          "line": 7,
+          "excerpt": "export const integer = (value,min=0,max=Number.MAX_SAFE_INTEGER) => { if(!Number.isSafeInteger(value)||value<min||value>max) fail('INVALID_INPUT'); return value; };"
+        },
+        {
+          "anchor": "export function exact",
+          "line": 9,
+          "excerpt": "export function exact(value,allowed,required=allowed) {"
+        },
+        {
+          "anchor": "export const canonicalDigest",
+          "line": 32,
+          "excerpt": "export const canonicalDigest = value => hash(canonical(value));"
+        }
+      ]
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "interpretation": "read-only point-in-time source observation; not a coherent source7/execution hold",
+      "locations": [
+        {
+          "anchor": "export function",
+          "line": 23,
+          "excerpt": "export function assertInstalledWorkerInvocation(ctx) {"
+        },
+        {
+          "anchor": "export function",
+          "line": 31,
+          "excerpt": "export function captureInstalledWorkerInvocation(ctx) {"
+        },
+        {
+          "anchor": "export function",
+          "line": 35,
+          "excerpt": "export function withInstalledWorkerInvocation(ctx, token, callback) {"
+        }
+      ]
+    }
+  ],
+  "composerObservationHistory": [
+    {
+      "sha256": "d1bf4f6e351b3f9a55127feff4f2efd8ac6392df0b0ebb2cde2347e99a613def",
+      "kind": "initial moving draft"
+    },
+    {
+      "sha256": "8ad5aa8d081ff51d9d09bf496a79cb78a5adb4eba178ed0bb6b5d8a2f8a4db4f",
+      "kind": "later moving draft excerpts"
+    }
+  ],
+  "plannedPrivateAPI": {
+    "readNormalNativeFinish": {
+      "capability": "currently admitted scoped owner read",
+      "inputFields": [
+        "taskRef",
+        "actionRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "output": "exact {receipt,finishRef} or genuine null; no wire proof fields",
+      "readOnly": true
+    },
+    "finishNormalNativeExecution": {
+      "inputFields": [
+        "taskRef",
+        "commandRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "captureRef",
+        "terminalEvidenceRef",
+        "outcomeEvidenceRef",
+        "usage",
+        "ownerRequest"
+      ],
+      "ownerRequestFields": [
+        "taskRef",
+        "actionRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "observer": "constructor-bound actual normal observer only",
+      "privateOutputFields": [
+        "receipt",
+        "finishRef"
+      ],
+      "wireOutput": "unchanged original settlement receipt"
+    },
+    "normalNativeFinishPayloadAddition": [
+      "commandRef",
+      "ownerRequestDigest"
+    ],
+    "finishRefRecipe": "claimRef",
+    "ownerRequestDigestRecipe": "H(['df.normal-native.finish-command/v1',ownerRef,workspaceRef,ownerRequest])"
+  },
+  "commandAuthentication": {
+    "originalCommandDigest": "hash(original mutation principalRef + operation + canonical normalized full method input)",
+    "originalReceiptHMAC": "keyed authentication covers original owner/workspace/command/task/digest/operation/private data",
+    "ownerRequestDigest": "separate derived signed request association; cannot substitute for commandDigest",
+    "freshReadPrincipalRecomputationForbidden": true,
+    "commandAndFinishInverseRequired": true,
+    "mandatoryNativeRegistryRequired": true
+  },
+  "caseIds": [
+    "CF-01",
+    "CF-02",
+    "CF-03",
+    "CF-04",
+    "CF-05",
+    "CF-06",
+    "CF-07",
+    "CF-08",
+    "CF-09",
+    "CF-10",
+    "CF-11",
+    "CF-12",
+    "CF-13",
+    "CF-14",
+    "CF-15",
+    "CF-16",
+    "CF-17",
+    "CF-18",
+    "CF-19",
+    "CF-20",
+    "CF-21"
+  ],
+  "processCutIds": [
+    "CUT-01",
+    "CUT-02",
+    "CUT-03",
+    "CUT-04",
+    "CUT-05",
+    "CUT-06",
+    "CUT-07",
+    "CUT-08"
+  ],
+  "objectionIds": [
+    "CF-O1",
+    "CF-O2",
+    "CF-O3",
+    "CF-O4",
+    "CF-O5",
+    "CF-O6"
+  ],
+  "allCasesStatus": "PLANNED / NOT RUN",
+  "executedCases": 0,
+  "executedProcessCuts": 0,
+  "errorDecision": {
+    "permission": "actual stable scoped owner/invocation denial, never null",
+    "signedContradiction": "STORAGE_INVALID",
+    "validSameCommandChangedRequestOrOperation": "IDEMPOTENCY_CONFLICT",
+    "differentCommandForAcknowledgedClaim": "WORKER_FINISH_UNAVAILABLE",
+    "validAbsentAcknowledgedAssociation": "null; existing current-CAS/private live handle still required for first finish",
+    "newInputAssociationMismatch": "exact existing stable code bound in later held source freeze; no invented new code"
+  },
+  "heldReceiptEdge": "root agreed supported genuine held acknowledgement replays same held receipt without promotion/resume; separate trusted reconciliation remains residual; if writer refuses initial held finish test actual refusal/hold, never fake signed positive",
+  "preservedRequirements": [
+    "DC01 marked-action generic bypass and every forward/inverse",
+    "mandatory signed six-kind normal_native_registry on open/read/mutation/recovery",
+    "DC07 cold native-result capture/origin/actual-native-read provenance",
+    "DC03..06",
+    "RSM01..14",
+    "B1..B12 and all existing process cuts",
+    "genuine writer6->7 and old-reader/backup/storage safeguards",
+    "same-ID new exact native incarnation",
+    "original public inbox/history/full-input/request/currentness/usage/flush/stop/drain/obligations",
+    "all82 original and5 current DF010 AC rows"
+  ],
+  "heldSourceACRows": [
+    "BUB001-01",
+    "BUB001-02",
+    "BUB001-03",
+    "BUB001-04",
+    "BUB001-05",
+    "BUB002-01",
+    "BUB002-02",
+    "BUB002-03",
+    "BUB002-04",
+    "BUB002-05",
+    "BUB003-01",
+    "BUB003-02",
+    "BUB003-03",
+    "BUB003-04",
+    "BUB003-05",
+    "BUB004-01",
+    "BUB004-02",
+    "BUB004-03",
+    "BUB004-04",
+    "BUB004-05",
+    "BUB005-01",
+    "BUB005-02",
+    "BUB005-03",
+    "BUB005-04",
+    "BUB005-05",
+    "BUB006-01",
+    "BUB006-02",
+    "BUB006-03",
+    "BUB006-04",
+    "BUB006-05",
+    "BUB007-01",
+    "BUB007-02",
+    "BUB007-03",
+    "BUB007-04",
+    "BUB007-05",
+    "BUB007-06",
+    "BUB008-01",
+    "BUB008-02",
+    "BUB008-03",
+    "BUB008-04",
+    "BUB008-05",
+    "BUB009-01",
+    "BUB009-02",
+    "BUB009-03",
+    "BUB009-04",
+    "BUB009-05",
+    "BUB010-01",
+    "BUB010-02",
+    "BUB010-03",
+    "BUB010-04",
+    "BUB010-05",
+    "BUB011-01",
+    "BUB011-02",
+    "BUB011-03",
+    "BUB011-04",
+    "BUB011-05",
+    "BUB012-01",
+    "BUB012-02",
+    "BUB012-03",
+    "BUB012-04",
+    "BUB012-05",
+    "BUB013-01",
+    "BUB013-02",
+    "BUB013-03",
+    "BUB013-04",
+    "BUB013-05",
+    "BUB014-01",
+    "BUB014-02",
+    "BUB014-03",
+    "BUB014-04",
+    "BUB014-05",
+    "BUB015-01",
+    "BUB015-02",
+    "BUB015-03",
+    "BUB015-04",
+    "BUB015-05",
+    "BUB016-01",
+    "BUB016-02",
+    "BUB016-03",
+    "BUB016-04",
+    "BUB016-05",
+    "BUB016-06",
+    "DF010-C01",
+    "DF010-C02",
+    "DF010-C03",
+    "DF010-C04",
+    "DF010-C05"
+  ],
+  "heldSourceACRowCount": 87,
+  "localDocumentationLinks": [
+    {
+      "target": "resume-cold-finish-addendum.md",
+      "exists": true,
+      "ownedCompanionCreatedByThisCheck": false
+    },
+    {
+      "target": "resume-cold-finish-design-checks.json",
+      "exists": true,
+      "ownedCompanionCreatedByThisCheck": true
+    },
+    {
+      "target": "../../normal-worker-resume-contract.md",
+      "exists": true,
+      "ownedCompanionCreatedByThisCheck": false
+    },
+    {
+      "target": "resume-test-design.md",
+      "exists": true,
+      "ownedCompanionCreatedByThisCheck": false
+    }
+  ],
+  "verificationPerformed": [
+    "read-only documentation/source inspection",
+    "SHA256 held document comparison",
+    "new documentation structure/case IDs/link checks",
+    "JSON serialization of documentation checks"
+  ],
+  "documentationCheckerCorrections": [
+    {
+      "kind": "initial in-memory structure assertion",
+      "cause": "case label regex expected bare IDs though rows include names; current DF010 IDs use C-prefix",
+      "correction": "match case ID prefixes and exact DF010-C01..C05; no product execution or document/source removal"
+    }
+  ],
+  "notPerformed": [
+    "product imports/module/parser tests",
+    "DB/store/native initialization/execution",
+    "CODE review/retry/replacement/alternate route",
+    "browser/CLI/profile/listener/HTTP/provider/model/tool/recipient",
+    "protected-row corruption/signature fabrication",
+    "new dependency/install",
+    "Git mutation"
+  ],
+  "remainingGates": [
+    "current5b5 author/core acknowledgement",
+    "coherent genuine5/6 and full create/runtime/client/provider/core holds",
+    "separate combined genuine7/native/prepared-context/API/source-pin root freeze",
+    "affected-source GO and separately held author/independent executable leases",
+    "actual packed original CLI/profile/auth physical proof",
+    "rendered browser/selected-model quality",
+    "blocked independent CODE",
+    "full82+5/MVP/publication"
+  ],
+  "newDocument": {
+    "path": "docs/evidence/NI2/resume-cold-finish-test-addendum.md",
+    "sha256": "2e562cd0d9e132ea92b6b1fbf98e07c9760d59ae76d90e1bbccc610af41e1f4d",
+    "lines": 100
+  },
+  "outcome": "complete independent documentation binding; every executable/native/store/process-cut oracle NOT RUN; no source7 GO"
+}
