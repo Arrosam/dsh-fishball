@@ -74,6 +74,11 @@ test('actual public Cordis/Connection bridge routes owner intake, blocks carrier
   assert.equal(secret.result.ok, false); assert.equal(secret.text.includes('synthetic-canary'), false);
   const exported = await f.send('export', { taskRef: result.value.task.taskRef });
   assert.equal(exported.text.includes('synthetic scoped goal'), false);
+  const task = exported.result.value.task, recordRef = exported.result.value.data[0].recordRef;
+  const detailed = await f.send('detail', { taskRef: task.taskRef, recordRef, expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch });
+  assert.equal(detailed.result.value.data.content, 'synthetic scoped goal');
+  assert.equal((await f.send('detail', { taskRef: task.taskRef, recordRef, expectedTaskVersion: task.version + 1, expectedAuthEpoch: task.authEpoch })).result.error.code, 'STALE_VERSION');
+  assert.equal((await f.send('detail', { taskRef: reference('other-task'), recordRef, expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch })).result.ok, false);
   assert.equal(f.ctx.sessions.list().length, 0);
   const borrowed = f.ctx.bubbles;
   const disposing = fiber.dispose();

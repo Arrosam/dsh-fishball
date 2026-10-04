@@ -57,6 +57,16 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         grant: value => store.grantAction(owner, value),
         revoke: value => store.revokeAction(owner, value),
         policy: value => store.policy(owner, value),
+        detail: value => {
+          record(value, ['taskRef', 'recordRef', 'expectedTaskVersion', 'expectedAuthEpoch'], 'INPUT_INVALID');
+          referenceCheck(value.taskRef); referenceCheck(value.recordRef);
+          const before = store.task(owner, value.taskRef);
+          if (before.version !== value.expectedTaskVersion || before.authEpoch !== value.expectedAuthEpoch) throw new BootstrapError('STALE_VERSION');
+          const data = store.readData(owner, { taskRef: value.taskRef, recordRef: value.recordRef });
+          const after = store.task(owner, value.taskRef);
+          if (after.version !== before.version || after.authEpoch !== before.authEpoch) throw new BootstrapError('STALE_VERSION');
+          return Object.freeze({ task: after, data });
+        },
         export: value => store.exportTask(owner, { taskRef: singleRef(value) }),
       };
       bridge = installOperatorBridge({ connection: ctx.connection, operations, isAlive: alive });
@@ -76,7 +86,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
 }
 
 function referenceCheck(value) {
-  if (typeof value !== 'string' || !/^[a-f0-9]{64}$/.test(value)) throw new BootstrapError('INPUT_INVALID');
+  if (typeof value !== 'string' || value.length !== 64 || !/^[a-f0-9]{64}$/.test(value)) throw new BootstrapError('INPUT_INVALID');
 }
 export const runtimePlugin = createRuntimePlugin();
 export default runtimePlugin;
