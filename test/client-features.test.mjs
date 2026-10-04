@@ -72,9 +72,9 @@ test('foreign session bindings, native ID, terminal incarnation or lost epoch ne
   const g = fixture({ extra: { workers: [{ ...worker, phase: 'stopped' }] }, navigateSession: () => opened++ }); await g.model.refresh(); assert.equal(await g.model.openWorker(worker.claimRef), false); assert.equal(opened, 0); g.model.dispose();
 });
 
-function automationFixture({ digest = options.digest, mutate = value => value } = {}) {
+function automationFixture({ digest = options.digest, mutate = value => value, subscriptionSource = d('source') } = {}) {
   const sources = [{ sourceRef: d('source'), revision: 3, spec: { kind: 'schedule', identityMode: 'unique_id', enabled: true, adapterRef: d('adapter'), permissionPolicyRef: d('permission'), maxEventAgeMs: 10000, rate: { windowMs: 1000, maxEvents: 2 } } }];
-  const subscriptions = [{ sourceRef: d('source'), subscriptionRef: d('subscription'), revision: 2, spec: { enabled: true, route: 'new_task', triggerRef: d('trigger') } }];
+  const subscriptions = [{ sourceRef: subscriptionSource, subscriptionRef: d('subscription'), revision: 2, spec: { enabled: true, route: 'new_task', triggerRef: d('trigger') } }];
   const clock = { sourceRef: d('source'), subscriptionRef: d('subscription'), clockRef: d('clock'), sourceRevision: 3, subscriptionRevision: 2, cursor: null, timezone: 'UTC', polling: false, pendingVerification: { planDigest: d('missed-plan'), through: 1500, approved: false }, registration: { sourceRef: d('source'), subscriptionRef: d('subscription'), goal: 'Explicit scheduled synthetic goal', externalEffect: true, startAfter: 1000, spec: { timezone: 'UTC', cadence: 'daily', time: '08:00' } } };
   const writes = [], calls = []; let approved = false;
   const model = client.createModel({ async call(_, endpoint, input) {
@@ -128,4 +128,23 @@ test('audit report inspection requires original material binding and fresh task 
 test('throwing navigation or source command hooks cannot leak uppercase canaries or wedge busy', async () => {
   const f = fixture({ navigateSession: () => { throw new Error('SYNTHETIC_PRIVATE_CANARY'); } }); await f.model.refresh(); assert.equal(await f.model.openWorker(worker.claimRef), false); assert.equal(f.model.getSnapshot().error, 'RESULT_UNCONFIRMED'); assert.equal(f.model.getSnapshot().busy, false); assert.equal(JSON.stringify(f.model.getSnapshot()).includes('SYNTHETIC_PRIVATE_CANARY'), false); f.model.dispose();
   const g = automationFixture({ digest: async () => { throw new Error('SYNTHETIC_PRIVATE_CANARY'); } }); await g.model.loadAutomation(); assert.equal(await g.model.approveSchedule(d('clock')), false); assert.equal(g.writes.length, 0); assert.equal(g.model.getSnapshot().automationError, 'RESULT_UNCONFIRMED'); assert.equal(g.model.getSnapshot().busy, false); g.model.dispose();
+});
+
+
+test('audit final read must retain exact task scope even when a foreign task has identical CAS', async () => {
+  const audit = { auditRef: d('audit-scope'), taskRef: task.taskRef, artifactRef: d('artifact'), artifactVersion: 1, digest: d('artifact'), materialDigest: d('material'), bindingDigest: d('binding'), reports: [] };
+  let reads = 0;
+  const model = client.createModel({ async call(_, endpoint) {
+    if (endpoint === 'v1/list') return ok([task]);
+    if (endpoint === 'v1/status') return ok({ task: { ...task, taskRef: reads++ ? d('foreign-task-same-cas') : task.taskRef }, control: 'active', data: [], actions: [], workers: [], audits: [audit] });
+    if (endpoint === 'v1/audit') return ok({ ...audit, state: 'unknown' });
+    throw new Error('UNEXPECTED_ENDPOINT');
+  } }, options);
+  await model.refresh(); const before = model.getSnapshot().detail;
+  assert.equal(await model.inspectAudit(audit.auditRef), false); assert.equal(model.getSnapshot().detail, before); assert.equal(model.getSnapshot().detail.task.taskRef, task.taskRef); model.dispose();
+});
+test('mixed schedule/source/subscription association cannot submit owner approval despite matching revisions', async () => {
+  const f = automationFixture({ subscriptionSource: d('foreign-source') });
+  assert.equal(await f.model.loadAutomation(), true); assert.equal(await f.model.approveSchedule(d('clock')), false);
+  assert.equal(f.writes.length, 0); assert.equal(f.calls.some(value => value.endpoint === 'v1/approveSchedule'), false); f.model.dispose();
 });

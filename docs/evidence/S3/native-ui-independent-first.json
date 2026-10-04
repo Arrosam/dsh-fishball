@@ -1,0 +1,150 @@
+{
+  "scope": "independent typed client module; no browser/native carrier acceptance",
+  "total": 34,
+  "passed": 32,
+  "failed": 2,
+  "results": [
+    {
+      "name": "captured-original-revise",
+      "pass": true
+    },
+    {
+      "name": "captured-original-answer",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-actionRef",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-claimRef",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-sessionRef",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-taskVersion",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-taskRef",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-generationRef",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-actionDigest",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-authEpoch",
+      "pass": true
+    },
+    {
+      "name": "second-session-link-sessionId",
+      "pass": true
+    },
+    {
+      "name": "session-hash-await-disconnect",
+      "pass": true
+    },
+    {
+      "name": "session-hash-await-dispose",
+      "pass": true
+    },
+    {
+      "name": "session-hash-await-refresh",
+      "pass": true
+    },
+    {
+      "name": "audit-report-bound-taskRef",
+      "pass": true
+    },
+    {
+      "name": "audit-report-bound-auditRef",
+      "pass": true
+    },
+    {
+      "name": "audit-report-bound-artifactVersion",
+      "pass": true
+    },
+    {
+      "name": "audit-report-bound-digest",
+      "pass": true
+    },
+    {
+      "name": "audit-report-bound-materialDigest",
+      "pass": true
+    },
+    {
+      "name": "audit-report-bound-bindingDigest",
+      "pass": true
+    },
+    {
+      "name": "audit-final-status-exact-task-not-only-equal-version",
+      "pass": false,
+      "error": "ERR_ASSERTION",
+      "expected": false,
+      "actual": true
+    },
+    {
+      "name": "automation-command-await-approve-disconnect",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-approve-dispose",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-approve-reload",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-source-disconnect",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-source-dispose",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-source-reload",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-subscription-disconnect",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-subscription-dispose",
+      "pass": true
+    },
+    {
+      "name": "automation-command-await-subscription-reload",
+      "pass": true
+    },
+    {
+      "name": "missed-plan-source-subscription-association-must-match",
+      "pass": false,
+      "error": "ERR_ASSERTION",
+      "expected": false,
+      "actual": true
+    },
+    {
+      "name": "source-disable-captures-complete-explicit-policy-before-await",
+      "pass": true
+    },
+    {
+      "name": "redacted-private-callback-approve",
+      "pass": true
+    },
+    {
+      "name": "redacted-private-callback-navigate",
+      "pass": true
+    }
+  ]
+}

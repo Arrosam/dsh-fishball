@@ -95,3 +95,10 @@ node --test test/native-adapter.test.mjs test/native-runtime-integration.test.mj
 node scripts/check.mjs
 node scripts/build-client.mjs --check
 ```
+
+
+## Independent UI-T02 / UI-T03 corrective checkpoint
+
+The committed UI unitacdc0c6 and its native-ui.sha256 /73-test output remain immutable historical evidence. The separate ISTQB reviewer reproduced two typed client negatives: an audit's final status reread could be a foreign task with equal version/epoch; a clock could select a same-revision subscription associated with a different source. Actual native core still rejected the mixed schedule, but the client predicate was insufficient.
+
+`inspectAudit` now requires exact taskRef as well as version/authEpoch on the final reread before publishing. `approveSchedule` now requires subscription.sourceRef equal plan.sourceRef before command construction or mutation. Dedicated retained negatives assert no foreign audit publication and0schedule approval writes. No core scope/CAS predicate or fixture expectation was weakened. Corrective `node --test test/client-features.test.mjs test/client.test.mjs test/client-build.test.mjs` passed29/29,0failures/skips; syntax68ESM and regenerated deterministic bundlecheck pass. Raw output is [native-ui-corrections.tap](native-ui-corrections.tap), exact changed source/test/report hashes [native-ui-corrections.sha256](native-ui-corrections.sha256). Independent retest remains pending; actual browser/visual and failed final code-review session remain held.

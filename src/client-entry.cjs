@@ -211,7 +211,7 @@ module.exports = function clientFactory(require) {
         const original = snapshot.audits.find(value => value.auditRef === auditRef);
         if (audit?.auditRef !== auditRef || audit.taskRef !== task.taskRef || ['bindingDigest', 'artifactRef', 'artifactVersion', 'digest', 'materialDigest'].some(key => audit[key] !== original[key]) || !Array.isArray(audit.reports) || audit.reports.length > 9 || !audit.reports.every(report => report.taskRef === task.taskRef && report.auditRef === auditRef && ['bindingDigest', 'artifactVersion', 'digest', 'materialDigest'].every(key => report[key] === audit[key]) && ref(report.reportRef) && ref(report.generationRef) && ['passed', 'failed', 'unknown', 'budget_exhausted'].includes(report.verdict) && ['coverageRefs', 'unexaminedRefs'].every(key => Array.isArray(report[key]) && report[key].length <= 16 && report[key].every(ref)) && Array.isArray(report.findings) && report.findings.length <= 16)) throw new Error('INVALID_RESPONSE');
         const latest = await call('status', { taskRef: task.taskRef });
-        if (latest?.task?.version !== task.version || latest.task.authEpoch !== task.authEpoch) throw new Error('STALE_VERSION');
+        if (latest?.task?.taskRef !== task.taskRef || latest.task.version !== task.version || latest.task.authEpoch !== task.authEpoch) throw new Error('STALE_VERSION');
         if (!active || epoch !== connectionEpoch || state.stale || state.detail !== snapshot) return false;
         publish({ detail: copy({ ...snapshot, audits: snapshot.audits.map(value => value.auditRef === auditRef ? audit : value) }), previews: Object.freeze({}) }); return true;
       } catch (error) { publish({ error: publicError(error?.message) }); return false; }
@@ -249,7 +249,7 @@ module.exports = function clientFactory(require) {
     }
     function approveSchedule(clockRef) {
       const plan = state.automation?.clocks.find(value => value.clockRef === clockRef), source = plan && state.automation.sources.find(value => value.sourceRef === plan.sourceRef), subscription = plan && state.automation.subscriptions.find(value => value.subscriptionRef === plan.subscriptionRef);
-      if (!plan || !source?.spec.enabled || !subscription?.spec.enabled || source.revision !== plan.sourceRevision || subscription.revision !== plan.subscriptionRevision || !plan.pendingVerification || plan.pendingVerification.approved) return Promise.resolve(false);
+      if (!plan || !source?.spec.enabled || !subscription?.spec.enabled || subscription.sourceRef !== plan.sourceRef || source.revision !== plan.sourceRevision || subscription.revision !== plan.subscriptionRevision || !plan.pendingVerification || plan.pendingVerification.approved) return Promise.resolve(false);
       return automationMutation('approveSchedule', { sourceRef: plan.sourceRef, subscriptionRef: plan.subscriptionRef, expectedSourceRevision: plan.sourceRevision, expectedSubscriptionRevision: plan.subscriptionRevision, clockRef, expectedCursor: plan.cursor, planDigest: plan.pendingVerification.planDigest });
     }
     async function loadReceipts(subscriptionRef) {
