@@ -2,7 +2,7 @@
 
 Current alias: **DF007B**. Historical BUB IDs and approved source text below remain preserved. The [owner amendment](../owner-amendment-2026-10-04.md) controls current naming, MIT and chat-provider applicability.
 
-Status: Isolated durable memory adapter and source-bound protected context implemented/module tested; final code/native integration acceptance HOLD.
+Status: Isolated durable adapter and bounded normal installed memory/context functionally tested,including physical-package reload/restart;full memory API/retention,final CODE/browser and ticket acceptance HOLD.
 Wave: W3 after007A; isolation contracts fromW1.
 Source AC IDs retained: BUB007-03..06.
 Planning source: Library libfile_13cd8b7e548881919b22d9e99bfddaf2; [complete approved text](../reference/approved-ticket-review.zh.txt).
@@ -47,6 +47,8 @@ BUB007-06 007B 任务终态与批准仅从账本读取。冲突记忆只能触�
 统一待决项 D7 抽取路线与许可证处理；D4 记忆保留、导入及删除策略。
 
 ## Milestone evidence
+
+The later [NI1 checkpoint](../evidence/NI1/checkpoint.md) adds normal explicit remember/read/context,private stable scope,pinned heuristic accounting,independent82/82 and actual packed native reload/reopen/dedup/decryption proof. It does not complete normal correction/deletion/import interfaces or every source memory criterion. All original scope and acceptance text above remain unchanged.
 
 Isolated durable memory adapter and source-bound protected context implemented/module tested; final code/native integration acceptance HOLD.
 
