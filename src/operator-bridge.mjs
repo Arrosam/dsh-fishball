@@ -7,7 +7,7 @@ const fail = code => { throw new OperatorBridgeError(code); };
 const publicCodes = new Set(['INVALID_INPUT', 'INPUT_TOO_LARGE', 'STALE_VERSION', 'STALE_AUTHORITY',
   'NOT_FOUND', 'SCOPE_DENIED', 'ROLE_DENIED', 'COMMAND_CONFLICT', 'TASK_TERMINAL', 'GRANT_REQUIRED',
   'GRANT_EXPIRED', 'HOST_PERMISSION_DENIED', 'RESOURCE_LIMIT', 'QUEUE_FULL', 'RECOVERY_REQUIRED',
-  'POLICY_STALE', 'AUTHORITY_REVOKED', 'SECRET_REJECTED', 'SERVICE_DISPOSED']);
+  'POLICY_STALE', 'AUTHORITY_REVOKED', 'SECRET_REJECTED', 'SERVICE_DISPOSED', 'OPERATOR_REQUIRED', 'REQUEST_ABORTED']);
 for (const code of ['CLARIFICATION_STALE', 'CLARIFICATION_INCOMPLETE', 'CLARIFICATION_INVALID', 'DECISION_CONFLICT', 'CAPABILITY_UNAVAILABLE', 'PREVIEW_UNAVAILABLE', 'PREVIEW_STALE', 'PREVIEW_CAPACITY',
   'WORKER_EXECUTION_UNAVAILABLE', 'WORKER_EXECUTION_DENIED', 'WORKER_EXECUTION_ALREADY_SUBMITTED',
   'WORKER_SESSION_UNAVAILABLE', 'WORKER_TOOLS_UNAVAILABLE', 'WORKER_RESULT_UNAVAILABLE', 'WORKER_CONTEXT_INVALID', 'WORKER_MAPPING_MISMATCH', 'WORKER_DISPOSED',
@@ -85,7 +85,7 @@ export function installOperatorBridge({ connection, operations, isAlive = () => 
       let alive = false;
       try { alive = active && isAlive() === true; } catch { /* stable failure below */ }
       if (!alive) return rejected('SERVICE_DISPOSED');
-      if (admittedPeer !== peer) return rejected('OPERATOR_REQUIRED');
+      if (admittedPeer !== peer || connection.operator !== peer) return rejected('OPERATOR_REQUIRED');
       if (signal?.aborted) return rejected('REQUEST_ABORTED');
       const name = typeof endpoint === 'string' && endpoint.startsWith(prefix) ? endpoint.slice(prefix.length) : undefined;
       const operation = commands.get(name);
@@ -98,7 +98,18 @@ export function installOperatorBridge({ connection, operations, isAlive = () => 
         if (Buffer.byteLength(JSON.stringify(input)) > 65536) fail('INPUT_TOO_LARGE');
         // No awaits precede admission to the operation. Once an operation has
         // claimed work, aborting its HTTP request cannot erase ledger facts.
-        const value = await operation(input);
+        let guarded = false;
+        const assertCurrent = () => {
+          guarded = true;
+          let current = false;
+          try { current = active && isAlive() === true; } catch { /* bounded below */ }
+          if (!current) fail('SERVICE_DISPOSED');
+          if (connection.operator !== peer || admittedPeer !== peer) fail('OPERATOR_REQUIRED');
+          if (signal?.aborted) fail('REQUEST_ABORTED');
+          return true;
+        };
+        const value = await operation(input, Object.freeze({ assertCurrent }));
+        if (guarded) assertCurrent();
         return { ok: true, value };
       } catch (error) {
         const descriptor = error && !types.isProxy(error) ? Object.getOwnPropertyDescriptor(error, 'code') : undefined;
