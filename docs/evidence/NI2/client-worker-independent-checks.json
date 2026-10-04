@@ -1,0 +1,441 @@
+{
+  "created": "2026-10-04T23:30:14.336611+00:00",
+  "identity": "/root/native_functional",
+  "role": "CLIENT-only separate independent functional/ISTQB execution; not CODE",
+  "outcome": "Bounded client PASS after exact root-authorized matching uncertainty method/UI repair",
+  "initialHeldPins": [
+    {
+      "path": "src/client-entry.cjs",
+      "expected": "b1862fb610ccaf809982aa2c0f7e6ad01bad536b419636fd57e4a2a7bb40d1cd",
+      "actual": "b1862fb610ccaf809982aa2c0f7e6ad01bad536b419636fd57e4a2a7bb40d1cd",
+      "match": true
+    },
+    {
+      "path": "lib/client.js",
+      "expected": "d0696c513351774774c37febaafec5c2215fa0688f2fc7554fef4a3a2570869f",
+      "actual": "d0696c513351774774c37febaafec5c2215fa0688f2fc7554fef4a3a2570869f",
+      "match": true
+    },
+    {
+      "path": "test/worker-client.test.mjs",
+      "expected": "1ceb2f64cf887be15e9c0de37b785e9545ea17e9d4ee4ab495a087f0c92b254c",
+      "actual": "1ceb2f64cf887be15e9c0de37b785e9545ea17e9d4ee4ab495a087f0c92b254c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-hold.md",
+      "expected": "0bc6f96a22677cc2854bbef37b93b471f3852f246f641f130c3a9796e065ae65",
+      "actual": "0bc6f96a22677cc2854bbef37b93b471f3852f246f641f130c3a9796e065ae65",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author.sha256",
+      "expected": "a3cee906a62ad900dca89092def8d2c84a9f3c7fa0385d9d59ada262a795c9a7",
+      "actual": "a3cee906a62ad900dca89092def8d2c84a9f3c7fa0385d9d59ada262a795c9a7",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "expected": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "actual": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "match": true
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "expected": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "actual": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "match": true
+    }
+  ],
+  "affectedHeldPins": [
+    {
+      "path": "src/client-entry.cjs",
+      "expected": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+      "actual": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+      "match": true
+    },
+    {
+      "path": "lib/client.js",
+      "expected": "a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f",
+      "actual": "a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f",
+      "match": true
+    },
+    {
+      "path": "test/worker-client.test.mjs",
+      "expected": "c65cf4333fc34e7b88be6e55396629afee5100e0427e68f3b18737ca01f728bd",
+      "actual": "c65cf4333fc34e7b88be6e55396629afee5100e0427e68f3b18737ca01f728bd",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-c23-c24-author-hold.md",
+      "expected": "5ab938f6f59e41e4f030e6c9ff2b7e03d3984b622094e62c0075efdbe8335559",
+      "actual": "5ab938f6f59e41e4f030e6c9ff2b7e03d3984b622094e62c0075efdbe8335559",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-c23-c24-author.sha256",
+      "expected": "88f010b5e082acb17cee58f325fcd409bad63d4d5048f5bdcab80d7cae2f715f",
+      "actual": "88f010b5e082acb17cee58f325fcd409bad63d4d5048f5bdcab80d7cae2f715f",
+      "match": true
+    }
+  ],
+  "initialAuthorManifestCount": 30,
+  "initialHistoricalSharedObservations": [
+    {
+      "path": "test/installed-worker.test.mjs",
+      "authorTestedSha256": "c99927a77e8d701f4aabe473069e8b6935ac7e697cba4d6fbcd93065ddbe3ac8",
+      "observedSha256": "c99927a77e8d701f4aabe473069e8b6935ac7e697cba4d6fbcd93065ddbe3ac8",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "authorTestedSha256": "8ad5aa8d081ff51d9d09bf496a79cb78a5adb4eba178ed0bb6b5d8a2f8a4db4f",
+      "observedSha256": "8ad5aa8d081ff51d9d09bf496a79cb78a5adb4eba178ed0bb6b5d8a2f8a4db4f",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "authorTestedSha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "observedSha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "authorTestedSha256": "f22415b60c9cdfb40fdfdb2bb6583e82cff34c7e590fbebfec05d641167eaf9b",
+      "observedSha256": "f22415b60c9cdfb40fdfdb2bb6583e82cff34c7e590fbebfec05d641167eaf9b",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/installed-worker-facts.mjs",
+      "authorTestedSha256": "22cb737371b43575a81eaf5281027a0cfae5c90b7fdbb89895d501f5dabc18b8",
+      "observedSha256": "22cb737371b43575a81eaf5281027a0cfae5c90b7fdbb89895d501f5dabc18b8",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "authorTestedSha256": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e",
+      "observedSha256": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/worker.mjs",
+      "authorTestedSha256": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "observedSha256": "55b93114668db772c887b08928bbbb312f1a3d236524b2375791ae6da958b653",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "authorTestedSha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "observedSha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "authorTestedSha256": "1178a826d22c4d051897599d1d500f2315ca85688cda48b77718f3f8356ce7ca",
+      "observedSha256": "5825291007bf33e52797257aaefd7fa8156cea8209001416788c34682f5319e5",
+      "match": false,
+      "classification": "historical_shared_no_import_or_execution"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "authorTestedSha256": "2150c4dae7db35f3cd66110c5526a9a0758dcc0d24e37f5c72f6ea1b74ca0f11",
+      "observedSha256": "2150c4dae7db35f3cd66110c5526a9a0758dcc0d24e37f5c72f6ea1b74ca0f11",
+      "match": true,
+      "classification": "historical_shared_no_import_or_execution"
+    }
+  ],
+  "afterChecks": "docs/evidence/NI2/client-worker-independent-after.json",
+  "first": {
+    "total": 63,
+    "passCount": 59,
+    "failCount": 4,
+    "skipCount": 0,
+    "exit": 1,
+    "syntaxExit": 0,
+    "testSourceSha256": "16787abaa2c4a8a05c59ba6a3bfbdfbb9bb917e984a666f15c24df0cdacfa24c",
+    "tapSha256": "f7b08f9a18233ce81bf679b44cb208f8007dd6f3fad980ab1a219bd71b618318",
+    "failureCases": [
+      "C23 source: uncertain capture requires reading current facts before another mutation decision",
+      "C24 source: uncertain finish requires reading current facts before another mutation decision",
+      "C23 bundle: uncertain capture requires reading current facts before another mutation decision",
+      "C24 bundle: uncertain finish requires reading current facts before another mutation decision"
+    ]
+  },
+  "rootRepair": {
+    "authorization": "Root authorized narrow client-only C23/C24 method/UI uncertainty guards and exact affected retest; preserve59 unchanged passes",
+    "scope": "matching capture/finish uncertainty guards and descriptors only",
+    "authorHoldSha256": "5ab938f6f59e41e4f030e6c9ff2b7e03d3984b622094e62c0075efdbe8335559",
+    "authorManifestSha256": "88f010b5e082acb17cee58f325fcd409bad63d4d5048f5bdcab80d7cae2f715f",
+    "originalSnapshotsPreserved": [
+      {
+        "originalPath": "src/client-entry.cjs",
+        "snapshotPath": "docs/evidence/NI2/client-worker-before-c23-c24.source.txt",
+        "expected": "b1862fb610ccaf809982aa2c0f7e6ad01bad536b419636fd57e4a2a7bb40d1cd",
+        "actual": "b1862fb610ccaf809982aa2c0f7e6ad01bad536b419636fd57e4a2a7bb40d1cd",
+        "match": true
+      },
+      {
+        "originalPath": "lib/client.js",
+        "snapshotPath": "docs/evidence/NI2/client-worker-before-c23-c24.bundle.txt",
+        "expected": "d0696c513351774774c37febaafec5c2215fa0688f2fc7554fef4a3a2570869f",
+        "actual": "d0696c513351774774c37febaafec5c2215fa0688f2fc7554fef4a3a2570869f",
+        "match": true
+      },
+      {
+        "originalPath": "test/worker-client.test.mjs",
+        "snapshotPath": "docs/evidence/NI2/client-worker-before-c23-c24.test.txt",
+        "expected": "1ceb2f64cf887be15e9c0de37b785e9545ea17e9d4ee4ab495a087f0c92b254c",
+        "actual": "1ceb2f64cf887be15e9c0de37b785e9545ea17e9d4ee4ab495a087f0c92b254c",
+        "match": true
+      }
+    ],
+    "independentFirstExpectationsPreserved": true
+  },
+  "affected": {
+    "total": 4,
+    "passCount": 4,
+    "failCount": 0,
+    "skipCount": 0,
+    "exit": 0,
+    "syntaxExit": 0,
+    "command": "env -i PATH=/opt/homebrew/bin:/usr/bin:/bin TZ=UTC /opt/homebrew/bin/node --test --test-reporter=tap --test-name-pattern='^C2[34] ' test/worker-client-functional.test.mjs",
+    "testSourceSha256": "34f2d7c1d53e28f9842587e211e73ef9d4670fdb887c22ab0d39b5a6ca079787",
+    "tapSha256": "8e01a8e8a2fb73a1ce4fb9de2173f06386ac49c9eace7347c69636577a3151d3",
+    "onlyIndependentCaseBodiesChanged": [
+      "C23",
+      "C24"
+    ],
+    "zeroSecondCaptureFinishRPC": true,
+    "queryStatusDoNotAcknowledgeUnknown": true
+  },
+  "countAttribution": {
+    "distinctIndependentCaseOutcomes": 63,
+    "behaviorFamiliesMirroredAcrossSourceAndBundle": 31,
+    "originalBundleSerializationCase": 1,
+    "firstUnchangedPassingCasesNotRepeated": 59,
+    "all63CurrentSourceFinalBatch": false,
+    "authorOriginal163AndNoListener4Included": false,
+    "authorCorrected32And151Included": false
+  },
+  "productClosure": [
+    "src/client-entry.cjs",
+    "lib/client.js"
+  ],
+  "runtime": "installed /opt/homebrew/bin/node v22.22.2, darwin arm64, env -i PATH/TZ",
+  "fixtureDisclosure": [
+    "typed RPC authority/task/receipt/source doubles",
+    "original held ordinary/additive client models",
+    "React descriptor double; no DOM/browser/screenshot",
+    "controlled clock/UUID/digest/deferred promises",
+    "same-realm emitted factory; foreign realm only explicitly negative/registration"
+  ],
+  "preservedSourceACRows": [
+    "BUB001-01",
+    "BUB001-02",
+    "BUB001-03",
+    "BUB001-04",
+    "BUB001-05",
+    "BUB002-01",
+    "BUB002-02",
+    "BUB002-03",
+    "BUB002-04",
+    "BUB002-05",
+    "BUB003-01",
+    "BUB003-02",
+    "BUB003-03",
+    "BUB003-04",
+    "BUB003-05",
+    "BUB004-01",
+    "BUB004-02",
+    "BUB004-03",
+    "BUB004-04",
+    "BUB004-05",
+    "BUB005-01",
+    "BUB005-02",
+    "BUB005-03",
+    "BUB005-04",
+    "BUB005-05",
+    "BUB006-01",
+    "BUB006-02",
+    "BUB006-03",
+    "BUB006-04",
+    "BUB006-05",
+    "BUB007-01",
+    "BUB007-02",
+    "BUB007-03",
+    "BUB007-04",
+    "BUB007-05",
+    "BUB007-06",
+    "BUB008-01",
+    "BUB008-02",
+    "BUB008-03",
+    "BUB008-04",
+    "BUB008-05",
+    "BUB009-01",
+    "BUB009-02",
+    "BUB009-03",
+    "BUB009-04",
+    "BUB009-05",
+    "BUB010-01",
+    "BUB010-02",
+    "BUB010-03",
+    "BUB010-04",
+    "BUB010-05",
+    "BUB011-01",
+    "BUB011-02",
+    "BUB011-03",
+    "BUB011-04",
+    "BUB011-05",
+    "BUB012-01",
+    "BUB012-02",
+    "BUB012-03",
+    "BUB012-04",
+    "BUB012-05",
+    "BUB013-01",
+    "BUB013-02",
+    "BUB013-03",
+    "BUB013-04",
+    "BUB013-05",
+    "BUB014-01",
+    "BUB014-02",
+    "BUB014-03",
+    "BUB014-04",
+    "BUB014-05",
+    "BUB015-01",
+    "BUB015-02",
+    "BUB015-03",
+    "BUB015-04",
+    "BUB015-05",
+    "BUB016-01",
+    "BUB016-02",
+    "BUB016-03",
+    "BUB016-04",
+    "BUB016-05",
+    "BUB016-06",
+    "DF010-C01",
+    "DF010-C02",
+    "DF010-C03",
+    "DF010-C04",
+    "DF010-C05"
+  ],
+  "preservedSourceACCount": 87,
+  "sourceACContributions": "report lists all87 rows with32 bounded client contribution rows; no whole criterion accepted",
+  "localDocumentationLinks": [
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-design.md",
+      "target": "test-design.md",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-design.md",
+      "target": "../../normal-worker-contract.md",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-design.md",
+      "target": "contract-freeze.md",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-first-failures.md",
+      "target": "client-worker-independent-first.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-first-failures.md",
+      "target": "client-worker-independent-first-source.mjs.txt",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-remediation.md",
+      "target": "client-worker-c23-c24-author-hold.md",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-remediation.md",
+      "target": "client-worker-c23-c24-author.sha256",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-remediation.md",
+      "target": "client-worker-independent-repair-diff.txt",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-remediation.md",
+      "target": "client-worker-independent-affected.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-remediation.md",
+      "target": "client-worker-independent-affected-before.json",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-report.md",
+      "target": "client-worker-independent-first.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-report.md",
+      "target": "client-worker-independent-first-source.mjs.txt",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-report.md",
+      "target": "client-worker-independent-first-checks.json",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-report.md",
+      "target": "client-worker-independent-first-failures.md",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-report.md",
+      "target": "client-worker-independent-remediation.md",
+      "exists": true
+    },
+    {
+      "document": "docs/evidence/NI2/client-worker-independent-report.md",
+      "target": "client-worker-independent-affected.tap",
+      "exists": true
+    }
+  ],
+  "independentOwnedWrites": [
+    "test/worker-client-functional.test.mjs",
+    "docs/evidence/NI2/client-worker-independent-*"
+  ],
+  "notPerformed": [
+    "shared core/runtime/composer/native import or test",
+    "product source/old author-test/evidence edits by independent lane",
+    "Git mutation",
+    "DB/raw-row corruption",
+    "host CLI/profile/package/listener/HTTP",
+    "browser/DOM/screenshot/visual acceptance",
+    "model/inference/tool/recipient/account/credentials/install",
+    "CODE retry/replacement/alternate route"
+  ],
+  "remainingHolds": [
+    "coherent final shared dependency regression",
+    "actual native authority/provider/input/output/flush/capture/stop/drain/release oracles",
+    "unknown capture/finish trustworthy reconciliation",
+    "genuine5/6/7 provenance/resume/useful continuation",
+    "original physical CLI/package/profile/auth/reload/restart",
+    "supported browser/Chinese/focus/keyboard/accessibility/resize",
+    "useful model/review quality",
+    "independent CODE platform block",
+    "full original82+current5 AC/MVP/publication"
+  ],
+  "testSha256": "34f2d7c1d53e28f9842587e211e73ef9d4670fdb887c22ab0d39b5a6ca079787",
+  "reportSha256": "41108cee0fbd491a954263ebf2850560010cd586b0747030f3b3dbee42c63c9e",
+  "leaseDisposition": "CLIENT execution released after this bounded report/hash freeze; source/Git/coherent promotion remain root controlled"
+}

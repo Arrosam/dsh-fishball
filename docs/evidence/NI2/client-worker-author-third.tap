@@ -1,0 +1,142 @@
+TAP version 13
+# Subtest: source: mount/catalogue/status do no policy consent, worker or inference work
+ok 1 - source: mount/catalogue/status do no policy consent, worker or inference work
+  ---
+  duration_ms: 4.328084
+  type: 'test'
+  ...
+# Subtest: source: policy acceptance is exact, literal, one-use and independent of action grant
+ok 2 - source: policy acceptance is exact, literal, one-use and independent of action grant
+  ---
+  duration_ms: 1.14675
+  type: 'test'
+  ...
+# Subtest: source: exact expiry, backward clock and refresh clear preview consent
+ok 3 - source: exact expiry, backward clock and refresh clear preview consent
+  ---
+  duration_ms: 1.962208
+  type: 'test'
+  ...
+# Subtest: source: disconnect fences pending confirm and refresh never replays it
+ok 4 - source: disconnect fences pending confirm and refresh never replays it
+  ---
+  duration_ms: 4.500333
+  type: 'test'
+  ...
+# Subtest: source: closed cached status rejects unknown fields/accessors and hides canaries
+ok 5 - source: closed cached status rejects unknown fields/accessors and hides canaries
+  ---
+  duration_ms: 0.587917
+  type: 'test'
+  ...
+# Subtest: source: context response is closed and scoped before action planning
+ok 6 - source: context response is closed and scoped before action planning
+  ---
+  duration_ms: 0.775167
+  type: 'test'
+  ...
+# Subtest: source: explicit full flow separates grant/idle create/execute/capture/read/finish and labels local result honestly
+ok 7 - source: explicit full flow separates grant/idle create/execute/capture/read/finish and labels local result honestly
+  ---
+  duration_ms: 17.824084
+  type: 'test'
+  ...
+# Subtest: source: external task/auth drift erases grant and pending consent
+ok 8 - source: external task/auth drift erases grant and pending consent
+  ---
+  duration_ms: 0.966792
+  type: 'test'
+  ...
+# Subtest: source: lost execute is unknown and performs read-only reconciliation without retry
+ok 9 - source: lost execute is unknown and performs read-only reconciliation without retry
+  ---
+  duration_ms: 1.1005
+  type: 'test'
+  ...
+# Subtest: source: foreign native response mapping cannot replace an owned worker or output
+ok 10 - source: foreign native response mapping cannot replace an owned worker or output
+  ---
+  duration_ms: 2.206083
+  type: 'test'
+  ...
+# Subtest: source: result claim mismatch is rejected without rendering raw content
+ok 11 - source: result claim mismatch is rejected without rendering raw content
+  ---
+  duration_ms: 0.959667
+  type: 'test'
+  ...
+# Subtest: bundle: mount/catalogue/status do no policy consent, worker or inference work
+ok 12 - bundle: mount/catalogue/status do no policy consent, worker or inference work
+  ---
+  duration_ms: 1.162625
+  type: 'test'
+  ...
+# Subtest: bundle: policy acceptance is exact, literal, one-use and independent of action grant
+ok 13 - bundle: policy acceptance is exact, literal, one-use and independent of action grant
+  ---
+  duration_ms: 0.670541
+  type: 'test'
+  ...
+# Subtest: bundle: exact expiry, backward clock and refresh clear preview consent
+ok 14 - bundle: exact expiry, backward clock and refresh clear preview consent
+  ---
+  duration_ms: 1.160417
+  type: 'test'
+  ...
+# Subtest: bundle: disconnect fences pending confirm and refresh never replays it
+ok 15 - bundle: disconnect fences pending confirm and refresh never replays it
+  ---
+  duration_ms: 2.710458
+  type: 'test'
+  ...
+# Subtest: bundle: closed cached status rejects unknown fields/accessors and hides canaries
+ok 16 - bundle: closed cached status rejects unknown fields/accessors and hides canaries
+  ---
+  duration_ms: 0.46525
+  type: 'test'
+  ...
+# Subtest: bundle: context response is closed and scoped before action planning
+ok 17 - bundle: context response is closed and scoped before action planning
+  ---
+  duration_ms: 0.815583
+  type: 'test'
+  ...
+# Subtest: bundle: explicit full flow separates grant/idle create/execute/capture/read/finish and labels local result honestly
+ok 18 - bundle: explicit full flow separates grant/idle create/execute/capture/read/finish and labels local result honestly
+  ---
+  duration_ms: 3.02275
+  type: 'test'
+  ...
+# Subtest: bundle: external task/auth drift erases grant and pending consent
+ok 19 - bundle: external task/auth drift erases grant and pending consent
+  ---
+  duration_ms: 0.751042
+  type: 'test'
+  ...
+# Subtest: bundle: lost execute is unknown and performs read-only reconciliation without retry
+ok 20 - bundle: lost execute is unknown and performs read-only reconciliation without retry
+  ---
+  duration_ms: 1.338584
+  type: 'test'
+  ...
+# Subtest: bundle: foreign native response mapping cannot replace an owned worker or output
+ok 21 - bundle: foreign native response mapping cannot replace an owned worker or output
+  ---
+  duration_ms: 1.646709
+  type: 'test'
+  ...
+# Subtest: bundle: result claim mismatch is rejected without rendering raw content
+ok 22 - bundle: result claim mismatch is rejected without rendering raw content
+  ---
+  duration_ms: 0.8935
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 160.866041

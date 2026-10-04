@@ -1,0 +1,567 @@
+{
+  "created": "2026-10-04T23:18:58.070280+00:00",
+  "firstCommand": "env -i PATH=/opt/homebrew/bin:/usr/bin:/bin TZ=UTC /opt/homebrew/bin/node --test --test-reporter=tap test/worker-client-functional.test.mjs",
+  "syntaxExit": 0,
+  "firstExit": 1,
+  "firstTests": 63,
+  "firstPass": 59,
+  "firstFail": 4,
+  "firstSkip": 0,
+  "firstTestSha256": "16787abaa2c4a8a05c59ba6a3bfbdfbb9bb917e984a666f15c24df0cdacfa24c",
+  "firstTapSha256": "f7b08f9a18233ce81bf679b44cb208f8007dd6f3fad980ab1a219bd71b618318",
+  "outcomes": [
+    {
+      "index": 1,
+      "name": "C01 source: actual apply, ordinary refresh and reset emit zero implicit worker RPC",
+      "outcome": "PASS"
+    },
+    {
+      "index": 2,
+      "name": "C02 source: ordered explicit decisions emit exact closed requests and fresh command references",
+      "outcome": "PASS"
+    },
+    {
+      "index": 3,
+      "name": "C03 source: real same-task detail:null refresh preserves context and captured facts; another task clears them",
+      "outcome": "PASS"
+    },
+    {
+      "index": 4,
+      "name": "C04 source: a captured rendered policy closure cannot accept or confirm replacement material",
+      "outcome": "PASS"
+    },
+    {
+      "index": 5,
+      "name": "C05 source: rendered action closure and literal consent remain separate from create and execution",
+      "outcome": "PASS"
+    },
+    {
+      "index": 6,
+      "name": "C06 source: expiry equality, rollback and grant TTL boundaries deny stale consent",
+      "outcome": "PASS"
+    },
+    {
+      "index": 7,
+      "name": "C07 source: task drift during command hashing prevents a request before it reaches RPC",
+      "outcome": "PASS"
+    },
+    {
+      "index": 8,
+      "name": "C08 source: pending explicit execution excludes a double click and every competing operation",
+      "outcome": "PASS"
+    },
+    {
+      "index": 9,
+      "name": "C09 source: lost create requires an explicit exact query; ambiguous cached mappings cannot recover it",
+      "outcome": "PASS"
+    },
+    {
+      "index": 10,
+      "name": "C10 source: lost execute stays uncertain through refresh and explicit query without another execute",
+      "outcome": "PASS"
+    },
+    {
+      "index": 11,
+      "name": "C11 source: unknown typed execution never exposes committed output, capture or finish",
+      "outcome": "PASS"
+    },
+    {
+      "index": 12,
+      "name": "C12 source: cancelled current task allows only explicit factual cleanup and keeps captured text",
+      "outcome": "PASS"
+    },
+    {
+      "index": 13,
+      "name": "C13 source: missing context/action/capture preconditions emit no corresponding effect request",
+      "outcome": "PASS"
+    },
+    {
+      "index": 14,
+      "name": "C14 source: closed native envelopes reject contradictory, hidden and accessor values without rendering canaries",
+      "outcome": "PASS"
+    },
+    {
+      "index": 15,
+      "name": "C15 source: cached status enforces numeric boundaries and denies contradictory ready accounting",
+      "outcome": "PASS"
+    },
+    {
+      "index": 16,
+      "name": "C16 source: owned mapping validation rejects foreign task/action and query identity substitutions",
+      "outcome": "PASS"
+    },
+    {
+      "index": 17,
+      "name": "C17 source: committed/unknown execution usage union rejects contradictory or unsafe facts",
+      "outcome": "PASS"
+    },
+    {
+      "index": 18,
+      "name": "C18 source: capture refuses foreign source associations, verification claims and extra receipt fields",
+      "outcome": "PASS"
+    },
+    {
+      "index": 19,
+      "name": "C19 source: retained result cannot replace an exact captured association or claim review/delivery",
+      "outcome": "PASS"
+    },
+    {
+      "index": 20,
+      "name": "C20 source: result limits measure complete UTF8 text and render script-looking output inertly",
+      "outcome": "PASS"
+    },
+    {
+      "index": 21,
+      "name": "C21 source: truthful held finish retains captured facts and never paints a released worker",
+      "outcome": "PASS"
+    },
+    {
+      "index": 22,
+      "name": "C22 source: foreign finish receipt cannot stop or replace the owned worker",
+      "outcome": "PASS"
+    },
+    {
+      "index": 23,
+      "name": "C23 source: uncertain capture requires reading current facts before another mutation decision",
+      "outcome": "FAIL"
+    },
+    {
+      "index": 24,
+      "name": "C24 source: uncertain finish requires reading current facts before another mutation decision",
+      "outcome": "FAIL"
+    },
+    {
+      "index": 25,
+      "name": "C25 source: ordinary cancel paints the authoritative readback and performs no implicit worker operation",
+      "outcome": "PASS"
+    },
+    {
+      "index": 26,
+      "name": "C26 source: accepted status/catalog/preview/results are detached and deeply immutable",
+      "outcome": "PASS"
+    },
+    {
+      "index": 27,
+      "name": "C27 source: disconnect/dispose abort pending reads and prevent late publication or automatic replay",
+      "outcome": "PASS"
+    },
+    {
+      "index": 28,
+      "name": "C28 source: descriptor controls reflect disabled/unavailable/idle/current-output/offline states",
+      "outcome": "PASS"
+    },
+    {
+      "index": 29,
+      "name": "C29 source: stale selected-task reply cannot repopulate old result or scope",
+      "outcome": "PASS"
+    },
+    {
+      "index": 30,
+      "name": "C30 source: same-task version/auth drift clears consent while preserving historical output for explicit reads",
+      "outcome": "PASS"
+    },
+    {
+      "index": 31,
+      "name": "C31 source: ordinary foreign-realm response fixture refuses; wire JSON rehydration is the same-realm carrier",
+      "outcome": "PASS"
+    },
+    {
+      "index": 32,
+      "name": "C01 bundle: actual apply, ordinary refresh and reset emit zero implicit worker RPC",
+      "outcome": "PASS"
+    },
+    {
+      "index": 33,
+      "name": "C02 bundle: ordered explicit decisions emit exact closed requests and fresh command references",
+      "outcome": "PASS"
+    },
+    {
+      "index": 34,
+      "name": "C03 bundle: real same-task detail:null refresh preserves context and captured facts; another task clears them",
+      "outcome": "PASS"
+    },
+    {
+      "index": 35,
+      "name": "C04 bundle: a captured rendered policy closure cannot accept or confirm replacement material",
+      "outcome": "PASS"
+    },
+    {
+      "index": 36,
+      "name": "C05 bundle: rendered action closure and literal consent remain separate from create and execution",
+      "outcome": "PASS"
+    },
+    {
+      "index": 37,
+      "name": "C06 bundle: expiry equality, rollback and grant TTL boundaries deny stale consent",
+      "outcome": "PASS"
+    },
+    {
+      "index": 38,
+      "name": "C07 bundle: task drift during command hashing prevents a request before it reaches RPC",
+      "outcome": "PASS"
+    },
+    {
+      "index": 39,
+      "name": "C08 bundle: pending explicit execution excludes a double click and every competing operation",
+      "outcome": "PASS"
+    },
+    {
+      "index": 40,
+      "name": "C09 bundle: lost create requires an explicit exact query; ambiguous cached mappings cannot recover it",
+      "outcome": "PASS"
+    },
+    {
+      "index": 41,
+      "name": "C10 bundle: lost execute stays uncertain through refresh and explicit query without another execute",
+      "outcome": "PASS"
+    },
+    {
+      "index": 42,
+      "name": "C11 bundle: unknown typed execution never exposes committed output, capture or finish",
+      "outcome": "PASS"
+    },
+    {
+      "index": 43,
+      "name": "C12 bundle: cancelled current task allows only explicit factual cleanup and keeps captured text",
+      "outcome": "PASS"
+    },
+    {
+      "index": 44,
+      "name": "C13 bundle: missing context/action/capture preconditions emit no corresponding effect request",
+      "outcome": "PASS"
+    },
+    {
+      "index": 45,
+      "name": "C14 bundle: closed native envelopes reject contradictory, hidden and accessor values without rendering canaries",
+      "outcome": "PASS"
+    },
+    {
+      "index": 46,
+      "name": "C15 bundle: cached status enforces numeric boundaries and denies contradictory ready accounting",
+      "outcome": "PASS"
+    },
+    {
+      "index": 47,
+      "name": "C16 bundle: owned mapping validation rejects foreign task/action and query identity substitutions",
+      "outcome": "PASS"
+    },
+    {
+      "index": 48,
+      "name": "C17 bundle: committed/unknown execution usage union rejects contradictory or unsafe facts",
+      "outcome": "PASS"
+    },
+    {
+      "index": 49,
+      "name": "C18 bundle: capture refuses foreign source associations, verification claims and extra receipt fields",
+      "outcome": "PASS"
+    },
+    {
+      "index": 50,
+      "name": "C19 bundle: retained result cannot replace an exact captured association or claim review/delivery",
+      "outcome": "PASS"
+    },
+    {
+      "index": 51,
+      "name": "C20 bundle: result limits measure complete UTF8 text and render script-looking output inertly",
+      "outcome": "PASS"
+    },
+    {
+      "index": 52,
+      "name": "C21 bundle: truthful held finish retains captured facts and never paints a released worker",
+      "outcome": "PASS"
+    },
+    {
+      "index": 53,
+      "name": "C22 bundle: foreign finish receipt cannot stop or replace the owned worker",
+      "outcome": "PASS"
+    },
+    {
+      "index": 54,
+      "name": "C23 bundle: uncertain capture requires reading current facts before another mutation decision",
+      "outcome": "FAIL"
+    },
+    {
+      "index": 55,
+      "name": "C24 bundle: uncertain finish requires reading current facts before another mutation decision",
+      "outcome": "FAIL"
+    },
+    {
+      "index": 56,
+      "name": "C25 bundle: ordinary cancel paints the authoritative readback and performs no implicit worker operation",
+      "outcome": "PASS"
+    },
+    {
+      "index": 57,
+      "name": "C26 bundle: accepted status/catalog/preview/results are detached and deeply immutable",
+      "outcome": "PASS"
+    },
+    {
+      "index": 58,
+      "name": "C27 bundle: disconnect/dispose abort pending reads and prevent late publication or automatic replay",
+      "outcome": "PASS"
+    },
+    {
+      "index": 59,
+      "name": "C28 bundle: descriptor controls reflect disabled/unavailable/idle/current-output/offline states",
+      "outcome": "PASS"
+    },
+    {
+      "index": 60,
+      "name": "C29 bundle: stale selected-task reply cannot repopulate old result or scope",
+      "outcome": "PASS"
+    },
+    {
+      "index": 61,
+      "name": "C30 bundle: same-task version/auth drift clears consent while preserving historical output for explicit reads",
+      "outcome": "PASS"
+    },
+    {
+      "index": 62,
+      "name": "C31 bundle: ordinary foreign-realm response fixture refuses; wire JSON rehydration is the same-realm carrier",
+      "outcome": "PASS"
+    },
+    {
+      "index": 63,
+      "name": "C32 exact source/emitted bundle serialization and lazy module registration",
+      "outcome": "PASS"
+    }
+  ],
+  "preservedInputChecks": [
+    {
+      "path": "src/client-entry.cjs",
+      "beforeSha256": "b1862fb610ccaf809982aa2c0f7e6ad01bad536b419636fd57e4a2a7bb40d1cd",
+      "afterSha256": "b1862fb610ccaf809982aa2c0f7e6ad01bad536b419636fd57e4a2a7bb40d1cd",
+      "match": true
+    },
+    {
+      "path": "lib/client.js",
+      "beforeSha256": "d0696c513351774774c37febaafec5c2215fa0688f2fc7554fef4a3a2570869f",
+      "afterSha256": "d0696c513351774774c37febaafec5c2215fa0688f2fc7554fef4a3a2570869f",
+      "match": true
+    },
+    {
+      "path": "test/worker-client.test.mjs",
+      "beforeSha256": "1ceb2f64cf887be15e9c0de37b785e9545ea17e9d4ee4ab495a087f0c92b254c",
+      "afterSha256": "1ceb2f64cf887be15e9c0de37b785e9545ea17e9d4ee4ab495a087f0c92b254c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-hold.md",
+      "beforeSha256": "0bc6f96a22677cc2854bbef37b93b471f3852f246f641f130c3a9796e065ae65",
+      "afterSha256": "0bc6f96a22677cc2854bbef37b93b471f3852f246f641f130c3a9796e065ae65",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author.sha256",
+      "beforeSha256": "a3cee906a62ad900dca89092def8d2c84a9f3c7fa0385d9d59ada262a795c9a7",
+      "afterSha256": "a3cee906a62ad900dca89092def8d2c84a9f3c7fa0385d9d59ada262a795c9a7",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/test-design.md",
+      "beforeSha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "afterSha256": "f37f4b66e2c5f69a818afd83c52c7040cc3cf5c00c47b5d5de5336bd954efaea",
+      "match": true
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "beforeSha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "afterSha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "match": true
+    },
+    {
+      "path": "AGENTS.md",
+      "beforeSha256": "8ada9c44581227ddf046ff763d79dba8e1a048366426132382611ddfecb94c26",
+      "afterSha256": "8ada9c44581227ddf046ff763d79dba8e1a048366426132382611ddfecb94c26",
+      "match": true
+    },
+    {
+      "path": "scripts/build-client.mjs",
+      "beforeSha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+      "afterSha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+      "match": true
+    },
+    {
+      "path": "package.json",
+      "beforeSha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "afterSha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/contract-freeze.md",
+      "beforeSha256": "53f89691a3f2a7006780bd9fbdf7aa5ad2054b8648a3215ec664598539c3913b",
+      "afterSha256": "53f89691a3f2a7006780bd9fbdf7aa5ad2054b8648a3215ec664598539c3913b",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-affected-first.tap",
+      "beforeSha256": "c2540f2510a76ce84eed3e09780ba123e3f318ab1763049f11dd13f8abfed09a",
+      "afterSha256": "c2540f2510a76ce84eed3e09780ba123e3f318ab1763049f11dd13f8abfed09a",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-final-current.tap",
+      "beforeSha256": "1ede2ec31f14e2c6f14c8cc032daab267ebf295ab525291addd6194c6a29adf2",
+      "afterSha256": "1ede2ec31f14e2c6f14c8cc032daab267ebf295ab525291addd6194c6a29adf2",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-final.tap",
+      "beforeSha256": "23772de8a1eb53e877e557495e5e18897edbcbf42bb9a8f5a78e6f20ada0a28c",
+      "afterSha256": "23772de8a1eb53e877e557495e5e18897edbcbf42bb9a8f5a78e6f20ada0a28c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-first.tap",
+      "beforeSha256": "1f135f752b9d1ad6362ca29447ac82bb356dead15c21f7256e1cd3f879fd2646",
+      "afterSha256": "1f135f752b9d1ad6362ca29447ac82bb356dead15c21f7256e1cd3f879fd2646",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-fourth.tap",
+      "beforeSha256": "6c19c6497260189e0144772b7fd9b20b0eaf89bf5a2ed785758475178c7ffe51",
+      "afterSha256": "6c19c6497260189e0144772b7fd9b20b0eaf89bf5a2ed785758475178c7ffe51",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-second.tap",
+      "beforeSha256": "a22108af9f7cb7bb1a2157fb442c7ea3588193ffa7f7350309a25f1fb7ada827",
+      "afterSha256": "a22108af9f7cb7bb1a2157fb442c7ea3588193ffa7f7350309a25f1fb7ada827",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-author-third.tap",
+      "beforeSha256": "58e2d5ecfb675857e21de5d7f244918ce638da7637bf40737fefebdcbc56b663",
+      "afterSha256": "58e2d5ecfb675857e21de5d7f244918ce638da7637bf40737fefebdcbc56b663",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/composer-client-author-final.tap",
+      "beforeSha256": "1db1beeb0abe11023b36a1903f46acae683d6c02e346ad6ee58b131396365263",
+      "afterSha256": "1db1beeb0abe11023b36a1903f46acae683d6c02e346ad6ee58b131396365263",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/composer-client-author-first.tap",
+      "beforeSha256": "c0da6eee057f5553d1959151cd83b0fe06435f36f9081210ad455989a60f2116",
+      "afterSha256": "c0da6eee057f5553d1959151cd83b0fe06435f36f9081210ad455989a60f2116",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/composer-client-author-fourth.tap",
+      "beforeSha256": "1e997ee32f57c8f8aeaaac2e8dd606080e5eba3fc7684fa6da905960e1840035",
+      "afterSha256": "1e997ee32f57c8f8aeaaac2e8dd606080e5eba3fc7684fa6da905960e1840035",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/composer-client-author-second.tap",
+      "beforeSha256": "cecaba7633ea4b17260709206e43356beb1af74abf673e0298f4e9e255e942d6",
+      "afterSha256": "cecaba7633ea4b17260709206e43356beb1af74abf673e0298f4e9e255e942d6",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/composer-client-author-third.tap",
+      "beforeSha256": "7589e93cecc97a89b3fdc54bc265f71608e83aaf73a8547664191c657c242d43",
+      "afterSha256": "7589e93cecc97a89b3fdc54bc265f71608e83aaf73a8547664191c657c242d43",
+      "match": true
+    },
+    {
+      "path": "test/client-build.test.mjs",
+      "beforeSha256": "f85a983f76634cea81d940496a109e49f77653372f88a806cfe05e11ddf675a3",
+      "afterSha256": "f85a983f76634cea81d940496a109e49f77653372f88a806cfe05e11ddf675a3",
+      "match": true
+    },
+    {
+      "path": "test/client-feature-adversarial.test.mjs",
+      "beforeSha256": "1a16cff79b85aa399f7c91e44eb430cb4a426ce529c5e1cce7c0f860a5607a5f",
+      "afterSha256": "1a16cff79b85aa399f7c91e44eb430cb4a426ce529c5e1cce7c0f860a5607a5f",
+      "match": true
+    },
+    {
+      "path": "test/client-features.test.mjs",
+      "beforeSha256": "95492bd9d8de24cb15704b322d68c104512df1e852e265d276a43ff0ef434d8c",
+      "afterSha256": "95492bd9d8de24cb15704b322d68c104512df1e852e265d276a43ff0ef434d8c",
+      "match": true
+    },
+    {
+      "path": "test/client.test.mjs",
+      "beforeSha256": "f9ee68804002bbee98680981ccf6903fdf80a05fc41c13aeb2b7377b712934c7",
+      "afterSha256": "f9ee68804002bbee98680981ccf6903fdf80a05fc41c13aeb2b7377b712934c7",
+      "match": true
+    },
+    {
+      "path": "test/onboarding-client-405-adversarial.test.mjs",
+      "beforeSha256": "0775bb43e86cc3a9eaeced0c6e2c72fb7f3f0b3a13d2c03bf238951ca24d51b7",
+      "afterSha256": "0775bb43e86cc3a9eaeced0c6e2c72fb7f3f0b3a13d2c03bf238951ca24d51b7",
+      "match": true
+    },
+    {
+      "path": "test/onboarding-client-adversarial.test.mjs",
+      "beforeSha256": "43f08520d714f3058d77ce10072a127cd0e919e569f65fe20ef533d0564946d7",
+      "afterSha256": "43f08520d714f3058d77ce10072a127cd0e919e569f65fe20ef533d0564946d7",
+      "match": true
+    },
+    {
+      "path": "test/onboarding-client.test.mjs",
+      "beforeSha256": "f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0",
+      "afterSha256": "f8069dc57a6850334ecd228c386347215b556da0a4630c64ce0a9af41612ddb0",
+      "match": true
+    },
+    {
+      "path": "test/worker-client-functional.test.mjs",
+      "beforeSha256": "16787abaa2c4a8a05c59ba6a3bfbdfbb9bb917e984a666f15c24df0cdacfa24c",
+      "afterSha256": "16787abaa2c4a8a05c59ba6a3bfbdfbb9bb917e984a666f15c24df0cdacfa24c",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI2/client-worker-independent-design.md",
+      "beforeSha256": "e153e316689cf1b523d55bc39d286a7ab27d3a93a979805c762f8b3036799adc",
+      "afterSha256": "e153e316689cf1b523d55bc39d286a7ab27d3a93a979805c762f8b3036799adc",
+      "match": true
+    }
+  ],
+  "executableProductClosure": [
+    "src/client-entry.cjs",
+    "lib/client.js"
+  ],
+  "productCounterexamples": [
+    {
+      "id": "CLIENT-CAPTURE-UNCERTAIN",
+      "cases": [
+        "C23 source",
+        "C23 bundle"
+      ],
+      "wireTrace": [
+        "workerCapture",
+        "list",
+        "status",
+        "workerStatus"
+      ],
+      "uncertain": "workerCapture",
+      "actualButtonDisabled": false,
+      "expectedButtonDisabled": true,
+      "secondRPCExecuted": false
+    },
+    {
+      "id": "CLIENT-FINISH-UNCERTAIN",
+      "cases": [
+        "C24 source",
+        "C24 bundle"
+      ],
+      "wireTrace": [
+        "workerFinish",
+        "list",
+        "status",
+        "workerStatus"
+      ],
+      "uncertain": "workerFinish",
+      "actualButtonDisabled": false,
+      "expectedButtonDisabled": true,
+      "secondRPCExecuted": false
+    }
+  ],
+  "disposition": "Await root/author assessment and exact held client-only repair; do not repeat unchanged successful cases",
+  "sourceMutation": false,
+  "sharedRuntimeExecution": false,
+  "browserCODEAcceptance": false
+}

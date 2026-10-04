@@ -1,0 +1,14 @@
+# First independent client outcomes and open counterexamples
+
+The first sanitized installed Node22.22.2 run selected only `test/worker-client-functional.test.mjs`: 63 tests, 59 PASS, 4 FAIL, 0 skipped. [Raw TAP](client-worker-independent-first.tap) and [original independent source](client-worker-independent-first-source.mjs.txt) are immutable first evidence. Test SHA256 was 16787abaa2c4a8a05c59ba6a3bfbdfbb9bb917e984a666f15c24df0cdacfa24c; raw TAP SHA256 is f7b08f9a18233ce81bf679b44cb208f8007dd6f3fad980ab1a219bd71b618318. Syntax check exited0; functional run exited1. No fixture correction or source repair preceded this report.
+
+The four failures are C23 source/bundle and C24 source/bundle. All other cases passed once. The two semantic counterexamples are:
+
+1. After an explicit committed typed execution, a lost `workerCapture` reply is projected as `uncertain:'workerCapture'`, with capture/result still absent. The client automatically performs only `list`, `status` and cached `workerStatus` readback; none supplies an acknowledged captured-result receipt in this fixture. Its `Capture local result` descriptor nevertheless has `disabled:false`.
+2. After an acknowledged typed capture, a lost `workerFinish` reply is projected as `uncertain:'workerFinish'`. The owned worker retains its pre-finish phase; no acknowledged stopped/released receipt is available. The same ordinary/cache readback occurs, but `Finish owned worker` has `disabled:false`.
+
+Held source `src/client-entry.cjs:531` gates these buttons by current task/execution/capture/phase, with no matching uncertainty fence. Line535 tells the owner that repeating a mutation is unavailable until its outcome is established. Lines384/386 route the corresponding methods through the generic runner without a matching uncertainty guard. That source observation explains the executed descriptor result; a second capture/finish RPC was **not** executed in the first batch. No actual native capture, stop, provider, ledger, release or external effect is claimed.
+
+The independent oracle comes from frozen N2-14's explicit truthful controls and uncertainty/readback behavior, with N2-10/17's no replay/retained uncertainty requirements. An uncertain label after ordinary readback is retained uncertainty; it is not an acknowledged capture or finish. First expectations remain preserved for root/author disposition. These are proposed product counterexamples within the typed client/descriptor boundary, not CODE findings or evidence that the shared runtime would accept or repeat an effect.
+
+Root received the exact cases, counts, first hashes, source lines and bounded scope. Independent execution is paused for that assessment and any expressly held client-only repair. The 59 unchanged successful cases will not be repeated. This lease does not authorize a shared core/runtime/composer/native repair or clear CODE/browser/physical/coherent-regression/full82+5/MVP/publication HOLD.
