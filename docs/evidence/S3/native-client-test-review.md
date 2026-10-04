@@ -2,7 +2,7 @@
 
 Reviewer `/root/istqb_review`, Sol6.1/max, independent of native/client/root authors and correctness reviewer. **PASS for the held public-library/module checkpoint; actual browser, full source-ticket and consolidated acceptance remain HOLD.** This review uses the installed official DSH Web0.2.1-alpha.1/Cordis4.0.5-alpha.1, synthetic private identity, temporary encrypted SQLite/JSONL and bounded local deterministic providers. No listener, Web profile/browser launch, credentials, external model/provider, install or Git mutation was performed.
 
-## Exact independent run
+## Earlier exact independent checkpoint
 
 ```sh
 node --test test/native-adapter.test.mjs test/worker.test.mjs test/environment.test.mjs test/native-runtime-integration.test.mjs test/client.test.mjs test/client-build.test.mjs
@@ -63,3 +63,58 @@ UI-CR01 disconnect during async command digest and independently reported UI-T01
 The owned live rename fixture now supplies explicit trusted toolGuard in its two prepare-only constructors. Its exact legacy/current/unbound session identity, mismatch, default permission and all zero-create/stream/session assertions remain; targeted1/1 passes. Historical dd07d1b rename report/manifest stays unchanged. No existing native assertion was weakened to accommodate this new constructor requirement.
 
 No new unresolved native/client test-design defect was reproduced in the recorded checkpoint. Independent correctness review and root's final committed code/test/package/bundle manifest remain required. Actual supported Web/browser rendering, complete native/profile regression and any real model invocation are unrun; no whole BUB014/MVP/release PASS is issued.
+
+## Frozen UI/session extension and corrected independent retest
+
+The53-case checkpoint above is retained history. The subsequent UI/session extension was committed at `acdc0c6aedf9f984ff12012374cccff489be6510`, with21-file [native-ui manifest](native-ui.sha256) SHA256 `4c19800eb1aa850d750827fedecaa417a553dc10ae648796d89c5ea8a259031a`. This reviewer independently verified all21 entries before/after and ran the author's exact eight-file command: **73/73 PASS,0 SKIP**,754.673542ms. TAP `/tmp/df-istqb-native-ui-owned.tap`, SHA256 `3afcc0abc60e9abf54334789d6522b37c4e0e03c9740179c1341b1f0d4e491d2`. Independent additional typed-client probes then reproduced two UI consistency defects below; author success was not accepted as sufficient evidence.
+
+The author repaired those predicates and retained separate regression tests in [native-ui-corrections manifest](native-ui-corrections.sha256), SHA256 `377c00caa5d142efe35888b11c9a16b2c4f46d3d546b5ddd79d823d3de5d6207`. The original manifest/TAP remains historical, not relabeled. Corrected exact files:
+
+| File | Corrected SHA256 |
+| --- | --- |
+| `src/client-entry.cjs` |`39776f4994fb7c3434286ae91c877093ed629b50c450114e1070e5c00dee5c0b` |
+| `lib/client.js` |`077e7dc6d445039d04db7153ea84c04e14d4ac93933dfffaaa4c3cfe09d9519d` |
+| `test/client-features.test.mjs` |`95492bd9d8de24cb15704b322d68c104512df1e852e265d276a43ff0ef434d8c` |
+| Independent `test/client-feature-adversarial.test.mjs` |`1a16cff79b85aa399f7c91e44eb430cb4a426ce529c5e1cce7c0f860a5607a5f` |
+
+Final affected command on held corrected files:
+
+```sh
+node --test test/client-feature-adversarial.test.mjs test/native-adapter.test.mjs test/native-runtime-integration.test.mjs test/runtime-plugin.test.mjs test/operator-bridge.test.mjs test/worker.test.mjs test/client.test.mjs test/client-features.test.mjs test/client-build.test.mjs
+node scripts/build-client.mjs --check
+```
+
+Actual **109/109 PASS,0 FAIL,0 SKIP**,757.516209ms, exit0;34 independently designed probes plus75 author checks. Bundle --check exit0. Original21 entries overlaid by the five corrective entries, plus the independent test, form23 reviewed entries: every hash/check matches before/after. Combined list `/tmp/df-istqb-native-ui-corrected.sha256` SHA256 `be62b27cddef5ee168c98efcf114f6323ef3d533a4b3a7d778ab3be948abd5dc`; final TAP `/tmp/df-istqb-native-ui-corrected.tap` SHA256 `2212d4222edef815d674c06341b9d7e23682aab152289de7f26b4e94a177e6f0`. Original unchanged scratch probe also independently retested34/34, retaining the initial32/34 JSON and exact script hash. The checked-in test is repo-relative and uses node:test; assertion oracles were not narrowed during that conversion.
+
+| Independent family / count | Expected / actual |
+| --- | --- |
+| Original captured goal/constraints and complete answers /2 |Mutating caller data during digest await preserves the originally captured strings/CAS; concurrent second mutation submits0; one original command writes, busy clears, no grant/dispatch/execute. PASS. |
+| Second native session-link fields /9 |After a valid first read/hash, changed actionRef/claimRef/sessionRef/taskVersion/taskRef/generationRef/actionDigest/authEpoch/native raw sessionId in the second read navigates0/writes0; busy clears. PASS. |
+| Session hash await invalidation /3 |Disconnect, disposal or fresh snapshot refresh after the first native mapping read denies navigation with0 mutations; paused navigation remains a read, not a grant. PASS. |
+| Exact independent report bindings /6 |Wrong task/audit/material/binding/artifact version/body digest never publishes coverage/reports. PASS. |
+| Final audit exact task /1 |Equal version/authorization numbers on a foreign task do not establish currentness of the selected task.0reports published. PASS after UI-T02. |
+| Approval/source/subscription await invalidation /9 |Each operation crossed with disconnect/disposal/automation reload submits0. Originating lifetime and exact loaded snapshot are checked after digest; no automatic retry. PASS. |
+| Plan source/subscription association /1 |Mixed subscription source and pending-plan source never submits an approval. PASS after UI-T03. |
+| Complete explicit source policy capture /1 |Caller mutates original provider rate/permission policy after load and during disable await; command preserves loaded complete policy and exact revision, changing only explicitly chosen enabled. No effect grant/tick/register. PASS. |
+| Private callback redaction /2 |Uppercase private navigation/digest canary never enters model state; stable RESULT_UNCONFIRMED, busy false. PASS. |
+
+These34 probes run the actual production client model with synthetic RPC/React callbacks. They are deliberately typed module tests. Genuine encrypted owner/RPC/native session and private provider/tool/result/quit composition is supplied by the affected author tests independently executed in the109-case batch, not inferred from the typed doubles. Native session links check actual owned AgentLoop/session object identity and SHA256(raw ID), current task/action/claim/generation/session/CAS; paused owner navigation wakes0 providers. JSON never chooses raw session identity or establishes a role/grant. Tool invocation remains vetoed through the actual scoped public ToolRuntime in this empty-tools phase.
+
+The actual native UI Workspace service is an explicit dependency; the bundle remains lazy/additive and scope-disposed. The rendered tree fixtures exercise escaped prose, labels/fields, original material and distinct verification/delivery/current access/audit coverage. They do not establish real DOM rendering, visual quality, focus, keyboard operation or accessibility.
+
+| Retained AC | Concrete extension proof | Remaining acceptance gate |
+| --- | --- | --- |
+| BUB014-01 |List/detail/version/epoch coherence, timestamps/stale refresh; report display rejects mismatched material and foreign final status. |Actual rendered list/detail/refresh in isolated authenticated Web; coherent global functional/fault regression. |
+| BUB014-02 |Applicable pause/resume/cancel, explicit goal/constraints/complete question answers, loaded missed-plan owner approval; exact concrete preview/expiry grant; these choices do not create/grant effects implicitly. |Actual interaction for each retained task/approval/control state; no claimed instant cancellation or full execution consent from a question answer. |
+| BUB014-03 |Double mutation blocked, immutable inputs, disconnect/dispose/refresh/load-currentness await guards, stale/native error handling, busy cleanup; no retry/writes/navigation from a superseded view. |Actual concurrent windows/old pages/host reconnect and meaningful user-visible failure/readback. |
+| BUB014-04 |Bounded Chinese/markup/text/records and semantic mock element tree. |Actual supported browser resize/long Chinese/keyboard/focus/empty/loading/error/accessibility/visual oracle: NOT RUN. |
+| BUB014-05 |Genuine admitted owner native session mapping, exact hash/current incarnation and second client read; wrong task/generation/version/session fails. Artifacts, scope, receipts and audit coverage retain separate meanings; no public private-review proof endpoint. |Actual native session navigation/artifact/approval UI under authenticated real carrier and another workspace; no credential display. |
+| Carried BUB002/006/008/009/011/013/015 |Typed client preserves current instruction/question/context/source/plan/material/consent identities and actual native backend checks them. Source controls and schedule decisions are not effect grants. |All original remaining AC and full cross-stage security/context/source/resource/native/visual oracles; selected live chat carrier portions OUT this phase. |
+
+**UI-T02 — CLOSED.** Original inspectAudit final status reread compared only version/authEpoch. A foreign taskRef with equal numbers returnedtrue and published the report. Author requires exact selected taskRef too; original no-publish oracle passes. This was a client consistency failure, not an observed core owner/authorization bypass.
+
+**UI-T03 — CLOSED.** Original approveSchedule found source and subscription at matching revisions but did not require subscription.sourceRef to equal plan.sourceRef. A mixed association submitted an approval. Author adds exact association before digest/write; original no-submit oracle passes. The actual core already rejects this mixed pair; no backend effect/grant bypass was claimed.
+
+Initial immutable scratch script `/tmp/df-istqb-ui-session-probes.mjs` SHA256 `89613a9595a5be6d3949fd7a482960dfabb06f30c7eb9fae4f8362e1ae7e3a9d`; first32PASS/2FAIL JSON `/tmp/df-istqb-ui-session-probes-first.json` SHA256 `4a4269f764eb8edb511a10f5ecea9ba6b74cafe14e4038dd266b89e74f3071ec`; unchanged corrected34/34 JSON `/tmp/df-istqb-ui-session-probes-fixed.json` SHA256 `880ec08e7ad617a6fe59305c44c75e023656bd8946faba39cc668488ca629411`. Root may archive those raw artifacts without changing them. No assertion, retained source criterion or failing evidence was removed.
+
+**Corrected UI/native module test-design checkpoint PASS; whole source-ticket/MVP/visual/release acceptance HOLD.** No remaining UI test-design defect is open in this reviewed bounded unit. The separate correctness verdict remains blocked, root's corrected/global commit/manifest is not represented by the earlier acdc0c6 source, and the newly proposed actual-host fixture has not been run by this lane. No browser, auth-backing change, host launch or denied experiment was performed. Final coherent-tree regression and applicable acceptance debt remain required.
