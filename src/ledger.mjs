@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
-import { copyFileSync, existsSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, statSync, openSync, closeSync, fsyncSync, chmodSync } from 'node:fs';
 import { constants } from 'node:fs';
-import { isAbsolute } from 'node:path';
+import { isAbsolute, dirname } from 'node:path';
 
 export class FoundationError extends Error {
   constructor(code) { super(code); this.name = 'FoundationError'; this.code = code; }
@@ -30,6 +30,7 @@ export class Ledger {
     try {
       if (existed && (!statSync(path).isFile() || statSync(path).size === 0)) fail('STORAGE_INVALID');
       this.db = new DatabaseSync(path);
+      if (!existed) chmodSync(path,0o600);
       this.db.exec('PRAGMA busy_timeout=2000; PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;');
       const version = this.db.prepare('PRAGMA user_version').get().user_version;
       if (version > SCHEMA_VERSION) fail('SCHEMA_FUTURE');
@@ -44,16 +45,26 @@ export class Ledger {
         if (this.db.prepare('PRAGMA journal_mode').get().journal_mode !== 'delete') fail('SCHEMA_UNSUPPORTED');
         this.db.exec('BEGIN EXCLUSIVE');
         try {
+          // Validate source under the exclusive lock before any backup or schema write.
+          this.verify(BASE);
+          this.validateRows(false);
           // Lock out concurrent writes before making an exact recoverable copy.
           this.backupPath = `${path}.schema-1.backup`;
           copyFileSync(path, this.backupPath, constants.COPYFILE_EXCL);
+          const backupFd=openSync(this.backupPath,'r');
+          try { fsyncSync(backupFd); } finally { closeSync(backupFd); }
+          const directoryFd=openSync(dirname(path),'r');
+          try { fsyncSync(directoryFd); } finally { closeSync(directoryFd); }
           for (const sql of Object.values(EXTRA)) this.db.exec(sql);
-          if (migrationFault) migrationFault();
+          if (migrationFault) { try { migrationFault(); } catch { fail('STORAGE_UNAVAILABLE'); } }
+          this.verify({ ...BASE, ...EXTRA });
+          this.validateRows(true);
           this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`);
         } catch (error) { this.db.exec('ROLLBACK'); throw error; }
       } else if (version !== SCHEMA_VERSION) fail('SCHEMA_UNSUPPORTED');
-      this.verify({ ...BASE, ...EXTRA });
-      if (this.db.prepare('PRAGMA foreign_key_check').all().length) fail('STORAGE_INVALID');
+      this.db.exec('BEGIN IMMEDIATE');
+      try { this.verify({ ...BASE, ...EXTRA }); this.validateRows(true); this.db.exec('COMMIT'); }
+      catch(error) { this.db.exec('ROLLBACK'); throw error; }
       if (maxPageCount !== undefined) this.db.exec(`PRAGMA max_page_count=${maxPageCount}`);
     } catch (error) {
       try { this.db?.close(); } catch {}
@@ -66,6 +77,29 @@ export class Ledger {
     const tables = this.db.prepare("SELECT name,sql FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all();
     if (tables.length !== Object.keys(expected).length || tables.some(row => !expected[row.name] || normalize(row.sql) !== normalize(expected[row.name]))) fail('SCHEMA_UNSUPPORTED');
     if (this.db.prepare("SELECT name FROM sqlite_schema WHERE type IN ('trigger','view') OR (type='index' AND name NOT LIKE 'sqlite_autoindex_%')").all().length) fail('SCHEMA_UNSUPPORTED');
+  }
+  validateRows(withActions) {
+    if (this.db.prepare('SELECT 1 FROM pragma_foreign_key_check LIMIT 1').get()) fail('STORAGE_INVALID');
+    const invalid = (table, conditions) => {
+      if (this.db.prepare(`SELECT 1 FROM ${table} WHERE ${conditions.join(' OR ')} LIMIT 1`).get()) fail('STORAGE_INVALID');
+    };
+    const refs = columns => columns.map(column => `(length(${column})!=64 OR ${column} GLOB '*[^a-f0-9]*')`);
+    const integers = (columns,min=0) => columns.map(column => `(typeof(${column})!='integer' OR ${column}<${min} OR ${column}>9007199254740991)`);
+    const states = "'queued','running','waiting','blocked','recovery_required','cancel_requested','completed','failed','cancelled','deleted'";
+    invalid('tasks',[...refs(['owner','workspace','id']),...integers(['version'],1),...integers(['auth_epoch','created_at','updated_at']),`status NOT IN (${states})`]);
+    invalid('ingress',[...refs(['owner','workspace','provider','source','event','task']),...integers(['received_at'])]);
+    invalid('events',[...refs(['owner','workspace','task']),...integers(['sequence','version'],1),...integers(['at']),`status NOT IN (${states})`,"reason NOT IN ('intake','progress','operator','recovery','fixture','delete','action_requested','grant','revoke','dispatch','cancel','settlement')"]);
+    if (this.db.prepare('SELECT 1 FROM tasks t WHERE (SELECT count(*) FROM ingress i WHERE i.owner=t.owner AND i.workspace=t.workspace AND i.task=t.id)!=1 OR NOT EXISTS (SELECT 1 FROM events e WHERE e.owner=t.owner AND e.workspace=t.workspace AND e.task=t.id AND e.sequence=(SELECT max(sequence) FROM events x WHERE x.owner=t.owner AND x.workspace=t.workspace AND x.task=t.id) AND e.version=t.version AND e.status=t.status) LIMIT 1').get()) fail('STORAGE_INVALID');
+    if (this.db.prepare('SELECT 1 FROM events GROUP BY owner,workspace,task HAVING min(sequence)!=1 OR max(sequence)!=count(*) LIMIT 1').get()) fail('STORAGE_INVALID');
+    if (!withActions) return;
+    const kinds="'fixture','read','write','review','repair'";
+    invalid('actions',[...refs(['owner','workspace','task','id','target_digest','data_digest']),...integers(['units'],1),...integers(['attempts','created_at','updated_at']),`kind NOT IN (${kinds})`,"state NOT IN ('requested','dispatch_intent','unknown','completed','failed','terminated')", "(state='requested' AND (attempts!=0 OR claim_id IS NOT NULL OR claim_epoch IS NOT NULL))", "(state!='requested' AND (attempts<1 OR claim_id IS NULL OR length(claim_id)!=36 OR claim_id GLOB '*[^a-f0-9-]*' OR claim_epoch IS NULL OR typeof(claim_epoch)!='integer' OR claim_epoch<0))", "(evidence_digest IS NOT NULL AND (length(evidence_digest)!=64 OR evidence_digest GLOB '*[^a-f0-9]*'))"]);
+    invalid('grants',[...refs(['owner','workspace','task','action','target_digest','data_digest']),...integers(['task_version','auth_epoch','units'],1),...integers(['expires_at']),`kind NOT IN (${kinds})`,"revoked NOT IN (0,1)"]);
+    invalid('reservations',[...refs(['owner','workspace','task','action']),...integers(['units'],1),...integers(['created_at']),"length(claim_id)!=36 OR claim_id GLOB '*[^a-f0-9-]*'"]);
+    if(this.db.prepare("SELECT 1 FROM reservations r JOIN actions a ON a.owner=r.owner AND a.workspace=r.workspace AND a.task=r.task AND a.id=r.action WHERE a.claim_id!=r.claim_id OR a.units!=r.units OR a.state NOT IN ('dispatch_intent','unknown') LIMIT 1").get()) fail('STORAGE_INVALID');
+    if(this.db.prepare("SELECT 1 FROM actions a WHERE (SELECT count(*) FROM reservations r WHERE r.owner=a.owner AND r.workspace=a.workspace AND r.task=a.task AND r.action=a.id)!=(a.state IN ('dispatch_intent','unknown')) LIMIT 1").get()) fail('STORAGE_INVALID');
+    if(this.db.prepare('SELECT 1 FROM grants g JOIN tasks t ON t.owner=g.owner AND t.workspace=g.workspace AND t.id=g.task WHERE g.auth_epoch>t.auth_epoch OR g.task_version>t.version LIMIT 1').get()) fail('STORAGE_INVALID');
+    if(this.db.prepare("SELECT 1 FROM reservations r JOIN tasks t ON t.owner=r.owner AND t.workspace=r.workspace AND t.id=r.task WHERE t.status IN ('completed','failed','cancelled','deleted') LIMIT 1").get()) fail('STORAGE_INVALID');
   }
   query(sql, ...params) { return this.guarded(() => this.db.prepare(sql).all(...params)); }
   one(sql, ...params) { return this.guarded(() => this.db.prepare(sql).get(...params)); }

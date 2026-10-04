@@ -45,6 +45,19 @@ test('each limit rejects invalid type, zero, negatives and fractions', () => {
   }
 });
 
+test('metadata minimum matches core at N-1, N and N+1 before storage opens', () => {
+  for (const value of [255, 256, 257]) {
+    const input = { databasePath: '/tmp/synthetic-ledger.sqlite', limits: { maxMetadataBytes: value } };
+    if (value === 255) {
+      assert.throws(() => validateConfig(input), { code: 'CONFIG_INVALID' });
+      assert.deepEqual(Config['~standard'].validate(input), { issues: [{ message: 'CONFIG_INVALID' }] });
+    } else {
+      assert.equal(validateConfig(input).limits.maxMetadataBytes, value);
+      assert.equal(Config['~standard'].validate(input).value.limits.maxMetadataBytes, value);
+    }
+  }
+});
+
 test('synchronous Cordis Standard Schema emits only stable issue codes', () => {
   assert.deepEqual(Config['~standard'].validate({ databasePath: '/tmp/a', credential: 'synthetic-secret' }), {
     issues: [{ message: 'CONFIG_INVALID' }],

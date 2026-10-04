@@ -48,7 +48,7 @@ Commands run from the bubbles repository:
 
 - Bundled `node -e` SQLite probe: v24.9.0, actual SQLite3.50.4; success.
 - `npm run check`: syntax success for all runtime/test/script ESM files; zero installs/downloads. Final count is recorded by root after integration.
-- `node --test test/bootstrap.test.mjs`: **7/7 passed** under development Node22.22.2; actual host fixture spawned bundled Node24.9.0.
+- `node --test test/bootstrap.test.mjs`: **8/8 passed** under development Node22.22.2, including the metadata min256 N-1/N/N+1 boundary; actual host fixture spawned bundled Node24.9.0.
 - `npm run host:smoke`: **passed**, JSON result loads11/reloads10/entries11, permissionOutcome=`rejected`, inferenceCalls=0, profileAccess=false, all capability checks true.
 
 Fixture checks: real approval request runs inside a synthetic turn and policy never rejects it; fixture session unload removes it. Malformed config fails before ledger creation and sentinel config values/keys do not enter errors. Default native task identity rejects spoofed JSON. Eleven real plugin activations with ten reloads each submit one synthetic input twice and produce exactly one durable entry per input; reopen retains prior entries. No worker sessions appear. Plugin registry count returns to baseline and ctx.bubbles disappears after every unload. Every captured method rejects immediately after unload is requested and after it settles. Mutating the trusted identity source after load leaves bound scope unchanged. Missing both required services, late approval appearance, approval disappearance/reappearance, and session disappearance are tested; no ledger is created while dependencies are missing. Provider removal closes old admission immediately.

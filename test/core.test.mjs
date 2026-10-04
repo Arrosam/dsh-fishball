@@ -14,7 +14,7 @@ const MODULE=fileURLToPath(new URL('../src/foundation.mjs',import.meta.url));
 function setup(t,options={}) { const dir=mkdtempSync(join(tmpdir(),'bubbles-core-')),databasePath=join(dir,'ledger.db'),capability={};let now=1000;const core=new Foundation({databasePath,clock:()=>now,hostPermission:()=>true,trustedOperators:[{scope:S,capability}],...options});t.after(()=>{core.close();rmSync(dir,{recursive:true,force:true});});return {core,dir,databasePath,capability,setTime:value=>now=value}; }
 function intake(core,id='task',scope=S,eventId=id,more={}) {return core.intake(scope,{taskId:id,provider:'fixture',source:'source',eventId,...more});}
 function request(core,task='task',action='action',version=core.getTask(S,task).version,more={}) {return core.requestAction(S,task,{actionId:action,kind:'fixture',targetDigest:D,dataDigest:E,limits:{units:1},expectedVersion:version,...more});}
-function approved(x,task='task',action='action') {intake(x.core,task);request(x.core,task,action);x.core.grant(x.capability,S,task,action,{expectedVersion:1,expiresAt:2000});}
+function approved(x,task='task',action='action') {intake(x.core,task);request(x.core,task,action);x.core.grant(x.capability,S,task,action,{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000});}
 const rejects=(fn,code)=>assert.throws(fn,error=>error instanceof FoundationError && error.code===code && error.message===code);
 function child(code) { return spawnSync(process.execPath,['--input-type=module','-e',code],{encoding:'utf8',timeout:5000,maxBuffer:16384}); }
 function childBase(path,extra='') { return `import {Foundation} from ${JSON.stringify(MODULE)};import{writeFileSync,existsSync}from'node:fs';const scope=${JSON.stringify(S)},cap={};const core=new Foundation({databasePath:${JSON.stringify(path)},clock:()=>1000,hostPermission:()=>true,trustedOperators:[{scope,capability:cap}],${extra}});`; }
@@ -38,10 +38,10 @@ test('durable full ingress identity and scoped CAS/history/tombstone survive reo
 
 test('trusted exact capability, scope, expiry, epoch, CAS, host denial and altered binding fail closed',t=>{
  const x=setup(t);approved(x);
- rejects(()=>x.core.grant({},S,'task','action',{expectedVersion:1,expiresAt:2000}),'UNAUTHORIZED');
- rejects(()=>x.core.grant(x.capability,W,'task','action',{expectedVersion:1,expiresAt:2000}),'UNAUTHORIZED');
- rejects(()=>x.core.grant({trusted:true,role:'owner'},S,'task','action',{expectedVersion:1,expiresAt:2000}),'UNAUTHORIZED');
- rejects(()=>x.core.grant(x.capability,S,'task','action',{expectedVersion:2,expiresAt:2000}),'STALE_VERSION');
+ rejects(()=>x.core.grant({},S,'task','action',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000}),'UNAUTHORIZED');
+ rejects(()=>x.core.grant(x.capability,W,'task','action',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000}),'UNAUTHORIZED');
+ rejects(()=>x.core.grant({trusted:true,role:'owner'},S,'task','action',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000}),'UNAUTHORIZED');
+ rejects(()=>x.core.grant(x.capability,S,'task','action',{expectedAuthEpoch:0,expectedVersion:2,expiresAt:2000}),'STALE_VERSION');
  x.setTime(2000);rejects(()=>x.core.claim(S,'task','action',{expectedVersion:1}),'APPROVAL_INVALID');
  x.setTime(1999); const c=x.core.claim(S,'task','action',{expectedVersion:1});assert.equal(c.action.state,'dispatch_intent');
  rejects(()=>x.core.claim(S,'task','action',{expectedVersion:2}),'ACTION_ALREADY_DISPATCHED');
@@ -54,15 +54,15 @@ test('trusted exact capability, scope, expiry, epoch, CAS, host denial and alter
   rejects(()=>altered.core.claim(S,'task','action',{expectedVersion:1}),'APPROVAL_INVALID');db.prepare(`UPDATE grants SET ${column}=?`).run(original);
  }
  altered.core.revoke(altered.capability,S,'task','action');rejects(()=>altered.core.claim(S,'task','action',{expectedVersion:1}),'APPROVAL_INVALID');
- altered.core.grant(altered.capability,S,'task','action',{expectedVersion:1,expiresAt:2000});altered.core.cancel(S,'task',{expectedVersion:1});rejects(()=>altered.core.claim(S,'task','action',{expectedVersion:2}),'TASK_TERMINAL');
+ altered.core.grant(altered.capability,S,'task','action',{expectedAuthEpoch:altered.core.getTask(S,'task').authEpoch,expectedVersion:1,expiresAt:2000});altered.core.cancel(S,'task',{expectedVersion:1});rejects(()=>altered.core.claim(S,'task','action',{expectedVersion:2}),'TASK_TERMINAL');
 });
 
 
 test('action completion preserves separate task authority and other requested actions',t=>{
- const x=setup(t);intake(x.core);request(x.core,'task','first');request(x.core,'task','second');x.core.grant(x.capability,S,'task','first',{expectedVersion:1,expiresAt:2000});
+ const x=setup(t);intake(x.core);request(x.core,'task','first');request(x.core,'task','second');x.core.grant(x.capability,S,'task','first',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000});
  const claim=x.core.claim(S,'task','first',{expectedVersion:1});const settled=x.core.settle(S,'task','first',{claimId:claim.claimId,outcome:'completed',evidenceDigest:D});
  assert.equal(settled.task.status,'running');assert.equal(x.core.exportTask(S,'task').actions.find(action=>action.state==='requested').kind,'fixture');
- x.core.grant(x.capability,S,'task','second',{expectedVersion:settled.task.version,expiresAt:2000});const second=x.core.claim(S,'task','second',{expectedVersion:settled.task.version});x.core.settle(S,'task','second',{claimId:second.claimId,outcome:'completed',evidenceDigest:D});
+ x.core.grant(x.capability,S,'task','second',{expectedAuthEpoch:x.core.getTask(S,'task').authEpoch,expectedVersion:settled.task.version,expiresAt:2000});const second=x.core.claim(S,'task','second',{expectedVersion:settled.task.version});x.core.settle(S,'task','second',{claimId:second.claimId,outcome:'completed',evidenceDigest:D});
  const task=x.core.getTask(S,'task');assert.equal(task.status,'running');assert.equal(x.core.transition(S,'task',{expectedVersion:task.version,status:'completed',reason:'operator'}).status,'completed');
 });
 
@@ -84,12 +84,12 @@ test('unknown and cancellation keep reservations; termination settles, late evid
 test('queue, units, attempts and record budgets enforce exact boundaries',t=>{
  const x=setup(t,{limits:{queueCapacity:2,maxActive:2,maxAttempts:2,maxTasks:3,maxActionsPerTask:2,maxEventsPerTask:20}});
  intake(x.core,'one');intake(x.core,'two');rejects(()=>intake(x.core,'three'),'QUEUE_FULL');
- request(x.core,'one','a',1,{limits:{units:2}});x.core.grant(x.capability,S,'one','a',{expectedVersion:1,expiresAt:2000});const c=x.core.claim(S,'one','a',{expectedVersion:1});intake(x.core,'three');rejects(()=>intake(x.core,'four'),'TASK_LIMIT');
- request(x.core,'two','b');x.core.grant(x.capability,S,'two','b',{expectedVersion:1,expiresAt:2000});rejects(()=>x.core.claim(S,'two','b',{expectedVersion:1}),'ACTIVE_FULL');
+ request(x.core,'one','a',1,{limits:{units:2}});x.core.grant(x.capability,S,'one','a',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000});const c=x.core.claim(S,'one','a',{expectedVersion:1});intake(x.core,'three');rejects(()=>intake(x.core,'four'),'TASK_LIMIT');
+ request(x.core,'two','b');x.core.grant(x.capability,S,'two','b',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000});rejects(()=>x.core.claim(S,'two','b',{expectedVersion:1}),'ACTIVE_FULL');
  x.core.settle(S,'one','a',{claimId:c.claimId,outcome:'unknown',evidenceDigest:D});rejects(()=>x.core.claim(S,'two','b',{expectedVersion:1}),'ACTIVE_FULL');
  x.core.settle(S,'one','a',{claimId:c.claimId,outcome:'terminated',evidenceDigest:D});
- let v=x.core.getTask(S,'one').version;x.core.grant(x.capability,S,'one','a',{expectedVersion:v,expiresAt:2000});const second=x.core.claim(S,'one','a',{expectedVersion:v});x.core.settle(S,'one','a',{claimId:second.claimId,outcome:'terminated',evidenceDigest:D});
- v=x.core.getTask(S,'one').version;request(x.core,'one','review',v);x.core.grant(x.capability,S,'one','review',{expectedVersion:v,expiresAt:2000});rejects(()=>x.core.claim(S,'one','review',{expectedVersion:v}),'ATTEMPT_LIMIT');rejects(()=>request(x.core,'one','overflow',v),'ACTION_LIMIT');
+ let v=x.core.getTask(S,'one').version;x.core.grant(x.capability,S,'one','a',{expectedAuthEpoch:x.core.getTask(S,'one').authEpoch,expectedVersion:v,expiresAt:2000});const second=x.core.claim(S,'one','a',{expectedVersion:v});x.core.settle(S,'one','a',{claimId:second.claimId,outcome:'terminated',evidenceDigest:D});
+ v=x.core.getTask(S,'one').version;request(x.core,'one','review',v);x.core.grant(x.capability,S,'one','review',{expectedAuthEpoch:x.core.getTask(S,'one').authEpoch,expectedVersion:v,expiresAt:2000});rejects(()=>x.core.claim(S,'one','review',{expectedVersion:v}),'ATTEMPT_LIMIT');rejects(()=>request(x.core,'one','overflow',v),'ACTION_LIMIT');
  const h=setup(t,{limits:{maxEventsPerTask:2}});intake(h.core);h.core.transition(S,'task',{expectedVersion:1,status:'waiting',reason:'progress'});rejects(()=>h.core.transition(S,'task',{expectedVersion:2,status:'queued',reason:'progress'}),'HISTORY_LIMIT');assert.equal(h.core.getTask(S,'task').version,2);
 });
 
@@ -97,7 +97,7 @@ test('fixture faults and actual abrupt process cuts recover without replay',asyn
  for(const cut of ['before_intake_commit','after_intake','pre_receipt','post_effect']) {
   const x=setup(t);x.core.close();
   const marker=join(x.dir,'effect-count');
-  const code=childBase(x.databasePath,`fixtureMode:true,fixtureFaults:point=>{if(point===${JSON.stringify(cut)})process.exit(71)}`)+`core.intake(scope,{taskId:'task',provider:'p',source:'s',eventId:'e'});core.requestAction(scope,'task',{actionId:'action',kind:'fixture',targetDigest:'1'.repeat(64),dataDigest:'2'.repeat(64),limits:{units:1},expectedVersion:1});core.grant(cap,scope,'task','action',{expectedVersion:1,expiresAt:2000});await core.dispatchFixture(scope,'task','action',{expectedVersion:1},async()=>{writeFileSync(${JSON.stringify(marker)},'one');return{outcome:'completed',evidenceDigest:'3'.repeat(64)}});`;
+  const code=childBase(x.databasePath,`fixtureMode:true,fixtureFaults:point=>{if(point===${JSON.stringify(cut)})process.exit(71)}`)+`core.intake(scope,{taskId:'task',provider:'p',source:'s',eventId:'e'});core.requestAction(scope,'task',{actionId:'action',kind:'fixture',targetDigest:'1'.repeat(64),dataDigest:'2'.repeat(64),limits:{units:1},expectedVersion:1});core.grant(cap,scope,'task','action',{expectedAuthEpoch:0,expectedVersion:1,expiresAt:2000});await core.dispatchFixture(scope,'task','action',{expectedVersion:1},async()=>{writeFileSync(${JSON.stringify(marker)},'one');return{outcome:'completed',evidenceDigest:'3'.repeat(64)}});`;
   const result=child(code);assert.equal(result.status,71,result.stderr);
   const reopened=new Foundation({databasePath:x.databasePath});t.after(()=>reopened.close());
   if(cut==='before_intake_commit') {assert.equal(reopened.listTasks(S).length,0);continue;}
@@ -138,7 +138,7 @@ test('all identifiers hash before persistence; unknown fields, getters, proxies 
  const secret='sk_live_SYNTHETICSECRETM1',scope={ownerId:secret,workspaceId:secret},dir=mkdtempSync(join(tmpdir(),'bubbles-secret-')),path=join(dir,'ledger.db'),cap={};t.after(()=>rmSync(dir,{recursive:true,force:true}));
  const core=new Foundation({databasePath:path,trustedOperators:[{scope,capability:cap}],hostPermission:()=>{throw Error(secret);}});t.after(()=>core.close());
  core.intake(scope,{taskId:secret,provider:secret,source:secret,eventId:secret});
- core.requestAction(scope,secret,{actionId:secret,kind:'fixture',targetDigest:D,dataDigest:E,limits:{units:1},expectedVersion:1});core.grant(cap,scope,secret,secret,{expectedVersion:1,expiresAt:Date.now()+10000});
+ core.requestAction(scope,secret,{actionId:secret,kind:'fixture',targetDigest:D,dataDigest:E,limits:{units:1},expectedVersion:1});core.grant(cap,scope,secret,secret,{expectedAuthEpoch:0,expectedVersion:1,expiresAt:Date.now()+10000});
  const errors=[];for(const fn of [()=>core.claim(scope,secret,secret,{expectedVersion:1}),()=>core.intake(scope,{taskId:'t',provider:'p',source:'s',eventId:'e',payload:secret}),()=>core.getTask(new Proxy({}, {get(){throw Error(secret)}}),'t')])try{fn();}catch(error){errors.push(error.message);}
  let invoked=0;const malicious={workspaceId:'w'};Object.defineProperty(malicious,'ownerId',{enumerable:true,get(){invoked++;throw Error(secret);}});rejects(()=>core.getTask(malicious,'t'),'INVALID_INPUT');assert.equal(invoked,0);
  const options={};Object.defineProperty(options,'databasePath',{enumerable:true,get(){invoked++;throw Error(secret);}});rejects(()=>new Foundation(options),'INVALID_INPUT');assert.equal(invoked,0);
@@ -148,9 +148,9 @@ test('all identifiers hash before persistence; unknown fields, getters, proxies 
 async function race(path, operations, limits={}) {
  const dir=join(path,'..'),gate=join(dir,'gate-'+Math.random()),children=operations.map((operation,index)=>{
   const ready=gate+'-'+index,code=childBase(path,`limits:${JSON.stringify(limits)}`)+`writeFileSync(${JSON.stringify(ready)},'ready');await new Promise(resolve=>{const timer=setInterval(()=>{if(existsSync(${JSON.stringify(gate)})){clearInterval(timer);resolve();}},5)});try{${operation};console.log('OK')}catch(error){console.log(error.code)}core.close();`;
-  const proc=spawn(process.execPath,['--input-type=module','-e',code],{stdio:['ignore','pipe','pipe']});let stdout='',stderr='';proc.stdout.on('data',chunk=>stdout+=chunk);proc.stderr.on('data',chunk=>stderr+=chunk);return {ready,done:new Promise((resolve,reject)=>{proc.on('error',reject);proc.on('close',status=>resolve({status,stdout:stdout.trim(),stderr}));})};
+  const proc=spawn(process.execPath,['--input-type=module','-e',code],{stdio:['ignore','pipe','pipe']});const timer=setTimeout(()=>proc.kill('SIGKILL'),10000);let stdout='',stderr='';proc.stdout.on('data',chunk=>stdout+=chunk);proc.stderr.on('data',chunk=>stderr+=chunk);return {ready,proc,done:new Promise((resolve,reject)=>{proc.on('error',error=>{clearTimeout(timer);reject(error);});proc.on('close',status=>{clearTimeout(timer);resolve({status,stdout:stdout.trim(),stderr});});})};
  });
- const deadline=Date.now()+5000;while(!children.every(item=>existsSync(item.ready))){if(Date.now()>deadline)throw Error('race readiness timeout');await new Promise(resolve=>setTimeout(resolve,5));}writeFileSync(gate,'go');return Promise.all(children.map(item=>item.done));
+ const deadline=Date.now()+5000;while(!children.every(item=>existsSync(item.ready))){if(Date.now()>deadline){for(const item of children)item.proc.kill('SIGKILL');await Promise.allSettled(children.map(item=>item.done));throw Error('race readiness timeout');}await new Promise(resolve=>setTimeout(resolve,5));}writeFileSync(gate,'go');return Promise.all(children.map(item=>item.done));
 }
 test('independent process last queue and active slot races cannot over-admit',async t=>{
  const x=setup(t,{limits:{queueCapacity:1,maxActive:1}});x.core.close();
@@ -161,4 +161,36 @@ test('independent process last queue and active slot races cannot over-admit',as
  const active=await race(y.databasePath,[`core.claim(scope,'one','a',{expectedVersion:1})`,`core.claim(scope,'two','b',{expectedVersion:1})`],{maxActive:1});
  assert.deepEqual(active.map(item=>item.stdout).sort(),['ACTIVE_FULL','OK']);assert.equal(active.every(item=>item.status===0),true);
  const reopened=new Foundation({databasePath:y.databasePath,limits:{maxActive:1}});t.after(()=>reopened.close());assert.equal(reopened.recover().reservationsHeld,1);
+});
+
+test('history admission reserves bounded recovery, cancellation and settlement capacity',t=>{
+ const denied=setup(t,{limits:{maxEventsPerTask:4}});approved(denied);rejects(()=>denied.core.claim(S,'task','action',{expectedVersion:1}),'HISTORY_LIMIT');assert.equal(denied.core.recover().reservationsHeld,0);assert.equal(denied.core.exportTask(S,'task').history.length,3);
+ const tooSmall=setup(t,{limits:{maxEventsPerTask:8}});approved(tooSmall);rejects(()=>tooSmall.core.claim(S,'task','action',{expectedVersion:1}),'HISTORY_LIMIT');
+ const x=setup(t,{limits:{maxEventsPerTask:9}});approved(x);const claim=x.core.claim(S,'task','action',{expectedVersion:1});
+ assert.equal(x.core.revoke(x.capability,S,'task','action').authEpoch,2);for(let i=0;i<10;i++)assert.equal(x.core.revoke(x.capability,S,'task','action').authEpoch,2);
+ x.core.cancel(S,'task',{expectedVersion:2});x.core.close();const reopened=new Foundation({databasePath:x.databasePath,limits:{maxEventsPerTask:9}});t.after(()=>reopened.close());assert.equal(reopened.getTask(S,'task').status,'cancel_requested');assert.equal(reopened.recover().reservationsHeld,1);
+ for(let i=0;i<20;i++)assert.equal(reopened.settle(S,'task','action',{claimId:claim.claimId,outcome:'unknown',evidenceDigest:D}).reservationHeld,true);
+ assert.equal(reopened.exportTask(S,'task').history.length,7);
+ const settled=reopened.settle(S,'task','action',{claimId:claim.claimId,outcome:'completed',evidenceDigest:E});assert.equal(settled.task.status,'cancel_requested');assert.equal(reopened.recover().reservationsHeld,0);
+ reopened.transition(S,'task',{expectedVersion:settled.task.version,status:'cancelled',reason:'operator'});assert.equal(reopened.exportTask(S,'task').history.length,9);
+});
+
+test('corrupt legacy foreign keys and semantic rows reject before migration and preserve exact original',t=>{
+ const dir=mkdtempSync(join(tmpdir(),'bubbles-corrupt-legacy-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ for(const kind of ['orphan','invalid-status']){
+  const path=join(dir,kind+'.db'),db=new DatabaseSync(path);db.exec(legacySchemaSql);db.exec('PRAGMA foreign_keys=OFF');
+  if(kind==='orphan')db.prepare('INSERT INTO ingress VALUES(?,?,?,?,?,?,?)').run(D,D,D,D,D,E,1000);
+  else db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(D,D,D,'bad-state',1,0,1000,1000);
+  db.close();const original=readFileSync(path);rejects(()=>new Foundation({databasePath:path}),'STORAGE_INVALID');assert.deepEqual(readFileSync(path),original);assert.equal(existsSync(path+'.schema-1.backup'),false);
+  const check=new DatabaseSync(path);assert.equal(check.prepare('PRAGMA user_version').get().user_version,1);check.close();
+ }
+ const x=setup(t);approved(x);x.core.claim(S,'task','action',{expectedVersion:1});x.core.close();const db=new DatabaseSync(x.databasePath);db.exec('DELETE FROM reservations');db.close();const original=readFileSync(x.databasePath);rejects(()=>new Foundation({databasePath:x.databasePath}),'STORAGE_INVALID');assert.deepEqual(readFileSync(x.databasePath),original);
+});
+
+
+test('old consent cannot restore revoked or replaced approval authority',t=>{
+ const x=setup(t);intake(x.core);request(x.core);const oldConsent={expectedVersion:1,expectedAuthEpoch:0,expiresAt:2000};
+ x.core.grant(x.capability,S,'task','action',oldConsent);rejects(()=>x.core.grant(x.capability,S,'task','action',oldConsent),'STALE_AUTHORITY');
+ x.core.revoke(x.capability,S,'task','action');rejects(()=>x.core.grant(x.capability,S,'task','action',oldConsent),'STALE_AUTHORITY');rejects(()=>x.core.claim(S,'task','action',{expectedVersion:1}),'APPROVAL_INVALID');
+ const current=x.core.getTask(S,'task');x.core.grant(x.capability,S,'task','action',{expectedVersion:current.version,expectedAuthEpoch:current.authEpoch,expiresAt:2000});assert.equal(x.core.claim(S,'task','action',{expectedVersion:1}).action.state,'dispatch_intent');
 });

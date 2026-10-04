@@ -60,10 +60,14 @@ export class Foundation {
   #event(task,status,reason,at) {
     const keys=[task.owner,task.workspace,task.id];
     const count=this.#ledger.one('SELECT count(*) AS n FROM events WHERE owner=? AND workspace=? AND task=?',...keys).n;
-    if(count>=this.limits.maxEventsPerTask) fail('HISTORY_LIMIT');
+    const held=this.#held(keys);
+    const protectedEvent=['cancel','revoke','recovery','settlement'].includes(reason);
+    const reserve=!protectedEvent && held>0 ? 2*held+3 : 0;
+    if(count>=this.limits.maxEventsPerTask-reserve) fail('HISTORY_LIMIT');
     this.#ledger.run('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)',...keys,count+1,task.version,status,reason,at);
   }
   #update(task,status,reason,at,epoch=task.auth_epoch) {
+    number(task.version+1,1); number(epoch);
     task={...task,status,version:task.version+1,auth_epoch:epoch,updated_at:at};
     this.#ledger.run('UPDATE tasks SET status=?,version=?,auth_epoch=?,updated_at=? WHERE owner=? AND workspace=? AND id=?',status,task.version,epoch,at,task.owner,task.workspace,task.id);
     this.#event(task,status,reason,at); return task;
@@ -113,12 +117,12 @@ export class Foundation {
     return this.#ledger.transaction(()=>{const task=this.#current(keys,input.expectedVersion); if(['cancel_requested','recovery_required'].includes(task.status)) fail('TASK_BLOCKED'); if(this.#ledger.one('SELECT count(*) AS n FROM actions WHERE owner=? AND workspace=? AND task=?',...keys).n>=this.limits.maxActionsPerTask) fail('ACTION_LIMIT'); if(this.#ledger.one('SELECT id FROM actions WHERE owner=? AND workspace=? AND task=? AND id=?',...keys,actionId)) fail('ACTION_EXISTS'); this.#ledger.run('INSERT INTO actions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',...keys,actionId,input.kind,input.targetDigest,input.dataDigest,input.limits.units,'requested',0,null,null,null,at,at); this.#event(task,task.status,'action_requested',at); return actionRecord(this.#action(keys,input.actionId));});
   }
   grant(capability,scope,taskId,actionId,input) {
-    this.#operator(capability,scope); exact(input,['expectedVersion','expiresAt']); const keys=this.#keys(scope,taskId),at=this.#now();number(input.expiresAt,at+1);
-    return this.#ledger.transaction(()=>{const task=this.#current(keys,input.expectedVersion),action=this.#action(keys,actionId); if(['cancel_requested','recovery_required'].includes(task.status)) fail('TASK_BLOCKED'); if(!['requested','failed','terminated'].includes(action.state)) fail('ACTION_NOT_GRANTABLE'); const epoch=task.auth_epoch+1; this.#ledger.run('UPDATE tasks SET auth_epoch=? WHERE owner=? AND workspace=? AND id=?',epoch,...keys); this.#ledger.run('INSERT INTO grants VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(owner,workspace,task,action) DO UPDATE SET task_version=excluded.task_version,auth_epoch=excluded.auth_epoch,target_digest=excluded.target_digest,data_digest=excluded.data_digest,units=excluded.units,kind=excluded.kind,expires_at=excluded.expires_at,revoked=0',...keys,action.id,task.version,epoch,action.target_digest,action.data_digest,action.units,action.kind,input.expiresAt,0); this.#event({...task,auth_epoch:epoch},task.status,'grant',at); return {taskVersion:task.version,authEpoch:epoch,expiresAt:input.expiresAt,actionRef:action.id};});
+    this.#operator(capability,scope); exact(input,['expectedVersion','expectedAuthEpoch','expiresAt']); number(input.expectedAuthEpoch); const keys=this.#keys(scope,taskId),at=this.#now();number(input.expiresAt,at+1);
+    return this.#ledger.transaction(()=>{const task=this.#current(keys,input.expectedVersion),action=this.#action(keys,actionId); if(task.auth_epoch!==input.expectedAuthEpoch) fail('STALE_AUTHORITY'); if(['cancel_requested','recovery_required'].includes(task.status)) fail('TASK_BLOCKED'); if(!['requested','failed','terminated'].includes(action.state)) fail('ACTION_NOT_GRANTABLE'); const epoch=number(task.auth_epoch+1); this.#ledger.run('UPDATE tasks SET auth_epoch=? WHERE owner=? AND workspace=? AND id=?',epoch,...keys); this.#ledger.run('INSERT INTO grants VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(owner,workspace,task,action) DO UPDATE SET task_version=excluded.task_version,auth_epoch=excluded.auth_epoch,target_digest=excluded.target_digest,data_digest=excluded.data_digest,units=excluded.units,kind=excluded.kind,expires_at=excluded.expires_at,revoked=0',...keys,action.id,task.version,epoch,action.target_digest,action.data_digest,action.units,action.kind,input.expiresAt,0); this.#event({...task,auth_epoch:epoch},task.status,'grant',at); return {taskVersion:task.version,authEpoch:epoch,expiresAt:input.expiresAt,actionRef:action.id};});
   }
   revoke(capability,scope,taskId,actionId) {
     this.#operator(capability,scope); const keys=this.#keys(scope,taskId),at=this.#now();
-    return this.#ledger.transaction(()=>{const task=this.#task(keys),action=this.#action(keys,actionId); if(TERMINAL.has(task.status)) fail('TASK_TERMINAL'); this.#ledger.run('UPDATE tasks SET auth_epoch=auth_epoch+1 WHERE owner=? AND workspace=? AND id=?',...keys); this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); this.#event(task,task.status,'revoke',at); return {authEpoch:task.auth_epoch+1,actionRef:action.id,state:action.state};});
+    return this.#ledger.transaction(()=>{const task=this.#task(keys),action=this.#action(keys,actionId); if(TERMINAL.has(task.status)) fail('TASK_TERMINAL'); const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); if(!grant || grant.revoked || grant.auth_epoch!==task.auth_epoch) return {authEpoch:task.auth_epoch,actionRef:action.id,state:action.state}; number(task.auth_epoch+1); this.#ledger.run('UPDATE tasks SET auth_epoch=auth_epoch+1 WHERE owner=? AND workspace=? AND id=?',...keys); this.#ledger.run('UPDATE grants SET revoked=1 WHERE owner=? AND workspace=? AND task=? AND action=?',...keys,action.id); this.#event(task,task.status,'revoke',at); return {authEpoch:task.auth_epoch+1,actionRef:action.id,state:action.state};});
   }
   claim(scope,taskId,actionId,input) {
     exact(input,['expectedVersion']); const keys=this.#keys(scope,taskId);
@@ -150,6 +154,7 @@ export class Foundation {
       const task=this.#task(keys),action=this.#action(keys,actionId);
       if(action.claim_id!==input.claimId || !['dispatch_intent','unknown'].includes(action.state)) fail('STALE_CLAIM');
       const held=this.#ledger.one('SELECT claim_id FROM reservations WHERE claim_id=? AND owner=? AND workspace=? AND task=? AND action=?',input.claimId,...keys,action.id); if(!held) fail('STALE_CLAIM');
+      if(action.state==='unknown' && input.outcome==='unknown') return {task:taskRecord(task),action:actionRecord(action),reservationHeld:true};
       this.#ledger.run('UPDATE actions SET state=?,evidence_digest=?,updated_at=? WHERE owner=? AND workspace=? AND task=? AND id=?',input.outcome,input.evidenceDigest,at,...keys,action.id);
       if(input.outcome!=='unknown') this.#ledger.run('DELETE FROM reservations WHERE claim_id=?',input.claimId);
       let updated=task;
