@@ -1,0 +1,35 @@
+{
+  "formatVersion": "df.private-linux-transfer-addendum/v1",
+  "ownerRequestedExactAmendment": true,
+  "frozenBundleUnchanged": true,
+  "originalArchiveSha256": "095a91ed84f8cb29d350b64aec62a5f6ae11a9def75ba5146361af912dedb344",
+  "confirmedSupportedLibraryFiles": [
+    {
+      "name": "dsh-fishball-a58c522-owner-amendment-2026-10-04.md",
+      "library_file_id": "libfile_00dc04ade4fc8191aa4ed33fabffadc6",
+      "file_id": "file_000000005f2081faaee0845931e5dbb3",
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+      "bytes": 5304,
+      "status": "succeeded",
+      "helperApplyXattrsExit": 0,
+      "libraryVersion": 0
+    },
+    {
+      "name": "dsh-fishball-a58c522-consumer-runtime-addendum.md",
+      "library_file_id": "libfile_352fdf4f48d88191b976fc9ef8e32227",
+      "file_id": "file_00000000f8ac81f8976a221a6ef6c291",
+      "sha256": "7d6ec52b828aac58c03973f0105c1e9073fcc1c223811755380a1ecf433193e7",
+      "bytes": 2766,
+      "status": "succeeded",
+      "helperApplyXattrsExit": 0,
+      "libraryVersion": 0
+    }
+  ],
+  "node": "strict supported22.22.2 engines and runtime guards; Node24 unsupported",
+  "python": "Macobserved3.14.5 baseline, no Pythonengine/versionguard; new stdlib fixture recipe can use3.12/3.13 with actual version attributed",
+  "nativeLinuxGuardUnchanged": true,
+  "cloudBrowserRestrictionUnresolved": true,
+  "all87Accepted": 0,
+  "remoteOrPublication": false,
+  "cloudConsumerReport": "parent reports original bundle materialized/all hashes verified and official dependencies installed with ignore-scripts; consumer execution results not yet received"
+}
