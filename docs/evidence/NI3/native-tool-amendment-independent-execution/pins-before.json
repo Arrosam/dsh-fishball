@@ -1,0 +1,167 @@
+{
+  "formatVersion": "df.ni3.native-tool-amendment-independent-execution-pins/v1",
+  "phase": "before-first-and-only-execution",
+  "timeUTC": "2026-10-05 03:52:52 UTC",
+  "rootFreeze": {
+    "path": "docs/evidence/NI3/native-tool-amendment-independent-root-freeze.json",
+    "sha256": "0e8b81773251c7f0f2dc1777f348ecce3779a9d855526b0c94550e0479dbddae",
+    "bytes": 7094
+  },
+  "rootCheckedRows": [
+    {
+      "role": "test",
+      "path": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+      "sha256": "acd5fc8c2283076e4947f0fc690a56464f15a270d980912228bcb536ff4f5a0f",
+      "expected": "acd5fc8c2283076e4947f0fc690a56464f15a270d980912228bcb536ff4f5a0f",
+      "bytes": 39963,
+      "expectedBytes": 39963,
+      "matches": true
+    },
+    {
+      "role": "sourceHoldDocument",
+      "path": "docs/evidence/NI3/native-tool-amendment-independent-source-hold.md",
+      "sha256": "c5f6d818a151f9060446aa63120368cd7d30cc77e5d467c3c6b882dd63052ad0",
+      "expected": "c5f6d818a151f9060446aa63120368cd7d30cc77e5d467c3c6b882dd63052ad0",
+      "bytes": 10705,
+      "expectedBytes": 10705,
+      "matches": true
+    },
+    {
+      "role": "boundDesign",
+      "path": "docs/evidence/NI3/native-tool-amendment-independent-design.md",
+      "sha256": "29c97459f54d81d8feff7dd933be1d595bb549b1b1d22604f47ee7d26601e9db",
+      "expected": "29c97459f54d81d8feff7dd933be1d595bb549b1b1d22604f47ee7d26601e9db",
+      "bytes": 22369,
+      "expectedBytes": 22369,
+      "matches": true
+    },
+    {
+      "role": "boundDesignCompanion",
+      "path": "docs/evidence/NI3/native-tool-amendment-independent-checks.json",
+      "sha256": "dc5bcdebdfadb7bf5bbf74ed1728409748d03f26798597597ee7cb85fa8aa2b6",
+      "expected": "dc5bcdebdfadb7bf5bbf74ed1728409748d03f26798597597ee7cb85fa8aa2b6",
+      "bytes": 46974,
+      "expectedBytes": 46974,
+      "matches": true
+    },
+    {
+      "role": "boundAmendment",
+      "path": "docs/evidence/NI3/native-tool-source-api-amendment.md",
+      "sha256": "a3248cc1715f96e1ff9b8e86a79e7caa96ee8f19607f52ce8dfd32971534d8ce",
+      "expected": "a3248cc1715f96e1ff9b8e86a79e7caa96ee8f19607f52ce8dfd32971534d8ce",
+      "bytes": 7191,
+      "expectedBytes": 7191,
+      "matches": true
+    },
+    {
+      "role": "boundAmendmentCompanion",
+      "path": "docs/evidence/NI3/native-tool-source-api-amendment.json",
+      "sha256": "aa58cd0f58aab788b9265f91dd61e18d0e94a6d88a5fce2e6a04164838ba15de",
+      "expected": "aa58cd0f58aab788b9265f91dd61e18d0e94a6d88a5fce2e6a04164838ba15de",
+      "bytes": 72321,
+      "expectedBytes": 72321,
+      "matches": true
+    },
+    {
+      "role": "candidate",
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "expected": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "bytes": 52497,
+      "expectedBytes": 52497,
+      "matches": true
+    },
+    {
+      "role": "historicalOriginal",
+      "path": ".runtime/ni3-native-tools-amendment/original/installed-audit.mjs",
+      "sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+      "expected": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+      "bytes": 49288,
+      "expectedBytes": 49288,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "expected": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "expectedBytes": 2918,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "expected": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "expectedBytes": 24196,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "expected": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "bytes": 52497,
+      "expectedBytes": 52497,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "expected": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "expectedBytes": 2341,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "expected": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "expectedBytes": 5018,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "expected": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "expectedBytes": 21450,
+      "matches": true
+    },
+    {
+      "role": "actual isolated executable closure",
+      "path": ".runtime/ni3-native-tools-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "expected": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "expectedBytes": 5323,
+      "matches": true
+    }
+  ],
+  "rootRowCount": 15,
+  "manifest": {
+    "path": "docs/evidence/NI3/native-tool-amendment-independent-source-hold.json",
+    "sha256": "4a55ead0968fdc91774acff2b563136bcfa041a42206bc97ad654aa498b96be7",
+    "bytes": 64604,
+    "matches": true
+  },
+  "nodeBinary": {
+    "path": "/opt/homebrew/bin/node",
+    "resolved": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "expected": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "bytes": 84640,
+    "matches": true
+  },
+  "allPinsMatch": true,
+  "command": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "testAndCopiedClosureRemainSchema5": true,
+  "newPlanDigestSeamReadOrApplied": false
+}

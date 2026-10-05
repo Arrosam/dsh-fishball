@@ -1,0 +1,11 @@
+{
+  "formatVersion": "df.ni3.nta-root-result-verification/v1",
+  "rowsVerified": 15,
+  "sourceDigestAndBytesUnchanged": true,
+  "binaryUnchanged": true,
+  "firstCheckerFailure": "Whole JSON equality incorrectly included post-run additive unchangedFromBefore flags; no file/hash mismatch",
+  "correctedChecker": "compared role/path/sha256/expected/bytes/expectedBytes/matches; separately required every after flag true",
+  "newRunOrMutation": false,
+  "distinctNtaGroupsPassed": 8,
+  "all87Accepted": 0
+}

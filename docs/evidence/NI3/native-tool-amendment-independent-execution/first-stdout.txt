@@ -1,0 +1,60 @@
+TAP version 13
+# (node:99951) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NTA-01 omission, captured false and unchanged disabled/carrier denial
+ok 1 - NTA-01 omission, captured false and unchanged disabled/carrier denial
+  ---
+  duration_ms: 46.8415
+  type: 'test'
+  ...
+# Subtest: NTA-02 descriptor, presence, closed API and known function classes
+ok 2 - NTA-02 descriptor, presence, closed API and known function classes
+  ---
+  duration_ms: 4.389125
+  type: 'test'
+  ...
+# Subtest: NTA-03 opaque exact agent and original input/array identities
+ok 3 - NTA-03 opaque exact agent and original input/array identities
+  ---
+  duration_ms: 10.374791
+  type: 'test'
+  ...
+# Subtest: NTA-04 frozen ordinary record and truly empty schemas membrane
+ok 4 - NTA-04 frozen ordinary record and truly empty schemas membrane
+  ---
+  duration_ms: 10.221125
+  type: 'test'
+  ...
+# Subtest: NTA-05 exact claim in pending and recorded review/repair stages
+ok 5 - NTA-05 exact claim in pending and recorded review/repair stages
+  ---
+  duration_ms: 27.775166
+  type: 'test'
+  ...
+# Subtest: NTA-06 only literal synchronous true, with zero result inspection
+ok 6 - NTA-06 only literal synchronous true, with zero result inspection
+  ---
+  duration_ms: 15.128167
+  type: 'test'
+  ...
+# Subtest: NTA-07 reentry poisons outer attempt and later valid attempt recovers
+ok 7 - NTA-07 reentry poisons outer attempt and later valid attempt recovers
+  ---
+  duration_ms: 12.701375
+  type: 'test'
+  ...
+# Subtest: NTA-08 pre/post currentness, exact expiry, pending/ended and historical finish
+ok 8 - NTA-08 pre/post currentness, exact expiry, pending/ended and historical finish
+  ---
+  duration_ms: 138.99175
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 382.992292

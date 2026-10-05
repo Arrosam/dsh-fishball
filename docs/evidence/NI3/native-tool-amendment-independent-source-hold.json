@@ -1,0 +1,697 @@
+{
+  "formatVersion": "df.ni3.native-tool-amendment-independent-source-hold/v1",
+  "status": "INDEPENDENT_FIXTURE_AUTHORED_EXECUTION_HELD",
+  "checkTimeUTC": "2026-10-05 03:47:28 UTC",
+  "authorship": "Independent /root/native_composition_design; finite source-only fixture AUTHORING lease; English; no CODE review/retry/replacement/verdict",
+  "ownedPaths": [
+    ".runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+    "docs/evidence/NI3/native-tool-amendment-independent-source-hold.md",
+    "docs/evidence/NI3/native-tool-amendment-independent-source-hold.json"
+  ],
+  "firstOwnedOutputCheck": {
+    "allThreeAbsent": true,
+    "existingOutputOverwritten": false
+  },
+  "sourceHoldDocument": {
+    "path": "docs/evidence/NI3/native-tool-amendment-independent-source-hold.md",
+    "sha256": "c5f6d818a151f9060446aa63120368cd7d30cc77e5d467c3c6b882dd63052ad0",
+    "bytes": 10705
+  },
+  "test": {
+    "path": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+    "sha256": "acd5fc8c2283076e4947f0fc690a56464f15a270d980912228bcb536ff4f5a0f",
+    "bytes": 39963
+  },
+  "literalTestSource": "// Independent NTA design 29c97459; typed module evidence only.\n// Source-only authored: no Node/import/syntax/test execution authorized yet.\n// No database, original host classes, provider, listener or native route.\nimport assert from 'node:assert/strict';\nimport test from 'node:test';\nimport { createHash } from 'node:crypto';\nimport { dirname, join } from 'node:path';\nimport { fileURLToPath } from 'node:url';\nimport { createInstalledAudit } from '../src/installed-audit.mjs';\nimport { runInstalledWorkerInvocation } from '../src/installed-invocation.mjs';\n\nconst ISOLATED_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));\nconst BASE_TIME = 1700000000000;\nconst sha = value => createHash('sha256').update(value).digest('hex');\nconst canonical = value => Array.isArray(value)\n  ? '[' + value.map(canonical).join(',') + ']'\n  : value && typeof value === 'object'\n    ? '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}'\n    : JSON.stringify(value);\nconst digest = value => sha(canonical(value));\nconst copy = value => structuredClone(value);\nlet fixtureSequence = 0;\n\nfunction deferred() {\n  let resolve;\n  const promise = new Promise(done => { resolve = done; });\n  return { promise, resolve };\n}\n\nfunction proxyTraps(counter) {\n  return Object.fromEntries(['get', 'getPrototypeOf', 'ownKeys', 'getOwnPropertyDescriptor', 'apply'].map(key => [key, () => {\n    counter.calls++;\n    throw new Error('Proxy trap must remain untouched: ' + key);\n  }]));\n}\n\n// These backing rows are typed callback data, not module private state or a DB.\nfunction fixture(clock, options = {}) {\n  const label = 'independent-fixture-' + ++fixtureSequence;\n  const ref = part => sha(label + ':' + part);\n  const ownerId = label + '-owner', workspaceId = label + '-workspace';\n  const scope = { ownerRef: sha(ownerId), workspaceRef: sha(workspaceId), taskRef: ref('task') };\n  const purpose = options.purpose ?? 'audit_review';\n  const selected = { provider: 'typed-provider', model: 'typed-model', agentPreset: 'typed-audit', reasoningEffort: null, maxOutputTokens: 128 };\n  const charges = { runtimeMs: 1000, usageUnits: 8192 };\n  const selection = options.disabled ? { enabled: false } : {\n    enabled: true, inputByteLimit: 16384, resultByteLimit: 4096,\n    maxPrivateReviewers: 1, blockingSeverities: ['blocking'], maxRepairRounds: 1, maxTotalAttempts: 4,\n    review: { selection: copy(selected), charges: copy(charges) },\n    repair: { selection: copy(selected), charges: copy(charges) },\n  };\n  const worker = {\n    enabled: true, selection: copy(selected), environment: { root: ISOLATED_ROOT, cwd: ISOLATED_ROOT },\n    persistence: { directory: join(ISOLATED_ROOT, 'df-sessions-independent-typed'), compression: 'none', retention: 'owner-managed' },\n    bounds: { requestBytes: 4096, resultBytes: 4096 },\n    policy: { maxRuntimeMs: 2000, maxUsageUnits: 40000, maxCostEstimateMicros: 0 },\n    charges: copy(charges), previewTtlMs: 5000, grantTtlMs: 5000,\n  };\n  const config = { selection, identity: { ownerId, workspaceId }, profile: { dir: ISOLATED_ROOT, name: 'independent-typed' }, worker };\n  const factory = createInstalledAudit(config);\n  const policy = {\n    version: 1,\n    modelPolicy: { version: 1, catalogEvidenceRef: ref('catalog'), presetRefs: [ref('review-preset'), ref('repair-preset')] },\n    limits: { maxTotalAttempts: 4, maxAttempts: 1, maxActive: 1, maxRuntimeMs: 2000, maxUsageUnits: 40000 },\n  };\n  const effects = { subscription: 0, composition: 0, configure: 0, prepareInput: 0, plan: 0, preview: 0, grant: 0, sourceCallback: 0, nativeDispatch: 0, execute: 0, collect: 0, capturePhase: 0, finish: 0, nativeDispose: 0, unsubscribe: 0, requestCurrent: 0 };\n  const state = {\n    ctx: {}, alive: true, carrierCurrent: true, decide: options.decide ?? (() => true), effects,\n    scope, purpose, policy, rows: new Map(), decisions: [],\n    claimRef: ref('claimed-before-setup'), returnedClaimRef: options.returnedClaimRef ?? ref('claimed-before-setup'),\n    dispatchStarted: deferred(), dispatchRelease: deferred(), finishStarted: deferred(), finishRelease: deferred(),\n    snap: { task: { ...scope, version: 1, authEpoch: 0 }, semanticRevision: 1, control: 'active', actions: [], artifacts: [], audits: [], data: [], policy },\n  };\n  const contextRecordRef = ref('prepared-context'), contextOrigin = ref('context-origin');\n  const contextBody = {\n    contractVersion: 'df.execution-context/v1', materialKind: 'execution_context', sourceScope: scope,\n    sourceTaskVersion: 1, sourceAuthEpoch: 0, generatedAt: clock.value,\n    sourceRefs: [contextOrigin], sourceProvenance: [{ recordRef: contextOrigin, digest: ref('context-source-digest'), taskVersion: 1, authEpoch: 0, createdAt: clock.value }],\n    memory: { namespaceRef: ref('memory'), revision: 0, provenance: [] }, ledgerSnapshotDigest: ref('snapshot'),\n    content: 'Unknown; all quality and audit findings remain unexamined in this typed fixture.',\n    retainedRefs: [contextOrigin], droppedRefs: [], verification: 'module_prepared_execution_context_only',\n  };\n  contextBody.inputCounts = { bytes: Buffer.byteLength(contextBody.content), tokens: 16 };\n  const contextContent = canonical(contextBody);\n  const contextData = {\n    recordRef: contextRecordRef, digest: sha(contextContent), kind: 'context', sourceRef: contextOrigin,\n    taskVersion: 1, authEpoch: 0, generationRef: null, createdAt: clock.value, byteLength: Buffer.byteLength(contextContent),\n    cryptoVersion: 2, sourceTaskVersion: 1, sourceAuthEpoch: 0, semanticRevision: 1, content: contextContent,\n  };\n  const artifactContent = 'Typed original factual artifact; quality remains unexamined.';\n  const artifactData = { recordRef: ref('original-artifact-data'), digest: sha(artifactContent), kind: 'artifact', content: artifactContent };\n  state.rows.set(contextRecordRef, contextData); state.rows.set(artifactData.recordRef, artifactData);\n  state.snap.data.push({ recordRef: contextRecordRef, digest: contextData.digest }, { recordRef: artifactData.recordRef, digest: artifactData.digest });\n  const artifact = { artifactRef: ref('artifact'), version: 1, digest: artifactData.digest, recordRef: artifactData.recordRef, producerClaimRef: ref('producer-claim'), generationRef: ref('producer-generation') };\n  state.snap.artifacts.push(artifact);\n  const sourceFacts = kind => ({\n    configurationRef: ref(kind + '-config'), nativeSourceRef: ref('native-source'), resourcePolicyVersion: 1, modelPolicyVersion: 1,\n    presetRef: ref(kind + '-preset'), modelRef: ref('model'), reasoningRef: ref('reasoning'), catalogEvidenceRef: ref('catalog'),\n    environmentRef: ref(kind + '-environment'), bindingDigest: ref(kind + '-environment-binding'), toolsDigest: ref(kind + '-tools'), permissionPolicyDigest: ref(kind + '-permission'),\n    effectiveReasoningEffort: null, accounting: 'typed-accounting-only', pricing: 'source_zero', costProvenanceRef: ref('typed-price-source'),\n  });\n  state.facts = { review: sourceFacts('review'), repair: sourceFacts('repair') };\n  const protectedFacts = () => ({\n    recordRef: contextRecordRef, digest: contextData.digest, kind: 'context', byteLength: contextData.byteLength, cryptoVersion: 2,\n    originSourceRef: contextOrigin, sourceTaskVersion: 1, sourceAuthEpoch: 0, memory: { namespaceRef: ref('memory'), revision: 0 },\n    taskRef: scope.taskRef, taskVersion: state.snap.task.version, authEpoch: state.snap.task.authEpoch,\n    semanticRevision: state.snap.semanticRevision, configurationRef: ref('context-config'), nativeSourceRef: ref('native-source'),\n  });\n  const producerFacts = () => ({\n    taskRef: scope.taskRef, artifactRef: artifact.artifactRef, artifactVersion: artifact.version,\n    recordRef: artifact.recordRef, digest: artifact.digest, producerClaimRef: artifact.producerClaimRef, generationRef: artifact.generationRef,\n    sessionRef: ref('producer-session'), executionRef: ref('producer-execution'), inputDigest: contextData.digest, cursor: 1,\n    resultDigest: artifact.digest, configurationRef: ref('producer-config'), nativeSourceRef: ref('native-source'),\n  });\n  function makeInput(v) {\n    const req = state.snap.audits[0];\n    const previousReportRef = v.purpose === 'audit_repair' ? req.reportRef : null;\n    const materialRows = req.material.map(m => ({ ...m, kind: state.rows.get(m.recordRef).kind, content: state.rows.get(m.recordRef).content }));\n    const body = {\n      contractVersion: 'df.audit-input/v1', purpose: v.purpose, ...scope, auditRef: req.auditRef, auditRevision: req.auditRevision,\n      round: v.round, semanticRevision: req.semanticRevision,\n      artifact: { artifactRef: artifact.artifactRef, version: 1, recordRef: artifact.recordRef, digest: artifact.digest },\n      bindingDigest: req.bindingDigest, materialDigest: req.materialDigest,\n      policy: { policyRef: req.policyRef, blockingSeverities: req.blockingSeverities, maxRepairRounds: req.maxRepairRounds },\n      material: materialRows, contextRecordRef, contextDigest: contextData.digest,\n      previousReport: previousReportRef === null ? null : { reportRef: previousReportRef, verdict: 'unknown', allUnexamined: true },\n      responseContract: 'df.audit-response/v1',\n    };\n    const content = canonical(body), inputRecordRef = ref('audit-input-' + v.purpose);\n    const association = {\n      contractVersion: 'df.audit-input-association/v1', ...scope, auditRef: req.auditRef, auditRevision: req.auditRevision,\n      round: v.round, purpose: v.purpose, recordRef: inputRecordRef, digest: sha(content), byteLength: Buffer.byteLength(content),\n      bindingDigest: req.bindingDigest, materialDigest: req.materialDigest,\n      artifactRef: artifact.artifactRef, artifactVersion: 1, artifactDigest: artifact.digest, semanticRevision: req.semanticRevision,\n      sourceTaskVersion: state.snap.task.version, sourceAuthEpoch: state.snap.task.authEpoch,\n      contextRecordRef, contextDigest: contextData.digest, previousReportRef, material: copy(req.material),\n      inputByteLimit: selection.inputByteLimit, resultByteLimit: selection.resultByteLimit, createdAt: clock.value,\n    };\n    const data = {\n      recordRef: inputRecordRef, digest: association.digest, kind: 'context', sourceRef: req.auditRef,\n      taskVersion: association.sourceTaskVersion, authEpoch: association.sourceAuthEpoch, generationRef: null, createdAt: clock.value,\n      byteLength: association.byteLength, cryptoVersion: 2, sourceTaskVersion: association.sourceTaskVersion,\n      sourceAuthEpoch: association.sourceAuthEpoch, semanticRevision: association.semanticRevision, auditInputRef: inputRecordRef, content,\n    };\n    state.pair = { association, data }; state.rows.set(inputRecordRef, data);\n    state.snap.data.push({ recordRef: inputRecordRef, digest: data.digest });\n    return { recordRef: inputRecordRef, digest: data.digest };\n  }\n  function captureBinding(outer) {\n    const a = state.pair.association;\n    return {\n      ...scope, auditRef: a.auditRef, auditRevision: a.auditRevision, round: a.round, semanticRevision: a.semanticRevision,\n      bindingDigest: a.bindingDigest, materialDigest: a.materialDigest, artifactRef: a.artifactRef,\n      artifactVersion: a.artifactVersion, artifactDigest: a.artifactDigest, inputRecordRef: a.recordRef, inputDigest: a.digest, purpose: a.purpose,\n      actionRef: state.spec.actionRef, actionDigest: digest(state.spec), claimRef: outer.claimRef, generationRef: outer.generationRef,\n      sessionRef: state.spec.executor.sessionRef, executionRef: outer.executionRef, outerInput: copy(outer),\n    };\n  }\n  // Literal held capture tag and complete binding/phase input; no new test hook.\n  function publishCapture(outer) {\n    const b = captureBinding(outer), content = 'Unknown; all findings remain unexamined. Typed capture only.';\n    const child = {\n      taskRef: outer.taskRef, claimRef: outer.claimRef, generationRef: outer.generationRef, executionRef: outer.executionRef,\n      sessionRef: b.sessionRef, inputCursor: 0, cursor: 1, content, evidenceRef: ref('typed-capture-evidence'),\n    };\n    const { content: omitted, ...rest } = child;\n    const phaseInput = { ...rest, contentDigest: sha(content), contentByteLength: Buffer.byteLength(content) };\n    child.commandRef = digest(['df.installed-audit.capture/v1', outer.commandRef, { binding: b, phaseInput }]);\n    const receipt = {\n      ...scope, actionRef: b.actionRef, actionDigest: b.actionDigest, claimRef: b.claimRef, generationRef: b.generationRef,\n      sessionRef: b.sessionRef, executionRef: b.executionRef, resultRef: b.executionRef, recordRef: ref('typed-captured-data'),\n      digest: sha(content), inputDigest: b.inputDigest, inputRecordRef: b.inputRecordRef, purpose: b.purpose,\n      bindingDigest: b.bindingDigest, materialDigest: b.materialDigest, auditRef: b.auditRef,\n      cursor: child.cursor, inputCursor: child.inputCursor, evidenceRef: child.evidenceRef, byteLength: Buffer.byteLength(content), state: 'captured',\n    };\n    assert.strictEqual(state.hooks.validateResult(state.agent, { executionRef: b.executionRef, claimRef: b.claimRef, generationRef: b.generationRef, content, digest: receipt.digest }), true);\n    state.captureEvent = { operation: 'captureAuditResult', input: child, receipt };\n    state.captureBinding = b; state.capturePhaseInput = phaseInput;\n    state.emit(state.captureEvent); effects.capturePhase++;\n  }\n  const api = {\n    ctx: state.ctx,\n    snapshotOwner(v) { assert.strictEqual(v.taskRef, scope.taskRef); return copy(state.snap); },\n    readOwnerData(v) { assert.strictEqual(v.taskRef, scope.taskRef); assert.ok(state.rows.has(v.recordRef)); return copy(state.rows.get(v.recordRef)); },\n    currentPolicy() { return copy(state.policy); },\n    planOwnerAction(v) {\n      effects.plan++; state.spec = copy(v.spec);\n      const actionDigest = digest(v.spec);\n      state.snap.actions.push({ actionRef: v.spec.actionRef, actionDigest, spec: state.spec });\n      return { actionRef: v.spec.actionRef, actionDigest };\n    },\n    prepareOwnerPreview(v) { effects.preview++; return { previewRef: ref('preview'), actionDigest: v.actionDigest }; },\n    grantOwnerPreview(v) {\n      effects.grant++; state.grantExpiresAt = v.expiresAt;\n      const { previewRef, ...input } = v, receipt = { actionDigest: v.actionDigest, task: copy(state.snap.task) };\n      state.emit({ operation: 'grant', input, receipt }); return receipt;\n    },\n    readProtectedContextFacts(v) { assert.strictEqual(v.contextRecordRef, contextRecordRef); return protectedFacts(); },\n    readCapturedProducerFacts(v) { assert.strictEqual(v.artifactRef, artifact.artifactRef); return producerFacts(); },\n    readAuditActionFacts(v) { assert.ok(['review', 'repair'].includes(v.purpose)); return copy(state.facts[v.purpose]); },\n    readAuditInput(v) { assert.strictEqual(v.inputRecordRef, state.pair.association.recordRef); return copy(state.pair); },\n    configureOwnerAudit(v) {\n      effects.configure++; assert.strictEqual(v.expectedAuditRevision, 0);\n      const req = {\n        auditRef: v.auditRef, auditRevision: 1, artifactRef: v.artifactRef, artifactVersion: v.artifactVersion,\n        digest: v.digest, contextRecordRef: v.contextRecordRef, material: copy(v.material), materialDigest: digest(v.material),\n        policyRef: v.policyRef, blockingSeverities: copy(v.blockingSeverities), maxRepairRounds: v.maxRepairRounds,\n        round: 0, semanticRevision: state.snap.semanticRevision, reportRef: purpose === 'audit_repair' ? ref('prior-unknown-report') : null,\n      };\n      req.bindingDigest = digest({ ...scope, auditRef: req.auditRef, auditRevision: req.auditRevision, artifactRef: req.artifactRef,\n        artifactVersion: req.artifactVersion, digest: req.digest, material: req.material, policyRef: req.policyRef,\n        blockingSeverities: req.blockingSeverities, maxRepairRounds: req.maxRepairRounds, round: req.round, semanticRevision: req.semanticRevision });\n      state.snap.audits.push(req); return copy(req);\n    },\n    prepareOwnerAuditInput(v) { effects.prepareInput++; return makeInput(v); },\n    assertNativeRequestCurrent(v) {\n      effects.requestCurrent++;\n      assert.deepEqual(v, { taskRef: scope.taskRef, claimRef: state.execution.claimRef, generationRef: state.execution.generationRef,\n        actionDigest: state.execution.actionDigest, executionRef: state.execution.executionRef });\n      return true;\n    },\n    composeNativeAudit({ worker: privateWorker, nativeHooks }) {\n      effects.composition++; state.worker = privateWorker; state.hooks = nativeHooks;\n      assert.deepEqual(Object.keys(privateWorker).sort(), ['environments', 'permission', 'resolveSession', 'toolGuard']);\n      assert.deepEqual(Object.keys(nativeHooks).sort(), ['bindExecution', 'commitAgent', 'setupAgent', 'validateResult']);\n      // This typed dispatcher exposes the module edge; it is not a native route\n      // and its synthetic returned view does not attest actual guard acceptance.\n      return {\n        async dispatch(v) {\n          effects.nativeDispatch++;\n          state.agent = { id: 'df-' + state.spec.executor.generationRef };\n          state.binding = { taskRef: scope.taskRef, actionRef: state.spec.actionRef, actionDigest: digest(state.spec), claimRef: state.claimRef,\n            generationRef: state.spec.executor.generationRef, sessionRef: state.spec.executor.sessionRef, options: {}, spec: copy(state.spec) };\n          nativeHooks.setupAgent({}, state.agent, state.binding);\n          state.dispatchStarted.resolve(); await state.dispatchRelease.promise;\n          state.dispatchResolved = true;\n          return { worker: { taskRef: v.taskRef, actionRef: v.actionRef, actionDigest: v.actionDigest,\n            generationRef: state.binding.generationRef, sessionRef: state.binding.sessionRef, claimRef: state.returnedClaimRef, phase: 'typed-unknown' } };\n        },\n        executeApprovedInput(v) {\n          effects.execute++;\n          state.execution = { taskRef: scope.taskRef, actionDigest: digest(state.spec), claimRef: v.claimRef, generationRef: v.generationRef,\n            executionRef: ref('execution'), dataDigest: state.spec.dataDigest, inputDigest: state.spec.executionInput.digest };\n          assert.strictEqual(nativeHooks.bindExecution(state.agent, state.execution, { digest: state.pair.data.digest, content: state.pair.data.content }), true);\n          return { executionRef: state.execution.executionRef };\n        },\n        query() { return { state: 'unknown' }; },\n        sessionLink() { return { state: 'unknown' }; },\n        collectAuditResult(v, source) {\n          effects.collect++;\n          assert.strictEqual(source.operationRef, digest(['df.installed-audit.collect-operation/v1', scope, v]));\n          assert.deepEqual(source.artifactTarget, purpose === 'audit_repair' ? { artifactRef: artifact.artifactRef, version: 2 } : null);\n          publishCapture(v); return { state: 'unknown' };\n        },\n        async finishExecution(v) { effects.finish++; state.finishInput = copy(v); state.finishStarted.resolve(); await state.finishRelease.promise; },\n        dispose() { effects.nativeDispose++; },\n      };\n    },\n    subscribeRuntimeReceipts(callback) { effects.subscription++; state.emit = callback; return () => { effects.unsubscribe++; }; },\n    isAlive() { return state.alive; },\n  };\n  if (!options.omitGuard) api.nativeToolGuard = record => { effects.sourceCallback++; return state.decide(record); };\n  const f = {\n    state, api, factory, config, ref, scope, clock,\n    install() { f.installed = factory.installedAuditInstaller(f.api); return f.installed; },\n    cas(command) { return { taskRef: scope.taskRef, commandRef: ref(command), expectedTaskVersion: state.snap.task.version, expectedAuthEpoch: state.snap.task.authEpoch }; },\n    actionInput(command) { return { ...f.cas(command), actionRef: state.spec.actionRef, actionDigest: digest(state.spec) }; },\n    executionInput(command) { return { ...f.cas(command), actionRef: state.spec.actionRef, claimRef: state.claimRef, generationRef: state.spec.executor.generationRef, executionRef: state.execution.executionRef }; },\n    op(name, input) { return f.installed.operations[name](input, { assertCurrent: () => state.carrierCurrent }); },\n    toolRecord(patch = {}) { return Object.freeze({ agent: state.agent, taskRef: scope.taskRef, generationRef: state.binding.generationRef, claimRef: state.binding.claimRef,\n      toolsDigest: state.spec.executor.toolsDigest, permissionPolicyDigest: state.spec.executor.permissionPolicyDigest, schemas: Object.freeze([]), ...patch }); },\n    rawGuard(record) { return state.worker.toolGuard(record); },\n    guard(record = f.toolRecord()) { return runInstalledWorkerInvocation(state.ctx, () => state.carrierCurrent, () => {\n      const decision = f.rawGuard(record); state.decisions.push(decision); return decision;\n    }); },\n    emitControl(operation = 'revoke') { state.emit({ operation, input: { taskRef: scope.taskRef, commandRef: ref('typed-' + operation) }, receipt: { task: copy(state.snap.task) } }); },\n    async begin() {\n      const materials = [contextData, artifactData].map(d => ({ recordRef: d.recordRef, digest: d.digest })).sort((a, b) => a.recordRef.localeCompare(b.recordRef));\n      await f.op('configureAudit', { ...f.cas('configure'), auditRef: ref('audit'), expectedAuditRevision: 0,\n        artifactRef: artifact.artifactRef, artifactVersion: 1, digest: artifact.digest, contextRecordRef, material: materials });\n      await f.op('prepareAuditInput', { ...f.cas('prepare'), auditRef: ref('audit'), expectedAuditRevision: 1, purpose,\n        round: purpose === 'audit_repair' ? 1 : 0, ...(purpose === 'audit_repair' ? { previousReportRef: ref('prior-unknown-report') } : {}) });\n      await f.op('planAuditAction', { ...f.cas('plan'), auditRef: ref('audit'), inputRecordRef: state.pair.association.recordRef, purpose });\n      const preview = await f.op('auditPreview', { taskRef: scope.taskRef, actionRef: state.spec.actionRef, actionDigest: digest(state.spec),\n        recordRef: state.pair.association.recordRef, expectedTaskVersion: state.snap.task.version, expectedAuthEpoch: state.snap.task.authEpoch });\n      await f.op('auditGrant', { ...f.actionInput('grant'), previewRef: preview.previewRef, accept: true, expiresAt: clock.value + 1000 });\n      state.dispatchTask = f.op('dispatchAudit', f.actionInput('dispatch'));\n      await Promise.race([state.dispatchStarted.promise, state.dispatchTask.then(() => { throw new Error('Dispatch returned before its controlled release'); })]);\n      return f;\n    },\n    async recordClaim() { state.dispatchRelease.resolve(); const view = await state.dispatchTask; state.dispatchCompleted = true; return view; },\n    async ready() { await f.begin(); await f.recordClaim(); return f; },\n    async capture() {\n      await f.op('executeAudit', { ...f.actionInput('execute'), claimRef: state.claimRef, generationRef: state.spec.executor.generationRef, inputRecordRef: state.pair.association.recordRef });\n      const result = await f.op('collectAuditResult', f.executionInput('collect'));\n      assert.deepEqual(result, { state: 'unknown', executionRef: state.execution.executionRef, resultRef: state.execution.executionRef });\n      assert.strictEqual(effects.capturePhase, 1); return result;\n    },\n    async endFinish() {\n      state.emit({ operation: 'finishExecution', input: copy(state.finishInput), receipt: {\n        task: copy(state.snap.task), claimRef: state.claimRef, reservationHeld: false, outcome: 'completed',\n      } });\n      state.finishRelease.resolve(); const receipt = await state.finishTask; state.finishCompleted = true; return receipt;\n    },\n    driftLatestArtifact() {\n      state.snap.artifacts.push({ ...copy(artifact), version: 2, digest: ref('newer-artifact-digest'), recordRef: ref('newer-artifact-data') });\n      state.snap.task.version++; state.snap.semanticRevision++;\n    },\n    async cleanup() {\n      const errors = [];\n      for (const [task, done, release] of [[state.dispatchTask, state.dispatchCompleted, state.dispatchRelease], [state.finishTask, state.finishCompleted, state.finishRelease]]) {\n        if (task && !done) { release.resolve(); try { await task; } catch (error) { errors.push(error); } }\n      }\n      f.installed?.dispose(); return errors;\n    },\n  };\n  if (!options.deferInstall) f.install();\n  return f;\n}\n\n// One test worker, serial top-level groups, scoped monotonic clock and restore.\n// Cleanup cannot hide the first assertion/runtime failure; latent task errors\n// become failures if the body otherwise succeeded. No real timers are started.\nasync function withClock(body) {\n  const original = Date.now, made = [], clock = { value: BASE_TIME };\n  Date.now = () => clock.value;\n  let primary;\n  const make = options => { clock.value = BASE_TIME; const f = fixture(clock, options); made.push(f); return f; };\n  try { return await body({ clock, make }); }\n  catch (error) { primary = error; throw error; }\n  finally {\n    const errors = [];\n    try { for (const f of made) errors.push(...await f.cleanup()); }\n    finally { Date.now = original; }\n    if (!primary && errors.length) throw new AggregateError(errors, 'Unconsumed controlled task failure');\n  }\n}\n\nasync function denied(f, record, message) {\n  const before = f.state.effects.sourceCallback;\n  assert.strictEqual(await f.guard(record), false, message);\n  assert.strictEqual(f.state.effects.sourceCallback, before, message + ': callback must not run');\n}\n\ntest('NTA-01 omission, captured false and unchanged disabled/carrier denial', { concurrency: false }, async () => withClock(async ({ make }) => {\n  const omitted = make({ omitGuard: true }); await omitted.ready();\n  assert.strictEqual(Object.keys(omitted.api).length, 17);\n  assert.deepEqual(Object.keys(omitted.installed).sort(), ['dispose', 'hostPermission', 'operations', 'previewResolver', 'previewTtlMs', 'status']);\n  await denied(omitted, omitted.toolRecord(), 'omission');\n  const supplied = make({ decide: () => false }); await supplied.ready();\n  let replacementCalls = 0;\n  supplied.api.nativeToolGuard = () => { replacementCalls++; return true; };\n  assert.strictEqual(await supplied.guard(), false);\n  assert.strictEqual(supplied.state.effects.sourceCallback, 1); assert.strictEqual(replacementCalls, 0);\n  assert.throws(() => createInstalledAudit({ ...supplied.config, selection: { ...supplied.config.selection, nativeToolGuard: () => true } }), { code: 'CONFIG_INVALID' });\n  await assert.rejects(supplied.op('dispatchAudit', { ...supplied.actionInput('owner-extra'), nativeToolGuard: () => true }), { code: 'INVALID_INPUT' });\n  const disabled = make({ disabled: true });\n  await assert.rejects(disabled.op('planAuditAction', {}), { code: 'AUDIT_DISABLED' });\n  assert.strictEqual(disabled.state.effects.composition, 0); assert.strictEqual(disabled.state.effects.sourceCallback, 0);\n  const stale = make(); await stale.ready(); stale.state.carrierCurrent = false;\n  await assert.rejects(stale.guard(), { code: 'SERVICE_DISPOSED' });\n  assert.strictEqual(stale.state.effects.sourceCallback, 0);\n  assert.strictEqual(stale.rawGuard(stale.toolRecord()), false);\n}));\n\ntest('NTA-02 descriptor, presence, closed API and known function classes', { concurrency: false }, async () => withClock(async ({ make }) => {\n  const mutations = [\n    ['present undefined', f => { f.api.nativeToolGuard = undefined; }, 'AUDIT_UNAVAILABLE'],\n    ['present false value', f => { f.api.nativeToolGuard = false; }, 'AUDIT_UNAVAILABLE'],\n    ['missing old required', f => { delete f.api.isAlive; }, 'INVALID_INPUT'],\n    ['unknown field', f => { f.api.callerProof = true; }, 'INVALID_INPUT'],\n    ['accessor', (f, c) => { Object.defineProperty(f.api, 'nativeToolGuard', { enumerable: true, get() { c.calls++; throw new Error('accessor'); } }); }, 'INVALID_INPUT'],\n    ['nonenumerable', f => { Object.defineProperty(f.api, 'nativeToolGuard', { enumerable: false, value: () => true }); }, 'INVALID_INPUT'],\n    ['proxy API', (f, c) => { f.api = new Proxy(f.api, proxyTraps(c)); }, 'INVALID_INPUT'],\n    ['proxy callback', (f, c) => { f.api.nativeToolGuard = new Proxy(() => true, proxyTraps(c)); }, 'AUDIT_UNAVAILABLE'],\n    ['async', (f, c) => { f.api.nativeToolGuard = async () => { c.calls++; return true; }; }, 'AUDIT_UNAVAILABLE'],\n    ['generator', (f, c) => { f.api.nativeToolGuard = function* () { c.calls++; yield true; }; }, 'AUDIT_UNAVAILABLE'],\n    ['async generator', (f, c) => { f.api.nativeToolGuard = async function* () { c.calls++; yield true; }; }, 'AUDIT_UNAVAILABLE'],\n  ];\n  for (const [name, mutate, code] of mutations) {\n    const f = make({ deferInstall: true }), counter = { calls: 0 };\n    mutate(f, counter);\n    assert.throws(() => f.install(), { code }, name);\n    assert.strictEqual(counter.calls, 0, name);\n    assert.strictEqual(f.state.effects.subscription, 0, name);\n    assert.strictEqual(f.state.effects.composition, 0, name);\n    assert.strictEqual(f.state.effects.sourceCallback, 0, name);\n  }\n  const valid = make(); assert.strictEqual(valid.state.effects.subscription, 1);\n}));\n\ntest('NTA-03 opaque exact agent and original input/array identities', { concurrency: false }, async () => withClock(async ({ make }) => {\n  const f = make(); await f.ready();\n  let agentReads = 0, seen;\n  Object.defineProperty(f.state.agent, 'id', { configurable: true, enumerable: true, get() { agentReads++; throw new Error('new gate inspected agent'); } });\n  f.state.agent.cycle = f.state.agent; f.state.agent[Symbol('opaque')] = () => {};\n  f.state.decide = record => { seen = record; return true; };\n  const record = f.toolRecord();\n  assert.ok(Object.isFrozen(record)); assert.ok(Object.isFrozen(record.schemas));\n  assert.strictEqual(await f.guard(record), true);\n  assert.strictEqual(seen, record); assert.strictEqual(seen.agent, f.state.agent); assert.strictEqual(seen.schemas, record.schemas);\n  assert.strictEqual(agentReads, 0); assert.strictEqual(Object.isFrozen(f.state.agent), false);\n  await denied(f, f.toolRecord({ agent: { id: 'df-' + f.state.binding.generationRef } }), 'agent lookalike');\n  const traps = { calls: 0 };\n  await denied(f, f.toolRecord({ agent: new Proxy(f.state.agent, proxyTraps(traps)) }), 'proxy agent');\n  assert.strictEqual(traps.calls, 0); assert.strictEqual(agentReads, 0);\n}));\n\ntest('NTA-04 frozen ordinary record and truly empty schemas membrane', { concurrency: false }, async () => withClock(async ({ make }) => {\n  const f = make(); await f.ready(); const good = f.toolRecord(); let getters = 0;\n  const accessor = { ...good }; Object.defineProperty(accessor, 'taskRef', { enumerable: true, get() { getters++; throw new Error('record accessor'); } });\n  const hidden = []; Object.defineProperty(hidden, 'hidden', { get() { getters++; throw new Error('schema accessor'); } }); Object.freeze(hidden);\n  const custom = []; Object.setPrototypeOf(custom, {}); Object.freeze(custom);\n  const recordTraps = { calls: 0 }, schemaTraps = { calls: 0 };\n  const bad = [\n    ['mutable record', { ...good }], ['mutable schemas', f.toolRecord({ schemas: [] })],\n    ['nonempty schemas', f.toolRecord({ schemas: Object.freeze([{}]) })],\n    ['record accessor', Object.freeze(accessor)], ['unknown record key', f.toolRecord({ callerProof: true })],\n    ['symbol record key', Object.freeze({ ...good, [Symbol('extra')]: true })],\n    ['proxy record', new Proxy(good, proxyTraps(recordTraps))],\n    ['custom array prototype', f.toolRecord({ schemas: custom })], ['hidden array accessor', f.toolRecord({ schemas: hidden })],\n    ['proxy schemas', f.toolRecord({ schemas: new Proxy(Object.freeze([]), proxyTraps(schemaTraps)) })],\n  ];\n  for (const [name, record] of bad) await denied(f, record, name);\n  assert.strictEqual(getters, 0); assert.strictEqual(recordTraps.calls, 0); assert.strictEqual(schemaTraps.calls, 0);\n  assert.strictEqual(await f.guard(good), true); assert.strictEqual(f.state.effects.sourceCallback, 1);\n}));\n\ntest('NTA-05 exact claim in pending and recorded review/repair stages', { concurrency: false }, async () => withClock(async ({ make }) => {\n  for (const purpose of ['audit_review', 'audit_repair']) {\n    const f = make({ purpose }); await f.begin(); const record = f.toolRecord();\n    assert.strictEqual(f.state.spec.dataDigest, f.state.snap.artifacts[0].digest);\n    assert.strictEqual(f.state.spec.executionInput.digest, f.state.pair.data.digest);\n    assert.notStrictEqual(f.state.spec.dataDigest, f.state.spec.executionInput.digest);\n    assert.notStrictEqual(f.state.dispatchResolved, true); assert.strictEqual(record.claimRef, f.state.binding.claimRef);\n    assert.strictEqual(await f.guard(record), true, purpose + ': claim-bound pending');\n    const absent = { ...record }; delete absent.claimRef;\n    await denied(f, Object.freeze(absent), purpose + ': missing claim');\n    await denied(f, f.toolRecord({ claimRef: undefined }), purpose + ': undefined claim');\n    await denied(f, f.toolRecord({ claimRef: f.ref('foreign-claim') }), purpose + ': foreign claim');\n    await f.recordClaim(); assert.strictEqual(f.state.dispatchResolved, true);\n    assert.strictEqual(await f.guard(record), true, purpose + ': recorded');\n    for (const key of ['taskRef', 'generationRef', 'toolsDigest', 'permissionPolicyDigest']) {\n      await denied(f, f.toolRecord({ [key]: f.ref('wrong-' + key) }), purpose + ': wrong ' + key);\n    }\n  }\n  const conflict = make({ returnedClaimRef: sha('independent-different-recorded-claim') }); await conflict.ready();\n  await denied(conflict, conflict.toolRecord(), 'recorded claim differs from setup claim');\n  await denied(conflict, conflict.toolRecord({ claimRef: conflict.state.returnedClaimRef }), 'matching recorded claim still differs from setup');\n}));\n\ntest('NTA-06 only literal synchronous true, with zero result inspection', { concurrency: false }, async () => withClock(async ({ make }) => {\n  const f = make(); await f.ready(); let resultReads = 0; const resultTraps = { calls: 0 };\n  const hostile = { get then() { resultReads++; throw new Error('then inspection'); }, get valueOf() { resultReads++; throw new Error('coercion'); } };\n  const behaviors = [\n    ['true', () => true, true], ['false', () => false, false], ['truthy hostile', () => hostile, false],\n    ['proxy result', () => new Proxy({}, proxyTraps(resultTraps)), false],\n    ['ordinary function returns Promise', () => Promise.resolve(true), false],\n    ['throw', () => { throw new Error('typed callback error'); }, false],\n    ['true after denied results', () => true, true],\n  ];\n  for (const [name, behavior, expected] of behaviors) {\n    f.state.decide = behavior; const before = f.state.effects.sourceCallback;\n    assert.strictEqual(await f.guard(), expected, name);\n    assert.strictEqual(f.state.effects.sourceCallback, before + 1, name + ': exactly one callback');\n    assert.strictEqual(f.state.effects.grant, 1); assert.strictEqual(f.state.effects.nativeDispatch, 1);\n    assert.strictEqual(f.state.effects.execute, 0); assert.strictEqual(f.state.effects.collect, 0); assert.strictEqual(f.state.effects.finish, 0);\n  }\n  assert.strictEqual(resultReads, 0); assert.strictEqual(resultTraps.calls, 0);\n}));\n\ntest('NTA-07 reentry poisons outer attempt and later valid attempt recovers', { concurrency: false }, async () => withClock(async ({ make }) => {\n  const f = make(); await f.ready();\n  for (const differentRecord of [false, true]) {\n    let nested;\n    f.state.decide = record => { nested = f.rawGuard(differentRecord ? f.toolRecord() : record); return true; };\n    const before = f.state.effects.sourceCallback;\n    assert.strictEqual(await f.guard(), false); assert.strictEqual(nested, false);\n    assert.strictEqual(f.state.effects.sourceCallback, before + 1, 'nested attempt does not invoke captured callback');\n    f.state.decide = () => true;\n    assert.strictEqual(await f.guard(), true); assert.strictEqual(f.state.effects.sourceCallback, before + 2);\n  }\n}));\n\ntest('NTA-08 pre/post currentness, exact expiry, pending/ended and historical finish', { concurrency: false }, async () => withClock(async ({ make, clock }) => {\n  for (const mode of ['expiresAt', 'dead', 'revoke', 'control', 'policy']) {\n    const f = make(); await f.ready();\n    if (mode === 'expiresAt') clock.value = f.state.grantExpiresAt;\n    else if (mode === 'dead') f.state.alive = false;\n    else f.emitControl(mode);\n    await denied(f, f.toolRecord(), 'already invalid: ' + mode);\n  }\n  const mutations = [\n    ['revoke', f => f.emitControl()],\n    ['policy', f => { f.state.policy.version++; }],\n    ['native source', f => { f.state.facts.review.nativeSourceRef = f.ref('changed-source'); }],\n    ['pair metadata with same digest', f => { f.state.pair.association.createdAt++; f.state.pair.data.createdAt++; }],\n    ['entire input body', f => { f.state.pair.data.content += '\\n'; }],\n    ['auth epoch', f => { f.state.snap.task.authEpoch++; }],\n    ['control state', f => { f.state.snap.control = 'paused'; }],\n    ['expiry equality', f => { clock.value = f.state.grantExpiresAt; }],\n    ['dispose', f => f.installed.dispose()],\n  ];\n  for (const [name, mutate] of mutations) {\n    const f = make(); await f.ready();\n    f.state.decide = () => { mutate(f); return true; };\n    assert.strictEqual(await f.guard(), false, 'changed after callback: ' + name);\n    assert.strictEqual(f.state.effects.sourceCallback, 1, name);\n    assert.strictEqual(f.state.effects.grant, 1); assert.strictEqual(f.state.effects.execute, 0); assert.strictEqual(f.state.effects.collect, 0);\n  }\n  const carrier = make(); await carrier.ready();\n  carrier.state.decide = () => { carrier.state.carrierCurrent = false; return true; };\n  await assert.rejects(carrier.guard(), { code: 'SERVICE_DISPOSED' });\n  assert.strictEqual(carrier.state.decisions.at(-1), false); assert.strictEqual(carrier.state.effects.sourceCallback, 1);\n\n  const finishing = make({ purpose: 'audit_repair' }); await finishing.ready(); await finishing.capture();\n  assert.strictEqual(await finishing.guard(), true, 'fresh captured row before finish');\n  const before = finishing.state.effects.sourceCallback;\n  // Do not await the deliberately pending finish Task. Wait only for the typed\n  // native finish entry, then inspect denial.\n  finishing.state.finishTask = finishing.op('workerFinish', finishing.executionInput('finish'));\n  await Promise.race([finishing.state.finishStarted.promise, finishing.state.finishTask.then(() => { throw new Error('Premature finish return'); })]);\n  assert.strictEqual(finishing.state.effects.finish, 1);\n  await denied(finishing, finishing.toolRecord(), 'finish intent while native finish unknown');\n  const ended = await finishing.endFinish(); assert.strictEqual(ended.reservationHeld, false);\n  await denied(finishing, finishing.toolRecord(), 'ended row'); assert.strictEqual(finishing.state.effects.sourceCallback, before);\n\n  const historical = make(); await historical.ready(); await historical.capture();\n  const originalClaim = historical.state.captureBinding.claimRef, originalExecution = historical.state.captureBinding.executionRef;\n  historical.driftLatestArtifact(); await denied(historical, historical.toolRecord(), 'fresh tools after newer artifact');\n  historical.state.finishTask = historical.op('workerFinish', historical.executionInput('finish'));\n  await Promise.race([historical.state.finishStarted.promise, historical.state.finishTask.then(() => { throw new Error('Premature historical finish return'); })]);\n  assert.strictEqual(historical.state.finishInput.expectedTaskVersion, 2);\n  assert.strictEqual(historical.state.finishInput.claimRef, originalClaim); assert.strictEqual(historical.state.finishInput.executionRef, originalExecution);\n  assert.strictEqual(historical.state.captureBinding.artifactVersion, 1); assert.strictEqual(historical.state.captureBinding.semanticRevision, 1);\n  await historical.endFinish(); await denied(historical, historical.toolRecord(), 'historically finished original row');\n}));\n",
+  "testLineCount": 537,
+  "boundDesign": {
+    "path": "docs/evidence/NI3/native-tool-amendment-independent-design.md",
+    "sha256": "29c97459f54d81d8feff7dd933be1d595bb549b1b1d22604f47ee7d26601e9db",
+    "bytes": 22369
+  },
+  "boundDesignCompanion": {
+    "path": "docs/evidence/NI3/native-tool-amendment-independent-checks.json",
+    "sha256": "dc5bcdebdfadb7bf5bbf74ed1728409748d03f26798597597ee7cb85fa8aa2b6",
+    "bytes": 46974
+  },
+  "boundAmendment": {
+    "path": "docs/evidence/NI3/native-tool-source-api-amendment.md",
+    "sha256": "a3248cc1715f96e1ff9b8e86a79e7caa96ee8f19607f52ce8dfd32971534d8ce",
+    "bytes": 7191
+  },
+  "boundAmendmentCompanion": {
+    "path": "docs/evidence/NI3/native-tool-source-api-amendment.json",
+    "sha256": "aa58cd0f58aab788b9265f91dd61e18d0e94a6d88a5fce2e6a04164838ba15de",
+    "bytes": 72321
+  },
+  "candidate": {
+    "path": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+    "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+    "bytes": 52497
+  },
+  "historicalOriginal": {
+    "path": ".runtime/ni3-native-tools-amendment/original/installed-audit.mjs",
+    "sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+    "bytes": 49288
+  },
+  "directImports": [
+    "node:assert/strict",
+    "node:test",
+    "node:crypto",
+    "node:path",
+    "node:url",
+    "../src/installed-audit.mjs",
+    "../src/installed-invocation.mjs"
+  ],
+  "fullLocalImportClosure": [
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "imports": [
+        "node:path",
+        "node:util"
+      ],
+      "historicalOriginal": {
+        "path": "src/config.mjs",
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "bytes": 2918
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    },
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ],
+      "historicalOriginal": {
+        "path": "src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    },
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "bytes": 52497,
+      "imports": [
+        "node:util",
+        "./config.mjs",
+        "./runtime-security.mjs",
+        "./installed-worker-config.mjs",
+        "./context.mjs",
+        "./installed-invocation.mjs"
+      ],
+      "historicalOriginal": {
+        "path": "src/installed-audit.mjs",
+        "sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+        "bytes": 49288
+      },
+      "identicalToHistoricalOriginal": false,
+      "verifiedCopiedPin": true
+    },
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "imports": [
+        "node:async_hooks",
+        "./config.mjs"
+      ],
+      "historicalOriginal": {
+        "path": "src/installed-invocation.mjs",
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "bytes": 2341
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    },
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "imports": [
+        "node:path",
+        "node:fs",
+        "node:util",
+        "./config.mjs"
+      ],
+      "historicalOriginal": {
+        "path": "src/installed-worker-config.mjs",
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "bytes": 5018
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    },
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ],
+      "historicalOriginal": {
+        "path": "src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+        "bytes": 21450
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    },
+    {
+      "path": ".runtime/ni3-native-tools-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ],
+      "historicalOriginal": {
+        "path": "src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    }
+  ],
+  "resolvedCopiedFiles": [
+    ".runtime/ni3-native-tools-amendment/src/config.mjs",
+    ".runtime/ni3-native-tools-amendment/src/context.mjs",
+    ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+    ".runtime/ni3-native-tools-amendment/src/installed-invocation.mjs",
+    ".runtime/ni3-native-tools-amendment/src/installed-worker-config.mjs",
+    ".runtime/ni3-native-tools-amendment/src/ledger.mjs",
+    ".runtime/ni3-native-tools-amendment/src/runtime-security.mjs"
+  ],
+  "copiedLocalFileCount": 7,
+  "builtinImportUnion": [
+    "node:assert/strict",
+    "node:async_hooks",
+    "node:crypto",
+    "node:fs",
+    "node:os",
+    "node:path",
+    "node:sqlite",
+    "node:test",
+    "node:url",
+    "node:util"
+  ],
+  "builtinModulesSuppliedByTargetNodeRuntimeNotVerifiedHere": true,
+  "sharedPromotion": {
+    "rootReportedSharedSchema": 6,
+    "isolatedCopiedLedgerSchema": 5,
+    "isolatedLedgerPin": {
+      "path": ".runtime/ni3-native-tools-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ],
+      "historicalOriginal": {
+        "path": "src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+        "bytes": 21450
+      },
+      "identicalToHistoricalOriginal": true,
+      "verifiedCopiedPin": true
+    },
+    "sharedOriginal5PreservedByRootAt": "test/fixtures/schema5-core/",
+    "sharedSourceReadForRepinningInThisLease": false,
+    "mustNotRelabelCopiedClosureTo6": true
+  },
+  "independentGroups": [
+    {
+      "id": "NTA-01",
+      "title": "NTA-01 omission, captured false and unchanged disabled/carrier denial",
+      "line": 345,
+      "heldDesignCase": "NTA-01",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-02",
+      "title": "NTA-02 descriptor, presence, closed API and known function classes",
+      "line": 366,
+      "heldDesignCase": "NTA-02",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-03",
+      "title": "NTA-03 opaque exact agent and original input/array identities",
+      "line": 392,
+      "heldDesignCase": "NTA-03",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-04",
+      "title": "NTA-04 frozen ordinary record and truly empty schemas membrane",
+      "line": 409,
+      "heldDesignCase": "NTA-04",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-05",
+      "title": "NTA-05 exact claim in pending and recorded review/repair stages",
+      "line": 429,
+      "heldDesignCase": "NTA-05",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-06",
+      "title": "NTA-06 only literal synchronous true, with zero result inspection",
+      "line": 452,
+      "heldDesignCase": "NTA-06",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-07",
+      "title": "NTA-07 reentry poisons outer attempt and later valid attempt recovers",
+      "line": 472,
+      "heldDesignCase": "NTA-07",
+      "executionStatus": "NOT_EXECUTED"
+    },
+    {
+      "id": "NTA-08",
+      "title": "NTA-08 pre/post currentness, exact expiry, pending/ended and historical finish",
+      "line": 485,
+      "heldDesignCase": "NTA-08",
+      "executionStatus": "NOT_EXECUTED"
+    }
+  ],
+  "authoredGroupCount": 8,
+  "plannedDistinctDiscriminatorCount": 8,
+  "executedGroups": 0,
+  "passingGroups": 0,
+  "passingAssertions": 0,
+  "unreachableOrOmittedPlannedCases": [],
+  "reachabilityIsSourceConstructionNotExecutedProof": true,
+  "existingModuleOperationsUsed": [
+    "configureAudit",
+    "prepareAuditInput",
+    "planAuditAction",
+    "auditPreview",
+    "auditGrant",
+    "dispatchAudit",
+    "executeAudit",
+    "collectAuditResult",
+    "workerFinish"
+  ],
+  "nativeHooksUsed": [
+    "setupAgent",
+    "bindExecution",
+    "validateResult"
+  ],
+  "nativeHookReturnShapeRetained": [
+    "setupAgent",
+    "commitAgent",
+    "bindExecution",
+    "validateResult"
+  ],
+  "nativeClosureReturnShapeRetained": [
+    "dispatch",
+    "executeApprovedInput",
+    "query",
+    "sessionLink",
+    "collectAuditResult",
+    "finishExecution",
+    "dispose"
+  ],
+  "privateStateInjection": false,
+  "candidateOrProductSourceEdits": false,
+  "typedCallbackBackingRowsOnly": true,
+  "opaqueAgentProtocol": {
+    "registeredOnceThroughSetupHook": true,
+    "afterSetupThrowingIdGetterCycleAndSymbolState": true,
+    "callbackInputAgentSchemasIdentityPreserved": true,
+    "newGateLookalikeAndProxyDenialWithNoReadsOrTraps": true
+  },
+  "pendingRecordedProtocol": {
+    "pendingControlledNativeDispatchAfterSetupClaimBinding": true,
+    "recordedOnlyAfterModuleDispatchReturns": true,
+    "claimRequiredInBothStages": true,
+    "noPreclaimAdmitted": true,
+    "dishonestTypedReturnedClaimCannotMatchBothBindings": true,
+    "typedViewNotActualNativeAcceptance": true
+  },
+  "finishProtocol": {
+    "sourceLines": {
+      "captureBinding": 149,
+      "publishCapture": 160,
+      "captureOperation": 293,
+      "endFinish": 299,
+      "testGroup": 485
+    },
+    "operations": [
+      "executeAudit",
+      "collectAuditResult",
+      "workerFinish"
+    ],
+    "captureTag": "df.installed-audit.capture/v1",
+    "captureCommandRecipe": "canonicalDigest([tag,outer.commandRef,{binding,phaseInput}])",
+    "fullBindingIncludesOuterInput": true,
+    "freshCapturedCollectionStatus": "unknown",
+    "onlyCaptureReceiptNoSubmissionOrArtifactWrite": true,
+    "finishInputDenialBeforeAwaitCompletes": true,
+    "endingReceiptExactInputOriginalClaimReservationHeldFalse": true,
+    "historicalFinishUsesCurrentCASButRetainedOriginalCaptureScopeArtifactSemanticClaimExecution": true,
+    "freshToolsDenyAfterLatestArtifactDrift": true,
+    "actualNativeFinishPermissionNotProven": true
+  },
+  "controlledClock": {
+    "method": "Scoped Date.now replacement and finally restoration per top-level group",
+    "baseTime": 1700000000000,
+    "expiryComparisonCase": "exact equality",
+    "singleWorkerRequired": true,
+    "topLevelConcurrency": false,
+    "freshInstallerPerFixture": true,
+    "clockResetDoesNotReenterEarlierFixtureGuards": true,
+    "timersSleepsStarted": false,
+    "cleanupPreservesPrimaryErrorAndFailsLatentErrors": true
+  },
+  "plannedCommand": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+  "plannedWorkingDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "plannedRuntime": "Root-selected Mac Node22.22.2; not invoked/verified in this lane",
+  "commandRun": false,
+  "commandScheduled": false,
+  "plannedEffects": {
+    "copiedDefinitionImports": true,
+    "nodeSqliteDefinitionsOnlyNoDBConstructor": true,
+    "ownedDirectoryDescriptorReads": [
+      ".runtime/ni3-native-tools-amendment"
+    ],
+    "persistencePathDeclaredOnly": ".runtime/ni3-native-tools-amendment/df-sessions-independent-typed",
+    "noDirectoryCreationOrProfileUse": true,
+    "inMemoryTypedRowsSnapshotsReceiptsDeferredPromisesCounters": true,
+    "hashesClonesAssertions": true,
+    "clockReplacementRestoration": true,
+    "typedDisposers": true,
+    "actualNativeProviderDatabaseNetworkEffects": false
+  },
+  "firstFailureProtocol": {
+    "retainFirstAssertionOrRuntimeFailure": true,
+    "cleanupCannotReplacePrimaryFailure": true,
+    "latentTaskFailureFailsOtherwiseSuccessfulGroup": true,
+    "cleanupEmitsNoSyntheticReceiptGrant": true,
+    "runtimePolicyDenialStopsWithoutFallback": true,
+    "noAuthorFixtureOrResultsUsedForRepairs": true,
+    "rootSoleGitWriter": true
+  },
+  "independence": {
+    "authorFixtureRead": false,
+    "authorExecutableResultsRead": false,
+    "authorCaseMatrixReadForOracle": false,
+    "heldSemanticAPIDesignAndCopiedSourceUsed": true
+  },
+  "retainedFamilies": {
+    "originalIds": [
+      "N3-01",
+      "N3-02",
+      "N3-03",
+      "N3-04",
+      "N3-05",
+      "N3-06",
+      "N3-07",
+      "N3-08",
+      "N3-09",
+      "N3-10",
+      "N3-11",
+      "N3-12",
+      "N3-13",
+      "N3-14",
+      "N3-15",
+      "N3-16",
+      "N3-17",
+      "N3-18",
+      "N3-19",
+      "N3-20"
+    ],
+    "originalCount": 20,
+    "additiveIds": [
+      "N3A-01",
+      "N3A-02",
+      "N3A-03",
+      "N3A-04",
+      "N3A-05",
+      "N3A-06",
+      "N3A-07",
+      "N3A-08",
+      "N3A-09",
+      "N3A-10",
+      "N3A-11",
+      "N3A-12",
+      "N3A-13",
+      "N3A-14",
+      "N3A-15",
+      "N3A-16",
+      "N3A-17",
+      "N3A-18",
+      "N3A-19",
+      "N3A-20"
+    ],
+    "additiveCount": 20,
+    "originalSource": {
+      "path": "docs/evidence/NI3/test-design.md",
+      "sha256": "f3e4f79e761310ed98f568bf14843c01448fcba4b22cabfa543acfa7a94d354f",
+      "bytes": 26335
+    },
+    "additiveSource": {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-design.md",
+      "sha256": "eb80e14127bd2f59e2eee4820889fd45000432acf6cd3bdb3d6b481b9e2f730d",
+      "bytes": 48106
+    },
+    "inheritedExactChecks": {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+      "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+      "bytes": 165459
+    },
+    "removed": [],
+    "replaced": [],
+    "priorDispositionUnchanged": true,
+    "narrowNewContributionOnly": [
+      "N3A-02",
+      "N3A-06",
+      "N3A-11",
+      "N3A-12",
+      "N3A-19"
+    ]
+  },
+  "retainedCriteria": {
+    "allRetainedIds": [
+      "BUB001-01",
+      "BUB001-02",
+      "BUB001-03",
+      "BUB001-04",
+      "BUB001-05",
+      "BUB002-01",
+      "BUB002-02",
+      "BUB002-03",
+      "BUB002-04",
+      "BUB002-05",
+      "BUB003-01",
+      "BUB003-02",
+      "BUB003-03",
+      "BUB003-04",
+      "BUB003-05",
+      "BUB004-01",
+      "BUB004-02",
+      "BUB004-03",
+      "BUB004-04",
+      "BUB004-05",
+      "BUB005-01",
+      "BUB005-02",
+      "BUB005-03",
+      "BUB005-04",
+      "BUB005-05",
+      "BUB006-01",
+      "BUB006-02",
+      "BUB006-03",
+      "BUB006-04",
+      "BUB006-05",
+      "BUB007-01",
+      "BUB007-02",
+      "BUB007-03",
+      "BUB007-04",
+      "BUB007-05",
+      "BUB007-06",
+      "BUB008-01",
+      "BUB008-02",
+      "BUB008-03",
+      "BUB008-04",
+      "BUB008-05",
+      "BUB009-01",
+      "BUB009-02",
+      "BUB009-03",
+      "BUB009-04",
+      "BUB009-05",
+      "BUB010-01",
+      "BUB010-02",
+      "BUB010-03",
+      "BUB010-04",
+      "BUB010-05",
+      "BUB011-01",
+      "BUB011-02",
+      "BUB011-03",
+      "BUB011-04",
+      "BUB011-05",
+      "BUB012-01",
+      "BUB012-02",
+      "BUB012-03",
+      "BUB012-04",
+      "BUB012-05",
+      "BUB013-01",
+      "BUB013-02",
+      "BUB013-03",
+      "BUB013-04",
+      "BUB013-05",
+      "BUB014-01",
+      "BUB014-02",
+      "BUB014-03",
+      "BUB014-04",
+      "BUB014-05",
+      "BUB015-01",
+      "BUB015-02",
+      "BUB015-03",
+      "BUB015-04",
+      "BUB015-05",
+      "BUB016-01",
+      "BUB016-02",
+      "BUB016-03",
+      "BUB016-04",
+      "BUB016-05",
+      "BUB016-06",
+      "DF010-C01",
+      "DF010-C02",
+      "DF010-C03",
+      "DF010-C04",
+      "DF010-C05"
+    ],
+    "originalBUBCount": 82,
+    "currentDF010Count": 5,
+    "total": 87,
+    "relevantNI3Count": 45,
+    "otherCount": 42,
+    "acceptedByThisLane": [],
+    "acceptedCount": 0,
+    "removed": [],
+    "priorIndividualContributionResidualDispositionUnchanged": true,
+    "inheritedIndividualMapping": {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+      "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+      "field": "retainedCriteria.individuallyMapped"
+    },
+    "traceability": {
+      "path": "docs/acceptance-traceability.md",
+      "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64",
+      "bytes": 37983,
+      "expected": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64",
+      "matches": true
+    },
+    "approvedChineseSource": {
+      "path": "docs/reference/approved-ticket-review.zh.txt",
+      "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+      "bytes": 45578,
+      "expected": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+      "matches": true
+    }
+  },
+  "acceptedCount": 0,
+  "remainingPrerequisites": [
+    {
+      "id": "AMENDMENT-ROOT-FREEZE",
+      "status": "HELD",
+      "requirement": "Root literal amendment/API/source/test/minimal diff/full closure review and separately authorized fixture lease; this reviewer has not read author new test or executable results."
+    },
+    {
+      "id": "ACTUAL-PRIVATE-NATIVE-TOOL-GUARD",
+      "status": "FUTURE_UNIMPLEMENTED",
+      "requirement": "Authenticate original prepared prepublication agent/context/factory ownership and real durable claim at pending and recorded stages; preserve actual class/hash/empty schemas/restrict/monotonic veto/current permission/one-use gates; deny omission/false/stale source."
+    },
+    {
+      "id": "NC-B01",
+      "status": "ORIGINAL_PRODUCT_STILL_BLOCKED",
+      "requirement": "Distinct eighteenth callback amendment may supply a new private seam after freezing; original 17-field installer false remains denial. No original-source closure or override is implied by this design or a typed pass."
+    },
+    {
+      "id": "NC-B02",
+      "status": "RETAINED",
+      "requirement": "Explicit source-held minimal NativeAdapter permission to full core permission mapping including taskVersion before original preparation permission call."
+    },
+    {
+      "id": "NC-B03",
+      "status": "RETAINED",
+      "requirement": "Resolve query no-phase-write promise against unchanged WorkerManager query observation behavior."
+    },
+    {
+      "id": "COLD-NATIVE-AUDIT-SCHEMA7",
+      "status": "SEPARATE",
+      "requirement": "Cold/native audit repair capability extension separate from schema5 isolated candidate and schema6 retention promotion."
+    },
+    {
+      "id": "REAL-COMPOSITION-EVIDENCE",
+      "status": "HELD",
+      "requirement": "Whole authenticated input/wire around awaits, actual source-owned one-manager opaque roles and persisted usage/receipts/currentness/repair/revoke/cancel/unknown/cold/full-quit proof; no T callback substitutes."
+    }
+  ],
+  "CODEVerdict": null,
+  "twiceBlockedCODEPolicy": "Retained; no retry, replacement or verdict.",
+  "sourceChecks": {
+    "copiedSevenPinsMatch": true,
+    "heldDesignPinsMatch": true,
+    "eightUniqueSerialGroupDeclarations": true,
+    "allStaticLocalImportsResolveInsideExactSevenCopiedFiles": true,
+    "completeBuiltinUnionCount": 10,
+    "literalTestSourceMatchesPinnedFile": true,
+    "fullManifestPreparedForRootRead": true,
+    "noJavaScriptSyntaxValidationClaim": true
+  },
+  "scopeCounters": {
+    "fixtureSourceAuthorship": 1,
+    "newOwnedEvidenceFiles": 2,
+    "productSourceEdits": 0,
+    "candidateSourceEdits": 0,
+    "otherTestSourceEdits": 0,
+    "nodeInvocations": 0,
+    "importsExecuted": 0,
+    "syntaxChecks": 0,
+    "testsExecuted": 0,
+    "databaseActions": 0,
+    "nativeProfileListenerProviderModelToolActions": 0,
+    "accountsCredentialsActions": 0,
+    "networkBrowserCLIHTTPActions": 0,
+    "gitActions": 0,
+    "CODEActions": 0,
+    "authorFixtureReads": 0,
+    "authorExecutableResultReads": 0
+  },
+  "nextGate": "Root read complete literal independent fixture + both source-hold docs + exact7module/builtin closure/effects/command; separately authorize finite ordinary ISTQB T execution before any Node/import/syntax/test action.",
+  "localClosurePinDigest": {
+    "algorithm": "sha256 of UTF-8 canonicalPinList literal",
+    "sha256": "432aeadf526932c088692404bb22c146c8d8b23295c251afb0dd9cd254304bc1",
+    "canonicalPinList": "[{\"bytes\":2918,\"path\":\".runtime/ni3-native-tools-amendment/src/config.mjs\",\"sha256\":\"e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8\"},{\"bytes\":24196,\"path\":\".runtime/ni3-native-tools-amendment/src/context.mjs\",\"sha256\":\"6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700\"},{\"bytes\":52497,\"path\":\".runtime/ni3-native-tools-amendment/src/installed-audit.mjs\",\"sha256\":\"24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f\"},{\"bytes\":2341,\"path\":\".runtime/ni3-native-tools-amendment/src/installed-invocation.mjs\",\"sha256\":\"5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484\"},{\"bytes\":5018,\"path\":\".runtime/ni3-native-tools-amendment/src/installed-worker-config.mjs\",\"sha256\":\"8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13\"},{\"bytes\":21450,\"path\":\".runtime/ni3-native-tools-amendment/src/ledger.mjs\",\"sha256\":\"f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44\"},{\"bytes\":5323,\"path\":\".runtime/ni3-native-tools-amendment/src/runtime-security.mjs\",\"sha256\":\"66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820\"}]",
+    "coversSevenCopiedFilesOnly": true,
+    "builtinImplementationHashesNotClaimed": true
+  },
+  "separateCompositionSeamsReportedByRoot": {
+    "toolUnitTargetUnchanged": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+    "rootReportedUnfrozenPlanDigestAmendmentPath": ".runtime/ni3-native-plan-digest-amendment",
+    "newSeamSourceOrFixturesRead": false,
+    "newSeamAppliedToThisUnit": false,
+    "downstreamActualPermissionWitnessAndOriginalManagerScopedActionDigestNeedSeparateFrozenBinding": true
+  }
+}

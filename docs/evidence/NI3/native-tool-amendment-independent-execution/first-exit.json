@@ -1,0 +1,14 @@
+{
+  "command": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+  "toolResult": {
+    "command": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs",
+    "chunk_id": "aad5e0",
+    "wall_time_seconds": 0.375015884,
+    "exit_code": 0,
+    "original_token_count": 0,
+    "output": ""
+  },
+  "approvedInvocationCount": 1,
+  "rerunCount": 0,
+  "captureCommand": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-tools-amendment/test/native-tool-amendment-independent.test.mjs > docs/evidence/NI3/native-tool-amendment-independent-execution/first-stdout.txt 2> docs/evidence/NI3/native-tool-amendment-independent-execution/first-stderr.txt"
+}
