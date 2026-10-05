@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { DSH_WEB_RUNTIME_ROOT, requireHost, resolveHostSource } from './host-probe.mjs';
 import { WorkerError, workerFail, workerDigest, workerRef, workerInteger, workerRecord } from './environment.mjs';
-import { normalizedSpec } from './runtime-security.mjs';
+import { normalizedSpec, canonical } from './runtime-security.mjs';
+import { types } from 'node:util';
+import { AUDIT_EXECUTION_FIELDS, approvedInputSource } from './audit-input-pair.mjs';
 
 const freezeJson = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freezeJson); Object.freeze(value); } return value; };
 const scopedService = (ctx, name) => ctx.reflect.get(name);
@@ -52,10 +54,12 @@ export function probeWorkerHost(ctx) {
 // Tickets and owned AgentHandles never cross the model-facing facade. Public
 // registry lookup supplies factual visibility, never a new disposal capability.
 export class NativeAdapter {
-  #ctx; #hooks; #env; #permission; #messageAdmission; #toolGuard; #resolve; #tickets = new WeakMap(); #entries = new Set(); #active = true;
-  constructor(ctx, { environments, permission = () => false, messageAdmission = () => false, toolGuard, resolveSession, nativeHooks } = {}) {
+  #ctx; #hooks; #claimBinding; #claimBindingRunning = false; #claimBindingReentered = false; #env; #permission; #messageAdmission; #toolGuard; #resolve; #tickets = new WeakMap(); #entries = new Set(); #active = true;
+  constructor(ctx, { environments, permission = () => false, messageAdmission = () => false, toolGuard, resolveSession, nativeHooks, claimBinding } = {}) {
     probeWorkerHost(ctx);
     if (!environments || !['bind', 'inspect', 'assertCurrent'].every(key => typeof environments[key] === 'function') || typeof permission !== 'function' || typeof messageAdmission !== 'function' || typeof toolGuard !== 'function' || resolveSession !== undefined && typeof resolveSession !== 'function') workerFail('WORKER_CONFIG');
+    if (claimBinding !== undefined && (typeof claimBinding !== 'function' || types.isProxy(claimBinding) || types.isAsyncFunction(claimBinding) || types.isGeneratorFunction(claimBinding))) workerFail('WORKER_CONFIG');
+    this.#claimBinding = claimBinding;
     if (nativeHooks !== undefined) {
       workerRecord(nativeHooks, ['setupAgent', 'commitAgent', 'bindExecution', 'validateResult']);
       if (Object.values(nativeHooks).some(value => typeof value !== 'function')) workerFail('WORKER_CONFIG');
@@ -69,7 +73,7 @@ export class NativeAdapter {
     ctx.on('agent/assistant-stream', ({ agent, frame }) => this.#stream(agent, frame));
     ctx.on('session/event', (session, event) => {
       for (const entry of this.#entries) if (entry.handle?.agent.session === session && Number.isSafeInteger(event.seq)) {
-        if (entry.execution && event.type === 'user/message' && event.data.id === entry.execution.executionRef && event.data.source?.kind === 'df-context' && event.data.content?.length === 1 && event.data.content[0].type === 'text' && typeof event.data.content[0].text === 'string' && createHash('sha256').update(event.data.content[0].text).digest('hex') === entry.execution.dataDigest) entry.executionInputSeq = event.seq;
+        if (entry.execution && event.type === 'user/message' && event.data.id === entry.execution.executionRef && event.data.source?.kind === approvedInputSource(entry.execution).kind && event.data.source?.form === 'local' && event.data.content?.length === 1 && event.data.content[0].type === 'text' && typeof event.data.content[0].text === 'string' && createHash('sha256').update(event.data.content[0].text).digest('hex') === (entry.execution.inputDigest ?? entry.execution.dataDigest)) entry.executionInputSeq = event.seq;
         if (entry.execution && Number.isSafeInteger(entry.executionInputSeq) && event.seq > entry.executionInputSeq && event.type === 'assistant/message') {
           const blocks = event.data?.message?.content;
           if (Array.isArray(blocks) && blocks.length > 0 && blocks.length <= 128 && blocks.every(block => block.type === 'text' && typeof block.text === 'string' && block.text.isWellFormed())) {
@@ -92,11 +96,24 @@ export class NativeAdapter {
     if (entry.claim && originalClaim) { try { if (entry.assertClaim() !== true) workerFail('WORKER_CLAIM_STALE'); } catch { workerFail('WORKER_CLAIM_STALE'); } }
   }
   bindClaim(ticket, claim, assertCurrent) {
+    if (this.#claimBindingRunning) { this.#claimBindingReentered = true; workerFail('WORKER_MAPPING_MISMATCH'); }
     const entry = this.#get(ticket);
     workerRecord(claim, ['claimRef', 'reservationRef', 'actionRef', 'actionDigest', 'generationRef', 'sessionRef', 'task'], ['claimRef', 'reservationRef', 'actionDigest', 'generationRef']);
     if (entry.claim || entry.state !== 'prepared' || typeof assertCurrent !== 'function' || claim.generationRef !== entry.generationRef || claim.actionRef !== entry.spec.actionRef || claim.actionDigest !== entry.actionDigest || claim.task && (claim.task.taskRef !== entry.taskRef || claim.task.workspaceRef !== entry.workspaceRef || claim.task.ownerRef !== entry.ownerRef)) workerFail('WORKER_MAPPING_MISMATCH');
     entry.claim = Object.freeze({ claimRef: workerRef(claim.claimRef), reservationRef: workerRef(claim.reservationRef), actionDigest: workerRef(claim.actionDigest), generationRef: entry.generationRef });
     entry.assertClaim = assertCurrent;
+    if (this.#claimBinding) {
+      this.#claimBindingRunning = true; this.#claimBindingReentered = false;
+      try {
+        // Original core currentness precedes the source transition. A committed
+        // refused claim stays held; there is no native creation or release.
+        if (assertCurrent() !== true) workerFail('WORKER_CLAIM_STALE');
+        const out = this.#claimBinding(Object.freeze({ taskRef: entry.taskRef, actionRef: entry.spec.actionRef, actionDigest: entry.actionDigest, claimRef: entry.claim.claimRef, reservationRef: entry.claim.reservationRef, generationRef: entry.generationRef, sessionRef: entry.sessionRef, spec: entry.spec }));
+        if (types.isPromise(out)) out.catch(() => {});
+        if (out !== true || this.#claimBindingReentered) workerFail('WORKER_MAPPING_MISMATCH');
+      } catch { workerFail('WORKER_MAPPING_MISMATCH'); }
+      finally { this.#claimBindingRunning = false; }
+    }
   }
   #tools(entry, agent) {
     try {
@@ -112,7 +129,7 @@ export class NativeAdapter {
     this.#alive();
     workerRef(actionDigest);
     try { spec = normalizedSpec(spec); } catch { workerFail('WORKER_INVALID'); }
-    const environment = this.#env.bind(spec, task);
+    const environment = this.#env.bind(spec, task, actionDigest);
     if (this.#entries.size >= 1000) workerFail('WORKER_CAPACITY');
     const entry = { environment, spec: freezeJson(structuredClone(spec)), actionDigest, taskRef: workerRef(task.taskRef), workspaceRef: task.workspaceRef, ownerRef: task.ownerRef, generationRef: workerRef(spec.executor.generationRef), state: 'prepared', handle: undefined, cursor: 0, events: new Map(), listeners: new Set(), stream: { revision: 0, count: 0, state: 'unobserved' } };
     this.#permit(entry);
@@ -265,12 +282,23 @@ export class NativeAdapter {
   }
   create(ticket) { return this.#start(ticket, 'create'); }
   resume(ticket) { return this.#start(ticket, 'resume'); }
-  async executeContext(ticket, execution, context, authorizeDispatch) {
+  executeContext(ticket, execution, context, authorizeDispatch) { return this.#executeApprovedInput(ticket, execution, context, authorizeDispatch, false); }
+  executeAuditInput(ticket, execution, body, authorizeDispatch) { return this.#executeApprovedInput(ticket, execution, body, authorizeDispatch, true); }
+  async #executeApprovedInput(ticket, execution, context, authorizeDispatch, audit) {
     const entry = this.#get(ticket);
-    workerRecord(execution, ['executionRef', 'taskRef', 'claimRef', 'generationRef', 'contextRecordRef', 'actionDigest', 'dataDigest']);
-    for (const value of Object.values(execution)) workerRef(value);
+    workerRecord(execution, audit ? AUDIT_EXECUTION_FIELDS : ['executionRef', 'taskRef', 'claimRef', 'generationRef', 'contextRecordRef', 'actionDigest', 'dataDigest']);
+    for (const [key, value] of Object.entries(execution)) {
+      if (key === 'semanticRevision') workerInteger(value, 1);
+      else if (key !== 'purpose') workerRef(value);
+    }
     workerRecord(context, ['recordRef', 'kind', 'content', 'digest', 'byteLength']);
-    if (!entry.claim || execution.taskRef !== entry.taskRef || execution.claimRef !== entry.claim.claimRef || execution.generationRef !== entry.generationRef || execution.actionDigest !== entry.actionDigest || execution.contextRecordRef !== context.recordRef || execution.dataDigest !== entry.spec.dataDigest || context.digest !== execution.dataDigest || context.kind !== 'context' || typeof context.content !== 'string' || !context.content.isWellFormed() || Buffer.byteLength(context.content) !== context.byteLength || context.byteLength > 65536 || createHash('sha256').update(context.content).digest('hex') !== execution.dataDigest || typeof authorizeDispatch !== 'function') workerFail('WORKER_CONTEXT_INVALID');
+    const inputDigest = audit ? execution.inputDigest : execution.dataDigest;
+    const recordRef = audit ? execution.inputRecordRef : execution.contextRecordRef;
+    if (!entry.claim || execution.taskRef !== entry.taskRef || execution.claimRef !== entry.claim.claimRef || execution.generationRef !== entry.generationRef || execution.actionDigest !== entry.actionDigest || recordRef !== context.recordRef || execution.dataDigest !== entry.spec.dataDigest || context.digest !== inputDigest || context.kind !== 'context' || typeof context.content !== 'string' || !context.content.isWellFormed() || Buffer.byteLength(context.content) !== context.byteLength || context.byteLength > 65536 || createHash('sha256').update(context.content).digest('hex') !== inputDigest || typeof authorizeDispatch !== 'function') workerFail('WORKER_CONTEXT_INVALID');
+    if (audit) {
+      const e = entry.spec.executionInput;
+      if (!e || execution.actionRef !== entry.spec.actionRef || execution.sessionRef !== entry.sessionRef || execution.inputRecordRef !== e.recordRef || execution.inputDigest !== e.digest || execution.auditRef !== e.auditRef || execution.bindingDigest !== e.bindingDigest || execution.materialDigest !== e.materialDigest || execution.purpose !== e.purpose || !['audit_review', 'audit_repair'].includes(execution.purpose)) workerFail('WORKER_CONTEXT_INVALID');
+    } else if (entry.spec.executionInput) workerFail('WORKER_CONTEXT_INVALID');
     const binding = Object.freeze({ ...execution }), body = Object.freeze({ ...context });
     if (entry.execution) workerFail('WORKER_EXECUTION_ALREADY_SUBMITTED');
     const idle = () => {
@@ -291,11 +319,11 @@ export class NativeAdapter {
       if (this.#hooks && this.#hooks.bindExecution(agent, binding, body) !== true) workerFail('WORKER_REQUEST_DENIED');
       // The durable consume is the linearization point. No await, fallback or
       // second send separates it from this exact owned public native wakeup.
-      agent.send({ id: binding.executionRef, role: 'user', content: [{ type: 'text', text: body.content }], source: { kind: 'df-context', form: 'local' } }, 'next-turn', true);
+      agent.send({ id: binding.executionRef, role: 'user', content: [{ type: 'text', text: body.content }], source: approvedInputSource(binding) }, 'next-turn', true);
       await agent.whenIdle();
       this.#alive();
       const committed = entry.stream.state === 'committed' && entry.stream.revision > previousRevision && Number.isSafeInteger(entry.executionInputSeq) && entry.stream.cursor > entry.executionInputSeq;
-      if (committed && entry.stream.eventType === 'assistant/message' && entry.resultCandidate?.cursor === entry.stream.cursor) entry.committedResult = Object.freeze({ ...entry.resultCandidate, ...binding, sessionRef: entry.sessionRef });
+      if (committed && entry.stream.eventType === 'assistant/message' && entry.resultCandidate?.cursor === entry.stream.cursor) entry.committedResult = Object.freeze({ ...entry.resultCandidate, ...binding, sessionRef: entry.sessionRef, ...(audit ? { inputCursor: entry.executionInputSeq } : {}) });
       return Object.freeze({ executionRef: binding.executionRef, state: committed ? 'committed' : 'unknown', worker: this.query(ticket), ...(committed ? { result: Object.freeze({ cursor: entry.stream.cursor, eventType: entry.stream.eventType, evidenceRef: workerDigest('context-result', binding.executionRef, entry.stream.cursor, entry.stream.eventType) }) } : {}) });
     } catch (error) { if (error instanceof WorkerError) throw error; workerFail('WORKER_EXECUTION_UNKNOWN'); }
   }
@@ -313,7 +341,9 @@ export class NativeAdapter {
     catch { workerFail('WORKER_RESULT_UNAVAILABLE'); }
     this.#get(ticket);
     if (entry.committedResult !== result || scopedService(this.#ctx, 'agents').get(entry.id) !== entry.handle.agent || scopedService(this.#ctx, 'sessions').get(entry.id) !== entry.handle.agent.session) workerFail('WORKER_RESULT_UNAVAILABLE');
-    workerRecord(facts, ['usageUnits', 'evidenceRef', 'resultDigest']);
+    const audit = Boolean(entry.spec.executionInput);
+    workerRecord(facts, audit ? ['usageUnits', 'evidenceRef', 'resultDigest', 'inputCursor'] : ['usageUnits', 'evidenceRef', 'resultDigest']);
+    if (audit && (workerInteger(facts.inputCursor) !== result.inputCursor || facts.inputCursor >= result.cursor)) workerFail('WORKER_RESULT_UNAVAILABLE');
     workerInteger(facts.usageUnits, 0, 100000000); workerRef(facts.evidenceRef); workerRef(facts.resultDigest);
     if (facts.resultDigest !== result.digest || facts.usageUnits > entry.spec.charges.usageUnits) workerFail('WORKER_RESULT_UNAVAILABLE');
     entry.validatedResult = Object.freeze({ ...facts, executionRef });

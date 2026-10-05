@@ -1,0 +1,38 @@
+[
+  {
+    "path": "baseline-manifest.json",
+    "sha256": "8082ce19eaf8685bcd54698577db51bec3dd318ad4634b3d4f64db17c5d6e046"
+  },
+  {
+    "path": "execution-closure.json",
+    "sha256": "592c7f2c7f9f1db33b41eb331a00679056648a0b140d3239ac1b18cab49a6a4b"
+  },
+  {
+    "path": "literal-diffs.patch",
+    "sha256": "54b6c9db90381b523a0e958d3f778fec65a2ba7c677b3f1694089007e34982b3"
+  },
+  {
+    "path": "native-composition-author-source-hold.json",
+    "sha256": "222633f8d7ecc8ab969ae294c3420a884e01f73178582be5edf9af70992401f2"
+  },
+  {
+    "path": "native-composition-author-source-hold.md",
+    "sha256": "de9af1f47458a22fdb94c71a8a7d2e54889da7bbad39cc14da3a2f725e4e48f9"
+  },
+  {
+    "path": "source-manifest.json",
+    "sha256": "c31a75b6abd9a1a433645b5491df7fe305069dce693f0c9a09f63f3d52f03b22"
+  },
+  {
+    "path": "src/native-adapter.mjs",
+    "sha256": "40e689aaa84593d01dee41078df8fb23fb06d14646d0a637082d77aa64291001"
+  },
+  {
+    "path": "src/native-contributions.mjs",
+    "sha256": "f04cb1a6554454e00e6ae712d2682a7ae294fd3cc5988b00b2282b7fef623241"
+  },
+  {
+    "path": "test/native-composition.test.mjs",
+    "sha256": "a2b7ea5c486cda56dd595882851969d30688fdd668f5bbed57ae70b56eef4b92"
+  }
+]

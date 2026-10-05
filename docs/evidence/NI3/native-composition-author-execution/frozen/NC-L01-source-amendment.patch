@@ -1,0 +1,84 @@
+--- .runtime/ni3-native-composition/history/NC-L01-before/src/native-contributions.mjs
++++ .runtime/ni3-native-composition/history/NC-D01-before/src/native-contributions.mjs
+@@ -53,11 +53,22 @@
+     canonical(record); exact(record, fullFields);
+     for (const k of fullFields.filter(k => !['spec', 'taskVersion', 'authEpoch'].includes(k))) ref(record[k]);
+     integer(record.taskVersion, 1); integer(record.authEpoch);
+-    const spec = normalizedSpec(record.spec), row = this.#row(record.taskRef, spec.executor.generationRef);
++    const spec = normalizedSpec(record.spec);
++    this.#current();
++    const row = this.#rows.get(`${record.taskRef}:${spec.executor.generationRef}`);
++    // The authentic audit environment assertion reads the public store. This
++    // locked route must not enter #row, environment assertions or any native
++    // hook. Only retained source-private origin and synchronous full matching
++    // may run here; ordinary minimal/bind/claim checks still use #row outside.
++    if (!row || this.#select(row.spec, record.taskRef) !== row.contribution) deny();
+     if (record.ownerRef !== row.ownerRef || record.workspaceRef !== row.workspaceRef || record.actionRef !== row.spec.actionRef || record.actionDigest !== row.actionDigest || !same(spec, row.spec)) deny();
+     // This matcher is the source's real full denial. No fallback selection,
+     // private mapping or successful native permission can override false.
+-    if (row.contribution.matchesFull(record) !== true) deny();
++    const witness = Object.freeze({ environment: row.environment, sourceRef: row.sourceRef });
++    // Root authenticates this exact opaque token/current source and then the
++    // unchanged original full matcher. Neither refs nor a native boolean are
++    // a substitute. These source closures must perform no public transaction.
++    if (row.contribution.matchesFull(record, witness) !== true) deny();
+     this.#current(); return true;
+   }
+   hostPermission = record => {
+--- .runtime/ni3-native-composition/history/NC-L01-before/test/native-composition.test.mjs
++++ .runtime/ni3-native-composition/history/NC-D01-before/test/native-composition.test.mjs
+@@ -63,6 +63,54 @@
+   const denied = routerFixture(f, { denyFull: true }); denied.router.worker.environments.bind(f.spec, f.task);
+   assert.equal(denied.router.worker.permission(denied.minimal), false);
+   assert.throws(() => routerFixture(f, { overlap: true }).router.worker.environments.bind(f.spec, f.task));
++});
++
++test('NC1-L01: locked full uses the source-private token witness, never transactionful environment currentness', () => {
++  // The lock marker is an interface discriminator, not an actual encrypted
++  // ledger/public-host oracle. Root must hold the real transaction-free source
++  // closures independently; the original audit assertion remains transactionful.
++  for (const mode of ['valid', 'missing', 'mismatched', 'withdrawn', 'full-false', 'full-throw', 'full-nontrue', 'full-reentry']) {
++    const f = auditFixture(), sourceRef = hash('locked-original-source'), originalToken = Object.freeze({}), witnesses = new WeakMap();
++    const calls = { environment: 0, transactionAttempts: 0, readTask: 0, claim: 0, hooks: 0, full: 0 };
++    let locked = false, sourceAvailable = true;
++    const full = Object.freeze({ ownerRef: f.task.ownerRef, workspaceRef: f.task.workspaceRef, taskRef: f.task.taskRef, actionRef: f.spec.actionRef, actionDigest: canonicalDigest(f.spec), taskVersion: 3, authEpoch: 1, spec: f.spec });
++    const router = new NativeContributions({
++      assertOwnerCurrent: () => true,
++      readCurrentTask: () => { calls.readTask++; if (locked) throw Error('public-task-read-under-lock'); return f.task; },
++      verifyClaimBinding: () => { calls.claim++; if (locked) throw Error('claim-read-under-lock'); return true; },
++    });
++    router.register({
++      matchesSpec: (spec, taskRef) => sourceAvailable && taskRef === f.task.taskRef && canonical(spec) === canonical(f.spec),
++      matchesFull: (actual, witness) => {
++        calls.full++; assert.deepEqual(actual, full);
++        if (!witness || !Object.isFrozen(witness) || Object.keys(witness).sort().join(',') !== 'environment,sourceRef' || witness.environment !== originalToken || witnesses.get(witness.environment) !== witness.sourceRef) return false;
++        if (mode === 'full-false') return false;
++        if (mode === 'full-throw') throw Error('real-full-denial');
++        if (mode === 'full-nontrue') return 1;
++        if (mode === 'full-reentry') { assert.equal(router.hostPermission(actual), false); return true; }
++        return true;
++      },
++      environments: {
++        bind: () => { witnesses.set(originalToken, sourceRef); return originalToken; },
++        inspect: (_, callback) => callback({}),
++        assertCurrent: token => { calls.environment++; assert.equal(token, originalToken); if (locked) { calls.transactionAttempts++; throw Error('ordinary-audit-snapshot-under-lock'); } return sourceRef; },
++      },
++      toolGuard: () => false,
++      nativeHooks: { setupAgent: () => { calls.hooks++; }, commitAgent: () => { calls.hooks++; return true; }, bindExecution: () => { calls.hooks++; return true; }, validateResult: () => { calls.hooks++; return true; } },
++    });
++    const token = router.worker.environments.bind(f.spec, f.task);
++    assert.equal(calls.environment, 1);
++    if (mode === 'missing') witnesses.delete(originalToken);
++    if (mode === 'mismatched') witnesses.set(originalToken, hash('different-source'));
++    if (mode === 'withdrawn') sourceAvailable = false;
++    locked = true;
++    assert.equal(router.hostPermission(full), mode === 'valid');
++    assert.equal(calls.environment, 1); assert.equal(calls.transactionAttempts, 0); assert.equal(calls.readTask, 0); assert.equal(calls.claim, 0); assert.equal(calls.hooks, 0);
++    // The ordinary source/environment path still performs its original check.
++    if (mode === 'valid') { assert.throws(() => router.worker.environments.assertCurrent(token), /ordinary-audit-snapshot-under-lock/); assert.equal(calls.transactionAttempts, 1); }
++    const { taskVersion: ignored, ...withoutVersion } = full;
++    assert.equal(router.hostPermission(withoutVersion), false);
++  }
+ });
+ 
+ test('NC3: distinct artifact/input digests; whole pair drift at prepare and grant; unsafe callback pairs', async () => {

@@ -1,0 +1,11 @@
+[
+  "/opt/homebrew/opt/node@22/bin/node --check src/approval-preview.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --check src/worker.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --check src/native-adapter.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --check src/audit-input-pair.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --check src/native-contributions.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --check test/native-composition.test.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --test test/native-composition.test.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --test test/approval-preview.test.mjs",
+  "/opt/homebrew/opt/node@22/bin/node --test --test-name-pattern='^(durable submitted|execution)' test/worker.test.mjs"
+]

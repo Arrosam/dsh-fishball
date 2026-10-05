@@ -1,0 +1,250 @@
+{
+  "contractVersion": "df.ni3-native-composition-closure/v1",
+  "status": "NC-L01_CORRECTED_SOURCE_ONLY_NC-D01_PENDING_NO_RUN",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-composition",
+  "runtime": {
+    "expectedVersion": "v22.22.2",
+    "binary": "/opt/homebrew/opt/node@22/bin/node",
+    "resolvedBinary": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "binarySha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+  },
+  "commandsProposedNotAuthorized": [
+    "/opt/homebrew/opt/node@22/bin/node --check src/approval-preview.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/worker.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/native-adapter.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/audit-input-pair.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/native-contributions.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check test/native-composition.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test test/native-composition.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test test/approval-preview.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test --test-name-pattern='^(durable submitted|execution)' test/worker.test.mjs"
+  ],
+  "testClosures": [
+    {
+      "entry": "test/native-composition.test.mjs",
+      "localModules": [
+        {
+          "path": "src/approval-preview.mjs",
+          "sha256": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792"
+        },
+        {
+          "path": "src/audit-input-pair.mjs",
+          "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+        },
+        {
+          "path": "src/context.mjs",
+          "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+        },
+        {
+          "path": "src/environment.mjs",
+          "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+        },
+        {
+          "path": "src/ledger.mjs",
+          "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44"
+        },
+        {
+          "path": "src/native-contributions.mjs",
+          "sha256": "f04cb1a6554454e00e6ae712d2682a7ae294fd3cc5988b00b2282b7fef623241"
+        },
+        {
+          "path": "src/runtime-security.mjs",
+          "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+        },
+        {
+          "path": "src/worker.mjs",
+          "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+        },
+        {
+          "path": "test/native-composition.test.mjs",
+          "sha256": "a2b7ea5c486cda56dd595882851969d30688fdd668f5bbed57ae70b56eef4b92"
+        }
+      ],
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:test",
+        "node:util"
+      ],
+      "staticExternal": [],
+      "dynamicResolution": "No computed dynamic imports in focused NC/preview closure; worker affected closure uses original schema5 core only, no native/public host imports."
+    },
+    {
+      "entry": "test/approval-preview.test.mjs",
+      "localModules": [
+        {
+          "path": "src/approval-preview.mjs",
+          "sha256": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792"
+        },
+        {
+          "path": "src/audit-input-pair.mjs",
+          "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+        },
+        {
+          "path": "src/context.mjs",
+          "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+        },
+        {
+          "path": "src/ledger.mjs",
+          "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44"
+        },
+        {
+          "path": "src/runtime-security.mjs",
+          "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+        },
+        {
+          "path": "test/approval-preview.test.mjs",
+          "sha256": "222197415eaed758d4e66dc81c2966854e93c05eca73359ec78f627017d9119a"
+        }
+      ],
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:test",
+        "node:util"
+      ],
+      "staticExternal": [],
+      "dynamicResolution": "No computed dynamic imports in focused NC/preview closure; worker affected closure uses original schema5 core only, no native/public host imports."
+    },
+    {
+      "entry": "test/worker.test.mjs",
+      "localModules": [
+        {
+          "path": "src/audit-input-pair.mjs",
+          "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+        },
+        {
+          "path": "src/context.mjs",
+          "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+        },
+        {
+          "path": "src/environment.mjs",
+          "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+        },
+        {
+          "path": "src/ledger.mjs",
+          "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44"
+        },
+        {
+          "path": "src/runtime-security.mjs",
+          "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+        },
+        {
+          "path": "src/runtime-store.mjs",
+          "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648"
+        },
+        {
+          "path": "src/worker.mjs",
+          "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+        },
+        {
+          "path": "test/worker.test.mjs",
+          "sha256": "55fbb01acc926ee97c23eaad473e3a9e30dd7e144de7c28f823189b41e2eb15b"
+        }
+      ],
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:test",
+        "node:util"
+      ],
+      "staticExternal": [],
+      "dynamicResolution": "No computed dynamic imports in focused NC/preview closure; worker affected closure uses original schema5 core only, no native/public host imports."
+    }
+  ],
+  "changedSource": [
+    {
+      "path": "src/approval-preview.mjs",
+      "sha256": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792"
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "40e689aaa84593d01dee41078df8fb23fb06d14646d0a637082d77aa64291001"
+    },
+    {
+      "path": "src/audit-input-pair.mjs",
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+    },
+    {
+      "path": "src/native-contributions.mjs",
+      "sha256": "f04cb1a6554454e00e6ae712d2682a7ae294fd3cc5988b00b2282b7fef623241"
+    },
+    {
+      "path": "test/native-composition.test.mjs",
+      "sha256": "a2b7ea5c486cda56dd595882851969d30688fdd668f5bbed57ae70b56eef4b92"
+    }
+  ],
+  "literalDiff": {
+    "path": "literal-diffs.patch",
+    "sha256": "54b6c9db90381b523a0e958d3f778fec65a2ba7c677b3f1694089007e34982b3"
+  },
+  "optional18": {
+    "path": "src/installed-audit.mjs",
+    "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+    "unchangedFromHeldAmendment": true
+  },
+  "schema5": {
+    "ledger": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "store": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+    "coreEdits": false
+  },
+  "effects": {
+    "imports": "only modules listed for scoped tests; syntaxchecks parse files without imports",
+    "filesystem": "focusedNC+preview tests in-memory only; affected worker selected typed tests import schema5RuntimeStore without constructing SQLite; no native/importedpublic host/profile/HTTP/network/account/provider/model/tool/browser/CODE/Git",
+    "timers": "original manager timeout2ms/10000ms typed cases only, no blocking sleep",
+    "testCounters": "typed source-module effects only, do not label native sends/collector facts as actualD/N/P evidence"
+  },
+  "gaps": [
+    "Original role/provider/prompt/preset/catalog/aggregate-policy/source collector and normal runtime/config/bridge/client wiring delegated separately; not present in this bounded changed unit",
+    "The captured-result type oracle uses doubles; actual persisted original SessionStore/JSONL/one-use usage and optional18 conjunction must be tested with next source-owned composition",
+    "Exact15 audit branch/native claimBinding adapter needs separately held original public-class fixture; focused tests do not import NativeAdapter",
+    "Original full matcher/root verifyClaimBinding callbacks still required; source router mapping is not independent authentication",
+    "IndependentCODE/supportedbrowser, coldschema7 origins, all40families/all87 acceptance remainHOLD"
+  ],
+  "testLeaves": [
+    {
+      "name": "NC1: pre-prepare mapping, exact full8, authentic postclaim order and unchanged false veto",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "NC1-L01: locked full uses the source-private token witness, never transactionful environment currentness",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "NC3: distinct artifact/input digests; whole pair drift at prepare and grant; unsafe callback pairs",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "NC3: complete consent wire65535/65536 fits;65537 has no usable token and releases pending capacity",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "NC2: actual-shaped collector facts required; boolean alone cannot capture or finish; query observations counted separately",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "NC4: original begin/consume/send once; lost capture receipt reconciles exact child without recollect; stopped denial holds",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "NC4: repair lineage is forwarded into original claim; claim-binding refusal never creates or sends",
+      "status": "NOT_RUN"
+    }
+  ]
+}

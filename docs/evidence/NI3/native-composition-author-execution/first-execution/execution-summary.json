@@ -1,0 +1,355 @@
+{
+  "contractVersion": "df.ni3-native-composition-execution/v1",
+  "status": "AUTHORIZED_ENGINE_FIRST_RUN_COMPLETE_TYPED_T_ONLY",
+  "completedUtc": "2026-10-05T04:17:05.701464+00:00",
+  "authorization": {
+    "rootFreeze": {
+      "path": "docs/evidence/NI3/native-composition-root-execution-freeze.json",
+      "sha256": "295ed3486bb0eefab394ef4b1612f036e5b1bfabf1f3216dafa47697131617fb"
+    },
+    "closure": {
+      "path": ".runtime/ni3-native-composition/execution-closure.json",
+      "sha256": "a7cf6104d468e38a51c441c20983962eaadcb1c7b0a55b89fd5075dfeefcac6f"
+    },
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-composition",
+    "sequentialOnceOnly": true,
+    "noAdditionalNodeCommands": true
+  },
+  "lease": {
+    "state": "CONSUMED_AND_RELEASED",
+    "additionalExecutionsAuthorized": false
+  },
+  "summary": {
+    "commandsExecuted": 9,
+    "commandsExitZero": 9,
+    "syntaxChecks": 6,
+    "distinctExecutedTests": 21,
+    "compositionTests": 8,
+    "previewTests": 8,
+    "filteredWorkerTests": 5,
+    "failures": 0,
+    "denials": 0,
+    "reruns": 0,
+    "corrections": 0,
+    "tapSkipped": 0
+  },
+  "firstFailure": null,
+  "firstDenial": null,
+  "commands": [
+    {
+      "index": 1,
+      "command": "/opt/homebrew/opt/node@22/bin/node --check src/approval-preview.mjs",
+      "chunk_id": "b2497e",
+      "wall_time_seconds": 2.6655e-05,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/01.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/01.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/01.result.json",
+        "sha256": "5350bc35207d5a1fd6f986c6908aebf5cbb016d93b3c7e3623fe0e00cca740f9"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --check src/approval-preview.mjs > execution/root-go-295ed3486b/01.stdout.log 2> execution/root-go-295ed3486b/01.stderr.log"
+    },
+    {
+      "index": 2,
+      "command": "/opt/homebrew/opt/node@22/bin/node --check src/worker.mjs",
+      "chunk_id": "ce8491",
+      "wall_time_seconds": 2.1163e-05,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/02.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/02.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/02.result.json",
+        "sha256": "2af2c6a1cdc23a5612a75f789cc30850aab11c6eca24682ff9b1fdbf35995400"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --check src/worker.mjs > execution/root-go-295ed3486b/02.stdout.log 2> execution/root-go-295ed3486b/02.stderr.log"
+    },
+    {
+      "index": 3,
+      "command": "/opt/homebrew/opt/node@22/bin/node --check src/native-adapter.mjs",
+      "chunk_id": "e107ec",
+      "wall_time_seconds": 2.1861e-05,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/03.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/03.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/03.result.json",
+        "sha256": "e7405d121856db17c3adc83ca63e4fe0fba974848355d45f87115fbed3b4ae51"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --check src/native-adapter.mjs > execution/root-go-295ed3486b/03.stdout.log 2> execution/root-go-295ed3486b/03.stderr.log"
+    },
+    {
+      "index": 4,
+      "command": "/opt/homebrew/opt/node@22/bin/node --check src/audit-input-pair.mjs",
+      "chunk_id": "e9b5f3",
+      "wall_time_seconds": 2.7272e-05,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/04.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/04.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/04.result.json",
+        "sha256": "35e57576f6f6f63b9e37c3659fd239f5f3404f0f1dbdd9a138e984590e06d748"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --check src/audit-input-pair.mjs > execution/root-go-295ed3486b/04.stdout.log 2> execution/root-go-295ed3486b/04.stderr.log"
+    },
+    {
+      "index": 5,
+      "command": "/opt/homebrew/opt/node@22/bin/node --check src/native-contributions.mjs",
+      "chunk_id": "74fc4c",
+      "wall_time_seconds": 2.6541e-05,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/05.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/05.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/05.result.json",
+        "sha256": "ee7e97b5ddecc47977369ab4ff7eeb6d4ce0c8dc940d60244741078847734949"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --check src/native-contributions.mjs > execution/root-go-295ed3486b/05.stdout.log 2> execution/root-go-295ed3486b/05.stderr.log"
+    },
+    {
+      "index": 6,
+      "command": "/opt/homebrew/opt/node@22/bin/node --check test/native-composition.test.mjs",
+      "chunk_id": "b89cad",
+      "wall_time_seconds": 2.7799e-05,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/06.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/06.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/06.result.json",
+        "sha256": "6af19e975e0a58f38346b92dfef438c9dd8096df2d1d4ce41822d3b2111037d2"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --check test/native-composition.test.mjs > execution/root-go-295ed3486b/06.stdout.log 2> execution/root-go-295ed3486b/06.stderr.log"
+    },
+    {
+      "index": 7,
+      "command": "/opt/homebrew/opt/node@22/bin/node --test test/native-composition.test.mjs",
+      "chunk_id": "122ec4",
+      "wall_time_seconds": 0.431210553,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/07.stdout.log",
+        "sha256": "2d7f0054c89809f70d63b9f1764486e185b9e94b5e2c13be35bf5980cae6100c",
+        "bytes": 2550
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/07.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/07.result.json",
+        "sha256": "5a473d578b6ec0f0fadbe6719205871fc82e6446e53d7e83a75fe4e76a5ef88a"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --test test/native-composition.test.mjs > execution/root-go-295ed3486b/07.stdout.log 2> execution/root-go-295ed3486b/07.stderr.log",
+      "tapCounts": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "testNames": [
+        "NC1: pre-prepare mapping, exact full8, authentic postclaim order and unchanged false veto",
+        "NC1-D01: retain original scoped planned digest, never spec-only/current-CAS recomputation; wrong or absent refs deny",
+        "NC1-L01: locked full uses the source-private token witness, never transactionful environment currentness",
+        "NC3: distinct artifact/input digests; whole pair drift at prepare and grant; unsafe callback pairs",
+        "NC3: complete consent wire65535/65536 fits;65537 has no usable token and releases pending capacity",
+        "NC2: actual-shaped collector facts required; boolean alone cannot capture or finish; query observations counted separately",
+        "NC4: original begin/consume/send once; lost capture receipt reconciles exact child without recollect; stopped denial holds",
+        "NC4: repair lineage is forwarded into original claim; claim-binding refusal never creates or sends"
+      ]
+    },
+    {
+      "index": 8,
+      "command": "/opt/homebrew/opt/node@22/bin/node --test test/approval-preview.test.mjs",
+      "chunk_id": "071792",
+      "wall_time_seconds": 0.129526288,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/08.stdout.log",
+        "sha256": "36254537010d5aaa2e58f9796e16e9d8ca7c37e7ec4f28df47831e134e276352",
+        "bytes": 2294
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/08.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/08.result.json",
+        "sha256": "0fc29fd0f38ac024235e74e29f2ce7265349524291c539c905ede7a423f958ae"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --test test/approval-preview.test.mjs > execution/root-go-295ed3486b/08.stdout.log 2> execution/root-go-295ed3486b/08.stderr.log",
+      "tapCounts": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "testNames": [
+        "trusted concrete preview retains exact data and unknown cost; valid captured grant narrows owner CAS",
+        "forged, changed-action, expired, disposed and missing previews never reach the grant authority",
+        "async target resolution cannot grant after task, auth, control, data, policy or unload changes",
+        "current concrete meaning, record digest and known secrets are rechecked; raw resolver errors stay redacted",
+        "descriptor and payload authority tricks reject before trusted resolution",
+        "pending resolver work reserves the same64 slots and cannot publish after unload",
+        "resolver-thrown exported error instances never leak arbitrary codes on prepare or grant",
+        "concurrent grants against one preview reserve one resolver and one authoritative grant"
+      ]
+    },
+    {
+      "index": 9,
+      "command": "/opt/homebrew/opt/node@22/bin/node --test --test-name-pattern='^(durable submitted|execution)' test/worker.test.mjs",
+      "chunk_id": "e7be26",
+      "wall_time_seconds": 0.120568048,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "attempt": 1,
+      "stdout": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/09.stdout.log",
+        "sha256": "a863d2348459a6a023aaee68897c3b2f448091e9d3be6b055a35aa22d3d8f411",
+        "bytes": 1579
+      },
+      "stderr": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/09.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "exitRecord": {
+        "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/09.result.json",
+        "sha256": "b1754d5bae491ececa3ece9f77b83a15087728bfa7860c2987c2b183ad638077"
+      },
+      "redirectedShellCommand": "/opt/homebrew/opt/node@22/bin/node --test --test-name-pattern='^(durable submitted|execution)' test/worker.test.mjs > execution/root-go-295ed3486b/09.stdout.log 2> execution/root-go-295ed3486b/09.stderr.log",
+      "tapCounts": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "testNames": [
+        "durable submitted boundary precedes native create; creation does not prove running or complete task",
+        "execution persists one intent and final consume before native send; duplicate command cannot wake again",
+        "execution denial and foreign completion are redacted unknowns retaining exact reservation",
+        "execution timeout holds ownership; late final consume denial prevents send and duplicate replay",
+        "execution immutable context and scoped claim mismatch reject before durable intent"
+      ]
+    }
+  ],
+  "pinVerification": {
+    "before": {
+      "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/pins-before.json",
+      "sha256": "04fc4d7c8e1eca2584846fdca453417334e7cf3c7a4e494ce154858fbc2abc38",
+      "allMatch": true,
+      "comparisons": 116,
+      "manifestRows": 70
+    },
+    "after": {
+      "path": ".runtime/ni3-native-composition/execution/root-go-295ed3486b/pins-after.json",
+      "sha256": "956b6514126a5b9c492087a559fe4c8399ff7b3a375bb6a97f685915b6953b14",
+      "allMatch": true,
+      "comparisons": 116,
+      "manifestRows": 70
+    },
+    "frozenSourceManifestSha256": "f1224a72ce7bf499e5f7fa97c70135899e67c9ab1f4d97b8af93123d41ab3e27",
+    "frozenLiteralDiffSha256": "e9441843864a0aeb22e0ee05625fa3a497088ad97d5568cd7e8e418fa34d9250",
+    "allFrozenArtifactsUnchanged": true
+  },
+  "scope": {
+    "evidenceClass": "T: typed source-module fixtures only",
+    "nativeAdapter": "syntax parse only; not imported/executed",
+    "nativeOrPublicHostImports": false,
+    "databaseConstructorExecuted": false,
+    "networkModelProviderToolBrowserProfileListenerAccountCodeExecuted": false,
+    "sharedProductRuntimeQaGitMutations": false,
+    "newWritesOnly": [
+      ".runtime/ni3-native-composition/execution/root-go-295ed3486b/",
+      "docs/evidence/NI3/native-composition-author-execution.json",
+      "docs/evidence/NI3/native-composition-author-execution.md"
+    ],
+    "experimentalWarning": "All three test files printed the standard node:sqlite ExperimentalWarning in stdout; stderr logs were empty."
+  },
+  "remainingHolds": [
+    "Actual original role/provider/preset/catalog/current aggregate policy/source collector/runtime/config/bridge/client composition has a separate root-held author lane; not executed here.",
+    "Authentic original callbacks/source witness/native claim/public class and persisted collector facts require separate bounded evidence. Typed fixtures do not certify native/model quality or actual adapter behavior.",
+    "Optional18 installed-audit24dd scoped actionDigest assumption is separately assigned; copied exact original module remains unchanged.",
+    "Cold origin adoption, independent CODE, supported browser, all40 families/all87 acceptance and any schema promotion remain held. No automatic resolution or full-composition acceptance claim."
+  ]
+}

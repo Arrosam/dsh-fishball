@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { canonical, hash } from './runtime-security.mjs';
+import { AUDIT_EXECUTION_FIELDS, validateAuditInputPair } from './audit-input-pair.mjs';
 import { WorkerError, workerFail, workerDigest, workerRecord, workerRef, workerInteger } from './environment.mjs';
 
 const freezeReceipt = value => { const copy = structuredClone(value); const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; }; return freeze(copy); };
@@ -39,7 +41,7 @@ export class WorkerManager {
   #view(entry) { return Object.freeze({ taskRef: entry.taskRef, actionRef: entry.actionRef, actionDigest: entry.actionDigest, claimRef: entry.claimRef, reservationRef: entry.reservationRef, generationRef: entry.generationRef, ...(entry.sessionRef ? { sessionRef: entry.sessionRef } : {}), phase: entry.phase }); }
   async dispatch(caller, input) {
     this.#alive();
-    workerRecord(input, ['taskRef', 'actionRef', 'actionDigest', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'timeoutMs'], ['taskRef', 'actionRef', 'actionDigest', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    workerRecord(input, ['taskRef', 'actionRef', 'actionDigest', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'timeoutMs', 'auditRepair'], ['taskRef', 'actionRef', 'actionDigest', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
     for (const key of ['taskRef', 'actionRef', 'actionDigest', 'commandRef']) workerRef(input[key]);
     workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
     const timeoutMs = input.timeoutMs ?? 10000; workerInteger(timeoutMs, 1, 60000);
@@ -48,6 +50,16 @@ export class WorkerManager {
     const action = structuredClone(snapshot.actions.find(value => value.actionRef === input.actionRef));
     if (!action || action.actionDigest !== input.actionDigest) workerFail('WORKER_INTENT_MISMATCH');
     if (action.claimRef || this.#entries.has(this.#key(input.taskRef, input.actionRef))) workerFail('WORKER_ALREADY_SUBMITTED');
+    if (action.spec.executionInput?.purpose === 'audit_repair') {
+      workerRecord(input.auditRepair, ['auditRef', 'round', 'previousReportRef', 'evidenceRef']);
+      for (const k of ['auditRef', 'previousReportRef', 'evidenceRef']) workerRef(input.auditRepair[k]);
+      workerInteger(input.auditRepair.round, 1, 8);
+      if (input.auditRepair.auditRef !== action.spec.executionInput.auditRef || input.auditRepair.previousReportRef !== action.spec.executionInput.previousReportRef || typeof this.#store.readAuditInput !== 'function') workerFail('WORKER_INTENT_MISMATCH');
+      const pair = this.#store.readAuditInput(this.#host, { taskRef: input.taskRef, inputRecordRef: action.spec.executionInput.recordRef });
+      try { validateAuditInputPair(pair, action.spec, snapshot.task); } catch { workerFail('WORKER_INTENT_MISMATCH'); }
+      if (pair.association.round !== input.auditRepair.round) workerFail('WORKER_INTENT_MISMATCH');
+      input = freezeReceipt(input);
+    } else if (Object.hasOwn(input, 'auditRepair')) workerFail('WORKER_INTENT_MISMATCH');
     // Model/environment readiness is asynchronous. Claim rechecks immutable
     // consent, CAS, permission and current policy atomically afterward.
     let ticket;
@@ -153,6 +165,86 @@ export class WorkerManager {
     const deadline = new Promise(resolve => { timer = setTimeout(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } resolve(Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) })); }, timeoutMs); });
     try { return await Promise.race([completion, deadline]); } finally { clearTimeout(timer); }
   }
+  async executeAuditInput(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'inputRecordRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'timeoutMs'], ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'inputRecordRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    for (const k of ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'inputRecordRef', 'commandRef']) workerRef(input[k]);
+    workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
+    const timeoutMs = input.timeoutMs ?? 10000; workerInteger(timeoutMs, 1, 60000); input = Object.freeze({ ...input });
+    if (!['readAuditInput', 'beginAuditExecution', 'assertExecutionCurrent'].every(k => typeof this.#store[k] === 'function') || typeof this.#adapter.executeAuditInput !== 'function') workerFail('WORKER_EXECUTION_UNAVAILABLE');
+    const snapshot = this.#snapshot(caller, input.taskRef), action = snapshot.actions.find(a => a.actionRef === input.actionRef);
+    const entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || entry.actionDigest !== input.actionDigest || !action || action.claimRef !== input.claimRef || action.actionDigest !== input.actionDigest || action.spec.executor.generationRef !== input.generationRef || !action.spec.executionInput || action.spec.executionInput.recordRef !== input.inputRecordRef) workerFail('WORKER_MAPPING_MISMATCH');
+    let pair;
+    try { pair = validateAuditInputPair(this.#store.readAuditInput(this.#host, { taskRef: input.taskRef, inputRecordRef: input.inputRecordRef }), action.spec, snapshot.task); }
+    catch { workerFail('WORKER_CONTEXT_INVALID'); }
+    const a = pair.association, data = pair.data;
+    const body = Object.freeze({ recordRef: data.recordRef, kind: data.kind, content: data.content, digest: data.digest, byteLength: data.byteLength });
+    const { timeoutMs: ignored, ...intentInput } = input;
+    const intent = this.#store.beginAuditExecution(this.#host, intentInput);
+    const binding = Object.freeze({ executionRef: workerRef(intent.executionRef), taskRef: input.taskRef, actionRef: input.actionRef, actionDigest: input.actionDigest, claimRef: input.claimRef, generationRef: input.generationRef, sessionRef: entry.sessionRef, inputRecordRef: input.inputRecordRef, inputDigest: a.digest, dataDigest: action.spec.dataDigest, auditRef: a.auditRef, bindingDigest: a.bindingDigest, materialDigest: a.materialDigest, purpose: a.purpose, semanticRevision: a.semanticRevision });
+    if (AUDIT_EXECUTION_FIELDS.some(k => intent[k] !== binding[k])) workerFail('WORKER_EXECUTION_INVALID');
+    if (intent.deduplicated === true || intent.state !== 'intent_committed') return Object.freeze({ executionRef: binding.executionRef, state: intent.state, admitted: false, worker: this.#view(entry) });
+    entry.auditExecution = binding;
+    const completion = this.#adapter.executeAuditInput(entry.ticket, binding, body, () => {
+      this.#alive();
+      return this.#store.assertExecutionCurrent(this.#host, { taskRef: input.taskRef, claimRef: input.claimRef, generationRef: input.generationRef, actionDigest: input.actionDigest, executionRef: binding.executionRef });
+    }).then(result => {
+      if (result.executionRef !== binding.executionRef || !['committed', 'unknown'].includes(result.state)) workerFail('WORKER_EXECUTION_INVALID');
+      this.#observation(entry, result.worker);
+      return Object.freeze({ ...result, worker: this.#view(entry) });
+    }).catch(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } return Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) }); });
+    let timer;
+    const deadline = new Promise(resolve => { timer = setTimeout(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } resolve(Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) })); }, timeoutMs); });
+    try { return await Promise.race([completion, deadline]); } finally { clearTimeout(timer); }
+  }
+  #auditEntry(caller, input) {
+    this.#alive();
+    workerRecord(input, ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
+    for (const k of ['taskRef', 'actionRef', 'claimRef', 'generationRef', 'executionRef', 'commandRef']) workerRef(input[k]);
+    workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
+    const snap = this.#snapshot(caller, input.taskRef), entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
+    if (!entry?.auditExecution || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || entry.auditExecution.executionRef !== input.executionRef || snap.task.version !== input.expectedTaskVersion || snap.task.authEpoch !== input.expectedAuthEpoch) workerFail('WORKER_RESULT_UNAVAILABLE');
+    return { snap, entry };
+  }
+  async validateAuditResult(caller, input) {
+    const { snap, entry } = this.#auditEntry(caller, input); input = freezeReceipt(input);
+    if (typeof this.#adapter.validateResult !== 'function' || typeof this.#adapter.readResult !== 'function') workerFail('WORKER_RESULT_UNAVAILABLE');
+    if (entry.auditValidation) return entry.auditValidation;
+    const facts = await this.#adapter.validateResult(entry.ticket, input.executionRef);
+    this.#alive(); const after = this.#snapshot(caller, input.taskRef);
+    if (after.task.version !== snap.task.version || after.task.authEpoch !== snap.task.authEpoch) workerFail('STALE_VERSION');
+    const result = this.#adapter.readResult(entry.ticket, input.executionRef);
+    canonical(result);
+    if (AUDIT_EXECUTION_FIELDS.some(k => result[k] !== entry.auditExecution[k])) workerFail('WORKER_RECEIPT_INVALID');
+    workerRecord(facts, ['usageUnits', 'evidenceRef', 'resultDigest', 'inputCursor', 'executionRef']);
+    workerInteger(facts.usageUnits, 0, 100000000); workerInteger(facts.inputCursor); workerRef(facts.evidenceRef); workerRef(facts.resultDigest);
+    if (facts.usageUnits > snap.actions.find(a => a.actionRef === input.actionRef).spec.charges.usageUnits || facts.executionRef !== input.executionRef || facts.inputCursor !== result.inputCursor || facts.inputCursor >= result.cursor || facts.resultDigest !== result.digest || typeof result.content !== 'string' || hash(result.content) !== result.digest) workerFail('WORKER_RECEIPT_INVALID');
+    entry.auditValidation = freezeReceipt({ result, facts }); return entry.auditValidation;
+  }
+  captureValidatedAuditResult(caller, input) {
+    const { snap, entry } = this.#auditEntry(caller, input), validated = entry.auditValidation;
+    if (!validated || typeof this.#store.captureAuditResult !== 'function') workerFail('WORKER_RESULT_UNAVAILABLE');
+    if (entry.captured) {
+      if (entry.captured.auditCommandRef !== input.commandRef || entry.captured.executionRef !== input.executionRef) workerFail('WORKER_RESULT_UNAVAILABLE');
+      return entry.captured.receipt;
+    }
+    const { result, facts } = validated;
+    const capture = Object.freeze({ taskRef: input.taskRef, commandRef: input.commandRef, claimRef: input.claimRef, generationRef: input.generationRef, executionRef: input.executionRef, sessionRef: result.sessionRef, inputCursor: facts.inputCursor, cursor: result.cursor, content: result.content, evidenceRef: facts.evidenceRef });
+    // Only this actual original store return can populate the discriminator.
+    // Root's facade publishes its authentic receipt before this call returns.
+    if (entry.auditCaptureIntent && canonical(entry.auditCaptureIntent) !== canonical(capture)) workerFail('WORKER_RESULT_UNAVAILABLE');
+    entry.auditCaptureIntent ??= capture; // retain before the original mutation/ack
+    const receipt = this.#store.captureAuditResult(this.#host, entry.auditCaptureIntent);
+    canonical(receipt);
+    workerRecord(receipt, ['contractVersion', 'ownerRef', 'workspaceRef', 'taskRef', 'resultRef', 'recordRef', 'digest', 'byteLength', 'inputDigest', 'inputRecordRef', 'executionRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'sessionRef', 'auditRef', 'bindingDigest', 'materialDigest', 'purpose', 'inputCursor', 'cursor', 'evidenceRef', 'state', 'createdAt', 'deduplicated'], ['contractVersion', 'ownerRef', 'workspaceRef', 'taskRef', 'resultRef', 'recordRef', 'digest', 'byteLength', 'inputDigest', 'inputRecordRef', 'executionRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'sessionRef', 'auditRef', 'bindingDigest', 'materialDigest', 'purpose', 'inputCursor', 'cursor', 'evidenceRef', 'state', 'createdAt']);
+    workerInteger(receipt.createdAt);
+    for (const k of ['taskRef', 'actionRef', 'actionDigest', 'claimRef', 'generationRef', 'sessionRef', 'inputRecordRef', 'inputDigest', 'auditRef', 'bindingDigest', 'materialDigest', 'purpose', 'executionRef']) if (receipt[k] !== result[k]) workerFail('WORKER_RECEIPT_INVALID');
+    if (receipt.ownerRef !== snap.task.ownerRef || receipt.workspaceRef !== snap.task.workspaceRef || receipt.contractVersion !== 'df.audit-result-association/v1' || receipt.state !== 'captured' || receipt.resultRef !== input.executionRef || receipt.digest !== result.digest || receipt.inputCursor !== facts.inputCursor || receipt.cursor !== result.cursor || receipt.evidenceRef !== facts.evidenceRef || receipt.byteLength !== Buffer.byteLength(result.content)) workerFail('WORKER_RECEIPT_INVALID');
+    workerRef(receipt.recordRef);
+    entry.captured = Object.freeze({ kind: 'audit_input', executionRef: input.executionRef, auditCommandRef: input.commandRef, receipt: freezeReceipt(receipt) });
+    return entry.captured.receipt;
+  }
   async cancel(caller, input) {
     this.#alive(); workerRecord(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch']);
     this.#snapshot(caller, workerRef(input.taskRef));
@@ -200,7 +292,7 @@ export class WorkerManager {
     workerInteger(input.expectedTaskVersion, 1); workerInteger(input.expectedAuthEpoch);
     input = Object.freeze({ ...input });
     const snapshot = this.#snapshot(caller, input.taskRef), entry = this.#entries.get(this.#key(input.taskRef, input.actionRef));
-    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || !entry.captured || entry.captured.executionRef !== input.executionRef || entry.captured.version !== 1 || typeof this.#adapter.finishExecution !== 'function' || typeof this.#store.settleAction !== 'function') workerFail('WORKER_FINISH_UNAVAILABLE');
+    if (!entry || entry.claimRef !== input.claimRef || entry.generationRef !== input.generationRef || !entry.captured || entry.captured.executionRef !== input.executionRef || (entry.auditExecution ? entry.captured.kind !== 'audit_input' || !entry.auditValidation || entry.captured.receipt.resultRef !== input.executionRef : entry.captured.version !== 1) || typeof this.#adapter.finishExecution !== 'function' || typeof this.#store.settleAction !== 'function') workerFail('WORKER_FINISH_UNAVAILABLE');
     const commandDigest = workerDigest('finish-command', input);
     if (entry.finished) {
       if (entry.finished.commandDigest !== commandDigest) workerFail('WORKER_FINISH_UNAVAILABLE');
