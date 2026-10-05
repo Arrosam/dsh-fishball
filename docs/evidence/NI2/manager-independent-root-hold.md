@@ -1,0 +1,7 @@
+# Normal manager: root independent functional hold
+
+Root read the exact independent report 646f98965464c9e5814dcb02db74ab4b8fa802b03424723e32e037cc0cd84695 and retains final new test 1e573927eb70c4c37aef776bd07402daffddd88884a35803728328af45aed5bc, checks 728b4f76e03f6bf9a82c643973103476e6965c1916f841c0b5a4eca31a7fe263 and 19-artifact manifest bad10f59c225371e3960fe882d9a1eca55f55cba5e67a3dd634b27b478dd5677. The independent lane reports 493 unchanged bound inputs and zero product findings/changes; root separately checks the bound and owned manifests before committing this evidence.
+
+Seventeen distinct cases have passing evidence across the preserved first 16/1/15, path-only affected 15/14/1, M11 original-session fixture correction 1/1 and new captured-carrier/observation case1/1. There is no final full17 rerun and no author53 included in that total. Both first failures were fixture construction errors and their exact sources/TAPs remain retained.
+
+Actual original Cordis/Loader/OperatorPeer/AgentLoop/SessionStore/JSONL, encrypted store, normal composer, source-owned synthetic provider and original receipt checks participated without a listener or CLI. This proves bounded native module behavior and the actual one-request/capture/read/finish path at that level. It does not prove physical authentication, rendered UI, cold native provenance/resume, useful model quality, CODE or all87 acceptance. The runtime/core/manager lease is released; root owns the separately authorized physical package/profile validation.

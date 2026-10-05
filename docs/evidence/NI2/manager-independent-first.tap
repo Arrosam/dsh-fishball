@@ -1,0 +1,303 @@
+TAP version 13
+# (node:88485) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: M01 actual normal chain: independent bytes, original receivers/receipts and factual stop accounting
+not ok 1 - M01 actual normal chain: independent bytes, original receivers/receipts and factual stop accounting
+  ---
+  duration_ms: 33.747084
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:187:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:188:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: M02 carrier partitions require literal true and retain the first bounded denial
+not ok 2 - M02 carrier partitions require literal true and retain the first bounded denial
+  ---
+  duration_ms: 9.02675
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:241:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:242:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M03 real retained manager closures reject missing/copied/foreign carrier with zero effects
+not ok 3 - M03 real retained manager closures reject missing/copied/foreign carrier with zero effects
+  ---
+  duration_ms: 9.934667
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:257:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:258:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M04 prepare-first loss refuses claim and captures immutable caller input
+not ok 4 - M04 prepare-first loss refuses claim and captures immutable caller input
+  ---
+  duration_ms: 7.564375
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:270:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:271:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M05 reverse completion keeps separate live carriers and aborts only original A
+not ok 5 - M05 reverse completion keeps separate live carriers and aborts only original A
+  ---
+  duration_ms: 9.410667
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:283:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:284:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M06 fresh query and execution never reuse an expired create callback
+not ok 6 - M06 fresh query and execution never reuse an expired create callback
+  ---
+  duration_ms: 7.25875
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:295:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:296:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M07 inner gate after actual outer readonly admission refuses all provider output
+not ok 7 - M07 inner gate after actual outer readonly admission refuses all provider output
+  ---
+  duration_ms: 7.388375
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:305:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:307:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M08 actual validation flush precedes owner loss with zero artifact and retained source result
+not ok 8 - M08 actual validation flush precedes owner loss with zero artifact and retained source result
+  ---
+  duration_ms: 7.363792
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:320:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:321:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M09 actual stopped facts survive denial; pending finish cannot replay stop or settlement
+not ok 9 - M09 actual stopped facts survive denial; pending finish cannot replay stop or settlement
+  ---
+  duration_ms: 8.553791
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:332:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:333:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M10 admission seals before original shutdown, owned stop drains before store close
+not ok 10 - M10 admission seals before original shutdown, owned stop drains before store close
+  ---
+  duration_ms: 7.62675
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:349:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:350:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M11 copied tickets and copied native event identities cannot become actual owned facts
+not ok 11 - M11 copied tickets and copied native event identities cannot become actual owned facts
+  ---
+  duration_ms: 8.870834
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:366:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:367:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M12 a fresh original query returns its observation task version and repeating it is readonly
+not ok 12 - M12 a fresh original query returns its observation task version and repeating it is readonly
+  ---
+  duration_ms: 7.029333
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:377:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:379:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M13 six aliases deny before and after composition; original task/memory remains usable
+not ok 13 - M13 six aliases deny before and after composition; original task/memory remains usable
+  ---
+  duration_ms: 7.024958
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:393:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:394:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M14 original response close during preparation denies claim with read-first durable facts
+not ok 14 - M14 original response close during preparation denies claim with read-first durable facts
+  ---
+  duration_ms: 7.042334
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:407:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:408:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M15 original response loss after control preserves actual held stop and no second effect
+not ok 15 - M15 original response loss after control preserves actual held stop and no second effect
+  ---
+  duration_ms: 7.922417
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:416:1'
+  failureType: 'testCodeFailure'
+  error: 'CONFIG_INVALID'
+  code: 'CONFIG_INVALID'
+  name: 'BootstrapError'
+  stack: |-
+    invalid (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:6:31)
+    validateInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker-config.mjs:53:13)
+    createInstalledWorker (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-worker.mjs:38:18)
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:113:37)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/manager-invocation-functional.test.mjs:417:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M16 absent installed mode preserves unrelated generic operations and readonly diagnostics
+ok 16 - M16 absent installed mode preserves unrelated generic operations and readonly diagnostics
+  ---
+  duration_ms: 32.895125
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 1
+# fail 15
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 398.924542

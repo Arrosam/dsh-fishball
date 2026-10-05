@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-05T00:31:18.192178+00:00",
+  "newCases": [
+    "M17"
+  ],
+  "reason": "Remaining frozen captured-carrier/readonly/independent observation digest discriminators",
+  "repeatedPassingCases": 0,
+  "testSha256": "1e573927eb70c4c37aef776bd07402daffddd88884a35803728328af45aed5bc",
+  "sourceChanges": 0,
+  "boundInputsMatched": 493,
+  "node": "v22.22.2",
+  "command": "env -i PATH=/opt/homebrew/bin:/usr/bin:/bin TZ=UTC LANG=C /opt/homebrew/bin/node --test --test-concurrency=1 --test-name-pattern='^M17 ' test/manager-invocation-functional.test.mjs"
+}

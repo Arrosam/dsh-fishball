@@ -1,0 +1,1317 @@
+{
+  "identity": "/root/native_functional",
+  "scope": "Independent manager/fresh-create functional/ISTQB execution only",
+  "leaseStatus": "RELEASED",
+  "leaseReleasedAt": "2026-10-05T00:32:13.920712+00:00",
+  "sourceHold": {
+    "path": "docs/evidence/NI2/manager-guard-author-source-hold.json",
+    "sha256": "ff8041335e9422849e21061a9f32eedf75e38382a3258fc8b949b070841e5e2c"
+  },
+  "authorManifest": {
+    "path": "docs/evidence/NI2/manager-guard-author.sha256",
+    "sha256": "51ed314cc2d6c1f4b3e3a5c217c54893754b85e2f74e50ffe29285760f6f78d9",
+    "rows": 430,
+    "allMatched": true
+  },
+  "frozenDesign": {
+    "sourceClarificationSha256": "5f1dabb6c93f3d770f6e60c76c7882144d07659ee11ef08fe3530a4ff15a0b9d",
+    "designSha256": "c954473efb3012f16ac76bca2cfd7d31820e5bd28616bd71dff24cbe8a3fd208",
+    "checksSha256": "8bbd82f9493e2196ed030235b5a215ab1fc8ccf9101ca45c8cd534e97d1f0e5e"
+  },
+  "beforeAfter": {
+    "uniqueInputs": 493,
+    "localImportClosure": 28,
+    "priorIndependentDeliverableRows": 61,
+    "allBeforeAfterMatched": true
+  },
+  "runs": [
+    {
+      "tests": 16,
+      "pass": 1,
+      "fail": 15,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "path": "docs/evidence/NI2/manager-independent-first.tap",
+      "sha256": "3ce53fd97fcb9d1a2abd859c715184a93b77d2cede5df2cf28bbb1b0e3ed0492",
+      "exitCode": 1
+    },
+    {
+      "tests": 15,
+      "pass": 14,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "path": "docs/evidence/NI2/manager-independent-path-repair.tap",
+      "sha256": "edd6461d9d955c74eb5616eef4efb0c2256598ea79612ac5dc2502c8525a2f9c",
+      "exitCode": 1
+    },
+    {
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "path": "docs/evidence/NI2/manager-independent-session-repair.tap",
+      "sha256": "ba890d760c584bc36dc1d82363246bd6056c4a3b3b72b867b92622e3b7fea97e",
+      "exitCode": 0
+    },
+    {
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "path": "docs/evidence/NI2/manager-independent-additional.tap",
+      "sha256": "c97caeb24bc16d0a733f09c705175cd33bbbba4ee381fd5e06c020a65b40081e",
+      "exitCode": 0
+    }
+  ],
+  "distinctCaseCount": 17,
+  "latestPassingCaseCount": 17,
+  "singleFinalFullTreeRun": false,
+  "fixtureCorrections": 2,
+  "productFindings": [],
+  "productOrOldTestOrEvidenceMutations": 0,
+  "authorTestsCountedIndependently": 0,
+  "passesRepeatedAfterPassing": 0,
+  "familyMatrix": [
+    {
+      "family": "N2M-01",
+      "cases": [
+        "M02",
+        "M03"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Callback/typed-carrier doubles; physical owner authentication remains outside."
+    },
+    {
+      "family": "N2M-02",
+      "cases": [
+        "M01",
+        "M03",
+        "M13"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists."
+    },
+    {
+      "family": "N2M-03",
+      "cases": [
+        "M04",
+        "M14"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Prepare loss-first actual original barrier and response close; no process crash injected."
+    },
+    {
+      "family": "N2M-04",
+      "cases": [
+        "M05",
+        "M06"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Two distinct live original child contexts reverse completion; same-child concurrency beyond these bounded carriers remains separate."
+    },
+    {
+      "family": "N2M-05",
+      "cases": [
+        "M01",
+        "M06",
+        "M17"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred."
+    },
+    {
+      "family": "N2M-06",
+      "cases": [
+        "M01",
+        "M06",
+        "M07",
+        "M17"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted."
+    },
+    {
+      "family": "N2M-07",
+      "cases": [
+        "M01",
+        "M08"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment."
+    },
+    {
+      "family": "N2M-08",
+      "cases": [
+        "M09",
+        "M14",
+        "M15"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held."
+    },
+    {
+      "family": "N2M-09",
+      "cases": [
+        "M09",
+        "M10",
+        "M11",
+        "M12",
+        "M17"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual adapter returns/events and shutdown provenance, copied opaque tickets and distinct Session objects rejected. Full ten-field fake publisher callbacks are not positive ownership oracles and were not invented."
+    },
+    {
+      "family": "N2M-10",
+      "cases": [
+        "M07",
+        "M09",
+        "M10",
+        "M12"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual."
+    },
+    {
+      "family": "N2M-11",
+      "cases": [
+        "M10"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held."
+    },
+    {
+      "family": "N2M-12",
+      "cases": [
+        "M03",
+        "M13",
+        "M15",
+        "M16"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+    },
+    {
+      "family": "N2M-13",
+      "cases": [],
+      "level": "Source-bound residual only",
+      "status": "NOT_RUN_HELD",
+      "residual": "NOT RUN: NI4 internal no-carrier chat cleanup requires separately held typed ingress/source wiring."
+    },
+    {
+      "family": "N2M-14",
+      "cases": [
+        "M01",
+        "M02",
+        "M13",
+        "M16"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Synthetic canary in bounded errors/diagnostics and zero boot/idle work; no physical logs/browser privacy claim."
+    },
+    {
+      "family": "N2M-15",
+      "cases": [
+        "M01",
+        "M14",
+        "M15"
+      ],
+      "level": "Actual original no-listener D/N plus explicit typed/synthetic guards",
+      "status": "BOUNDED_FUNCTIONAL_PASS_WITH_RESIDUAL",
+      "residual": "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+    }
+  ],
+  "retainedCriteria": {
+    "originalCount": 82,
+    "currentDf010Count": 5,
+    "totalCount": 87,
+    "allRetainedIds": [
+      "BUB001-01",
+      "BUB001-02",
+      "BUB001-03",
+      "BUB001-04",
+      "BUB001-05",
+      "BUB002-01",
+      "BUB002-02",
+      "BUB002-03",
+      "BUB002-04",
+      "BUB002-05",
+      "BUB003-01",
+      "BUB003-02",
+      "BUB003-03",
+      "BUB003-04",
+      "BUB003-05",
+      "BUB004-01",
+      "BUB004-02",
+      "BUB004-03",
+      "BUB004-04",
+      "BUB004-05",
+      "BUB005-01",
+      "BUB005-02",
+      "BUB005-03",
+      "BUB005-04",
+      "BUB005-05",
+      "BUB006-01",
+      "BUB006-02",
+      "BUB006-03",
+      "BUB006-04",
+      "BUB006-05",
+      "BUB007-01",
+      "BUB007-02",
+      "BUB007-03",
+      "BUB007-04",
+      "BUB007-05",
+      "BUB007-06",
+      "BUB008-01",
+      "BUB008-02",
+      "BUB008-03",
+      "BUB008-04",
+      "BUB008-05",
+      "BUB009-01",
+      "BUB009-02",
+      "BUB009-03",
+      "BUB009-04",
+      "BUB009-05",
+      "BUB010-01",
+      "BUB010-02",
+      "BUB010-03",
+      "BUB010-04",
+      "BUB010-05",
+      "BUB011-01",
+      "BUB011-02",
+      "BUB011-03",
+      "BUB011-04",
+      "BUB011-05",
+      "BUB012-01",
+      "BUB012-02",
+      "BUB012-03",
+      "BUB012-04",
+      "BUB012-05",
+      "BUB013-01",
+      "BUB013-02",
+      "BUB013-03",
+      "BUB013-04",
+      "BUB013-05",
+      "BUB014-01",
+      "BUB014-02",
+      "BUB014-03",
+      "BUB014-04",
+      "BUB014-05",
+      "BUB015-01",
+      "BUB015-02",
+      "BUB015-03",
+      "BUB015-04",
+      "BUB015-05",
+      "BUB016-01",
+      "BUB016-02",
+      "BUB016-03",
+      "BUB016-04",
+      "BUB016-05",
+      "BUB016-06",
+      "DF010-C01",
+      "DF010-C02",
+      "DF010-C03",
+      "DF010-C04",
+      "DF010-C05"
+    ],
+    "relevantAdditiveCount": 35,
+    "individualContributions": [
+      {
+        "criterion": "BUB001-02",
+        "planned_contribution_and_residual": "N2M-04/11/15 exact owned lifetime/replacement separation; ten actual reloads still N/P pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-04",
+          "N2M-11",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M05",
+          "M06",
+          "M10",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-04/11/15 exact owned lifetime/replacement separation; ten actual reloads still N/P pending.",
+        "currentResiduals": [
+          "Two distinct live original child contexts reverse completion; same-child concurrency beyond these bounded carriers remains separate.",
+          "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB001-04",
+        "planned_contribution_and_residual": "N2M-11/15 seal/drain/held restart; actual full exit versus browser close pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-11",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M10",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-11/15 seal/drain/held restart; actual full exit versus browser close pending.",
+        "currentResiduals": [
+          "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB002-02",
+        "planned_contribution_and_residual": "N2M-02/05/07 final CAS/source/context/currentness after waits; actual D/N pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-05",
+          "N2M-07"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M06",
+          "M08",
+          "M13",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/05/07 final CAS/source/context/currentness after waits; actual D/N pending.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment."
+        ]
+      },
+      {
+        "criterion": "BUB002-03",
+        "planned_contribution_and_residual": "N2M-03/08/11/12 loss-first admission versus actual stop/control-first facts; physical race pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-08",
+          "N2M-11",
+          "N2M-12"
+        ],
+        "cases": [
+          "M03",
+          "M04",
+          "M09",
+          "M10",
+          "M13",
+          "M14",
+          "M15",
+          "M16"
+        ],
+        "originalFrozenResidual": "N2M-03/08/11/12 loss-first admission versus actual stop/control-first facts; physical race pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+        ]
+      },
+      {
+        "criterion": "BUB003-01",
+        "planned_contribution_and_residual": "N2M-03/06/08/15 durable receipt/intent/unknown preservation; actual crashes D/P pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-06",
+          "N2M-08",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M04",
+          "M06",
+          "M07",
+          "M09",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-03/06/08/15 durable receipt/intent/unknown preservation; actual crashes D/P pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB003-02",
+        "planned_contribution_and_residual": "N2M-02/05/08 final original atomic checks and unchanged exact receipts; actual races pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-05",
+          "N2M-08"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M06",
+          "M09",
+          "M13",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/05/08 final original atomic checks and unchanged exact receipts; actual races pending.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held."
+        ]
+      },
+      {
+        "criterion": "BUB003-03",
+        "planned_contribution_and_residual": "N2M-02/08/10/15 safe error/held storage uncertainty; original IO/crypto fault evidence remains separate.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-08",
+          "N2M-10",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M07",
+          "M09",
+          "M10",
+          "M12",
+          "M13",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-02/08/10/15 safe error/held storage uncertainty; original IO/crypto fault evidence remains separate.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB003-04",
+        "planned_contribution_and_residual": "N2M-14/15 no schema/key/migration change; real5/6 preservation and old-writer rejection remain pending elsewhere.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-14",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M02",
+          "M13",
+          "M14",
+          "M15",
+          "M16"
+        ],
+        "originalFrozenResidual": "N2M-14/15 no schema/key/migration change; real5/6 preservation and old-writer rejection remain pending elsewhere.",
+        "currentResiduals": [
+          "Synthetic canary in bounded errors/diagnostics and zero boot/idle work; no physical logs/browser privacy claim.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB004-01",
+        "planned_contribution_and_residual": "N2M-02/03/06 exact admitted original worker/native mapping and execute carrier; physical native proof pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-03",
+          "N2M-06"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M04",
+          "M06",
+          "M07",
+          "M13",
+          "M14",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/03/06 exact admitted original worker/native mapping and execute carrier; physical native proof pending.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted."
+        ]
+      },
+      {
+        "criterion": "BUB004-02",
+        "planned_contribution_and_residual": "N2M-06/07 one approved input and actual captured result; useful-model quality remains HOLD.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-06",
+          "N2M-07"
+        ],
+        "cases": [
+          "M01",
+          "M06",
+          "M07",
+          "M08",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-06/07 one approved input and actual captured result; useful-model quality remains HOLD.",
+        "currentResiduals": [
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment."
+        ]
+      },
+      {
+        "criterion": "BUB004-04",
+        "planned_contribution_and_residual": "N2M-07/08/12 actual result/stop survives response loss; no rollback or erased effect.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-07",
+          "N2M-08",
+          "N2M-12"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M08",
+          "M09",
+          "M13",
+          "M14",
+          "M15",
+          "M16"
+        ],
+        "originalFrozenResidual": "N2M-07/08/12 actual result/stop survives response loss; no rollback or erased effect.",
+        "currentResiduals": [
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+        ]
+      },
+      {
+        "criterion": "BUB004-05",
+        "planned_contribution_and_residual": "N2M-04/05/09/10 fresh query and owned receipts; no retry/replacement from old request.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-04",
+          "N2M-05",
+          "N2M-09",
+          "N2M-10"
+        ],
+        "cases": [
+          "M01",
+          "M05",
+          "M06",
+          "M07",
+          "M09",
+          "M10",
+          "M11",
+          "M12",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-04/05/09/10 fresh query and owned receipts; no retry/replacement from old request.",
+        "currentResiduals": [
+          "Two distinct live original child contexts reverse completion; same-child concurrency beyond these bounded carriers remains separate.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Actual adapter returns/events and shutdown provenance, copied opaque tickets and distinct Session objects rejected. Full ten-field fake publisher callbacks are not positive ownership oracles and were not invented.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual."
+        ]
+      },
+      {
+        "criterion": "BUB005-02",
+        "planned_contribution_and_residual": "N2M-02/05/06 unchanged immutable worker permission; no new message/relay grant.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-05",
+          "N2M-06"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M06",
+          "M07",
+          "M13",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/05/06 unchanged immutable worker permission; no new message/relay grant.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted."
+        ]
+      },
+      {
+        "criterion": "BUB005-03",
+        "planned_contribution_and_residual": "N2M-03/06/08/15 no duplicate consume/send/recreation; durable dedup D/N pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-06",
+          "N2M-08",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M04",
+          "M06",
+          "M07",
+          "M09",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-03/06/08/15 no duplicate consume/send/recreation; durable dedup D/N pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB005-05",
+        "planned_contribution_and_residual": "N2M-06/08/09 actual lifecycle/result distinct from a success response or callback; N pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-06",
+          "N2M-08",
+          "N2M-09"
+        ],
+        "cases": [
+          "M01",
+          "M06",
+          "M07",
+          "M09",
+          "M10",
+          "M11",
+          "M12",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-06/08/09 actual lifecycle/result distinct from a success response or callback; N pending.",
+        "currentResiduals": [
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual adapter returns/events and shutdown provenance, copied opaque tickets and distinct Session objects rejected. Full ten-field fake publisher callbacks are not positive ownership oracles and were not invented."
+        ]
+      },
+      {
+        "criterion": "BUB006-01",
+        "planned_contribution_and_residual": "N2M-01/04/06/12/15 exact captured native OperatorPeer; T callback cannot prove admission.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-01",
+          "N2M-04",
+          "N2M-06",
+          "N2M-12",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M02",
+          "M03",
+          "M05",
+          "M06",
+          "M07",
+          "M13",
+          "M14",
+          "M15",
+          "M16",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-01/04/06/12/15 exact captured native OperatorPeer; T callback cannot prove admission.",
+        "currentResiduals": [
+          "Callback/typed-carrier doubles; physical owner authentication remains outside.",
+          "Two distinct live original child contexts reverse completion; same-child concurrency beyond these bounded carriers remains separate.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB006-02",
+        "planned_contribution_and_residual": "N2M-02/03/05/07/12 current scoped permission/data/CAS after awaits; final original checks retained.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-03",
+          "N2M-05",
+          "N2M-07",
+          "N2M-12"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M04",
+          "M06",
+          "M08",
+          "M13",
+          "M14",
+          "M15",
+          "M16",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/03/05/07/12 current scoped permission/data/CAS after awaits; final original checks retained.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+        ]
+      },
+      {
+        "criterion": "BUB006-03",
+        "planned_contribution_and_residual": "N2M-01/09/14 private capabilities, bounded errors and synthetic canary scans; actual privacy pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-01",
+          "N2M-09",
+          "N2M-14"
+        ],
+        "cases": [
+          "M01",
+          "M02",
+          "M03",
+          "M09",
+          "M10",
+          "M11",
+          "M12",
+          "M13",
+          "M16",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-01/09/14 private capabilities, bounded errors and synthetic canary scans; actual privacy pending.",
+        "currentResiduals": [
+          "Callback/typed-carrier doubles; physical owner authentication remains outside.",
+          "Actual adapter returns/events and shutdown provenance, copied opaque tickets and distinct Session objects rejected. Full ten-field fake publisher callbacks are not positive ownership oracles and were not invented.",
+          "Synthetic canary in bounded errors/diagnostics and zero boot/idle work; no physical logs/browser privacy claim."
+        ]
+      },
+      {
+        "criterion": "BUB006-04",
+        "planned_contribution_and_residual": "N2M-02/05/06/07 exact approved source remains required; transport currentness is no data proof.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-05",
+          "N2M-06",
+          "N2M-07"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M06",
+          "M07",
+          "M08",
+          "M13",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/05/06/07 exact approved source remains required; transport currentness is no data proof.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment."
+        ]
+      },
+      {
+        "criterion": "BUB006-05",
+        "planned_contribution_and_residual": "N2M-01/02/06/10 unknown/denied authority stops effects and preserves holds; no implicit fallback.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-01",
+          "N2M-02",
+          "N2M-06",
+          "N2M-10"
+        ],
+        "cases": [
+          "M01",
+          "M02",
+          "M03",
+          "M06",
+          "M07",
+          "M09",
+          "M10",
+          "M12",
+          "M13",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-01/02/06/10 unknown/denied authority stops effects and preserves holds; no implicit fallback.",
+        "currentResiduals": [
+          "Callback/typed-carrier doubles; physical owner authentication remains outside.",
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual."
+        ]
+      },
+      {
+        "criterion": "BUB008-05",
+        "planned_contribution_and_residual": "N2M-02/05/06 current original context/source at final request fence; native observation pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-05",
+          "N2M-06"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M06",
+          "M07",
+          "M13",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-02/05/06 current original context/source at final request fence; native observation pending.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted."
+        ]
+      },
+      {
+        "criterion": "BUB011-03",
+        "planned_contribution_and_residual": "N2M-02/12 private putHandoff guard/unchanged source requirements; NI2 exposes no new handoff/resume.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-02",
+          "N2M-12"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M13",
+          "M15",
+          "M16"
+        ],
+        "originalFrozenResidual": "N2M-02/12 private putHandoff guard/unchanged source requirements; NI2 exposes no new handoff/resume.",
+        "currentResiduals": [
+          "Actual original receiver/opaque handles proven for reachable methods. putHandoff guarded by held source plus zero alias calls; no positive normal handoff exists.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+        ]
+      },
+      {
+        "criterion": "BUB011-04",
+        "planned_contribution_and_residual": "N2M-01/05/06 no public marker/caller-ready or latest-token authority; actual source identity pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-01",
+          "N2M-05",
+          "N2M-06"
+        ],
+        "cases": [
+          "M01",
+          "M02",
+          "M03",
+          "M06",
+          "M07",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-01/05/06 no public marker/caller-ready or latest-token authority; actual source identity pending.",
+        "currentResiduals": [
+          "Callback/typed-carrier doubles; physical owner authentication remains outside.",
+          "Repeated original readonly native checks cause zero changes; arbitrary host authorization is not inferred.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted."
+        ]
+      },
+      {
+        "criterion": "BUB011-05",
+        "planned_contribution_and_residual": "N2M-04/09/10/11/15 lost environment/lifetime leaves held unknown; no automatic recreation.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-04",
+          "N2M-09",
+          "N2M-10",
+          "N2M-11",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M05",
+          "M06",
+          "M07",
+          "M09",
+          "M10",
+          "M11",
+          "M12",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-04/09/10/11/15 lost environment/lifetime leaves held unknown; no automatic recreation.",
+        "currentResiduals": [
+          "Two distinct live original child contexts reverse completion; same-child concurrency beyond these bounded carriers remains separate.",
+          "Actual adapter returns/events and shutdown provenance, copied opaque tickets and distinct Session objects rejected. Full ten-field fake publisher callbacks are not positive ownership oracles and were not invented.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual.",
+          "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB012-01",
+        "planned_contribution_and_residual": "N2M-03/08/10 preserves active reservation after unknown/stop; actual last-slot races remain D/N pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-08",
+          "N2M-10"
+        ],
+        "cases": [
+          "M04",
+          "M07",
+          "M09",
+          "M10",
+          "M12",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-03/08/10 preserves active reservation after unknown/stop; actual last-slot races remain D/N pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual."
+        ]
+      },
+      {
+        "criterion": "BUB012-03",
+        "planned_contribution_and_residual": "N2M-03/06/08/15 abort/unknown cannot reset attempt or release for retry; actual cumulative accounting pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-06",
+          "N2M-08",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M04",
+          "M06",
+          "M07",
+          "M09",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-03/06/08/15 abort/unknown cannot reset attempt or release for retry; actual cumulative accounting pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB012-04",
+        "planned_contribution_and_residual": "N2M-08/10 known usage distinct from unknown/fabricated zero; real usage/cost remains separate.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-08",
+          "N2M-10"
+        ],
+        "cases": [
+          "M07",
+          "M09",
+          "M10",
+          "M12",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-08/10 known usage distinct from unknown/fabricated zero; real usage/cost remains separate.",
+        "currentResiduals": [
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual."
+        ]
+      },
+      {
+        "criterion": "BUB012-05",
+        "planned_contribution_and_residual": "N2M-01/10/11/14 no new unbounded queue/timer/cache/effect authority; aggregate actual bounds pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-01",
+          "N2M-10",
+          "N2M-11",
+          "N2M-14"
+        ],
+        "cases": [
+          "M01",
+          "M02",
+          "M03",
+          "M07",
+          "M09",
+          "M10",
+          "M12",
+          "M13",
+          "M16"
+        ],
+        "originalFrozenResidual": "N2M-01/10/11/14 no new unbounded queue/timer/cache/effect authority; aggregate actual bounds pending.",
+        "currentResiduals": [
+          "Callback/typed-carrier doubles; physical owner authentication remains outside.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual.",
+          "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held.",
+          "Synthetic canary in bounded errors/diagnostics and zero boot/idle work; no physical logs/browser privacy claim."
+        ]
+      },
+      {
+        "criterion": "BUB013-01",
+        "planned_contribution_and_residual": "N2M-07/08 captured original input/result provenance and held factual finish; complete reviewed report still NI3/NI5 pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-07",
+          "N2M-08"
+        ],
+        "cases": [
+          "M01",
+          "M08",
+          "M09",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-07/08 captured original input/result provenance and held factual finish; complete reviewed report still NI3/NI5 pending.",
+        "currentResiduals": [
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held."
+        ]
+      },
+      {
+        "criterion": "BUB014-02",
+        "planned_contribution_and_residual": "N2M-08/10/12 truthful guarded control/stop/unknown states; rendered controls U HOLD.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-08",
+          "N2M-10",
+          "N2M-12"
+        ],
+        "cases": [
+          "M03",
+          "M07",
+          "M09",
+          "M10",
+          "M12",
+          "M13",
+          "M14",
+          "M15",
+          "M16"
+        ],
+        "originalFrozenResidual": "N2M-08/10/12 truthful guarded control/stop/unknown states; rendered controls U HOLD.",
+        "currentResiduals": [
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual unknown/recovery and terminal held facts tested; exhaustive timer-after-return interleavings remain a source-backed residual.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+        ]
+      },
+      {
+        "criterion": "BUB014-03",
+        "planned_contribution_and_residual": "N2M-04/06/12 stale concurrent replies cannot borrow another request; actual rendered reconnect pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-04",
+          "N2M-06",
+          "N2M-12"
+        ],
+        "cases": [
+          "M01",
+          "M03",
+          "M05",
+          "M06",
+          "M07",
+          "M13",
+          "M15",
+          "M16",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-04/06/12 stale concurrent replies cannot borrow another request; actual rendered reconnect pending.",
+        "currentResiduals": [
+          "Two distinct live original child contexts reverse completion; same-child concurrency beyond these bounded carriers remains separate.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Installed aliases/control and absent-installed generic task/memory tested. Advanced native absent-hooks path is preserved prior evidence, not a new current runtime integration count."
+        ]
+      },
+      {
+        "criterion": "BUB016-01",
+        "planned_contribution_and_residual": "Exact proposal/design/source/history pins and all87 retained criteria; no functional design substitutes CODE.",
+        "status": "RETAINED_UNPASSED",
+        "families": [],
+        "cases": [],
+        "originalFrozenResidual": "Exact proposal/design/source/history pins and all87 retained criteria; no functional design substitutes CODE.",
+        "currentResiduals": []
+      },
+      {
+        "criterion": "BUB016-02",
+        "planned_contribution_and_residual": "N2M-03/06/07/08/15 bounded normal worker contribution; whole native feature chain pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-06",
+          "N2M-07",
+          "N2M-08",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M04",
+          "M06",
+          "M07",
+          "M08",
+          "M09",
+          "M14",
+          "M15",
+          "M17"
+        ],
+        "originalFrozenResidual": "N2M-03/06/07/08/15 bounded normal worker contribution; whole native feature chain pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Original outer/inner deterministic adapter and foreign ambient helper tested; original full CLI/model execution is not accepted.",
+          "Actual original flush and scoped persisted read; no corruption or broad IO fault experiment.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB016-03",
+        "planned_contribution_and_residual": "N2M-03/08/11/15 exact loss/race/restart residuals; actual D/N/P matrix pending.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-03",
+          "N2M-08",
+          "N2M-11",
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M04",
+          "M09",
+          "M10",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-03/08/11/15 exact loss/race/restart residuals; actual D/N/P matrix pending.",
+        "currentResiduals": [
+          "Prepare loss-first actual original barrier and response close; no process crash injected.",
+          "Actual native stop and pending finish under denied owner; crashes between stop and durable settlement remain held.",
+          "Actual plugin shutdown drain/store-close ordering and closed retained closures; whole DSH quit/restart and physical reload remain held.",
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      },
+      {
+        "criterion": "BUB016-04",
+        "planned_contribution_and_residual": "N2M-15 real bare installed package/native authentication/quit proof remains NOT RUN; preview/release HOLD.",
+        "status": "ADDITIVE_BOUNDED_FUNCTIONAL_NOT_ACCEPTED",
+        "families": [
+          "N2M-15"
+        ],
+        "cases": [
+          "M01",
+          "M14",
+          "M15"
+        ],
+        "originalFrozenResidual": "N2M-15 real bare installed package/native authentication/quit proof remains NOT RUN; preview/release HOLD.",
+        "currentResiduals": [
+          "Actual original no-listener ordering and both bounded response-loss orders; process cuts/cold reopen/full exit/resume/P remain outside."
+        ]
+      }
+    ],
+    "otherRetainedIds": [
+      "BUB001-01",
+      "BUB001-03",
+      "BUB001-05",
+      "BUB002-01",
+      "BUB002-04",
+      "BUB002-05",
+      "BUB003-05",
+      "BUB004-03",
+      "BUB005-01",
+      "BUB005-04",
+      "BUB007-01",
+      "BUB007-02",
+      "BUB007-03",
+      "BUB007-04",
+      "BUB007-05",
+      "BUB007-06",
+      "BUB008-01",
+      "BUB008-02",
+      "BUB008-03",
+      "BUB008-04",
+      "BUB009-01",
+      "BUB009-02",
+      "BUB009-03",
+      "BUB009-04",
+      "BUB009-05",
+      "BUB010-01",
+      "BUB010-02",
+      "BUB010-03",
+      "BUB010-04",
+      "BUB010-05",
+      "BUB011-01",
+      "BUB011-02",
+      "BUB012-02",
+      "BUB013-02",
+      "BUB013-03",
+      "BUB013-04",
+      "BUB013-05",
+      "BUB014-01",
+      "BUB014-04",
+      "BUB014-05",
+      "BUB015-01",
+      "BUB015-02",
+      "BUB015-03",
+      "BUB015-04",
+      "BUB015-05",
+      "BUB016-05",
+      "BUB016-06",
+      "DF010-C01",
+      "DF010-C02",
+      "DF010-C03",
+      "DF010-C04",
+      "DF010-C05"
+    ],
+    "otherDisposition": "All original mappings and residuals preserved; no promotion",
+    "fullTicketOrCriterionAccepted": false
+  },
+  "executionRestrictions": {
+    "schema": 5,
+    "sourceOrGitMutations": 0,
+    "protectedRowTamper": 0,
+    "fakeFactoryPersistenceReceiptPublisher": 0,
+    "hostCliLaunchListenersHttpSocketBrowser": 0,
+    "externalInferenceToolsAccountsCredentialsInstall": 0,
+    "CODEAttemptsOrReroutes": 0,
+    "schema6Schema7Resume": 0
+  },
+  "residualHolds": [
+    "Final independent CODE remains blocked by recorded platform cyber flag; never retried or replaced",
+    "Physical installed/profile/native authentication/listener/browser/quit/restart acceptance",
+    "Full rendered client and coherent final dependency regression",
+    "NI4 internal no-carrier chat/source control cleanup",
+    "Full ten-field provenance/cold process-cut/migration/resume matrices",
+    "Real useful model/reviewer quality",
+    "All 82 original plus 5 DF010 criteria; full MVP/publication/stable release"
+  ],
+  "finalTest": {
+    "path": "test/manager-invocation-functional.test.mjs",
+    "sha256": "1e573927eb70c4c37aef776bd07402daffddd88884a35803728328af45aed5bc"
+  }
+}

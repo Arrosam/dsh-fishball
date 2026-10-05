@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-05T00:28:39.213110+00:00",
+  "pathRepairRun": {
+    "tests": 15,
+    "pass": 14,
+    "fail": 1,
+    "exitCode": 1,
+    "tapSha256": "edd6461d9d955c74eb5616eef4efb0c2256598ea79612ac5dc2502c8525a2f9c"
+  },
+  "classification": "M11 fixture event violated original SessionProjection carrier shape: plain object lacked snapshotEvents",
+  "repair": "Replace the negative plain session spoof with actual original detached Session.create and its actual appended turn/start event; same raw id, different object and no owned registry handle",
+  "affectedCases": [
+    "M11"
+  ],
+  "unchangedPassingCases": [
+    "M01",
+    "M02",
+    "M03",
+    "M04",
+    "M05",
+    "M06",
+    "M07",
+    "M08",
+    "M09",
+    "M10",
+    "M12",
+    "M13",
+    "M14",
+    "M15",
+    "M16"
+  ],
+  "productSourceChanges": 0,
+  "boundInputsMatched": 493,
+  "testSha256": "ca60e3772b39010026773fbe1c1bc76652f4c0e0eec4796bb8dc3c7141fd0c97"
+}
