@@ -1,0 +1,47 @@
+{
+  "status": "FIRST INDEPENDENT RESULT PRESERVED",
+  "check_time_utc": "2026-10-05T00:54:28.305468+00:00",
+  "source_and_test": [
+    {
+      "source": "src/installed-audit.mjs",
+      "preserved_as": "docs/evidence/NI3/installer-independent-first-source.mjs",
+      "sha256": "00e2cbbec188dc9cc154c512766b563e86368c2c8d6a15338b7cc32ceeae3922",
+      "bytes": 46737
+    },
+    {
+      "source": "test/installed-audit-functional.test.mjs",
+      "preserved_as": "docs/evidence/NI3/installer-independent-first-test.mjs",
+      "sha256": "2b92b7704ee77b148cbd52462c0c1da02e8025452af8e31f525ea39bd62bf369",
+      "bytes": 36431
+    }
+  ],
+  "tap": {
+    "path": "docs/evidence/NI3/installer-independent-first.tap",
+    "sha256": "ab878f1e0278673ecec676498cb510de7b12967f306cbe52727825f3634164ee",
+    "bytes": 8898
+  },
+  "counts": {
+    "tests": 16,
+    "pass": 13,
+    "fail": 3,
+    "skip": 0
+  },
+  "failures": [
+    {
+      "id": "IF02",
+      "classification": "independent expected-code fixture correction",
+      "detail": "Omitting required auditInputRef is structurally INVALID_INPUT before domain identity checks; complete negative remains refused0plan."
+    },
+    {
+      "id": "IF10",
+      "classification": "independent capacity fixture correction",
+      "detail": "Selected maxTotalAttempts2 is full after capture-only and reconciliation commands. A new third command correctly refuses AUDIT_COLLECT_CAPACITY; the required replay oracle must use a retained existing command."
+    },
+    {
+      "id": "IF11",
+      "classification": "source functional finding IA-F01",
+      "detail": "Known typed projection of actual schema5 writeArtifact creates latest artifact4/task advance from original3; source collect line350 calls nonhistorical planCurrent/currentPair line161 before collector recovery. AUDIT_STALE blocks exact original receipt recovery; no second collector/source write."
+    }
+  ],
+  "evidence_level": "TYPED MODULE ONLY; no DB/native provenance"
+}

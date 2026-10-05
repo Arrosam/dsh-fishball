@@ -1,0 +1,340 @@
+TAP version 13
+# (node:89924) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: omitted and exact disabled selection are inert with disabled worker and one lifecycle
+ok 1 - omitted and exact disabled selection are inert with disabled worker and one lifecycle
+  ---
+  duration_ms: 14.146
+  type: 'test'
+  ...
+# Subtest: selection descriptors and Proxy reject before traps
+ok 2 - selection descriptors and Proxy reject before traps
+  ---
+  duration_ms: 0.2355
+  type: 'test'
+  ...
+# Subtest: inputByteLimit rejects both illegal boundaries
+ok 3 - inputByteLimit rejects both illegal boundaries
+  ---
+  duration_ms: 0.219958
+  type: 'test'
+  ...
+# Subtest: resultByteLimit rejects both illegal boundaries
+ok 4 - resultByteLimit rejects both illegal boundaries
+  ---
+  duration_ms: 0.093417
+  type: 'test'
+  ...
+# Subtest: maxPrivateReviewers rejects both illegal boundaries
+ok 5 - maxPrivateReviewers rejects both illegal boundaries
+  ---
+  duration_ms: 0.072625
+  type: 'test'
+  ...
+# Subtest: maxRepairRounds rejects both illegal boundaries
+ok 6 - maxRepairRounds rejects both illegal boundaries
+  ---
+  duration_ms: 0.071167
+  type: 'test'
+  ...
+# Subtest: maxTotalAttempts rejects both illegal boundaries
+ok 7 - maxTotalAttempts rejects both illegal boundaries
+  ---
+  duration_ms: 0.156083
+  type: 'test'
+  ...
+# Subtest: zero repair rounds require repair omission and distinct severities
+ok 8 - zero repair rounds require repair omission and distinct severities
+  ---
+  duration_ms: 0.484667
+  type: 'test'
+  ...
+# Subtest: closed installer refuses missing callbacks and safe input before callbacks
+ok 9 - closed installer refuses missing callbacks and safe input before callbacks
+  ---
+  duration_ms: 2.032541
+  type: 'test'
+  ...
+# Subtest: configuration and preparation derive source policy and mandatory material
+ok 10 - configuration and preparation derive source policy and mandatory material
+  ---
+  duration_ms: 4.880041
+  type: 'test'
+  ...
+# Subtest: protected preparation and captured producer provenance cannot be missing/header-only
+ok 11 - protected preparation and captured producer provenance cannot be missing/header-only
+  ---
+  duration_ms: 1.515375
+  type: 'test'
+  ...
+# Subtest: source-derived review spec retains distinct full input and artifact digests
+ok 12 - source-derived review spec retains distinct full input and artifact digests
+  ---
+  duration_ms: 3.108625
+  type: 'test'
+  ...
+# Subtest: unknown role price and producer-only policy do not plan
+ok 13 - unknown role price and producer-only policy do not plan
+  ---
+  duration_ms: 3.341458
+  type: 'test'
+  ...
+# Subtest: typed input/current scope refuses before plan
+ok 14 - typed input/current scope refuses before plan
+  ---
+  duration_ms: 1.547875
+  type: 'test'
+  ...
+# Subtest: typed input/current body refuses before plan
+ok 15 - typed input/current body refuses before plan
+  ---
+  duration_ms: 1.284125
+  type: 'test'
+  ...
+# Subtest: typed input/current crypto refuses before plan
+ok 16 - typed input/current crypto refuses before plan
+  ---
+  duration_ms: 1.6865
+  type: 'test'
+  ...
+# Subtest: typed input/current input-origin refuses before plan
+ok 17 - typed input/current input-origin refuses before plan
+  ---
+  duration_ms: 1.6415
+  type: 'test'
+  ...
+# Subtest: typed input/current material refuses before plan
+ok 18 - typed input/current material refuses before plan
+  ---
+  duration_ms: 1.458125
+  type: 'test'
+  ...
+# Subtest: typed input/current artifact refuses before plan
+ok 19 - typed input/current artifact refuses before plan
+  ---
+  duration_ms: 1.184042
+  type: 'test'
+  ...
+# Subtest: typed input/current semantic refuses before plan
+ok 20 - typed input/current semantic refuses before plan
+  ---
+  duration_ms: 1.227708
+  type: 'test'
+  ...
+# Subtest: typed input/current control refuses before plan
+ok 21 - typed input/current control refuses before plan
+  ---
+  duration_ms: 1.527291
+  type: 'test'
+  ...
+# Subtest: normal consent checks complete successful wire size before local preview admission
+ok 22 - normal consent checks complete successful wire size before local preview admission
+  ---
+  duration_ms: 5.382875
+  type: 'test'
+  ...
+# Subtest: transport denial during preview wait overrides callback and prevents consent
+ok 23 - transport denial during preview wait overrides callback and prevents consent
+  ---
+  duration_ms: 3.500292
+  type: 'test'
+  ...
+# Subtest: grant echo without actual private grant receipt never authorizes
+ok 24 - grant echo without actual private grant receipt never authorizes
+  ---
+  duration_ms: 6.747458
+  type: 'test'
+  ...
+# Subtest: pending dispatch occupies selected reviewer slot and unknown never recreates
+ok 25 - pending dispatch occupies selected reviewer slot and unknown never recreates
+  ---
+  duration_ms: 15.621584
+  type: 'test'
+  ...
+# Subtest: execution lost response holds one-use submission and no second callback
+ok 26 - execution lost response holds one-use submission and no second callback
+  ---
+  duration_ms: 8.622875
+  type: 'test'
+  ...
+# Subtest: actual typed capture/submission phases complete review; callback echo alone cannot
+ok 27 - actual typed capture/submission phases complete review; callback echo alone cannot
+  ---
+  duration_ms: 9.097917
+  type: 'test'
+  ...
+# Subtest: callback success/header without private phase receipts remains unknown
+ok 28 - callback success/header without private phase receipts remains unknown
+  ---
+  duration_ms: 8.140792
+  type: 'test'
+  ...
+# Subtest: outer changed CAS conflicts before fresh CAS or child effects and historical replay survives CAS advance
+ok 29 - outer changed CAS conflicts before fresh CAS or child effects and historical replay survives CAS advance
+  ---
+  duration_ms: 8.97825
+  type: 'test'
+  ...
+# Subtest: concurrent identical collect refuses without a second collector
+ok 30 - concurrent identical collect refuses without a second collector
+  ---
+  duration_ms: 9.159833
+  type: 'test'
+  ...
+# Subtest: repair publication fixes authenticated next version; replay cannot create another
+ok 31 - repair publication fixes authenticated next version; replay cannot create another
+  ---
+  duration_ms: 10.079375
+  type: 'test'
+  ...
+# Subtest: capture-only repair reuses fixed target on explicit current reconciliation
+ok 32 - capture-only repair reuses fixed target on explicit current reconciliation
+  ---
+  duration_ms: 10.334583
+  type: 'test'
+  ...
+# Subtest: write uncertainty recovers original child identity rather than selecting another version
+ok 33 - write uncertainty recovers original child identity rather than selecting another version
+  ---
+  duration_ms: 9.812709
+  type: 'test'
+  ...
+# Subtest: source cancellation during capture refusal retains hold and no submission
+ok 34 - source cancellation during capture refusal retains hold and no submission
+  ---
+  duration_ms: 8.35525
+  type: 'test'
+  ...
+# Subtest: factual finish requires original finish receipt and cannot be inferred from output
+ok 35 - factual finish requires original finish receipt and cannot be inferred from output
+  ---
+  duration_ms: 8.825458
+  type: 'test'
+  ...
+# Subtest: original finish receipt closes only exact execution and actual release
+ok 36 - original finish receipt closes only exact execution and actual release
+  ---
+  duration_ms: 8.950834
+  type: 'test'
+  ...
+# Subtest: lost lifetime/cold module cannot adopt body or original receipt as collection authority
+ok 37 - lost lifetime/cold module cannot adopt body or original receipt as collection authority
+  ---
+  duration_ms: 7.342291
+  type: 'test'
+  ...
+# Subtest: exact seventeen-input installer and six-return contribution refuse extra/missing fields without reads
+ok 38 - exact seventeen-input installer and six-return contribution refuse extra/missing fields without reads
+  ---
+  duration_ms: 0.816375
+  type: 'test'
+  ...
+# Subtest: complete successful consent envelope 65535 bytes legal boundary
+ok 39 - complete successful consent envelope 65535 bytes legal boundary
+  ---
+  duration_ms: 4.332292
+  type: 'test'
+  ...
+# Subtest: complete successful consent envelope 65536 bytes legal boundary
+ok 40 - complete successful consent envelope 65536 bytes legal boundary
+  ---
+  duration_ms: 4.50825
+  type: 'test'
+  ...
+# Subtest: complete successful consent envelope 65537 bytes legal boundary
+ok 41 - complete successful consent envelope 65537 bytes legal boundary
+  ---
+  duration_ms: 4.06625
+  type: 'test'
+  ...
+# Subtest: whole typed pair policy binding cannot change while keeping digest labels
+not ok 42 - whole typed pair policy binding cannot change while keeping digest labels
+  ---
+  duration_ms: 2.157209
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:156:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 'AUDIT_INPUT_REQUIRED'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:156:445)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: selected private plan ceiling refuses before new source mutation and retains original plans
+not ok 43 - selected private plan ceiling refuses before new source mutation and retains original plans
+  ---
+  duration_ms: 5.380542
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:157:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 'AUDIT_COLLECT_CAPACITY'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:157:208)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: separate pending review actions share one selected active slot
+not ok 44 - separate pending review actions share one selected active slot
+  ---
+  duration_ms: 3.660542
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:158:1'
+  failureType: 'testCodeFailure'
+  error: 'AUDIT_SOURCE_STALE'
+  code: 'AUDIT_SOURCE_STALE'
+  name: 'BootstrapError'
+  stack: |-
+    fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-audit.mjs:8:30)
+    planCurrent (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-audit.mjs:169:197)
+    auditPreview (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-audit.mjs:301:157)
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-audit.mjs:369:129
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-invocation.mjs:49:28
+    AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14)
+    runInstalledWorkerInvocation (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-invocation.mjs:46:18)
+    Object.auditPreview (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/installed-audit.mjs:369:14)
+    Object.call (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:106:296)
+    f.grant (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-audit.test.mjs:108:57)
+  ...
+# Subtest: original revoke receipt before dispatch prevents native admission
+ok 45 - original revoke receipt before dispatch prevents native admission
+  ---
+  duration_ms: 5.730666
+  type: 'test'
+  ...
+# Subtest: pending dispatch transport denial preserves its occupied unknown slot
+ok 46 - pending dispatch transport denial preserves its occupied unknown slot
+  ---
+  duration_ms: 7.5095
+  type: 'test'
+  ...
+# Subtest: finite outer commands refuse capacity before collector yet retain original incomplete identity
+ok 47 - finite outer commands refuse capacity before collector yet retain original incomplete identity
+  ---
+  duration_ms: 13.747209
+  type: 'test'
+  ...
+# Subtest: unsolicited/incorrect private phase seals admission and still disposes subscription exactly once
+ok 48 - unsolicited/incorrect private phase seals admission and still disposes subscription exactly once
+  ---
+  duration_ms: 6.871541
+  type: 'test'
+  ...
+1..48
+# tests 48
+# suites 0
+# pass 45
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 353.256458

@@ -1,0 +1,4 @@
+97cdfb8517d6c20963adb4636b8efadfa22c79fedc6bc2fe45b047aa06105bb3  src/installed-audit.mjs
+712cdda0898b34a7b7365346278a9c0db8f3b40ec8d64e358cb2460ad5ea6055  test/installed-audit.test.mjs
+b267612922b39aa6b11ab47c1f3d4d04e41862bb925e023872741826d21656a9  docs/evidence/NI3/normal-audit-api-addendum.md
+eb80e14127bd2f59e2eee4820889fd45000432acf6cd3bdb3d6b481b9e2f730d  docs/evidence/NI3/normal-audit-api-independent-design.md

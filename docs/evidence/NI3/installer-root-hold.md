@@ -1,0 +1,7 @@
+# Audit installer module checkpoint
+
+Root verified all21 rows of the affected author manifest `b2a29de72a0c6f6175aa12be9a9d91324426b4d00ec98e54b42d825b3bbf42d7`, read the full narrow source diff and repair notes, and authorized the unchanged independent IF11 discriminator against source `80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d` and independent test `4c97a6dfe84f5aefccc0aa3fecc61d23a7c3bc78db74eb5c5cb9469ab523fc69`.
+
+The independent first16/13PASS/3FAIL is preserved. Two fixture-only corrections passed2/2. IA-F01 was a real module defect: already committed fixed-target repair output could prevent lookup of its lost original write receipt. Its original author repaired only receipt reconciliation; fresh-effect currentness remains strict. Author affected3/3 and independent unchanged IF11 1/1 pass. No full repaired16/16 or author49/49 run is claimed. Git whitespace checking flags two blank lines in the verbatim first failing TAP; those evidence bytes are intentionally retained. Product source and final tests have no whitespace errors.
+
+This commit is typed module implementation and scoped functional evidence. Actual source-owned child receipt recovery, native collector/usage, role-specific original model recipes and accepted policy, whole-pair private preview, packed installation and final regression remain required. Boolean validateResult is only a narrowing hook, never authentic native usage. Independent CODE, browser/useful inference, all87 aggregate acceptance, full MVP and publication remain HOLD.

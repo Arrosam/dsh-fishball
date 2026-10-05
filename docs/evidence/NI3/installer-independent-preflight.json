@@ -1,0 +1,291 @@
+{
+  "pins": [
+    {
+      "path": "src/installed-audit.mjs",
+      "sha256": "00e2cbbec188dc9cc154c512766b563e86368c2c8d6a15338b7cc32ceeae3922",
+      "bytes": 46737,
+      "expected": "00e2cbbec188dc9cc154c512766b563e86368c2c8d6a15338b7cc32ceeae3922",
+      "match": true
+    },
+    {
+      "path": "test/installed-audit.test.mjs",
+      "sha256": "b010f067bd50573375c9e414f1a73fdd99aedf64311d21ecc14115547eac1ab0",
+      "bytes": 37621,
+      "expected": "b010f067bd50573375c9e414f1a73fdd99aedf64311d21ecc14115547eac1ab0",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-first/installed-audit.mjs",
+      "sha256": "97cdfb8517d6c20963adb4636b8efadfa22c79fedc6bc2fe45b047aa06105bb3",
+      "bytes": 45872,
+      "expected": "97cdfb8517d6c20963adb4636b8efadfa22c79fedc6bc2fe45b047aa06105bb3",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-first/installed-audit.test.mjs",
+      "sha256": "712cdda0898b34a7b7365346278a9c0db8f3b40ec8d64e358cb2460ad5ea6055",
+      "bytes": 32484,
+      "expected": "712cdda0898b34a7b7365346278a9c0db8f3b40ec8d64e358cb2460ad5ea6055",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-first.tap",
+      "sha256": "b819fd5c6bba9443b1f47289dfaa17a3dbd5e2fe834c1c8115d96dab0b86e61b",
+      "bytes": 7788,
+      "expected": "b819fd5c6bba9443b1f47289dfaa17a3dbd5e2fe834c1c8115d96dab0b86e61b",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-boundary-source.mjs",
+      "sha256": "97cdfb8517d6c20963adb4636b8efadfa22c79fedc6bc2fe45b047aa06105bb3",
+      "bytes": 45872,
+      "expected": "97cdfb8517d6c20963adb4636b8efadfa22c79fedc6bc2fe45b047aa06105bb3",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-boundary-test.mjs",
+      "sha256": "d375ebdb2bfe2fa9016f172ec791b9c0c8f74b68db4bd591603674c9fa8a9204",
+      "bytes": 37607,
+      "expected": "d375ebdb2bfe2fa9016f172ec791b9c0c8f74b68db4bd591603674c9fa8a9204",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-boundary-first.tap",
+      "sha256": "c7ab06f9b2018c7c46a09d6ae935ced1094393e84e0d52c2adf8b2e956458166",
+      "bytes": 12832,
+      "expected": "c7ab06f9b2018c7c46a09d6ae935ced1094393e84e0d52c2adf8b2e956458166",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-boundary-retest.tap",
+      "sha256": "4f850ba00f427dbb44ddb0916079b481aceeb8ee85583ad48ae93ad675e360a3",
+      "bytes": 10264,
+      "expected": "4f850ba00f427dbb44ddb0916079b481aceeb8ee85583ad48ae93ad675e360a3",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-addendum.md",
+      "sha256": "b267612922b39aa6b11ab47c1f3d4d04e41862bb925e023872741826d21656a9",
+      "bytes": 43622,
+      "expected": "b267612922b39aa6b11ab47c1f3d4d04e41862bb925e023872741826d21656a9",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-addendum.1ca02630.md",
+      "sha256": "1ca026309fcff9dc5fa74ce0ca29b80027ec610c7f23d64cee6391052c378d06",
+      "bytes": 30466,
+      "expected": "1ca026309fcff9dc5fa74ce0ca29b80027ec610c7f23d64cee6391052c378d06",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-design.md",
+      "sha256": "eb80e14127bd2f59e2eee4820889fd45000432acf6cd3bdb3d6b481b9e2f730d",
+      "bytes": 48106,
+      "expected": "eb80e14127bd2f59e2eee4820889fd45000432acf6cd3bdb3d6b481b9e2f730d",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+      "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+      "bytes": 165459,
+      "expected": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-root-freeze.md",
+      "sha256": "4cf03a6b3885673edf1f4838cf8306bf3382a61ade7c8fd7aa7d4c5af9d19542",
+      "bytes": 3443,
+      "expected": "4cf03a6b3885673edf1f4838cf8306bf3382a61ade7c8fd7aa7d4c5af9d19542",
+      "match": true
+    },
+    {
+      "path": "docs/normal-runtime-audit-contract.md",
+      "sha256": "9e806aaf1c224581d43ae54fffe6775e18d58400c20fcc42814b844859a1c012",
+      "bytes": 34346,
+      "expected": "9e806aaf1c224581d43ae54fffe6775e18d58400c20fcc42814b844859a1c012",
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/test-design.md",
+      "sha256": "f3e4f79e761310ed98f568bf14843c01448fcba4b22cabfa543acfa7a94d354f",
+      "bytes": 26335,
+      "expected": "f3e4f79e761310ed98f568bf14843c01448fcba4b22cabfa543acfa7a94d354f",
+      "match": true
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "expected": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "match": true
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "expected": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "match": true
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "expected": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "match": true
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "expected": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "match": true
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "expected": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "match": true
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "expected": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "match": true
+    },
+    {
+      "path": "src/installed-events.mjs",
+      "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a",
+      "bytes": 23241,
+      "expected": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a",
+      "match": true
+    },
+    {
+      "path": "test/installed-events.test.mjs",
+      "sha256": "fbf65fdef3afd641431a04eb2a511887ce2c7fe571cb22a786060726503a2118",
+      "bytes": 29258,
+      "expected": "fbf65fdef3afd641431a04eb2a511887ce2c7fe571cb22a786060726503a2118",
+      "match": true
+    },
+    {
+      "path": "src/installed-results.mjs",
+      "sha256": "f98296928737a7f8a2feb7c487fe8ff06af17a4d5fed631b561a5ece7d5c77d8",
+      "bytes": 48192,
+      "expected": "f98296928737a7f8a2feb7c487fe8ff06af17a4d5fed631b561a5ece7d5c77d8",
+      "match": true
+    },
+    {
+      "path": "test/installed-results.test.mjs",
+      "sha256": "f6e3feb834521e847a77587b4b0276fd60db34125ad8c6be51bfe38a5978a24e",
+      "bytes": 49225,
+      "expected": "f6e3feb834521e847a77587b4b0276fd60db34125ad8c6be51bfe38a5978a24e",
+      "match": true
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "8ada9c44581227ddf046ff763d79dba8e1a048366426132382611ddfecb94c26",
+      "bytes": 7120,
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-source-hold.json",
+      "sha256": "f7cb98eb9b08815d7ea2ca744bc5c7a7c15d3ca908437a8364886e54bbe89b8b",
+      "bytes": 3797,
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-hold.md",
+      "sha256": "e5b148ec0bc4571ebeaab6f767ce6cc4d18894df46734e05757990ed6e014a8c",
+      "bytes": 8083,
+      "match": true
+    },
+    {
+      "path": "docs/evidence/NI3/read-input-author/source-hold.json",
+      "sha256": "1b140e452bc48c470b9005664be8254ed2d4388e69d9817eb6353c9a21e06046",
+      "bytes": 3855,
+      "match": true
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+      "bytes": 187413,
+      "match": true
+    },
+    {
+      "path": "docs/reference/approved-ticket-review.zh.txt",
+      "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+      "bytes": 45578,
+      "match": true
+    },
+    {
+      "path": "docs/acceptance-traceability.md",
+      "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64",
+      "bytes": 37983,
+      "match": true
+    },
+    {
+      "path": "docs/evidence/acceptance-debt.md",
+      "sha256": "b03ee8b6f22ef8a84d3a92149148be7d8f1274a4b74429aff1df93e59396af1d",
+      "bytes": 11879,
+      "match": true
+    }
+  ],
+  "import_closure": [
+    {
+      "path": "src/installed-audit.mjs",
+      "sha256": "00e2cbbec188dc9cc154c512766b563e86368c2c8d6a15338b7cc32ceeae3922",
+      "bytes": 46737
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450
+    }
+  ],
+  "schema": 5,
+  "source_hold_sha256": "f7cb98eb9b08815d7ea2ca744bc5c7a7c15d3ca908437a8364886e54bbe89b8b",
+  "author_notes_sha256": "e5b148ec0bc4571ebeaab6f767ce6cc4d18894df46734e05757990ed6e014a8c",
+  "independent_test_before_first_run": {
+    "path": "test/installed-audit-functional.test.mjs",
+    "sha256": "2b92b7704ee77b148cbd52462c0c1da02e8025452af8e31f525ea39bd62bf369",
+    "bytes": 36431,
+    "top_level_test_groups": 16
+  },
+  "check_time_utc": "2026-10-05T00:53:42.110091+00:00",
+  "node": {
+    "path": "/opt/homebrew/bin/node",
+    "version": "v22.22.2"
+  },
+  "status": "PREEXECUTION PINS MATCH; TYPED MODULE ONLY",
+  "prohibited_actions_performed": [],
+  "owned_writes": [
+    "test/installed-audit-functional.test.mjs",
+    "docs/evidence/NI3/installer-independent-*"
+  ]
+}

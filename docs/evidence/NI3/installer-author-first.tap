@@ -1,0 +1,234 @@
+TAP version 13
+# (node:89646) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: omitted and exact disabled selection are inert with disabled worker and one lifecycle
+ok 1 - omitted and exact disabled selection are inert with disabled worker and one lifecycle
+  ---
+  duration_ms: 12.08125
+  type: 'test'
+  ...
+# Subtest: selection descriptors and Proxy reject before traps
+ok 2 - selection descriptors and Proxy reject before traps
+  ---
+  duration_ms: 0.16425
+  type: 'test'
+  ...
+# Subtest: inputByteLimit rejects both illegal boundaries
+ok 3 - inputByteLimit rejects both illegal boundaries
+  ---
+  duration_ms: 0.185542
+  type: 'test'
+  ...
+# Subtest: resultByteLimit rejects both illegal boundaries
+ok 4 - resultByteLimit rejects both illegal boundaries
+  ---
+  duration_ms: 0.074875
+  type: 'test'
+  ...
+# Subtest: maxPrivateReviewers rejects both illegal boundaries
+ok 5 - maxPrivateReviewers rejects both illegal boundaries
+  ---
+  duration_ms: 0.064792
+  type: 'test'
+  ...
+# Subtest: maxRepairRounds rejects both illegal boundaries
+ok 6 - maxRepairRounds rejects both illegal boundaries
+  ---
+  duration_ms: 0.061625
+  type: 'test'
+  ...
+# Subtest: maxTotalAttempts rejects both illegal boundaries
+ok 7 - maxTotalAttempts rejects both illegal boundaries
+  ---
+  duration_ms: 0.135041
+  type: 'test'
+  ...
+# Subtest: zero repair rounds require repair omission and distinct severities
+ok 8 - zero repair rounds require repair omission and distinct severities
+  ---
+  duration_ms: 0.376208
+  type: 'test'
+  ...
+# Subtest: closed installer refuses missing callbacks and safe input before callbacks
+ok 9 - closed installer refuses missing callbacks and safe input before callbacks
+  ---
+  duration_ms: 1.7365
+  type: 'test'
+  ...
+# Subtest: configuration and preparation derive source policy and mandatory material
+ok 10 - configuration and preparation derive source policy and mandatory material
+  ---
+  duration_ms: 3.985667
+  type: 'test'
+  ...
+# Subtest: protected preparation and captured producer provenance cannot be missing/header-only
+ok 11 - protected preparation and captured producer provenance cannot be missing/header-only
+  ---
+  duration_ms: 1.165375
+  type: 'test'
+  ...
+# Subtest: source-derived review spec retains distinct full input and artifact digests
+ok 12 - source-derived review spec retains distinct full input and artifact digests
+  ---
+  duration_ms: 2.412792
+  type: 'test'
+  ...
+# Subtest: unknown role price and producer-only policy do not plan
+ok 13 - unknown role price and producer-only policy do not plan
+  ---
+  duration_ms: 2.565833
+  type: 'test'
+  ...
+# Subtest: typed input/current scope refuses before plan
+ok 14 - typed input/current scope refuses before plan
+  ---
+  duration_ms: 1.125334
+  type: 'test'
+  ...
+# Subtest: typed input/current body refuses before plan
+ok 15 - typed input/current body refuses before plan
+  ---
+  duration_ms: 1.056083
+  type: 'test'
+  ...
+# Subtest: typed input/current crypto refuses before plan
+ok 16 - typed input/current crypto refuses before plan
+  ---
+  duration_ms: 1.461458
+  type: 'test'
+  ...
+# Subtest: typed input/current input-origin refuses before plan
+ok 17 - typed input/current input-origin refuses before plan
+  ---
+  duration_ms: 1.226417
+  type: 'test'
+  ...
+# Subtest: typed input/current material refuses before plan
+ok 18 - typed input/current material refuses before plan
+  ---
+  duration_ms: 1.159875
+  type: 'test'
+  ...
+# Subtest: typed input/current artifact refuses before plan
+ok 19 - typed input/current artifact refuses before plan
+  ---
+  duration_ms: 0.929791
+  type: 'test'
+  ...
+# Subtest: typed input/current semantic refuses before plan
+ok 20 - typed input/current semantic refuses before plan
+  ---
+  duration_ms: 0.957625
+  type: 'test'
+  ...
+# Subtest: typed input/current control refuses before plan
+ok 21 - typed input/current control refuses before plan
+  ---
+  duration_ms: 1.007708
+  type: 'test'
+  ...
+# Subtest: normal consent checks complete successful wire size before local preview admission
+ok 22 - normal consent checks complete successful wire size before local preview admission
+  ---
+  duration_ms: 4.765834
+  type: 'test'
+  ...
+# Subtest: transport denial during preview wait overrides callback and prevents consent
+ok 23 - transport denial during preview wait overrides callback and prevents consent
+  ---
+  duration_ms: 2.926709
+  type: 'test'
+  ...
+# Subtest: grant echo without actual private grant receipt never authorizes
+ok 24 - grant echo without actual private grant receipt never authorizes
+  ---
+  duration_ms: 5.625875
+  type: 'test'
+  ...
+# Subtest: pending dispatch occupies selected reviewer slot and unknown never recreates
+ok 25 - pending dispatch occupies selected reviewer slot and unknown never recreates
+  ---
+  duration_ms: 13.71725
+  type: 'test'
+  ...
+# Subtest: execution lost response holds one-use submission and no second callback
+ok 26 - execution lost response holds one-use submission and no second callback
+  ---
+  duration_ms: 7.230459
+  type: 'test'
+  ...
+# Subtest: actual typed capture/submission phases complete review; callback echo alone cannot
+ok 27 - actual typed capture/submission phases complete review; callback echo alone cannot
+  ---
+  duration_ms: 7.968709
+  type: 'test'
+  ...
+# Subtest: callback success/header without private phase receipts remains unknown
+ok 28 - callback success/header without private phase receipts remains unknown
+  ---
+  duration_ms: 7.45975
+  type: 'test'
+  ...
+# Subtest: outer changed CAS conflicts before fresh CAS or child effects and historical replay survives CAS advance
+ok 29 - outer changed CAS conflicts before fresh CAS or child effects and historical replay survives CAS advance
+  ---
+  duration_ms: 7.8765
+  type: 'test'
+  ...
+# Subtest: concurrent identical collect refuses without a second collector
+ok 30 - concurrent identical collect refuses without a second collector
+  ---
+  duration_ms: 7.872625
+  type: 'test'
+  ...
+# Subtest: repair publication fixes authenticated next version; replay cannot create another
+ok 31 - repair publication fixes authenticated next version; replay cannot create another
+  ---
+  duration_ms: 8.609083
+  type: 'test'
+  ...
+# Subtest: capture-only repair reuses fixed target on explicit current reconciliation
+ok 32 - capture-only repair reuses fixed target on explicit current reconciliation
+  ---
+  duration_ms: 8.653417
+  type: 'test'
+  ...
+# Subtest: write uncertainty recovers original child identity rather than selecting another version
+ok 33 - write uncertainty recovers original child identity rather than selecting another version
+  ---
+  duration_ms: 8.721583
+  type: 'test'
+  ...
+# Subtest: source cancellation during capture refusal retains hold and no submission
+ok 34 - source cancellation during capture refusal retains hold and no submission
+  ---
+  duration_ms: 7.208666
+  type: 'test'
+  ...
+# Subtest: factual finish requires original finish receipt and cannot be inferred from output
+ok 35 - factual finish requires original finish receipt and cannot be inferred from output
+  ---
+  duration_ms: 7.6335
+  type: 'test'
+  ...
+# Subtest: original finish receipt closes only exact execution and actual release
+ok 36 - original finish receipt closes only exact execution and actual release
+  ---
+  duration_ms: 7.516167
+  type: 'test'
+  ...
+# Subtest: lost lifetime/cold module cannot adopt body or original receipt as collection authority
+ok 37 - lost lifetime/cold module cannot adopt body or original receipt as collection authority
+  ---
+  duration_ms: 5.935334
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 244.686125

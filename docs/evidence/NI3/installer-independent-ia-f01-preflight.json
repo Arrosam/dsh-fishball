@@ -1,0 +1,121 @@
+{
+  "status": "ROOT AUTHORIZED IF11 RETEST PRECHECK PASS",
+  "time_utc": "2026-10-05T01:05:49.317113+00:00",
+  "source_hold_sha256": "b2a29de72a0c6f6175aa12be9a9d91324426b4d00ec98e54b42d825b3bbf42d7",
+  "author_rows": [
+    {
+      "path": "src/installed-audit.mjs",
+      "sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+      "bytes": 49288
+    },
+    {
+      "path": "test/installed-audit.test.mjs",
+      "sha256": "2bf81c0d74f60b44483569f822ebdadffa77cca5fffd74c109559e584627068a",
+      "bytes": 39340
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-ia-f01-before/installed-audit.mjs",
+      "sha256": "00e2cbbec188dc9cc154c512766b563e86368c2c8d6a15338b7cc32ceeae3922",
+      "bytes": 46737
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-ia-f01-before/installed-audit.test.mjs",
+      "sha256": "b010f067bd50573375c9e414f1a73fdd99aedf64311d21ecc14115547eac1ab0",
+      "bytes": 37621
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-ia-f01-before/source-hold.json",
+      "sha256": "f7cb98eb9b08815d7ea2ca744bc5c7a7c15d3ca908437a8364886e54bbe89b8b",
+      "bytes": 3797
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-ia-f01-before/hold.md",
+      "sha256": "e5b148ec0bc4571ebeaab6f767ce6cc4d18894df46734e05757990ed6e014a8c",
+      "bytes": 8083
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-ia-f01-first.tap",
+      "sha256": "ad117da9c09735a73d640fba05572f9ddeba47ab0a49652432634c550c9ac55f",
+      "bytes": 1958
+    },
+    {
+      "path": "docs/evidence/NI3/installer-author-ia-f01-retest.tap",
+      "sha256": "b197997278125f8df1fe32cf9a88ec6be77637893e3dffb2cc965d5a42a812f3",
+      "bytes": 1041
+    },
+    {
+      "path": "docs/evidence/NI3/installer-independent-first-result.json",
+      "sha256": "72e51a5d3ccf02cb5aaccf5d4f832b870893e0caf338812399bfc6cb02ae53ca",
+      "bytes": 1977
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-addendum.md",
+      "sha256": "b267612922b39aa6b11ab47c1f3d4d04e41862bb925e023872741826d21656a9",
+      "bytes": 43622
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-root-freeze.md",
+      "sha256": "4cf03a6b3885673edf1f4838cf8306bf3382a61ade7c8fd7aa7d4c5af9d19542",
+      "bytes": 3443
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341
+    },
+    {
+      "path": "src/installed-events.mjs",
+      "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a",
+      "bytes": 23241
+    },
+    {
+      "path": "test/installed-events.test.mjs",
+      "sha256": "fbf65fdef3afd641431a04eb2a511887ce2c7fe571cb22a786060726503a2118",
+      "bytes": 29258
+    },
+    {
+      "path": "src/installed-results.mjs",
+      "sha256": "f98296928737a7f8a2feb7c487fe8ff06af17a4d5fed631b561a5ece7d5c77d8",
+      "bytes": 48192
+    },
+    {
+      "path": "test/installed-results.test.mjs",
+      "sha256": "f6e3feb834521e847a77587b4b0276fd60db34125ad8c6be51bfe38a5978a24e",
+      "bytes": 49225
+    }
+  ],
+  "independent_test": {
+    "path": "test/installed-audit-functional.test.mjs",
+    "sha256": "4c97a6dfe84f5aefccc0aa3fecc61d23a7c3bc78db74eb5c5cb9469ab523fc69"
+  },
+  "command": "/opt/homebrew/bin/node --test --test-name-pattern='IF11' test/installed-audit-functional.test.mjs",
+  "approved_source_sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+  "evidence_level": "TYPED MODULE ONLY",
+  "existing_import_closure_other6_unchanged": true,
+  "prior_results_and_snapshots_preserved": true
+}
