@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-10-05T03:39:00Z",
+  "kind": "readonly-file-hash-check",
+  "rootHeadAtHandoff": "7df1c2cfae04b5b24c63c78a943b0c6a7711263c",
+  "installedProductRevision": "a58c522",
+  "rows": [
+    {
+      "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+      "sha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+      "bytes": 4114465,
+      "matchesExpected": true
+    },
+    {
+      "path": ".runtime/ni2-install/host/package-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "bytes": 388886,
+      "matchesExpected": true
+    }
+  ],
+  "installedPackageExists": true,
+  "qaFixtureExistsAtCheck": false,
+  "hostStartedByThisCheck": false,
+  "browserActionRunByThisCheck": false,
+  "result": "two immutable input pins match; no manual QA result claimed"
+}
