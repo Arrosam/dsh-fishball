@@ -1,0 +1,30 @@
+TAP version 13
+# (node:92677) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: before-commit cuts roll back pair, signed local report and sent publication without losing reconciliation
+ok 1 - before-commit cuts roll back pair, signed local report and sent publication without losing reconciliation
+  ---
+  duration_ms: 2161.372458
+  type: 'test'
+  ...
+# Subtest: typed local claim expires exactly at boundary and publication rechecks current policy after claim
+ok 2 - typed local claim expires exactly at boundary and publication rechecks current policy after claim
+  ---
+  duration_ms: 177.893334
+  type: 'test'
+  ...
+# Subtest: two independent processes race the last weighted slot through typed local claim
+ok 3 - two independent processes race the last weighted slot through typed local claim
+  ---
+  duration_ms: 422.914959
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2860.109667

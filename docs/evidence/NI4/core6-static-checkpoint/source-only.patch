@@ -1,0 +1,799 @@
+--- .runtime/ni4-core6/source5/src/ledger.mjs
++++ .runtime/ni4-core6/candidate/src/ledger.mjs
+@@ -8,7 +8,7 @@
+   constructor(code) { super(code); this.name = 'FoundationError'; this.code = code; }
+ }
+ export const fail = code => { throw new FoundationError(code); };
+-export const SCHEMA_VERSION = 5;
++export const SCHEMA_VERSION = 6;
+ const BASE = {
+   tasks: 'CREATE TABLE tasks (owner TEXT NOT NULL, workspace TEXT NOT NULL, id TEXT NOT NULL, status TEXT NOT NULL, version INTEGER NOT NULL, auth_epoch INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,id))',
+   ingress: 'CREATE TABLE ingress (owner TEXT NOT NULL, workspace TEXT NOT NULL, provider TEXT NOT NULL, source TEXT NOT NULL, event TEXT NOT NULL, task TEXT NOT NULL, received_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,provider,source,event), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
+@@ -48,7 +48,7 @@
+     if (read!==header.length || !header.subarray(0,16).equals(Buffer.from('SQLite format 3\0','ascii'))) fail('STORAGE_UNAVAILABLE');
+     const version=header.readInt32BE(60);
+     if (version>SCHEMA_VERSION) fail('SCHEMA_FUTURE');
+-    if (![1,2,3,4,SCHEMA_VERSION].includes(version)) fail('SCHEMA_UNSUPPORTED');
++    if (![1,2,3,4,5,SCHEMA_VERSION].includes(version)) fail('SCHEMA_UNSUPPORTED');
+     if (header[18]!==1 || header[19]!==1) fail('SCHEMA_UNSUPPORTED');
+     const pageSize=header.readUInt16BE(16)===1 ? 65536 : header.readUInt16BE(16);
+     if (pageSize<512 || pageSize>65536 || (pageSize & (pageSize-1))!==0 || info.size<pageSize || info.size%pageSize!==0 || pageSize-header[20]<480 || header[21]!==64 || header[22]!==32 || header[23]!==32) fail('STORAGE_UNAVAILABLE');
+@@ -99,7 +99,7 @@
+         this.db.exec('BEGIN EXCLUSIVE');
+         try { this.version(0); if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) fail('SCHEMA_UNSUPPORTED'); for (const sql of Object.values({ ...BASE, ...EXTRA, ...RUNTIME, ...AUTOMATION })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
+         catch (error) { this.db.exec('ROLLBACK'); throw error; }
+-      } else if ([1,2,3,4].includes(version)) {
++      } else if ([1,2,3,4,5].includes(version)) {
+         const sourceSchema=version===1 ? BASE : version===2 ? {...BASE,...EXTRA} : version===3 ? {...BASE,...EXTRA,...RUNTIME} : {...BASE,...EXTRA,...RUNTIME,...AUTOMATION};
+         this.verify(sourceSchema);
+         if (this.db.prepare('PRAGMA journal_mode').get().journal_mode !== 'delete') fail('SCHEMA_UNSUPPORTED');
+@@ -178,7 +178,7 @@
+   }
+   validateRuntimeRows(version=SCHEMA_VERSION) {
+     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()){
+-      const auditKinds=version>=5?",'audit_input','audit_result'":'';
++      const auditKinds=(version>=5?",'audit_input','audit_result'":'')+(version>=6?",'local_source_pair','local_notification_policy','local_report','normal_provenance_registry'":'');
+       if(this.db.prepare(`SELECT 1 FROM automation_records WHERE kind NOT IN ('source','subscription','event','clock','semantic','audit','report','repair','execution','receipt_policy','legacy_command','notification_policy','notification_window','notification_group','notification_fact','notification_claim'${auditKinds}) OR NOT json_valid(payload) LIMIT 1`).get()||this.db.prepare('SELECT 1 FROM workspace_memory WHERE revision<1 OR NOT json_valid(metadata) LIMIT 1').get())fail('STORAGE_INVALID');
+     }
+     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()&&this.db.prepare("SELECT 1 FROM automation_records a WHERE a.task IS NOT NULL AND NOT EXISTS(SELECT 1 FROM runtime_tasks t WHERE t.owner=a.owner AND t.workspace=a.workspace AND t.task=a.task) LIMIT 1").get())fail('STORAGE_INVALID');
+--- .runtime/ni4-core6/source5/src/runtime-store.mjs
++++ .runtime/ni4-core6/candidate/src/runtime-store.mjs
+@@ -100,7 +100,7 @@
+       this.#ledger=new Ledger(databasePath,{
+         migrationFault,maxPageCount:fixtureMaxPageCount,
+         validateMigration:source=>{const original=this.#ledger;this.#ledger=source;try{this.#validateOpen();}finally{this.#ledger=original;}},
+-        initializeMigration:(source,version)=>{const original=this.#ledger;this.#ledger=source;try{if(version<4)this.#initializeReceiptPolicies();}finally{this.#ledger=original;}},
++        initializeMigration:(source,version)=>{const original=this.#ledger;this.#ledger=source;try{if(version<4)this.#initializeReceiptPolicies();if(version<6)this.#initializeNormalRegistries();}finally{this.#ledger=original;}},
+         validateSnapshot:snapshot=>{
+           const original=this.#ledger;
+           this.#ledger=snapshot;
+@@ -147,6 +147,7 @@
+       const t=this.#task(c,c.taskRef);
+       if(!binding||binding.principalRef!==c.principalRef||!worker||parse(worker.payload).generationRef!==c.generationRef||parse(worker.payload).terminalEvidenceRef||t.auth_epoch!==c.auditAuthEpoch||TERMINAL.has(t.status)||['cancel_requested','recovery_required'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,c.taskRef))?.control!=='active'||!this.#ledger.one('SELECT 1 FROM reservations WHERE owner=? AND workspace=? AND task=? AND claim_id=?',...this.#keys(c,c.taskRef),binding.claimId))fail('UNAUTHORIZED');
+     }
++    if(this.#ledger)this.#validateNormalScope(c);
+     return c;
+   }
+   context(handle,taskRef) {
+@@ -238,20 +239,22 @@
+     if(changed){try{legacyDigest=hash(c.principalRef+operation+this.#check(input,Math.max(this.#limits.maxMetadataBytes,this.#limits.maxDataBytes+4096)));}catch(error){if(error.code!=='INPUT_TOO_LARGE')throw error;}}
+ 
+     return this.#ledger.transaction(()=>{
+-      if(['chatControl','ingestEvent','advanceEventClock','approveEventClock'].includes(operation))this.#eventBinding(c,input);
++      this.#validateNormalScopes();
++      if(['chatControl','ingestEvent','ingestLocalOwnerEvent','advanceEventClock','approveEventClock'].includes(operation))this.#eventBinding(c,input);
+       const old=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,input.commandRef);
+       if(old){
+         const receipt=this.#commandReceipt(old);
+         if(old.digest!==digest&&old.digest!==legacyDigest||old.operation!==operation)fail('IDEMPOTENCY_CONFLICT');
+         if(['beginContextExecution','beginAuditExecution'].includes(operation))return{...this.#auto(c,'execution',receipt.claimRef),deduplicated:true};
+         if(['prepareAuditInput','captureAuditResult'].includes(operation))return{...receipt,deduplicated:true};
+-        if(operation==='ingestEvent')return{...receipt,deduplicated:true,task:taskRecord(this.#task(c,receipt.taskRef))};
++        if(['ingestEvent','ingestLocalOwnerEvent'].includes(operation))return{...receipt,deduplicated:true,task:taskRecord(this.#task(c,receipt.taskRef))};
+         return receipt;
+       }
+       const count=this.#ledger.one('SELECT count(*) AS n FROM runtime_commands').n,held=this.#ledger.one('SELECT count(*) AS n FROM reservations').n;
+       const terminalProgress=protectedOp==='terminal'&&this.#terminalProgress(c,input,operation);
+       const invalidationProgress=protectedOp===true&&this.#invalidationProgress(c,input,operation);
+       if(count>=this.#limits.maxCommands-(terminalProgress?0:invalidationProgress?4*held+1:12*held+this.#limits.maxControlCommands))fail('COMMAND_LIMIT');
++      this.#ensureNormalRegistry(c);
+       const result=fn(c);
+       this.#ensureReceiptPolicy(c);
+       const row={owner:c.ownerRef,workspace:c.workspaceRef,id:input.commandRef,task:input.taskRef||c.workspaceRef,digest,operation};
+@@ -259,6 +262,7 @@
+       const receipt=this.#check({format:'command-receipt/v1',data:result,mac:this.#receiptMac(row,result)},this.#limits.maxMetadataBytes+512);
+       this.#cut('before_commit');
+       this.#ledger.run('INSERT INTO runtime_commands VALUES(?,?,?,?,?,?,?)',c.ownerRef,c.workspaceRef,input.commandRef,input.taskRef||c.workspaceRef,digest,operation,receipt);
++      this.#validateNormalScope(c);
+       return result;
+     });
+   }
+@@ -646,13 +650,19 @@
+       };
+     },true);
+   }
+-  claimAction(handle,input){
++  claimAction(handle,input){return this.#claimAction(handle,input,false);}
++  claimLocalDelivery(handle,input){
++    exact(input,['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch','delivery']);
++    exact(input.delivery,['deliveryRef']);
++    return this.#claimAction(handle,input,true);
++  }
++  #claimAction(handle,input,local){
+     exact(input,['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch','outbox','delivery','auditRepair'],['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch']);
+     if([input.outbox,input.delivery,input.auditRepair].filter(Boolean).length>1)fail('INVALID_INPUT');
+     if(input.outbox)exact(input.outbox,['messageRef']);
+     if(input.delivery)exact(input.delivery,['deliveryRef']);
+     if(input.auditRepair)exact(input.auditRepair,['auditRef','round','previousReportRef','evidenceRef']);
+-    const result=this.#mut(handle,input,DISPATCH,'claimAction',c=>{
++    const result=this.#mut(handle,input,DISPATCH,local?'claimLocalDelivery':'claimAction',c=>{
+       const t=this.#cas(c,input),a=this.#action(c,t.id,input.actionRef),keys=this.#keys(c,t.id),at=this.#now(),policy=this.#getPolicy(c);
+       if(a.digest!==ref(input.actionDigest))fail('SPEC_MISMATCH');
+       if(!['queued','running','waiting','blocked'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys)?.control!=='active')fail('TASK_BLOCKED');
+@@ -712,7 +722,16 @@
+         const kind=input.outbox?'message':'delivery',id=input.outbox?.messageRef||input.delivery.deliveryRef;
+         record=this.#record(c,t.id,kind,id);
+         if(record.state!=='accepted'||record.targetDigest!==a.spec.targetDigest||(kind==='message'?record.bodyDigest:record.digest)!==a.spec.dataDigest)fail('OUTBOX_SPEC_MISMATCH');
+-        if(kind==='delivery'){const latest=this.#artifact(c,t.id,record.artifactRef);if(!latest||latest.version!==record.artifactVersion||latest.digest!==record.digest||latest.verification?.verdict!=='accepted')fail('ARTIFACT_UNVERIFIED');if(record.notification)notificationAdmission=this.#notificationAdmission(c,t.id,record,at);}
++        if(kind==='delivery'){
++          const latest=this.#artifact(c,t.id,record.artifactRef);
++          if(!latest||latest.version!==record.artifactVersion||latest.digest!==record.digest||latest.verification?.verdict!=='accepted')fail('ARTIFACT_UNVERIFIED');
++          const normalPolicy=record.notification&&this.#auto(c,'notification_policy',record.notification.policyRef)?.markerRef;
++          // Only this typed path or a sticky normal policy invokes the normal
++          // source-derived publication predicate. An unmarked advanced none
++          // executor retains its original claim semantics and signed receipts.
++          if(local||normalPolicy)this.#localPublicationMaterial(c,t.id,record,a);
++          if(record.notification)notificationAdmission=this.#notificationAdmission(c,t.id,record,at);
++        }
+       }
+       const claimId=randomUUID(),claimRef=reference(claimId),reservationRef=canonicalDigest({
+         claimRef,actionDigest:a.digest
+@@ -746,6 +765,7 @@
+     exact(input,['taskRef','claimRef','generationRef','actionDigest']);
+     const c=this.#ctx(handle,input.taskRef,HOST);
+     return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();
+       const {
+         w,a,t
+       }
+@@ -768,11 +788,13 @@
+   }
+   assertMessageCurrent(handle,input){
+     exact(input,['taskRef','messageRef','claimRef','reservationRef','generationRef']);const c=this.#ctx(handle,input.taskRef,HOST);
+-    return this.#ledger.transaction(()=>{const {a,t,w}=this.#claim(c,input),m=this.#record(c,input.taskRef,'message',input.messageRef);if(m.state!=='outbox_committed'||m.claimRef!==input.claimRef||m.reservationRef!==ref(input.reservationRef)||m.generationRef!==input.generationRef||m.targetDigest!==a.spec.targetDigest||m.bodyDigest!==a.spec.dataDigest||a.claim_epoch!==t.auth_epoch||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active'||['cancel_requested','recovery_required'].includes(t.status))fail('CLAIM_REVOKED');const g=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);if(!g||g.revoked||g.auth_epoch!==t.auth_epoch||this.#now()>=g.expires_at)fail('APPROVAL_INVALID');return{messageRef:m.messageRef,claimRef:w.claimRef,actionDigest:a.digest,reservationRef:w.reservationRef,task:taskRecord(t)};});
++    return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();const {a,t,w}=this.#claim(c,input),m=this.#record(c,input.taskRef,'message',input.messageRef);if(m.state!=='outbox_committed'||m.claimRef!==input.claimRef||m.reservationRef!==ref(input.reservationRef)||m.generationRef!==input.generationRef||m.targetDigest!==a.spec.targetDigest||m.bodyDigest!==a.spec.dataDigest||a.claim_epoch!==t.auth_epoch||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active'||['cancel_requested','recovery_required'].includes(t.status))fail('CLAIM_REVOKED');const g=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);if(!g||g.revoked||g.auth_epoch!==t.auth_epoch||this.#now()>=g.expires_at)fail('APPROVAL_INVALID');return{messageRef:m.messageRef,claimRef:w.claimRef,actionDigest:a.digest,reservationRef:w.reservationRef,task:taskRecord(t)};});
+   }
+   assertWorkerOwned(handle,input){
+     exact(input,['taskRef','workerClaimRef','generationRef','sessionRef']);ref(input.sessionRef);const c=this.#ctx(handle,input.taskRef,HOST);
+-    return this.#ledger.transaction(()=>{const {a,t,w}=this.#claim(c,{...input,claimRef:input.workerClaimRef});if(w.sessionRef!==input.sessionRef||!['created','ready','running'].includes(w.phase)||!['running','blocked','waiting'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active')fail('WORKER_UNAVAILABLE');const grant=this.#ledger.one('SELECT revoked FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);if(!grant||grant.revoked)fail('CLAIM_REVOKED');return{task:taskRecord(t),claimRef:w.claimRef,generationRef:w.generationRef,sessionRef:w.sessionRef,actionDigest:a.digest};});
++    return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();const {a,t,w}=this.#claim(c,{...input,claimRef:input.workerClaimRef});if(w.sessionRef!==input.sessionRef||!['created','ready','running'].includes(w.phase)||!['running','blocked','waiting'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active')fail('WORKER_UNAVAILABLE');const grant=this.#ledger.one('SELECT revoked FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action);if(!grant||grant.revoked)fail('CLAIM_REVOKED');return{task:taskRecord(t),claimRef:w.claimRef,generationRef:w.generationRef,sessionRef:w.sessionRef,actionDigest:a.digest};});
+   }
+   #saveAction(c,task,action,metadata){
+     this.#ledger.run('UPDATE runtime_actions SET metadata=? WHERE owner=? AND workspace=? AND task=? AND action=?',this.#check(metadata),...this.#keys(c,task),action);
+@@ -1104,15 +1126,21 @@
+     exact(spec.frequency,['windowMs','maxClaims']);integer(spec.frequency.windowMs,1,8640000000000000);integer(spec.frequency.maxClaims,0,4096);
+     return JSON.parse(canonical(spec));
+   }
+-  configureNotificationPolicy(handle,input){
++  configureNotificationPolicy(handle,input){return this.#configureNotification(handle,input,false);}
++  configureLocalNotificationPolicy(handle,input){return this.#configureNotification(handle,input,true);}
++  #configureNotification(handle,input,local){
+     exact(input,['commandRef','policyRef','expectedRevision','spec']);
+     ref(input.policyRef);integer(input.expectedRevision);
+     const spec=this.#notificationSpec(input.spec);
+-    return this.#mut(handle,input,['owner'],'configureNotificationPolicy',c=>{
++    return this.#mut(handle,input,['owner'],local?'configureLocalNotificationPolicy':'configureNotificationPolicy',c=>{
+       const old=this.#auto(c,'notification_policy',input.policyRef);
+       if((old?.revision||0)!==input.expectedRevision)fail('STALE_NOTIFICATION_POLICY');
+       if(!old&&this.#autoCount(c,'notification_policy')>=16)fail('NOTIFICATION_LIMIT');
+-      return this.#saveAuto(c,'notification_policy',input.policyRef,null,{policyRef:input.policyRef,revision:input.expectedRevision+1,spec});
++      if(!local&&old?.markerRef)fail('NORMAL_POLICY_REQUIRED');
++      const markerRef=local?input.policyRef:old?.markerRef;
++      if(local)this.#saveAuto(c,'local_notification_policy',markerRef,null,{contractVersion:'df.local-notification-policy/v1',policyRef:input.policyRef,localReportOnly:true});
++      const policy=this.#saveAuto(c,'notification_policy',input.policyRef,null,{policyRef:input.policyRef,revision:input.expectedRevision+1,spec,...(markerRef?{markerRef}:{})});
++      if(local)this.#refreshNormalRegistry(c);return policy;
+     });
+   }
+   getNotificationPolicy(handle,input){
+@@ -1150,6 +1178,7 @@
+       if(data.kind!=='progress'||data.sourceRef!==record.progressRef)fail('STORAGE_INVALID');
+       return record;
+     });
++    if(policy.markerRef)this.#normalNotificationManifest(c,task,delivery);
+     const emergency=progress.some(record=>spec.emergencyKinds.includes(record.kind));
+     if(progress.length>1&&progress.some(record=>!spec.mergeKinds.includes(record.kind)))fail('NOTIFICATION_MERGE_DENIED');
+     if(!emergency&&progress.every(record=>spec.mergeKinds.includes(record.kind))&&at<Math.min(...progress.map(record=>record.at))+spec.mergeWindowMs)fail('NOTIFICATION_COALESCING');
+@@ -1162,7 +1191,7 @@
+     if(!group&&priorClaims.some(prior=>prior.groupId===groupId))fail('STORAGE_INVALID');
+     if(group){const prior=this.#record(c,task,'delivery',group.deliveryRef);if(!['delivered','failed'].includes(prior.state)||!this.#notificationReleased(c,task,prior))fail('NOTIFICATION_PENDING');}
+     if(!group&&this.#autoCount(c,'notification_group',task)>=this.#limits.maxRecordsPerTask)fail('NOTIFICATION_LIMIT');
+-    const facts=progress.map(record=>({id:canonicalDigest({...endpoint,digest:record.digest}),record}));
++    const facts=progress.map(record=>({id:canonicalDigest({...endpoint,digest:policy.markerRef?this.#localProgress(c,task,record.progressRef).report.progressDigest:record.digest}),record}));
+     for(const fact of facts){
+       const ownership=this.#auto(c,'notification_fact',fact.id);
+       if(!ownership){if(priorClaims.some(prior=>prior.factIds.includes(fact.id)))fail('STORAGE_INVALID');continue;}
+@@ -1179,7 +1208,7 @@
+     const count=old&&windowStart===old.windowStart?old.count:0;
+     if(count>=spec.frequency.maxClaims)fail('NOTIFICATION_FREQUENCY');
+     if(!old&&this.#autoCount(c,'notification_window')>=128)fail('NOTIFICATION_LIMIT');
+-    return{binding,groupId,facts,windowId,windowStart,count};
++    return{binding,groupId,facts,windowId,windowStart,count,normal:!!policy.markerRef};
+   }
+   #commitNotification(c,task,delivery,admission,claimRef,reservationRef,at){
+     const {binding,groupId,facts,windowId,windowStart,count}=admission;
+@@ -1187,7 +1216,7 @@
+     this.#saveAuto(c,'notification_claim',delivery.deliveryRef,task,{...ownership,groupId,factIds:facts.map(fact=>fact.id)});
+     this.#saveAuto(c,'notification_window',windowId,null,{policyRef:binding.policyRef,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef,windowStart,count:count+1,lastClaimAt:at});
+     this.#saveAuto(c,'notification_group',groupId,task,{...ownership,mergeKeyRef:binding.mergeKeyRef,progressRefs:[...binding.progressRefs]});
+-    for(const {id,record} of facts)this.#saveAuto(c,'notification_fact',id,task,{...ownership,progressRef:record.progressRef,digest:record.digest});
++    for(const {id,record} of facts)this.#saveAuto(c,'notification_fact',id,task,{...ownership,progressRef:record.progressRef,digest:admission.normal?this.#localProgress(c,task,record.progressRef).report.progressDigest:record.digest});
+   }
+   recordDelivery(handle,input){
+     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','targetDigest','previousDeliveryRef','notification'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','targetDigest']);
+@@ -1454,6 +1483,448 @@
+     this.#ledger.run('INSERT INTO workspace_memory VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(owner,workspace,namespace) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,ciphertext=excluded.ciphertext,nonce=excluded.nonce,tag=excluded.tag,metadata=excluded.metadata',c.ownerRef,c.workspaceRef,input.namespaceRef,metadata.revision,metadata.digest,ciphertext,nonce,cipher.getAuthTag(),canonical(metadata));
+     return metadata;
+   }
++  #normalScopes(){
++    const scopes=new Map();
++    for(const table of ['runtime_commands','runtime_tasks','runtime_policy','workspace_memory','automation_records'])for(const row of this.#ledger.query(`SELECT DISTINCT owner,workspace FROM ${table}`))scopes.set(row.owner+row.workspace,{ownerRef:row.owner,workspaceRef:row.workspace});
++    return [...scopes.values()];
++  }
++  #normalIndex(c){
++    const ids=kind=>this.#ledger.query('SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind=? ORDER BY id',c.ownerRef,c.workspaceRef,kind).map(row=>row.id);
++    const policies=ids('local_notification_policy'),pairs=ids('local_source_pair');
++    const reports=ids('local_report').map(id=>{
++      const value=this.#auto(c,'local_report',id);
++      return{taskRef:value.taskRef,progressRef:value.progressRef,localReportRef:id};
++    }).sort((a,b)=>a.taskRef.localeCompare(b.taskRef)||a.progressRef.localeCompare(b.progressRef)||a.localReportRef.localeCompare(b.localReportRef));
++    if(policies.length>16||pairs.length>128||reports.length>this.#limits.maxCommands)fail('STORAGE_INVALID');
++    // Internal bounded index hashing preserves canonical array bytes without
++    // widening the public authority canonicalizer's128-element input limit.
++    const digest=values=>hash('['+values.map(value=>canonical(value)).join(',')+']');
++    return{contractVersion:'df.normal-provenance/v1',localPolicyCount:policies.length,localPolicyDigest:digest(policies),localPairCount:pairs.length,localPairDigest:digest(pairs),localReportCount:reports.length,localReportDigest:digest(reports)};
++  }
++  #ensureNormalRegistry(c){
++    if(this.#ledger.one('PRAGMA user_version').user_version<6)return;
++    const registry=this.#auto(c,'normal_provenance_registry',c.workspaceRef);
++    if(registry){this.#validateNormalScope(c);return;}
++    const expected=this.#normalIndex(c);
++    if(expected.localPolicyCount||expected.localPairCount||expected.localReportCount||this.#ledger.one('SELECT 1 FROM runtime_commands WHERE owner=? AND workspace=? LIMIT 1',c.ownerRef,c.workspaceRef))fail('STORAGE_INVALID');
++    this.#saveAuto(c,'normal_provenance_registry',c.workspaceRef,null,expected);
++  }
++  #initializeNormalRegistries(){
++    for(const c of this.#normalScopes()){
++      if(this.#auto(c,'normal_provenance_registry',c.workspaceRef))fail('SCHEMA_UNSUPPORTED');
++      const index=this.#normalIndex(c);
++      if(index.localPolicyCount||index.localPairCount||index.localReportCount)fail('SCHEMA_UNSUPPORTED');
++      this.#saveAuto(c,'normal_provenance_registry',c.workspaceRef,null,index);
++    }
++  }
++  #refreshNormalRegistry(c){
++    if(!this.#auto(c,'normal_provenance_registry',c.workspaceRef))fail('STORAGE_INVALID');
++    this.#saveAuto(c,'normal_provenance_registry',c.workspaceRef,null,this.#normalIndex(c));
++  }
++  #validateNormalScopes(){
++    if(this.#ledger.one('PRAGMA user_version').user_version<6)return;
++    for(const c of this.#normalScopes())this.#validateNormalScope(c);
++  }
++  #validateNormalScope(c){
++    if(this.#ledger.one('PRAGMA user_version').user_version<6)return;
++    const registry=this.#auto(c,'normal_provenance_registry',c.workspaceRef),index=this.#normalIndex(c);
++    if(!registry){
++      for(const table of ['runtime_commands','runtime_tasks','runtime_policy','workspace_memory','automation_records'])if(this.#ledger.one(`SELECT 1 FROM ${table} WHERE owner=? AND workspace=? LIMIT 1`,c.ownerRef,c.workspaceRef))fail('STORAGE_INVALID');
++      return;
++    }
++    try{
++      exact(registry,['contractVersion','localPolicyCount','localPolicyDigest','localPairCount','localPairDigest','localReportCount','localReportDigest']);
++      if(canonical(registry)!==canonical(index))fail('STORAGE_INVALID');
++      // Authentic acknowledged normal commands retain sticky ownership even
++      // if an old valid generic body/pointer is replayed alongside a stripped
++      // graph. Historical revisions need not equal the latest revision.
++      for(const row of this.#ledger.query("SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND operation IN ('configureLocalSubscription','configureLocalNotificationPolicy')",c.ownerRef,c.workspaceRef)){
++        const receipt=this.#commandReceipt(row);
++        if(row.operation==='configureLocalSubscription'){
++          const pair=receipt.pair,subscription=receipt.subscription;
++          if(!pair||!subscription||pair.pairRef!==subscription.localPairRef||pair.subscriptionRef!==subscription.subscriptionRef||pair.sourceRef!==subscription.sourceRef||!this.#auto(c,'local_source_pair',pair.pairRef))fail('STORAGE_INVALID');
++        }else{
++          if(!receipt.markerRef||receipt.markerRef!==receipt.policyRef||!this.#auto(c,'local_notification_policy',receipt.markerRef))fail('STORAGE_INVALID');
++        }
++      }
++      for(const row of this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind='local_notification_policy'",c.ownerRef,c.workspaceRef)){
++        const marker=this.#auto(c,'local_notification_policy',row.id);exact(marker,['contractVersion','policyRef','localReportOnly']);
++        if(marker.contractVersion!=='df.local-notification-policy/v1'||marker.policyRef!==row.id||marker.localReportOnly!==true)fail('STORAGE_INVALID');
++        const policy=this.#auto(c,'notification_policy',row.id);
++        if(!policy||policy.markerRef!==row.id)fail('STORAGE_INVALID');
++      }
++      for(const row of this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind='notification_policy'",c.ownerRef,c.workspaceRef)){
++        const policy=this.#auto(c,'notification_policy',row.id);
++        if(policy.markerRef!==undefined&&(policy.markerRef!==row.id||!this.#auto(c,'local_notification_policy',policy.markerRef)))fail('STORAGE_INVALID');
++      }
++      for(const row of this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind='local_source_pair'",c.ownerRef,c.workspaceRef))this.#localPair(c,row.id);
++      for(const row of this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind='subscription'",c.ownerRef,c.workspaceRef)){
++        const subscription=this.#auto(c,'subscription',row.id);
++        if(subscription.localPairRef!==undefined){const pair=this.#localPair(c,subscription.localPairRef);if(pair.subscriptionRef!==row.id)fail('STORAGE_INVALID');}
++      }
++      const commands=this.#localReportCommands(c);
++      for(const id of commands.keys())if(!this.#auto(c,'local_report',id))fail('STORAGE_INVALID');
++      for(const row of this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND kind='local_report'",c.ownerRef,c.workspaceRef))this.#localReport(c,row.id,commands);
++      for(const row of this.#ledger.query("SELECT task,id FROM runtime_records WHERE owner=? AND workspace=? AND kind='progress'",c.ownerRef,c.workspaceRef)){
++        const progress=this.#record(c,row.task,'progress',row.id);
++        if(progress.localReportRef!==undefined){const report=this.#localReport(c,progress.localReportRef,commands);if(report.taskRef!==row.task||report.progressRef!==row.id)fail('STORAGE_INVALID');}
++      }
++    }catch{fail('STORAGE_INVALID');}
++  }
++  #localPair(c,id){
++    const pair=this.#auto(c,'local_source_pair',ref(id));if(!pair)fail('STORAGE_INVALID');
++    exact(pair,['contractVersion','pairRef','sourceRef','sourceRevision','sourceSpecDigest','subscriptionRef','subscriptionRevision','subscriptionSpecDigest']);
++    for(const key of ['pairRef','sourceRef','sourceSpecDigest','subscriptionRef','subscriptionSpecDigest'])ref(pair[key]);
++    integer(pair.sourceRevision,1);integer(pair.subscriptionRevision,1);
++    if(pair.contractVersion!=='df.local-source-pair/v1'||pair.pairRef!==id||id!==canonicalDigest({sourceRef:pair.sourceRef,subscriptionRef:pair.subscriptionRef}))fail('STORAGE_INVALID');
++    const source=this.#auto(c,'source',pair.sourceRef),subscription=this.#auto(c,'subscription',pair.subscriptionRef);
++    if(!source||!subscription||subscription.sourceRef!==pair.sourceRef||subscription.localPairRef!==id||pair.sourceRevision>source.revision||pair.subscriptionRevision>subscription.revision)fail('STORAGE_INVALID');
++    return pair;
++  }
++  #pairCurrent(pair,source,subscription){
++    return pair.sourceRevision===source.revision&&pair.subscriptionRevision===subscription.revision&&pair.sourceSpecDigest===canonicalDigest(source.spec)&&pair.subscriptionSpecDigest===canonicalDigest(subscription.spec);
++  }
++  #requireLocalPair(c,source,subscription){
++    if(!subscription.localPairRef)fail('EVENT_PAIR_MISSING');
++    const pair=this.#localPair(c,subscription.localPairRef);
++    if(!this.#pairCurrent(pair,source,subscription))fail('EVENT_PAIR_STALE');
++    return pair;
++  }
++  readLocalSourcePair(handle,input){
++    exact(input,['sourceRef','subscriptionRef']);ref(input.sourceRef);ref(input.subscriptionRef);
++    const c=this.#ctx(handle,undefined,HOST);
++    return this.#ledger.transaction(()=>{
++      this.#validateNormalScope(c);
++      const id=canonicalDigest(input),pair=this.#auto(c,'local_source_pair',id);
++      if(!pair)return{pair:null,currentness:'missing'};
++      const actual=this.#localPair(c,id),source=this.#auto(c,'source',input.sourceRef),subscription=this.#auto(c,'subscription',input.subscriptionRef);
++      return{pair:actual,currentness:this.#pairCurrent(actual,source,subscription)?'current':'stale'};
++    });
++  }
++  ingestLocalOwnerEvent(handle,input){
++    const required=['commandRef','sourceRef','subscriptionRef','expectedSourceRevision','expectedSubscriptionRevision','adapterRef','permissionPolicyRef','providerRef','sourceIdentityRef','eventIdRef','goal'];
++    exact(input,[...required,'taskId','targetTaskRef','expectedTaskVersion','expectedAuthEpoch'],required);
++    for(const key of ['sourceRef','subscriptionRef','adapterRef','permissionPolicyRef','providerRef','sourceIdentityRef','eventIdRef'])ref(input[key]);
++    if(typeof input.goal!=='string'||!input.goal.isWellFormed()||!input.goal.trim())fail('INVALID_INPUT');
++    return this.#mut(handle,input,HOST,'ingestLocalOwnerEvent',c=>{
++      const {source,subscription}=this.#eventBinding(c,input);this.#requireLocalPair(c,source,subscription);
++      if(source.spec.kind!=='internal'||source.spec.identityMode!=='unique_id'||source.spec.adapterRef!==input.adapterRef||source.spec.permissionPolicyRef!==input.permissionPolicyRef)fail('ROUTE_MISMATCH');
++      if(subscription.spec.route==='new_task'){
++        if(input.taskId===undefined||input.targetTaskRef!==undefined||input.expectedTaskVersion!==undefined||input.expectedAuthEpoch!==undefined)fail('INVALID_INPUT');reference(input.taskId);
++      }else{
++        if(input.taskId!==undefined||input.targetTaskRef!==subscription.spec.targetTaskRef)fail('ROUTE_MISMATCH');
++        ref(input.targetTaskRef);integer(input.expectedTaskVersion,1);integer(input.expectedAuthEpoch);
++      }
++      const origin={providerRef:input.providerRef,sourceIdentityRef:input.sourceIdentityRef,eventRef:input.eventIdRef};
++      const eventDigest=canonicalDigest({...origin,sourceRef:source.sourceRef,subscriptionRef:subscription.subscriptionRef,adapterRef:input.adapterRef,permissionPolicyRef:input.permissionPolicyRef,route:subscription.spec.route,goal:input.goal,...(input.taskId!==undefined?{taskId:input.taskId}:{targetTaskRef:input.targetTaskRef,expectedTaskVersion:input.expectedTaskVersion,expectedAuthEpoch:input.expectedAuthEpoch})});
++      const old=this.#auto(c,'event',canonicalDigest(origin)),at=old?.observedAt??this.#now();
++      return this.#ingestEvent(c,{commandRef:input.commandRef,sourceRef:source.sourceRef,subscriptionRef:subscription.subscriptionRef,expectedSourceRevision:source.revision,expectedSubscriptionRevision:subscription.revision,...origin,eventDigest,observedAt:at,receivedAt:old?.receivedAt??at,goal:input.goal,...(input.taskId!==undefined?{taskId:input.taskId}:{targetTaskRef:input.targetTaskRef,expectedTaskVersion:input.expectedTaskVersion,expectedAuthEpoch:input.expectedAuthEpoch})});
++    });
++  }
++  readMemoryCommand(handle,input){
++    exact(input,['namespaceRef','commandRef']);ref(input.namespaceRef);ref(input.commandRef);
++    const c=this.#ctx(handle,undefined,['owner']);
++    return this.#ledger.transaction(()=>{
++      this.#validateNormalScope(c);
++      const row=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,input.commandRef);
++      if(!row)return null;
++      // Authenticate the original row before classifying a legitimate collision.
++      // Old nonmemory history is not returned or reconstructed as a receipt.
++      const receipt=this.#commandReceipt(row,false,!['putMemory','deleteMemory'].includes(row.operation));
++      if(!['putMemory','deleteMemory'].includes(row.operation))fail('IDEMPOTENCY_CONFLICT');
++      if(receipt.namespaceRef!==input.namespaceRef)fail('IDEMPOTENCY_CONFLICT');
++      return receipt;
++    });
++  }
++  #localVerification(c,task,artifact){
++    this.#validateArtifactVerification(c,task,artifact);
++    const verification=artifact.verification;if(!verification)return null;
++    if(!verification.resultRef)return{source:'unavailable',verdict:verification.verdict,reason:'PROVENANCE_UNAVAILABLE',evidenceRef:verification.evidenceRef??null};
++    const report=this.#auto(c,'report',verification.reportRef);if(!report?.native)fail('STORAGE_INVALID');
++    this.#validateNativeReport(c,report);
++    const source=this.#auditResult(c,report.native.resultRef).association,material=this.#auditInput(c,source.inputRecordRef);
++    if(material.artifactRef!==artifact.artifactRef||material.artifactVersion!==artifact.version||material.artifactDigest!==artifact.digest||report.reviewerRef===artifact.producerRef||artifact.generationRef!==null&&report.generationRef===artifact.generationRef)fail('STORAGE_INVALID');
++    // Historical provenance stays factual. Current suitability is evaluated
++    // separately against current audit/material/semantic facts under the lock.
++    return{source:'native',auditRef:report.auditRef,auditRevision:report.auditRevision,round:report.round,reportRef:report.reportRef,bindingDigest:report.bindingDigest,materialDigest:report.materialDigest,resultRef:source.resultRef,recordRef:source.recordRef,digest:source.digest,claimRef:source.claimRef,generationRef:source.generationRef,sessionRef:source.sessionRef,executionRef:source.executionRef,inputDigest:source.inputDigest,reviewerRef:report.reviewerRef,verdict:verification.verdict,evidenceRef:report.evidenceRef};
++  }
++  readLocalArtifact(handle,input){
++    exact(input,['taskRef','artifactRef','version','digest']);ref(input.taskRef);ref(input.artifactRef);ref(input.digest);integer(input.version,1);
++    const c=this.#ctx(handle,input.taskRef,['owner']);
++    return this.#ledger.transaction(()=>{
++      this.#validateNormalScope(c);
++      const artifact=this.#artifact(c,input.taskRef,input.artifactRef,input.version);if(!artifact)fail('RECORD_NOT_FOUND');
++      if(artifact.digest!==input.digest)fail('DIGEST_MISMATCH');
++      const {metadata,content}=this.#auditData(c,input.taskRef,artifact.recordRef);this.#readAllowed(c,metadata);
++      if(metadata.kind!=='artifact'||metadata.digest!==artifact.digest||metadata.byteLength!==Buffer.byteLength(content))fail('STORAGE_INVALID');
++      return{artifact:{...artifact,verificationBinding:this.#localVerification(c,input.taskRef,artifact)},data:{...metadata,content}};
++    });
++  }
++  #localSourceStates(c,task,artifactRef){
++    ref(artifactRef);
++    const requirements=this.#ledger.query("SELECT id FROM automation_records WHERE owner=? AND workspace=? AND task=? AND kind='audit' ORDER BY id",...this.#keys(c,task)).filter(row=>this.#auto(c,'audit',row.id).artifactRef===artifactRef);
++    if(requirements.length>16)fail('RECORD_LIMIT');
++    return requirements.map(row=>{
++      const req=this.#auto(c,'audit',row.id),report=req.reportRef?this.#auto(c,'report',req.reportRef):null;
++      let currentness='current';try{this.#auditCurrent(c,req);}catch(error){if(['AUDIT_STALE','AUDIT_BINDING_MISMATCH'].includes(error.code))currentness='stale';else throw error;}
++      if(report?.native)this.#validateNativeReport(c,report);
++      return{auditRef:req.auditRef,auditRevision:req.auditRevision,round:req.round,bindingDigest:req.bindingDigest,materialDigest:req.materialDigest,semanticRevision:req.semanticRevision,material:req.material,policyRef:req.policyRef,blockingSeverities:req.blockingSeverities,maxRepairRounds:req.maxRepairRounds,state:req.state,currentness,report:report?{reportRef:report.reportRef,verdict:report.verdict,reviewerRef:report.reviewerRef,claimRef:report.claimRef,generationRef:report.generationRef,resultRef:report.native?.resultRef??null,coverageRefs:report.coverageRefs,unexaminedRefs:report.unexaminedRefs,findings:report.findings,evidenceRef:report.evidenceRef}:null,repair:req.pendingRepair?{claimRef:req.pendingRepair.claimRef,generationRef:req.pendingRepair.generationRef,round:req.pendingRepair.round,previousReportRef:req.pendingRepair.previousReportRef,evidenceRef:req.pendingRepair.evidenceRef}:null};
++    });
++  }
++  #localAggregate(binding,sources,semantic){
++    if(sources.some(s=>s.currentness==='stale'||s.semanticRevision!==semantic))return'stale';
++    if(sources.some(s=>s.state==='pending'&&!s.report||s.report?.findings.some(f=>f.severity==='fatal'||s.blockingSeverities.includes(f.severity))))return'blocked';
++    if(sources.some(s=>s.state==='budget_exhausted'||s.report?.verdict==='budget_exhausted'))return'budget_limited';
++    if(sources.some(s=>s.report?.unexaminedRefs.length))return'unexamined';
++    if(binding?.source==='unavailable'||binding?.verdict==='unknown'||sources.some(s=>s.state==='unknown'||s.report?.verdict==='unknown'||s.report&&s.report.resultRef===null))return'unknown';
++    if(binding?.verdict==='rejected'||sources.some(s=>s.state==='failed'||s.report?.verdict==='failed'))return'failed';
++    if(binding===null&&sources.length===0)return'not_run';
++    if(binding?.source!=='native'||binding.verdict!=='accepted'||sources.some(s=>s.state!=='passed'||!s.report))return'unknown';
++    const source=sources.find(s=>s.auditRef===binding.auditRef);
++    if(!source||source.auditRevision!==binding.auditRevision||source.round!==binding.round||source.bindingDigest!==binding.bindingDigest||source.materialDigest!==binding.materialDigest||source.report.reportRef!==binding.reportRef||source.report.resultRef!==binding.resultRef)return'stale';
++    return'passed';
++  }
++  #localStatement(c,task,id){
++    const {metadata,content}=this.#auditData(c,task,ref(id));this.#readAllowed(c,metadata);
++    if(!['context','clarification','constraints'].includes(metadata.kind)||metadata.auditInputRef)fail('INVALID_INPUT');
++    return{recordRef:metadata.recordRef,digest:metadata.digest};
++  }
++  #localReportFacts(report){
++    const normalize=value=>{
++      if(Array.isArray(value)){const items=value.map(normalize);return items.sort((a,b)=>canonical(a).localeCompare(canonical(b)));}
++      if(value&&typeof value==='object'){const out={};for(const [key,item] of Object.entries(value))if(!['observedSourceCAS','createdAt','observedAt','progressRef','recordRef','reportRef'].includes(key))out[key]=normalize(item);return out;}
++      return value;
++    };
++    return canonicalDigest(normalize({kind:report.kind,originalGoal:report.originalGoal,statements:report.statements,artifact:report.artifact,semanticRevision:report.semanticRevision,verificationState:report.verificationState,verificationBinding:report.verificationBinding,sourceStates:report.sourceStates}));
++  }
++  writeLocalProgress(handle,input){
++    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','progressRef','kind','artifactRef','artifactVersion','digest','completedScopeRef','unfinishedRef','nextStepRef','blockerRefs']);
++    for(const key of ['taskRef','commandRef','progressRef','artifactRef','digest','completedScopeRef','unfinishedRef','nextStepRef'])ref(input[key]);integer(input.artifactVersion,1);
++    if(!['milestone','obstacle','question','final'].includes(input.kind))fail('INVALID_INPUT');canonical(input.blockerRefs);
++    if(!Array.isArray(input.blockerRefs)||input.blockerRefs.length>16||new Set(input.blockerRefs).size!==input.blockerRefs.length)fail('INVALID_INPUT');input.blockerRefs.forEach(ref);
++    return this.#mut(handle,input,['owner'],'writeLocalProgress',c=>{
++      const task=this.#cas(c,input),artifact=this.#artifact(c,input.taskRef,input.artifactRef);
++      if(!artifact||artifact.version!==input.artifactVersion||artifact.digest!==input.digest)fail('STALE_ARTIFACT');
++      const goals=this.#ledger.query("SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND kind='goal'",...this.#keys(c,input.taskRef)).map(row=>this.#openData(c,row).metadata).sort((a,b)=>a.taskVersion-b.taskVersion||a.createdAt-b.createdAt||a.recordRef.localeCompare(b.recordRef));
++      if(!goals.length)fail('RECORD_NOT_FOUND');
++      const originalGoal={recordRef:goals[0].recordRef,digest:goals[0].digest};
++      const statements={completedScope:this.#localStatement(c,task.id,input.completedScopeRef),unfinished:this.#localStatement(c,task.id,input.unfinishedRef),nextStep:this.#localStatement(c,task.id,input.nextStepRef),blockers:[...input.blockerRefs].sort().map(id=>this.#localStatement(c,task.id,id))};
++      const semanticRevision=this.#semantic(c,task.id),verificationBinding=this.#localVerification(c,task.id,artifact),sourceStates=this.#localSourceStates(c,task.id,artifact.artifactRef),verificationState=this.#localAggregate(verificationBinding,sourceStates,semanticRevision),at=this.#now();
++      const identity={artifactRef:artifact.artifactRef,version:artifact.version,recordRef:artifact.recordRef,digest:artifact.digest,producerRef:artifact.producerRef,producerClaimRef:artifact.producerClaimRef,generationRef:artifact.generationRef};
++      const base={contractVersion:'df.local-progress/v1',ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:task.id,progressRef:input.progressRef,kind:input.kind,originalGoal,statements,artifact:identity,semanticRevision,observedSourceCAS:{taskVersion:task.version,authEpoch:task.auth_epoch},createdAt:at,verificationState,verificationBinding,sourceStates};
++      const progressDigest=this.#localReportFacts(base);
++      const verificationEvidence=verificationBinding?.source==='native'?[{evidenceRef:verificationBinding.evidenceRef,digest:verificationBinding.digest,observedAt:this.#auditResult(c,verificationBinding.resultRef).association.createdAt}]:[];
++      const report={originalGoalRef:originalGoal.recordRef,completedScopeRef:statements.completedScope.recordRef,unfinishedRef:statements.unfinished.recordRef,nextStepRef:statements.nextStep.recordRef,verificationState,verificationEvidence,blockerRefs:statements.blockers.map(item=>item.recordRef),progressDigest};
++      const t=this.#update(task,task.status,'progress'),data=this.#data(c,t,{kind:'progress',content:canonical(report),sourceRef:input.progressRef,commandRef:input.commandRef});
++      const localReportRef=canonicalDigest({taskRef:t.id,progressRef:input.progressRef});
++      const progress=this.#newRecord(c,t.id,'progress',input.progressRef,{progressRef:input.progressRef,recordRef:data.recordRef,digest:data.digest,kind:input.kind,generationRef:null,at,localReportRef});
++      const localReport=this.#saveAuto(c,'local_report',localReportRef,t.id,{...base,recordRef:data.recordRef,digest:data.digest,progressDigest});
++      this.#refreshNormalRegistry(c);return{progress,report,localReport,currentness:'current',task:taskRecord(t)};
++    });
++  }
++  #localReportCommands(c){
++    // Ephemeral validation index within this read/transaction, never a second
++    // authority or a cache that can outlive the SQLite snapshot.
++    const result=new Map();
++    for(const row of this.#ledger.query("SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND operation='writeLocalProgress'",c.ownerRef,c.workspaceRef)){
++      const receipt=this.#commandReceipt(row),report=receipt.localReport;
++      if(!report||report.taskRef!==row.task)fail('STORAGE_INVALID');
++      const id=canonicalDigest({taskRef:ref(report.taskRef),progressRef:ref(report.progressRef)});
++      if(result.has(id))fail('STORAGE_INVALID');
++      result.set(id,receipt);
++    }
++    return result;
++  }
++  #localReport(c,id,commands){
++    const association=this.#auto(c,'local_report',ref(id));if(!association)fail('STORAGE_INVALID');
++    try{
++      exact(association,['contractVersion','ownerRef','workspaceRef','taskRef','progressRef','recordRef','digest','kind','originalGoal','statements','artifact','semanticRevision','observedSourceCAS','createdAt','verificationState','progressDigest','verificationBinding','sourceStates']);
++      const a=association;
++      if(a.contractVersion!=='df.local-progress/v1'||a.ownerRef!==c.ownerRef||a.workspaceRef!==c.workspaceRef||id!==canonicalDigest({taskRef:a.taskRef,progressRef:a.progressRef}))fail('STORAGE_INVALID');
++      for(const key of ['taskRef','progressRef','recordRef','digest','progressDigest'])ref(a[key]);integer(a.semanticRevision,1);integer(a.createdAt,0,8640000000000000);
++      exact(a.observedSourceCAS,['taskVersion','authEpoch']);integer(a.observedSourceCAS.taskVersion,1);integer(a.observedSourceCAS.authEpoch);
++      if(!['milestone','obstacle','question','final'].includes(a.kind)||!['passed','failed','not_run','stale','unknown','unexamined','budget_limited','blocked'].includes(a.verificationState))fail('STORAGE_INVALID');
++      const pair=value=>{exact(value,['recordRef','digest']);ref(value.recordRef);ref(value.digest);const data=this.#auditData(c,a.taskRef,value.recordRef);if(data.metadata.digest!==value.digest)fail('STORAGE_INVALID');return data.metadata;};
++      if(pair(a.originalGoal).kind!=='goal')fail('STORAGE_INVALID');
++      exact(a.statements,['completedScope','unfinished','nextStep','blockers']);
++      if(!Array.isArray(a.statements.blockers)||a.statements.blockers.length>16||new Set(a.statements.blockers.map(b=>b.recordRef)).size!==a.statements.blockers.length)fail('STORAGE_INVALID');
++      for(const selected of [a.statements.completedScope,a.statements.unfinished,a.statements.nextStep,...a.statements.blockers])if(!['context','clarification','constraints'].includes(pair(selected).kind))fail('STORAGE_INVALID');
++      exact(a.artifact,['artifactRef','version','recordRef','digest','producerRef','producerClaimRef','generationRef']);
++      for(const key of ['artifactRef','recordRef','digest','producerRef'])ref(a.artifact[key]);for(const key of ['producerClaimRef','generationRef'])if(a.artifact[key]!==null)ref(a.artifact[key]);integer(a.artifact.version,1);
++      const artifact=this.#artifact(c,a.taskRef,a.artifact.artifactRef,a.artifact.version);
++      if(!artifact||Object.entries(a.artifact).some(([key,value])=>artifact[key]!==value))fail('STORAGE_INVALID');
++      if(!Array.isArray(a.sourceStates)||a.sourceStates.length>16||new Set(a.sourceStates.map(s=>s.auditRef)).size!==a.sourceStates.length)fail('STORAGE_INVALID');
++      for(const state of a.sourceStates){
++        exact(state,['auditRef','auditRevision','round','bindingDigest','materialDigest','semanticRevision','material','policyRef','blockingSeverities','maxRepairRounds','state','currentness','report','repair']);
++        for(const key of ['auditRef','bindingDigest','materialDigest','policyRef'])ref(state[key]);integer(state.auditRevision,1);integer(state.semanticRevision,1);integer(state.round,0,8);integer(state.maxRepairRounds,0,8);
++        if(!['pending','passed','failed','unknown','budget_exhausted'].includes(state.state)||!['current','stale'].includes(state.currentness)||!this.#auto(c,'audit',state.auditRef))fail('STORAGE_INVALID');
++        if(!Array.isArray(state.material)||state.material.length>16||new Set(state.material.map(m=>m.recordRef)).size!==state.material.length||canonicalDigest(state.material)!==state.materialDigest||canonical(state.material)!==canonical([...state.material].sort((a,b)=>a.recordRef.localeCompare(b.recordRef))))fail('STORAGE_INVALID');
++        state.material.forEach(pair);
++        const versions=this.#ledger.query("SELECT id FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind='artifact'",...this.#keys(c,a.taskRef)).map(row=>this.#record(c,a.taskRef,'artifact',row.id)).filter(item=>item.artifactRef===a.artifact.artifactRef);
++        if(!versions.some(version=>state.material.some(m=>m.recordRef===version.recordRef&&m.digest===version.digest)))fail('STORAGE_INVALID');
++        if(!Array.isArray(state.blockingSeverities)||state.blockingSeverities.length>4||new Set(state.blockingSeverities).size!==state.blockingSeverities.length||state.blockingSeverities.some(s=>!['fatal','blocking','warning','info'].includes(s)))fail('STORAGE_INVALID');
++        if(state.report){
++          exact(state.report,['reportRef','verdict','reviewerRef','claimRef','generationRef','resultRef','coverageRefs','unexaminedRefs','findings','evidenceRef']);
++          const source=this.#auto(c,'report',state.report.reportRef);if(!source||source.auditRef!==state.auditRef||source.auditRevision!==state.auditRevision||source.round!==state.round||source.materialDigest!==state.materialDigest||source.bindingDigest!==state.bindingDigest)fail('STORAGE_INVALID');
++          const expected={reportRef:source.reportRef,verdict:source.verdict,reviewerRef:source.reviewerRef,claimRef:source.claimRef,generationRef:source.generationRef,resultRef:source.native?.resultRef??null,coverageRefs:source.coverageRefs,unexaminedRefs:source.unexaminedRefs,findings:source.findings,evidenceRef:source.evidenceRef};
++          if(canonical(expected)!==canonical(state.report))fail('STORAGE_INVALID');
++          this.#reportFields(source);const union=[...source.coverageRefs,...source.unexaminedRefs];if(new Set(union).size!==union.length||canonical([...union].sort())!==canonical(state.material.map(m=>m.recordRef).sort()))fail('STORAGE_INVALID');
++          if(source.native)this.#validateNativeReport(c,source);
++        }
++        if(state.repair){exact(state.repair,['claimRef','generationRef','round','previousReportRef','evidenceRef']);const source=this.#auto(c,'repair',state.repair.claimRef);if(!source||Object.entries(state.repair).some(([key,value])=>source[key]!==value)||source.auditRef!==state.auditRef)fail('STORAGE_INVALID');}
++      }
++      const binding=a.verificationBinding;
++      if(binding){
++        if(binding.source==='unavailable'){exact(binding,['source','verdict','reason','evidenceRef']);if(binding.reason!=='PROVENANCE_UNAVAILABLE'||!['accepted','rejected','unknown'].includes(binding.verdict))fail('STORAGE_INVALID');if(binding.evidenceRef!==null)ref(binding.evidenceRef);}
++        else{
++          exact(binding,['source','auditRef','auditRevision','round','reportRef','bindingDigest','materialDigest','resultRef','recordRef','digest','claimRef','generationRef','sessionRef','executionRef','inputDigest','reviewerRef','verdict','evidenceRef']);
++          const report=this.#auto(c,'report',binding.reportRef),source=this.#auditResult(c,binding.resultRef).association;
++          if(binding.source!=='native'||!report?.native)fail('STORAGE_INVALID');this.#validateNativeReport(c,report);
++          const expected={source:'native',auditRef:report.auditRef,auditRevision:report.auditRevision,round:report.round,reportRef:report.reportRef,bindingDigest:report.bindingDigest,materialDigest:report.materialDigest,resultRef:source.resultRef,recordRef:source.recordRef,digest:source.digest,claimRef:source.claimRef,generationRef:source.generationRef,sessionRef:source.sessionRef,executionRef:source.executionRef,inputDigest:source.inputDigest,reviewerRef:report.reviewerRef,verdict:this.#nativeVerification(c,report).verdict,evidenceRef:report.evidenceRef};
++          if(canonical(binding)!==canonical(expected))fail('STORAGE_INVALID');
++        }
++      }
++      if(a.verificationState!==this.#localAggregate(binding,a.sourceStates,a.semanticRevision)||a.progressDigest!==this.#localReportFacts(a))fail('STORAGE_INVALID');
++      const progress=this.#record(c,a.taskRef,'progress',a.progressRef);
++      if(progress.localReportRef!==id||progress.recordRef!==a.recordRef||progress.digest!==a.digest||progress.kind!==a.kind||progress.at!==a.createdAt)fail('STORAGE_INVALID');
++      const data=this.#auditData(c,a.taskRef,a.recordRef),report=parse(data.content);
++      exact(report,['originalGoalRef','completedScopeRef','unfinishedRef','nextStepRef','verificationState','verificationEvidence','blockerRefs','progressDigest']);
++      const verificationEvidence=binding?.source==='native'?[{evidenceRef:binding.evidenceRef,digest:binding.digest,observedAt:this.#auditResult(c,binding.resultRef).association.createdAt}]:[];
++      const expected={originalGoalRef:a.originalGoal.recordRef,completedScopeRef:a.statements.completedScope.recordRef,unfinishedRef:a.statements.unfinished.recordRef,nextStepRef:a.statements.nextStep.recordRef,verificationState:a.verificationState,verificationEvidence,blockerRefs:a.statements.blockers.map(b=>b.recordRef),progressDigest:a.progressDigest};
++      if(data.metadata.kind!=='progress'||data.metadata.sourceRef!==a.progressRef||data.metadata.digest!==a.digest||canonical(report)!==canonical(expected))fail('STORAGE_INVALID');
++      const receipt=(commands||this.#localReportCommands(c)).get(id);
++      if(!receipt||canonical(receipt.localReport)!==canonical(a)||canonical(receipt.progress)!==canonical(progress))fail('STORAGE_INVALID');
++      return a;
++    }catch{fail('STORAGE_INVALID');}
++  }
++  #localProgress(c,task,id){
++    const progress=this.#record(c,task,'progress',ref(id));
++    const data=this.#auditData(c,task,progress.recordRef);
++    if(data.metadata.digest!==progress.digest||data.metadata.kind!=='progress')fail('STORAGE_INVALID');
++    if(!progress.localReportRef)return{progress,report:null,localReport:null,currentness:'unverified'};
++    const localReport=this.#localReport(c,progress.localReportRef);
++    const artifact=this.#artifact(c,task,localReport.artifact.artifactRef),sources=this.#localSourceStates(c,task,localReport.artifact.artifactRef);
++    const current=artifact?.version===localReport.artifact.version&&artifact?.digest===localReport.artifact.digest&&localReport.semanticRevision===this.#semantic(c,task)&&canonical(sources)===canonical(localReport.sourceStates)&&canonical(this.#localVerification(c,task,artifact))===canonical(localReport.verificationBinding)&&localReport.verificationState!=='stale';
++    return{progress,report:parse(data.content),localReport,currentness:current?'current':'stale'};
++  }
++  readLocalProgress(handle,input){
++    exact(input,['taskRef','progressRef']);ref(input.taskRef);ref(input.progressRef);
++    const c=this.#ctx(handle,input.taskRef,['owner']);
++    return this.#ledger.transaction(()=>{this.#validateNormalScope(c);return this.#localProgress(c,input.taskRef,input.progressRef);});
++  }
++  #localArtifactReady(c,task,artifact){
++    const latest=this.#artifact(c,task,artifact.artifactRef),binding=this.#localVerification(c,task,artifact);
++    if(!latest||latest.version!==artifact.version||latest.digest!==artifact.digest)fail('STALE_ARTIFACT');
++    if(binding?.source!=='native'||binding.verdict!=='accepted')fail('PROVENANCE_UNAVAILABLE');
++    const req=this.#auto(c,'audit',binding.auditRef);this.#auditCurrent(c,req);
++    if(req.reportRef!==binding.reportRef||req.auditRevision!==binding.auditRevision||req.round!==binding.round||req.bindingDigest!==binding.bindingDigest||req.state!=='passed')fail('ARTIFACT_UNVERIFIED');
++    this.#auditGate(c,task);return binding;
++  }
++  #normalNotificationManifest(c,task,delivery){
++    const selected=[...delivery.notification.progressRefs].sort().map(id=>{
++      const value=this.#localProgress(c,task,id);if(value.currentness!=='current')fail(value.currentness==='unverified'?'PROVENANCE_UNAVAILABLE':'PROGRESS_STALE');
++      return{progressRef:id,digest:value.progress.digest,kind:value.progress.kind,report:value.report,localReport:value.localReport};
++    });
++    const manifest={version:'df.local-notification/v1',taskRef:task,ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,progress:selected};
++    const artifact=this.#artifact(c,task,delivery.artifactRef);if(!artifact||artifact.version!==delivery.artifactVersion||artifact.digest!==delivery.digest)fail('STALE_ARTIFACT');
++    const data=this.#auditData(c,task,artifact.recordRef),binding=this.#localArtifactReady(c,task,artifact);
++    if(data.content!==canonical(manifest))fail('NOTIFICATION_BINDING_INVALID');
++    const source=this.#auditInput(c,this.#auditResult(c,binding.resultRef).association.inputRecordRef);
++    const covered=new Map(source.material.map(m=>[m.recordRef,m.digest]));
++    // Reviewing a reference manifest alone does not certify its extra selected
++    // statements. Their exact bytes must be in this charged review material.
++    for(const item of selected)for(const pair of [item.localReport.originalGoal,item.localReport.statements.completedScope,item.localReport.statements.unfinished,item.localReport.statements.nextStep,...item.localReport.statements.blockers])if(covered.get(pair.recordRef)!==pair.digest)fail('COVERAGE_UNAVAILABLE');
++    return manifest;
++  }
++  #localPublicationMaterial(c,task,delivery,action){
++    if(action.spec.kind!=='write'||action.spec.role!=='worker'||action.spec.executor.mode!=='none'||action.spec.targetDigest!==delivery.targetDigest||action.spec.dataDigest!==delivery.digest||action.spec.charges.costState!=='estimated'||action.spec.charges.costEstimateMicros!==0||!action.spec.charges.costProvenanceRef)fail('LOCAL_ADMISSION_DENIED');
++    const charges=action.spec.charges;
++    if(action.spec.units>32||charges.runtimeMs<1||charges.runtimeMs>60000||charges.usageUnits<1||charges.usageUnits>100000000)fail('LOCAL_ADMISSION_DENIED');
++    const artifact=this.#artifact(c,task,delivery.artifactRef);if(!artifact||artifact.version!==delivery.artifactVersion||artifact.digest!==delivery.digest)fail('STALE_ARTIFACT');
++    this.#localArtifactReady(c,task,artifact);
++    const {metadata,content}=this.#auditData(c,task,artifact.recordRef);
++    if(metadata.kind!=='artifact'||metadata.digest!==delivery.digest)fail('STORAGE_INVALID');
++    const bytes=Buffer.byteLength(canonical({taskRef:task,deliveryRef:delivery.deliveryRef,artifactRef:delivery.artifactRef,artifactVersion:delivery.artifactVersion,digest:delivery.digest,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef,content}));
++    if(bytes>action.spec.charges.usageUnits)fail('BUDGET_LIMIT');
++    if(delivery.notification){
++      const policy=this.#auto(c,'notification_policy',delivery.notification.policyRef);if(!policy)fail('NOTIFICATION_POLICY_UNAVAILABLE');
++      if(policy.markerRef)this.#normalNotificationManifest(c,task,delivery);
++    }
++    return{artifact,bytes};
++  }
++  #localClaimCurrent(c,input,delivery){
++    const {a,w,t}=this.#claim(c,input);
++    if(a.digest!==input.actionDigest||delivery.claimRef!==input.claimRef||delivery.generationRef!==input.generationRef||delivery.reservationRef!==w.reservationRef||a.claim_epoch!==t.auth_epoch||!['running','blocked','waiting'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active')fail('CLAIM_REVOKED');
++    const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action),policy=this.#getPolicy(c);
++    if(!grant||grant.revoked||grant.auth_epoch!==t.auth_epoch||grant.task_version!==a.metadata.plannedTaskVersion||grant.target_digest!==a.spec.targetDigest||grant.data_digest!==a.spec.dataDigest||grant.units!==a.spec.units||grant.kind!==a.spec.kind||this.#now()>=grant.expires_at)fail('APPROVAL_INVALID');
++    const reservation=this.#ledger.one('SELECT * FROM reservations WHERE claim_id=?',a.claim_id);
++    if(!reservation||reservation.owner!==c.ownerRef||reservation.workspace!==c.workspaceRef||reservation.task!==t.id||reservation.action!==a.action||reservation.units!==a.spec.units||w.claimRef!==reference(a.claim_id)||w.actionDigest!==a.digest||w.reservationRef!==canonicalDigest({claimRef:w.claimRef,actionDigest:a.digest}))fail('STORAGE_INVALID');
++    if(policy.version!==a.spec.resourcePolicyVersion||!policy.modelPolicy||policy.modelPolicy.version!==a.spec.modelPolicyVersion)fail('STALE_POLICY');
++    if(this.#ledger.one('SELECT coalesce(sum(units),0) AS n FROM reservations').n>policy.limits.maxActive)fail('ACTIVE_FULL');
++    let allowed=false;try{allowed=this.#permission(Object.freeze({ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id,actionRef:a.action,actionDigest:a.digest,taskVersion:t.version,authEpoch:t.auth_epoch,spec:JSON.parse(canonical(a.spec))}))===true;}catch{fail('HOST_DENIED');}if(!allowed)fail('HOST_DENIED');
++    this.#localPublicationMaterial(c,t.id,delivery,a);return{a,w,t};
++  }
++  #localNotificationOwned(c,task,delivery,at){
++    const binding=delivery.notification,policy=this.#auto(c,'notification_policy',binding.policyRef);this.#notificationBinding(binding);
++    if(!policy||!policy.spec.enabled)fail('NOTIFICATION_DISABLED');if(policy.revision!==binding.policyRevision)fail('STALE_NOTIFICATION_POLICY');
++    const ownership=this.#auto(c,'notification_claim',delivery.deliveryRef);
++    if(!ownership||ownership.claimRef!==delivery.claimRef||ownership.reservationRef!==delivery.reservationRef||ownership.policyRevision!==binding.policyRevision||ownership.policyRef!==binding.policyRef)fail('STORAGE_INVALID');
++    const group=this.#auto(c,'notification_group',ownership.groupId);
++    if(!group||group.deliveryRef!==delivery.deliveryRef||group.claimRef!==delivery.claimRef||group.reservationRef!==delivery.reservationRef||canonical(group.progressRefs)!==canonical(binding.progressRefs))fail('STORAGE_INVALID');
++    if(policy.markerRef)this.#normalNotificationManifest(c,task,delivery);
++    for(const id of ownership.factIds){const fact=this.#auto(c,'notification_fact',id);if(!fact||fact.deliveryRef!==delivery.deliveryRef||fact.claimRef!==delivery.claimRef||fact.reservationRef!==delivery.reservationRef)fail('STORAGE_INVALID');}
++    const spec=this.#notificationSpec(policy.spec),progress=binding.progressRefs.map(id=>this.#record(c,task,'progress',id)),emergency=progress.some(p=>spec.emergencyKinds.includes(p.kind));
++    if(progress.length>1&&progress.some(p=>!spec.mergeKinds.includes(p.kind)))fail('NOTIFICATION_MERGE_DENIED');
++    if(!emergency&&progress.every(p=>spec.mergeKinds.includes(p.kind))&&at<Math.min(...progress.map(p=>p.at))+spec.mergeWindowMs)fail('NOTIFICATION_COALESCING');
++    let minute;
++    try{
++      const parts=new Intl.DateTimeFormat('en-GB',{timeZone:spec.timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(at);
++      minute=Number(parts.find(p=>p.type==='hour').value)*60+Number(parts.find(p=>p.type==='minute').value);
++    }catch{fail('NOTIFICATION_CLOCK_INVALID');}
++    if(!emergency&&spec.quietWindows.some(w=>w.startMinute<w.endMinute?minute>=w.startMinute&&minute<w.endMinute:minute>=w.startMinute||minute<w.endMinute))fail('NOTIFICATION_QUIET');
++    // Its already committed window/frequency/resource ownership is validated,
++    // never charged again and never treated as a conflicting pending group.
++    const window=this.#auto(c,'notification_window',canonicalDigest({policyRef:binding.policyRef,recipientRef:delivery.recipientRef,channelRef:delivery.channelRef}));
++    if(!window||window.count<1||window.lastClaimAt<ownership.claimedAt)fail('STORAGE_INVALID');
++  }
++  publishLocalDelivery(handle,input){
++    const required=['taskRef','commandRef','deliveryRef','claimRef','generationRef','actionDigest','observedAt','evidenceRef'];exact(input,[...required,'notification'],required);
++    for(const key of required.filter(k=>k!=='observedAt'))ref(input[key]);integer(input.observedAt,0,8640000000000000);
++    if(input.notification){exact(input.notification,['policyRef','policyRevision']);ref(input.notification.policyRef);integer(input.notification.policyRevision,1);}
++    return this.#mut(handle,input,HOST,'publishLocalDelivery',c=>{
++      const delivery=this.#record(c,input.taskRef,'delivery',input.deliveryRef);
++      if(delivery.state!=='outbox_committed')fail('ACTION_ALREADY_DISPATCHED');
++      const {a}=this.#localClaimCurrent(c,input,delivery),now=this.#now();
++      if(input.observedAt>now)fail('EVENT_CLOCK_INVALID');
++      if(input.observedAt<a.updated_at)fail('STALE_OBSERVATION');
++      if(!!input.notification!==!!delivery.notification||input.notification&&(input.notification.policyRef!==delivery.notification.policyRef||input.notification.policyRevision!==delivery.notification.policyRevision))fail('NOTIFICATION_BINDING_INVALID');
++      if(delivery.notification)this.#localNotificationOwned(c,input.taskRef,delivery,now);
++      const observation={state:'sent',evidenceRef:input.evidenceRef,permissionState:'allowed',openability:'unknown',observedAt:input.observedAt};
++      const next=this.#appendLocalAccess(delivery,observation,'sent');this.#saveRecord(c,input.taskRef,'delivery',input.deliveryRef,next);return next;
++    });
++  }
++  #appendLocalAccess(delivery,observation,state=delivery.state){
++    const previous=delivery.observations.at(-1);
++    if(previous&&(observation.observedAt<previous.observedAt||observation.observedAt===previous.observedAt&&canonical(observation)!==canonical(previous)))fail('STALE_OBSERVATION');
++    if(previous&&canonical(observation)===canonical(previous))return delivery;
++    const next={...delivery,state,observations:[...delivery.observations,observation],currentAccess:{permissionState:observation.permissionState,openability:'unknown'}};
++    if(delivery.observations.length>=15||Buffer.byteLength(canonical(next))+512>this.#limits.maxMetadataBytes)fail('RECORD_LIMIT');return next;
++  }
++  recordLocalDeliveryAccess(handle,input){
++    exact(input,['taskRef','commandRef','deliveryRef','artifactRef','artifactVersion','digest','recipientRef','channelRef','permissionState','observedAt','evidenceRef']);
++    for(const key of ['taskRef','commandRef','deliveryRef','artifactRef','digest','recipientRef','channelRef','evidenceRef'])ref(input[key]);integer(input.artifactVersion,1);integer(input.observedAt,0,8640000000000000);
++    if(!['allowed','denied','unknown'].includes(input.permissionState))fail('INVALID_INPUT');
++    return this.#mut(handle,input,HOST,'recordLocalDeliveryAccess',c=>{
++      const delivery=this.#record(c,input.taskRef,'delivery',input.deliveryRef);
++      if(!delivery.claimRef||!['sent','unknown','failed','delivered'].includes(delivery.state))fail('DELIVERY_UNCONFIRMED');
++      for(const key of ['artifactRef','artifactVersion','digest','recipientRef','channelRef'])if(input[key]!==delivery[key])fail('DIGEST_MISMATCH');
++      const artifact=this.#artifact(c,input.taskRef,input.artifactRef,input.artifactVersion);if(!artifact||artifact.digest!==input.digest)fail('STORAGE_INVALID');
++      const data=this.#auditData(c,input.taskRef,artifact.recordRef);if(data.metadata.kind!=='artifact'||data.metadata.digest!==input.digest)fail('STORAGE_INVALID');
++      if(input.observedAt>this.#now())fail('EVENT_CLOCK_INVALID');
++      const observation={state:delivery.state,evidenceRef:input.evidenceRef,permissionState:input.permissionState,openability:'unknown',observedAt:input.observedAt};
++      const next=this.#appendLocalAccess(delivery,observation);this.#saveRecord(c,input.taskRef,'delivery',input.deliveryRef,next);return next;
++    });
++  }
+   #route(value){
+     exact(value,['pairingRef','pairingRevision','principalRef','conversationRef','threadRef','conversationKind'],['pairingRef','pairingRevision','principalRef','conversationRef','conversationKind']);
+     for(const k of ['pairingRef','principalRef','conversationRef'])ref(value[k]);
+@@ -1489,7 +1960,9 @@
+   #autoCount(c,kind){
+     return this.#ledger.one('SELECT count(*) AS n FROM automation_records WHERE owner=? AND workspace=? AND kind=?',c.ownerRef,c.workspaceRef,kind).n;
+   }
+-  configureSubscription(handle,input){
++  configureSubscription(handle,input){return this.#configureSubscription(handle,input,false);}
++  configureLocalSubscription(handle,input){return this.#configureSubscription(handle,input,true);}
++  #configureSubscription(handle,input,local){
+     exact(input,['commandRef','subscriptionRef','sourceRef','expectedRevision','expectedSourceRevision','spec']);
+     ref(input.subscriptionRef);
+     ref(input.sourceRef);
+@@ -1502,16 +1975,21 @@
+     if(s.route==='supplement')ref(s.targetTaskRef);
+     else if(s.targetTaskRef!==undefined)fail('INVALID_INPUT');
+     if(s.goalNamespaceRef!==undefined)ref(s.goalNamespaceRef);
+-    return this.#mut(handle,input,['owner'],'configureSubscription',c=>{
++    return this.#mut(handle,input,['owner'],local?'configureLocalSubscription':'configureSubscription',c=>{
+       const source=this.#auto(c,'source',input.sourceRef);
+       if(!source||source.revision!==input.expectedSourceRevision)fail('STALE_SOURCE');
+       const old=this.#auto(c,'subscription',input.subscriptionRef);
+       if((old?.revision||0)!==input.expectedRevision)fail('STALE_SUBSCRIPTION');
+       if(old&&old.sourceRef!==input.sourceRef)fail('ROUTE_MISMATCH');
+       if(!old&&this.#autoCount(c,'subscription')>=128)fail('EVENT_LIMIT');
+-      return this.#saveAuto(c,'subscription',input.subscriptionRef,null,{
+-        subscriptionRef:input.subscriptionRef,sourceRef:input.sourceRef,revision:input.expectedRevision+1,spec:JSON.parse(canonical(s))
++      if(s.route==='supplement')this.#task(c,s.targetTaskRef);
++      const pairRef=local?canonicalDigest({sourceRef:input.sourceRef,subscriptionRef:input.subscriptionRef}):old?.localPairRef;
++      const subscription=this.#saveAuto(c,'subscription',input.subscriptionRef,null,{
++        subscriptionRef:input.subscriptionRef,sourceRef:input.sourceRef,revision:input.expectedRevision+1,spec:JSON.parse(canonical(s)),...(pairRef?{localPairRef:pairRef}:{})
+       });
++      if(!local)return subscription;
++      const pair=this.#saveAuto(c,'local_source_pair',pairRef,null,{contractVersion:'df.local-source-pair/v1',pairRef,sourceRef:source.sourceRef,sourceRevision:source.revision,sourceSpecDigest:canonicalDigest(source.spec),subscriptionRef:subscription.subscriptionRef,subscriptionRevision:subscription.revision,subscriptionSpecDigest:canonicalDigest(subscription.spec)});
++      this.#refreshNormalRegistry(c);return{subscription,pair};
+     });
+   }
+   source(handle,input){
+@@ -1537,6 +2015,7 @@
+     if(subscription.sourceRef!==source.sourceRef)fail('ROUTE_MISMATCH');
+     if(!source.spec.enabled)fail('SOURCE_DISABLED');
+     if(!subscription.spec.enabled)fail('SUBSCRIPTION_DISABLED');
++    if(subscription.localPairRef)this.#requireLocalPair(c,source,subscription);
+     return{
+       source,subscription
+     };
+@@ -1555,7 +2034,9 @@
+     for(const k of ['eventRef','eventDigest','providerRef','sourceIdentityRef'])ref(input[k]);
+     integer(input.observedAt,0,8640000000000000);
+     integer(input.receivedAt,0,8640000000000000);
+-    return this.#mut(handle,input,HOST,'ingestEvent',c=>{
++    return this.#mut(handle,input,HOST,'ingestEvent',c=>this.#ingestEvent(c,input));
++  }
++  #ingestEvent(c,input){
+       const{
+         source,subscription
+       }=this.#eventBinding(c,input),now=this.#now(),id=canonicalDigest({
+@@ -1626,7 +2107,6 @@
+       return{
+         ...receipt,deduplicated:false,task:taskRecord(t)
+       };
+-    });
+   }
+   #eventReceipt(c,event){
+     const task=this.#task(c,event.taskRef),actions=this.#ledger.query('SELECT state FROM actions WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,event.taskRef)),held=this.#held(c,event.taskRef);
+@@ -1692,7 +2172,7 @@
+     return this.#mut(handle,input,['owner'],'approveEventClock',c=>{
+       this.#eventBinding(c,input);
+       const old=this.#auto(c,'clock',input.clockRef);
+-      if(!old||old.sourceRef!==input.sourceRef||old.subscriptionRef!==input.subscriptionRef||old.cursor!==input.expectedCursor)fail('STALE_EVENT_CLOCK');
++      if(!old||old.sourceRef!==input.sourceRef||old.subscriptionRef!==input.subscriptionRef||old.cursor!==input.expectedCursor||old.sourceRevision!==input.expectedSourceRevision||old.subscriptionRevision!==input.expectedSubscriptionRevision)fail('STALE_EVENT_CLOCK');
+       if(!old.pendingVerification||old.pendingVerification.planDigest!==ref(input.planDigest))fail('VERIFICATION_REQUIRED');
+       return this.#saveAuto(c,'clock',input.clockRef,null,{
+         ...old,pendingVerification:{
+@@ -1705,6 +2185,7 @@
+     exact(input,['sourceRef','subscriptionRef','expectedSourceRevision','expectedSubscriptionRevision','taskRef']);
+     const c=this.#ctx(handle,input.taskRef,HOST);
+     return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();
+       const{
+         source,subscription
+       }=this.#eventBinding(c,input);
+@@ -1796,6 +2277,7 @@
+     ref(input.taskRef);ref(input.inputRecordRef);
+     const c=this.#ctx(handle,input.taskRef,HOST);
+     return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();
+       // This is an authenticated historical read, never fresh admission or
+       // native origin. Validate the original graph before returning its bytes.
+       const association=this.#auditInput(c,input.inputRecordRef);
+@@ -1863,6 +2345,7 @@
+     if(!handle||typeof handle!=='object'||types.isProxy(handle)||this.#principals.has(handle))fail('INVALID_CONFIG');
+     const c=this.#ctx(host,input.taskRef,HOST);
+     return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();
+       const claimed=this.#claim(c,input);
+       const {a,w,t}=this.#executionAdmission(c,{...input,actionDigest:claimed.a.digest}),association=this.#auditSpec(c,t.id,a.spec,true);
+       if(association.purpose!=='audit_review'||association.auditRef!==ref(input.auditRef)||w.generationRef!==ref(input.generationRef)||w.sessionRef!==ref(input.sessionRef)||!['created','ready','running'].includes(w.phase)||w.terminalEvidenceRef)fail('UNAUTHORIZED');
+@@ -1891,7 +2374,9 @@
+     }=this.#claim(c,input);
+     if(a.digest!==ref(input.actionDigest)||a.claim_epoch!==t.auth_epoch||!['running','waiting','blocked'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id))?.control!=='active')fail('CLAIM_REVOKED');
+     const grant=this.#ledger.one('SELECT * FROM grants WHERE owner=? AND workspace=? AND task=? AND action=?',...this.#keys(c,t.id),a.action),policy=this.#getPolicy(c);
+-    if(!grant||grant.revoked||grant.auth_epoch!==t.auth_epoch||this.#now()>=grant.expires_at)fail('APPROVAL_INVALID');
++    if(!grant||grant.revoked||grant.auth_epoch!==t.auth_epoch||grant.task_version!==a.metadata.plannedTaskVersion||grant.target_digest!==a.spec.targetDigest||grant.data_digest!==a.spec.dataDigest||grant.units!==a.spec.units||grant.kind!==a.spec.kind||this.#now()>=grant.expires_at)fail('APPROVAL_INVALID');
++    const reservation=this.#ledger.one('SELECT * FROM reservations WHERE claim_id=?',a.claim_id);
++    if(!reservation||reservation.owner!==c.ownerRef||reservation.workspace!==c.workspaceRef||reservation.task!==t.id||reservation.action!==a.action||reservation.units!==a.spec.units||w.claimRef!==reference(a.claim_id)||w.actionDigest!==a.digest||w.reservationRef!==canonicalDigest({claimRef:w.claimRef,actionDigest:a.digest}))fail('STORAGE_INVALID');
+     if(policy.version!==a.spec.resourcePolicyVersion||!policy.modelPolicy||policy.modelPolicy.version!==a.spec.modelPolicyVersion)fail('STALE_POLICY');
+     const active=this.#ledger.one('SELECT coalesce(sum(units),0) AS n FROM reservations').n;
+     if(active>policy.limits.maxActive)fail('ACTIVE_FULL');
+@@ -1994,6 +2479,7 @@
+     exact(input,['taskRef','claimRef','generationRef','actionDigest','executionRef']);
+     const c=this.#ctx(handle,input.taskRef,HOST);
+     return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();
+       const record=this.#auto(c,'execution',ref(input.claimRef));
+       if(!record||record.taskRef!==input.taskRef||record.generationRef!==input.generationRef||record.actionDigest!==input.actionDigest||record.executionRef!==input.executionRef)fail('SPEC_MISMATCH');
+       if(record.state!=='intent_committed')return{
+@@ -2017,6 +2503,7 @@
+     exact(input,['taskRef','claimRef','generationRef','actionDigest','executionRef']);
+     const c=this.#ctx(handle,input.taskRef,HOST);
+     return this.#ledger.transaction(()=>{
++      this.#validateNormalScopes();
+       const record=this.#auto(c,'execution',ref(input.claimRef));
+       if(!record||record.taskRef!==input.taskRef||record.claimRef!==input.claimRef||record.generationRef!==input.generationRef||record.actionDigest!==input.actionDigest||record.executionRef!==input.executionRef||record.state!=='dispatch_intent')fail('SPEC_MISMATCH');
+       const {a}=this.#executionAdmission(c,input);
+@@ -2396,6 +2883,12 @@
+   }
+   #validate(){
+     const version=this.#ledger.one('PRAGMA user_version').user_version;
++    if(version<6&&this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){
++      if(this.#ledger.one("SELECT 1 FROM automation_records WHERE kind IN ('local_source_pair','local_report','local_notification_policy','normal_provenance_registry') LIMIT 1"))fail('SCHEMA_UNSUPPORTED');
++      for(const row of this.#ledger.query("SELECT payload FROM automation_records WHERE kind IN ('subscription','notification_policy')")){const value=parse(row.payload).data;if(value?.localPairRef!==undefined||value?.markerRef!==undefined)fail('SCHEMA_UNSUPPORTED');}
++      for(const row of this.#ledger.query("SELECT payload FROM runtime_records WHERE kind='progress'"))if(parse(row.payload).localReportRef!==undefined)fail('SCHEMA_UNSUPPORTED');
++    }
++    this.#validateNormalScopes();
+     if(version<5){
+       for(const row of this.#ledger.query('SELECT spec FROM runtime_actions'))if(parse(row.spec).executionInput!==undefined)fail('SCHEMA_UNSUPPORTED');
+       if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){

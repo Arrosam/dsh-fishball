@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--test",
+    ".runtime/ni4-core6/candidate/test/normal-provenance-core.test.mjs"
+  ],
+  "exitCode": 0,
+  "sourceUnchanged": true,
+  "tapSha256": "2bf13a8ee66bf0722316feec9a3870747b50a4eac7f7db5288a86fe644e75aef"
+}

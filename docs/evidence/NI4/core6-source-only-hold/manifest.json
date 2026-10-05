@@ -1,0 +1,100 @@
+{
+  "status": "AUTHOR HOLD, isolated source-only; no runtime/CODE/acceptance verdict",
+  "createdAt": "2026-10-05T00:44:32.780924+00:00",
+  "schemaVersion": 6,
+  "genuine5Origin": {
+    "schemaVersion": 5,
+    "originCommit": "a64d040",
+    "readInputHoldSHA256": "1b140e452bc48c470b9005664be8254ed2d4388e69d9817eb6353c9a21e06046",
+    "runtimeBaseline": "Node22.22.2, no product imports or execution",
+    "files": [
+      {
+        "origin": "src/ledger.mjs",
+        "source": ".runtime/ni4-core6/source5/src/ledger.mjs",
+        "candidate": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44"
+      },
+      {
+        "origin": "src/runtime-store.mjs",
+        "source": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+        "candidate": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+        "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648"
+      },
+      {
+        "origin": "src/runtime-security.mjs",
+        "source": ".runtime/ni4-core6/source5/src/runtime-security.mjs",
+        "candidate": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+      },
+      {
+        "origin": "src/context.mjs",
+        "source": ".runtime/ni4-core6/source5/src/context.mjs",
+        "candidate": ".runtime/ni4-core6/candidate/src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+      },
+      {
+        "origin": "src/foundation.mjs",
+        "source": ".runtime/ni4-core6/source5/src/foundation.mjs",
+        "candidate": ".runtime/ni4-core6/candidate/src/foundation.mjs",
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+      }
+    ]
+  },
+  "files": [
+    {
+      "path": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258"
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f"
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/test/normal-provenance-core.test.mjs",
+      "sha256": "6198f03837cb8c68d043136e2ceb0105febe9e99fc1805a9a2548648d16066f9"
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-progress.md",
+      "sha256": "a94d4cb057916e87a0a327736535956df4f4640eebd8a45f064ff5a5d7acf615"
+    },
+    {
+      "path": "docs/evidence/NI5/core6-admission-addendum.md",
+      "sha256": "1b6c8477c6554dcd6d30f78f5e0a158019bf43fcc1ad54449032b71fdeb07b2c"
+    }
+  ],
+  "importClosure": "Five .mjs modules with relative links only to each other and Node built-ins",
+  "staticChecks": {
+    "manifest": "docs/evidence/NI4/core6-static-checkpoint/manifest.json",
+    "sha256": "d6f0ef73b42d9719f22edca7fe859902966fea2f6ce06e167f3ec06c44ac1858",
+    "count": 6,
+    "allExitCode": 0,
+    "nodeVersion": "v22.22.2",
+    "checkedFilesStillUnchanged": true
+  },
+  "independentDocsBinding": {
+    "author": "1b6c8477c6554dcd6d30f78f5e0a158019bf43fcc1ad54449032b71fdeb07b2c",
+    "design": "d82827ed5bcc4aa66c66b3650d0ae5155b26df559b8148152e4c2ddc8ac8991d",
+    "checks": "a254055bcbb0a188bf0d0c1be8957669dccac95d7d099b7e6fc8de4c3714d519"
+  },
+  "mainAndCapsuleFiveHashesEachUnchanged": true,
+  "draftTests": {
+    "file": ".runtime/ni4-core6/candidate/test/normal-provenance-core.test.mjs",
+    "families": 8,
+    "execution": "NOT RUN"
+  },
+  "productImports": "NONE",
+  "databasesMigrationsTestsNativeBrowserCODE": "NOT RUN",
+  "nextGate": "Root explicit promotion/materialization/executable lease; no schema7"
+}
