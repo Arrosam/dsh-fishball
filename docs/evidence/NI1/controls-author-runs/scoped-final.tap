@@ -1,0 +1,575 @@
+TAP version 13
+# Subtest: context exact N-1/N/N+1 output-byte and injected-token boundaries never truncate protected text
+ok 1 - context exact N-1/N/N+1 output-byte and injected-token boundaries never truncate protected text
+  ---
+  duration_ms: 1.752042
+  type: 'test'
+  ...
+# Subtest: whole-record compaction recomputes assembled counts and preserves front/middle/end constraints
+ok 2 - whole-record compaction recomputes assembled counts and preserves front/middle/end constraints
+  ---
+  duration_ms: 1.049292
+  type: 'test'
+  ...
+# Subtest: known secret, credential shape, hostile getters and tokenizer failures redact errors before output
+ok 3 - known secret, credential shape, hostile getters and tokenizer failures redact errors before output
+  ---
+  duration_ms: 0.382083
+  type: 'test'
+  ...
+# Subtest: stored reference fields reject trailing line terminators
+ok 4 - stored reference fields reject trailing line terminators
+  ---
+  duration_ms: 0.113208
+  type: 'test'
+  ...
+# Subtest: optional context arrays reject non-index numeric own fields rather than discard them
+ok 5 - optional context arrays reject non-index numeric own fields rather than discard them
+  ---
+  duration_ms: 0.084916
+  type: 'test'
+  ...
+# Subtest: actual module assembly uses latest protected source/ledger facts and omits stale summary assertions
+ok 6 - actual module assembly uses latest protected source/ledger facts and omits stale summary assertions
+  ---
+  duration_ms: 1.20375
+  type: 'test'
+  ...
+# Subtest: assembly rejects wrong source owner/workspace/task, missing provenance, generation and changed CAS after tokenization
+ok 7 - assembly rejects wrong source owner/workspace/task, missing provenance, generation and changed CAS after tokenization
+  ---
+  duration_ms: 1.997291
+  type: 'test'
+  ...
+# Subtest: async assembly captures request versions and nested references before host query awaits
+ok 8 - async assembly captures request versions and nested references before host query awaits
+  ---
+  duration_ms: 0.491875
+  type: 'test'
+  ...
+# Subtest: final authoritative snapshot is checked even if version changes after final task read
+ok 9 - final authoritative snapshot is checked even if version changes after final task read
+  ---
+  duration_ms: 0.584792
+  type: 'test'
+  ...
+# Subtest: closed exact execution envelope validation rejects future/unknown/foreign/count/provenance and never claims tokenizer identity
+ok 10 - closed exact execution envelope validation rejects future/unknown/foreign/count/provenance and never claims tokenizer identity
+  ---
+  duration_ms: 1.754042
+  type: 'test'
+  ...
+# Subtest: old complete execution contexts are validated and omitted by default; explicit recursive selection refuses
+ok 11 - old complete execution contexts are validated and omitted by default; explicit recursive selection refuses
+  ---
+  duration_ms: 0.676042
+  type: 'test'
+  ...
+# Subtest: protected authoritative work facts include current artifact/delivery/progress and clarification source provenance
+ok 12 - protected authoritative work facts include current artifact/delivery/progress and clarification source provenance
+  ---
+  duration_ms: 0.2945
+  type: 'test'
+  ...
+# Subtest: closed supplemental instructions require authenticated source versions, scope, source and observed time even when unselected
+ok 13 - closed supplemental instructions require authenticated source versions, scope, source and observed time even when unselected
+  ---
+  duration_ms: 1.055167
+  type: 'test'
+  ...
+# Subtest: pinned TTL safe defaults, labels, N-1/N/N+1 expiry and confirmation/invalidation
+ok 14 - pinned TTL safe defaults, labels, N-1/N/N+1 expiry and confirmation/invalidation
+  ---
+  duration_ms: 1.765958
+  type: 'test'
+  ...
+# Subtest: pinned bigram Jaccard/cosine dimension guards and max(vector,word) candidate behavior
+ok 15 - pinned bigram Jaccard/cosine dimension guards and max(vector,word) candidate behavior
+  ---
+  duration_ms: 3.388542
+  type: 'test'
+  ...
+# Subtest: source main snapshot and release JSONL union migration keeps missing snapshot rows and latest revision
+ok 16 - source main snapshot and release JSONL union migration keeps missing snapshot rows and latest revision
+  ---
+  duration_ms: 2.232958
+  type: 'test'
+  ...
+# Subtest: turn revision preserves position; deletion/log clearing does not erase learned facts and clears session bridge
+ok 17 - turn revision preserves position; deletion/log clearing does not erase learned facts and clears session bridge
+  ---
+  duration_ms: 1.626833
+  type: 'test'
+  ...
+# Subtest: write-through requires synchronous explicit durable receipt; failures block rather than claim in-memory save
+ok 18 - write-through requires synchronous explicit durable receipt; failures block rather than claim in-memory save
+  ---
+  duration_ms: 1.374083
+  type: 'test'
+  ...
+# Subtest: malformed snapshot and JSONL tail fail closed without calling persistence or silently starting empty
+ok 19 - malformed snapshot and JSONL tail fail closed without calling persistence or silently starting empty
+  ---
+  duration_ms: 0.257292
+  type: 'test'
+  ...
+# Subtest: namespace mismatch, known secret, credential field, hostile descriptors and whole data bounds reject before save
+ok 20 - namespace mismatch, known secret, credential field, hostile descriptors and whole data bounds reject before save
+  ---
+  duration_ms: 0.748959
+  type: 'test'
+  ...
+# Subtest: whole aggregate bound and duplicate IDs reject atomically; memory strings cannot change task/approval authority
+ok 21 - whole aggregate bound and duplicate IDs reject atomically; memory strings cannot change task/approval authority
+  ---
+  duration_ms: 15.724
+  type: 'test'
+  ...
+# Subtest: non-index numeric own fields are rejected before vector normalization or persistence
+ok 22 - non-index numeric own fields are rejected before vector normalization or persistence
+  ---
+  duration_ms: 0.570417
+  type: 'test'
+  ...
+# Subtest: native whole snapshot exact UTF-8 byte limit accepts N-1/N and refuses N+1
+ok 23 - native whole snapshot exact UTF-8 byte limit accepts N-1/N and refuses N+1
+  ---
+  duration_ms: 220.402541
+  type: 'test'
+  ...
+# Subtest: review-gated installed public Cordis loads, writes encrypted synthetic memory and rereads after disposal/reload
+ok 24 - review-gated installed public Cordis loads, writes encrypted synthetic memory and rereads after disposal/reload # SKIP
+  ---
+  duration_ms: 0.395709
+  type: 'test'
+  ...
+# Subtest: missing or wrong exact context denies without caller JSON authority
+ok 25 - missing or wrong exact context denies without caller JSON authority
+  ---
+  duration_ms: 1.30225
+  type: 'test'
+  ...
+# Subtest: distinct awaited invocation carriers retain their own exact guard
+ok 26 - distinct awaited invocation carriers retain their own exact guard
+  ---
+  duration_ms: 0.253625
+  type: 'test'
+  ...
+# Subtest: first stable guard denial survives manager wrapping and subsequent callback recovery
+ok 27 - first stable guard denial survives manager wrapping and subsequent callback recovery
+  ---
+  duration_ms: 0.284458
+  type: 'test'
+  ...
+# Subtest: outer recheck rejects success or failure after transport loss without replay
+ok 28 - outer recheck rejects success or failure after transport loss without replay
+  ---
+  duration_ms: 0.196167
+  type: 'test'
+  ...
+# Subtest: captured execute gate reentry uses original carrier while later requests remain independent
+ok 29 - captured execute gate reentry uses original carrier while later requests remain independent
+  ---
+  duration_ms: 0.120958
+  type: 'test'
+  ...
+# Subtest: unbounded thrown details and accessor error code never enter stable projection
+ok 30 - unbounded thrown details and accessor error code never enter stable projection
+  ---
+  duration_ms: 0.209542
+  type: 'test'
+  ...
+# (node:88310) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: exact factory and eight closures expose no store, key, adapter or consent authority
+ok 31 - exact factory and eight closures expose no store, key, adapter or consent authority
+  ---
+  duration_ms: 13.723291
+  type: 'test'
+  ...
+# Subtest: actual encrypted correction retains confidence/vector provenance and exact acknowledgement
+ok 32 - actual encrypted correction retains confidence/vector provenance and exact acknowledgement
+  ---
+  duration_ms: 15.2785
+  type: 'test'
+  ...
+# Subtest: historical correction replay preserves original variant and clears volatile preparation again
+ok 33 - historical correction replay preserves original variant and clears volatile preparation again
+  ---
+  duration_ms: 9.786583
+  type: 'test'
+  ...
+# Subtest: namespace and fact CAS, same-kind and domain refusals never change actual store
+ok 34 - namespace and fact CAS, same-kind and domain refusals never change actual store
+  ---
+  duration_ms: 9.573334
+  type: 'test'
+  ...
+# Subtest: forget creates fact tombstone, removes old retrievable text, and survives reopen
+ok 35 - forget creates fact tombstone, removes old retrievable text, and survives reopen
+  ---
+  duration_ms: 13.541625
+  type: 'test'
+  ...
+# Subtest: owner-only deletion is explicit permanent namespace tombstone and authenticated status
+ok 36 - owner-only deletion is explicit permanent namespace tombstone and authenticated status
+  ---
+  duration_ms: 12.580375
+  type: 'test'
+  ...
+# Subtest: full pinned snapshot/log union preview is readonly and matches actual confirmed projection
+ok 37 - full pinned snapshot/log union preview is readonly and matches actual confirmed projection
+  ---
+  duration_ms: 8.290708
+  type: 'test'
+  ...
+# Subtest: parser errors, empty/native/future documents, cross-kind IDs and secret failures have bounded codes
+ok 38 - parser errors, empty/native/future documents, cross-kind IDs and secret failures have bounded codes
+  ---
+  duration_ms: 6.341333
+  type: 'test'
+  ...
+# Subtest: readonly import rejects empty live projection as distinct from true absence
+ok 39 - readonly import rejects empty live projection as distinct from true absence
+  ---
+  duration_ms: 8.515
+  type: 'test'
+  ...
+# Subtest: raw document 49151/49152/49153 byte boundary with complete escaping-aware response
+ok 40 - raw document 49151/49152/49153 byte boundary with complete escaping-aware response
+  ---
+  duration_ms: 13.291916
+  type: 'test'
+  ...
+# Subtest: pending/ready shared preview capacity reserves before awaits and expires without granting permission
+ok 41 - pending/ready shared preview capacity reserves before awaits and expires without granting permission
+  ---
+  duration_ms: 8.607209
+  type: 'test'
+  ...
+# Subtest: confirmation is exclusive and exact TTL accepts one millisecond before expiry only
+ok 42 - confirmation is exclusive and exact TTL accepts one millisecond before expiry only
+  ---
+  duration_ms: 5.818167
+  type: 'test'
+  ...
+# Subtest: preview mismatch, rollback, changed namespace and invalid acceptance never write
+ok 43 - preview mismatch, rollback, changed namespace and invalid acceptance never write
+  ---
+  duration_ms: 7.487416
+  type: 'test'
+  ...
+# Subtest: closed detached requests reject selectors, hostile descriptors and unsafe numeric authority
+ok 44 - closed detached requests reject selectors, hostile descriptors and unsafe numeric authority
+  ---
+  duration_ms: 7.7705
+  type: 'test'
+  ...
+# Subtest: source-private exact ctx/guard and disposal seal pending previews and borrowed closures
+ok 45 - source-private exact ctx/guard and disposal seal pending previews and borrowed closures
+  ---
+  duration_ms: 5.584333
+  type: 'test'
+  ...
+# Subtest: postcommit listener fault reports uncertainty, retains exact durable receipt, and never reconfirms
+ok 46 - postcommit listener fault reports uncertainty, retains exact durable receipt, and never reconfirms
+  ---
+  duration_ms: 6.983958
+  type: 'test'
+  ...
+# Subtest: post-ack asynchronous revocation wins redaction and does not imply rollback
+ok 47 - post-ack asynchronous revocation wins redaction and does not imply rollback
+  ---
+  duration_ms: 7.728417
+  type: 'test'
+  ...
+# Subtest: actual schema5 historical command status is explicitly unavailable, never reconstructed
+ok 48 - actual schema5 historical command status is explicitly unavailable, never reconstructed
+  ---
+  duration_ms: 7.537541
+  type: 'test'
+  ...
+# Subtest: clock callbacks cannot publish familiar error codes as source facts
+ok 49 - clock callbacks cannot publish familiar error codes as source facts
+  ---
+  duration_ms: 17.050958
+  type: 'test'
+  ...
+# Subtest: expiry and abort at confirmation namespace read are checked before actual mutation
+ok 50 - expiry and abort at confirmation namespace read are checked before actual mutation
+  ---
+  duration_ms: 5.203833
+  type: 'test'
+  ...
+# Subtest: actual original quota projection remains MEMORY_UNAVAILABLE without false absence or COMMAND_CAPACITY
+ok 51 - actual original quota projection remains MEMORY_UNAVAILABLE without false absence or COMMAND_CAPACITY
+  ---
+  duration_ms: 6.424917
+  type: 'test'
+  ...
+# Subtest: actual original transaction fault rolls back and remains a guarded unavailable failure
+ok 52 - actual original transaction fault rolls back and remains a guarded unavailable failure
+  ---
+  duration_ms: 7.733875
+  type: 'test'
+  ...
+# Subtest: current owner scope drift, typed storage fault and arbitrary read error never become absence
+ok 53 - current owner scope drift, typed storage fault and arbitrary read error never become absence
+  ---
+  duration_ms: 5.051459
+  type: 'test'
+  ...
+# Subtest: actual final store replay after early miss preserves its unmarked original ack and clearing-only fanout
+ok 54 - actual final store replay after early miss preserves its unmarked original ack and clearing-only fanout
+  ---
+  duration_ms: 9.801417
+  type: 'test'
+  ...
+# Subtest: mutation acknowledgements remain historical after later edits and task authority is untouched
+ok 55 - mutation acknowledgements remain historical after later edits and task authority is untouched
+  ---
+  duration_ms: 9.208417
+  type: 'test'
+  ...
+# Subtest: metadata status and delete preview work for existing bodies above the request limit without exposing them
+ok 56 - metadata status and delete preview work for existing bodies above the request limit without exposing them
+  ---
+  duration_ms: 21.482417
+  type: 'test'
+  ...
+# Subtest: actual public Cordis child uses the exact invocation carrier and own disposal closes facade
+ok 57 - actual public Cordis child uses the exact invocation carrier and own disposal closes facade
+  ---
+  duration_ms: 20.011833
+  type: 'test'
+  ...
+# Subtest: typed-double historical read contract preserves observed/not-observed shapes without claiming durable support
+ok 58 - typed-double historical read contract preserves observed/not-observed shapes without claiming durable support
+  ---
+  duration_ms: 8.685417
+  type: 'test'
+  ...
+# Subtest: actual independent processes race same namespace/fact CAS with one winner
+ok 59 - actual independent processes race same namespace/fact CAS with one winner
+  ---
+  duration_ms: 120.311916
+  type: 'test'
+  ...
+# (node:88311) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: trusted workspace namespace isolation, opaque handle binding and no automatic import
+ok 60 - trusted workspace namespace isolation, opaque handle binding and no automatic import
+  ---
+  duration_ms: 7.261334
+  type: 'test'
+  ...
+# Subtest: correction/delete removes old cached/retrievable plaintext; provenance revision and internal IDs never rewind
+ok 61 - correction/delete removes old cached/retrievable plaintext; provenance revision and internal IDs never rewind
+  ---
+  duration_ms: 4.48375
+  type: 'test'
+  ...
+# Subtest: stale revisions, corrupt/future projection, read/write faults fail visibly and never claim save
+ok 62 - stale revisions, corrupt/future projection, read/write faults fail visibly and never claim save
+  ---
+  duration_ms: 1.589709
+  type: 'test'
+  ...
+# Subtest: namespace owner deletion writes tombstone and cannot silently resurrect
+ok 63 - namespace owner deletion writes tombstone and cannot silently resurrect
+  ---
+  duration_ms: 0.899333
+  type: 'test'
+  ...
+# Subtest: known secrets and hostile/malformed candidate structures are rejected before extraction or persistence
+ok 64 - known secrets and hostile/malformed candidate structures are rejected before extraction or persistence
+  ---
+  duration_ms: 1.097917
+  type: 'test'
+  ...
+# Subtest: injected extraction validates full batch and captures source/CAS before await; one transaction or no save
+ok 65 - injected extraction validates full batch and captures source/CAS before await; one transaction or no save
+  ---
+  duration_ms: 2.428042
+  type: 'test'
+  ...
+# Subtest: explicit synthetic source import validates revisions, preserves provenance and rejects merge into existing store
+ok 66 - explicit synthetic source import validates revisions, preserves provenance and rejects merge into existing store
+  ---
+  duration_ms: 1.852292
+  type: 'test'
+  ...
+# Subtest: memory context projection reads latest ledger/user facts and marks every memory assertion as requiring verification
+ok 67 - memory context projection reads latest ledger/user facts and marks every memory assertion as requiring verification
+  ---
+  duration_ms: 0.995458
+  type: 'test'
+  ...
+# Subtest: authoritative command receipt replay does not derive a new projection or reuse fact IDs
+ok 68 - authoritative command receipt replay does not derive a new projection or reuse fact IDs
+  ---
+  duration_ms: 1.5075
+  type: 'test'
+  ...
+# Subtest: assembled memory compacts only sourced backgrounds, preserves latest constraint positions and counts exact limits
+ok 69 - assembled memory compacts only sourced backgrounds, preserves latest constraint positions and counts exact limits
+  ---
+  duration_ms: 3.364292
+  type: 'test'
+  ...
+# Subtest: assembly awaits captured immutable request then refuses changed memory or task before output
+ok 70 - assembly awaits captured immutable request then refuses changed memory or task before output
+  ---
+  duration_ms: 2.218333
+  type: 'test'
+  ...
+# Subtest: complete encrypted projection exact byte N-1/N/N+1 and future contract refuse without writes
+ok 71 - complete encrypted projection exact byte N-1/N/N+1 and future contract refuse without writes
+  ---
+  duration_ms: 462.733333
+  type: 'test'
+  ...
+# Subtest: actual encrypted RuntimeStore memory isolation/reopen, correction/delete freshness, replay and tombstone
+ok 72 - actual encrypted RuntimeStore memory isolation/reopen, correction/delete freshness, replay and tombstone
+  ---
+  duration_ms: 30.013417
+  type: 'test'
+  ...
+# Subtest: actual memory write fault rolls back namespace and receipt together, then healthy reopen reads only durable state
+ok 73 - actual memory write fault rolls back namespace and receipt together, then healthy reopen reads only durable state
+  ---
+  duration_ms: 9.470958
+  type: 'test'
+  ...
+# Subtest: actual separate OS processes race memory CAS with one committed winner and no reused IDs
+ok 74 - actual separate OS processes race memory CAS with one committed winner and no reused IDs
+  ---
+  duration_ms: 115.719125
+  type: 'test'
+  ...
+# Subtest: actual abrupt process exit before commit and after acknowledgement preserves durable memory and command causality
+ok 75 - actual abrupt process exit before commit and after acknowledgement preserves durable memory and command causality
+  ---
+  duration_ms: 206.869208
+  type: 'test'
+  ...
+# Subtest: persisted core null/false/zero rejects without normalizing corrupt projection to empty memory
+ok 76 - persisted core null/false/zero rejects without normalizing corrupt projection to empty memory
+  ---
+  duration_ms: 1.404291
+  type: 'test'
+  ...
+# Subtest: actual prepared encrypted full-envelope digest, source facts, bounded receipt and no recursive reassembly survive reopen
+ok 77 - actual prepared encrypted full-envelope digest, source facts, bounded receipt and no recursive reassembly survive reopen
+  ---
+  duration_ms: 21.621167
+  type: 'test'
+  ...
+# Subtest: actual preparation atomic guard rejects newly created, corrected, deleted memory and concurrent task correction
+    # Subtest: absent_created
+    ok 1 - absent_created
+      ---
+      duration_ms: 11.356459
+      type: 'test'
+      ...
+    # Subtest: live_corrected
+    ok 2 - live_corrected
+      ---
+      duration_ms: 14.140625
+      type: 'test'
+      ...
+    # Subtest: live_deleted
+    ok 3 - live_deleted
+      ---
+      duration_ms: 11.601584
+      type: 'test'
+      ...
+    # Subtest: task_corrected
+    ok 4 - task_corrected
+      ---
+      duration_ms: 12.852709
+      type: 'test'
+      ...
+    1..4
+ok 78 - actual preparation atomic guard rejects newly created, corrected, deleted memory and concurrent task correction
+  ---
+  duration_ms: 50.349625
+  type: 'test'
+  ...
+# Subtest: actual complete serialized64KiB context boundary accounts JSON escaping and protects minimum rather than trimming
+    # Subtest: protected text fits raw input but escapes past encrypted record cap
+    ok 1 - protected text fits raw input but escapes past encrypted record cap
+      ---
+      duration_ms: 10.091834
+      type: 'test'
+      ...
+    1..1
+ok 79 - actual complete serialized64KiB context boundary accounts JSON escaping and protects minimum rather than trimming
+  ---
+  duration_ms: 22.581
+  type: 'test'
+  ...
+# Subtest: actual complete execution envelope exact serialized byte N-1/N/N+1 boundary with escaped source text
+    # Subtest: 65535
+    ok 1 - 65535
+      ---
+      duration_ms: 13.16825
+      type: 'test'
+      ...
+    # Subtest: 65536
+    ok 2 - 65536
+      ---
+      duration_ms: 13.26325
+      type: 'test'
+      ...
+    # Subtest: 65537
+    ok 3 - 65537
+      ---
+      duration_ms: 9.877916
+      type: 'test'
+      ...
+    1..3
+ok 80 - actual complete execution envelope exact serialized byte N-1/N/N+1 boundary with escaped source text
+  ---
+  duration_ms: 48.035792
+  type: 'test'
+  ...
+# Subtest: actual encrypted extraction boundary rejects known secret before callback or persistence
+ok 81 - actual encrypted extraction boundary rejects known secret before callback or persistence
+  ---
+  duration_ms: 6.17125
+  type: 'test'
+  ...
+# Subtest: actual prepared-context write fault preserves task version, data rows and encrypted reopen state
+ok 82 - actual prepared-context write fault preserves task version, data rows and encrypted reopen state
+  ---
+  duration_ms: 13.601959
+  type: 'test'
+  ...
+# Subtest: actual admitted supplements append, remain protected outside optional selection, preserve original goal/provenance and deduplicate
+ok 83 - actual admitted supplements append, remain protected outside optional selection, preserve original goal/provenance and deduplicate
+  ---
+  duration_ms: 28.430125
+  type: 'test'
+  ...
+# Subtest: actual supplement secret admission and protected byte minimum refuse without dropped instructions or phantom preparation
+ok 84 - actual supplement secret admission and protected byte minimum refuse without dropped instructions or phantom preparation
+  ---
+  duration_ms: 15.62075
+  type: 'test'
+  ...
+# Subtest: actual supplement arriving at preparation commit invalidates CAS; later source disable preserves admitted current instruction
+ok 85 - actual supplement arriving at preparation commit invalidates CAS; later source disable preserves admitted current instruction
+  ---
+  duration_ms: 18.404666
+  type: 'test'
+  ...
+1..85
+# tests 93
+# suites 0
+# pass 92
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1201.664959

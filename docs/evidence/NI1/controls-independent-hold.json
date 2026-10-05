@@ -1,0 +1,98 @@
+{
+  "scope": "Independent NI1 controls-only functional lease final hold",
+  "timeUtc": "2026-10-05T00:52:23.442935+00:00",
+  "reviewer": "/root/istqb_review; gpt-6.1-sol max",
+  "state": "OWNED_FILES_HELD; CONTROLS_ONLY_MAIN5_SOURCE_READ_EXECUTION_LEASE_RELEASED",
+  "sourceClosure": "Exactly nine original schema5 product modules; all33 author pins verified before/after/final hold",
+  "authorManifestSha256": "d515ec3aa988b13938530c06f6d8279b4c503f0422c98e712826c6ffef1b0c21",
+  "results": {
+    "firstRunPass": 12,
+    "fail": 0,
+    "skip": 0,
+    "cancelled": 0,
+    "topLevelFamilies": 8,
+    "nestedTemporalCases": 4,
+    "leafTestNodes": 11,
+    "wrappers": 1,
+    "durationMs": 206.25825,
+    "exitCode": 0,
+    "productCounterexamples": 0,
+    "testCorrectionsAfterExecution": 0,
+    "retests": 0
+  },
+  "ownedFiles": [
+    {
+      "path": "test/continuity-controls-functional.test.mjs",
+      "sha256": "5bc3193d6a26215fad96e37beefdc7554ff282108a63963175ff68ee1e48cb69",
+      "bytes": 23709
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-ac.json",
+      "sha256": "9d15384549103e1bf51585e119191cc5a324f9acdbe4d9b07658f1dde9ac363e",
+      "bytes": 95422
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-after.json",
+      "sha256": "92baa53a07415c083596ac4401016531c6c7f0f1946d343f3f9e5a55e6b84e01",
+      "bytes": 13241
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-before.json",
+      "sha256": "9d1e2c4845d157cbe74639bf5eeea7896d51282f794726c43ebe71eb804c4be0",
+      "bytes": 12725
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-first-source.json",
+      "sha256": "814d7f1e46a8604b3e9ad7d4066aedfb6fbd311a77b08f52203b0896a5a25fb9",
+      "bytes": 739
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-first-test.mjs.txt",
+      "sha256": "5bc3193d6a26215fad96e37beefdc7554ff282108a63963175ff68ee1e48cb69",
+      "bytes": 23709
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-first.tap",
+      "sha256": "5acdb714c1d829886a375617bae9c8dc1e7b1629676bd90b83cb6bc9313b58ba",
+      "bytes": 2988
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-plan.md",
+      "sha256": "0d046def2179861b8731567df79b795907a5c47bb99f91e8a837587f230a029b",
+      "bytes": 4430
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-results.json",
+      "sha256": "052b06acd5a8a845db02658175915ea04c0843c26b5bc3fea3643723f89797b5",
+      "bytes": 1606
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-review.md",
+      "sha256": "9f9716bea8caab931926294494b1a09941c46d87052c00e99035c09e1a715af1",
+      "bytes": 11004
+    },
+    {
+      "path": "docs/evidence/NI1/controls-independent-syntax.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "additionalOwnedFinalArtifacts": [
+    "docs/evidence/NI1/controls-independent-hold.json",
+    "docs/evidence/NI1/controls-independent.sha256"
+  ],
+  "retainedWholeCriteria": 87,
+  "wholeCriteriaAccepted": 0,
+  "nativeProof": false,
+  "actualReadMemoryCommand": "MEMORY_UNAVAILABLE; missing genuine schema5 seam remains a source gate",
+  "typedHistory": "Positive readMemoryCommand tests are explicit typed double only",
+  "prohibitedActions": "No product/source/old-file/Git/schema6or7/protected-corruption/CODE/browser/listener/CLI/HTTP/provider/account/credential/install action",
+  "remainingGates": [
+    "CODE blocked and not rerouted",
+    "native mounted controls and original owner auth pending",
+    "physical normal package pending for these controls",
+    "client/browser pending",
+    "context/conflict preparation graph and source migration separate",
+    "useful semantic memory/native inference/full AC/MVP/publication HOLD"
+  ]
+}

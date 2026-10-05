@@ -1,0 +1,85 @@
+TAP version 13
+# (node:90750) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: CCF01 closed controls preserve original guard precedence and refuse wire authority without writes
+ok 1 - CCF01 closed controls preserve original guard precedence and refuse wire authority without writes
+  ---
+  duration_ms: 17.440208
+  type: 'test'
+  ...
+# Subtest: CCF02 sourced fractional edit and historical replay after forget invalidate conservatively
+ok 2 - CCF02 sourced fractional edit and historical replay after forget invalidate conservatively
+  ---
+  duration_ms: 12.186083
+  type: 'test'
+  ...
+# Subtest: CCF03 import consent retains complete detached union and cannot be reconstructed by another instance
+ok 3 - CCF03 import consent retains complete detached union and cannot be reconstructed by another instance
+  ---
+  duration_ms: 9.668667
+  type: 'test'
+  ...
+# Subtest: CCF04 import and delete previews share15/16/17 pending capacity and release only the denied slot
+ok 4 - CCF04 import and delete previews share15/16/17 pending capacity and release only the denied slot
+  ---
+  duration_ms: 9.873833
+  type: 'test'
+  ...
+# Subtest: CCF05 exact expiry and recovered rollback do not restore old consent
+    # Subtest: expiry relative millisecond -1
+    ok 1 - expiry relative millisecond -1
+      ---
+      duration_ms: 6.777792
+      type: 'test'
+      ...
+    # Subtest: expiry relative millisecond 0
+    ok 2 - expiry relative millisecond 0
+      ---
+      duration_ms: 5.6205
+      type: 'test'
+      ...
+    # Subtest: expiry relative millisecond 1
+    ok 3 - expiry relative millisecond 1
+      ---
+      duration_ms: 5.521209
+      type: 'test'
+      ...
+    # Subtest: rollback then recovery
+    ok 4 - rollback then recovery
+      ---
+      duration_ms: 5.451125
+      type: 'test'
+      ...
+    1..4
+ok 5 - CCF05 exact expiry and recovered rollback do not restore old consent
+  ---
+  duration_ms: 24.24925
+  type: 'test'
+  ...
+# Subtest: CCF06 before-commit refusal and lost postcommit acknowledgement preserve distinct accountable facts
+ok 6 - CCF06 before-commit refusal and lost postcommit acknowledgement preserve distinct accountable facts
+  ---
+  duration_ms: 15.760292
+  type: 'test'
+  ...
+# Subtest: CCF07 independent invocation denial and own disposal preserve a committed permanent namespace tombstone
+ok 7 - CCF07 independent invocation denial and own disposal preserve a committed permanent namespace tombstone
+  ---
+  duration_ms: 10.736208
+  type: 'test'
+  ...
+# Subtest: CCF08 TYPED history seam validates old receipt facts but cannot establish schema5 durable history support
+ok 8 - CCF08 TYPED history seam validates old receipt facts but cannot establish schema5 durable history support
+  ---
+  duration_ms: 8.011917
+  type: 'test'
+  ...
+1..8
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 206.25825

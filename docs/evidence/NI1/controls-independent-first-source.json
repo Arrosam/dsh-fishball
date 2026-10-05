@@ -1,0 +1,10 @@
+{
+  "testPath": "test/continuity-controls-functional.test.mjs",
+  "sha256": "5bc3193d6a26215fad96e37beefdc7554ff282108a63963175ff68ee1e48cb69",
+  "bytes": 23709,
+  "firstSnapshot": "docs/evidence/NI1/controls-independent-first-test.mjs.txt",
+  "sourceManifestSha256": "d515ec3aa988b13938530c06f6d8279b4c503f0422c98e712826c6ffef1b0c21",
+  "all33PinsMatchImmediatelyBeforeFirstRun": true,
+  "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test test/continuity-controls-functional.test.mjs > docs/evidence/NI1/controls-independent-first.tap 2>&1",
+  "syntaxCommand": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --check test/continuity-controls-functional.test.mjs"
+}

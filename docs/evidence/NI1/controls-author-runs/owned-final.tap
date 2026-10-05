@@ -1,0 +1,186 @@
+TAP version 13
+# (node:88023) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: exact factory and eight closures expose no store, key, adapter or consent authority
+ok 1 - exact factory and eight closures expose no store, key, adapter or consent authority
+  ---
+  duration_ms: 13.867583
+  type: 'test'
+  ...
+# Subtest: actual encrypted correction retains confidence/vector provenance and exact acknowledgement
+ok 2 - actual encrypted correction retains confidence/vector provenance and exact acknowledgement
+  ---
+  duration_ms: 13.846125
+  type: 'test'
+  ...
+# Subtest: historical correction replay preserves original variant and clears volatile preparation again
+ok 3 - historical correction replay preserves original variant and clears volatile preparation again
+  ---
+  duration_ms: 9.318792
+  type: 'test'
+  ...
+# Subtest: namespace and fact CAS, same-kind and domain refusals never change actual store
+ok 4 - namespace and fact CAS, same-kind and domain refusals never change actual store
+  ---
+  duration_ms: 8.207958
+  type: 'test'
+  ...
+# Subtest: forget creates fact tombstone, removes old retrievable text, and survives reopen
+ok 5 - forget creates fact tombstone, removes old retrievable text, and survives reopen
+  ---
+  duration_ms: 12.799583
+  type: 'test'
+  ...
+# Subtest: owner-only deletion is explicit permanent namespace tombstone and authenticated status
+ok 6 - owner-only deletion is explicit permanent namespace tombstone and authenticated status
+  ---
+  duration_ms: 12.167083
+  type: 'test'
+  ...
+# Subtest: full pinned snapshot/log union preview is readonly and matches actual confirmed projection
+ok 7 - full pinned snapshot/log union preview is readonly and matches actual confirmed projection
+  ---
+  duration_ms: 8.153083
+  type: 'test'
+  ...
+# Subtest: parser errors, empty/native/future documents, cross-kind IDs and secret failures have bounded codes
+ok 8 - parser errors, empty/native/future documents, cross-kind IDs and secret failures have bounded codes
+  ---
+  duration_ms: 6.249833
+  type: 'test'
+  ...
+# Subtest: readonly import rejects empty live projection as distinct from true absence
+ok 9 - readonly import rejects empty live projection as distinct from true absence
+  ---
+  duration_ms: 8.096209
+  type: 'test'
+  ...
+# Subtest: raw document 49151/49152/49153 byte boundary with complete escaping-aware response
+ok 10 - raw document 49151/49152/49153 byte boundary with complete escaping-aware response
+  ---
+  duration_ms: 13.369959
+  type: 'test'
+  ...
+# Subtest: pending/ready shared preview capacity reserves before awaits and expires without granting permission
+ok 11 - pending/ready shared preview capacity reserves before awaits and expires without granting permission
+  ---
+  duration_ms: 8.156959
+  type: 'test'
+  ...
+# Subtest: confirmation is exclusive and exact TTL accepts one millisecond before expiry only
+ok 12 - confirmation is exclusive and exact TTL accepts one millisecond before expiry only
+  ---
+  duration_ms: 5.860084
+  type: 'test'
+  ...
+# Subtest: preview mismatch, rollback, changed namespace and invalid acceptance never write
+ok 13 - preview mismatch, rollback, changed namespace and invalid acceptance never write
+  ---
+  duration_ms: 6.833
+  type: 'test'
+  ...
+# Subtest: closed detached requests reject selectors, hostile descriptors and unsafe numeric authority
+ok 14 - closed detached requests reject selectors, hostile descriptors and unsafe numeric authority
+  ---
+  duration_ms: 7.718208
+  type: 'test'
+  ...
+# Subtest: source-private exact ctx/guard and disposal seal pending previews and borrowed closures
+ok 15 - source-private exact ctx/guard and disposal seal pending previews and borrowed closures
+  ---
+  duration_ms: 4.68075
+  type: 'test'
+  ...
+# Subtest: postcommit listener fault reports uncertainty, retains exact durable receipt, and never reconfirms
+ok 16 - postcommit listener fault reports uncertainty, retains exact durable receipt, and never reconfirms
+  ---
+  duration_ms: 7.006042
+  type: 'test'
+  ...
+# Subtest: post-ack asynchronous revocation wins redaction and does not imply rollback
+ok 17 - post-ack asynchronous revocation wins redaction and does not imply rollback
+  ---
+  duration_ms: 7.466042
+  type: 'test'
+  ...
+# Subtest: actual schema5 historical command status is explicitly unavailable, never reconstructed
+ok 18 - actual schema5 historical command status is explicitly unavailable, never reconstructed
+  ---
+  duration_ms: 7.217625
+  type: 'test'
+  ...
+# Subtest: clock callbacks cannot publish familiar error codes as source facts
+ok 19 - clock callbacks cannot publish familiar error codes as source facts
+  ---
+  duration_ms: 15.77125
+  type: 'test'
+  ...
+# Subtest: expiry and abort at confirmation namespace read are checked before actual mutation
+ok 20 - expiry and abort at confirmation namespace read are checked before actual mutation
+  ---
+  duration_ms: 4.733792
+  type: 'test'
+  ...
+# Subtest: actual original quota projection remains MEMORY_UNAVAILABLE without false absence or COMMAND_CAPACITY
+ok 21 - actual original quota projection remains MEMORY_UNAVAILABLE without false absence or COMMAND_CAPACITY
+  ---
+  duration_ms: 6.387125
+  type: 'test'
+  ...
+# Subtest: actual original transaction fault rolls back and remains a guarded unavailable failure
+ok 22 - actual original transaction fault rolls back and remains a guarded unavailable failure
+  ---
+  duration_ms: 6.640625
+  type: 'test'
+  ...
+# Subtest: current owner scope drift, typed storage fault and arbitrary read error never become absence
+ok 23 - current owner scope drift, typed storage fault and arbitrary read error never become absence
+  ---
+  duration_ms: 4.139875
+  type: 'test'
+  ...
+# Subtest: actual final store replay after early miss preserves its unmarked original ack and clearing-only fanout
+ok 24 - actual final store replay after early miss preserves its unmarked original ack and clearing-only fanout
+  ---
+  duration_ms: 8.531667
+  type: 'test'
+  ...
+# Subtest: mutation acknowledgements remain historical after later edits and task authority is untouched
+ok 25 - mutation acknowledgements remain historical after later edits and task authority is untouched
+  ---
+  duration_ms: 8.591458
+  type: 'test'
+  ...
+# Subtest: metadata status and delete preview work for existing bodies above the request limit without exposing them
+ok 26 - metadata status and delete preview work for existing bodies above the request limit without exposing them
+  ---
+  duration_ms: 19.947417
+  type: 'test'
+  ...
+# Subtest: actual public Cordis child uses the exact invocation carrier and own disposal closes facade
+ok 27 - actual public Cordis child uses the exact invocation carrier and own disposal closes facade
+  ---
+  duration_ms: 21.088917
+  type: 'test'
+  ...
+# Subtest: typed-double historical read contract preserves observed/not-observed shapes without claiming durable support
+ok 28 - typed-double historical read contract preserves observed/not-observed shapes without claiming durable support
+  ---
+  duration_ms: 8.518875
+  type: 'test'
+  ...
+# Subtest: actual independent processes race same namespace/fact CAS with one winner
+ok 29 - actual independent processes race same namespace/fact CAS with one winner
+  ---
+  duration_ms: 119.477459
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 494.28125

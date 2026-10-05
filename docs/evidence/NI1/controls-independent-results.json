@@ -1,0 +1,40 @@
+{
+  "scope": "Independent NI1 controls-only functional; not CODE/native/full acceptance",
+  "node": "22.22.2",
+  "newTestSha256": "5bc3193d6a26215fad96e37beefdc7554ff282108a63963175ff68ee1e48cb69",
+  "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test test/continuity-controls-functional.test.mjs > docs/evidence/NI1/controls-independent-first.tap 2>&1",
+  "exitCode": 0,
+  "tapTestNodes": 12,
+  "pass": 12,
+  "fail": 0,
+  "skip": 0,
+  "cancelled": 0,
+  "todo": 0,
+  "topLevelFamilies": 8,
+  "nestedTemporalCases": 4,
+  "leafTests": 11,
+  "wrappers": 1,
+  "tapDurationMs": 206.25825,
+  "firstRawTapSha256": "5acdb714c1d829886a375617bae9c8dc1e7b1629676bd90b83cb6bc9313b58ba",
+  "sourceCorrection": "NONE",
+  "testCorrection": "NONE after execution; first test bytes unchanged",
+  "productCounterexamples": [],
+  "retests": [],
+  "authorSuiteReruns": "NONE; author30/30 remains separate author evidence",
+  "pins": {
+    "all33AuthorPinsMatchBeforeAfter": true,
+    "all9ProductModulesMatchBeforeAfter": true
+  },
+  "readMemoryCommandActual": "Absent in genuine schema5; MEMORY_UNAVAILABLE expected and observed",
+  "readMemoryCommandTypedPositive": "CCF08 typed delegating double only; no durable history acceptance",
+  "sourceLease": "RELEASED after owned evidence hold",
+  "gates": {
+    "CODE": "BLOCKED; not rerouted",
+    "browser": "HOLD; not run",
+    "nativeMountedControls": "HOLD; not run",
+    "schema6or7": "NO import/source action in this lease",
+    "wholeACAccepted": 0,
+    "MVP": "HOLD",
+    "liveChatAccounts": "OUT_OF_PHASE; no pass/fail"
+  }
+}
