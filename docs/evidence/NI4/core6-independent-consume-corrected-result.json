@@ -1,0 +1,78 @@
+{
+  "status": "bounded affected retest PASS; all first failures retained; no full AC/native/CODE acceptance",
+  "command": "/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/bin:/bin /opt/homebrew/bin/node --test --test-concurrency=1 --test-name-pattern='C6F0[4-8]' .runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+  "exitCode": 0,
+  "runtimeBaseline": "Installed Node22.22.2 from frozen execution contract",
+  "tap": {
+    "path": "docs/evidence/NI4/core6-independent-consume-corrected-first.tap",
+    "sha256": "d8fd33246a61664a6d61d1d07dfe915e353f604b2426c970cfa261470511af68",
+    "bytes": 2166
+  },
+  "tapNodes": {
+    "tests": 8,
+    "pass": 8,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "durationMs": 22950.492833,
+  "leafCases": {
+    "total": 7,
+    "pass": 7,
+    "fail": 0,
+    "skip": 0
+  },
+  "wrappers": {
+    "total": 1,
+    "pass": 1,
+    "fail": 0
+  },
+  "families": {
+    "total": 5,
+    "pass": [
+      "C6F04",
+      "C6F05",
+      "C6F06",
+      "C6F07",
+      "C6F08"
+    ],
+    "excludedAndNotRepeated": [
+      "C6F01",
+      "C6F02",
+      "C6F03"
+    ]
+  },
+  "test": {
+    "path": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+    "sha256": "89d756710f7ab5e7903997425cc4faa14b9895884cedbef74711c4172016ed33"
+  },
+  "onlyCorrection": "one original assertExecutionCurrent public consume and literal admitted===true in shared review helper; every original assertion retained",
+  "firstFailureRemains": {
+    "path": "docs/evidence/NI4/core6-independent-first.tap",
+    "sha256": "2a9fe5d13ba821f909bb28e490cf0e6ca261890b3e91bfb10437c334fe3890a1",
+    "pass": 3,
+    "fail": 8
+  },
+  "acrossCommands": {
+    "uniqueTopLevelFamilies": 8,
+    "passingUniqueLeafCases": 10,
+    "passingWrapper": 1,
+    "coherent11NodeSingleRerun": false,
+    "explanation": "C6F01/02/03 pass in first command; C6F04..08 pass only after affected fixture correction. Counts are not added into a fictitious all-pass first/final11 command."
+  },
+  "ownedChild": "C6F08 assertion reached status73 within20s and public-ack/encrypted-reopen/exact receipt/no-fresh-send assertions passed. No separate raw child stdout/stderr is claimed.",
+  "sourceAssociations": "native-shaped trusted-core observations only; original DSH/OperatorPeer/SessionStore/provider provenance not tested",
+  "beforeAfter": {
+    "path": "docs/evidence/NI4/core6-independent-consume-corrected-after.json",
+    "sha256": "a780d872693495c53948fce97c073c02e3873ca8c85e5a91a3265bc526fea88c",
+    "checkedRows": 95,
+    "mismatches": 0
+  },
+  "productCorrections": 0,
+  "productFindings": 0,
+  "observedRuntimePolicyDenials": 0,
+  "author20Executed": false,
+  "acceptedWholeCriteria": 0,
+  "performanceLimit": "C6F05 whole compound scenario20.018s is setup/review/signed-state validation plus assertions; no individual publish latency or responsiveness target is established."
+}

@@ -1,0 +1,320 @@
+{
+  "scope": "Isolated schema6 independent static design baseline; imports/execution NOT RUN",
+  "authorManifestExpectedInParentTask": "afbcd4101eaf927e0aca0c2ba56e1075fa867b1206f2e7f8b0486cf699fd9d02",
+  "authorManifestObservedSha256": "4b4a2121f4b7cb6e10bda299ea9185a2f9fccb3926a8a772ff95a934ec57ea15",
+  "authorManifestBinding": "PENDING root correction; all45 referenced rows match",
+  "author45Rows": [
+    {
+      "path": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/test/normal-provenance-core.test.mjs",
+      "sha256": "61459e3bb4570061b94a76d9a43dd367b49b8841c58fc8acd5b5cc3262ac62c3",
+      "bytes": 44451
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution.md",
+      "sha256": "ca6e7b58ccbe8ca0fad0149d0b86595d4071f344ed7088f634a9a288fff750e0",
+      "bytes": 6925
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-corrected/result.json",
+      "sha256": "89eb6f900f0089f8496a903dbe811cbc70c1862b1c597a87e415da6cac22aecf",
+      "bytes": 283
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-corrected/result.tap",
+      "sha256": "7653cdb305105886af928e88d5f5a20992885c96b200245cb1ca63771edfb196",
+      "bytes": 831
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-corrected/test.mjs",
+      "sha256": "2fef597cfa78d19c41649e819feac5112eb2a0ee52829a1a6ac83587b235ee89",
+      "bytes": 28055
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/first.tap",
+      "sha256": "7b82186cc1dec8480c553ac0053d62148062e97040d026c61ef73f2d68ca4806",
+      "bytes": 3403
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/result.json",
+      "sha256": "47948ae0cac3006294308d51e45c02eec3641d600313b658b7fefef87dd1ea13",
+      "bytes": 212
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/source.json",
+      "sha256": "87cad96c805f1a0aeed1c212dd55fc57d53f87703172d88a8ae49736d58edfbe",
+      "bytes": 940
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/extended-first/test/normal-provenance-core.test.mjs",
+      "sha256": "ac6c6319c08575526d56c11f8d85e1cb2f8a68d7057c2123a73fe0a1b533c3c8",
+      "bytes": 28032
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/fault-race-first/first.tap",
+      "sha256": "da87a0e0cb7a20858187c172f5b0c41bebc76a1e7a93c5519cb74eb415c46765",
+      "bytes": 1075
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/fault-race-first/result.json",
+      "sha256": "497d6d8d4d1326ecf7b96217a907609c5e3fdab9d7b650afa44d7bb5356e984e",
+      "bytes": 319
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/fault-race-first/test.mjs",
+      "sha256": "61459e3bb4570061b94a76d9a43dd367b49b8841c58fc8acd5b5cc3262ac62c3",
+      "bytes": 44451
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/final.tap",
+      "sha256": "2bf13a8ee66bf0722316feec9a3870747b50a4eac7f7db5288a86fe644e75aef",
+      "bytes": 5864
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/result.json",
+      "sha256": "7a95b17325bf5047b996bbe2e8d6cdd38354e48f0b2fa8b32f9a61d69bae14a5",
+      "bytes": 247
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/source-after.json",
+      "sha256": "0cd84925a64916b14340874e96fb3efca7b11752f4346ef0033c18fb90fe158e",
+      "bytes": 1060
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/source-before.json",
+      "sha256": "0cd84925a64916b14340874e96fb3efca7b11752f4346ef0033c18fb90fe158e",
+      "bytes": 1060
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/final/test/normal-provenance-core.test.mjs",
+      "sha256": "61459e3bb4570061b94a76d9a43dd367b49b8841c58fc8acd5b5cc3262ac62c3",
+      "bytes": 44451
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first/src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first/test/normal-provenance-core.test.mjs",
+      "sha256": "6198f03837cb8c68d043136e2ceb0105febe9e99fc1805a9a2548648d16066f9",
+      "bytes": 14709
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first-result.json",
+      "sha256": "69de80a0c51a9afe32743a5f16c5f88579282d170fe85d465b18afb7de3b5538",
+      "bytes": 1747
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first-source.json",
+      "sha256": "e395d79a5058b736a50e09fa7419bc8dbc883567f6adb5d20c5b614e265026ec",
+      "bytes": 1483
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/first.tap",
+      "sha256": "9f47266269419c11fe7dd6b5f2afc3d7f3c7b4f1c86739aefd387678f27ce227",
+      "bytes": 2503
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/notification-crash-first/first.tap",
+      "sha256": "bad8ad6eb00a9af8b85043afac6cef66f74ec816320e10a406784182cfcd9ca1",
+      "bytes": 2027
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/notification-crash-first/result.json",
+      "sha256": "cc1b0b65eee50634ff89b78ce1538f9a31dbf109b718cce2769f473ef0c16624",
+      "bytes": 321
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/notification-crash-first/test.mjs",
+      "sha256": "c9d9a9997d1e56aa16deae75b42480ce9334d239b7c5bd783b263fa4000863c3",
+      "bytes": 37318
+    },
+    {
+      "path": "docs/evidence/NI4/core6-author-execution/shared5-preservation.json",
+      "sha256": "1e9defdccf375aa40de55e54e3715c2bc1391f44a4aa26a5a6129ac15014c016",
+      "bytes": 3050
+    }
+  ],
+  "genuine5Capsule": [
+    {
+      "path": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "sharedOrigin": "src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "sharedOrigin": "src/runtime-store.mjs",
+      "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+      "bytes": 187413
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/runtime-security.mjs",
+      "sharedOrigin": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/context.mjs",
+      "sharedOrigin": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/foundation.mjs",
+      "sharedOrigin": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    }
+  ],
+  "allCandidateAuthorAndGenuine5PinsMatch": true,
+  "frozenDesignInputs": [
+    {
+      "path": "docs/evidence/NI4/core6-root-execution-freeze.md",
+      "sha256": "5f191231caaf9615626babc9399975930f51728569e4f79faec36c08b95def59",
+      "bytes": 1942
+    },
+    {
+      "path": "docs/normal-events-contract.md",
+      "sha256": "6d3a6800ddaede4d0d9242bc8dabed33bfa5cd5425ffceb128e1d0c13f5ab405",
+      "bytes": 16703
+    },
+    {
+      "path": "docs/evidence/NI4/test-design.md",
+      "sha256": "4d61064d6c05ba72dd23fd6b3502eb5b3d84b20490e067bb9f9b8693af8f69e0",
+      "bytes": 25562
+    },
+    {
+      "path": "docs/evidence/NI4/source-pair-addendum.md",
+      "sha256": "0fa847f9e4796afbb69696bb6bf81d82eb37b38e593e70fe746ab0cf19aac496",
+      "bytes": 7721
+    },
+    {
+      "path": "docs/evidence/NI4/source-pair-test-addendum.md",
+      "sha256": "9989ee93c1875c2c583d5db46d3c38e88c2b1f290f3fb96eb17a9fbbdd694451",
+      "bytes": 20328
+    },
+    {
+      "path": "docs/normal-results-contract.md",
+      "sha256": "6b6e2e752141bf7e52a6c6ae4d9b3b6968fdf6d2e31fbc48790f35c0cf3d3569",
+      "bytes": 39930
+    },
+    {
+      "path": "docs/evidence/NI5/test-design.md",
+      "sha256": "80a4debeaca1e482d1aadfb9f70b6cbf437164c8584a60b39848ad27f26dc241",
+      "bytes": 39027
+    },
+    {
+      "path": "docs/evidence/NI5/core6-admission-addendum.md",
+      "sha256": "1b6c8477c6554dcd6d30f78f5e0a158019bf43fcc1ad54449032b71fdeb07b2c",
+      "bytes": 7038
+    },
+    {
+      "path": "docs/evidence/NI5/ni5-core6-admission-independent-design.md",
+      "sha256": "d82827ed5bcc4aa66c66b3650d0ae5155b26df559b8148152e4c2ddc8ac8991d",
+      "bytes": 13174
+    },
+    {
+      "path": "docs/evidence/NI5/ni5-core6-admission-independent-checks.json",
+      "sha256": "a254055bcbb0a188bf0d0c1be8957669dccac95d7d099b7e6fc8de4c3714d519",
+      "bytes": 49794
+    }
+  ],
+  "execution": "NOT RUN; awaiting root GO",
+  "prohibitedActions": "No Node/product import/DB/native/provider/listener/CLI/HTTP/browser/account/Git/CODE actions"
+}

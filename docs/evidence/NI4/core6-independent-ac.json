@@ -1,0 +1,1281 @@
+{
+  "scope": "Independent isolated-core6 static plan; all82+5 retained individually; no full acceptance",
+  "retainedInventorySource": "docs/evidence/NI3/core-independent-ac.json",
+  "retainedInventorySha256": "296fa2bb66657990cdd76270dfc8e68063c9aa39f546006f5a79f722fbc9f3be",
+  "historicalTraceability": {
+    "path": "docs/acceptance-traceability.md",
+    "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64"
+  },
+  "historicalSourceTickets": [
+    {
+      "path": "docs/tickets/BUB001.md",
+      "sha256": "a83391a353c74b832f668251f3cc15f376adaa457afcb4c2d96176e1d29872e6"
+    },
+    {
+      "path": "docs/tickets/BUB002.md",
+      "sha256": "1b3b7a1d25f67deefe0947004422919b22712b8682553edfa2ca6d379e990665"
+    },
+    {
+      "path": "docs/tickets/BUB003.md",
+      "sha256": "05d35e1c51cfb79ebdccf9b37dc3b5ef4b726ea1119ff17a3b707a150bc5ec73"
+    },
+    {
+      "path": "docs/tickets/BUB004.md",
+      "sha256": "8b19cff5e3296ebcfbac7eb32b82aab7c2aa939cf42a6564520848fdaf23a6a0"
+    },
+    {
+      "path": "docs/tickets/BUB005.md",
+      "sha256": "8517546177534ea4bf8adc7fff3c25da6a718823128183307fea9ade8432ea4f"
+    },
+    {
+      "path": "docs/tickets/BUB006.md",
+      "sha256": "affa8641b9a80efce152cbcc9e6cfad4114e255aaac04617d6f935bc52878f94"
+    },
+    {
+      "path": "docs/tickets/BUB007A.md",
+      "sha256": "53a129eb330bdf8c0afedd44694825bcf4937e6d58a8b358f4a933bbae69382a"
+    },
+    {
+      "path": "docs/tickets/BUB007B.md",
+      "sha256": "3265a66d375f1566792fb595da81e8b501ab5265b8f49cd076de9ea2096ef39d"
+    },
+    {
+      "path": "docs/tickets/BUB008.md",
+      "sha256": "f83349faa315d51e260e8fb61dc27c3e953791bec4b185b9789bce55b936b82a"
+    },
+    {
+      "path": "docs/tickets/BUB009.md",
+      "sha256": "235a5bc3606c21da9a1022e70fd12e2848ecace538de46606dc838a45c474ca4"
+    },
+    {
+      "path": "docs/tickets/BUB010.md",
+      "sha256": "e12f27624d329e33cb76ee0a3690b8da6dc89f4555f78ac738420b312b12c91a"
+    },
+    {
+      "path": "docs/tickets/BUB011.md",
+      "sha256": "ab185f940bd7a32a7a1d8dffc4e7cbeb33d21a8b51ceaa354750c6db2bc5623a"
+    },
+    {
+      "path": "docs/tickets/BUB012.md",
+      "sha256": "93e00fa5795a40c3561ce1c50d4ed07b4e784b7fa4d1f54fa8fa58cdc6d1bac7"
+    },
+    {
+      "path": "docs/tickets/BUB013.md",
+      "sha256": "a9d4c28492f6bdb49a469d1fbcde58079a8a28461143a653ed59102b57e99012"
+    },
+    {
+      "path": "docs/tickets/BUB014.md",
+      "sha256": "59ab8b06baecb67b62d1a8c22e157efabb2858daeddc46cbd31aad4a63db34df"
+    },
+    {
+      "path": "docs/tickets/BUB015.md",
+      "sha256": "0072c0ea9f5239a5b7cdf970f644b538fc75636eca02e34435bd7c5c9c59c1ff"
+    },
+    {
+      "path": "docs/tickets/BUB016.md",
+      "sha256": "9a0e36699f88bc8d0a34df162497847124a9aef61446c54d1e3fc4e90c7305dd"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+    }
+  ],
+  "totalCriteria": 87,
+  "acceptedWholeCriteria": 0,
+  "familyContributions": {
+    "C6F01": [
+      "BUB003-01",
+      "BUB003-04",
+      "BUB006-01",
+      "BUB007-03",
+      "BUB007-04",
+      "BUB007-05",
+      "BUB016-03"
+    ],
+    "C6F02": [
+      "BUB002-01",
+      "BUB002-02",
+      "BUB003-02",
+      "BUB006-01",
+      "BUB006-02",
+      "BUB009-01",
+      "BUB009-02"
+    ],
+    "C6F03": [
+      "BUB006-01",
+      "BUB006-02",
+      "BUB006-05",
+      "BUB013-02",
+      "BUB015-01",
+      "BUB015-05"
+    ],
+    "C6F04": [
+      "BUB003-02",
+      "BUB006-02",
+      "BUB006-04",
+      "BUB012-01",
+      "BUB012-03",
+      "BUB012-05",
+      "BUB013-02",
+      "BUB013-05"
+    ],
+    "C6F05": [
+      "BUB006-04",
+      "BUB009-05",
+      "BUB013-01",
+      "BUB013-02",
+      "BUB013-04",
+      "BUB015-03"
+    ],
+    "C6F06": [
+      "BUB013-01",
+      "BUB015-01",
+      "BUB015-03"
+    ],
+    "C6F07": [
+      "BUB003-01",
+      "BUB003-02",
+      "BUB006-02",
+      "BUB006-05",
+      "BUB012-01",
+      "BUB013-02",
+      "BUB013-05"
+    ],
+    "C6F08": [
+      "BUB003-01",
+      "BUB003-02",
+      "BUB013-05",
+      "BUB016-03"
+    ]
+  },
+  "criteria": [
+    {
+      "id": "BUB001-01",
+      "sourceLink": "tickets/BUB001.md",
+      "priorImplementedOracle": "Pinned public capability/negative bootstrap and Cordis load/unload/reload",
+      "priorEvidence": "[bootstrap.test.mjs](../test/bootstrap.test.mjs); [runtime-plugin.test.mjs](../test/runtime-plugin.test.mjs); [evidence](evidence/M1/validation.md)",
+      "retainedAcceptanceResidual": "Actual selected runtime installation and browser lifecycle/negative profile; foundation entry smoke is not Stage3. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB001-02",
+      "sourceLink": "tickets/BUB001.md",
+      "priorImplementedOracle": "Ten public reloads and single registration/teardown fixtures",
+      "priorEvidence": "[bootstrap.test.mjs](../test/bootstrap.test.mjs); [runtime-plugin.test.mjs](../test/runtime-plugin.test.mjs); [evidence](evidence/M1/validation.md)",
+      "retainedAcceptanceResidual": "Final whole-plugin reload with timers/panel/native sessions; actual UI oracle. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB001-03",
+      "sourceLink": "tickets/BUB001.md",
+      "priorImplementedOracle": "Required-service/version/config probes refuse before admission",
+      "priorEvidence": "[bootstrap.test.mjs](../test/bootstrap.test.mjs); [native-adapter.test.mjs](../test/native-adapter.test.mjs); [evidence](evidence/M1/host-interface.md)",
+      "retainedAcceptanceResidual": "Production identity/key/permission/model composition and actual UI diagnostics. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB001-04",
+      "sourceLink": "tickets/BUB001.md",
+      "priorImplementedOracle": "Module/native quit teardown and durable reopen holds",
+      "priorEvidence": "[runtime-plugin.test.mjs](../test/runtime-plugin.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Actual browser window-close versus full host exit, final-profile restart. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB001-05",
+      "sourceLink": "tickets/BUB001.md",
+      "priorImplementedOracle": "Exact Web0.2.1-alpha.1 capability matrix retained",
+      "priorEvidence": "[bootstrap.test.mjs](../test/bootstrap.test.mjs); [evidence](evidence/M1/host-interface.md)",
+      "retainedAcceptanceResidual": "Desktop/Electron excluded by owner; do not infer CLI/other versions supported. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB002-01",
+      "sourceLink": "tickets/BUB002.md",
+      "priorImplementedOracle": "Complete source/event intake dedup; deliberate distinct IDs retained",
+      "priorEvidence": "[coordinator.test.mjs](../test/coordinator.test.mjs); [events.test.mjs](../test/events.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Actual native conversation/control carrier; final integration review. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F02"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB002-02",
+      "sourceLink": "tickets/BUB002.md",
+      "priorImplementedOracle": "Task CAS/semantic revisions, constraints and late-result protection",
+      "priorEvidence": "[coordinator.test.mjs](../test/coordinator.test.mjs); [context.test.mjs](../test/context.test.mjs); [runtime-store.test.mjs](../test/runtime-store.test.mjs); [evidence](evidence/S3/memory.md)",
+      "retainedAcceptanceResidual": "Native edit during live work and rendered current state. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F02"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB002-03",
+      "sourceLink": "tickets/BUB002.md",
+      "priorImplementedOracle": "Atomic pause/cancel admission and factual worker observation",
+      "priorEvidence": "[worker.test.mjs](../test/worker.test.mjs); [control.test.mjs](../test/control.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Actual host cancel-versus-completion; stop request is not confirmed termination. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB002-04",
+      "sourceLink": "tickets/BUB002.md",
+      "priorImplementedOracle": "Intake/query independent of held workers and bounded queues",
+      "priorEvidence": "[coordinator.test.mjs](../test/coordinator.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Owner-selected response/latency target and measured native workload. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB002-05",
+      "sourceLink": "tickets/BUB002.md",
+      "priorImplementedOracle": "Grouped clarification, correction and source-bound answers",
+      "priorEvidence": "[coordinator.test.mjs](../test/coordinator.test.mjs); [evidence](evidence/S2/coordinator-context.md)",
+      "retainedAcceptanceResidual": "Rendered owner clarification/revision workflow and final integration review. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB003-01",
+      "sourceLink": "tickets/BUB003.md",
+      "priorImplementedOracle": "Durable intake/claim/unknown settlement and real OS crash cuts",
+      "priorEvidence": "[core.test.mjs](../test/core.test.mjs); [runtime-store.test.mjs](../test/runtime-store.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-core.md)",
+      "retainedAcceptanceResidual": "Full selected Web/process dispatch/effect/ack fault chain. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01",
+        "C6F07",
+        "C6F08"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB003-02",
+      "sourceLink": "tickets/BUB003.md",
+      "priorImplementedOracle": "Atomic version/history/terminal guards and competing OS connections",
+      "priorEvidence": "[core.test.mjs](../test/core.test.mjs); [runtime-adversarial.test.mjs](../test/runtime-adversarial.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Final independent receipt/topology code verdict blocked. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F02",
+        "C6F04",
+        "C6F07",
+        "C6F08"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB003-03",
+      "sourceLink": "tickets/BUB003.md",
+      "priorImplementedOracle": "Actual file/SQLite failures, closed stable diagnostics, no uncommitted acknowledgement",
+      "priorEvidence": "[adversarial.test.mjs](../test/adversarial.test.mjs); [runtime-adversarial.test.mjs](../test/runtime-adversarial.test.mjs); [memory.test.mjs](../test/memory.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Actual Web restricted-state presentation and production storage limits. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB003-04",
+      "sourceLink": "tickets/BUB003.md",
+      "priorImplementedOracle": "Supported1/2/3→4 migration/backup, future/v1/sidecar/hot-journal preservation",
+      "priorEvidence": "[adversarial.test.mjs](../test/adversarial.test.mjs); [runtime-adversarial.test.mjs](../test/runtime-adversarial.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-core.md)",
+      "retainedAcceptanceResidual": "Final code verdict; production upgrade/recovery/install matrix. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB003-05",
+      "sourceLink": "tickets/BUB003.md",
+      "priorImplementedOracle": "Scoped metadata export and durable deletion/tombstone no-reschedule",
+      "priorEvidence": "[core.test.mjs](../test/core.test.mjs); [memory.test.mjs](../test/memory.test.mjs); [evidence](evidence/M1/validation.md)",
+      "retainedAcceptanceResidual": "Owner retention/artifact cleanup policy and whole-runtime export/delete validation. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB004-01",
+      "sourceLink": "tickets/BUB004.md",
+      "priorImplementedOracle": "Created/ready/running/unknown facts backed by public native observations",
+      "priorEvidence": "[native-adapter.test.mjs](../test/native-adapter.test.mjs); [worker.test.mjs](../test/worker.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Real selected-provider worker behavior and actual panel/state. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB004-02",
+      "sourceLink": "tickets/BUB004.md",
+      "priorImplementedOracle": "Exact session request correlation/late discovery, unknown keeps reservation",
+      "priorEvidence": "[native-adapter.test.mjs](../test/native-adapter.test.mjs); [worker.test.mjs](../test/worker.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Whole Web create timeout/reconnect fault oracle. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB004-03",
+      "sourceLink": "tickets/BUB004.md",
+      "priorImplementedOracle": "Public JSONL/AgentLoop existing-session mapping and observable local deterministic work",
+      "priorEvidence": "[native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Real owner-selected model inference unapproved/not run; final historical session mapping. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB004-04",
+      "sourceLink": "tickets/BUB004.md",
+      "priorImplementedOracle": "Cancel/late result keeps factual effects and unknown held ownership",
+      "priorEvidence": "[worker.test.mjs](../test/worker.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Actual running native provider cancellation; no instant/undo promise. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB004-05",
+      "sourceLink": "tickets/BUB004.md",
+      "priorImplementedOracle": "Query/reconcile and feed cursor/generation/source binding after disconnect",
+      "priorEvidence": "[native-adapter.test.mjs](../test/native-adapter.test.mjs); [worker.test.mjs](../test/worker.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Actual Web stream disconnect/restart/terminal reconciliation. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB005-01",
+      "sourceLink": "tickets/BUB005.md",
+      "priorImplementedOracle": "Private scoped parent/worker messaging and unrelated-scope denial",
+      "priorEvidence": "[messages.test.mjs](../test/messages.test.mjs); [runtime-adversarial.test.mjs](../test/runtime-adversarial.test.mjs); [evidence](evidence/S2/messages-results.md)",
+      "retainedAcceptanceResidual": "Actual multi-session parent reporting and final code review. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB005-02",
+      "sourceLink": "tickets/BUB005.md",
+      "priorImplementedOracle": "Exact message grant/task/auth/CAS linearization and revoke ordering",
+      "priorEvidence": "[messages.test.mjs](../test/messages.test.mjs); [runtime-store.test.mjs](../test/runtime-store.test.mjs); [evidence](evidence/S2/messages-results.md)",
+      "retainedAcceptanceResidual": "Native current permission and revoke while relay runs. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB005-03",
+      "sourceLink": "tickets/BUB005.md",
+      "priorImplementedOracle": "Complete durable message identity and query-before-unknown retry",
+      "priorEvidence": "[messages.test.mjs](../test/messages.test.mjs); [runtime-store.test.mjs](../test/runtime-store.test.mjs); [evidence](evidence/S2/messages-results.md)",
+      "retainedAcceptanceResidual": "Actual source/target consumption receipts; arbitrary effects not exactly-once. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB005-04",
+      "sourceLink": "tickets/BUB005.md",
+      "priorImplementedOracle": "Original provenance and bounded hops/cycle amplification refusal",
+      "priorEvidence": "[messages.test.mjs](../test/messages.test.mjs); [evidence](evidence/S2/messages-results.md)",
+      "retainedAcceptanceResidual": "Full multi-session cyclic relay fault chain. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB005-05",
+      "sourceLink": "tickets/BUB005.md",
+      "priorImplementedOracle": "accepted/outbox/sent/consumed remain distinct; no inferred wakeup",
+      "priorEvidence": "[messages.test.mjs](../test/messages.test.mjs); [native-adapter.test.mjs](../test/native-adapter.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Actual target acknowledgement/consumption and panel presentation. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB006-01",
+      "sourceLink": "tickets/BUB006.md",
+      "priorImplementedOracle": "Trusted private handles/operator peer/proofs; spoof/cross-owner/route/revoke denial",
+      "priorEvidence": "[runtime-plugin.test.mjs](../test/runtime-plugin.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Production pairing/identity/key/secret provisioning; final code review blocked. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01",
+        "C6F02",
+        "C6F03"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB006-02",
+      "sourceLink": "tickets/BUB006.md",
+      "priorImplementedOracle": "Concrete preview plus full immutable action/data/target/model/tool/env/limits/expiry/CAS",
+      "priorEvidence": "[approval-preview-adversarial.test.mjs](../test/approval-preview-adversarial.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/approval-preview.md)",
+      "retainedAcceptanceResidual": "Actual owner approval UI and selected catalog; final code review blocked. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F02",
+        "C6F03",
+        "C6F04",
+        "C6F07"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB006-03",
+      "sourceLink": "tickets/BUB006.md",
+      "priorImplementedOracle": "Secret/descriptor/Unicode rejection and encrypted scope-bound content; redacted errors/exports",
+      "priorEvidence": "[runtime-adversarial.test.mjs](../test/runtime-adversarial.test.mjs); [memory.test.mjs](../test/memory.test.mjs); [events.test.mjs](../test/events.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Final frozen package/evidence privacy scan and actual UI/error export. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB006-04",
+      "sourceLink": "tickets/BUB006.md",
+      "priorImplementedOracle": "Private recipient/source/task/digest route and exact allowed data",
+      "priorEvidence": "[results.test.mjs](../test/results.test.mjs); [notifications.test.mjs](../test/notifications.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/notifications.md)",
+      "retainedAcceptanceResidual": "Applicable actual destination/access oracle; live chat provider OUT. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F04",
+        "C6F05"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB006-05",
+      "sourceLink": "tickets/BUB006.md",
+      "priorImplementedOracle": "Default-deny host admission, review role cannot grant, monotonic native tool veto",
+      "priorEvidence": "[native-adapter.test.mjs](../test/native-adapter.test.mjs); [audit.test.mjs](../test/audit.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Nonempty actual tools/production permission policy and final independent review. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F03",
+        "C6F07"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB007-01",
+      "sourceLink": "tickets/BUB007A.md",
+      "priorImplementedOracle": "Pinned ESM algorithm/domain translation and actual durable SQLite/JSONL/Cordis fixtures",
+      "priorEvidence": "[fishball-memory-core.test.mjs](../test/fishball-memory-core.test.mjs); [memory.test.mjs](../test/memory.test.mjs); [evidence](evidence/S3/fishball-portability.md)",
+      "retainedAcceptanceResidual": "Final intended native Web runtime loading/upgrade; no Kotlin/JS/full-core claim. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB007-02",
+      "sourceLink": "tickets/BUB007A.md",
+      "priorImplementedOracle": "Owner-authored subset/history, MIT decision, explicit source/dependency notices",
+      "priorEvidence": "[fishball-memory-core.test.mjs](../test/fishball-memory-core.test.mjs); [evidence](evidence/S3/fishball-code-review.md)",
+      "retainedAcceptanceResidual": "Final package contents/notices check; any future incorporated source reviewed separately. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB007-03",
+      "sourceLink": "tickets/BUB007B.md",
+      "priorImplementedOracle": "Owner/workspace/namespace isolation with real encrypted state",
+      "priorEvidence": "[memory.test.mjs](../test/memory.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/memory-test-review.md)",
+      "retainedAcceptanceResidual": "Final native-context/recipient isolation and code review. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB007-04",
+      "sourceLink": "tickets/BUB007B.md",
+      "priorImplementedOracle": "Persistence/CAS/fault/reopen observable; actual before/after-commit OS exits",
+      "priorEvidence": "[memory.test.mjs](../test/memory.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/memory-test-review.md)",
+      "retainedAcceptanceResidual": "Actual Web restricted UI and final receipt integrity code review. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB007-05",
+      "sourceLink": "tickets/BUB007B.md",
+      "priorImplementedOracle": "Provenance/time/confidence/revision/tombstone, no stale retrieval after corrections",
+      "priorEvidence": "[memory.test.mjs](../test/memory.test.mjs); [context.test.mjs](../test/context.test.mjs); [evidence](evidence/S3/memory.md)",
+      "retainedAcceptanceResidual": "Final actual task correction/memory/runtime integration. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB007-06",
+      "sourceLink": "tickets/BUB007B.md",
+      "priorImplementedOracle": "Ledger authority and protected original goal/instructions; memory cannot mint grants",
+      "priorEvidence": "[memory.test.mjs](../test/memory.test.mjs); [context.test.mjs](../test/context.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/memory.md)",
+      "retainedAcceptanceResidual": "Final actual model input/audit/authority composition and code review. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB008-01",
+      "sourceLink": "tickets/BUB008.md",
+      "priorImplementedOracle": "Latest goal/constraints/clarification/current ledger and immutable full context",
+      "priorEvidence": "[context.test.mjs](../test/context.test.mjs); [coordinator.test.mjs](../test/coordinator.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/memory.md)",
+      "retainedAcceptanceResidual": "Actual selected-model/restart briefing oracle. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB008-02",
+      "sourceLink": "tickets/BUB008.md",
+      "priorImplementedOracle": "Summary scope/time/version and new instructions protected over stale summary",
+      "priorEvidence": "[context.test.mjs](../test/context.test.mjs); [memory.test.mjs](../test/memory.test.mjs); [evidence](evidence/S3/memory.md)",
+      "retainedAcceptanceResidual": "Actual summary model quality/current task conflict presentation. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB008-03",
+      "sourceLink": "tickets/BUB008.md",
+      "priorImplementedOracle": "Explicit tokenizer/byte/token limits; full-envelope N±1 and protected-minimum refusal",
+      "priorEvidence": "[context.test.mjs](../test/context.test.mjs); [memory.test.mjs](../test/memory.test.mjs); [evidence](evidence/S3/memory.md)",
+      "retainedAcceptanceResidual": "Owner-selected model tokenizer/context capacity and measured native limit. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB008-04",
+      "sourceLink": "tickets/BUB008.md",
+      "priorImplementedOracle": "Scoped actual encrypted briefing injected into genuine local AgentLoop",
+      "priorEvidence": "[native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [context.test.mjs](../test/context.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Real selected-model input proof unapproved/not run; final review. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB008-05",
+      "sourceLink": "tickets/BUB008.md",
+      "priorImplementedOracle": "Current task/grant/audit reads and once-only execution context, stale snapshots explicit",
+      "priorEvidence": "[automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Actual Web snapshot/current query and full restart. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB009-01",
+      "sourceLink": "tickets/BUB009.md",
+      "priorImplementedOracle": "Complete retained event identity4096 cap, age/rate/CAS/quota and duplicate OS race",
+      "priorEvidence": "[events.test.mjs](../test/events.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Production retention/replay/source contract; root-adapter final review. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F02"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB009-02",
+      "sourceLink": "tickets/BUB009.md",
+      "priorImplementedOracle": "Atomic ingress/goal/clock and crash cuts, immutable receipts/unknown effect holds",
+      "priorEvidence": "[automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [scheduler.test.mjs](../test/scheduler.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Whole Web source handler/dispatch/effect fault chain. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F02"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB009-03",
+      "sourceLink": "tickets/BUB009.md",
+      "priorImplementedOracle": "No daemon; durable missed plan skip/coalesce/verify and bounded cursor/reopen",
+      "priorEvidence": "[scheduler.test.mjs](../test/scheduler.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Actual quit/offline/restart source gaps and owner UI verification. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB009-04",
+      "sourceLink": "tickets/BUB009.md",
+      "priorImplementedOracle": "Explicit IANA/UTC schedule semantics, fold/midnight/bounds and displayed metadata",
+      "priorEvidence": "[event-clock.test.mjs](../test/event-clock.test.mjs); [scheduler.test.mjs](../test/scheduler.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Full gap/fold/timezone-change and actual next-run UI matrix. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB009-05",
+      "sourceLink": "tickets/BUB009.md",
+      "priorImplementedOracle": "Explicit quiet/emergency/merge/frequency policy; transactional fact dedup/unknown hold",
+      "priorEvidence": "[notifications.test.mjs](../test/notifications.test.mjs); [automation-store.test.mjs](../test/automation-store.test.mjs); [evidence](evidence/S3/notifications.md)",
+      "retainedAcceptanceResidual": "Owner production policy and actual notifications/panel; S3-EVT01 independently closed113/113. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F05"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB010-01",
+      "sourceLink": "tickets/BUB010.md",
+      "priorImplementedOracle": "Actual chat platform/provider selection",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "OUT OF THIS PHASE by owner; neither failed prerequisite nor mock-pass. Final current CODE gate HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB010-02",
+      "sourceLink": "tickets/BUB010.md",
+      "priorImplementedOracle": "Immutable message/edit/delete/order contract and complete source/event provenance",
+      "priorEvidence": "[events.test.mjs](../test/events.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Current contract maps to DF010-C02; actual platform semantics OUT. Final current CODE gate HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB010-03",
+      "sourceLink": "tickets/BUB010.md",
+      "priorImplementedOracle": "Exact private original conversation/thread; new window/group/forward/revision denied",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Current contract maps to C01/C03; actual platform connectivity OUT. Final current CODE gate HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB010-04",
+      "sourceLink": "tickets/BUB010.md",
+      "priorImplementedOracle": "Authenticated source descriptor/digest bytes/expiry/access; path-only delivery refused",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [results.test.mjs](../test/results.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Current contract maps to C04; actual platform attachments OUT. Final current CODE gate HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB010-05",
+      "sourceLink": "tickets/BUB010.md",
+      "priorImplementedOracle": "Rate/disconnect/sent/delivered/current-access/unknown/query-before-retry distinct",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [notifications.test.mjs](../test/notifications.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Current contract maps to C05; actual platform receipts OUT. Final current CODE gate HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB011-01",
+      "sourceLink": "tickets/BUB011.md",
+      "priorImplementedOracle": "Exact registered environment and public session bindings; no fallback environment",
+      "priorEvidence": "[environment.test.mjs](../test/environment.test.mjs); [native-adapter.test.mjs](../test/native-adapter.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Owner real environment registry/current service and final review. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB011-02",
+      "sourceLink": "tickets/BUB011.md",
+      "priorImplementedOracle": "Public permission/tool runtime guards veto changed tools before body/provider",
+      "priorEvidence": "[native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [native-adapter.test.mjs](../test/native-adapter.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Nonempty actual tool execution unaccepted; no alternate-tool denial bypass. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB011-03",
+      "sourceLink": "tickets/BUB011.md",
+      "priorImplementedOracle": "Typed scoped handoff goal/reason/steps/resume conditions and durable waiting state",
+      "priorEvidence": "[environment.test.mjs](../test/environment.test.mjs); [coordinator.test.mjs](../test/coordinator.test.mjs); [evidence](evidence/S2/coordinator-context.md)",
+      "retainedAcceptanceResidual": "Actual owner login/handoff UI; no credentials in text. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB011-04",
+      "sourceLink": "tickets/BUB011.md",
+      "priorImplementedOracle": "Resume requires trusted current-state/environment/task binding; semantic branch changes stale",
+      "priorEvidence": "[environment.test.mjs](../test/environment.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-core.md)",
+      "retainedAcceptanceResidual": "Actual tool/page/current-state login proof; no assumed success. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB011-05",
+      "sourceLink": "tickets/BUB011.md",
+      "priorImplementedOracle": "Query unknown environment/session/effects; durable reservations and no auto replay",
+      "priorEvidence": "[worker.test.mjs](../test/worker.test.mjs); [environment.test.mjs](../test/environment.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Actual environment disconnect/reconnect fault chain. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB012-01",
+      "sourceLink": "tickets/BUB012.md",
+      "priorImplementedOracle": "Queue/weighted-active last-slot boundary races with actual atomic store",
+      "priorEvidence": "[core.test.mjs](../test/core.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Actual native workload/performance and final policy choices. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F04",
+        "C6F07"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB012-02",
+      "sourceLink": "tickets/BUB012.md",
+      "priorImplementedOracle": "Explicit model/reasoning/preset/environment; unavailable fails without downgrade",
+      "priorEvidence": "[environment.test.mjs](../test/environment.test.mjs); [native-adapter.test.mjs](../test/native-adapter.test.mjs); [evidence](evidence/S3/native-worker.md)",
+      "retainedAcceptanceResidual": "Actual installed model catalog/provider config; no real inference approval. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB012-03",
+      "sourceLink": "tickets/BUB012.md",
+      "priorImplementedOracle": "Attempts/unknown holds/reviewer/repair charged to shared total limits",
+      "priorEvidence": "[audit.test.mjs](../test/audit.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-audit.md)",
+      "retainedAcceptanceResidual": "Actual runtime/usage data and owner production thresholds. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F04"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB012-04",
+      "sourceLink": "tickets/BUB012.md",
+      "priorImplementedOracle": "Actual/estimated/unknown metadata distinct; unknown cost denies unsafe claims",
+      "priorEvidence": "[runtime-store.test.mjs](../test/runtime-store.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/runtime-core.md)",
+      "retainedAcceptanceResidual": "Real trusted usage/cost source; fixture nominal1 is not a price estimate. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB012-05",
+      "sourceLink": "tickets/BUB012.md",
+      "priorImplementedOracle": "Explicit caps for queue/message/event/projection/memory/audit/preview/metadata, refuse overflow",
+      "priorEvidence": "[automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [approval-preview-adversarial.test.mjs](../test/approval-preview-adversarial.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Measured native burst/storage/latency behavior and retention/overflow policy. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F04"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB013-01",
+      "sourceLink": "tickets/BUB013.md",
+      "priorImplementedOracle": "Versioned result schema original goal/scope/evidence/unfinished/next and native result provenance",
+      "priorEvidence": "[results.test.mjs](../test/results.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Actual accepted complete report/result UI and real worker result. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F05",
+        "C6F06"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB013-02",
+      "sourceLink": "tickets/BUB013.md",
+      "priorImplementedOracle": "Exact task/artifact version/digest/reviewer/recipient binding; current access distinct",
+      "priorEvidence": "[results.test.mjs](../test/results.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S2/messages-results.md)",
+      "retainedAcceptanceResidual": "Applicable actual recipient opens artifact; local path is not proof. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F03",
+        "C6F04",
+        "C6F05",
+        "C6F07"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB013-03",
+      "sourceLink": "tickets/BUB013.md",
+      "priorImplementedOracle": "Per-item delivery state, exact target, known failed retry only, uncertain reservation held",
+      "priorEvidence": "[results.test.mjs](../test/results.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Actual applicable recipient transport/batch and partial-failure oracle. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB013-04",
+      "sourceLink": "tickets/BUB013.md",
+      "priorImplementedOracle": "Immutable progress fact dedup/quiet/merge/frequency/reservation; no repeated notification",
+      "priorEvidence": "[notifications.test.mjs](../test/notifications.test.mjs); [automation-store.test.mjs](../test/automation-store.test.mjs); [evidence](evidence/S3/notifications.md)",
+      "retainedAcceptanceResidual": "Actual blocking update delivery and owner policy; live chat OUT. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F05"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB013-05",
+      "sourceLink": "tickets/BUB013.md",
+      "priorImplementedOracle": "Unknown send/reopen retains hold; trusted query before retry, historical receipt≠current access",
+      "priorEvidence": "[results.test.mjs](../test/results.test.mjs); [notifications.test.mjs](../test/notifications.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [evidence](evidence/S3/notifications.md)",
+      "retainedAcceptanceResidual": "Actual applicable transport reconciliation/receipt proof. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F04",
+        "C6F07",
+        "C6F08"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB014-01",
+      "sourceLink": "tickets/BUB014.md",
+      "priorImplementedOracle": "Owner-native RPC list/detail from same ledger, captured time/version and refresh",
+      "priorEvidence": "[client.test.mjs](../test/client.test.mjs); [runtime-plugin.test.mjs](../test/runtime-plugin.test.mjs); [evidence](evidence/S3/native-client-test-review.md)",
+      "retainedAcceptanceResidual": "UI unit acdc0c6 frozen; independent final review and actual rendered list/detail. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB014-02",
+      "sourceLink": "tickets/BUB014.md",
+      "priorImplementedOracle": "State-specific CAS controls, exact approval preview/grant, factual cancel observation",
+      "priorEvidence": "[client.test.mjs](../test/client.test.mjs); [control.test.mjs](../test/control.test.mjs); [evidence](evidence/S3/native-client.md)",
+      "retainedAcceptanceResidual": "UI unit acdc0c6 frozen; independent final review and actual keyboard/control behavior. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB014-03",
+      "sourceLink": "tickets/BUB014.md",
+      "priorImplementedOracle": "Private peer scope/reconnect epoch/stale selection/CAS fences and duplicate no-dispatch",
+      "priorEvidence": "[client.test.mjs](../test/client.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-client-test-review.md)",
+      "retainedAcceptanceResidual": "New UI adversarial retest plus actual stale tab/control race. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB014-04",
+      "sourceLink": "tickets/BUB014.md",
+      "priorImplementedOracle": "Native public panel/bundle composition only; no actual rendered visual evidence",
+      "priorEvidence": "[client-build.test.mjs](../test/client-build.test.mjs); [evidence](evidence/S3/native-client.md)",
+      "retainedAcceptanceResidual": "BLOCKED: callable browser observation/control absent; resize/long Chinese/keys/focus/loading/error unpassed. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB014-05",
+      "sourceLink": "tickets/BUB014.md",
+      "priorImplementedOracle": "Scoped artifact/approval/session mapping planned through public uiWorkspace",
+      "priorEvidence": "[client.test.mjs](../test/client.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-client.md)",
+      "retainedAcceptanceResidual": "Related-session UI unit acdc0c6 frozen; stopped/reopened mappings remain explicit limitations, actual Web navigation unpassed. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB015-01",
+      "sourceLink": "tickets/BUB015.md",
+      "priorImplementedOracle": "Exact immutable allowlisted material/coverage and independently held scoped review action",
+      "priorEvidence": "[audit.test.mjs](../test/audit.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/runtime-audit.md)",
+      "retainedAcceptanceResidual": "Actual model review quality and coverage; report prose is synthetic. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F03",
+        "C6F06"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB015-02",
+      "sourceLink": "tickets/BUB015.md",
+      "priorImplementedOracle": "Separate development author/code/ISTQB sessions; product rejects same producer/generation",
+      "priorEvidence": "[audit.test.mjs](../test/audit.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-audit-test-review.md)",
+      "retainedAcceptanceResidual": "Final independent CODE session blocked; runtime review cannot sign development acceptance. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB015-03",
+      "sourceLink": "tickets/BUB015.md",
+      "priorImplementedOracle": "Pending/unknown/failed/budget/fatal/unexamined/stale material blocks completion",
+      "priorEvidence": "[audit.test.mjs](../test/audit.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-audit.md)",
+      "retainedAcceptanceResidual": "Actual reviewer failures/UI/full native completion chain and final code review. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F05",
+        "C6F06"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB015-04",
+      "sourceLink": "tickets/BUB015.md",
+      "priorImplementedOracle": "Explicit rounds0..8, atomic approved lineage and charged bounded repair",
+      "priorEvidence": "[audit.test.mjs](../test/audit.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [evidence](evidence/S3/runtime-audit.md)",
+      "retainedAcceptanceResidual": "Owner required categories/severity/rounds and actual repair model workload. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB015-05",
+      "sourceLink": "tickets/BUB015.md",
+      "priorImplementedOracle": "Private review capability cannot grant/send/expand scope; hostile fields refused",
+      "priorEvidence": "[audit.test.mjs](../test/audit.test.mjs); [native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Final independent code verdict and actual malicious-artifact/model oracle. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F03"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB016-01",
+      "sourceLink": "tickets/BUB016.md",
+      "priorImplementedOracle": "All82 historical source AC plus5 current chat-contract rows traced; hard release gates retained",
+      "priorEvidence": "documentation/source audit; [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Final coherent source/test manifest, independent CODE and all applicable actual validation HOLD. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB016-02",
+      "sourceLink": "tickets/BUB016.md",
+      "priorImplementedOracle": "Actual public local deterministic native vertical fixture, not full live-request acceptance",
+      "priorEvidence": "[native-runtime-integration.test.mjs](../test/native-runtime-integration.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Actual DSH request/worker/memory/events/panel/report chain and faults; live chat OUT by explicit amendment. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB016-03",
+      "sourceLink": "tickets/BUB016.md",
+      "priorImplementedOracle": "Real SQLite/process migration/crash/revoke/limits and native module quit/reopen",
+      "priorEvidence": "[automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [runtime-adversarial.test.mjs](../test/runtime-adversarial.test.mjs); [evidence](evidence/S3/integrations-test-review.md)",
+      "retainedAcceptanceResidual": "Whole selected Web upgrade/restart/full quit/pairing/export/delete/resource matrix. Final current CODE gate HOLD.",
+      "independentCore6Families": [
+        "C6F01",
+        "C6F08"
+      ],
+      "currentDisposition": "Planned bounded synthetic core contribution NOT RUN; full criterion HOLD",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB016-04",
+      "sourceLink": "tickets/BUB016.md",
+      "priorImplementedOracle": "Built-in reproducible client bundle, exact host pins, preview private package and synthetic docs",
+      "priorEvidence": "[client-build.test.mjs](../test/client-build.test.mjs); [evidence](evidence/S3/native-runtime.md)",
+      "retainedAcceptanceResidual": "Final package privacy/notice/install-uninstall/reproduction check; runtime default needs trusted composition. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB016-05",
+      "sourceLink": "tickets/BUB016.md",
+      "priorImplementedOracle": "Pinned incorporated source provenance, MIT owner decision, complete incorporated notices",
+      "priorEvidence": "[fishball-memory-core.test.mjs](../test/fishball-memory-core.test.mjs); [evidence](evidence/S3/fishball-portability.md)",
+      "retainedAcceptanceResidual": "Final exact package/dependency/name/asset notices; no future blanket license clearance. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "BUB016-06",
+      "sourceLink": "tickets/BUB016.md",
+      "priorImplementedOracle": "Version0.1.0-preview.1/private and local no-remotes workflow; stable requires owner",
+      "priorEvidence": "package/source audit; [evidence](evidence/M1/setup.md)",
+      "retainedAcceptanceResidual": "No release/publication now; future exact release separately authorized. Final current CODE gate HOLD.",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "DF010-C01",
+      "sourceLink": "owner-amendment-2026-10-04.md",
+      "priorImplementedOracle": "Privately verified pairing/revision/private conversation and revoke fences",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [automation-adversarial.test.mjs](../test/automation-adversarial.test.mjs); [adapter evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Synthetic authoritative contract covered; production/private installer inputs remain explicit; independent adapter113/113passed at72dcf51 and final CODE HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "DF010-C02",
+      "sourceLink": "owner-amendment-2026-10-04.md",
+      "priorImplementedOracle": "Complete provider/source/event identity and immutable message/edit/delete semantics",
+      "priorEvidence": "[events.test.mjs](../test/events.test.mjs); [chat.test.mjs](../test/chat.test.mjs); [adapter evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Synthetic authoritative contract covered; edits cannot alter an existing grant; independent adapter113/113passed at72dcf51 and final CODE HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "DF010-C03",
+      "sourceLink": "owner-amendment-2026-10-04.md",
+      "priorImplementedOracle": "Exact original source/thread/private task/control/reply scope; no group/forward authority",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [adapter evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Synthetic authoritative contract covered; no remote grant endpoint; independent adapter113/113passed at72dcf51 and final CODE HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "DF010-C04",
+      "sourceLink": "owner-amendment-2026-10-04.md",
+      "priorImplementedOracle": "Exact source-bound attachment descriptor/digest/bytes/expiry and permitted result target",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [results.test.mjs](../test/results.test.mjs); [adapter evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Synthetic authoritative contract covered; actual platform attachments/delivery OUT; independent adapter113/113passed at72dcf51 and final CODE HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    },
+    {
+      "id": "DF010-C05",
+      "sourceLink": "owner-amendment-2026-10-04.md",
+      "priorImplementedOracle": "Bounded rate/disconnect/unknown-held send with reconciliation before retry",
+      "priorEvidence": "[chat.test.mjs](../test/chat.test.mjs); [notifications.test.mjs](../test/notifications.test.mjs); [adapter evidence](evidence/S3/event-adapters.md)",
+      "retainedAcceptanceResidual": "Synthetic authoritative contract covered; sent/delivered/current access are distinct; independent adapter113/113passed at72dcf51 and final CODE HOLD.",
+      "liveChatPlatformScope": "Original live-platform scope OUT by owner amendment; provider-neutral criteria retained",
+      "independentCore6Families": [],
+      "currentDisposition": "Outside finite core6 supplement; every existing criterion/evidence/residual retained, not run here",
+      "fullACAccepted": false,
+      "nativeProof": false,
+      "execution": "NOT RUN"
+    }
+  ]
+}

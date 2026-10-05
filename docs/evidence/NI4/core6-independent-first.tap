@@ -1,0 +1,199 @@
+TAP version 13
+# (node:94578) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: C6F01 genuine5 preserves scoped historical acknowledgements, cipher identities and held claim through6
+ok 1 - C6F01 genuine5 preserves scoped historical acknowledgements, cipher identities and held claim through6
+  ---
+  duration_ms: 58.643875
+  type: 'test'
+  ...
+# Subtest: C6F02 paired supplement route binds original CAS/origin across rollback, later task state and stale partial source
+ok 2 - C6F02 paired supplement route binds original CAS/origin across rollback, later task state and stale partial source
+  ---
+  duration_ms: 54.67575
+  type: 'test'
+  ...
+# Subtest: C6F03 claimed JSON provenance and executor none confer no local authority; advanced receipts stay operation-bound
+ok 3 - C6F03 claimed JSON provenance and executor none confer no local authority; advanced receipts stay operation-bound
+  ---
+  duration_ms: 42.003916
+  type: 'test'
+  ...
+# Subtest: C6F04 independently sized escaped/CJK/astral publication envelope uses inclusive U and exact typed replay
+    # Subtest: approved units U-1
+    not ok 1 - approved units U-1
+      ---
+      duration_ms: 49.688709
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:378:46'
+      failureType: 'testCodeFailure'
+      error: 'SPEC_MISMATCH'
+      code: 'SPEC_MISMATCH'
+      name: 'FoundationError'
+      stack: |-
+        fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:10:37)
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2548:344
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:258:20
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:206:58
+        Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:201:18)
+        Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:204:17)
+        #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:241:25)
+        RuntimeStore.captureAuditResult (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2546:21)
+        reviewed (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:175:27)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:379:44)
+      ...
+    # Subtest: approved units U
+    not ok 2 - approved units U
+      ---
+      duration_ms: 38.827791
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:378:46'
+      failureType: 'testCodeFailure'
+      error: 'SPEC_MISMATCH'
+      code: 'SPEC_MISMATCH'
+      name: 'FoundationError'
+      stack: |-
+        fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:10:37)
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2548:344
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:258:20
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:206:58
+        Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:201:18)
+        Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:204:17)
+        #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:241:25)
+        RuntimeStore.captureAuditResult (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2546:21)
+        reviewed (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:175:27)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:379:44)
+      ...
+    # Subtest: approved units U+1
+    not ok 3 - approved units U+1
+      ---
+      duration_ms: 36.497041
+      type: 'test'
+      location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:378:46'
+      failureType: 'testCodeFailure'
+      error: 'SPEC_MISMATCH'
+      code: 'SPEC_MISMATCH'
+      name: 'FoundationError'
+      stack: |-
+        fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:10:37)
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2548:344
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:258:20
+        file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:206:58
+        Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:201:18)
+        Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:204:17)
+        #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:241:25)
+        RuntimeStore.captureAuditResult (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2546:21)
+        reviewed (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:175:27)
+        TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:379:44)
+      ...
+    1..3
+not ok 4 - C6F04 independently sized escaped/CJK/astral publication envelope uses inclusive U and exact typed replay
+  ---
+  duration_ms: 125.586625
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:377:3'
+  failureType: 'subtestsFailed'
+  error: '3 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: C6F05 selected-artifact report survives unrelated audit yet whole-task gate blocks another notification
+not ok 5 - C6F05 selected-artifact report survives unrelated audit yet whole-task gate blocks another notification
+  ---
+  duration_ms: 54.3475
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:413:3'
+  failureType: 'testCodeFailure'
+  error: 'SPEC_MISMATCH'
+  code: 'SPEC_MISMATCH'
+  name: 'FoundationError'
+  stack: |-
+    fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:10:37)
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2548:344
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:258:20
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:206:58
+    Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:201:18)
+    Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:204:17)
+    #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:241:25)
+    RuntimeStore.captureAuditResult (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2546:21)
+    reviewed (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:175:27)
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:414:60)
+  ...
+# Subtest: C6F06 resolved fatal precedence preserves unknown/partial review facts and historical report after semantic drift
+not ok 6 - C6F06 resolved fatal precedence preserves unknown/partial review facts and historical report after semantic drift
+  ---
+  duration_ms: 51.564708
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:451:3'
+  failureType: 'testCodeFailure'
+  error: 'SPEC_MISMATCH'
+  code: 'SPEC_MISMATCH'
+  name: 'FoundationError'
+  stack: |-
+    fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:10:37)
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2548:344
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:258:20
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:206:58
+    Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:201:18)
+    Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:204:17)
+    #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:241:25)
+    RuntimeStore.captureAuditResult (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2546:21)
+    reviewed (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:175:27)
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:455:18)
+  ...
+# Subtest: C6F07 precommit/permission cuts preserve hold; expiry/revoke ordering keeps historical sent/current access separate
+not ok 7 - C6F07 precommit/permission cuts preserve hold; expiry/revoke ordering keeps historical sent/current access separate
+  ---
+  duration_ms: 36.506459
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:474:3'
+  failureType: 'testCodeFailure'
+  error: 'SPEC_MISMATCH'
+  code: 'SPEC_MISMATCH'
+  name: 'FoundationError'
+  stack: |-
+    fail (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:10:37)
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2548:344
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:258:20
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:206:58
+    Ledger.guarded (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:201:18)
+    Ledger.transaction (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/ledger.mjs:204:17)
+    #mut (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:241:25)
+    RuntimeStore.captureAuditResult (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/src/runtime-store.mjs:2546:21)
+    reviewed (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:175:27)
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:478:21)
+  ...
+# Subtest: C6F08 abrupt child exit after committed publication preserves original receipt, uncertain hold and zero fresh send
+not ok 8 - C6F08 abrupt child exit after committed publication preserves original receipt, uncertain hold and zero fresh send
+  ---
+  duration_ms: 168.9715
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:523:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    bounded owned child must exit at the committed cut
+    
+    1 !== 73
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 73
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs:530:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..8
+# tests 11
+# suites 0
+# pass 3
+# fail 8
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 710.751417

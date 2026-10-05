@@ -1,0 +1,333 @@
+{
+  "status": "static-only preparation; no executable GO received",
+  "correctAuthorJsonBinding": {
+    "path": "docs/evidence/NI4/core6-author-executable-hold.json",
+    "sha256": "afbcd4101eaf927e0aca0c2ba56e1075fa867b1206f2e7f8b0486cf699fd9d02",
+    "bytes": 9216
+  },
+  "correctAuthorTextBinding": {
+    "path": "docs/evidence/NI4/core6-author-executable.sha256",
+    "sha256": "4b4a2121f4b7cb6e10bda299ea9185a2f9fccb3926a8a772ff95a934ec57ea15",
+    "bytes": 5955
+  },
+  "all45AuthorRowsMatch": true,
+  "all10FrozenDesignInputsMatch": true,
+  "all5GenuineCapsuleAndSharedPinsMatch": true,
+  "literalImportClosure": [
+    {
+      "path": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "sha256": "3e7662f3f3e34d8ad9e0ebef77a9dc4370667fab5bde889a60b18f6e4b2279e0",
+      "bytes": 39424
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+      "bytes": 187413
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": ".runtime/ni4-core6/candidate/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    }
+  ],
+  "importEdges": [
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:test",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:assert/strict",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:fs",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:os",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:path",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:url",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:sqlite",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "node:child_process",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "../src/runtime-store.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/candidate/src/runtime-store.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+      "specifier": "../../source5/src/runtime-store.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/source5/src/runtime-store.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "specifier": "node:util",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "specifier": "./ledger.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/candidate/src/ledger.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "specifier": "./runtime-security.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/candidate/src/runtime-security.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-store.mjs",
+      "specifier": "./context.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/candidate/src/context.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "specifier": "node:util",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "specifier": "./ledger.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/source5/src/ledger.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "specifier": "./runtime-security.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/source5/src/runtime-security.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-store.mjs",
+      "specifier": "./context.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/source5/src/context.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "specifier": "node:sqlite",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "specifier": "node:fs",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "specifier": "node:fs",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "specifier": "node:path",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/ledger.mjs",
+      "specifier": "node:os",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+      "specifier": "node:util",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/runtime-security.mjs",
+      "specifier": "./ledger.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/candidate/src/ledger.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/context.mjs",
+      "specifier": "node:util",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/candidate/src/context.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "specifier": "node:sqlite",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "specifier": "node:fs",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "specifier": "node:fs",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "specifier": "node:path",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/ledger.mjs",
+      "specifier": "node:os",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-security.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-security.mjs",
+      "specifier": "node:util",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/runtime-security.mjs",
+      "specifier": "./ledger.mjs",
+      "kind": "literal local module",
+      "resolved": ".runtime/ni4-core6/source5/src/ledger.mjs"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/context.mjs",
+      "specifier": "node:util",
+      "kind": "Node builtin"
+    },
+    {
+      "from": ".runtime/ni4-core6/source5/src/context.mjs",
+      "specifier": "node:crypto",
+      "kind": "Node builtin"
+    }
+  ],
+  "nodeBuiltins": [
+    "node:assert/strict",
+    "node:child_process",
+    "node:crypto",
+    "node:fs",
+    "node:os",
+    "node:path",
+    "node:sqlite",
+    "node:test",
+    "node:url",
+    "node:util"
+  ],
+  "importedProductModuleCount": 8,
+  "supportOnlyFoundations": [
+    {
+      "path": ".runtime/ni4-core6/candidate/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": ".runtime/ni4-core6/source5/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    }
+  ],
+  "scope": "No source7, main/native/provider imports, author-test helpers, bare peers or runtime code evaluation",
+  "productImports": 0,
+  "nodeCommands": 0,
+  "syntaxChecks": "NOT RUN until GO",
+  "databaseOpens": 0,
+  "childProcesses": 0,
+  "firstTest": {
+    "path": "docs/evidence/NI4/core6-independent-first-test.mjs.txt",
+    "sha256": "3e7662f3f3e34d8ad9e0ebef77a9dc4370667fab5bde889a60b18f6e4b2279e0",
+    "bytes": 39424
+  },
+  "liveTest": {
+    "path": ".runtime/ni4-core6/candidate/test/core6-independent-functional.test.mjs",
+    "sha256": "3e7662f3f3e34d8ad9e0ebef77a9dc4370667fab5bde889a60b18f6e4b2279e0",
+    "bytes": 39424
+  },
+  "testStructure": {
+    "topLevelFamilies": 8,
+    "boundaryChildCases": 3,
+    "plannedTapNodes": 11,
+    "plannedLeafCases": 10,
+    "plannedWrappers": 1,
+    "actualCounts": "NOT RUN"
+  },
+  "staticPreFreezeClarifications": [
+    "Foreign opaque host with a referenced task from another workspace expects the exact public API TASK_NOT_FOUND; wrong role remains UNAUTHORIZED",
+    "Owned child cleanup closes store and zeros parent key before removal; no execution/failure preceded these draft adjustments"
+  ]
+}

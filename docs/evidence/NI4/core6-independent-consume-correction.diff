@@ -1,0 +1,17 @@
+--- first3e7662f3
++++ consume-corrected-only
+@@ -168,6 +168,14 @@
+     auditRef: requirement.auditRef, claimRef: held.claimRef, generationRef, sessionRef});
+   const execution = x.store.beginAuditExecution(x.host, {...x.bind(), actionRef: held.actionRef,
+     actionDigest: held.actionDigest, claimRef: held.claimRef, generationRef, inputRecordRef: input.recordRef});
++  const consumed = x.store.assertExecutionCurrent(x.host, {
++    taskRef: x.task.taskRef,
++    claimRef: held.claimRef,
++    generationRef,
++    actionDigest: held.actionDigest,
++    executionRef: execution.executionRef,
++  });
++  assert.equal(consumed.admitted, true);
+   const body = {contractVersion: 'df.audit-response/v1', bindingDigest: input.bindingDigest,
+     materialDigest: input.materialDigest, inputDigest: input.digest, verdict: 'passed',
+     coverageRefs: requirement.material.map(item => item.recordRef), unexaminedRefs: [], findings: [],
