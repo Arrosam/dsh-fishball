@@ -1,0 +1,108 @@
+{
+  "formatVersion": 1,
+  "status": "independent-static-ordinary-quality-review-complete",
+  "verdict": "one-static-contract-coverage-discrepancy; no-runtime-verdict",
+  "scope": {
+    "candidatePath": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+    "candidateReviewedLines": ["77-82", "290-321"],
+    "fixturePath": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment.test.mjs",
+    "fixtureReviewedLines": "122-207",
+    "adapterPath": "src/native-adapter.mjs",
+    "adapterReviewedLines": ["101-109", "229-258"],
+    "descriptorApiPath": "src/runtime-security.mjs",
+    "descriptorApiReviewedLines": "9-32",
+    "amendmentMarkdownPath": "docs/evidence/NI3/native-tool-source-api-amendment.md",
+    "amendmentJsonFields": ["semantics", "literalMinimalDiff", "pins"],
+    "excluded": [
+      "receipt or envelope integrity",
+      "cryptography, signing, migration, quarantine, or recovery",
+      "tampering investigations",
+      "the blocked original CODE session",
+      "runtime execution or product imports",
+      "native, browser, provider, model, tool, or account execution",
+      "source edits and Git operations",
+      "whole-suite, ticket, MVP, or acceptance verdicts"
+    ]
+  },
+  "pins": {
+    "amendmentMarkdown": {
+      "path": "docs/evidence/NI3/native-tool-source-api-amendment.md",
+      "sha256": "a3248cc1715f96e1ff9b8e86a79e7caa96ee8f19607f52ce8dfd32971534d8ce"
+    },
+    "amendmentJson": {
+      "path": "docs/evidence/NI3/native-tool-source-api-amendment.json",
+      "sha256": "aa58cd0f58aab788b9265f91dd61e18d0e94a6d88a5fce2e6a04164838ba15de"
+    },
+    "originalInstalledAuditBaseline": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+    "candidate": {
+      "path": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f"
+    },
+    "fixture": {
+      "path": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment.test.mjs",
+      "sha256": "0546e78cf62b337b75d5330e9bb328db1642fc06c2d62271b49bbaa96b18cb54"
+    },
+    "nativeAdapter": {
+      "path": "src/native-adapter.mjs",
+      "sha256": "caba6d841cc4db6825e5b5aebce95c7b83dab3a501a6602bfea91efb00b7c49e"
+    },
+    "runtimeSecurity": {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+    }
+  },
+  "finding": {
+    "id": "ordinary-quality-01",
+    "kind": "static-contract-and-coverage-discrepancy",
+    "location": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs:80-81",
+    "relatedFixture": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment.test.mjs:137-149",
+    "statement": "The amendment semantics require rejection of async-generator callbacks and NT02 includes an async-generator callback, but the candidate's visible validator explicitly checks only isAsyncFunction and isGeneratorFunction. With execution out of scope, rejection of the async-generator category is not established by this source slice.",
+    "recommendation": "Add an explicit async-generator-function predicate or revise the contract and fixture after the classifier behavior is established.",
+    "runtimeFailureObserved": false
+  },
+  "reviewedInterfaceConclusions": {
+    "eighteenthPropertyIsOptional": true,
+    "priorSeventeenPropertiesRemainRequired": true,
+    "omittedCallbackDenies": true,
+    "sameInputRecordPassedToCallback": true,
+    "opaqueAgentUsesWeakMapIdentityLookup": true,
+    "strictLiteralTrueRequired": true,
+    "reentryPoisonsOuterCall": true,
+    "postCallbackCurrentnessCheckPresent": true,
+    "adapterCallShapeAndOrder": "static comparison only",
+    "schemasIdentity": "preserved by passing the unchanged record; whole-record identity is asserted by NT03",
+    "actualNativeSource": "future/unimplemented per amendment; fixture callbacks are typed doubles"
+  },
+  "fixtureCoverageFromStaticInspection": {
+    "NT01": "old 17-field disabled construction; enabled omission and supplied-false denial",
+    "NT02": "invalid callback shapes/descriptors, proxies, and intended async-generator rejection; unexecuted",
+    "NT03": "record/agent identity, pending and recorded claim phases, both review and repair roles",
+    "NT04": "literal result partition, thrown callback, promise/proxy/thenable values without intended inspection",
+    "NT05": "hostile or malformed records, refs, agent identity, schemas, and pre-callback denial",
+    "NT06": "currentness/lifetime withdrawal and callback reentry"
+  },
+  "uncoveredOrUnproven": [
+    "No fixture instantiates NativeAdapter or an actual ToolRegistry/service; invocation shape/order is static-only.",
+    "No actual source-private nativeToolGuard exists in this unit; doubles cannot prove source or native gates.",
+    "Fixture assertions were inspected but not executed, so they provide no runtime PASS.",
+    "The explicit async-generator rejection required by the semantics is not demonstrated by the candidate predicate list."
+  ],
+  "execution": {
+    "codeImported": false,
+    "nodeOrTestCommandRun": false,
+    "syntaxCheckRun": false,
+    "databaseOrNativeExecution": false,
+    "sourceEdited": false,
+    "gitCommandRun": false,
+    "runtimePass": false
+  },
+  "separateBlockedFinalCodeGap": {
+    "status": "remains-blocked-unchanged",
+    "relation": "This independent static review is not a retry, replacement, verdict, or closure of the original final CODE gap."
+  },
+  "acceptance": {
+    "whole87": "not-assessed",
+    "ticketOrMvp": "not-assessed",
+    "nativeOrBrowser": "not-assessed"
+  }
+}

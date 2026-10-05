@@ -1,0 +1,50 @@
+{
+  "formatVersion": 1,
+  "status": "ordinary-quality-followup-disposition-recorded",
+  "history": {
+    "firstReviewMarkdown": "docs/evidence/NI3/native-tool-amendment-ordinary-quality-review.md",
+    "firstReviewJson": "docs/evidence/NI3/native-tool-amendment-ordinary-quality-review.json",
+    "immutability": "First review artifacts and finding history were not rewritten."
+  },
+  "disposition": {
+    "findingId": "ordinary-quality-01",
+    "status": "closed-no-source-finding-on-pinned-target",
+    "reason": "On Node v22.22.2, the recorded built-in classification reports an async-generator function satisfies both types.isAsyncFunction and types.isGeneratorFunction. The candidate's existing disjunction therefore rejects it; no specialized predicate or source change is required for that target.",
+    "candidatePredicateLocation": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs:80-81",
+    "fixtureCaseLocation": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment.test.mjs:137-149"
+  },
+  "inputEvidence": {
+    "path": "docs/evidence/NI3/native-tool-amendment-node-classifier-check.json",
+    "recordedRuntime": "v22.22.2",
+    "recordedClassification": {
+      "isAsyncFunction": true,
+      "isGeneratorFunction": true,
+      "callbackInvocations": 0,
+      "exitCode": 0
+    },
+    "recordedFixtureResult": "First author NT02 passed the async-generator rejection case before subscription or traps.",
+    "followupReranClassifierOrFixture": false
+  },
+  "overread": {
+    "file": "src/runtime-security.mjs",
+    "authorizedRange": "9-32",
+    "reportedExposure": "The first review read command displayed later definitions beyond the authorized descriptor helper range.",
+    "reliedOnLaterDefinitions": false,
+    "ledgerCoreReceiptOrEnvelopeInvestigation": false,
+    "unreviewedResultsCounted": false
+  },
+  "executionThisFollowup": {
+    "nodeCommandRun": false,
+    "testRun": false,
+    "productImport": false,
+    "sourceEdit": false,
+    "gitCommand": false
+  },
+  "boundaries": {
+    "newProductOrNativePass": false,
+    "newSourceOriginProof": false,
+    "newFullSuiteOrAcceptancePass": false,
+    "originalFinalCodeGap": "remains-blocked-unchanged",
+    "scope": "Only the ordinary static async-generator finding is disposed for recorded Node 22.22.2 classifier behavior."
+  }
+}
