@@ -1,0 +1,747 @@
+TAP version 13
+# (node:81862) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent setup normal 0755 profile and parent are read-only until consent, then only private state is created
+ok 1 - independent setup normal 0755 profile and parent are read-only until consent, then only private state is created
+  ---
+  duration_ms: 104.217542
+  type: 'test'
+  ...
+# Subtest: independent setup relative depth 1 rejects, 2/15/16 allow volatile prepare, and 17 rejects without writes
+    # Subtest: depth-1
+    ok 1 - depth-1
+      ---
+      duration_ms: 0.958791
+      type: 'test'
+      ...
+    # Subtest: depth-2
+    ok 2 - depth-2
+      ---
+      duration_ms: 1.085583
+      type: 'test'
+      ...
+    # Subtest: depth-15
+    ok 3 - depth-15
+      ---
+      duration_ms: 1.136416
+      type: 'test'
+      ...
+    # Subtest: depth-16
+    ok 4 - depth-16
+      ---
+      duration_ms: 1.360792
+      type: 'test'
+      ...
+    # Subtest: depth-17
+    ok 5 - depth-17
+      ---
+      duration_ms: 1.098834
+      type: 'test'
+      ...
+    1..5
+ok 2 - independent setup relative depth 1 rejects, 2/15/16 allow volatile prepare, and 17 rejects without writes
+  ---
+  duration_ms: 8.095917
+  type: 'test'
+  ...
+# Subtest: independent setup lexical path-length 1023/1024/1025 and exact UTF-8 validity are separate from filesystem support
+    # Subtest: constructor-character-length-1023
+    ok 1 - constructor-character-length-1023
+      ---
+      duration_ms: 1.444625
+      type: 'test'
+      ...
+    # Subtest: constructor-character-length-1024
+    ok 2 - constructor-character-length-1024
+      ---
+      duration_ms: 0.80875
+      type: 'test'
+      ...
+    # Subtest: constructor-character-length-1025
+    ok 3 - constructor-character-length-1025
+      ---
+      duration_ms: 5.874875
+      type: 'test'
+      ...
+    1..3
+ok 3 - independent setup lexical path-length 1023/1024/1025 and exact UTF-8 validity are separate from filesystem support
+  ---
+  duration_ms: 37.303375
+  type: 'test'
+  ...
+# Subtest: independent setup hostile payloads are rejected without executing traps or persisting secret canaries
+ok 4 - independent setup hostile payloads are rejected without executing traps or persisting secret canaries
+  ---
+  duration_ms: 7.006625
+  type: 'test'
+  ...
+# Subtest: independent setup consent reference/digest are private-instance bound and require literal acceptance
+ok 5 - independent setup consent reference/digest are private-instance bound and require literal acceptance
+  ---
+  duration_ms: 106.466167
+  type: 'test'
+  ...
+# Subtest: independent setup final trusted callback expiry/abort and lifetime loss prevent the first write
+    # Subtest: expiry
+    ok 1 - expiry
+      ---
+      duration_ms: 1.881583
+      type: 'test'
+      ...
+    # Subtest: abort
+    ok 2 - abort
+      ---
+      duration_ms: 1.372791
+      type: 'test'
+      ...
+    # Subtest: lifetime
+    ok 3 - lifetime
+      ---
+      duration_ms: 1.890875
+      type: 'test'
+      ...
+    1..3
+ok 6 - independent setup final trusted callback expiry/abort and lifetime loss prevent the first write
+  ---
+  duration_ms: 15.279292
+  type: 'test'
+  ...
+# Subtest: independent setup plan binds existing parent inode, profile identity and unsafe final mode
+    # Subtest: parent-inode
+    ok 1 - parent-inode
+      ---
+      duration_ms: 6.379166
+      type: 'test'
+      ...
+    # Subtest: profile-name
+    ok 2 - profile-name
+      ---
+      duration_ms: 1.333833
+      type: 'test'
+      ...
+    # Subtest: profile-writable
+    ok 3 - profile-writable
+      ---
+      duration_ms: 1.368875
+      type: 'test'
+      ...
+    1..3
+ok 7 - independent setup plan binds existing parent inode, profile identity and unsafe final mode
+  ---
+  duration_ms: 10.86575
+  type: 'test'
+  ...
+# Subtest: independent setup orphan sidecar links and directory entries refuse with exact preservation
+    # Subtest: dangling-wal
+    ok 1 - dangling-wal
+      ---
+      duration_ms: 2.197875
+      type: 'test'
+      ...
+    # Subtest: directory-shm
+    ok 2 - directory-shm
+      ---
+      duration_ms: 5.364875
+      type: 'test'
+      ...
+    # Subtest: hardlinked-journal
+    ok 3 - hardlinked-journal
+      ---
+      duration_ms: 9.691833
+      type: 'test'
+      ...
+    1..3
+ok 8 - independent setup orphan sidecar links and directory entries refuse with exact preservation
+  ---
+  duration_ms: 19.244708
+  type: 'test'
+  ...
+# Subtest: independent setup a real OS permission failure creates no ready state or replacement entries
+ok 9 - independent setup a real OS permission failure creates no ready state or replacement entries
+  ---
+  duration_ms: 7.385083
+  type: 'test'
+  ...
+# Subtest: independent setup late sidecar contender prevents target publication and partial state cannot replay
+ok 10 - independent setup late sidecar contender prevents target publication and partial state cannot replay
+  ---
+  duration_ms: 50.673083
+  type: 'test'
+  ...
+# Subtest: independent setup authenticated metadata byte boundary 4095/4096/4097 retains legitimate whitespace
+    # Subtest: metadata-bytes-4095
+    ok 1 - metadata-bytes-4095
+      ---
+      duration_ms: 120.021125
+      type: 'test'
+      ...
+    # Subtest: metadata-bytes-4096
+    ok 2 - metadata-bytes-4096
+      ---
+      duration_ms: 86.280833
+      type: 'test'
+      ...
+    # Subtest: metadata-bytes-4097
+    ok 3 - metadata-bytes-4097
+      ---
+      duration_ms: 90.116083
+      type: 'test'
+      ...
+    1..3
+ok 11 - independent setup authenticated metadata byte boundary 4095/4096/4097 retains legitimate whitespace
+  ---
+  duration_ms: 311.243625
+  type: 'test'
+  ...
+# Subtest: independent setup exact key length 31/32/33 and HMAC/format/private-file linkage reject without resealing
+    # Subtest: key31
+    ok 1 - key31
+      ---
+      duration_ms: 87.362333
+      type: 'test'
+      ...
+    # Subtest: key32
+    ok 2 - key32
+      ---
+      duration_ms: 48.023625
+      type: 'test'
+      ...
+    # Subtest: key33
+    ok 3 - key33
+      ---
+      duration_ms: 95.242875
+      type: 'test'
+      ...
+    # Subtest: bad-mac
+    ok 4 - bad-mac
+      ---
+      duration_ms: 58.083
+      type: 'test'
+      ...
+    # Subtest: future-format
+    ok 5 - future-format
+      ---
+      duration_ms: 68.480584
+      type: 'test'
+      ...
+    # Subtest: key-hardlink
+    ok 6 - key-hardlink
+      ---
+      duration_ms: 95.571834
+      type: 'test'
+      ...
+    # Subtest: metadata-mode
+    ok 7 - metadata-mode
+      ---
+      duration_ms: 99.695333
+      type: 'test'
+      ...
+    1..7
+ok 12 - independent setup exact key length 31/32/33 and HMAC/format/private-file linkage reject without resealing
+  ---
+  duration_ms: 579.808125
+  type: 'test'
+  ...
+# Subtest: independent setup one pending confirmation, late disposal and callback errors preserve closed receipts and partial facts
+    # Subtest: throw-canary
+    ok 1 - throw-canary
+      ---
+      duration_ms: 80.773417
+      type: 'test'
+      ...
+    # Subtest: wrong-disposer
+    ok 2 - wrong-disposer
+      ---
+      duration_ms: 100.562542
+      type: 'test'
+      ...
+    1..2
+ok 13 - independent setup one pending confirmation, late disposal and callback errors preserve closed receipts and partial facts
+  ---
+  duration_ms: 299.359709
+  type: 'test'
+  ...
+# Subtest: independent setup two already-prepared OS processes publish one namespace with no overwrite or extra key
+ok 14 - independent setup two already-prepared OS processes publish one namespace with no overwrite or extra key
+  ---
+  duration_ms: 251.042958
+  type: 'test'
+  ...
+# Subtest: independent setup actual process exits before commit and during staging preserve exact uncertainty boundary
+    # Subtest: precommit-crash
+    ok 1 - precommit-crash
+      ---
+      duration_ms: 95.379334
+      type: 'test'
+      ...
+    # Subtest: staging-crash
+    ok 2 - staging-crash
+      ---
+      duration_ms: 139.975125
+      type: 'test'
+      ...
+    1..2
+ok 15 - independent setup actual process exits before commit and during staging preserve exact uncertainty boundary
+  ---
+  duration_ms: 237.513458
+  type: 'test'
+  ...
+# Subtest: independent setup real post-ack abrupt exit retains one encrypted task, exact namespace/key and dedup without replay
+ok 16 - independent setup real post-ack abrupt exit retains one encrypted task, exact namespace/key and dedup without replay
+  ---
+  duration_ms: 168.887041
+  type: 'test'
+  ...
+# Subtest: independent installed original native owner carrier enforces no-write auth, explicit storage consent and own closure
+ok 17 - independent installed original native owner carrier enforces no-write auth, explicit storage consent and own closure
+  ---
+  duration_ms: 127.880167
+  type: 'test'
+  ...
+# Subtest: independent installed and testing-provider metadata retains original factory/client mappings
+ok 18 - independent installed and testing-provider metadata retains original factory/client mappings
+  ---
+  duration_ms: 0.325
+  type: 'test'
+  ...
+# (node:81863) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: read-only first status/preview and strict consent denials never create persistent entries
+ok 19 - read-only first status/preview and strict consent denials never create persistent entries
+  ---
+  duration_ms: 6.791666
+  type: 'test'
+  ...
+# Subtest: preview supersession, exact expiry, rollback and precommit abort have zero writes
+ok 20 - preview supersession, exact expiry, rollback and precommit abort have zero writes
+  ---
+  duration_ms: 102.84825
+  type: 'test'
+  ...
+# Subtest: clock crossing expiry during final trusted path recheck refuses the first persistent write
+ok 21 - clock crossing expiry during final trusted path recheck refuses the first persistent write
+  ---
+  duration_ms: 1.580292
+  type: 'test'
+  ...
+# Subtest: consented same-schema encrypted core, private state, one-use preview and retained namespace reopen
+ok 22 - consented same-schema encrypted core, private state, one-use preview and retained namespace reopen
+  ---
+  duration_ms: 113.860875
+  type: 'test'
+  ...
+# Subtest: retained target, every sidecar, dangling entries and lexical/path/mode drift preserve bytes
+ok 23 - retained target, every sidecar, dangling entries and lexical/path/mode drift preserve bytes
+  ---
+  duration_ms: 40.001333
+  type: 'test'
+  ...
+# Subtest: publication contender, callback secrets and activation failure preserve accountable partials
+ok 24 - publication contender, callback secrets and activation failure preserve accountable partials
+  ---
+  duration_ms: 166.977458
+  type: 'test'
+  ...
+# Subtest: activation awaits recheck key/metadata/inode and own disposal, without replay or false ready
+ok 25 - activation awaits recheck key/metadata/inode and own disposal, without replay or false ready
+  ---
+  duration_ms: 333.379125
+  type: 'test'
+  ...
+# Subtest: postcommit request abort retains valid ready state and cannot undo consent or initialize twice
+ok 26 - postcommit request abort retains valid ready state and cannot undo consent or initialize twice
+  ---
+  duration_ms: 55.405083
+  type: 'test'
+  ...
+# Subtest: future/corrupt/partial retained setup refuses repair or key replacement
+ok 27 - future/corrupt/partial retained setup refuses repair or key replacement
+  ---
+  duration_ms: 530.274834
+  type: 'test'
+  ...
+# Subtest: exact inode and profile binding refuse same-byte replacement without following retained state
+ok 28 - exact inode and profile binding refuse same-byte replacement without following retained state
+  ---
+  duration_ms: 303.26425
+  type: 'test'
+  ...
+# Subtest: unload before trusted activation and corrupt ready-state read seals child admission
+ok 29 - unload before trusted activation and corrupt ready-state read seals child admission
+  ---
+  duration_ms: 101.347541
+  type: 'test'
+  ...
+# Subtest: two genuine processes prepare before barrier and only one publishes the owned namespace
+ok 30 - two genuine processes prepare before barrier and only one publishes the owned namespace
+  ---
+  duration_ms: 290.737875
+  type: 'test'
+  ...
+# Subtest: genuine abrupt child exits at six durable cuts preserve partial facts and never resume or replay
+ok 31 - genuine abrupt child exits at six durable cuts preserve partial facts and never resume or replay
+  ---
+  duration_ms: 752.596667
+  type: 'test'
+  ...
+# Subtest: original public native owner setup has zero preconsent writes, actual child readiness, encrypted dedup and ten reloads
+ok 32 - original public native owner setup has zero preconsent writes, actual child readiness, encrypted dedup and ten reloads
+  ---
+  duration_ms: 229.206916
+  type: 'test'
+  ...
+# Subtest: native startup future-schema refusal preserves setup/database facts and mounts no task route
+ok 33 - native startup future-schema refusal preserves setup/database facts and mounts no task route
+  ---
+  duration_ms: 64.000416
+  type: 'test'
+  ...
+# Subtest: installed entry missing concrete carrier remains pending before any storage or runtime
+ok 34 - installed entry missing concrete carrier remains pending before any storage or runtime
+  ---
+  duration_ms: 1.120959
+  type: 'test'
+  ...
+# (node:81864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI1-01/02 independent closed installed-only config retains exact detached integer choices
+ok 35 - NI1-01/02 independent closed installed-only config retains exact detached integer choices
+  ---
+  duration_ms: 4.187833
+  type: 'test'
+  ...
+# Subtest: NI1-01 independent hidden nested config and revoked Proxy cannot invoke supplied hooks
+ok 36 - NI1-01 independent hidden nested config and revoked Proxy cannot invoke supplied hooks
+  ---
+  duration_ms: 1.115791
+  type: 'test'
+  ...
+# Subtest: NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unambiguous private namespaces
+ok 37 - NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unambiguous private namespaces
+  ---
+  duration_ms: 10.861666
+  type: 'test'
+  ...
+# Subtest: NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import
+    # Subtest: canonical
+    ok 1 - canonical
+      ---
+      duration_ms: 103.301333
+      type: 'test'
+      ...
+    # Subtest: missing
+    ok 2 - missing
+      ---
+      duration_ms: 112.4685
+      type: 'test'
+      ...
+    # Subtest: altered-source
+    ok 3 - altered-source
+      ---
+      duration_ms: 145.844833
+      type: 'test'
+      ...
+    # Subtest: conditional-alias
+    ok 4 - conditional-alias
+      ---
+      duration_ms: 170.242792
+      type: 'test'
+      ...
+    # Subtest: metadata-symlink
+    ok 5 - metadata-symlink
+      ---
+      duration_ms: 168.093083
+      type: 'test'
+      ...
+    # Subtest: foreign-root
+    ok 6 - foreign-root
+      ---
+      duration_ms: 163.139583
+      type: 'test'
+      ...
+    # Subtest: wrong-name
+    ok 7 - wrong-name
+      ---
+      duration_ms: 152.994667
+      type: 'test'
+      ...
+    1..7
+ok 38 - NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import
+  ---
+  duration_ms: 1150.444791
+  type: 'test'
+  ...
+# Subtest: NI1-N01/N05/N06 independent exact classification preserves fractions but denies every other registered name
+ok 39 - NI1-N01/N05/N06 independent exact classification preserves fractions but denies every other registered name
+  ---
+  duration_ms: 2.427
+  type: 'test'
+  ...
+# Subtest: NI1-N07/N08 independent recursive multibyte size, descriptor and pre-admission fences remain strict
+ok 40 - NI1-N07/N08 independent recursive multibyte size, descriptor and pre-admission fences remain strict
+  ---
+  duration_ms: 0.923458
+  type: 'test'
+  ...
+# Subtest: NI1-N09 independent captured decimals survive caller mutation and committed fact is not erased by late abort
+ok 41 - NI1-N09 independent captured decimals survive caller mutation and committed fact is not erased by late abort
+  ---
+  duration_ms: 0.270375
+  type: 'test'
+  ...
+# Subtest: NI1-05/08 actual encrypted empty memory and cross-workspace/profile identical query remain isolated
+ok 42 - NI1-05/08 actual encrypted empty memory and cross-workspace/profile identical query remain isolated
+  ---
+  duration_ms: 67.135041
+  type: 'test'
+  ...
+# Subtest: NI1-08 adapter-only encrypted correction/delete keeps fresh sourced revisions and historical replay after reopen
+ok 43 - NI1-08 adapter-only encrypted correction/delete keeps fresh sourced revisions and historical replay after reopen
+  ---
+  duration_ms: 66.850417
+  type: 'test'
+  ...
+# Subtest: NI1-09/10 public heuristic token N-1/N/N+1 removes optional records whole including separators
+ok 44 - NI1-09/10 public heuristic token N-1/N/N+1 removes optional records whole including separators
+  ---
+  duration_ms: 2.778458
+  type: 'test'
+  ...
+# Subtest: NI1-N04 actual store domain rejection after fractional transport leaves every row and receipt unchanged
+ok 45 - NI1-N04 actual store domain rejection after fractional transport leaves every row and receipt unchanged
+  ---
+  duration_ms: 55.989584
+  type: 'test'
+  ...
+# Subtest: NI1-08/10 actual sourced envelope protects current instructions and integer accounting against memory authority claims
+ok 46 - NI1-08/10 actual sourced envelope protects current instructions and integer accounting against memory authority claims
+  ---
+  duration_ms: 65.4825
+  type: 'test'
+  ...
+# Subtest: NI1-10 actual public-accounted complete encrypted envelope accepts65535/65536 and refuses65537 without a write
+    # Subtest: complete-envelope-65535
+    ok 1 - complete-envelope-65535
+      ---
+      duration_ms: 115.78125
+      type: 'test'
+      ...
+    # Subtest: complete-envelope-65536
+    ok 2 - complete-envelope-65536
+      ---
+      duration_ms: 64.279917
+      type: 'test'
+      ...
+    # Subtest: complete-envelope-65537
+    ok 3 - complete-envelope-65537
+      ---
+      duration_ms: 81.713833
+      type: 'test'
+      ...
+    1..3
+ok 47 - NI1-10 actual public-accounted complete encrypted envelope accepts65535/65536 and refuses65537 without a write
+  ---
+  duration_ms: 349.749291
+  type: 'test'
+  ...
+# Subtest: NI1-10 actual rendered protected minimum N-1 refuses and exactN/N+1 preserve text
+ok 48 - NI1-10 actual rendered protected minimum N-1 refuses and exactN/N+1 preserve text
+  ---
+  duration_ms: 23.670583
+  type: 'test'
+  ...
+# Subtest: NI1-11 actual async namespace and task/auth races refuse stale prepared writes
+    # Subtest: memory
+    ok 1 - memory
+      ---
+      duration_ms: 36.840375
+      type: 'test'
+      ...
+    # Subtest: task
+    ok 2 - task
+      ---
+      duration_ms: 12.374625
+      type: 'test'
+      ...
+    1..2
+ok 49 - NI1-11 actual async namespace and task/auth races refuse stale prepared writes
+  ---
+  duration_ms: 49.410458
+  type: 'test'
+  ...
+# Subtest: NI1-14 actual registered secret is refused before memory/context persistence
+ok 50 - NI1-14 actual registered secret is refused before memory/context persistence
+  ---
+  duration_ms: 7.1475
+  type: 'test'
+  ...
+# Subtest: NI1-06/07 public native features before consent are closed read-only metadata, never memory authority
+ok 51 - NI1-06/07 public native features before consent are closed read-only metadata, never memory authority
+  ---
+  duration_ms: 78.425334
+  type: 'test'
+  ...
+# Subtest: NI1-N02/N03 public native decimal domains, exact receipts and encrypted context survive disable/re-enable own closure
+ok 52 - NI1-N02/N03 public native decimal domains, exact receipts and encrypted context survive disable/re-enable own closure
+  ---
+  duration_ms: 180.79425
+  type: 'test'
+  ...
+# Subtest: NI1-11/13 independent already-open processes deduplicate one decimal command and retain abrupt acknowledgement
+ok 53 - NI1-11/13 independent already-open processes deduplicate one decimal command and retain abrupt acknowledgement
+  ---
+  duration_ms: 379.474042
+  type: 'test'
+  ...
+# (node:81865) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installed config preserves base validation, ordinary/null prototypes, detached frozen choices and disabled default
+ok 54 - installed config preserves base validation, ordinary/null prototypes, detached frozen choices and disabled default
+  ---
+  duration_ms: 2.686541
+  type: 'test'
+  ...
+# Subtest: closed memory flags and exact enabled integer boundary partitions
+    # Subtest: byteLimit accepts 1
+    ok 1 - byteLimit accepts 1
+      ---
+      duration_ms: 0.101709
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 2
+    ok 2 - byteLimit accepts 2
+      ---
+      duration_ms: 0.144417
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 65535
+    ok 3 - byteLimit accepts 65535
+      ---
+      duration_ms: 0.0615
+      type: 'test'
+      ...
+    # Subtest: byteLimit accepts 65536
+    ok 4 - byteLimit accepts 65536
+      ---
+      duration_ms: 1.1705
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 1
+    ok 5 - tokenLimit accepts 1
+      ---
+      duration_ms: 0.278083
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 2
+    ok 6 - tokenLimit accepts 2
+      ---
+      duration_ms: 0.084417
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 131071
+    ok 7 - tokenLimit accepts 131071
+      ---
+      duration_ms: 0.283625
+      type: 'test'
+      ...
+    # Subtest: tokenLimit accepts 131072
+    ok 8 - tokenLimit accepts 131072
+      ---
+      duration_ms: 0.208917
+      type: 'test'
+      ...
+    1..8
+ok 55 - closed memory flags and exact enabled integer boundary partitions
+  ---
+  duration_ms: 5.065334
+  type: 'test'
+  ...
+# Subtest: hostile config descriptors/prototypes never invoke hooks or reveal supplied canaries
+ok 56 - hostile config descriptors/prototypes never invoke hooks or reveal supplied canaries
+  ---
+  duration_ms: 0.544208
+  type: 'test'
+  ...
+# Subtest: actual public estimate has exact UTF-16 heuristic and private stable namespace across bounds/scope partitions
+ok 57 - actual public estimate has exact UTF-16 heuristic and private stable namespace across bounds/scope partitions
+  ---
+  duration_ms: 9.11775
+  type: 'test'
+  ...
+# Subtest: rendered accounting boundaries drop whole backgrounds and protect exact instructions
+ok 58 - rendered accounting boundaries drop whole backgrounds and protect exact instructions
+  ---
+  duration_ms: 3.036459
+  type: 'test'
+  ...
+# Subtest: canonical public estimator provenance refuses missing/mixed/aliased/source/lock mutations without fallback
+ok 59 - canonical public estimator provenance refuses missing/mixed/aliased/source/lock mutations without fallback
+  ---
+  duration_ms: 1347.069833
+  type: 'test'
+  ...
+# Subtest: normal native disabled/omitted config retains exact carriers and cannot enable later features
+ok 60 - normal native disabled/omitted config retains exact carriers and cannot enable later features
+  ---
+  duration_ms: 304.406583
+  type: 'test'
+  ...
+# Subtest: normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context
+ok 61 - normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context
+  ---
+  duration_ms: 330.604417
+  type: 'test'
+  ...
+# Subtest: actual encrypted context refuses protected overflow and stale CAS without a context write
+ok 62 - actual encrypted context refuses protected overflow and stale CAS without a context write
+  ---
+  duration_ms: 20.142125
+  type: 'test'
+  ...
+# Subtest: independent processes race one encrypted memory revision and preserve the acknowledged receipt on abrupt exit
+ok 63 - independent processes race one encrypted memory revision and preserve the acknowledged receipt on abrupt exit
+  ---
+  duration_ms: 307.053459
+  type: 'test'
+  ...
+# (node:81866) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: omitted normal worker cached route is closed disabled and causes zero setup/session work
+ok 64 - omitted normal worker cached route is closed disabled and causes zero setup/session work
+  ---
+  duration_ms: 44.096959
+  type: 'test'
+  ...
+# Subtest: enabled cached worker status before consent displays choices/plaintext storage but does not resolve optional facts
+ok 65 - enabled cached worker status before consent displays choices/plaintext storage but does not resolve optional facts
+  ---
+  duration_ms: 37.494959
+  type: 'test'
+  ...
+# Subtest: actual original public owner auth and closed route reject anonymous and caller authority fields
+ok 66 - actual original public owner auth and closed route reject anonymous and caller authority fields
+  ---
+  duration_ms: 26.315875
+  type: 'test'
+  ...
+# Subtest: confirmed normal setup mounts lazy worker while missing optional services leave task/memory usable and native work unavailable
+ok 67 - confirmed normal setup mounts lazy worker while missing optional services leave task/memory usable and native work unavailable
+  ---
+  duration_ms: 211.209
+  type: 'test'
+  ...
+# Subtest: normal parent disposal withdraws cached worker status and original child routes without worker creation
+ok 68 - normal parent disposal withdraws cached worker status and original child routes without worker creation
+  ---
+  duration_ms: 138.33
+  type: 'test'
+  ...
+1..68
+# tests 119
+# suites 0
+# pass 119
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3332.483

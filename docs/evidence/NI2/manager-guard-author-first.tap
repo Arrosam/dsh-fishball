@@ -1,0 +1,178 @@
+TAP version 13
+# (node:84929) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: lazy installed runtime receives only closed private seams and boots without optional native services or resolver work
+ok 1 - lazy installed runtime receives only closed private seams and boots without optional native services or resolver work
+  ---
+  duration_ms: 28.598542
+  type: 'test'
+  ...
+# Subtest: original module-prepared context receipt is detached, frozen and synchronously observed exactly once before owner reply
+ok 2 - original module-prepared context receipt is detached, frozen and synchronously observed exactly once before owner reply
+  ---
+  duration_ms: 25.1365
+  type: 'test'
+  ...
+# Subtest: receipt observer failure preserves actual policy commit, exposes bounded uncertainty and seals installed admission
+ok 3 - receipt observer failure preserves actual policy commit, exposes bounded uncertainty and seals installed admission
+  ---
+  duration_ms: 11.857875
+  type: 'test'
+  ...
+# Subtest: lazy original preview closures refuse before construction and never mint caller accept or a boot grant
+ok 4 - lazy original preview closures refuse before construction and never mint caller accept or a boot grant
+  ---
+  duration_ms: 10.391292
+  type: 'test'
+  ...
+# Subtest: closed installer rejects authority-bearing extras, missing operations and mixed advanced worker/preview composition
+ok 5 - closed installer rejects authority-bearing extras, missing operations and mixed advanced worker/preview composition
+  ---
+  duration_ms: 65.967833
+  type: 'test'
+  ...
+# Subtest: the one original ApprovalPreview creates only the actual once-observed grant and refuses concurrent or repeated confirmation
+ok 6 - the one original ApprovalPreview creates only the actual once-observed grant and refuses concurrent or repeated confirmation
+  ---
+  duration_ms: 29.883166
+  type: 'test'
+  ...
+# (node:84930) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: omitted normal worker cached route is closed disabled and causes zero setup/session work
+ok 7 - omitted normal worker cached route is closed disabled and causes zero setup/session work
+  ---
+  duration_ms: 33.509375
+  type: 'test'
+  ...
+# Subtest: enabled cached worker status before consent displays choices/plaintext storage but does not resolve optional facts
+ok 8 - enabled cached worker status before consent displays choices/plaintext storage but does not resolve optional facts
+  ---
+  duration_ms: 18.750959
+  type: 'test'
+  ...
+# Subtest: actual original public owner auth and closed route reject anonymous and caller authority fields
+ok 9 - actual original public owner auth and closed route reject anonymous and caller authority fields
+  ---
+  duration_ms: 16.380958
+  type: 'test'
+  ...
+# Subtest: confirmed normal setup mounts lazy worker while missing optional services leave task/memory usable and native work unavailable
+ok 10 - confirmed normal setup mounts lazy worker while missing optional services leave task/memory usable and native work unavailable
+  ---
+  duration_ms: 149.193125
+  type: 'test'
+  ...
+# Subtest: normal parent disposal withdraws cached worker status and original child routes without worker creation
+ok 11 - normal parent disposal withdraws cached worker status and original child routes without worker creation
+  ---
+  duration_ms: 73.600917
+  type: 'test'
+  ...
+# (node:84931) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: enabled normal installer boots with missing optional services and leaves existing task-memory usable
+ok 12 - enabled normal installer boots with missing optional services and leaves existing task-memory usable
+  ---
+  duration_ms: 72.900167
+  type: 'test'
+  ...
+# Subtest: catalogue and explicit policy consent use actual original facts and zero boot/session work
+ok 13 - catalogue and explicit policy consent use actual original facts and zero boot/session work
+  ---
+  duration_ms: 168.884542
+  type: 'test'
+  ...
+# Subtest: complete fresh normal path requires actual prepared context, separate action consent, idle create, native output capture and explicit finish
+ok 14 - complete fresh normal path requires actual prepared context, separate action consent, idle create, native output capture and explicit finish
+  ---
+  duration_ms: 885.871417
+  type: 'test'
+  ...
+# Subtest: normal client consumes actual original encrypted-core/native receipts through all explicit create operations
+ok 15 - normal client consumes actual original encrypted-core/native receipts through all explicit create operations
+  ---
+  duration_ms: 887.31525
+  type: 'test'
+  ...
+# Subtest: only the DSH admitted operator can reach trusted closures
+ok 16 - only the DSH admitted operator can reach trusted closures
+  ---
+  duration_ms: 1.271875
+  type: 'test'
+  ...
+# Subtest: payload accessors, proxies, sparse arrays and authority prototypes never run
+ok 17 - payload accessors, proxies, sparse arrays and authority prototypes never run
+  ---
+  duration_ms: 0.515959
+  type: 'test'
+  ...
+# Subtest: capture disconnects mutable input and abort fences only new admission
+ok 18 - capture disconnects mutable input and abort fences only new admission
+  ---
+  duration_ms: 1.0585
+  type: 'test'
+  ...
+# Subtest: disposal closes captured handlers immediately and secret errors stay redacted
+ok 19 - disposal closes captured handlers immediately and secret errors stay redacted
+  ---
+  duration_ms: 0.423916
+  type: 'test'
+  ...
+# Subtest: invocation context is exact immutable private authority, detached from payload
+ok 20 - invocation context is exact immutable private authority, detached from payload
+  ---
+  duration_ms: 2.138125
+  type: 'test'
+  ...
+# Subtest: guarded abort after await prevents mutation with bounded code
+ok 21 - guarded abort after await prevents mutation with bounded code
+  ---
+  duration_ms: 0.271583
+  type: 'test'
+  ...
+# Subtest: guarded peer after await prevents mutation with bounded code
+ok 22 - guarded peer after await prevents mutation with bounded code
+  ---
+  duration_ms: 0.138958
+  type: 'test'
+  ...
+# Subtest: guarded dispose after await prevents mutation with bounded code
+ok 23 - guarded dispose after await prevents mutation with bounded code
+  ---
+  duration_ms: 0.14125
+  type: 'test'
+  ...
+# Subtest: guarded alive after await prevents mutation with bounded code
+ok 24 - guarded alive after await prevents mutation with bounded code
+  ---
+  duration_ms: 0.070792
+  type: 'test'
+  ...
+# Subtest: opt-in final check preserves committed effects and denies lost response
+ok 25 - opt-in final check preserves committed effects and denies lost response
+  ---
+  duration_ms: 0.221708
+  type: 'test'
+  ...
+# Subtest: parallel requests retain separate guards and legacy ignored context retains admitted response
+ok 26 - parallel requests retain separate guards and legacy ignored context retains admitted response
+  ---
+  duration_ms: 0.476209
+  type: 'test'
+  ...
+# Subtest: replacement peer is denied before any new operation even with original admitted peer
+ok 27 - replacement peer is denied before any new operation even with original admitted peer
+  ---
+  duration_ms: 0.062625
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2272.921875

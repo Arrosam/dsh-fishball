@@ -1,0 +1,24 @@
+{
+  "node": "22.22.2",
+  "coreSourceHold": "1b140e452bc48c470b9005664be8254ed2d4388e69d9817eb6353c9a21e06046",
+  "coreSourceMatch": true,
+  "commands": [
+    {
+      "command": "/opt/homebrew/bin/node --check src/runtime-plugin.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check src/operator-bridge.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check src/installed-worker.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node scripts/build-client.mjs --check",
+      "exitCode": 0
+    }
+  ],
+  "scope": "syntax and deterministic current bundle only; no visual or CODE acceptance"
+}

@@ -1,4 +1,5 @@
 import { types } from 'node:util';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { pathToFileURL } from 'node:url';
 import { BootstrapError, Config, record, validateConfig } from './config.mjs';
 import { requireHost, resolveHostSource } from './host-probe.mjs';
@@ -16,6 +17,8 @@ import { NotificationService } from './notifications.mjs';
 import { EventRouter } from './events.mjs';
 import { ScheduleDriver } from './scheduler.mjs';
 import { ChatAdapter } from './chat.mjs';
+import { assertInstalledWorkerInvocation, runInstalledWorkerInvocation } from './installed-invocation.mjs';
+import { workerDigest } from './environment.mjs';
 
 const { HostConnectionService } = await import(pathToFileURL(
   resolveHostSource('@deepseek-ai/dsh-client-connection')).href);
@@ -79,7 +82,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
             { handle: coordinatorHandle, role: 'coordinator', scope }, { handle: hostHandle, role: 'host', scope }],
           limits: { ...config.limits, ...runtimeLimits }, hostPermission: effectivePermission, forbiddenSecrets });
       } finally { key.fill(0); }
-      let active = true, bridge, manager, preview, reviewerDisposer, automationDisposer, router, schedules;
+      let active = true, bridge, manager, installedManager, preview, reviewerDisposer, automationDisposer, router, schedules;
       const chats = new Set(), scheduleTokens = new Map();
       const alive = () => active && ctx.fiber.state === 2 && ctx.fiber.uid !== null;
       const assertAlive = () => { if (!alive()) throw new BootstrapError('SERVICE_DISPOSED'); };
@@ -110,6 +113,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         try { await reviewerDisposer?.(); } catch { failed = true; }
         try { await installed?.dispose(); } catch { failed = true; }
         try { await manager?.close(); } catch { failed = true; }
+        finally { installedManager?.seal(); }
         try { await bridge?.dispose(); } catch { failed = true; }
         try { store.close(); } catch { failed = true; }
         if (failed) throw new BootstrapError('RUNTIME_CLEANUP_UNAVAILABLE');
@@ -135,14 +139,15 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         nativeCompositionAttempted = true;
         try {
           const adapter = new NativeAdapter(ctx, { ...value.worker, nativeHooks: value.nativeHooks, messageAdmission: () => false });
-          manager = new WorkerManager({ store, hostHandle, adapter });
+          installedManager = installedManagerBinding(ctx, store, adapter);
+          manager = new WorkerManager({ store: installedManager.store, hostHandle, adapter: installedManager.adapter });
           return Object.freeze({
-            dispatch: input => observe('dispatch', input, () => manager.dispatch(owner, input)),
-            executeContext: input => observe('execute', input, () => manager.executeContext(owner, input)),
-            query: input => manager.query(owner, input),
-            sessionLink: input => manager.sessionLink(owner, input),
-            captureResult: input => observe('captureResult', input, () => manager.captureValidatedResult(owner, input)),
-            finishExecution: input => observe('finishExecution', input, () => manager.finishExecution(owner, input)),
+            dispatch: input => installedManager.run(() => observe('dispatch', input, () => manager.dispatch(owner, input))),
+            executeContext: input => installedManager.run(() => observe('execute', input, () => manager.executeContext(owner, input))),
+            query: input => installedManager.run(() => manager.query(owner, input)),
+            sessionLink: input => installedManager.run(() => manager.sessionLink(owner, input)),
+            captureResult: input => installedManager.run(() => observe('captureResult', input, () => manager.captureValidatedResult(owner, input))),
+            finishExecution: input => installedManager.run(() => observe('finishExecution', input, () => manager.finishExecution(owner, input))),
           });
         } catch { installedSealed = true; throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); }
       };
@@ -321,9 +326,22 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
       if (installed) {
         // Successful original mutations notify the single private observer.
         // Grant already observes its actual store mutation inside Preview.
-        for (const name of ['prepareContext','policy','plan','revoke','revise','control','dispatch','execute','captureResult']) {
+        for (const name of ['prepareContext','policy','plan','revoke','revise']) {
           const original = operations[name];
           operations[name] = input => observe(name, input, () => original(input));
+        }
+        const originalControl = operations.control;
+        operations.control = (input, context) => {
+          record(context, ['assertCurrent'], 'SERVICE_DISPOSED');
+          if (typeof context.assertCurrent !== 'function') throw new BootstrapError('SERVICE_DISPOSED');
+          return runInstalledWorkerInvocation(ctx, context.assertCurrent, () => {
+            assertInstalledWorkerInvocation(ctx);
+            const invoke = () => observe('control', input, () => originalControl(input));
+            return installedManager ? installedManager.run(invoke) : invoke();
+          });
+        };
+        for (const name of ['dispatch','execute','query','sessionLink','handoff','captureResult']) {
+          operations[name] = () => { throw new BootstrapError('WORKER_REQUEST_DENIED'); };
         }
         Object.assign(operations, installed.operations);
       }
@@ -346,6 +364,143 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
     }, 'df.runtime.lifecycle');
   }
   return Object.freeze({ name: 'dsh-fishball', inject: Object.freeze(['connection', 'sessions', 'approval', 'webServer', ...(worker ? ['agents', 'llm', 'tools'] : [])]), Config, apply });
+}
+
+// Private normal-manager binding. It forwards to the same original store and
+// adapter; no owner JSON, digest or copied observation establishes provenance.
+function installedManagerBinding(ctx, originalStore, originalAdapter) {
+  const observations = new AsyncLocalStorage();
+  const invocations = new AsyncLocalStorage();
+  const claims = new WeakSet(), tickets = new WeakMap(), retained = new Set();
+  let observationOpen = true;
+  const denied = () => { throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); };
+  const invoke = (method, args) => Reflect.apply(originalAdapter[method], originalAdapter, args);
+  const forward = (method, args) => Reflect.apply(originalStore[method], originalStore, args);
+  const assertOwner = () => {
+    if (invocations.getStore()?.open !== true) throw new BootstrapError('SERVICE_DISPOSED');
+    return assertInstalledWorkerInvocation(ctx);
+  };
+  function ticketRecord(ticket) {
+    const value = tickets.get(ticket);
+    if (!value || !observationOpen) denied();
+    return value;
+  }
+  function actualReceipt(ticket, receipt) {
+    const value = ticketRecord(ticket), claim = value.claim;
+    if (!claim || !receipt || receipt.taskRef !== value.taskRef ||
+        receipt.actionRef !== value.actionRef || receipt.actionDigest !== value.actionDigest ||
+        receipt.claimRef !== claim.claimRef || receipt.reservationRef !== claim.reservationRef ||
+        receipt.generationRef !== value.generationRef ||
+        typeof claim.sessionRef === 'string' && receipt.sessionRef !== claim.sessionRef ||
+        value.sessionRef !== undefined && receipt.sessionRef !== value.sessionRef) denied();
+    referenceCheck(receipt.sessionRef);
+    value.sessionRef ??= receipt.sessionRef;
+    return Object.freeze({ value, receipt });
+  }
+  function publish(ticket, receipt) {
+    // The exact original adapter return is delivered in a separate source
+    // carrier. The manager's later explicit continuation still has its own
+    // owner carrier; a denied owner never acquires this carrier by fallback.
+    if (!observationOpen) return;
+    const source = actualReceipt(ticket, receipt);
+    if (source.value.listener) {
+      observations.run(source, () => {
+        try { source.value.listener(receipt); } catch { /* actual facts stay held if storage refuses */ }
+      });
+    }
+  }
+  function returned(method, args, receiptOf = value => value) {
+    const result = invoke(method, args);
+    const capture = value => { publish(args[0], receiptOf(value)); return value; };
+    return types.isPromise(result) ? result.then(capture) : capture(result);
+  }
+  const store = {};
+  for (const method of ['snapshot', 'readData', 'assertClaimCurrent']) {
+    store[method] = (...args) => forward(method, args);
+  }
+  for (const method of ['claimAction', 'beginContextExecution', 'assertExecutionCurrent',
+    'writeArtifact', 'settleAction', 'control', 'putHandoff']) {
+    store[method] = (...args) => {
+      assertOwner();
+      const receipt = forward(method, args);
+      if (method === 'claimAction') claims.add(receipt);
+      return receipt;
+    };
+  }
+  store.workerObservation = (...args) => {
+    const source = observations.getStore();
+    if (source) {
+      if (!observationOpen || !retained.has(source.value) || !source.value.claim) denied();
+      const input = args[1], receipt = source.receipt;
+      // Match the complete original binding, plus the manager's exact
+      // observation command. Nothing in input can create this source carrier.
+      const fields = ['taskRef', 'claimRef', 'generationRef', 'phase', 'cursor', 'evidenceRef', 'sessionRef'];
+      if (!input || Object.keys(input).some(key => ![...fields, 'commandRef'].includes(key)) ||
+          fields.some(key => input[key] !== receipt[key]) ||
+          input.commandRef !== workerDigest('worker-observation', receipt.claimRef,
+            receipt.phase, receipt.cursor, receipt.evidenceRef)) denied();
+    } else {
+      // Includes submitted/cancel_requested and explicit reconciliation. A
+      // timeout/error's fabricated unknown has no owned-receipt authority.
+      assertOwner();
+    }
+    return forward('workerObservation', args);
+  };
+  const adapter = {
+    async prepare(...args) {
+      const ticket = await invoke('prepare', args);
+      if (!observationOpen || tickets.has(ticket)) denied();
+      const [spec, task, actionDigest] = args;
+      const value = { taskRef: task.taskRef, actionRef: spec.actionRef, actionDigest,
+        generationRef: spec.executor.generationRef, claim: null, listener: null };
+      tickets.set(ticket, value); retained.add(value);
+      return ticket;
+    },
+    bindClaim(ticket, claim, assertion) {
+      const value = ticketRecord(ticket);
+      if (!claims.has(claim) || value.claim || claim.task?.taskRef !== value.taskRef ||
+          claim.actionRef !== value.actionRef || claim.actionDigest !== value.actionDigest ||
+          claim.generationRef !== value.generationRef) denied();
+      const result = invoke('bindClaim', [ticket, claim, assertion]);
+      value.claim = claim;
+      return result;
+    },
+    observe(ticket, listener) {
+      const value = ticketRecord(ticket);
+      if (value.listener || typeof listener !== 'function') denied();
+      value.listener = listener;
+      // Retain the actual manager listener through its original shutdown
+      // drain even after detaching the native subscription. Seal clears it.
+      return invoke('observe', [ticket, receipt => publish(ticket, receipt)]);
+    },
+  };
+  for (const method of ['create', 'resume', 'query', 'cancel', 'dispose', 'shutdown']) {
+    adapter[method] = (...args) => returned(method, args);
+  }
+  for (const method of ['executeContext', 'finishExecution']) {
+    adapter[method] = (...args) => returned(method, args, value => value.worker);
+  }
+  for (const method of ['readResult', 'validateResult', 'sessionLink', 'handoff']) {
+    adapter[method] = (...args) => invoke(method, args);
+  }
+  return Object.freeze({ store: Object.freeze(store), adapter: Object.freeze(adapter),
+    run(callback) {
+      const invocation = { open: true };
+      return invocations.run(invocation, () => {
+        try {
+          assertOwner();
+          const result = callback();
+          if (types.isPromise(result)) return result.finally(() => { invocation.open = false; });
+          invocation.open = false;
+          return result;
+        } catch (error) { invocation.open = false; throw error; }
+      });
+    },
+    seal() {
+      observationOpen = false;
+      for (const value of retained) { value.listener = null; value.claim = null; }
+      retained.clear();
+    } });
 }
 
 function referenceCheck(value) {

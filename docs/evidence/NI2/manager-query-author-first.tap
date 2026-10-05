@@ -1,0 +1,68 @@
+TAP version 13
+# (node:85377) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: fresh query after denied native publication returns the post-observation authoritative task
+not ok 1 - fresh query after denied native publication returns the post-observation authoritative task
+  ---
+  duration_ms: 475.8715
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker.test.mjs:135:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    query reply must include its actual newly recorded observation
+    + actual - expected
+    
+      {
+        authEpoch: 1,
+        createdAt: 1791158089779,
+        ownerRef: '45cbf383845b9eef55aa646f0dddf7dc630ed8d559feef69525a24b3f046cbef',
+    +   status: 'running',
+    -   status: 'recovery_required',
+        taskRef: '05676374058e1aaeca972614148f6ca290cf7f60972494e50acb7c3ff2d45765',
+    +   taskVersion: 3,
+    +   updatedAt: 1791158090074,
+    +   version: 3,
+    -   taskVersion: 4,
+    -   updatedAt: 1791158090138,
+    -   version: 4,
+        workspaceRef: '3d20a6b68c4a8dbf5a4ab59d680fdbfc1ff8366c812a189356228d41392e8551'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    ownerRef: '45cbf383845b9eef55aa646f0dddf7dc630ed8d559feef69525a24b3f046cbef'
+    workspaceRef: '3d20a6b68c4a8dbf5a4ab59d680fdbfc1ff8366c812a189356228d41392e8551'
+    taskRef: '05676374058e1aaeca972614148f6ca290cf7f60972494e50acb7c3ff2d45765'
+    status: 'recovery_required'
+    version: 4
+    taskVersion: 4
+    authEpoch: 1
+    createdAt: 1791158089779
+    updatedAt: 1791158090138
+  actual:
+    authEpoch: 1
+    createdAt: 1791158089779
+    ownerRef: '45cbf383845b9eef55aa646f0dddf7dc630ed8d559feef69525a24b3f046cbef'
+    status: 'running'
+    taskRef: '05676374058e1aaeca972614148f6ca290cf7f60972494e50acb7c3ff2d45765'
+    taskVersion: 3
+    updatedAt: 1791158090074
+    version: 3
+    workspaceRef: '3d20a6b68c4a8dbf5a4ab59d680fdbfc1ff8366c812a189356228d41392e8551'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/test/installed-worker.test.mjs:143:9)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 690.735625

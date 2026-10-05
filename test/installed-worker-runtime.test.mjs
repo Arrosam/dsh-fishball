@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
 import { createRuntimePlugin } from '../src/runtime-plugin.mjs';
 import { reference } from '../src/runtime-store.mjs';
+import { BootstrapError } from '../src/config.mjs';
 
 const packages = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const { Context } = await import(pathToFileURL(`${packages}/cordis/lib/index.js`).href);
@@ -118,4 +119,11 @@ test('the one original ApprovalPreview creates only the actual once-observed gra
  const [first,second]=await Promise.allSettled([api.grantOwnerPreview(grant),api.grantOwnerPreview(grant)]);assert.equal(first.status,'fulfilled');assert.equal(second.status,'rejected');assert.equal(second.reason.code,'PREVIEW_BUSY');
  const observed=events.filter(e=>e.operation==='grant');assert.equal(observed.length,1);const {previewRef,...originalGrant}=grant;assert.deepEqual(observed[0].input,originalGrant);assert.deepEqual(observed[0].receipt,first.value);assert.equal(Object.isFrozen(observed[0].receipt.task),true);
  await assert.rejects(api.grantOwnerPreview(grant),{code:'PREVIEW_STALE'});assert.equal(events.filter(e=>e.operation==='grant').length,1);assert.equal(f.ctx.sessions.list().length,0);await fiber.dispose();
+});
+test('native normal operation failures project only the closed NI2 source and availability codes',async t=>{
+ const f=await fixture(t);let selected;
+ const codes=['WORKER_NOT_CONFIGURED','WORKER_CATALOG_UNAVAILABLE','WORKER_POLICY_REQUIRED','WORKER_POLICY_STALE','WORKER_CONFIRMATION_REQUIRED','WORKER_PREVIEW_STALE','WORKER_PRESET_UNAVAILABLE','WORKER_PERSISTENCE_UNSUPPORTED','WORKER_SOURCE_UNAVAILABLE','WORKER_REQUEST_DENIED','WORKER_FINISH_UNAVAILABLE'];
+ const fiber=f.ctx.plugin(createRuntimePlugin(options(installer(()=>({operations:Object.fromEntries(names.map(name=>[name,()=>{throw new BootstrapError(selected);}])),})))),{databasePath:join(f.directory,'source-codes.sqlite'),limits:{maxMetadataBytes:4096}});await fiber;
+ for(const code of [...codes,'PRIVATE_PROVIDER_ERROR_CANARY']){selected=code;const result=(await f.send('workerCatalog')).result;const projected=code==='PRIVATE_PROVIDER_ERROR_CANARY'?'OPERATION_REJECTED':code;assert.deepEqual(result,{ok:false,error:{code:projected,message:projected,details:{}}});assert.equal(JSON.stringify(result).includes('CANARY'),false);}
+ await fiber.dispose();
 });

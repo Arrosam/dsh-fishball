@@ -1,6 +1,8 @@
 import { pathToFileURL } from 'node:url';
 import { Config, validateInstalledConfig } from './installed-config.mjs';
 import { MEMORY_ACCOUNTING, prepareInstalledMemory } from './installed-memory.mjs';
+import { createInstalledWorker } from './installed-worker.mjs';
+import { canonicalDigest } from './runtime-security.mjs';
 import { requireHost, resolveHostSource } from './host-probe.mjs';
 import { createRuntimePlugin } from './runtime-plugin.mjs';
 import { SETUP_BOUNDS, SetupError, SetupState } from './setup-state.mjs';
@@ -29,6 +31,7 @@ export async function apply(ctx, input) {
     activate: async ({ identity, encryptionKey }) => {
       if (!alive()) throw new SetupError('SERVICE_DISPOSED');
       const options = { identity: () => identity, encryptionKey: () => encryptionKey, hostPermission: () => false,
+        ...createInstalledWorker({ selection: worker, identity, profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name } }),
         ...(bindMemory ? { memory: bindMemory(identity, { dir: ctx.profileContext.dir, name: ctx.profileContext.name }) } : {}) };
       const current = ctx.plugin(createRuntimePlugin(options), config); child = current;
       try { await current; if (!alive()) throw new SetupError('SERVICE_DISPOSED'); current.ctx.df.diagnostics(); }
@@ -52,11 +55,22 @@ export async function apply(ctx, input) {
     if (admittedPeer !== peer) return rejected('OPERATOR_REQUIRED');
     if (signal?.aborted) return rejected('REQUEST_ABORTED');
     try {
-      if (!['v1/status', 'v1/prepare', 'v1/confirm', 'v1/features'].includes(endpoint)) return rejected('ENDPOINT_NOT_FOUND');
+      if (!['v1/status', 'v1/prepare', 'v1/confirm', 'v1/features', 'v1/workerStatus'].includes(endpoint)) return rejected('ENDPOINT_NOT_FOUND');
       record(payload, endpoint === 'v1/confirm' ? ['previewRef', 'planDigest', 'accept'] : [], 'SETUP_INVALID_INPUT');
       if (Buffer.byteLength(JSON.stringify(payload)) > SETUP_BOUNDS.inputBytes) throw new SetupError('SETUP_INVALID_INPUT');
       let value;
-      if (endpoint === 'v1/features') {
+      if (endpoint === 'v1/workerStatus') {
+        value = worker.enabled ? Object.freeze({ enabled: true, phase: 'setup_required', reasonCode: 'SETUP_REQUIRED',
+          configurationRef: canonicalDigest(['df.installed-worker-config/v1', worker]), policyVersion: null, selection: worker.selection, environment: worker.environment,
+          persistence: Object.freeze({ ...worker.persistence, encrypted: false }), bounds: worker.bounds,
+          accounting: null, pricing: 'unknown', actionsEnabled: false }) : Object.freeze({ enabled: false, phase: 'disabled', reasonCode: null,
+          configurationRef: null, policyVersion: null, selection: null, environment: null, persistence: null,
+          bounds: null, accounting: null, pricing: 'unknown', actionsEnabled: false });
+        if (worker.enabled && state.status({}).phase === 'ready' && child?.state === 2 && child.uid !== null) {
+          try { value = child.ctx.df.diagnostics().installedWorkerStatus; }
+          catch { value = Object.freeze({ ...value, phase: 'unavailable', reasonCode: 'WORKER_SOURCE_UNAVAILABLE' }); }
+        }
+      } else if (endpoint === 'v1/features') {
         let ready = false;
         if (memory.enabled && state.status({}).phase === 'ready' && child?.state === 2 && child.uid !== null) {
           try { ready = child.ctx.df.diagnostics().capabilities.memory === true; } catch { /* Closed/unavailable child is never ready. */ }

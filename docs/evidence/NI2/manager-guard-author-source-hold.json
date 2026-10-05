@@ -1,0 +1,57 @@
+{
+  "status": "AUTHOR HOLD; independent manager execution pending",
+  "node": "22.22.2",
+  "schemaVersion": 5,
+  "scope": "Installed same-original-store manager guards, original owned observation/drain, control/alias branches, stable NI2 projection, post-observation query task",
+  "files": [
+    {
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "sha256": "9227a0126e662bc150fa64b152cd4a380c8b70c7e5160a1ed151c6103422aa77"
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "sha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb"
+    },
+    {
+      "path": "test/installed-worker.test.mjs",
+      "sha256": "73d39e3d1c8a8b46bf475385c9586c70c5ab0a280170bef758e4d03cab0bcddf"
+    },
+    {
+      "path": "test/installed-worker-runtime.test.mjs",
+      "sha256": "d22914e0b439a104ac4ce41b5768984442f1ebc368e42a6755392c374fcf2653"
+    }
+  ],
+  "coreSourceHold": "1b140e452bc48c470b9005664be8254ed2d4388e69d9817eb6353c9a21e06046",
+  "finalTAP": {
+    "path": "docs/evidence/NI2/manager-guard-author-final.tap",
+    "sha256": "85c85ea8cf3d2f101bf32c0775cee8e59d2e73ab8e8bb62cf79fca1a4fa19ff6",
+    "pass": 53,
+    "fail": 0,
+    "skip": 0
+  },
+  "sourceFinding": {
+    "first": "manager-query-author-first.tap",
+    "pass": 0,
+    "fail": 1,
+    "retestPass": 1,
+    "change": "task snapshot moves after actual native observation; same assertion"
+  },
+  "fixtureFinding": {
+    "first": "manager-denial-author-first.tap",
+    "pass": 1,
+    "fail": 1,
+    "retestPass": 1,
+    "change": "projection expectation uses unchanged code/message/empty-details native bridge envelope"
+  },
+  "changedCoreProviderNativeFactsHelperPackage": false,
+  "limitations": [
+    "No schema7/cold provenance or resume",
+    "No independent manager verdict",
+    "No physical CLI/profile/listener/browser or real provider",
+    "CODE/model quality/full criteria/MVP/release HOLD"
+  ]
+}

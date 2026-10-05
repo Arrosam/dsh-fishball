@@ -1,0 +1,24 @@
+TAP version 13
+# (node:85477) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installed generic control commits and stops under its actual original owner invocation
+ok 1 - installed generic control commits and stops under its actual original owner invocation
+  ---
+  duration_ms: 584.469792
+  type: 'test'
+  ...
+# Subtest: actual original response-close signal after native stop retains control and held stopped facts
+ok 2 - actual original response-close signal after native stop retains control and held stopped facts
+  ---
+  duration_ms: 517.035584
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1332.872416
