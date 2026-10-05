@@ -1,0 +1,11 @@
+{
+  "kind": "root-passive-original-startup-diagnostic",
+  "originalPatch": "9c5528bd3ac54b43a93c9cac2ba924e7bfee6e766371f9c786bb73b9813729d5",
+  "diagnosticPatch": "7b66546994988d1fbf7cae5260fbf29ae1153c981da624214466f03408663845",
+  "helperSHA256": "e1632bcb1e5cc2184ab2e72aac99cf5d46d2ba005c31a53243f9a312058ea288",
+  "originalPort": 3080,
+  "originalHost": true,
+  "requestCount": 0,
+  "permissionChanges": false,
+  "reason": "first original startup exit13 before readiness; observe public Loader statuses and allowlisted error codes only"
+}

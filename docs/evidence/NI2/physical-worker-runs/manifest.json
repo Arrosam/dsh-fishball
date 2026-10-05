@@ -1,0 +1,330 @@
+{
+  "kind": "installed-original-first-worker-evidence-hold",
+  "artifactGit": "a58c522",
+  "artifactSHA256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+  "hostTarget": "DSH Web0.2.1-alpha.1",
+  "boundedWorker": "PASS; first fixture failures and affected repairs preserved",
+  "coldNativeOrigin": "unavailable",
+  "resume": "not-implemented",
+  "independentCODE": "platform-blocked; not substituted",
+  "browserRendered": false,
+  "aggregateAcceptance": "HOLD; all87 criteria retained",
+  "rawPrivateFilesCopied": 0,
+  "rows": [
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/archive-installed-product.sha256",
+      "bytes": 5023,
+      "sha256": "4f03d530b8695173b12a1270c3e587d64a3c6d16bfda54434e317044f2795783"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/final-file-pin-check.json",
+      "bytes": 16957,
+      "sha256": "563e081ae17a85813fb0b21812494f3a5d3640e2b60c3659024fd469b5793c6a"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/continue-first-chain.mjs.txt",
+      "bytes": 10143,
+      "sha256": "3f2707210052909b124952f410d6afd7d4de7d9dc20f4bdfa7825733549e444e"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/cordis.patch.yml.txt",
+      "bytes": 6053,
+      "sha256": "9c5528bd3ac54b43a93c9cac2ba924e7bfee6e766371f9c786bb73b9813729d5"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/cordis.yml.txt",
+      "bytes": 68,
+      "sha256": "752d0dd14f655a392c55432801ceb46909f1d593bae640e05fae949fba970e70"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/corrected-profile-cordis.patch.yml.txt",
+      "bytes": 6594,
+      "sha256": "6c6000a9d8d782ba2b2747d50629bf24fbc6dc70a4e045d71d79010dbd6ac315"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/launch.mjs.txt",
+      "bytes": 1705,
+      "sha256": "3f8a253b9f386e188e3ee069b33d8b9bf6ea0432487d3df4701448bd75517f5d"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/observer.mjs.txt",
+      "bytes": 10860,
+      "sha256": "ce1fb2bd91856434803e2e435652f22714d2de399751523d0efb858dc58cec2e"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/preparation-held.sha256.txt",
+      "bytes": 12497,
+      "sha256": "cd114dfddae72d2e2afe6e509753d9b9201dceebd142c5ca641ce8b850bd8d0a"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/preparation-source-hold.json.txt",
+      "bytes": 951,
+      "sha256": "969ca0b89143a8f42c145e2fe5384843a058c5bed5867be47dd8f7d8edb955fe"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/profile-package.json.txt",
+      "bytes": 361,
+      "sha256": "e0167fd1a092e1526abf7ca49357b3934314aec4937253994ca4433608023cdd"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/public-source-pins.json.txt",
+      "bytes": 15336,
+      "sha256": "45b3803ca55f383f65d69446ef5f311f9cc0b731d8ce93c623551854c0f67e70"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/read-first-chain.mjs.txt",
+      "bytes": 2014,
+      "sha256": "b8c8b927cefb89e672212a1aa91908392cc726ab80f346bad3f5cd5f5089e4ef"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/recipe.md.txt",
+      "bytes": 9841,
+      "sha256": "649259030af075e12a2549be8e9109d5c4b733c066e713802221d842e1c7a286"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/root-first-physical-observer.mjs.txt",
+      "bytes": 10833,
+      "sha256": "61cc8320586f2a8e6a6f289997585171f9c09fc496ed3880ed8a1c3782fd24c2"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/root-first-smoke.mjs.txt",
+      "bytes": 16797,
+      "sha256": "752e3513d783b0e57fed088cd04a13f0515005c3c89b6c3e3934620687b808fb"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/root-first-startup-observer.mjs.txt",
+      "bytes": 2371,
+      "sha256": "e1632bcb1e5cc2184ab2e72aac99cf5d46d2ba005c31a53243f9a312058ea288"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/root-original-first-profile-patch.yml.txt",
+      "bytes": 6053,
+      "sha256": "9c5528bd3ac54b43a93c9cac2ba924e7bfee6e766371f9c786bb73b9813729d5"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/root-pre-preset-profile-patch.yml.txt",
+      "bytes": 6246,
+      "sha256": "7b66546994988d1fbf7cae5260fbf29ae1153c981da624214466f03408663845"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/root-veto-startup-observer.mjs.txt",
+      "bytes": 3049,
+      "sha256": "3255db945e522a76a4af03a23f1a3bd010dcf24490336825d1be99caca357356"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/smoke.mjs.txt",
+      "bytes": 16937,
+      "sha256": "d3ed6ad3b695974c25e360e2150d7992bb66c9f93c2f446a26eb13d0633a24ac"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/helpers/startup-observer.mjs.txt",
+      "bytes": 3078,
+      "sha256": "030e2aa2a7a414a79402a326149f9dffad5dcc3dad922c3981235e94a8c7b4dd"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/initial-worker-continued-smoke.json",
+      "bytes": 753,
+      "sha256": "961b5fbb26883a435d807482dd1911d135ad923df7fb5b2099ff21d76633faaf"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/observer-state.json",
+      "bytes": 1983,
+      "sha256": "b832a6993a4a16bd60fdefe0dce608e45c93230b1b61fcec851135fbfd60001f"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-cli-approved-launch.jsonl",
+      "bytes": 202,
+      "sha256": "9f6c2a6d40e06495bb90c41d21650d31ef142cb88c992b0a2c63739817eb02d5"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-cli-cold-restart-launch.jsonl",
+      "bytes": 202,
+      "sha256": "9344864aa4aed2db38cba0fbbb9d873f02c9f4c4097f3e10ba5890c4845d4250"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-cli-delegation-retest-launch.jsonl",
+      "bytes": 202,
+      "sha256": "4c3f348cb712d52fb2b6ac1c35c578cad12ef4063bab50a6d6c6221c664f2beb"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-cli-diagnostic-launch.jsonl",
+      "bytes": 203,
+      "sha256": "fd245d28a0168f94d655d30433ef571fa87917be00bc9cf89bc26f34c02565a5"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-cli-diagnostic2-launch.jsonl",
+      "bytes": 203,
+      "sha256": "76d0477d6cc097f38eb5fc661027a1a6ad8f2069878e202f53fbca9b9b12558f"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-cli-first-launch.jsonl",
+      "bytes": 203,
+      "sha256": "ed67f467dc5ebf97df025825374349ffd32431c76956d508301193af83a90f73"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/original-startup-observer.json",
+      "bytes": 32291,
+      "sha256": "9269722456ec2ebd57d0c12299acdeb1394ddae7908271f69b0fbb5fc38810d5"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/reload-worker-smoke.json",
+      "bytes": 420,
+      "sha256": "bf284174d9c16f02d895a3f7c6580206b5af09541cfc341869affa674b1f6aad"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/restart-worker-smoke.json",
+      "bytes": 418,
+      "sha256": "a26188c5e8b801ac886261bdc681007758228aa4579bf3298f1ad29c5319c5b2"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-cold-final-disposed-state.json",
+      "bytes": 1983,
+      "sha256": "b832a6993a4a16bd60fdefe0dce608e45c93230b1b61fcec851135fbfd60001f"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-cold-restart-verified-state.json",
+      "bytes": 1837,
+      "sha256": "7753e28b9c56e78b325c7786001154b9aff879c3ca1c9bad228b5a3af9c3387a"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-completed-worker-disposed-state.json",
+      "bytes": 3920,
+      "sha256": "3eea2518f759f601d79ce6888e10a06774de5b4ecca3102597cd2b83f1859d06"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-diagnostic2-observer-state.json",
+      "bytes": 32008,
+      "sha256": "58e8d3a2615cbcb04dc31eff5fff478bbf12253396e65c74fb957afad57cbd41"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-duplicate-first-state.json",
+      "bytes": 1973,
+      "sha256": "2827710270857f3633576ad05fa670e1349f354c4f3e5f1f3913abf420a35fc4"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-continued.jsonl",
+      "bytes": 639,
+      "sha256": "cd3abb2ade87802f75d0b3aee7af9a001bcf549b0367a22c90cce11eba3d1f03"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-delegation-retest.stderr",
+      "bytes": 94,
+      "sha256": "75605f726be887a537e5e54a18b202c19e8fddbd9822f160caa73d00417d67c4"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-first.stderr",
+      "bytes": 86,
+      "sha256": "5647dcc9f55d1cc68bea1e4831cff68da4238989caa368d18a5da1c65d578874"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-observer-discriminator.json",
+      "bytes": 290,
+      "sha256": "de596491a3841da62209b54e3bb4a0204229de043feebf28a193a1aa546ab738"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-observer-state.json",
+      "bytes": 1595,
+      "sha256": "18ed8379184083c3c7332f90179b33aa4127d1d026a9698812fe0edb00b0293b"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-readonly.json",
+      "bytes": 1976,
+      "sha256": "c76a862d036a60f6d01706f640e84e1135c8f4c2151f2bf07a1bd2f14eec7a6f"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-chain-startup-state.json",
+      "bytes": 32299,
+      "sha256": "7b4164adc074bed7573df0edba879b694424adec89f13a2fb24bb05e56f9c911"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-failure-disposed-startup.json",
+      "bytes": 32291,
+      "sha256": "5a8e717187f6c22f3a52cd51dcde3cce1d840492d1edf787fdf36a325596b3f7"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-failure-disposed-state.json",
+      "bytes": 1741,
+      "sha256": "155e6ad9700a618b63ad572ca6beae3de7c477a5a65386ffda708c582c8aed5b"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-failure-fixture-preserved.json",
+      "bytes": 1521,
+      "sha256": "964185a2899d8a1b24d642d58fefd9509111208f8bff73c19086fccf01fcf2af"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-first-startup-observer-state.json",
+      "bytes": 31932,
+      "sha256": "7d637d3da388f1e2cb4ff85c077b8b20337a881d08c5708752197464ea4e9cec"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-observer-delegation-fix.json",
+      "bytes": 658,
+      "sha256": "f21ae86affd1823959d9d36fce91e1d637346c96efd46c09596a805ba43d2650"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-original-config-dump.json",
+      "bytes": 319,
+      "sha256": "0ec2cf6f0b2bab12f8d7ce534649af3c5a4436c52be872714ad9bb557eb3e58c"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-original-config-schema.json",
+      "bytes": 463,
+      "sha256": "35f0e62b20b7077e9f0600ef5f2038066fcf5bee19b0ae80bd03ea13d54c6d79"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-original-schema-classification.json",
+      "bytes": 1447,
+      "sha256": "18033462f2784ba3dcc77d849ea1d997ad25c8926cdbd21cdfed33fab8c87189"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-preset-correction.json",
+      "bytes": 514,
+      "sha256": "027a2058ac7710676dde273145e7f469a9d9b5ffd1f34d472327295306b77fb9"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-profile-installed.json",
+      "bytes": 1279,
+      "sha256": "ce07a8a4d917e994738603b886471e5c57703032a5b39db5ccb32292a5951087"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-startup-diagnostic-hold.json",
+      "bytes": 545,
+      "sha256": "49b45adbb493c5503d20bbfeb5d91a3198727baf2bb78c4eec8e14a4ba7e01bf"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-startup-diagnostic2-hold.json",
+      "bytes": 590,
+      "sha256": "71a68db4f08ffc685fafecfa456b4f2ea3a939b68039975b8058be983630643e"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-worker-cold-restart-first.jsonl",
+      "bytes": 346,
+      "sha256": "f73bcb3983d88b014a9be899dffafa7a6ff6ff270a3d91338d2d03c3b1a52e11"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-worker-reload-final-state.json",
+      "bytes": 3776,
+      "sha256": "fa0f7f9450a1264d686c8979ca233e55aae4095b0233a469c6e4a2c1eb8d3696"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-runs/root-worker-reload-first.jsonl",
+      "bytes": 348,
+      "sha256": "d0b12a7bb20de330ecde4949a6166c7ee3cfe567a0e915a3759c06a4263d5104"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-checkpoint.md",
+      "bytes": 8792,
+      "sha256": "0cd68855a0d0c383fda111f0345bb6d86ff8db857384afeff372cce9b80412f5"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-startup-source-diagnosis.md",
+      "bytes": 11597,
+      "sha256": "ef7d461c93354aaa968d3b2c7b759e1efe4179dea2d20e6bce88c86aebd40f4e"
+    },
+    {
+      "path": "docs/evidence/NI2/physical-worker-execution-source-diagnosis.md",
+      "bytes": 13735,
+      "sha256": "49032ed870eaa60402a9cc6cad58e1d21427c15ee071e591156f98d4043d5481"
+    }
+  ]
+}

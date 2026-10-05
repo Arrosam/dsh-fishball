@@ -1,0 +1,1362 @@
+{
+  "stage": "original-loader-instrumented",
+  "pid": 91790,
+  "agentRequests": 1,
+  "warnings": 3,
+  "errors": 0,
+  "codes": [],
+  "categories": {},
+  "entries": [
+    {
+      "id": "80795013",
+      "name": "@deepseek-ai/dsh-host-directory-picker-native",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "include",
+      "name": "cordis:include",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "tool-plugin-manager",
+      "name": "@deepseek-ai/dsh-plugin-manager/tools",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "plugin-manager",
+      "name": "@deepseek-ai/dsh-plugin-manager",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "timer",
+      "name": "@deepseek-ai/cordis-plugin-timer",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "hmr",
+      "name": "@deepseek-ai/dsh-hmr",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "llm",
+      "name": "@deepseek-ai/dsh-llm",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "deepseek-llm-api-extensions",
+      "name": "@deepseek-ai/dsh-deepseek-llm-api-extensions",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session",
+      "name": "@deepseek-ai/dsh-session",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-log-deepseek",
+      "name": "@deepseek-ai/dsh-session-log-deepseek",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "typert",
+      "name": "@deepseek-ai/dsh-typert-registry",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "typert-loader",
+      "name": "@deepseek-ai/dsh-typert-loader",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "typert-gateway",
+      "name": "@deepseek-ai/dsh-api-gateway",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-title",
+      "name": "@deepseek-ai/dsh-session-title",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-title-llm",
+      "name": "@deepseek-ai/dsh-session-title-first-prompt-llm",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "user-questions",
+      "name": "@deepseek-ai/dsh-user-questions",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "agent",
+      "name": "@deepseek-ai/dsh-agent",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "plugin-package-inventory-deepseek",
+      "name": "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "agent-default-model",
+      "name": "@deepseek-ai/dsh-agent-default-model",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "jobs",
+      "name": "@deepseek-ai/dsh-jobs-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "llm-retry",
+      "name": "@deepseek-ai/dsh-llm-retry",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "config-editor",
+      "name": "@deepseek-ai/dsh-config-editor",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "settings",
+      "name": "@deepseek-ai/dsh-settings",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "authorization",
+      "name": "@deepseek-ai/dsh-authorization",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "deepseek-account",
+      "name": "@deepseek-ai/dsh-deepseek-account-platform",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "credentials",
+      "name": "@deepseek-ai/dsh-credentials-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "llm-pi-ai",
+      "name": "@deepseek-ai/dsh-llm-pi-ai",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "session-persistence-jsonl",
+      "name": "@deepseek-ai/dsh-session-persistence-jsonl",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "attachment-local",
+      "name": "@deepseek-ai/dsh-attachment-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-query-sqlite",
+      "name": "@deepseek-ai/dsh-session-query-sqlite",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-projection",
+      "name": "@deepseek-ai/dsh-session-projection",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "storage",
+      "name": "@deepseek-ai/dsh-storage",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "storage-json",
+      "name": "@deepseek-ai/dsh-storage-json",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "storage-domain",
+      "name": "@deepseek-ai/dsh-storage-domain",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-projection-cache",
+      "name": "@deepseek-ai/dsh-session-projection-cache",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "otel",
+      "name": "@deepseek-ai/dsh-otel",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "session-telemetry-otel",
+      "name": "@deepseek-ai/dsh-session-telemetry-otel",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "subprocess",
+      "name": "@deepseek-ai/dsh-subprocess-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "sandbox",
+      "name": "@deepseek-ai/dsh-sandbox-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "sandbox-policy",
+      "name": "@deepseek-ai/dsh-sandbox-policy",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "bash-sandbox",
+      "name": "@deepseek-ai/dsh-bash-sandbox",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "pwsh-sandbox",
+      "name": "@deepseek-ai/dsh-pwsh-sandbox",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "approval",
+      "name": "@deepseek-ai/dsh-user-approval",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "permission",
+      "name": "@deepseek-ai/dsh-permission-presets",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "shell-env",
+      "name": "@deepseek-ai/dsh-shell-env",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "tool-bash",
+      "name": "@deepseek-ai/dsh-tool-bash",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-pwsh",
+      "name": "@deepseek-ai/dsh-tool-pwsh",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-jobs",
+      "name": "@deepseek-ai/dsh-tool-jobs",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "fs-observation-policy",
+      "name": "@deepseek-ai/dsh-fs-observation-policy",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "tool-fs",
+      "name": "@deepseek-ai/dsh-tool-fs",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-fs-search",
+      "name": "@deepseek-ai/dsh-tool-fs-search",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "agent-instructions",
+      "name": "@deepseek-ai/dsh-agent-instructions",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "skill",
+      "name": "@deepseek-ai/dsh-skill",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "skill-filesystem",
+      "name": "@deepseek-ai/dsh-skill-filesystem",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "skill-badge",
+      "name": "@deepseek-ai/dsh-skill-badge",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-skill",
+      "name": "@deepseek-ai/dsh-tool-skill",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "commands",
+      "name": "@deepseek-ai/dsh-commands",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "command-feedback",
+      "name": "@deepseek-ai/dsh-command-feedback",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "goal",
+      "name": "@deepseek-ai/dsh-goal",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "goal-round-driver",
+      "name": "@deepseek-ai/dsh-goal-round-driver",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "command-goal",
+      "name": "@deepseek-ai/dsh-command-goal",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "plan-mode",
+      "name": "@deepseek-ai/dsh-plan-mode",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "token-meter",
+      "name": "@deepseek-ai/dsh-token-meter",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "compaction-basic",
+      "name": "@deepseek-ai/dsh-compaction-basic",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "command-compact",
+      "name": "@deepseek-ai/dsh-command-compact",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "subagent",
+      "name": "@deepseek-ai/dsh-subagent",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "subagent-spawn-in-process",
+      "name": "@deepseek-ai/dsh-subagent-spawn-in-process",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "subagent-fork-in-process",
+      "name": "@deepseek-ai/dsh-subagent-fork-in-process",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "tool-subagent-control",
+      "name": "@deepseek-ai/dsh-tool-subagent-control",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-subagent-list-agents",
+      "name": "@deepseek-ai/dsh-tool-subagent-control/list-agents",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-subagent",
+      "name": "@deepseek-ai/dsh-tool-subagent",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-subagent-fork",
+      "name": "@deepseek-ai/dsh-tool-subagent",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "ptc-runtime",
+      "name": "@deepseek-ai/dsh-ptc-runtime-node",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "workflow-ptc",
+      "name": "@deepseek-ai/dsh-workflow-ptc",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-workflow",
+      "name": "@deepseek-ai/dsh-tool-workflow",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "timeout-policy",
+      "name": "@deepseek-ai/dsh-tool-call-timeout-policy",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "spill-local",
+      "name": "@deepseek-ai/dsh-spill-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "spill-policy",
+      "name": "@deepseek-ai/dsh-spill-policy",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-checkpoint-policy",
+      "name": "@deepseek-ai/dsh-session-checkpoint-policy",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "tool-result-pruner",
+      "name": "@deepseek-ai/dsh-compaction-tool-result-pruner",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "image-offload",
+      "name": "@deepseek-ai/dsh-compaction-image-offload",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-todo",
+      "name": "@deepseek-ai/dsh-tool-todo",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-goal",
+      "name": "@deepseek-ai/dsh-tool-goal",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-ralph",
+      "name": "@deepseek-ai/dsh-tool-ralph",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "repeat-tool-reminder",
+      "name": "@deepseek-ai/dsh-repeat-tool-reminder",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "web",
+      "name": "@deepseek-ai/dsh-web",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "web-search-deepseek",
+      "name": "@deepseek-ai/dsh-web-search-deepseek",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "web-fetch-http",
+      "name": "@deepseek-ai/dsh-web-fetch-http",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "tool-web",
+      "name": "@deepseek-ai/dsh-tool-web",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "mcp-resources",
+      "name": "@deepseek-ai/dsh-mcp-resources",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "tools",
+      "name": "@deepseek-ai/dsh-tools",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "system-prompt",
+      "name": "@deepseek-ai/dsh-system-prompt",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "agent-loop",
+      "name": "@deepseek-ai/dsh-agent-loop",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "fs-sandbox",
+      "name": "@deepseek-ai/dsh-fs-sandbox",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "llm-deepseek",
+      "name": "@deepseek-ai/dsh-llm-deepseek-api-key",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "llm-deepseek-account",
+      "name": "@deepseek-ai/dsh-llm-deepseek-account",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "desktop-product-telemetry",
+      "name": "@deepseek-ai/dsh-host-product-telemetry-otel",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "product-analytics",
+      "name": "@deepseek-ai/dsh-client-product-analytics",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "subagent-model-selection-settings",
+      "name": "@deepseek-ai/dsh-tool-subagent/model-selection-settings",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "message-feedback",
+      "name": "@deepseek-ai/dsh-message-feedback",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-log-download",
+      "name": "@deepseek-ai/dsh-session-log-export",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "open-in-app",
+      "name": "@deepseek-ai/dsh-host-open-in-app",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-open-in-app",
+      "name": "@deepseek-ai/dsh-client-ui-open-in-app",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "workspace",
+      "name": "@deepseek-ai/dsh-workspace",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-reference",
+      "name": "@deepseek-ai/dsh-session-reference",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "file-reference-local",
+      "name": "@deepseek-ai/dsh-file-reference-local",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-stats",
+      "name": "@deepseek-ai/dsh-session-stats",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-turn-outline",
+      "name": "@deepseek-ai/dsh-session-turn-outline",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "directory-picker",
+      "name": "@deepseek-ai/dsh-host-directory-picker-auto",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "plugin-inventory",
+      "name": "@deepseek-ai/dsh-host-plugin-inventory",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "session-controller",
+      "name": "@deepseek-ai/dsh-api-session-controller",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "job-controller",
+      "name": "@deepseek-ai/dsh-api-job-controller",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "terminal-controller",
+      "name": "@deepseek-ai/dsh-api-terminal-controller",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "workspace-files",
+      "name": "@deepseek-ai/dsh-api-workspace-files",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "schedule",
+      "name": "@deepseek-ai/dsh-schedule",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "ui-settings-account",
+      "name": "@deepseek-ai/dsh-client-ui-settings-account",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "account-controller",
+      "name": "@deepseek-ai/dsh-api-account-controller",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "settings-controller",
+      "name": "@deepseek-ai/dsh-api-settings-controller",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "workspace-controller",
+      "name": "@deepseek-ai/dsh-api-workspace-controller",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "cordis-host-runner",
+      "name": "@deepseek-ai/dsh-cordis-host-runner",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "cordis-inspect-providers",
+      "name": "@deepseek-ai/dsh-tool-cordis/host",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "web-startup",
+      "name": "@deepseek-ai/dsh-web-app/startup",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "webserver",
+      "name": "@deepseek-ai/dsh-host-webserver",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "web-runtime",
+      "name": "@deepseek-ai/dsh-web-app",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "client-hmr",
+      "name": "@deepseek-ai/dsh-client-hmr",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "modules",
+      "name": "@deepseek-ai/dsh-client-modules",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "connection",
+      "name": "@deepseek-ai/dsh-client-connection",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "file-upload",
+      "name": "@deepseek-ai/dsh-client-file-upload",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "api-remotes",
+      "name": "@deepseek-ai/dsh-api-remotes",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "cordis-client-runner",
+      "name": "@deepseek-ai/dsh-cordis-client-runner",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-theme",
+      "name": "@deepseek-ai/dsh-client-ui-theme",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "locale",
+      "name": "@deepseek-ai/dsh-client-locale",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "shortcuts",
+      "name": "@deepseek-ai/dsh-client-shortcuts",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-shortcuts",
+      "name": "@deepseek-ai/dsh-client-ui-shortcuts",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-layout",
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-renderer",
+      "name": "@deepseek-ai/dsh-client-ui-renderer",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-session",
+      "name": "@deepseek-ai/dsh-client-ui-session",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "resources",
+      "name": "@deepseek-ai/dsh-client-resources",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-sidebar",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-sidebar-right",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-right",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "office-to-pdf",
+      "name": "@deepseek-ai/dsh-office-to-pdf",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-sidebar-documentpreview",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-sidebar-browser",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-browser",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "ui-sidebar-terminal",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-terminal",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-sidebar-files",
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-files",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings",
+      "name": "@deepseek-ai/dsh-client-ui-settings",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-general",
+      "name": "@deepseek-ai/dsh-client-ui-settings-general",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-models",
+      "name": "@deepseek-ai/dsh-client-ui-settings-models",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-plugin-manager",
+      "name": "@deepseek-ai/dsh-client-ui-plugin-manager",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-plugin-inventory",
+      "name": "@deepseek-ai/dsh-client-ui-settings-plugin-inventory",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-conversation",
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-approval",
+      "name": "@deepseek-ai/dsh-client-ui-approval",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-chat",
+      "name": "@deepseek-ai/dsh-client-ui-chat",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-brand-official",
+      "name": "@deepseek-ai/dsh-client-ui-brand-official",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-attachment",
+      "name": "@deepseek-ai/dsh-client-ui-attachment",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-tool",
+      "name": "@deepseek-ai/dsh-client-ui-tool",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-cordis",
+      "name": "@deepseek-ai/dsh-client-ui-cordis",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-deliverables",
+      "name": "@deepseek-ai/dsh-client-ui-deliverables",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "workspace-changes",
+      "name": "@deepseek-ai/dsh-workspace-changes",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-workspace",
+      "name": "@deepseek-ai/dsh-client-ui-workspace",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-workflow-run",
+      "name": "@deepseek-ai/dsh-client-ui-workflow-run",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-input-trigger",
+      "name": "@deepseek-ai/dsh-client-ui-input-trigger",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-commands",
+      "name": "@deepseek-ai/dsh-client-ui-commands",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-skill",
+      "name": "@deepseek-ai/dsh-client-ui-skill",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-subagent",
+      "name": "@deepseek-ai/dsh-client-ui-subagent",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-reference",
+      "name": "@deepseek-ai/dsh-client-ui-reference",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-jobs",
+      "name": "@deepseek-ai/dsh-client-ui-jobs",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-schedule",
+      "name": "@deepseek-ai/dsh-client-ui-schedule",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "ui-goal",
+      "name": "@deepseek-ai/dsh-client-ui-goal",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-message-feedback",
+      "name": "@deepseek-ai/dsh-client-ui-message-feedback",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-model-selection",
+      "name": "@deepseek-ai/dsh-client-ui-model-selection",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-permission",
+      "name": "@deepseek-ai/dsh-client-ui-permission-presets",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-agent-preset",
+      "name": "@deepseek-ai/dsh-client-ui-agent-preset",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-session-log",
+      "name": "@deepseek-ai/dsh-client-ui-settings-session-log",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-plugins",
+      "name": "@deepseek-ai/dsh-client-ui-settings-plugins",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-shell",
+      "name": "@deepseek-ai/dsh-client-ui-settings-shell",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-agent-loop",
+      "name": "@deepseek-ai/dsh-client-ui-settings-agent-loop",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-subagent",
+      "name": "@deepseek-ai/dsh-client-ui-settings-subagent",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-settings-web-search",
+      "name": "@deepseek-ai/dsh-client-ui-settings-web-search",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-plan",
+      "name": "@deepseek-ai/dsh-client-ui-plan",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-user-questions",
+      "name": "@deepseek-ai/dsh-client-ui-user-questions",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "ui-trajectory",
+      "name": "@deepseek-ai/dsh-client-ui-trajectory",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "agent-preset-registry",
+      "name": "@deepseek-ai/dsh-agent-preset-registry",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "preset-standard",
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "preset-ptc",
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "preset-minimal",
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "preset-cordis",
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "disabled": true,
+      "fiberState": null,
+      "imported": false
+    },
+    {
+      "id": "df-ni2-startup-observer",
+      "name": "local-instrumentation",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "preset-df-ni2-empty",
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "df-testing-provider",
+      "name": "dsh-fishball/testing-provider",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "df-installed",
+      "name": "dsh-fishball/installed",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "df-ni2-observer",
+      "name": "local-instrumentation",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    },
+    {
+      "id": "fda99662",
+      "name": "@deepseek-ai/dsh-client-ui-directory-picker-native",
+      "disabled": false,
+      "fiberState": 2,
+      "imported": true
+    }
+  ]
+}

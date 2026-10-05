@@ -1,0 +1,13 @@
+{
+  "result": "passed",
+  "exitCode": 0,
+  "signal": null,
+  "stdoutBytes": 53358,
+  "stderrBytes": 0,
+  "stdoutDigest": "687a6ef06f2b739799a96e2b442bc918fc77d6862a9f3fdd7db448793c4b0628",
+  "unsettledTopLevelAwait": false,
+  "errorCodes": [],
+  "profileDumpOnly": true,
+  "hostLaunch": false,
+  "credentials": false
+}

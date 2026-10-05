@@ -1,0 +1,40 @@
+{
+  "kind": "preserved-failed-synthetic-fixture",
+  "ownedOriginalPid": 91790,
+  "actualCLIExit": 0,
+  "signal": null,
+  "shutdownServicesDisposed": true,
+  "unknownIntentAndReservationPreserved": true,
+  "originalCommandReplayed": false,
+  "rawRowsMutated": false,
+  "originalProfileUnchanged": true,
+  "originalPort": 3080,
+  "freshStorageNeedsExplicitConfirmation": true,
+  "files": [
+    {
+      "path": "df-sessions/--Users-samuel-Documents-Codex-2026-10-04-task-6-dsh-fishball-.runtime-ni2-install-workspace--/df-347834a3d59c121bb7da04e250aa2e8a8a2d17e6b0a876f164b4a7277a9480b1/session.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "df-sessions/--Users-samuel-Documents-Codex-2026-10-04-task-6-dsh-fishball-.runtime-ni2-install-workspace--/df-347834a3d59c121bb7da04e250aa2e8a8a2d17e6b0a876f164b4a7277a9480b1/session.v4.jsonl",
+      "bytes": 4049,
+      "sha256": "dd10619dd9728017089950d42f0d0e033ad3c179ef43226a89e4b21ffd1f8ad8"
+    },
+    {
+      "path": "runtime.sqlite",
+      "bytes": 172032,
+      "sha256": "fe536eb3fe62ebde30043758c7abbb833eca06460feb54b1030b9a61b8887aca"
+    },
+    {
+      "path": "runtime.sqlite.df-setup/key.bin",
+      "bytes": 32,
+      "sha256": "6ec4bf39ba1060e28831ce42576aeb6050e5c5063c0204d456f156d5a7b4942d"
+    },
+    {
+      "path": "runtime.sqlite.df-setup/state.json",
+      "bytes": 621,
+      "sha256": "4b173fedf11dd05475cfbf8416b9ca7bb0d18d1e0dd23c337d80144fbaa022a8"
+    }
+  ]
+}

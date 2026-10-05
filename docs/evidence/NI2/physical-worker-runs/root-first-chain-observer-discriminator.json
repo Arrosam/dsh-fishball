@@ -1,0 +1,16 @@
+{
+  "kind": "waterfall-observer-discriminator",
+  "startupRequests": 1,
+  "physicalRequests": 0,
+  "streams": 0,
+  "tools": 0,
+  "events": {
+    "other": 4,
+    "turn/start": 1,
+    "step/start": 1,
+    "step/end": 1,
+    "turn/end": 1
+  },
+  "assistantFrames": 0,
+  "originalPid": 91790
+}

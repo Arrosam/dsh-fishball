@@ -1,0 +1,61 @@
+{
+  "kind": "original-owner-readonly-first-chain",
+  "task": {
+    "taskRef": "c13028eea6f3b7ed8313238fe48ee764fce2adda743b179bf1dbf81f0b4885ea",
+    "status": "running",
+    "version": 3,
+    "authEpoch": 1
+  },
+  "keys": [
+    "schemaVersion",
+    "observedAt",
+    "task",
+    "data",
+    "actions",
+    "workers",
+    "policy",
+    "messages",
+    "artifacts",
+    "deliveries",
+    "progress",
+    "reviews",
+    "control",
+    "executions",
+    "audits",
+    "semanticRevision",
+    "notificationFacts",
+    "notifications"
+  ],
+  "actions": [
+    {
+      "actionRef": "3a1d0a0f9bac0bbc7e53faf4c4dfa0f1a45b72d1be55bbc1f1e956feca3005c8",
+      "actionDigest": "1e537d1c5550ec6251989d245dd40024a74c9ea59471d3bbb714dece0ecb3ed7",
+      "state": "dispatch_intent",
+      "outcome": null,
+      "claimRef": "8c0e707a80d449ac118ed55c4ad116b26e299026c08fd9ada82637a186adebd9",
+      "generationRef": "347834a3d59c121bb7da04e250aa2e8a8a2d17e6b0a876f164b4a7277a9480b1",
+      "usageState": "estimated"
+    }
+  ],
+  "workers": [
+    {
+      "actionRef": "3a1d0a0f9bac0bbc7e53faf4c4dfa0f1a45b72d1be55bbc1f1e956feca3005c8",
+      "claimRef": "8c0e707a80d449ac118ed55c4ad116b26e299026c08fd9ada82637a186adebd9",
+      "generationRef": "347834a3d59c121bb7da04e250aa2e8a8a2d17e6b0a876f164b4a7277a9480b1",
+      "phase": "ready",
+      "reservationRef": "b2dac65a2454103d69342cf4472c0ad199788956f9eb8c049750904ba278c5ac",
+      "cursor": 8
+    }
+  ],
+  "executions": [
+    {
+      "executionRef": "b3745d948c5fb855725992ea189790f7ff2495428e666050196345231195875d",
+      "state": "dispatch_intent",
+      "claimRef": "8c0e707a80d449ac118ed55c4ad116b26e299026c08fd9ada82637a186adebd9",
+      "generationRef": "347834a3d59c121bb7da04e250aa2e8a8a2d17e6b0a876f164b4a7277a9480b1",
+      "dataDigest": "bae9b2897d922e291d3318c5a95d60bec9a8ed0ebfe76ed0c2b8481fe741a938",
+      "contextRecordRef": "73aa6027ac5cc3d74d351e4d8c04ab45487b12169a95a2855df2192ccb1def3d"
+    }
+  ],
+  "artifacts": 0
+}

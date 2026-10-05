@@ -1,0 +1,14 @@
+// Root-only future wrapper around the original compiled CLI; no service realm.
+import { spawn } from 'node:child_process';
+import { existsSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const base=fileURLToPath(new URL('../',import.meta.url));
+for(const directory of ['workspace','home','agents','private','evidence'])if(realpathSync(`${base}${directory}`)!==`${base}${directory}`)throw new Error('NI2_FIXTURE_CANONICAL_PATH');
+for(const file of [`${base}workspace/.env`,`${base}home/.env`])if(existsSync(file))throw new Error('NI2_FIXTURE_ENV_NOT_EMPTY');
+const child=spawn(process.execPath,[`${base}host/node_modules/@deepseek-ai/dsh/lib/bin.js`,'--profile','web','--host','127.0.0.1','--port','3080','--no-open'],{cwd:`${base}workspace`,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',DSH_HOME:`${base}home`,DSH_AGENTS_HOME:`${base}agents`,DSH_TELEMETRY_DISABLED:'1',DSH_PERMISSION_MODE:'read-only'},stdio:['ignore','pipe','pipe']});
+// Native logs are untrusted and can contain credentials. Export byte counts only.
+let stdoutBytes=0,stderrBytes=0;child.stdout.on('data',data=>{stdoutBytes+=data.length;});child.stderr.on('data',data=>{stderrBytes+=data.length;});
+console.log(JSON.stringify({result:'spawn-requested',pid:child.pid,originalCLI:true,url:'http://127.0.0.1:3080',browserOpened:false}));
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));
+child.on('error',()=>{console.error(JSON.stringify({result:'failed',code:'NI2_ORIGINAL_CLI_SPAWN_FAILED'}));process.exitCode=1;});
+child.on('exit',(code,signal)=>{console.log(JSON.stringify({result:'original-cli-exited',code,signal,stdoutBytes,stderrBytes}));process.exitCode=code??1;});

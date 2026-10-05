@@ -1,0 +1,33 @@
+{
+  "artifactGit": "a58c522",
+  "artifactSha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+  "commands": [
+    {
+      "command": "/opt/homebrew/bin/node --version",
+      "result": "v22.22.2"
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check .runtime/ni2-install/physical/observer.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check .runtime/ni2-install/physical/smoke.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "/opt/homebrew/bin/node --check .runtime/ni2-install/physical/launch.mjs",
+      "exitCode": 0
+    }
+  ],
+  "staticPatchRows": 37,
+  "unknownCompiledRowIds": [],
+  "productImports": 0,
+  "productTests": 0,
+  "hostLaunches": 0,
+  "httpAuthStreamCalls": 0,
+  "credentialWrites": 0,
+  "profileConfigInstalled": false,
+  "sharedProductEdited": false,
+  "gitMutations": 0,
+  "acceptance": "HOLD: prepared source only; no physical or browser/CODE proof"
+}

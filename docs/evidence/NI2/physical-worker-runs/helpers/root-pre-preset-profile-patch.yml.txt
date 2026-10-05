@@ -1,0 +1,261 @@
+# Root-only passive startup diagnostic; original profile authority unchanged.
+[
+  {
+    "id": "web-runtime",
+    "config": {
+      "openBrowser": false,
+      "printUrl": false,
+      "surfaceContext": false,
+      "trustedHosts": []
+    }
+  },
+  {
+    "id": "connection",
+    "inject": [
+      "webServer"
+    ],
+    "config": {
+      "trustedHosts": []
+    }
+  },
+  {
+    "id": "credentials",
+    "config": {
+      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/private/browser-auth.yml",
+      "dshHome": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home",
+      "watch": false
+    }
+  },
+  {
+    "id": "session-persistence-jsonl",
+    "config": {
+      "root": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home/profiles/web/df-data/df-sessions",
+      "compression": "none"
+    }
+  },
+  {
+    "id": "agent-loop",
+    "config": {
+      "agents": [],
+      "maxParallelToolCalls": 1
+    }
+  },
+  {
+    "id": "agent-preset-registry",
+    "config": {
+      "default": "df-ni2-empty"
+    }
+  },
+  {
+    "id": "agent-default-model",
+    "config": {
+      "provider": "df-testing-local",
+      "model": "df-testing-worker-v1"
+    }
+  },
+  {
+    "id": "system-prompt",
+    "config": {
+      "personaPrefix": "",
+      "personaSuffix": ""
+    }
+  },
+  {
+    "id": "tools",
+    "config": {
+      "mode": "native"
+    }
+  },
+  {
+    "id": "approval",
+    "config": {
+      "policy": "never"
+    }
+  },
+  {
+    "id": "llm-deepseek",
+    "disabled": true
+  },
+  {
+    "id": "llm-deepseek-account",
+    "disabled": true
+  },
+  {
+    "id": "llm-pi-ai",
+    "disabled": true
+  },
+  {
+    "id": "deepseek-account",
+    "disabled": true
+  },
+  {
+    "id": "account-controller",
+    "disabled": true
+  },
+  {
+    "id": "session-title-llm",
+    "disabled": true
+  },
+  {
+    "id": "llm-retry",
+    "disabled": true
+  },
+  {
+    "id": "otel",
+    "disabled": true
+  },
+  {
+    "id": "session-telemetry-otel",
+    "disabled": true
+  },
+  {
+    "id": "desktop-product-telemetry",
+    "disabled": true
+  },
+  {
+    "id": "product-analytics",
+    "disabled": true
+  },
+  {
+    "id": "goal-round-driver",
+    "disabled": true
+  },
+  {
+    "id": "compaction-basic",
+    "disabled": true
+  },
+  {
+    "id": "command-compact",
+    "disabled": true
+  },
+  {
+    "id": "tool-result-pruner",
+    "disabled": true
+  },
+  {
+    "id": "image-offload",
+    "disabled": true
+  },
+  {
+    "id": "agent-instructions",
+    "disabled": true
+  },
+  {
+    "id": "skill-filesystem",
+    "disabled": true
+  },
+  {
+    "id": "preset-minimal",
+    "disabled": true
+  },
+  {
+    "id": "preset-standard",
+    "disabled": true
+  },
+  {
+    "id": "preset-ptc",
+    "disabled": true
+  },
+  {
+    "id": "preset-cordis",
+    "disabled": true
+  },
+  {
+    "id": "web-search-deepseek",
+    "disabled": true
+  },
+  {
+    "id": "web-fetch-http",
+    "disabled": true
+  },
+  {
+    "id": "schedule",
+    "disabled": true
+  },
+  {
+    "id": "ui-schedule",
+    "disabled": true
+  },
+  {
+    "insert": [
+      {
+        "id": "df-ni2-startup-observer",
+        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/physical/startup-observer.mjs",
+        "config": {}
+      },
+      {
+        "id": "preset-df-ni2-empty",
+        "name": "@deepseek-ai/dsh-agent-preset",
+        "config": {
+          "id": "df-ni2-empty",
+          "description": "Synthetic NI2 empty preset; no tools, models or child plugins",
+          "plugins": []
+        }
+      },
+      {
+        "id": "df-testing-provider",
+        "name": "dsh-fishball/testing-provider",
+        "config": {}
+      },
+      {
+        "id": "df-installed",
+        "name": "dsh-fishball/installed",
+        "config": {
+          "databasePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home/profiles/web/df-data/runtime.sqlite",
+          "memory": {
+            "enabled": true,
+            "byteLimit": 65536,
+            "tokenLimit": 8192
+          },
+          "limits": {
+            "maxMetadataBytes": 4096
+          },
+          "worker": {
+            "enabled": true,
+            "selection": {
+              "provider": "df-testing-local",
+              "model": "df-testing-worker-v1",
+              "agentPreset": "df-ni2-empty",
+              "reasoningEffort": null,
+              "maxOutputTokens": 128
+            },
+            "environment": {
+              "root": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/workspace",
+              "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/workspace"
+            },
+            "persistence": {
+              "directory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home/profiles/web/df-data/df-sessions",
+              "compression": "none",
+              "retention": "owner-managed"
+            },
+            "bounds": {
+              "requestBytes": 8192,
+              "resultBytes": 128
+            },
+            "policy": {
+              "maxRuntimeMs": 10000,
+              "maxUsageUnits": 20000,
+              "maxCostEstimateMicros": 0
+            },
+            "charges": {
+              "runtimeMs": 1000,
+              "usageUnits": 8320
+            },
+            "previewTtlMs": 30000,
+            "grantTtlMs": 60000
+          }
+        }
+      },
+      {
+        "id": "df-ni2-observer",
+        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/physical/observer.mjs",
+        "config": {
+          "databasePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home/profiles/web/df-data/runtime.sqlite",
+          "profileDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home/profiles/web",
+          "persistenceDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/home/profiles/web/df-data/df-sessions",
+          "credentialPath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/private/browser-auth.yml"
+        }
+      }
+    ]
+  }
+]

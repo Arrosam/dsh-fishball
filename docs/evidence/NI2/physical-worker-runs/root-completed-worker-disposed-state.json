@@ -1,0 +1,183 @@
+{
+  "phase": "disposed",
+  "pid": 92911,
+  "setupAvailable": false,
+  "runtimeAvailable": false,
+  "setupLoads": 11,
+  "runtimeLoads": 11,
+  "agentRequests": 1,
+  "streamEntries": 1,
+  "streamFinishes": 1,
+  "textChunks": 1,
+  "toolAttempts": 0,
+  "eventCount": 13,
+  "eventTypes": {
+    "other": 7,
+    "turn/start": 1,
+    "step/start": 1,
+    "user/message": 1,
+    "assistant/message": 1,
+    "step/end": 1,
+    "turn/end": 1
+  },
+  "assistantFrames": 5,
+  "lastUsage": {
+    "inputUnits": 3137,
+    "outputUnits": 113,
+    "totalUnits": 3250
+  },
+  "request": {
+    "messageCount": 2,
+    "requestBytes": 3137,
+    "toolCount": 0,
+    "providerIsSynthetic": true,
+    "modelIsSynthetic": true,
+    "maxTokens": 128,
+    "reasoningIsDeterministic": true
+  },
+  "resultDigest": "979dc9b4bcd1a9edd97ca00758adf28b656b0b631520fdedf17037f40c122e2b",
+  "persisted": {
+    "count": 1,
+    "idRef": "851a9e3af05a7cf449ba4b4f2bd98d2fa780ef9fdd165836588ac2f46db5d24f",
+    "events": 14,
+    "userMessages": 1,
+    "assistantMessages": 1,
+    "inputDigest": "de4c8a89d937e3d57ca4508ccf91004cf68ff95b5e8dba1998ba158912b11886",
+    "resultDigest": "979dc9b4bcd1a9edd97ca00758adf28b656b0b631520fdedf17037f40c122e2b"
+  },
+  "withdrawals": [
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "runtime",
+      "code": "SERVICE_DISPOSED"
+    },
+    {
+      "service": "setup",
+      "code": "SERVICE_DISPOSED"
+    }
+  ],
+  "sessions": 0,
+  "agents": [],
+  "providers": 1,
+  "databaseExists": true,
+  "setupNamespaceExists": true,
+  "routes": {
+    "setup": false,
+    "runtime": false
+  },
+  "facts": {
+    "installed": [
+      {
+        "name": "dsh-fishball/installed",
+        "disabled": false,
+        "fiberState": 5,
+        "moduleExact": true,
+        "fiberEntryExact": true
+      }
+    ],
+    "testingProvider": [
+      {
+        "name": "dsh-fishball/testing-provider",
+        "disabled": false,
+        "fiberState": 2,
+        "moduleExact": true,
+        "fiberEntryExact": true
+      }
+    ],
+    "connectionOriginal": true,
+    "operatorOriginal": true,
+    "credentialProviderOriginal": true,
+    "credentialPathExact": true,
+    "credentialHomeExact": true,
+    "persistenceOriginal": true,
+    "persistenceRootExact": true,
+    "persistenceCompressionExact": true,
+    "loopOriginal": true,
+    "loopCapturedBackendExact": true,
+    "profileExact": false
+  },
+  "lifecycle": {
+    "id": "ni2-reload-persisted-read",
+    "operation": "persisted-read",
+    "result": "passed"
+  }
+}
