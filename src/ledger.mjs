@@ -8,7 +8,7 @@ export class FoundationError extends Error {
   constructor(code) { super(code); this.name = 'FoundationError'; this.code = code; }
 }
 export const fail = code => { throw new FoundationError(code); };
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 const BASE = {
   tasks: 'CREATE TABLE tasks (owner TEXT NOT NULL, workspace TEXT NOT NULL, id TEXT NOT NULL, status TEXT NOT NULL, version INTEGER NOT NULL, auth_epoch INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,id))',
   ingress: 'CREATE TABLE ingress (owner TEXT NOT NULL, workspace TEXT NOT NULL, provider TEXT NOT NULL, source TEXT NOT NULL, event TEXT NOT NULL, task TEXT NOT NULL, received_at INTEGER NOT NULL, PRIMARY KEY(owner,workspace,provider,source,event), FOREIGN KEY(owner,workspace,task) REFERENCES tasks(owner,workspace,id))',
@@ -48,7 +48,7 @@ function preflight(path, existed) {
     if (read!==header.length || !header.subarray(0,16).equals(Buffer.from('SQLite format 3\0','ascii'))) fail('STORAGE_UNAVAILABLE');
     const version=header.readInt32BE(60);
     if (version>SCHEMA_VERSION) fail('SCHEMA_FUTURE');
-    if (![1,2,3,4,SCHEMA_VERSION].includes(version)) fail('SCHEMA_UNSUPPORTED');
+    if (![1,2,3,4,5,SCHEMA_VERSION].includes(version)) fail('SCHEMA_UNSUPPORTED');
     if (header[18]!==1 || header[19]!==1) fail('SCHEMA_UNSUPPORTED');
     const pageSize=header.readUInt16BE(16)===1 ? 65536 : header.readUInt16BE(16);
     if (pageSize<512 || pageSize>65536 || (pageSize & (pageSize-1))!==0 || info.size<pageSize || info.size%pageSize!==0 || pageSize-header[20]<480 || header[21]!==64 || header[22]!==32 || header[23]!==32) fail('STORAGE_UNAVAILABLE');
@@ -99,7 +99,7 @@ export class Ledger {
         this.db.exec('BEGIN EXCLUSIVE');
         try { this.version(0); if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) fail('SCHEMA_UNSUPPORTED'); for (const sql of Object.values({ ...BASE, ...EXTRA, ...RUNTIME, ...AUTOMATION })) this.db.exec(sql); this.db.exec(`PRAGMA user_version=${SCHEMA_VERSION}; COMMIT`); }
         catch (error) { this.db.exec('ROLLBACK'); throw error; }
-      } else if ([1,2,3,4].includes(version)) {
+      } else if ([1,2,3,4,5].includes(version)) {
         const sourceSchema=version===1 ? BASE : version===2 ? {...BASE,...EXTRA} : version===3 ? {...BASE,...EXTRA,...RUNTIME} : {...BASE,...EXTRA,...RUNTIME,...AUTOMATION};
         this.verify(sourceSchema);
         if (this.db.prepare('PRAGMA journal_mode').get().journal_mode !== 'delete') fail('SCHEMA_UNSUPPORTED');
@@ -178,7 +178,7 @@ export class Ledger {
   }
   validateRuntimeRows(version=SCHEMA_VERSION) {
     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()){
-      const auditKinds=version>=5?",'audit_input','audit_result'":'';
+      const auditKinds=(version>=5?",'audit_input','audit_result'":'')+(version>=6?",'local_source_pair','local_notification_policy','local_report','normal_provenance_registry'":'');
       if(this.db.prepare(`SELECT 1 FROM automation_records WHERE kind NOT IN ('source','subscription','event','clock','semantic','audit','report','repair','execution','receipt_policy','legacy_command','notification_policy','notification_window','notification_group','notification_fact','notification_claim'${auditKinds}) OR NOT json_valid(payload) LIMIT 1`).get()||this.db.prepare('SELECT 1 FROM workspace_memory WHERE revision<1 OR NOT json_valid(metadata) LIMIT 1').get())fail('STORAGE_INVALID');
     }
     if(this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name='automation_records'").get()&&this.db.prepare("SELECT 1 FROM automation_records a WHERE a.task IS NOT NULL AND NOT EXISTS(SELECT 1 FROM runtime_tasks t WHERE t.owner=a.owner AND t.workspace=a.workspace AND t.task=a.task) LIMIT 1").get())fail('STORAGE_INVALID');

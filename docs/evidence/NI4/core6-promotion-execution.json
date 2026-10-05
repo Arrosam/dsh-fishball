@@ -1,0 +1,565 @@
+{
+  "formatVersion": "df.ni4.core6-promotion-execution/v1",
+  "status": "FIRST_SELECTED_CANONICAL_TWO_GROUPS_PASS_LEASE_RELEASED",
+  "authorization": {
+    "path": "docs/evidence/NI4/core6-promotion-root-execution-freeze.json",
+    "sha256": "50b239b4e7884995cab4fc27825aeac23d56506a9008968d9720a8e83fb1bafa",
+    "bytes": 2592
+  },
+  "command": "/opt/homebrew/bin/node --test --test-name-pattern='^(readonly owner memory command preserves acknowledged historical put after correction and deletion|genuine5 writer migrates to6 with exact backup/cipher/ack preservation; old5 refuses6 before writes)$' test/normal-provenance-core.test.mjs",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "runtime": {
+    "path": "/opt/homebrew/bin/node",
+    "version": "22.22.2",
+    "basis": "Existing root-confirmed baseline; no extra version command invoked"
+  },
+  "first": {
+    "exitCode": 0,
+    "tests": 2,
+    "suites": 0,
+    "pass": 2,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "tapDurationMs": 184.301625,
+    "execWallTimeSeconds": 0.16693501,
+    "execChunkId": "5ea707"
+  },
+  "filterDisposition": {
+    "selectedGroups": 2,
+    "selectedNames": [
+      "readonly owner memory command preserves acknowledged historical put after correction and deletion",
+      "genuine5 writer migrates to6 with exact backup/cipher/ack preservation; old5 refuses6 before writes"
+    ],
+    "remainingRegisteredNames": [
+      "local source/subscription acknowledgement commits exact pair, stale partial config persists across reopen",
+      "normal local ingress keeps first server timestamp and original event association over time/restart",
+      "owner cannot approve retained pending clock under newer source revision, with no new acknowledgement",
+      "advanced accepted verification stays unavailable in private normal artifact projection; raw progress is unverified",
+      "typed local claim refuses unavailable source/zero charge before mutation while advanced none remains compatible",
+      "typed progress commits source-derived not-run state and fact digest ignores row identity/blocker order",
+      "normal notification marker rejects generic policy downgrade without changing original policy",
+      "genuine5 backup collision and migration fault preserve old bytes and acknowledged public state",
+      "normal typed native provenance and publication enforce complete UTF8 U-1/U/U+1 reservation before mutation",
+      "normal publication is fenced by revoke/cancel and historical sent access cannot erase newer denial",
+      "normal notification exact manifest/current material gates share one claim; later notification audit does not stale selected artifact report",
+      "normal notification false manifest or omitted statement coverage rejects before outbox/frequency/reservation mutation",
+      "normal local report preserves unknown/budget/unexamined/fatal findings without passed or not-run substitution",
+      "genuine5 abrupt migration cut keeps durable5 backup and original acknowledgements",
+      "genuine5 spilled DELETE hot journal recovers only acknowledged memory then migrates6 without lost held claim",
+      "before-commit cuts roll back pair, signed local report and sent publication without losing reconciliation",
+      "typed local claim expires exactly at boundary and publication rechecks current policy after claim",
+      "two independent processes race the last weighted slot through typed local claim"
+    ],
+    "remaining18": "Excluded by exact filter, not executed; Node reports only2 tests and0 skipped, so no18-skip or full20 PASS claim",
+    "selectedChildCommands": []
+  },
+  "tap": {
+    "path": "docs/evidence/NI4/core6-promotion-execution/first.tap",
+    "sha256": "db2d1d242459579bff32a4db40fd96587fe3827a3ec0cdd522a5b018dc2b4051",
+    "bytes": 828
+  },
+  "document": {
+    "path": "docs/evidence/NI4/core6-promotion-execution.md",
+    "sha256": "985505731071f8d20921feae4701bad24ef381ddd200afae2bb37a26110f1684",
+    "bytes": 3888
+  },
+  "canonical11BeforeAfterPins": [
+    {
+      "path": "src/ledger.mjs",
+      "before": {
+        "path": "src/ledger.mjs",
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "bytes": 21567
+      },
+      "after": {
+        "path": "src/ledger.mjs",
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "bytes": 21567
+      },
+      "unchanged": true
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "before": {
+        "path": "src/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793
+      },
+      "after": {
+        "path": "src/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793
+      },
+      "unchanged": true
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "before": {
+        "path": "src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "after": {
+        "path": "src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "unchanged": true
+    },
+    {
+      "path": "src/context.mjs",
+      "before": {
+        "path": "src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "after": {
+        "path": "src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "unchanged": true
+    },
+    {
+      "path": "src/foundation.mjs",
+      "before": {
+        "path": "src/foundation.mjs",
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+        "bytes": 22111
+      },
+      "after": {
+        "path": "src/foundation.mjs",
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+        "bytes": 22111
+      },
+      "unchanged": true
+    },
+    {
+      "path": "test/normal-provenance-core.test.mjs",
+      "before": {
+        "path": "test/normal-provenance-core.test.mjs",
+        "sha256": "923d9de8ef1b6fc48917f9c2073578f322f6cae96143c34ef6891daed900ff2d",
+        "bytes": 44471
+      },
+      "after": {
+        "path": "test/normal-provenance-core.test.mjs",
+        "sha256": "923d9de8ef1b6fc48917f9c2073578f322f6cae96143c34ef6891daed900ff2d",
+        "bytes": 44471
+      },
+      "unchanged": true
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/context.mjs",
+      "before": {
+        "path": "test/fixtures/schema5-core/src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "after": {
+        "path": "test/fixtures/schema5-core/src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "unchanged": true
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/foundation.mjs",
+      "before": {
+        "path": "test/fixtures/schema5-core/src/foundation.mjs",
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+        "bytes": 22111
+      },
+      "after": {
+        "path": "test/fixtures/schema5-core/src/foundation.mjs",
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+        "bytes": 22111
+      },
+      "unchanged": true
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/ledger.mjs",
+      "before": {
+        "path": "test/fixtures/schema5-core/src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+        "bytes": 21450
+      },
+      "after": {
+        "path": "test/fixtures/schema5-core/src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+        "bytes": 21450
+      },
+      "unchanged": true
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/runtime-security.mjs",
+      "before": {
+        "path": "test/fixtures/schema5-core/src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "after": {
+        "path": "test/fixtures/schema5-core/src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "unchanged": true
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/runtime-store.mjs",
+      "before": {
+        "path": "test/fixtures/schema5-core/src/runtime-store.mjs",
+        "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+        "bytes": 187413
+      },
+      "after": {
+        "path": "test/fixtures/schema5-core/src/runtime-store.mjs",
+        "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+        "bytes": 187413
+      },
+      "unchanged": true
+    }
+  ],
+  "beforePinVerification": "All11 expected post-promotion rows compared to actual source bytes before the command (preflight30852a) and after run",
+  "actualImportedModuleClosure": [
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567,
+      "imports": [
+        {
+          "specifier": "node:sqlite",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin"
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "src/ledger.mjs",
+            "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+            "bytes": 21567
+          }
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "src/runtime-security.mjs",
+            "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+            "bytes": 5323
+          }
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "src/context.mjs",
+            "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+            "bytes": 24196
+          }
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "src/ledger.mjs",
+            "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+            "bytes": 21567
+          }
+        }
+      ]
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        }
+      ]
+    },
+    {
+      "path": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111,
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "src/ledger.mjs",
+            "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+            "bytes": 21567
+          }
+        }
+      ]
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        }
+      ]
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111,
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "test/fixtures/schema5-core/src/ledger.mjs",
+            "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+            "bytes": 21450
+          }
+        }
+      ]
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "imports": [
+        {
+          "specifier": "node:sqlite",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin"
+        }
+      ]
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "test/fixtures/schema5-core/src/ledger.mjs",
+            "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+            "bytes": 21450
+          }
+        }
+      ]
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/runtime-store.mjs",
+      "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+      "bytes": 187413,
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "test/fixtures/schema5-core/src/ledger.mjs",
+            "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+            "bytes": 21450
+          }
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "test/fixtures/schema5-core/src/runtime-security.mjs",
+            "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+            "bytes": 5323
+          }
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": "test/fixtures/schema5-core/src/context.mjs",
+            "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+            "bytes": 24196
+          }
+        }
+      ]
+    }
+  ],
+  "fixtureDirectImports": [
+    "node:test",
+    "node:assert/strict",
+    "node:fs",
+    "node:crypto",
+    "node:sqlite",
+    "node:child_process",
+    "../src/runtime-security.mjs",
+    "./fixtures/schema5-core/src/runtime-store.mjs",
+    "node:os",
+    "node:path",
+    "../src/runtime-store.mjs",
+    "node:fs"
+  ],
+  "builtins": [
+    "node:assert/strict",
+    "node:child_process",
+    "node:crypto",
+    "node:fs",
+    "node:os",
+    "node:path",
+    "node:sqlite",
+    "node:test",
+    "node:util"
+  ],
+  "unchangedSourcePreparation": [
+    {
+      "path": "docs/evidence/NI4/core6-promotion-source-hold.json",
+      "sha256": "1b973100f2b7ce2337cb10917ece4438516092d3c8bea52b3c7cfd78afdd572a",
+      "bytes": 109730
+    },
+    {
+      "path": "docs/evidence/NI4/core6-promotion-source-hold.md",
+      "sha256": "248046daca0b4079c02f5a49a685bf97032ee61cf1cfca7a0a15f56d368c900b",
+      "bytes": 6079
+    }
+  ],
+  "algorithmsAssertionsFixtureUnmodified": true,
+  "executedEffects": [
+    "Actual source6 historical owner memory command after acknowledged correction/deletion/reopen and role/namespace/nonmemory collision refusal",
+    "Genuine original5 public writer to actual promoted6 migration with exact schema5 backup/cipher/receipt/held-claim preservation",
+    "Actual5 constructor refuses future6 before database/directory writes",
+    "Synthetic temporary SQLite stores/directories, read-only encrypted-row inspection and cleanup"
+  ],
+  "notExecuted": [
+    "No selected child process",
+    "No full20 or stress/fault/hot-journal/race rerun",
+    "No protected-row/manual PRAGMA/version relabel writes",
+    "No native/profile/HTTP/listener/provider/model/tool/account/credential/browser/Git/publication action"
+  ],
+  "scopeCounters": {
+    "authorizedNodeCommands": 1,
+    "extraVersionSyntaxAlternateTestCommands": 0,
+    "reruns": 0,
+    "selectedChildProcesses": 0,
+    "sourceOrAssertionChanges": 0,
+    "nativeHttpListenerProviderModelToolBrowserAccountGitActions": 0,
+    "runtimePolicyDenials": 0
+  },
+  "historicalAttribution": {
+    "author": "prior isolated20/20 remains previous evidence",
+    "independent": "eightfamilies/ten distinct leaves across previous first+affected; no full corrected11-node run",
+    "thisRun": "2 selected canonical integration groups only"
+  },
+  "acceptedCriteria": [],
+  "totalRetainedCriteria": 87,
+  "remainingHolds": [
+    "Normal original-native/installed composition and actual source/usage/model proof",
+    "Independent CODE platform hold",
+    "Supported browser/accessibility",
+    "Useful model quality",
+    "All87 aggregate/full MVP/publication"
+  ],
+  "leaseReleased": true
+}

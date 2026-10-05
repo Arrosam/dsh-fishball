@@ -1,0 +1,72 @@
+{
+  "formatVersion": "df.ni4.core6-promotion.root-execution-freeze/v1",
+  "status": "EXACT_TWO_FILE_SOURCE6_PROMOTED_CANONICAL_FOCUSED_RUN_NOT_YET_EXECUTED",
+  "priorHead": "8564b9f",
+  "schemaVersion": 6,
+  "original5Retained": true,
+  "leaseReconciliation": {
+    "nativeCompositionEngineOriginal5Copies": "44 files complete",
+    "independentNativeToolDesignSharedReadLease": "explicitly released"
+  },
+  "rows": [
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": "test/normal-provenance-core.test.mjs",
+      "sha256": "923d9de8ef1b6fc48917f9c2073578f322f6cae96143c34ef6891daed900ff2d",
+      "bytes": 44471
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": "test/fixtures/schema5-core/src/runtime-store.mjs",
+      "sha256": "694b98fbf41090f0278e1421c3b324a236a0f0fcf11d94ff2d685e54d8f2b648",
+      "bytes": 187413
+    }
+  ],
+  "sourceCorrection": false,
+  "previousEvidence": "isolated author20/20; independent10 distinct leaves/eightfamilies across first+affected commands",
+  "scope": "Only canonical genuine5 migration/old-reader refusal and historical memory-command groups; no child/native/model/HTTP/browser",
+  "fullAcceptance": false
+}
