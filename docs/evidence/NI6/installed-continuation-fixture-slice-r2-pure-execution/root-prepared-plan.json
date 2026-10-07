@@ -1,0 +1,221 @@
+{
+  "contractVersion": "df.ni6.fixture-slice-r2.pure-execution-plan/v1",
+  "status": "PREPARED_ONLY_ROOT_EXECUTION_GO_FALSE",
+  "rootReviewedExecutionGO": false,
+  "runCountAuthorized": 1,
+  "all87": "HOLD",
+  "CODE": "BLOCKED_UNCHANGED",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "evidenceDirectory": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution",
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-installed-continuation-fixture-slice-r2/public-oracles.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-installed-continuation-fixture-slice-r2/original-observers.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-installed-continuation-fixture-slice-r2/public-instance-fixtures.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs"
+    ]
+  ],
+  "sequential": true,
+  "stopAfterFirstNonzeroCommand": true,
+  "timeoutSecondsPerCommand": 60,
+  "runner": {
+    "path": ".runtime/root-bounded-execution-60s.py",
+    "bytes": 5855,
+    "sha256": "e57882ad45265fead78c87c98bedd762314297f71cd46e654e18b0074e33532a"
+  },
+  "runnerInvocationProposedOnly": [
+    "python3",
+    ".runtime/root-bounded-execution-60s.py",
+    ".runtime/root-ni6-fixture-slice-r2-pure-execution-plan.json"
+  ],
+  "canonicalNode": {
+    "path": "/opt/homebrew/opt/node@22/bin/node",
+    "resolved": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+  },
+  "environmentPreflight": {
+    "requiredAbsentInParentEnvironment": [
+      "NODE_OPTIONS",
+      "NODE_PATH",
+      "NODE_TEST_CONTEXT"
+    ],
+    "observedAbsentDuringPreparation": true,
+    "mustRepeatBeforeRootGOAndRunnerLaunch": true,
+    "runnerDoesNotEnforceThisMetadata": true,
+    "ordinaryNodeTestWorkerContext": "Node may set its own internal test-worker context; that ordinary one worker is not native-process proof"
+  },
+  "preflightBeforeRootGO": [
+    "Root reads this exact plan and both final r2 review pairs; only root changes rootReviewedExecutionGO after its exact followup approval",
+    "Verify this exact plan/runner, all55 declared pins, r2 manifest and all48 owned/input records; stop on any drift",
+    "Verify canonical Node resolves to the stated physical binary/hash and NODE_OPTIONS/NODE_PATH/NODE_TEST_CONTEXT remain absent in the parent environment",
+    "Require the exact evidenceDirectory absent; no reuse, overwrite or retry of an existing execution directory",
+    "Invoke only the pinned existing runner; precisely four syntax checks then one pure test command, once sequential,60s each, first nonzero stops the remaining commands"
+  ],
+  "pins": {
+    ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts": "f72cc0e13b57c436817ab8199268bc7defc609c7121f8fda49018ca919bf84c9",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts": "7c03f0f92be4a48cc7960ac02fc040b2088b462ae790eab1427e50bfe5e74b31",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/README.md": "0cb0ad3ac89d58cc23e68bac8baa01418a6e09355b9a83e73b534928aa3c40d7",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/bounded-cells.json": "89d99d61599d2c177428035284fa9f8508ca8e783230aa682a59d72a37adb7da",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/original-observers.mjs": "e3f7a45b173f8a78bbe1042b12085dbe6c095606314b31c703d0261dcebd25fd",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/prerequisites.md": "f09417351333d1e9ddb46f807bff33d856eed2311c2a10b92ac6270c4a54dafd",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/public-instance-fixtures.mjs": "89bd223f637d3c3fa729e1146ab2fbea1dc75aa7972171d0a028319f3a2b67b3",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/public-oracles.mjs": "9dde6c88585e7fa79310d7e00dc5779e754b22e504144d40370fa039dfb06494",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/source-manifest.json": "581625ffd92367839c8a35f2bdb10dfae6e2131173f2a3bb3d7b3480f9eb0e62",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/README.md": "213810bfe7365d348f163dfef61e3db594b46f82985899993ca772cc8ea0c951",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/bounded-cells.json": "2d1889b976d517e79d1fe9dc56357c123e78b0c1cfd44316254d11684db6c22c",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs": "00e2f0549c1c4765a5d4d0ba1f3a69bd535021e5e7f21423edb0317c7792a67e",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/history/draft-status.json": "17ca2c991b0edaa6f4499549fea67a6ae33233a942013d7331113408816a4bed",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/history/literal-r1-to-unsealed-r2.patch": "8ec40dc0e5b462c359fc6acda0d442a25cbcc3e43f0e38d260ff1eb65e168ca6",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/literal-r1-to-r2.patch": "8ec19635ebea93f324f1d20138b161a67a5f942218ccfa4cdc1195cc8fd048ce",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/original-observers.mjs": "d265c26d01a97e489ebaab084e0641ce697c1521e40cadb9d119a9a31afff320",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/prerequisites.md": "c03f5be04d844a23d2a1f5ad642034740e85570f52fceec48a0bc0939409d4ad",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/public-instance-fixtures.mjs": "89bd223f637d3c3fa729e1146ab2fbea1dc75aa7972171d0a028319f3a2b67b3",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/public-oracles.mjs": "8ec97df4c4646e935716f8a9abfe666dbb9c22e2291c8197e4037f47c7551198",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/source-manifest.json": "c2ea5a0ffe0d046626297a84817eaa3ae87a19d1203c15a37d98e76057affb58",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/status.json": "145df06548ed2836ec1cd488e4388740320683d5e103ab34236d135da264cee0",
+    ".runtime/ni6-installed-continuation-public-contract/public-callables.d.ts.txt": "7641c24bc0c7f2734404b7572b9ba5813a96d3d0ccb760dc80b829603e9d913b",
+    ".runtime/ni6-installed-continuation-public-contract/public-interface-manifest.json": "37eb43db1dd90173281ca0c9a65148255b096e6e395cd034b2df8202ce1688e6",
+    ".runtime/ni6-preparation-independent-continuation-r4/source-manifest.json": "767cb05aab89fde616f649b12199d76c672b72339166bc139f33b39a45e93e42",
+    ".runtime/ni6-request-validation-proposal-r1/source-manifest.json": "86822898eb27e73f06c40aa1f5fc99333fd622d70da93737598202060937f894",
+    ".runtime/ni6-runtime-composition-r4/contracts/owner-command-protocol.d.ts.txt": "06a91ea6dcb8f22ec6a43a5730f1f6681f31484a5562adc70ed5c553dff3c97d",
+    ".runtime/ni6-runtime-composition-r4/contracts/schema7-contracts.d.ts.txt": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+    ".runtime/ni6-runtime-composition-r4/full-composition-source-pins.json": "1d61f4f0be80d1bc08c00e9a293273c35889f78d937305c7ae26ab65d7259403",
+    ".runtime/ni6-runtime-composition-r4/imports-effects.json": "a45b7b451fc42000a07af564e1a910ea9f9459e4b5b30e9fa01fe08ebe85f6ec",
+    ".runtime/ni6-runtime-composition-r4/source-closure.json": "f8ae5efd9fcfb1b19fa7a9cb1bafac3b30770b323878f644b14d2f72f62d7c27",
+    ".runtime/ni6-runtime-composition-r4/src/memory.mjs": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+    ".runtime/ni6-runtime-composition-r4/src/runtime-store.mjs": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7",
+    ".runtime/ni6-runtime-composition-r4/src/worker.mjs": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a",
+    ".runtime/ni6-sec05-oracle-amendment-r1/source-manifest.json": "6171e8188ba0f9e092d66e4f86aac634f5090c7bd98cac40dd2e1d2059eb80d9",
+    ".runtime/root-bounded-execution-60s.py": "e57882ad45265fead78c87c98bedd762314297f71cd46e654e18b0074e33532a",
+    "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "AGENTS.md": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+    "docs/development-workflow.md": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.json": "86ce52e50c502642da53e50059b5da3547a13e6ef01135da39e88ec0193cc624",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.md": "48448ce6676ff6877d5b17d3c59ba6237f51235c17d15bc1b663e6f9359317a0",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.json": "72578a2ec66eea615f2027a0ff8c2b5bf23b1fdd3cd80bb4dbcf56fe34006d89",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.md": "b0dbdfcaecf6e6839cf5d821b5b13c10795d9cc37273ce9e519aabcb613b0a2a",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.json": "d6177c6faab09489eadfe7c9f0ded1d6f6271c635eacc14fb71d5a46da4a75ec",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.md": "291330d7664b3f34f11d84cb30f5dae69d1a34250f7e2db2301c7b36ced5b8ac",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.json": "ca85e9e1e635a9891e494ad5d9b104498b92bcbf17be27398b7faa22c1a1ddb2",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.md": "95b4b6116d3fcee2faf6cc44e8dd8c81f6cd0e5db242c195e4ae5cdc60e5612b",
+    "docs/evidence/NI6/installed-continuation-independent-design.json": "6d7f60e7468c21a087735a5a39396d951f85e262d4ab2c2078fd8531ea387977",
+    "docs/evidence/NI6/installed-continuation-independent-design.md": "bd896d6486f4e7f2ee58cf8a2da83d7a8a446a5dec38891c750696dd0579e90e",
+    "docs/evidence/NI6/native-runtime-composition-r4-independent-source-review.json": "43c0f2fef097d131ea73697879e8591418c54b6baf76130aa1a0d0428d99e4d1",
+    "docs/evidence/NI6/native-runtime-composition-r4-independent-source-review.md": "0ff783b0ebe5fdd9a3c1cd67da51c1844d2de304a860d582218188e80fce0f00",
+    "docs/evidence/NI6/native-runtime-composition-r4-source.md": "e6c7454e818e18194aa308151d6fa137db75925da4e813cc106284d5fded0375"
+  },
+  "sourceCopies": [
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/README.md",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/bounded-cells.json",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/original-observers.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/prerequisites.md",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/public-instance-fixtures.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/public-oracles.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r1/source-manifest.json",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/README.md",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/bounded-cells.json",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/history/draft-status.json",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/history/literal-r1-to-unsealed-r2.patch",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/literal-r1-to-r2.patch",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/original-observers.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/prerequisites.md",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/public-instance-fixtures.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/public-oracles.mjs",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/status.json",
+    ".runtime/ni6-installed-continuation-fixture-slice-r2/source-manifest.json",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.md",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.json",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.json",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.md",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.json",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.json",
+    ".runtime/ni6-installed-continuation-public-contract/public-callables.d.ts.txt",
+    "docs/evidence/NI6/installed-continuation-independent-design.json"
+  ],
+  "publicGraphManifest": null,
+  "sourceClosureQualification": "Finite byte pins and evidence copies only. Original host/app dependency graph is not evaluated; full host closure is not claimed. Runner additionally pins the actual invocation plan bytes and its own bytes.",
+  "pureEvaluationClosure": [
+    "fixture-oracles.test.mjs",
+    "public-oracles.mjs",
+    "node:test",
+    "node:assert/strict"
+  ],
+  "neverEvaluatedByThisPlan": [
+    "original-observers.mjs",
+    "public-instance-fixtures.mjs",
+    "Cordis",
+    "RuntimeStore",
+    "MemoryAdapter",
+    "WorkerManager",
+    "original native/store/runtime/host modules"
+  ],
+  "executionBounds": {
+    "nodeCommands": 5,
+    "syntaxCommands": 4,
+    "pureTestCommands": 1,
+    "commandConcurrency": 1,
+    "ordinaryNodeTestWorkers": 1,
+    "rootPythonRunnerProcesses": 1,
+    "ordinaryTestWorkerIsNativeProcessProof": false,
+    "proposedPureCases": 25,
+    "nativeAuthorityContextDonorProcessDbFixtures": 0,
+    "modelCalls": 0,
+    "networkCalls": 0,
+    "toolEffects": 0,
+    "serviceProfileListenerBrowserChanges": 0,
+    "privateStateInspection": 0,
+    "protectedCodeActions": 0
+  },
+  "retainedFunctionalDisposition": {
+    "standaloneFunctionalHostRunnableCells": 0,
+    "mappedComplete": 0,
+    "mappedPartial": 8,
+    "mappedHeldObservationOnly": 2,
+    "originalObserverLifecycle": "IH03_HOLD",
+    "holds": [
+      "IH01",
+      "IH02",
+      "IH03",
+      "IH05"
+    ],
+    "partialSourceTaskCheckIdentityAndQIndexCountGaps": "UNCHANGED",
+    "native47CallPendingSelection": "NOT_SELECTED_NOT_EXECUTED",
+    "pureProof": "DTO and event-window oracle behavior only; no functional/native/plugin/cold/transport/browser/quality acceptance"
+  },
+  "r2ManifestSha256": "c2ea5a0ffe0d046626297a84817eaa3ae87a19d1203c15a37d98e76057affb58",
+  "r1ManifestSha256": "581625ffd92367839c8a35f2bdb10dfae6e2131173f2a3bb3d7b3480f9eb0e62",
+  "finalR2ReviewPins": {
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.md": "291330d7664b3f34f11d84cb30f5dae69d1a34250f7e2db2301c7b36ced5b8ac",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.json": "d6177c6faab09489eadfe7c9f0ded1d6f6271c635eacc14fb71d5a46da4a75ec",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.md": "95b4b6116d3fcee2faf6cc44e8dd8c81f6cd0e5db242c195e4ae5cdc60e5612b",
+    "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.json": "ca85e9e1e635a9891e494ad5d9b104498b92bcbf17be27398b7faa22c1a1ddb2"
+  },
+  "preparationOnly": "No Node check/test command, runner, app import/evaluation, DB/native/model/network/service/browser/private/protected action or Git operation was performed by the author. Root owns execution and Git."
+}

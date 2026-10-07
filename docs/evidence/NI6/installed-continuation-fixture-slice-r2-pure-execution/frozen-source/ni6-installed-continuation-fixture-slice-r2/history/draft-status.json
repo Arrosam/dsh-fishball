@@ -1,0 +1,43 @@
+{
+  "revision": "ni6-installed-continuation-fixture-slice-r2",
+  "status": "UNSEALED_SOURCE_DRAFT_PENDING_BOTH_FINAL_R1_REPORTS",
+  "standaloneNativeRunnableCells": 0,
+  "pureRegressionTestCountProposed": 25,
+  "pureTestsExecuted": 0,
+  "confirmedRootFindings": [
+    "exact own strings/data descriptors without accessors",
+    "current-resume exact boundary-prefix window",
+    "closed original observer cannot supply live counts"
+  ],
+  "preservedR1ManifestSha256": "581625ffd92367839c8a35f2bdb10dfae6e2131173f2a3bb3d7b3480f9eb0e62",
+  "unchangedCopiedFiles": [
+    "public-instance-fixtures.mjs",
+    "prerequisites.md"
+  ],
+  "modifiedCopiedFiles": [
+    "public-oracles.mjs",
+    "original-observers.mjs"
+  ],
+  "newPureTestImports": [
+    "node:test",
+    "node:assert/strict",
+    "./public-oracles.mjs"
+  ],
+  "retainedHolds": [
+    "IH01",
+    "IH02",
+    "IH03",
+    "IH05",
+    "all87 accepted0/HOLD",
+    "protected final CODE permanent block"
+  ],
+  "nativeDirectBounds": "r1 proposed47 calls unchanged; pending final review. Pure regressions do not execute native functions.",
+  "actualBoundaryPrerequisite": "Root captures exact immutable events() prefixes before actual resume and after natural publication/before explicit execute; array equality cannot establish host authority or boundary provenance.",
+  "postClose": "events/requests/originalAgents remain historical only; counts and live same-ID checks refuse after close.",
+  "notRun": [
+    "JavaScript parse/import/evaluation/test/build",
+    "DB/native/service/profile/listener/browser/model/network",
+    "Git"
+  ],
+  "sealing": "Root requested UNSEALED until both final r1 reports arrive; no source-manifest written."
+}

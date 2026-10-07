@@ -1,0 +1,124 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-installed-continuation-fixture-slice-r2/public-oracles.mjs"
+      ],
+      "durationSeconds": 0.067841,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T12:32:39.463898+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T12:32:39.396062+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-01.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-installed-continuation-fixture-slice-r2/original-observers.mjs"
+      ],
+      "durationSeconds": 0.068056,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T12:32:39.532422+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T12:32:39.464370+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-02.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-installed-continuation-fixture-slice-r2/public-instance-fixtures.mjs"
+      ],
+      "durationSeconds": 0.067762,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T12:32:39.600588+00:00",
+      "index": 3,
+      "startedAt": "2026-10-07T12:32:39.532848+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-03.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-03.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs"
+      ],
+      "durationSeconds": 0.067177,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T12:32:39.668205+00:00",
+      "index": 4,
+      "startedAt": "2026-10-07T12:32:39.601063+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-04.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-04.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs"
+      ],
+      "durationSeconds": 0.209484,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T12:32:39.878185+00:00",
+      "index": 5,
+      "startedAt": "2026-10-07T12:32:39.668731+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-05.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 4343,
+        "path": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/command-05.stdout.txt",
+        "sha256": "63081277aa5e4429571cef2436989d63df3ec8cc199a49227ae843cb7c6011c8"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": false
+}

@@ -1,0 +1,225 @@
+{
+  "revision": "ni6-installed-continuation-fixture-slice-r1",
+  "status": "SOURCE_ONLY_SEALED_NOT_PARSED_IMPORTED_TESTED_OR_EXECUTED",
+  "standaloneRunnableCells": 0,
+  "candidate": ".runtime/ni6-runtime-composition-r4/",
+  "independentOracle": "docs/evidence/NI6/installed-continuation-independent-design.json",
+  "selectionIsNotExecutionGo": true,
+  "functions": [
+    {
+      "id": "SL-P01",
+      "function": "currentPreparation",
+      "designSubsteps": [
+        "IC-W01-01"
+      ],
+      "completeDesignCell": false,
+      "prerequisites": [
+        "IH03 genuine same-store admitted owner/memory/store and fresh synthetic task"
+      ],
+      "bounds": {
+        "prepareAttempts": 2,
+        "publicReads": 6,
+        "newContextCommits": 1,
+        "newOwnerIntents": 0,
+        "newClaims": 0,
+        "modelStreams": 0
+      }
+    },
+    {
+      "id": "SL-Q05",
+      "function": "capturedOwnerIntent",
+      "designSubsteps": [
+        "IC-Q05-01",
+        "IC-Q08-01",
+        "IC-Q08-06"
+      ],
+      "completeDesignCell": false,
+      "prerequisites": [
+        "IH03 actual captured producer donor",
+        "existing actual coordinator",
+        "current task version>1",
+        "two fresh distinct synthetic command refs"
+      ],
+      "bounds": {
+        "recordAttempts": 4,
+        "publicReads": 19,
+        "newOwnerIntents": 1,
+        "expectedRefusals": 4,
+        "newClaims": 0,
+        "modelStreams": 0
+      },
+      "exactRefusals": [
+        {
+          "attempt": "actual coordinator record",
+          "code": "UNAUTHORIZED"
+        },
+        {
+          "attempt": "actual coordinator read",
+          "code": "UNAUTHORIZED"
+        },
+        {
+          "attempt": "actual coordinator list",
+          "code": "UNAUTHORIZED"
+        },
+        {
+          "attempt": "owner new command with task version minus one",
+          "code": "STALE_VERSION"
+        }
+      ]
+    },
+    {
+      "id": "SL-Q04H",
+      "function": "readActualHeldAuditCommand",
+      "designSubsteps": [
+        "IC-Q04-01",
+        "IC-Q04-02"
+      ],
+      "completeDesignCell": false,
+      "prerequisites": [
+        "IH02 actual absent-role provenance",
+        "IH03 actual original held audit writer receipt; no fabricated donor"
+      ],
+      "bounds": {
+        "publicReads": 6,
+        "newOwnerIntents": 0,
+        "newClaims": 0,
+        "modelStreams": 0
+      },
+      "truth": "Committed history must really be held with null release evidence; pending/refusal is HOLD for this held-history positive."
+    },
+    {
+      "id": "SL-W09C",
+      "function": "cancelOwnReleasedDonor",
+      "designSubsteps": [
+        "IC-W09-02"
+      ],
+      "completeDesignCell": false,
+      "prerequisites": [
+        "IH03 existing original manager/owner",
+        "genuine own donor already released",
+        "IH03 original resume denial entry still required"
+      ],
+      "bounds": {
+        "cancelAttempts": 1,
+        "publicReads": 4,
+        "newOwnerIntents": 0,
+        "newClaims": 0,
+        "modelStreams": 0
+      }
+    },
+    {
+      "id": "SL-C01R",
+      "function": "readonlyCommandInNewProcess",
+      "designSubsteps": [
+        "IC-C01-01"
+      ],
+      "completeDesignCell": false,
+      "selection": "pending state only for this proposed first slice; committed branch reserved for a separately selected IC-C04 scope",
+      "prerequisites": [
+        "IH03 freshly admitted actual owner",
+        "IH05 root-observed A exit and entirely fresh B",
+        "genuine pending Q from SL-Q05 and exact original durable synthetic paths"
+      ],
+      "bounds": {
+        "publicReads": 5,
+        "newOwnerIntents": 0,
+        "newClaims": 0,
+        "modelStreams": 0,
+        "processesIncludingDonor": 2
+      }
+    }
+  ],
+  "observationHelpers": [
+    {
+      "function": "observeOriginalContext",
+      "listeners": 5,
+      "maxNaturalEventRows": 32,
+      "maxActualAgentPublications": 2,
+      "maxObservedMockStreams": 2,
+      "maxRequestMessagesUtf8Bytes": 32768,
+      "manualEvents": 0,
+      "disposer": "own five original listener registrations only"
+    },
+    {
+      "function": "assertSameIdResumeObservation",
+      "designSubsteps": [
+        "IC-W02-01",
+        "IC-C03-01"
+      ],
+      "completeDesignCell": false,
+      "status": "OBSERVATION_ONLY_IH01_IH03_IH05_HOLD",
+      "nativeCalls": 0
+    }
+  ],
+  "proposedDirectAggregate": {
+    "publicCalls": 47,
+    "publicReads": 40,
+    "prepareAttempts": 2,
+    "recordAttempts": 4,
+    "cancelAttempts": 1,
+    "expectedRefusals": 4,
+    "newOwnerIntentCommits": 1,
+    "constructors": 0,
+    "storeCloses": 0,
+    "nativeDispatchExecuteCaptureFinishCalls": 0,
+    "processSpawn": 0,
+    "realModelCalls": 0,
+    "networkCalls": 0,
+    "toolEffects": 0,
+    "concurrency": 1
+  },
+  "boundMeaning": "Direct lexical fixture calls with finite loop expansion only, not transitive effects. No donor setup/cleanup or runnable root orchestration is authored. Root must bind the independent per-cell donor-inclusive ceilings before GO.",
+  "proposedSyntheticPaths": [
+    {
+      "case": "SL-P01",
+      "scratchRoot": ".runtime/ni6-installed-continuation-first-slice-scratch-r1/preparation",
+      "status": "NOT_CREATED"
+    },
+    {
+      "case": "SL-Q05 then separately scoped SL-C01R",
+      "scratchRoot": ".runtime/ni6-installed-continuation-first-slice-scratch-r1/pending-owner",
+      "status": "NOT_CREATED"
+    },
+    {
+      "case": "SL-Q04H",
+      "scratchRoot": ".runtime/ni6-installed-continuation-first-slice-scratch-r1/held-audit",
+      "status": "NOT_CREATED"
+    },
+    {
+      "case": "SL-W09C",
+      "scratchRoot": ".runtime/ni6-installed-continuation-first-slice-scratch-r1/cancel-released",
+      "status": "NOT_CREATED"
+    }
+  ],
+  "rootPreflight": [
+    "Fresh independent source and affected design review of exact sealed files",
+    "Freeze actual original public admitted setup and genuine donor provenance; otherwise HOLD",
+    "Verify exact genuine candidate and full original host closure before any import",
+    "Freeze separate own synthetic paths/process commands/selected mocked source/cleanup/counters",
+    "Once only, sequential; first unexpected failure stops downstream work; each public boundary<=30000ms and each root command<=60000ms; no retry/fallback"
+  ],
+  "runner": "NONE; no runnable entry/wrapper/dispatcher or process setup supplied",
+  "holds": [
+    "IH01",
+    "IH02",
+    "IH03",
+    "IH05"
+  ],
+  "acceptance": {
+    "all87": "accepted0/HOLD",
+    "protectedFinalCode": "PERMANENT_BLOCK_UNCHANGED",
+    "nativePluginBrowserQuality": "NOT_PROVEN"
+  },
+  "priorRootReportedState": {
+    "ninePublicContinuationLeaves": "ACTUAL9PASS committed9dea; parent-provided, not Git-verified here",
+    "runningUiHandoff": "b3bd4c7; parent-provided, not Git-verified here"
+  },
+  "nonActions": [
+    "No JS parse/import/evaluation/test/build",
+    "No DB/native/private/model/network operation",
+    "No profile/listener/browser changes",
+    "No Git operation",
+    "No protected CODE inspection/retry/reroute",
+    "No old evidence/source/capsule mutation"
+  ]
+}

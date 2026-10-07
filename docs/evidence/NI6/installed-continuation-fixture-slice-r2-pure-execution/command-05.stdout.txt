@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: keys accepts ordinary required and optional data fields
+ok 1 - keys accepts ordinary required and optional data fields
+  ---
+  duration_ms: 1.262542
+  type: 'test'
+  ...
+# Subtest: keys accepts a frozen ordinary DTO
+ok 2 - keys accepts a frozen ordinary DTO
+  ---
+  duration_ms: 0.141958
+  type: 'test'
+  ...
+# Subtest: keys rejects a missing required key
+ok 3 - keys rejects a missing required key
+  ---
+  duration_ms: 5.280792
+  type: 'test'
+  ...
+# Subtest: keys rejects an extra enumerable key
+ok 4 - keys rejects an extra enumerable key
+  ---
+  duration_ms: 0.2515
+  type: 'test'
+  ...
+# Subtest: keys rejects an extra nonenumerable key
+ok 5 - keys rejects an extra nonenumerable key
+  ---
+  duration_ms: 0.164959
+  type: 'test'
+  ...
+# Subtest: keys rejects an own symbol key
+ok 6 - keys rejects an own symbol key
+  ---
+  duration_ms: 0.23525
+  type: 'test'
+  ...
+# Subtest: keys rejects a getter without invoking it
+ok 7 - keys rejects a getter without invoking it
+  ---
+  duration_ms: 0.145917
+  type: 'test'
+  ...
+# Subtest: keys rejects a setter without invoking it
+ok 8 - keys rejects a setter without invoking it
+  ---
+  duration_ms: 0.111334
+  type: 'test'
+  ...
+# Subtest: keys rejects a combined accessor without invoking either accessor
+ok 9 - keys rejects a combined accessor without invoking either accessor
+  ---
+  duration_ms: 0.376416
+  type: 'test'
+  ...
+# Subtest: keys rejects a nonplain prototype
+ok 10 - keys rejects a nonplain prototype
+  ---
+  duration_ms: 1.499583
+  type: 'test'
+  ...
+# Subtest: keys rejects a null-prototype object
+ok 11 - keys rejects a null-prototype object
+  ---
+  duration_ms: 0.570833
+  type: 'test'
+  ...
+# Subtest: keys rejects null
+ok 12 - keys rejects null
+  ---
+  duration_ms: 0.12775
+  type: 'test'
+  ...
+# Subtest: keys rejects an array
+ok 13 - keys rejects an array
+  ---
+  duration_ms: 0.178417
+  type: 'test'
+  ...
+# Subtest: resume window accepts donor-inclusive natural rows and exact boundary prefixes
+ok 14 - resume window accepts donor-inclusive natural rows and exact boundary prefixes
+  ---
+  duration_ms: 1.808292
+  type: 'test'
+  ...
+# Subtest: resume window rejects a stale donor announcement without a new announcement
+ok 15 - resume window rejects a stale donor announcement without a new announcement
+  ---
+  duration_ms: 0.549833
+  type: 'test'
+  ...
+# Subtest: resume window rejects a new announcement after agent publication
+ok 16 - resume window rejects a new announcement after agent publication
+  ---
+  duration_ms: 0.475417
+  type: 'test'
+  ...
+# Subtest: resume window rejects a stream before the post-publication pre-execute snapshot
+ok 17 - resume window rejects a stream before the post-publication pre-execute snapshot
+  ---
+  duration_ms: 0.12825
+  type: 'test'
+  ...
+# Subtest: resume window rejects an extra successor stream
+ok 18 - resume window rejects an extra successor stream
+  ---
+  duration_ms: 0.2605
+  type: 'test'
+  ...
+# Subtest: resume window rejects a mismatched pre-resume prefix
+ok 19 - resume window rejects a mismatched pre-resume prefix
+  ---
+  duration_ms: 0.85725
+  type: 'test'
+  ...
+# Subtest: resume window rejects a mismatched pre-execute prefix
+ok 20 - resume window rejects a mismatched pre-execute prefix
+  ---
+  duration_ms: 0.302041
+  type: 'test'
+  ...
+# Subtest: resume window rejects reversed boundary order
+ok 21 - resume window rejects reversed boundary order
+  ---
+  duration_ms: 0.148291
+  type: 'test'
+  ...
+# Subtest: resume window rejects a mismatched resumed session identity
+ok 22 - resume window rejects a mismatched resumed session identity
+  ---
+  duration_ms: 0.156625
+  type: 'test'
+  ...
+# Subtest: resume window rejects a mismatched resumed agent identity
+ok 23 - resume window rejects a mismatched resumed agent identity
+  ---
+  duration_ms: 0.098209
+  type: 'test'
+  ...
+# Subtest: resume window rejects a snapshot captured before publication
+ok 24 - resume window rejects a snapshot captured before publication
+  ---
+  duration_ms: 0.127167
+  type: 'test'
+  ...
+# Subtest: resume window rejects a startup publication in the successor window
+ok 25 - resume window rejects a startup publication in the successor window
+  ---
+  duration_ms: 0.092791
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 123.471916

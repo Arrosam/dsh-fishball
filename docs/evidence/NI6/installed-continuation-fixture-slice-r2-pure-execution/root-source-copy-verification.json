@@ -1,0 +1,233 @@
+{
+  "checkedAt": "2026-10-07T12:37:55.526200+00:00",
+  "exactCopies": 32,
+  "rows": [
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/README.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/README.md",
+      "bytes": 3153,
+      "sha256": "0cb0ad3ac89d58cc23e68bac8baa01418a6e09355b9a83e73b534928aa3c40d7",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/bounded-cells.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/bounded-cells.json",
+      "bytes": 7126,
+      "sha256": "89d99d61599d2c177428035284fa9f8508ca8e783230aa682a59d72a37adb7da",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/original-observers.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/original-observers.mjs",
+      "bytes": 3783,
+      "sha256": "e3f7a45b173f8a78bbe1042b12085dbe6c095606314b31c703d0261dcebd25fd",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/prerequisites.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/prerequisites.md",
+      "bytes": 4750,
+      "sha256": "f09417351333d1e9ddb46f807bff33d856eed2311c2a10b92ac6270c4a54dafd",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/public-instance-fixtures.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/public-instance-fixtures.mjs",
+      "bytes": 12726,
+      "sha256": "89bd223f637d3c3fa729e1146ab2fbea1dc75aa7972171d0a028319f3a2b67b3",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/public-oracles.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/public-oracles.mjs",
+      "bytes": 4550,
+      "sha256": "9dde6c88585e7fa79310d7e00dc5779e754b22e504144d40370fa039dfb06494",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r1/source-manifest.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r1/source-manifest.json",
+      "bytes": 10874,
+      "sha256": "581625ffd92367839c8a35f2bdb10dfae6e2131173f2a3bb3d7b3480f9eb0e62",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/README.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/README.md",
+      "bytes": 3721,
+      "sha256": "213810bfe7365d348f163dfef61e3db594b46f82985899993ca772cc8ea0c951",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/bounded-cells.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/bounded-cells.json",
+      "bytes": 20152,
+      "sha256": "2d1889b976d517e79d1fe9dc56357c123e78b0c1cfd44316254d11684db6c22c",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/fixture-oracles.test.mjs",
+      "bytes": 5359,
+      "sha256": "00e2f0549c1c4765a5d4d0ba1f3a69bd535021e5e7f21423edb0317c7792a67e",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/history/draft-status.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/history/draft-status.json",
+      "bytes": 1696,
+      "sha256": "17ca2c991b0edaa6f4499549fea67a6ae33233a942013d7331113408816a4bed",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/history/literal-r1-to-unsealed-r2.patch",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/history/literal-r1-to-unsealed-r2.patch",
+      "bytes": 7062,
+      "sha256": "8ec40dc0e5b462c359fc6acda0d442a25cbcc3e43f0e38d260ff1eb65e168ca6",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/literal-r1-to-r2.patch",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/literal-r1-to-r2.patch",
+      "bytes": 12559,
+      "sha256": "8ec19635ebea93f324f1d20138b161a67a5f942218ccfa4cdc1195cc8fd048ce",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/original-observers.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/original-observers.mjs",
+      "bytes": 3786,
+      "sha256": "d265c26d01a97e489ebaab084e0641ce697c1521e40cadb9d119a9a31afff320",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/prerequisites.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/prerequisites.md",
+      "bytes": 7932,
+      "sha256": "c03f5be04d844a23d2a1f5ad642034740e85570f52fceec48a0bc0939409d4ad",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/public-instance-fixtures.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/public-instance-fixtures.mjs",
+      "bytes": 12726,
+      "sha256": "89bd223f637d3c3fa729e1146ab2fbea1dc75aa7972171d0a028319f3a2b67b3",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/public-oracles.mjs",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/public-oracles.mjs",
+      "bytes": 7266,
+      "sha256": "8ec97df4c4646e935716f8a9abfe666dbb9c22e2291c8197e4037f47c7551198",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/status.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/status.json",
+      "bytes": 2246,
+      "sha256": "145df06548ed2836ec1cd488e4388740320683d5e103ab34236d135da264cee0",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-fixture-slice-r2/source-manifest.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-fixture-slice-r2/source-manifest.json",
+      "bytes": 19964,
+      "sha256": "c2ea5a0ffe0d046626297a84817eaa3ae87a19d1203c15a37d98e76057affb58",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.md",
+      "bytes": 11265,
+      "sha256": "48448ce6676ff6877d5b17d3c59ba6237f51235c17d15bc1b663e6f9359317a0",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-source-review.json",
+      "bytes": 34627,
+      "sha256": "86ce52e50c502642da53e50059b5da3547a13e6ef01135da39e88ec0193cc624",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.md",
+      "bytes": 20416,
+      "sha256": "b0dbdfcaecf6e6839cf5d821b5b13c10795d9cc37273ce9e519aabcb613b0a2a",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r1-independent-test-design-review.json",
+      "bytes": 19109,
+      "sha256": "72578a2ec66eea615f2027a0ff8c2b5bf23b1fdd3cd80bb4dbcf56fe34006d89",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.md",
+      "bytes": 7071,
+      "sha256": "291330d7664b3f34f11d84cb30f5dae69d1a34250f7e2db2301c7b36ced5b8ac",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-source-review.json",
+      "bytes": 38495,
+      "sha256": "d6177c6faab09489eadfe7c9f0ded1d6f6271c635eacc14fb71d5a46da4a75ec",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.md",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.md",
+      "bytes": 14087,
+      "sha256": "95b4b6116d3fcee2faf6cc44e8dd8c81f6cd0e5db242c195e4ae5cdc60e5612b",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-fixture-slice-r2-independent-test-design-review.json",
+      "bytes": 17011,
+      "sha256": "ca85e9e1e635a9891e494ad5d9b104498b92bcbf17be27398b7faa22c1a1ddb2",
+      "matches": true
+    },
+    {
+      "source": ".runtime/ni6-installed-continuation-public-contract/public-callables.d.ts.txt",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/ni6-installed-continuation-public-contract/public-callables.d.ts.txt",
+      "bytes": 16576,
+      "sha256": "7641c24bc0c7f2734404b7572b9ba5813a96d3d0ccb760dc80b829603e9d913b",
+      "matches": true
+    },
+    {
+      "source": "docs/evidence/NI6/installed-continuation-independent-design.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/frozen-source/docs/evidence/NI6/installed-continuation-independent-design.json",
+      "bytes": 187561,
+      "sha256": "6d7f60e7468c21a087735a5a39396d951f85e262d4ab2c2078fd8531ea387977",
+      "matches": true
+    },
+    {
+      "source": ".runtime/root-ni6-fixture-slice-r2-pure-execution-plan.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/root-prepared-plan.json",
+      "bytes": 16439,
+      "sha256": "7141cea2d8b91f1d36dbb7931445dc5e25894c10b12ac5446996f0e72580ea28",
+      "matches": true
+    },
+    {
+      "source": ".runtime/root-ni6-fixture-slice-r2-pure-execution-go.json",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/root-invocation-plan.json",
+      "bytes": 17074,
+      "sha256": "29fb218a204475a90c23c4a43f3e6cb7faef4a144409def838db2eb9792d6080",
+      "matches": true
+    },
+    {
+      "source": ".runtime/root-bounded-execution-60s.py",
+      "copy": "docs/evidence/NI6/installed-continuation-fixture-slice-r2-pure-execution/root-runner.py.txt",
+      "bytes": 5855,
+      "sha256": "e57882ad45265fead78c87c98bedd762314297f71cd46e654e18b0074e33532a",
+      "matches": true
+    }
+  ],
+  "errors": [],
+  "privateDataRead": false,
+  "newNodeCommands": 0
+}
