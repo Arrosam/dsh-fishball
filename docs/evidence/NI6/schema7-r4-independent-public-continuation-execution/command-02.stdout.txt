@@ -1,0 +1,75 @@
+TAP version 13
+# (node:14864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI6 independent public continuation REQ-02
+ok 1 - NI6 independent public continuation REQ-02
+  ---
+  duration_ms: 7158.42875
+  type: 'test'
+  ...
+# {"id":"REQ-02","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/REQ-02-NYhKXl","observations":{"acceptedIndependentFaces":10,"invalidClosedFaces":19,"noCartesianMaximumPromise":true,"tokenizerCalls":40,"newCommitCallbacks":10}}
+# Subtest: NI6 independent public continuation REQ-03
+ok 2 - NI6 independent public continuation REQ-03
+  ---
+  duration_ms: 347.165042
+  type: 'test'
+  ...
+# {"id":"REQ-03","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/REQ-03-cgwtiM","observations":{"wholeFiniteRequestBytes":[65535,65536,65537],"exactBoundaryAccepted":true,"overflowRefusesBeforeTokenizer":true,"tokenizerCalls":8,"newCommitCallbacks":2}}
+# Subtest: NI6 independent public continuation REQ-04
+ok 3 - NI6 independent public continuation REQ-04
+  ---
+  duration_ms: 141.065666
+  type: 'test'
+  ...
+# {"id":"REQ-04","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/REQ-04-Q8N4U4","observations":{"originalCallerMutationIsDetached":true,"observerGetsSubmittedRequest":true,"tokenizerCalls":4,"newCommitCallbacks":1}}
+# Subtest: NI6 independent public continuation SEC-01
+ok 4 - NI6 independent public continuation SEC-01
+  ---
+  duration_ms: 433.944167
+  type: 'test'
+  ...
+# {"id":"SEC-01","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-01-RYx332","observations":{"configuredRawSecretHistoricalAndFreshRefusal":true,"authenticAdapterAndOriginalStoreCallers":true,"benignControlCommitted":true,"rejectedAdapterCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"reopenedStoreCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"inaccessibleStoreReadCount":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation SEC-02
+ok 5 - NI6 independent public continuation SEC-02
+  ---
+  duration_ms: 432.931125
+  type: 'test'
+  ...
+# {"id":"SEC-02","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-02-8wE0Ma","observations":{"configuredRawSecretHistoricalAndFreshRefusal":true,"authenticAdapterAndOriginalStoreCallers":true,"benignControlCommitted":true,"rejectedAdapterCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"reopenedStoreCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"inaccessibleStoreReadCount":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation SEC-03
+ok 6 - NI6 independent public continuation SEC-03
+  ---
+  duration_ms: 767.648875
+  type: 'test'
+  ...
+# {"id":"SEC-03","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-03-biqMSv","observations":{"configuredRawSecretHistoricalAndFreshRefusal":true,"authenticAdapterAndOriginalStoreCallers":true,"benignControlCommitted":true,"rejectedAdapterCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"reopenedStoreCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"inaccessibleStoreReadCount":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation SEC-04
+ok 7 - NI6 independent public continuation SEC-04
+  ---
+  duration_ms: 430.216291
+  type: 'test'
+  ...
+# {"id":"SEC-04","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-04-nP6wu9","observations":{"configuredRawSecretHistoricalAndFreshRefusal":true,"authenticAdapterAndOriginalStoreCallers":true,"benignControlCommitted":true,"rejectedAdapterCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"reopenedStoreCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"inaccessibleStoreReadCount":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation SEC-05
+ok 8 - NI6 independent public continuation SEC-05
+  ---
+  duration_ms: 184.040208
+  type: 'test'
+  ...
+# {"id":"SEC-05","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-05-5F5uiH","observations":{"originalEncodedOnlyRejectionRetained":true,"structureAndSizeErrorsPrecedeSecretError":true,"tokenizerCalls":0,"newCommitCallbacks":0}}
+# Subtest: NI6 independent public continuation SEC-06
+ok 9 - NI6 independent public continuation SEC-06
+  ---
+  duration_ms: 111.273125
+  type: 'test'
+  ...
+# {"id":"SEC-06","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-06-btW2NH","observations":{"genuineFreshAutomaticPatternsRefused":5,"automaticPatternHistoricalEquivalence":"NOT_AUTHORED_HOLD","missingPrerequisite":"Supported historical matching request and explicit literal policy","tokenizerCalls":0,"newCommitCallbacks":0}}
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10126.107375

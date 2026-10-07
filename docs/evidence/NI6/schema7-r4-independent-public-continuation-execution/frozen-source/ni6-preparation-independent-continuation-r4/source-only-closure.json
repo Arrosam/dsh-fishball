@@ -1,0 +1,932 @@
+{
+  "contractVersion": "NI6-r4-source-only-import-effects-closure-v1",
+  "status": "SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED_NOT_RUN",
+  "ownedModuleCount": 12,
+  "entries": [
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+      "imports": [
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "../ni6-schema7-core/original/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/original/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/original/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/src/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/src/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/src/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+      "imports": [
+        {
+          "specifier": "./support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-02.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-03.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-04.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-01.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-02.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-03.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-04.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-05.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-06.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/selected-leaf.mjs",
+      "imports": [
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": "BUILTIN_NOT_IMPORTED"
+        }
+      ],
+      "dynamicImport": {
+        "source": "import(LEAVES[id])",
+        "literalClosedMap": {
+          "REQ-02": "./leaves/req-02.mjs",
+          "REQ-03": "./leaves/req-03.mjs",
+          "REQ-04": "./leaves/req-04.mjs",
+          "SEC-01": "./leaves/sec-01.mjs",
+          "SEC-02": "./leaves/sec-02.mjs",
+          "SEC-03": "./leaves/sec-03.mjs",
+          "SEC-04": "./leaves/sec-04.mjs",
+          "SEC-05": "./leaves/sec-05.mjs",
+          "SEC-06": "./leaves/sec-06.mjs"
+        },
+        "beforeImport": "Manifest digest, every canonical source/literal size/hash, exact Node/current instruction/core/owned and physical nine-leaf inventory checks complete; separate root bounded GO required"
+      },
+      "inspection": "LEXICAL_SOURCE_TEXT_ONLY_NOT_JS_PARSED_OR_IMPORTED"
+    }
+  ],
+  "completeModuleProvenance": [
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/support.mjs",
+      "bytes": 11708,
+      "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+      "originSha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_R3_GENUINE_PUBLIC_HELPER"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/secret-case.mjs",
+      "bytes": 3623,
+      "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+      "originSha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_R3_GENUINE_PUBLIC_HELPER"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-02.mjs",
+      "id": "REQ-02",
+      "originPath": ".runtime/ni6-request-validation-proposal-r1/req-02.after.mjs.txt",
+      "bytes": 3181,
+      "sha256": "ad01fe3fe3c9e4f4a4a20cfdffe74af7437f92969bf69213e96147d5fb4218ac",
+      "originSha256": "ad01fe3fe3c9e4f4a4a20cfdffe74af7437f92969bf69213e96147d5fb4218ac",
+      "byteIdentical": true,
+      "identity": "EXACT_SEALED_ORACLE_AFTER_BODY",
+      "historicalR3Status": "FAIL"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-03.mjs",
+      "id": "REQ-03",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/req-03.mjs",
+      "bytes": 1204,
+      "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+      "originSha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-04.mjs",
+      "id": "REQ-04",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/req-04.mjs",
+      "bytes": 1145,
+      "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+      "originSha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-01.mjs",
+      "id": "SEC-01",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/sec-01.mjs",
+      "bytes": 134,
+      "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+      "originSha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-02.mjs",
+      "id": "SEC-02",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/sec-02.mjs",
+      "bytes": 163,
+      "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+      "originSha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-03.mjs",
+      "id": "SEC-03",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/sec-03.mjs",
+      "bytes": 165,
+      "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+      "originSha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-04.mjs",
+      "id": "SEC-04",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/sec-04.mjs",
+      "bytes": 132,
+      "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+      "originSha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-05.mjs",
+      "id": "SEC-05",
+      "originPath": ".runtime/ni6-sec05-oracle-amendment-r1/leaves/sec-05.after.mjs.txt",
+      "bytes": 2332,
+      "sha256": "f94334f41e140e83ffebc0d0cc222e784b5f33af7ee7a91c212fbdc5e2380aeb",
+      "originSha256": "f94334f41e140e83ffebc0d0cc222e784b5f33af7ee7a91c212fbdc5e2380aeb",
+      "byteIdentical": true,
+      "identity": "EXACT_SEALED_ORACLE_AFTER_BODY",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-06.mjs",
+      "id": "SEC-06",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/sec-06.mjs",
+      "bytes": 1435,
+      "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+      "originSha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+      "byteIdentical": true,
+      "identity": "BYTE_IDENTICAL_UNTOUCHED_STOPPED_R3_LEAF",
+      "historicalR3Status": "STOPPED_AFTER_FIRST_FAILURE"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r4/selected-leaf.mjs",
+      "originPath": ".runtime/ni6-preparation-independent-continuation-r3/selected-leaf.mjs",
+      "bytes": 7415,
+      "sha256": "86a2dfa38fc8af194575261f03bf5a912a9a70180ba290b174d6d6f87ecb5b8c",
+      "originSha256": "a1049161c9e0cd103d6ad1c403427adc6f19e42dd6c46a1d4816d7ee26d88ba9",
+      "byteIdentical": false,
+      "identity": "EXACT_NINE_MAP_VERSION_OWNED_INVENTORY_AND_DIAGNOSTIC_DELTA_ONLY"
+    }
+  ],
+  "requiredCoreSourcePins": [
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+      "bytes": 28297,
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+      "bytes": 21799,
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+      "bytes": 36680,
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "bytes": 31990,
+      "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "bytes": 6033,
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "bytes": 330375,
+      "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+      "role": "UNCHANGED_GENUINE_ORIGINAL6_CURRENT7_CORE_SOURCE"
+    }
+  ],
+  "coreLexicalEdges": [
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "line": 1,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "line": 2,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "line": 3,
+      "specifier": "./ledger.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "line": 1,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "line": 2,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "line": 3,
+      "specifier": "./ledger.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "line": 4,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "line": 1,
+      "specifier": "./runtime-store.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "line": 2,
+      "specifier": "./normal-contracts.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "line": 5,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "line": 6,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "line": 7,
+      "specifier": "./fishball-memory-core.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "line": 8,
+      "specifier": "./context.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "line": 4,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "line": 3,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "line": 4,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "line": 5,
+      "specifier": "./fishball-memory-core.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "line": 6,
+      "specifier": "./context.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "line": 1,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "line": 2,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "line": 1,
+      "specifier": "node:sqlite",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "line": 2,
+      "specifier": "node:fs",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "line": 3,
+      "specifier": "node:fs",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "line": 4,
+      "specifier": "node:path",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "line": 5,
+      "specifier": "node:os",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "line": 1,
+      "specifier": "./runtime-store.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "line": 2,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "line": 3,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "line": 1,
+      "specifier": "node:sqlite",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "line": 2,
+      "specifier": "node:fs",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "line": 3,
+      "specifier": "node:fs",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "line": 4,
+      "specifier": "node:path",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "line": 5,
+      "specifier": "node:os",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "line": 2,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "line": 3,
+      "specifier": "node:path",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "line": 4,
+      "specifier": "./ledger.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "line": 5,
+      "specifier": "./runtime-security.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "line": 1,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "line": 5,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "line": 9,
+      "specifier": "./ledger.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "line": 13,
+      "specifier": "./runtime-security.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "line": 14,
+      "specifier": "./context.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 1,
+      "specifier": "node:util",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 5,
+      "specifier": "node:crypto",
+      "kind": "builtin",
+      "resolved": null,
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 9,
+      "specifier": "./ledger.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 13,
+      "specifier": "./runtime-security.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 14,
+      "specifier": "./context.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 15,
+      "specifier": "./normal-contracts.mjs",
+      "kind": "relative",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "inspection": "LEXICAL_IMPORT_LINE_ONLY_NO_BODY_SECURITY_REVIEW_NO_IMPORT"
+    }
+  ],
+  "coreLexicalEdgesProvenance": {
+    "path": ".runtime/ni6-preparation-independent-continuation-r3/source-only-closure.json",
+    "sha256": "bf24836d402ced7b9ce81a459d508a0c0fbc1d786a1a7a1583df265798c3ca61",
+    "qualification": "Inherited reviewed lexical import declarations only; all thirteen core identities rechecked unchanged; no private body/security review or import"
+  },
+  "counts": {
+    "ownedRelativeEdges": 16,
+    "ownedBuiltinEdges": 10,
+    "closedMapDynamicImports": 1,
+    "coreRelativeEdges": 18,
+    "coreBuiltinEdges": 30
+  },
+  "sourceEffects": {
+    "topLevelOwned": "Definitions, frozen literals and genuine builtin/relative module declarations only; no test/run/constructor/directory/DB calls",
+    "dispatcherCalledBeforeCandidateImport": "Manifest/pin/physical-inventory source reads and exact checks only",
+    "selectedRunAfterSeparateGO": "Unchanged genuine public fresh synthetic constructor/migration/writer/preparation/read/close lifecycle within direct finite bounds",
+    "helperPath": "Same .runtime depth retains genuine original/current core imports; unchanged withLease resolves only NEW r4/runs/<ID>-<mkdtemp>/ledger.sqlite",
+    "callerMutation": "Only unchanged REQ-04 caller-input mutation during supplied tokenizer",
+    "newNativeModelProviderProfileNetworkGitDependency": 0,
+    "limit": "No whole-host or private protected investigation; source direct bounds are not full transitive/private counts"
+  },
+  "guardedRequiredOwnedPaths": [
+    ".runtime/ni6-preparation-independent-continuation-r4/support.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/secret-case.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-02.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-03.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/req-04.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-01.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-02.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-03.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-04.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-05.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/leaves/sec-06.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/selected-leaf.mjs",
+    ".runtime/ni6-preparation-independent-continuation-r4/required-dispatcher.diff",
+    ".runtime/ni6-preparation-independent-continuation-r4/required-req02.diff",
+    ".runtime/ni6-preparation-independent-continuation-r4/required-sec05.diff",
+    ".runtime/ni6-preparation-independent-continuation-r4/metadata-r3-to-r4.literal.json",
+    ".runtime/ni6-preparation-independent-continuation-r4/continuation-plan.md",
+    ".runtime/ni6-preparation-independent-continuation-r4/continuation-plan.json",
+    ".runtime/ni6-preparation-independent-continuation-r4/preservation-report.md",
+    ".runtime/ni6-preparation-independent-continuation-r4/preservation-report.json",
+    ".runtime/ni6-preparation-independent-continuation-r4/source-only-closure.json"
+  ],
+  "futureWrapperConstraint": "Exact nine literal IDs; one awaited leaf per invocation, each once, stop all later leaves after first unexpected failure; separate root60-second two-command GO",
+  "executedThisLane": {
+    "JSParse": 0,
+    "moduleImports": 0,
+    "tests": 0,
+    "fixtures": 0,
+    "constructors": 0,
+    "DB": 0,
+    "migrations": 0,
+    "preparations": 0,
+    "tokenizer": 0,
+    "callbacks": 0,
+    "native": 0,
+    "models": 0,
+    "providers": 0,
+    "profiles": 0,
+    "ports": 0,
+    "network": 0,
+    "Git": 0
+  }
+}

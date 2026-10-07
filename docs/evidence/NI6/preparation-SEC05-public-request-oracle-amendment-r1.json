@@ -1,0 +1,63 @@
+{
+  "contractVersion": "NI6-SEC05-public-request-oracle-amendment-r1",
+  "status": "SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED_NOT_RUN_HOLD",
+  "historicalStatus": "R3_STOPPED_AFTER_FIRST_FAILURE_UNCHANGED",
+  "classification": "PREDICTED_UNSUPPORTED_SINGLE_ROW_FIXTURE_EXPECTATION",
+  "sourcePath": ".runtime/ni6-preparation-independent-continuation-r3/leaves/sec-05.mjs",
+  "sourceLine": 19,
+  "beforeExpectedCode": "INVALID_INPUT",
+  "afterExactExpectedCode": "MEMORY_INVALID",
+  "scope": "Only the sec-05-unknown-key call expected code; no request/product/other-oracle change",
+  "originalContractCitations": [
+    ".runtime/ni6-schema7-core/original/memory.mjs:20..23,272..274",
+    ".runtime/ni6-schema7-core/src/memory.mjs:22..25,281..285",
+    "docs/evidence/NI6/schema7-independent-design.md:101"
+  ],
+  "inertLiteralInputs": [
+    {
+      "path": ".runtime/ni6-sec05-oracle-amendment-r1/leaves/sec-05.before.mjs.txt",
+      "bytes": 2331,
+      "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+      "status": "INERT_TEXT_NOT_PARSED_NOT_IMPORTED_NOT_RUN"
+    },
+    {
+      "path": ".runtime/ni6-sec05-oracle-amendment-r1/leaves/sec-05.after.mjs.txt",
+      "bytes": 2332,
+      "sha256": "f94334f41e140e83ffebc0d0cc222e784b5f33af7ee7a91c212fbdc5e2380aeb",
+      "status": "INERT_TEXT_NOT_PARSED_NOT_IMPORTED_NOT_RUN"
+    },
+    {
+      "path": ".runtime/ni6-sec05-oracle-amendment-r1/sec-05.required.diff",
+      "bytes": 1108,
+      "sha256": "1d6e224f1d6b8114e5c93c6dd6e5c6fe0f817fb6452191c2b01f57c7f791b4eb",
+      "status": "INERT_TEXT_NOT_PARSED_NOT_IMPORTED_NOT_RUN"
+    }
+  ],
+  "singleExactLineReplacement": true,
+  "unchangedOtherOracles": {
+    "SECRET_REJECTED": true,
+    "undefinedAndTextINVALID_INPUT": true,
+    "wholeRequestINPUT_TOO_LARGE": true,
+    "stableTokenizerAndNewCallbackChecks": true,
+    "completePublicSnapshotEquality": true,
+    "broaderCodeAllowlist": false
+  },
+  "sealedREQ02R1Unchanged": {
+    "path": ".runtime/ni6-request-validation-proposal-r1/source-manifest.json",
+    "sha256": "86822898eb27e73f06c40aa1f5fc99333fd622d70da93737598202060937f894"
+  },
+  "continuationBoundsUnchanged": {
+    "selectedLeaves": 9,
+    "constructorAttemptsAndOwnedCloses": 22,
+    "directPrepareCalls": 78,
+    "expectedNewCommitCallbacks": 23,
+    "freshScratchPaths": 9,
+    "parallelLeavesAndPreparations": 1,
+    "qualification": "Direct source bounds and expected complete outcomes; no runtime/private totals"
+  },
+  "actualJSParseImportTestDatabaseModelNetworkGitOperations": 0,
+  "all87Accepted": 0,
+  "all87": "HOLD",
+  "finalCODE": "PERMANENTLY_BLOCKED_UNCHANGED",
+  "requiredNextGate": "Root r4 coherent source freeze plus fresh independent affected SOURCE review of both corrections and separate bounded GO"
+}

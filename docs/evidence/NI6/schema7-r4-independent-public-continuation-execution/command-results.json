@@ -1,0 +1,56 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-preparation-independent-continuation-r4/root-ni6-public-continuation-r4.test.mjs"
+      ],
+      "durationSeconds": 0.066623,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:30:08.208489+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T10:30:08.141870+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/schema7-r4-independent-public-continuation-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/schema7-r4-independent-public-continuation-execution/command-01.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/ni6-preparation-independent-continuation-r4/root-ni6-public-continuation-r4.test.mjs"
+      ],
+      "durationSeconds": 10.207588,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:30:18.416523+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T10:30:08.208948+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/schema7-r4-independent-public-continuation-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 5527,
+        "path": "docs/evidence/NI6/schema7-r4-independent-public-continuation-execution/command-02.stdout.txt",
+        "sha256": "f3aca9708bc822bf12dcb57d7c4b1b8ce73b930ed79bf14aee7f0e3b10cf010d"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": false
+}

@@ -1,0 +1,170 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "SEC06AutomaticPatternHistoricalEquivalence": "NOT_AUTHORED_HOLD",
+  "actualFailed": 0,
+  "actualFunctionalCases": 9,
+  "actualModelNetworkNativeProfileBrowserEffects": 0,
+  "actualPassed": 9,
+  "actualSkipped": 0,
+  "actualSyntax": "PASS",
+  "actualTestCommandSeconds": 10.207588,
+  "all307InputsMatched": true,
+  "all87": "HOLD",
+  "copiedSourceFiles": 47,
+  "createdAt": "2026-10-07T10:32:12.958691+00:00",
+  "declaredDirectSourceBounds": {
+    "constructorsAndOwnedCloseAttempts": 22,
+    "directPrepareCalls": 78,
+    "expectedNewCallbacks": 23,
+    "newScratchPaths": 9,
+    "parallelLeaves": 1
+  },
+  "historicalR3Result": "14PASS_1FAIL_8STOPPED_PRESERVED",
+  "latestSelected23LeafResults": "14HISTORICAL_PASS_PLUS9R4_PASS",
+  "observations": [
+    {
+      "id": "REQ-02",
+      "observations": {
+        "acceptedIndependentFaces": 10,
+        "invalidClosedFaces": 19,
+        "newCommitCallbacks": 10,
+        "noCartesianMaximumPromise": true,
+        "tokenizerCalls": 40
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/REQ-02-NYhKXl",
+      "status": "PASS"
+    },
+    {
+      "id": "REQ-03",
+      "observations": {
+        "exactBoundaryAccepted": true,
+        "newCommitCallbacks": 2,
+        "overflowRefusesBeforeTokenizer": true,
+        "tokenizerCalls": 8,
+        "wholeFiniteRequestBytes": [
+          65535,
+          65536,
+          65537
+        ]
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/REQ-03-cgwtiM",
+      "status": "PASS"
+    },
+    {
+      "id": "REQ-04",
+      "observations": {
+        "newCommitCallbacks": 1,
+        "observerGetsSubmittedRequest": true,
+        "originalCallerMutationIsDetached": true,
+        "tokenizerCalls": 4
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/REQ-04-Q8N4U4",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-01",
+      "observations": {
+        "authenticAdapterAndOriginalStoreCallers": true,
+        "benignControlCommitted": true,
+        "configuredRawSecretHistoricalAndFreshRefusal": true,
+        "inaccessibleStoreReadCount": "SOURCE_ONLY",
+        "rejectedAdapterCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        },
+        "reopenedStoreCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        }
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-01-RYx332",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-02",
+      "observations": {
+        "authenticAdapterAndOriginalStoreCallers": true,
+        "benignControlCommitted": true,
+        "configuredRawSecretHistoricalAndFreshRefusal": true,
+        "inaccessibleStoreReadCount": "SOURCE_ONLY",
+        "rejectedAdapterCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        },
+        "reopenedStoreCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        }
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-02-8wE0Ma",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-03",
+      "observations": {
+        "authenticAdapterAndOriginalStoreCallers": true,
+        "benignControlCommitted": true,
+        "configuredRawSecretHistoricalAndFreshRefusal": true,
+        "inaccessibleStoreReadCount": "SOURCE_ONLY",
+        "rejectedAdapterCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        },
+        "reopenedStoreCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        }
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-03-biqMSv",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-04",
+      "observations": {
+        "authenticAdapterAndOriginalStoreCallers": true,
+        "benignControlCommitted": true,
+        "configuredRawSecretHistoricalAndFreshRefusal": true,
+        "inaccessibleStoreReadCount": "SOURCE_ONLY",
+        "rejectedAdapterCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        },
+        "reopenedStoreCounters": {
+          "newCommitCallbacks": 0,
+          "tokenizerCalls": 0
+        }
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-04-nP6wu9",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-05",
+      "observations": {
+        "newCommitCallbacks": 0,
+        "originalEncodedOnlyRejectionRetained": true,
+        "structureAndSizeErrorsPrecedeSecretError": true,
+        "tokenizerCalls": 0
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-05-5F5uiH",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-06",
+      "observations": {
+        "automaticPatternHistoricalEquivalence": "NOT_AUTHORED_HOLD",
+        "genuineFreshAutomaticPatternsRefused": 5,
+        "missingPrerequisite": "Supported historical matching request and explicit literal policy",
+        "newCommitCallbacks": 0,
+        "tokenizerCalls": 0
+      },
+      "runDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r4/runs/SEC-06-btW2NH",
+      "status": "PASS"
+    }
+  ],
+  "privateTransitiveOperationCount": "NOT_MEASURED",
+  "rawBytes": 5527,
+  "rawSha256": "f3aca9708bc822bf12dcb57d7c4b1b8ce73b930ed79bf14aee7f0e3b10cf010d",
+  "rootOwner": "/root",
+  "runnerCopy": 1,
+  "schema7SharedSourceOrNativeCompositionAdopted": false
+}
