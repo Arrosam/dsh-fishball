@@ -1,0 +1,131 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "actualDriverReturnRequired": true,
+  "after": {
+    "complete": true,
+    "inputCount": 539,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "all87": "HOLD",
+  "before": {
+    "complete": true,
+    "inputCount": 539,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-bootstrap-diagnostic-r4/diagnostic.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 58022,
+      "durationSeconds": 0.071848,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-07T21:32:05.679535+00:00",
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 58022,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-07T21:32:05.607758+00:00",
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-public-preparation-bootstrap-diagnostic-r4/diagnostic.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 58023,
+      "durationSeconds": 3.942586,
+      "exitCode": 1,
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finishedAt": "2026-10-07T21:32:09.673062+00:00",
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 58023,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "2593796547de4278346d399ac511c770a46b6230b621d273a1cbd421214a5c55",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-07T21:32:05.730544+00:00",
+      "timedOut": false
+    }
+  ],
+  "conservativeActiveSeconds": 17.744106916943565,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-executor/v1",
+  "diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+    "entryRemoved": false,
+    "phase": "ENTRY_APPLY_RPC_REGISTRATION",
+    "result": "FAILED_HOLD",
+    "rootClosed": false,
+    "zeroNative": true
+  },
+  "failureCode": "EXECUTOR_COMMAND_NONZERO",
+  "finalized": false,
+  "observedSeconds": 12.744106249883771,
+  "result": "FAILED_HOLD",
+  "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+}

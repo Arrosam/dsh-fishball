@@ -1,0 +1,12 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "category": "REJECTION",
+  "completedPlugins": 11,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+  "entryRemoved": false,
+  "phase": "ENTRY_APPLY_RPC_REGISTRATION",
+  "result": "FAILED_HOLD",
+  "rootClosed": false,
+  "zeroNative": true
+}
