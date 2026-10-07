@@ -1,0 +1,17 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "contractVersion": "df.ni6-prep01-bounded-error-code-projection/v1",
+  "inputBytes": 1180,
+  "inputSha256": "74f77ca8384008a14d379e30a52820f7ff64640004640473eb71a331ec4284fd",
+  "observedAt": "2026-10-07T17:37:09.521501+00:00",
+  "originalFailedResultPreserved": true,
+  "projection": "SINGLE_SOURCE_DECLARED_TAP_ERROR_CODE",
+  "rawDecodedOrPublished": false,
+  "readOnly": true,
+  "retry": 0,
+  "runtimeOrCloudCalls": 0,
+  "safeErrorCode": "PREP01_ORIGINAL_BOOTSTRAP_FAILED",
+  "scope": "New synthetic NI6 command8 only; exact source-declared ASCII error field, no raw text/profile/auth/DB/model/old realm/CODE inspection",
+  "sourcePrivateFile": ".runtime/ni6-prep01-executor-r3/private-test/command-08.stdout.bin"
+}
