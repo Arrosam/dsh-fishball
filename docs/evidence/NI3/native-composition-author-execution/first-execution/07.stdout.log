@@ -1,0 +1,60 @@
+TAP version 13
+# (node:2193) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NC1: pre-prepare mapping, exact full8, authentic postclaim order and unchanged false veto
+ok 1 - NC1: pre-prepare mapping, exact full8, authentic postclaim order and unchanged false veto
+  ---
+  duration_ms: 14.123167
+  type: 'test'
+  ...
+# Subtest: NC1-D01: retain original scoped planned digest, never spec-only/current-CAS recomputation; wrong or absent refs deny
+ok 2 - NC1-D01: retain original scoped planned digest, never spec-only/current-CAS recomputation; wrong or absent refs deny
+  ---
+  duration_ms: 1.323416
+  type: 'test'
+  ...
+# Subtest: NC1-L01: locked full uses the source-private token witness, never transactionful environment currentness
+ok 3 - NC1-L01: locked full uses the source-private token witness, never transactionful environment currentness
+  ---
+  duration_ms: 4.878041
+  type: 'test'
+  ...
+# Subtest: NC3: distinct artifact/input digests; whole pair drift at prepare and grant; unsafe callback pairs
+ok 4 - NC3: distinct artifact/input digests; whole pair drift at prepare and grant; unsafe callback pairs
+  ---
+  duration_ms: 9.604458
+  type: 'test'
+  ...
+# Subtest: NC3: complete consent wire65535/65536 fits;65537 has no usable token and releases pending capacity
+ok 5 - NC3: complete consent wire65535/65536 fits;65537 has no usable token and releases pending capacity
+  ---
+  duration_ms: 313.2205
+  type: 'test'
+  ...
+# Subtest: NC2: actual-shaped collector facts required; boolean alone cannot capture or finish; query observations counted separately
+ok 6 - NC2: actual-shaped collector facts required; boolean alone cannot capture or finish; query observations counted separately
+  ---
+  duration_ms: 2.74625
+  type: 'test'
+  ...
+# Subtest: NC4: original begin/consume/send once; lost capture receipt reconciles exact child without recollect; stopped denial holds
+ok 7 - NC4: original begin/consume/send once; lost capture receipt reconciles exact child without recollect; stopped denial holds
+  ---
+  duration_ms: 1.934208
+  type: 'test'
+  ...
+# Subtest: NC4: repair lineage is forwarded into original claim; claim-binding refusal never creates or sends
+ok 8 - NC4: repair lineage is forwarded into original claim; claim-binding refusal never creates or sends
+  ---
+  duration_ms: 1.216
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 448.964375

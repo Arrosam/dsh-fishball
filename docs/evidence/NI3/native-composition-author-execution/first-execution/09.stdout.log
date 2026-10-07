@@ -1,0 +1,42 @@
+TAP version 13
+# (node:2274) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: durable submitted boundary precedes native create; creation does not prove running or complete task
+ok 1 - durable submitted boundary precedes native create; creation does not prove running or complete task
+  ---
+  duration_ms: 3.895208
+  type: 'test'
+  ...
+# Subtest: execution persists one intent and final consume before native send; duplicate command cannot wake again
+ok 2 - execution persists one intent and final consume before native send; duplicate command cannot wake again
+  ---
+  duration_ms: 1.078541
+  type: 'test'
+  ...
+# Subtest: execution denial and foreign completion are redacted unknowns retaining exact reservation
+ok 3 - execution denial and foreign completion are redacted unknowns retaining exact reservation
+  ---
+  duration_ms: 1.406708
+  type: 'test'
+  ...
+# Subtest: execution timeout holds ownership; late final consume denial prevents send and duplicate replay
+ok 4 - execution timeout holds ownership; late final consume denial prevents send and duplicate replay
+  ---
+  duration_ms: 3.823958
+  type: 'test'
+  ...
+# Subtest: execution immutable context and scoped claim mismatch reject before durable intent
+ok 5 - execution immutable context and scoped claim mismatch reject before durable intent
+  ---
+  duration_ms: 0.503833
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 119.969
