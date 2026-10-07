@@ -1,0 +1,100 @@
+[
+  {
+    "sanitizedObservation": {
+      "phase": "original-context-created"
+    },
+    "sourceBytes": 308,
+    "sourceFile": "observation-001.json",
+    "sourceSha256": "5e61135d89d50ec7542da1cce99666863815c7296ef4174b150b1fb78fa363e4"
+  },
+  {
+    "sanitizedObservation": {
+      "phase": "genuine-installed-setup-ready"
+    },
+    "sourceBytes": 403,
+    "sourceFile": "observation-002.json",
+    "sourceSha256": "cb48c47138eb19720c437cdf957ad7c30f31f3dd61e99c9c3b6222fd2eb8d033"
+  },
+  {
+    "sanitizedObservation": {
+      "phase": "original-policy-confirmed"
+    },
+    "sourceBytes": 2360,
+    "sourceFile": "observation-003.json",
+    "sourceSha256": "bf3cc1396351dcd4585d94bd497d9a765e60bfee3e50a6d163cac3180fa13913"
+  },
+  {
+    "sanitizedObservation": {
+      "adapterAudit": {
+        "active": false,
+        "attempted": 0,
+        "billing": "unknown",
+        "calls": [],
+        "uncertainHold": false
+      },
+      "cloudBilling": "unknown",
+      "livePositionsReserved": false,
+      "phase": "genuine-no-inference-preflight-ready"
+    },
+    "sourceBytes": 2219,
+    "sourceFile": "observation-004.json",
+    "sourceSha256": "425d62bd94ba2db468b765563af68e68a996b8f8f02da11819bae72e9ec5490c"
+  },
+  {
+    "sanitizedObservation": {
+      "adapterAudit": {
+        "active": false,
+        "attempted": 0,
+        "billing": "unknown",
+        "calls": [],
+        "uncertainHold": false
+      },
+      "phase": "six-live-positions-reserved-after-preflight"
+    },
+    "sourceBytes": 288,
+    "sourceFile": "observation-005.json",
+    "sourceSha256": "06601ee406ea4713532c2a5b80588e5e25e806e2cc5000940b0704c7094990bc"
+  },
+  {
+    "sanitizedObservation": {
+      "adapterAudit": {
+        "active": false,
+        "attempted": 1,
+        "billing": "unknown",
+        "calls": [
+          {
+            "billing": "unknown",
+            "bodyDigest": "67f933eafe814a6d46f0ce4342c44ed9cab5d088a8f05775790a7be5bd7e939f",
+            "call": 1,
+            "failureCode": "OLLAMA_INVALID_RESPONSE",
+            "httpStatus": 200,
+            "remoteOutcome": "unknown",
+            "requestBytes": 3107,
+            "state": "local_failure"
+          }
+        ],
+        "uncertainHold": true
+      },
+      "consumedPositions": 1,
+      "followingPositions": "expired",
+      "livePositionsReserved": true,
+      "liveReservationState": "reserved",
+      "reasonCode": "ERR_ASSERTION",
+      "remoteTermination": "unproved",
+      "reservationRelease": "unproved",
+      "state": "HOLD"
+    },
+    "sourceBytes": 820,
+    "sourceFile": "observation-006.json",
+    "sourceSha256": "f2c5f70decdd8dca35b6cfdc49f205d15bcd1b74b5955286c23a3d41adfb8c06"
+  },
+  {
+    "sanitizedObservation": {
+      "phase": "original-context-disposal-resolved",
+      "remoteTermination": "unproved"
+    },
+    "sourceBytes": 205,
+    "sourceFile": "observation-007.json",
+    "sourceSha256": "1a7059d27e48a6f041d308e9e8e58a2f607d1d6e0eda96a5f9ca08ef2f7db06c"
+  }
+]

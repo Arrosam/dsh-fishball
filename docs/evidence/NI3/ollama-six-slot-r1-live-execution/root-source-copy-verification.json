@@ -1,0 +1,145 @@
+{
+  "errors": [],
+  "sourceCopies": [
+    {
+      "bytes": 1568,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/admission.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "0a4cc2f0ed4c25cbbea067fcda19b4b30b0b6318303d2abe682f7500117a4899",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs"
+    },
+    {
+      "bytes": 8950,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/entry.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "557279d39ba82ae21b1bdcd97851066505d0fe183a7df122bc3a85fa77bde3bd",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/entry.mjs"
+    },
+    {
+      "bytes": 305,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/installed-source.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "1f9b2b71056612dcfd5ef047f9163db75ac88e52a304598fd643e3246488ecd3",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/installed-source.mjs"
+    },
+    {
+      "bytes": 6984,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/native-fixture.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "ecb37bcf793a486fd14e3fff2b6d1761521f488dc137151b4a6f680e274061c6",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/native-fixture.mjs"
+    },
+    {
+      "bytes": 2874,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/prompts.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "f98338affe9c2029621c0473ce0961de4e2f70ee4a22ff1b9fb02fd7da10dd2e",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/prompts.mjs"
+    },
+    {
+      "bytes": 18504,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/scenarios.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "4d28368c15ee451b7432f709cbbf55087fbc946598307ddf0e06b16afcc0a89f",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/scenarios.mjs"
+    },
+    {
+      "bytes": 1813,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "4278acdce0b33917175267f77de2a86ad3dcf75a7ff339c0f8951a99569d01eb",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs"
+    },
+    {
+      "bytes": 3308,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-functional-fixtures-r1/stream-observer.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "df7fbd6fe9a6f7d6127c2a396350cbdab1f6d061c21ec6eedcabe035902ddae8",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/stream-observer.mjs"
+    },
+    {
+      "bytes": 7374,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-integration-currentness-r1/installed-entry.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "c9acb18b2f5773e5ed2b346d8a1b7dbcfcb3b5c3160085aff9c190c6dd9d8ce7",
+      "sourcePath": ".runtime/ollama-dsh-integration-currentness-r1/installed-entry.mjs"
+    },
+    {
+      "bytes": 1692,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-integration-currentness-r1/installed-owned-stream.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "0e3e2cf31a205d7af1d563df2180fde79cdffe338a5fd8100c5f78db7432a36f",
+      "sourcePath": ".runtime/ollama-dsh-integration-currentness-r1/installed-owned-stream.mjs"
+    },
+    {
+      "bytes": 21101,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-integration-currentness-r1/installed-worker-facts.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2",
+      "sourcePath": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker-facts.mjs"
+    },
+    {
+      "bytes": 35177,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-integration-currentness-r1/installed-worker.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "fa02b816912efb04f9dab77dbc8d0ff8a59b5d1a661a3f8503b77d02c790895b",
+      "sourcePath": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker.mjs"
+    },
+    {
+      "bytes": 12241,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-integration-currentness-r1/ollama-binding.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "b3a81cc87b92f8a088846a4cfdcaf7736873fe086793cdce72e66938e1a80104",
+      "sourcePath": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs"
+    },
+    {
+      "bytes": 16944,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c",
+      "sourcePath": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs"
+    },
+    {
+      "bytes": 7405,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-memory-continuity-source/installed-entry.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "08c7d8fefe6f4deb6fad99f964556ad42f54e62e6d3211aa418f10fa0a2df4b3",
+      "sourcePath": ".runtime/ollama-dsh-memory-continuity-source/installed-entry.mjs"
+    },
+    {
+      "bytes": 37737,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/frozen-source/ollama-dsh-memory-continuity-source/runtime-plugin.mjs",
+      "matchedFrozenInput": true,
+      "sha256": "765835e5d5129bef4d66bf559b007cf1b72197eddfddafab71e796f2786d615b",
+      "sourcePath": ".runtime/ollama-dsh-memory-continuity-source/runtime-plugin.mjs"
+    },
+    {
+      "bytes": 62347,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/fixture-freeze.json",
+      "matchedActualSource": true,
+      "sha256": "b590a3cecde67cb29eb2a0019cb93c7e7f74c9189c811838dd5c1ca0c133d553",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/fixture-freeze.json"
+    },
+    {
+      "bytes": 53971,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/source-import-closure.json",
+      "matchedActualSource": true,
+      "sha256": "e8f0eaaf532d027a29fd01f2ba0d36d0023d621a8ec9496cb3c2342d3360c64d",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/source-import-closure.json"
+    },
+    {
+      "bytes": 2438,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/root-execution-go.json",
+      "matchedActualSource": true,
+      "sha256": "ca0f3b23be048cac928688cb1a7105d20cc5b569b8f4ee808f053742bba77a90",
+      "sourcePath": ".runtime/ollama-dsh-functional-fixtures-r1/root-execution-go.json"
+    },
+    {
+      "bytes": 4670,
+      "copyPath": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/root-runner.py.txt",
+      "matchedActualSource": true,
+      "sha256": "aa1efbedc33d995b526b16a586c8b4898e191c6d2d3f0fa2711c5d811a4b1234",
+      "sourcePath": ".runtime/root-ollama-six-slot-live.py"
+    }
+  ]
+}

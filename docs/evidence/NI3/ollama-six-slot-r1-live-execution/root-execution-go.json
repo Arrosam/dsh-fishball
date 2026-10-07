@@ -1,0 +1,33 @@
+{
+  "FOL01AffectedReviewAccepted": true,
+  "authoritativeInferenceCountBefore": 0,
+  "authorizationRef": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb",
+  "contractVersion": "df.ollama-functional-root-go/v1",
+  "endpoint": "http://127.0.0.1:11434/api/chat",
+  "executionAuthorized": true,
+  "fixtureFreezeSha256": "b590a3cecde67cb29eb2a0019cb93c7e7f74c9189c811838dd5c1ca0c133d553",
+  "fixtureLiteralReviewAccepted": true,
+  "hostGraphChecksAccepted": true,
+  "independentDesignSha256": "45db6968d99ca1c2d9af031bcc714b7e54d774b63c8552666f70e3277aa883b4",
+  "interruptWindowMs": 90000,
+  "liveWindowMs": 480000,
+  "maxCalls": 6,
+  "memoryContinuityDesignFollowupAccepted": true,
+  "memoryContinuitySourceReviewAccepted": true,
+  "metadataRevalidated": true,
+  "model": "deepseek-v4.1-flash:cloud",
+  "realmReplacedOrAllowanceReplenished": false,
+  "scope": "One actual same-realm zero-inference bootstrap and fixedR01\u2013R06; no retries/fallback/seventhcall, syntheticdataonly. Actual native effects/usage to be measured; billingunknown/localadmissionestimate, all87/finalCODEHOLD.",
+  "sourceReviewAccepted": true,
+  "supportingPins": {
+    ".runtime/ni5-result-lifetime-positive/public-graph-pins.json": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd",
+    ".runtime/ollama-live-metadata-preflight-2026-10-07/observations.json": "52055c855285f68f00d4243fc50aaf801dfacd80ab62a69c43bb974b828828e1",
+    ".runtime/root-ollama-six-slot-live.py": "aa1efbedc33d995b526b16a586c8b4898e191c6d2d3f0fa2711c5d811a4b1234",
+    "docs/evidence/NI3/ollama-memory-correct-independent-design-amendment.json": "c59373dfb11694d5a10d6702f6344d762f71c2afcca9e55d243ee27af1f3172a",
+    "docs/evidence/NI3/ollama-memory-correct-independent-design-amendment.md": "8fb4bcb9570af769d95beaf17abf79876e360f07b7f0d8d1ad61ae0f7ca46f92",
+    "docs/evidence/NI3/ollama-six-slot-r1-affected-source-review.json": "4bbd43bfe9398939bba469296cb6e14ffdd2457c0a7d003250a62c6ac9f6c41c",
+    "docs/evidence/NI3/ollama-six-slot-r1-affected-source-review.md": "0be55509e5de9e15926417e838ff6080f73a0d72656686c1e4efd7f63be7854d",
+    "docs/evidence/NI3/ollama-six-slot-r1-syntax-execution/command-results.json": "ce905e8c700026155e2affd5a7bea1774cd0c54ffc1dad6ed739f3941649dff5",
+    "docs/evidence/NI3/ollama-six-slot-r1-syntax-execution/root-after-verification.json": "f03effbff1405229bae7c3a61968801ccca129f019105bf4df920fbc2c5368c2"
+  }
+}

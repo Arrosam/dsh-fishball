@@ -1,0 +1,38 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "afterSourceDrift": [],
+  "all87": "HOLD",
+  "argv": [
+    "/opt/homebrew/opt/node@22/bin/node",
+    "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ollama-dsh-functional-fixtures-r1/entry.mjs"
+  ],
+  "attemptCountBefore": 0,
+  "childPid": 20542,
+  "contract": "df.root-ollama-six-slot-execution/v1",
+  "durationSeconds": 2.553482,
+  "exitCode": 2,
+  "finishedAt": "2026-10-07T12:59:46.830976+00:00",
+  "inputsUnchanged": true,
+  "maxCalls": 6,
+  "model": "deepseek-v4.1-flash:cloud",
+  "outerProcessLimitSeconds": 495,
+  "outerTimeout": false,
+  "privateOutput": {
+    "stderr.txt": {
+      "bytes": 169,
+      "sha256": "b6e94dc41a0778d00baedd43c04125c9ba5dd08cbb7c119710745b5ddf454a65"
+    },
+    "stdout.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "retryAllowed": false,
+  "rootGoSha256": "ca0f3b23be048cac928688cb1a7105d20cc5b569b8f4ee808f053742bba77a90",
+  "scopeNote": "Read per-position observations; exit0 is not six passes or remote termination/settlement proof.",
+  "sourceFilesChecked": 174,
+  "sourceFreezeSha256": "b590a3cecde67cb29eb2a0019cb93c7e7f74c9189c811838dd5c1ca0c133d553",
+  "startedAt": "2026-10-07T12:59:44.277045+00:00",
+  "wholeHostFiles": 27577,
+  "wholeHostLinks": 12
+}

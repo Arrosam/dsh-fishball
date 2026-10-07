@@ -1,0 +1,26 @@
+# First action-time-authorized Ollama native fixture result
+
+The supported approval review admitted the original `python3 .runtime/root-ollama-six-slot-live.py` command once after the owner's new direct authorization, reply reference `Sentinel_0c1c5a344a708191a49bbcf03845383f`, relayed by parent thread01a0fa97-234d-744a-b992-afc652f53017. The two earlier automatic rejections remain valid historical evidence; they are not rewritten. The fresh permission covers necessary DF testing with existing `deepseek-v4.1-flash:cloud` and acknowledges potentially billable cloud usage. It permits no other model/provider/account/credential/quota changes.
+
+**One actual provider attempt returned HTTP200, then failed local response validation. No native case completed.** The adapter's exact recorded failure is `OLLAMA_INVALID_RESPONSE`, state `local_failure`, attempted1, active=false, uncertainHold=true, remoteOutcome/billing unknown. R01 remains HOLD; R02–R06 were not run and the original sequence expired its following positions. The failed response subpredicate, actual output and token usage are not observed. There was no retry, reset, alternate provider or inference after this failure.
+
+## Actual environment and command
+
+Fresh metadata checks confirmed existing loopback Ollama0.40.0 at12:57:32UTC and exact `/api/show` completion metadata at12:58:55UTC. Show returned HTTP200, family `deepseek_v41`, with the same486-byte SHA256 `ccc116239ee97f78543b807488d558ffd6147c7f062aed1709fd4d85e0852419` as the previous verified contract. `/api/tags` was empty in both old and new observations; root's first tags-only assertion was too strict for this cloud route and was corrected using the already established read-only show contract. The default sandbox blocked the metadata socket before any response; the standard escalation reviews then approved the read-only metadata requests. Metadata inference requests were0.
+
+The original root command's new supported approval review succeeded, creating session93301 and actual Node child20542. It ran12:59:44.277045–12:59:46.830976UTC, duration2.553482seconds, exit2, no outer timeout. The unchanged runner verified all174 frozen source records, its supporting pins, canonical Node22.22.2, all27,577 original host graph files and12 links before and after. Inputs remained unchanged.
+
+The selected genuine original same-realm Context/service/installed-setup fixture completed its no-inference preflight: policy confirmation, one retained R01 idle worker and actual provider attempted0/inactive/not-uncertain, with empty stream observations. It then durably reserved the six selected outer positions and consumed R01 before original execution. The HTTP request body was3107bytes, SHA256 `67f933eafe814a6d46f0ce4342c44ed9cab5d088a8f05775790a7be5bd7e939f`; synthetic input only. No successful normalized response, capture, result or finish is recorded. This fixture's original composition is not a browser or current-r4 public-HTTP preparation proof.
+
+The original context disposal resolved. That local result proves neither remote termination nor authoritative reservation release. Its exact attempt marker, reservation ledger, R01 consumption and seven private observations remain retained and unchanged. Private process stdout0bytes and stderr169bytes remain private; their hashes are recorded without opening/printing their content.
+
+## Evidence and next unit
+
+- [Actual execution record](ollama-six-slot-r1-live-execution/root-run-record.json).
+- [Root result and metadata](ollama-six-slot-r1-live-execution/root-result.json).
+- [Sanitized finite observations](ollama-six-slot-r1-live-execution/sanitized-observations.json).
+- [Exact copied source verification](ollama-six-slot-r1-live-execution/root-source-copy-verification.json):16 listed source modules (15 reachable plus one preserved unused historical entry), original freeze/lexical closure/GO and unchanged root runner,20 exact copies,0copy mismatches.
+
+The prior adapter collapses five predicates into the same response error, so this result cannot determine which one failed. Independently, the [Ollama v0.40.0 explicit-cloud route](https://raw.githubusercontent.com/ollama/ollama/v0.40.0/server/routes.go) sends the base name upstream and the [cloud proxy](https://raw.githubusercontent.com/ollama/ollama/v0.40.0/server/cloud_proxy.go) preserves upstream response bytes. A base-name reply is a concrete compatibility counterexample to the adapter's exact `:cloud` response-name requirement. It is not proof of R01's actual response name. NR-OLLAMA-RESP01 will add narrowly pinned response-name compatibility and finite diagnostics, with offline tests and separate reviews before any new live selection; old observations remain immutable.
+
+Root branch at execution was `feat/S3-integrations` / `f3fcd5160d956f468e4a982b5636c6a40178a386`, main unchanged `3b136e1ab264040b535c1e787b89f659328b30c4`, no remote. The running corrected UI package/profile/listener was untouched. All87 remains accepted0/HOLD; permanently blocked final CODE, browser, semantic/model quality and full MVP acceptance remain open. The initial six-position controls are this finite test selection, not an owner-wide call quota.
