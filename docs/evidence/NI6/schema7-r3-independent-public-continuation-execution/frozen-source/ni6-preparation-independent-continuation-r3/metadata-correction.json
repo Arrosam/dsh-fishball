@@ -1,0 +1,71 @@
+{
+  "contractVersion": "NI6-continuation-r3-metadata-correction-source-v1",
+  "status": "NEW_SOURCE_COMPANION_PENDING_INDEPENDENT_AFFECTED_REVIEW_NO_GO",
+  "author": "/root/ni6_prep01_rootcause",
+  "rootOwner": "/root",
+  "date": "2026-10-07",
+  "historicalAmendmentManifest": {
+    "path": ".runtime/ni6-prep01-oracle-amendment-r1/source-manifest.json",
+    "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-prep01-oracle-amendment-r1/source-manifest.json",
+    "bytes": 60272,
+    "sha256": "a320fac7f20ab1077fc7428a4716e96506b9b9bf6eb73cf837ac56c0ed4c163f",
+    "role": "PRESERVED_HISTORICAL_SOURCE_OR_REVIEW_EVIDENCE"
+  },
+  "priorIndependentReview": [
+    {
+      "path": "docs/evidence/NI6/preparation-public-snapshot-oracle-r1-independent-source-review.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/preparation-public-snapshot-oracle-r1-independent-source-review.md",
+      "bytes": 14765,
+      "sha256": "71af1fc31715c6e3ad40d8a2efa19aa538166194b3c53e114f87b9dd03638f4f",
+      "role": "PRESERVED_HISTORICAL_SOURCE_OR_REVIEW_EVIDENCE"
+    },
+    {
+      "path": "docs/evidence/NI6/preparation-public-snapshot-oracle-r1-independent-source-review.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/preparation-public-snapshot-oracle-r1-independent-source-review.json",
+      "bytes": 112278,
+      "sha256": "8957fe0c6f387dc8fa29ff14160d5f86f8adbbd2934f59098792490d6c5007f5",
+      "role": "PRESERVED_HISTORICAL_SOURCE_OR_REVIEW_EVIDENCE"
+    }
+  ],
+  "F01": {
+    "classification": "REAL_EXECUTION_METADATA_BLOCKER",
+    "cause": "Author metadata generation prefixed the repository root to every path, including the already-absolute canonical external Node path.",
+    "historicalPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "preservedMalformedDeclaredAbsolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball//opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "exactCorrectNewNodePin": {
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "absolutePath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "bytes": 84640,
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+    },
+    "historicalStatementQualification": "All150 bytes/sizes matched canonical path resolution; only149 declared absolutePath records matched. Historical metadata is kept unchanged, not treated as an executable pin set.",
+    "newDisposition": "Every r3 active absolutePath is canonical and exact. Only the literal pinned Node path is admitted outside the repository; any other outside path, path drift, missing pin, hash/size mismatch or duplicate refuses before import.",
+    "scope": "Metadata correction in NEW r3 only; old a320 manifest/proposal/MD/JSON and all150 referenced bytes unchanged."
+  },
+  "Q02": {
+    "classification": "CITATION_CORRECTION_IN_NEW_COMPANION_ONLY",
+    "originalDATA_KINDS": {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "line": 22
+    },
+    "currentDATA_KINDS": {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "line": 23
+    },
+    "behavior": "Same nine ordinary DATA_KINDS; current NATIVE_DATA_KINDS context_check remains excluded from ordinary snapshot.data.",
+    "oldCitations": "Preserved as historical evidence."
+  },
+  "reviewedLeafIdentity": {
+    "PREP01": "eedd0521951243c7c78d452887fc7dde5156028910dae1ee24693f9d753e1069",
+    "PREP04": "ae5308a46f348f2ac2990d4a666f167c76bfb34f530843d03f092fa410199da8",
+    "PREP12": "17e1a9fb8defee03c93aa7339a3e3098f53255a670ebc2d6b5cb50ed9696315f",
+    "copiedFrom": "Exact complete reviewed .mjs.txt bytes; filename extension only changes in new r3"
+  },
+  "authorization": "Root authorized this source-only continuation and separate metadata companion after the sealed review; new fixture-source assertion edits are not authorized.",
+  "historicalManifestRule": "Hash historical manifests as immutable files only. Do not invoke their dispatchers or recursively apply their obsolete instruction pins.",
+  "execution": "NOT_RUN",
+  "JSParseImport": "NOT_RUN",
+  "rootFreshBoundedGO": "REQUIRED_SEPARATELY",
+  "all87": "HOLD",
+  "finalCODE": "BLOCKED_UNCHANGED"
+}

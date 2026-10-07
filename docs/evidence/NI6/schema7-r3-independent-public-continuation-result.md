@@ -1,0 +1,15 @@
+# Schema7 public continuation r3: actual execution
+
+Root performed the one authorized fixed two-command invocation on2026-10-07 at09:38:55UTC after the independent source and execution-plan review reported no new affected blocker. The syntax check passed. The selected functional run finished in11.399333seconds with **14 PASS,1 FAIL,8 STOPPED**. No selected migration test was rerun.
+
+PREP-01 through PREP-13 and REQ-01 passed. These include the three independently reviewed corrections to public context metadata expectations; their original task/auth/semantic/currentness/receipt/check assertions remain intact. The fixture observations explicitly retain each unsupported native, cross-process, threshold, quota or source-removal partition. Passing a leaf does not close those partitions or the entire acceptance criterion.
+
+REQ-02 failed on a malformed request's stable error code at `leaves/req-02.mjs:28`: actual `MEMORY_INVALID`, expected `INVALID_INPUT`. Root stopped immediately. REQ-03,REQ-04 and SEC-01 through SEC-06 were skipped before dispatcher/leaf execution with `STOPPED_AFTER_FIRST_FAILURE`. No assertion was edited, weakened or rerun. A separate source-only max-reasoning lane is diagnosing the ordinary public request-shape/error contract; private receipt/cipher/SQL and the protected final CODE experiment are excluded.
+
+Actual evidence is retained in [the execution directory](schema7-r3-independent-public-continuation-execution/command-results.json), including exact command arrays, raw TAP/stdout/stderr, immutable input freeze,50 pinned source copies, the bounded runner and before/after verification. The functional stdout is10867bytes,SHA256 `1144d4bb5ab29e63a85a65186fc953d7649abbd0986102278c1f9af12090423d`. Syntax output and both stderr files are empty. All204 effective input pins matched before and after execution. This lane verifies the reviewed ordinary13-file core closure; it makes no full installed-host graph claim.
+
+Fresh wholly synthetic DB/migration/preparation effects occurred only under the reviewed r3 capsule's owned `runs/` paths. Source bounds were23 selected leaves,53 RuntimeStore constructor/owned-close attempts,123 direct preparation calls,1parallel leaf and60seconds/direct command; not all bounded actions ran after the first failure. These are public-source bounds, not complete private/transitive SQL or descendant-process counts. Scratch/journal/backup evidence remains retained. No model inference, external network, installed native service, browser, QA profile/listener or private personal-data action occurred.
+
+The independent lane sealed its source-only plan report separately and later observed the expected root-created output/runs directories. That observation is not source drift or execution by the reviewer. Root owns this actual outcome; historical SOURCE-only reports remain unchanged.
+
+All87 acceptance criteria remain accepted0/HOLD. The separate owner-intent/runtime-r4 composition, cold/native/installed/UI/model-quality proofs and blocked final CODE review remain held. No adoption, release or publication follows from this partial run.

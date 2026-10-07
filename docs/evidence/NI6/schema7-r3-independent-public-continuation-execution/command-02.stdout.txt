@@ -1,0 +1,187 @@
+TAP version 13
+# (node:11486) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI6 independent public continuation PREP-01
+ok 1 - NI6 independent public continuation PREP-01
+  ---
+  duration_ms: 198.2165
+  type: 'test'
+  ...
+# {"id":"PREP-01","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-01-SUYyr3","observations":{"publicDataRecordsAdded":1,"taskIncrement":1,"semanticIncrement":1,"persistedEnvelopeFields":15,"tokenizerCalls":4,"newCommitCallbacks":1,"memoryState":"absent"}}
+# Subtest: NI6 independent public continuation PREP-02
+ok 2 - NI6 independent public continuation PREP-02
+  ---
+  duration_ms: 382.326917
+  type: 'test'
+  ...
+# {"id":"PREP-02","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-02-jMn7z9","observations":{"absentLiveTombstoneReplay":true,"oldCASAndAuthorityReplay":true,"genuineReopenReplay":true,"reopenedCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"inaccessibleStoreReadCount":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation PREP-03
+ok 3 - NI6 independent public continuation PREP-03
+  ---
+  duration_ms: 381.618208
+  type: 'test'
+  ...
+# {"id":"PREP-03","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-03-8ktn90","observations":{"selectionModes":["all_eligible","explicit_records"],"duplicateSourceOrderPreserved":true,"explicitUnselectedGlobalSemanticDrift":true,"newCommitCallbacks":2}}
+# Subtest: NI6 independent public continuation PREP-04
+ok 4 - NI6 independent public continuation PREP-04
+  ---
+  duration_ms: 231.450334
+  type: 'test'
+  ...
+# {"id":"PREP-04","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-04-gVWVlE","observations":{"concurrentInvocations":2,"successfulReplies":2,"publicDataRecordsAdded":1,"taskIncrement":1,"semanticIncrement":1,"tokenizerCalls":8,"newCommitCallbacks":1,"crossProcessRace":"NOT_AUTHORED_HOLD"}}
+# Subtest: NI6 independent public continuation PREP-05
+ok 5 - NI6 independent public continuation PREP-05
+  ---
+  duration_ms: 150.919625
+  type: 'test'
+  ...
+# {"id":"PREP-05","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-05-s2iSIm","observations":{"durableCommitAfterObserverInterruption":true,"replayCreatesNoNewObservation":true,"tokenizerCalls":4,"newCommitCallbacks":1,"nativeOriginPublication":"NOT_AUTHORED_HOLD"}}
+# Subtest: NI6 independent public continuation PREP-06
+ok 6 - NI6 independent public continuation PREP-06
+  ---
+  duration_ms: 82.549084
+  type: 'test'
+  ...
+# {"id":"PREP-06","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-06-j99zb4","observations":{"onlyGenuineOwnerWriteCommitted":true,"preparationRefusedAfterTokenizerRace":true,"tokenizerCalls":2,"newCommitCallbacks":0}}
+# Subtest: NI6 independent public continuation PREP-07
+ok 7 - NI6 independent public continuation PREP-07
+  ---
+  duration_ms: 101.085625
+  type: 'test'
+  ...
+# {"id":"PREP-07","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-07-IpzavA","observations":{"onlyGenuineMemoryWriteCommitted":true,"preparationRefusedAfterMemoryRace":true,"tokenizerCalls":4,"newCommitCallbacks":0}}
+# Subtest: NI6 independent public continuation PREP-08
+ok 8 - NI6 independent public continuation PREP-08
+  ---
+  duration_ms: 150.289833
+  type: 'test'
+  ...
+# {"id":"PREP-08","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-08-Doxm8I","observations":{"genuineIssuerCallerTaskDenials":3,"genuineNamespaceDenial":true,"admittedTaskACommit":true,"deniedCounters":{"tokenizerCalls":0,"newCommitCallbacks":0},"fabricatedCapabilities":0}}
+# Subtest: NI6 independent public continuation PREP-09
+ok 9 - NI6 independent public continuation PREP-09
+  ---
+  duration_ms: 157.901875
+  type: 'test'
+  ...
+# {"id":"PREP-09","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-09-Q6AIJm","observations":{"selected1024RefusedBeforeTokenizer":true,"selected4096Accepted":true,"automaticLimitGrowth":false,"wrapperExactThreshold":"NOT_AUTHORED_HOLD"}}
+# Subtest: NI6 independent public continuation PREP-10
+ok 10 - NI6 independent public continuation PREP-10
+  ---
+  duration_ms: 160.948292
+  type: 'test'
+  ...
+# {"id":"PREP-10","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-10-P7vTMV","observations":{"staleAndBudgetRowsBothPersisted":true,"examinedRefs":2,"droppedFreshSummary":true,"tokenizerCalls":5,"newCommitCallbacks":1}}
+# Subtest: NI6 independent public continuation PREP-11
+ok 11 - NI6 independent public continuation PREP-11
+  ---
+  duration_ms: 172.1325
+  type: 'test'
+  ...
+# {"id":"PREP-11","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-11-EMPsh3","observations":{"actualMemoryCandidateDroppedByFinalEnvelope":true,"originalSummaryRemainsProtectedInSecondAssembly":true,"persistedMemoryProvenanceCount":0,"contextBytes":3609,"tokenizerCalls":6,"newCommitCallbacks":1}}
+# Subtest: NI6 independent public continuation PREP-12
+ok 12 - NI6 independent public continuation PREP-12
+  ---
+  duration_ms: 376.968167
+  type: 'test'
+  ...
+# {"id":"PREP-12","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-12-dCuVMl","observations":{"recordLimit3WholePreparationRollback":true,"recordLimit4ExactFit":true,"fullQuotaHistoricalReplay":true,"tokenizerCalls":8,"newCommitCallbacks":1,"nativeAggregateCharges":"NOT_AUTHORED_HOLD"}}
+# Subtest: NI6 independent public continuation PREP-13
+ok 13 - NI6 independent public continuation PREP-13
+  ---
+  duration_ms: 428.791375
+  type: 'test'
+  ...
+# {"id":"PREP-13","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/PREP-13-1raqHC","observations":{"independentPublicCurrentnessAxes":true,"tombstoneDoesNotBecomeAbsent":true,"missingAssociatedEdgeAndSourceRemoval":"NOT_AUTHORED_HOLD","tokenizerCalls":8,"newCommitCallbacks":2}}
+# Subtest: NI6 independent public continuation REQ-01
+ok 14 - NI6 independent public continuation REQ-01
+  ---
+  duration_ms: 534.169125
+  type: 'test'
+  ...
+# {"id":"REQ-01","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/runs/REQ-01-jAImvl","observations":{"optionalPresenceConflicts":7,"orderedDuplicateRefsAndFiniteFloatDigest":true,"completeIdentityReplay":true,"tokenizerCalls":8,"newCommitCallbacks":2}}
+# Subtest: NI6 independent public continuation REQ-02
+not ok 15 - NI6 independent public continuation REQ-02
+  ---
+  duration_ms: 7688.859292
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-continuation-r3.test.mjs:15:9'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'MEMORY_INVALID'
+    - 'INVALID_INPUT'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'INVALID_INPUT'
+  actual: 'MEMORY_INVALID'
+  operator: 'strictEqual'
+  stack: |-
+    expectCode (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/support.mjs:38:48)
+    async file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/leaves/req-02.mjs:28:5
+    async withLease (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/support.mjs:59:26)
+    async runSelectedLeaf (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r3/selected-leaf.mjs:150:10)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-continuation-r3.test.mjs:18:22)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+    async file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-continuation-r3.test.mjs:15:3
+  ...
+# Subtest: NI6 independent public continuation REQ-03
+ok 16 - NI6 independent public continuation REQ-03 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.044917
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation REQ-04
+ok 17 - NI6 independent public continuation REQ-04 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.023083
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-01
+ok 18 - NI6 independent public continuation SEC-01 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.021834
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-02
+ok 19 - NI6 independent public continuation SEC-02 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.018208
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-03
+ok 20 - NI6 independent public continuation SEC-03 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.019042
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-04
+ok 21 - NI6 independent public continuation SEC-04 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.016042
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-05
+ok 22 - NI6 independent public continuation SEC-05 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.022375
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-06
+ok 23 - NI6 independent public continuation SEC-06 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.020291
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 14
+# fail 1
+# cancelled 0
+# skipped 8
+# todo 0
+# duration_ms 11314.701041
