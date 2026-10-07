@@ -1,0 +1,48 @@
+{
+  "contractVersion": "df.ni3-independent-runtime-p01-source-proposal-reference/v1",
+  "status": "UNAPPLIED_SOURCE_ONLY_NOT_RUN_ROOT_LITERAL_REVIEW_REQUIRED",
+  "literalPatch": {
+    "path": ".runtime/ni3-native-runtime-independent/proposals/P01-optional-public-fields/native-entry-public-fields.patch",
+    "sha256": "a911967b87c627b7560926f5a3c646cdf781c25a62d86bd3d5630b9bbab5c1c5",
+    "bytes": 4178
+  },
+  "beforeEntry": {
+    "path": ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs",
+    "sha256": "86160441437d9d708621ca5ab19bd582fc25c6329f08193e4db875d986132bec",
+    "bytes": 20649
+  },
+  "projectedAfterEntry": {
+    "path": ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs",
+    "sha256": "b5ab53385ac4e3bc1020f999312000a530e6cdda30a580b70d3e8d97c7f3aa56",
+    "bytes": 21894,
+    "projected": true,
+    "applicationPerformed": false
+  },
+  "unchangedHelper": {
+    "path": ".runtime/ni3-native-runtime-independent/test/native-host-fixture.mjs",
+    "sha256": "1524af956132b80ef8eefe6595e8d1336de8893fbebdfd3ae809d1c2b49e0f92",
+    "bytes": 26778
+  },
+  "rootCauseJson": {
+    "path": "docs/evidence/NI3/native-runtime-independent-P01-public-field-rootcause.json",
+    "sha256": "ee732dbdec1a59b331acf5a6bf3775702904aea344c90b7575a62249c6abbbf4",
+    "bytes": 11797
+  },
+  "rootCauseMarkdown": {
+    "path": "docs/evidence/NI3/native-runtime-independent-P01-public-field-rootcause.md",
+    "sha256": "433a74f52d25d68c79a4ba1b83eff8155b47c25ef2fa7008484e00b7457f17dd",
+    "bytes": 4694
+  },
+  "effectImportInventory": {
+    "path": ".runtime/ni3-native-runtime-independent/proposals/P01-optional-public-fields/import-effects-inventory.json",
+    "sha256": "13a6b6c250561625174463f79512872be75d79a606578f5531687117b0a27f4a",
+    "bytes": 5121
+  },
+  "projection": {
+    "path": ".runtime/ni3-native-runtime-independent/proposals/P01-optional-public-fields/projected-source-delta.json",
+    "sha256": "86a36941e5ee5db902f8ddc70a8ba95c80793b1349e68dd032cbd32b65227945",
+    "bytes": 24701
+  },
+  "applicationPerformed": false,
+  "executionPerformed": false
+}

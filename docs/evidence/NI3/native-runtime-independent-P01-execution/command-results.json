@@ -1,0 +1,33 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs"
+      ],
+      "durationSeconds": 45.615899,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:17:57.440687+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T06:17:11.824807+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI3/native-runtime-independent-P01-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 7730,
+        "path": "docs/evidence/NI3/native-runtime-independent-P01-execution/command-01.stdout.txt",
+        "sha256": "26a3043b85bdb844dfafca85ab7e821fab9e3fa273271cfe3dcddac832d98762"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": false
+}

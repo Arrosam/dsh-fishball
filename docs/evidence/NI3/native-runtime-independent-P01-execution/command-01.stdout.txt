@@ -1,0 +1,125 @@
+TAP version 13
+# (node:84680) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NRI-L01 genuine producer and original unknown review
+ok 1 - NRI-L01 genuine producer and original unknown review
+  ---
+  duration_ms: 7451.668042
+  type: 'test'
+  ...
+# {"id":"L01","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/L01-QiUc5H","rpcCalls":45,"requests":2,"textEffects":2,"iteratorNext":8,"iteratorReturn":0,"sessionEvents":22,"publicReaders":{"stat":2,"openRead":2,"read":2,"closeRead":2,"openWrite":0,"closeWrite":0}}
+# Subtest: NRI-L02 genuine unknown review repair and fresh unknown review
+ok 2 - NRI-L02 genuine unknown review repair and fresh unknown review
+  ---
+  duration_ms: 18085.772667
+  type: 'test'
+  ...
+# {"id":"L02","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/L02-HEpWiG","rpcCalls":83,"requests":4,"textEffects":4,"iteratorNext":16,"iteratorReturn":0,"sessionEvents":44,"publicReaders":{"stat":4,"openRead":4,"read":4,"closeRead":4,"openWrite":0,"closeWrite":0}}
+# Subtest: NRI-P01 original owner revoke before review dispatch
+ok 3 - NRI-P01 original owner revoke before review dispatch
+  ---
+  duration_ms: 3956.974333
+  type: 'test'
+  ...
+# {"id":"P01","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/P01-MYpYxN","rpcCalls":40,"requests":1,"textEffects":1,"iteratorNext":4,"iteratorReturn":0,"sessionEvents":11,"publicReaders":{"stat":1,"openRead":1,"read":1,"closeRead":1,"openWrite":0,"closeWrite":0}}
+# Subtest: NRI-S01 original RPC abort before first lazy provider effect
+ok 4 - NRI-S01 original RPC abort before first lazy provider effect
+  ---
+  duration_ms: 6059.07675
+  type: 'test'
+  ...
+# {"id":"S01","beforeDisposal":"review-claim-held-no-report","iteratorReturn":0,"deniedIteratorErrors":["REQUEST_ABORTED"],"originalManagerDisposal":[{"sessionRef":"320560ebde5d751c5b5f8dccfaf9002ea61cdcebc845ffdcd9add864e3d6f92b","agentAbsent":true,"sessionAbsent":true,"drainedWriterObserved":true}],"finalRelease":"NOT_CLAIMED"}
+# {"id":"S01","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/S01-El4ouN","rpcCalls":40,"requests":2,"textEffects":1,"iteratorNext":5,"iteratorReturn":0,"sessionEvents":22,"publicReaders":{"stat":1,"openRead":1,"read":1,"closeRead":1,"openWrite":1,"closeWrite":1}}
+# Subtest: NRI-S02 original RPC abort after first genuine deterministic delta
+ok 5 - NRI-S02 original RPC abort after first genuine deterministic delta
+  ---
+  duration_ms: 6538.174291
+  type: 'test'
+  ...
+# {"id":"S02","beforeDisposal":"review-claim-held-no-report","iteratorReturn":0,"deniedIteratorErrors":["REQUEST_ABORTED"],"originalManagerDisposal":[{"sessionRef":"c8d7b1e8019c3cf3bb0ab5b2d17b68f58b66a436646be8dddb762760e15a8c65","agentAbsent":true,"sessionAbsent":true,"drainedWriterObserved":true}],"finalRelease":"NOT_CLAIMED"}
+# {"id":"S02","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/S02-hf9rEO","rpcCalls":40,"requests":2,"textEffects":2,"iteratorNext":6,"iteratorReturn":0,"sessionEvents":22,"publicReaders":{"stat":1,"openRead":1,"read":1,"closeRead":1,"openWrite":1,"closeWrite":1}}
+# Subtest: NRI-D01 original shared opaque directory token across three runtime roles
+ok 6 - NRI-D01 original shared opaque directory token across three runtime roles # SKIP NOT_AUTHORED: original runtime directoryBinding/allocation token has no public observation point; independently resolved token cannot prove its identity.
+  ---
+  duration_ms: 0.354292
+  type: 'test'
+  ...
+# Subtest: NRI-D02 original source refuses unexpected preclaim leaf
+ok 7 - NRI-D02 original source refuses unexpected preclaim leaf
+  ---
+  duration_ms: 1032.096709
+  type: 'test'
+  ...
+# {"id":"D02","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/D02-chAPhQ","rpcCalls":17,"requests":0,"textEffects":0,"iteratorNext":0,"iteratorReturn":0,"sessionEvents":0,"publicReaders":{"stat":0,"openRead":0,"read":0,"closeRead":0,"openWrite":0,"closeWrite":0}}
+# Subtest: NRI-D03 original source refuses replaced owned allocation inode
+ok 8 - NRI-D03 original source refuses replaced owned allocation inode
+  ---
+  duration_ms: 1734.069791
+  type: 'test'
+  ...
+# {"id":"D03","originalManagerDisposal":[{"sessionRef":"f7f8a96541b19706ccd6a0962a1f413a2b04c6e4c63687059134e3c0f413a2d9","agentAbsent":true,"sessionAbsent":true,"drainedWriterObserved":null}],"writerDrain":"HOLD: replaced public path cannot prove retained original writer drain","release":"NOT_CLAIMED"}
+# {"id":"D03","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/D03-XfumQn","rpcCalls":19,"requests":0,"textEffects":0,"iteratorNext":0,"iteratorReturn":0,"sessionEvents":0,"publicReaders":{"stat":0,"openRead":0,"read":0,"closeRead":0,"openWrite":0,"closeWrite":0}}
+# Subtest: NRI-T01 public facts resolver refuses foreign empty directory token
+ok 9 - NRI-T01 public facts resolver refuses foreign empty directory token
+  ---
+  duration_ms: 414.534458
+  type: 'test'
+  ...
+# {"id":"T01","syntheticRoot":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime-independent/fixtures/T01-Mltshe","rpcCalls":9,"requests":0,"textEffects":0,"iteratorNext":0,"iteratorReturn":0,"sessionEvents":0,"publicReaders":{"stat":0,"openRead":0,"read":0,"closeRead":0,"openWrite":0,"closeWrite":0}}
+# Subtest: NRI-C01 disabled audit card remains visible with usable worker and no artifact
+ok 10 - NRI-C01 disabled audit card remains visible with usable worker and no artifact
+  ---
+  duration_ms: 8.197375
+  type: 'test'
+  ...
+# Subtest: NRI-C02 lost execute and disconnect retain uncertainty through exact readonly query
+ok 11 - NRI-C02 lost execute and disconnect retain uncertainty through exact readonly query
+  ---
+  duration_ms: 2.202333
+  type: 'test'
+  ...
+# Subtest: NRI-C03 query refuses changed valid generation without replacing original mapping
+ok 12 - NRI-C03 query refuses changed valid generation without replacing original mapping
+  ---
+  duration_ms: 1.034042
+  type: 'test'
+  ...
+# Subtest: NRI-C04 task change refuses late original query mapping
+ok 13 - NRI-C04 task change refuses late original query mapping
+  ---
+  duration_ms: 0.758708
+  type: 'test'
+  ...
+# Subtest: NRI-C05 pending dispatch disconnect captures unknown outcome before abort
+ok 14 - NRI-C05 pending dispatch disconnect captures unknown outcome before abort
+  ---
+  duration_ms: 0.501417
+  type: 'test'
+  ...
+# Subtest: NRI-C06 exactly one fresh matching worker permits readonly unknown-dispatch query
+ok 15 - NRI-C06 exactly one fresh matching worker permits readonly unknown-dispatch query
+  ---
+  duration_ms: 0.874334
+  type: 'test'
+  ...
+# Subtest: NRI-C07 zero fresh matching workers refuses query without RPC or cleared uncertainty
+ok 16 - NRI-C07 zero fresh matching workers refuses query without RPC or cleared uncertainty
+  ---
+  duration_ms: 0.561667
+  type: 'test'
+  ...
+# Subtest: NRI-C08 two fresh matching workers refuses arbitrary candidate selection
+ok 17 - NRI-C08 two fresh matching workers refuses arbitrary candidate selection
+  ---
+  duration_ms: 0.807709
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 45529.402917
