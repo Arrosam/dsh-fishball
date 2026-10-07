@@ -1,0 +1,38 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GOUnconsumedAndPreserved": true,
+  "accepted": 0,
+  "actionArgv": [
+    "/opt/homebrew/bin/python3",
+    "-I",
+    ".runtime/ollama-corrected-one-call-r2/run-private.py"
+  ],
+  "actualLIVE02ApplicationStarts": 0,
+  "actualLIVE02ControlHTTP": 0,
+  "actualLIVE02MetadataHTTP": 0,
+  "actualLIVE02ModelPOST": 0,
+  "all87": "HOLD",
+  "contractVersion": "df.live02-r2-automatic-approval-rejection/v1",
+  "currentTargetExistenceMetadata": {
+    "preflight-attempt.json": false,
+    "private-process-output": false,
+    "private-run": false,
+    "root-execution-go.json": true
+  },
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "historicalR01ModelPOST": 1,
+  "historicalR01UncertainHoldPreserved": true,
+  "noBypassInstructionHonored": true,
+  "observedAt": "2026-10-07T17:21:22.659233+00:00",
+  "pythonAST": "PASS",
+  "rejectedBy": "automatic approval review",
+  "requestedApprovalNeeded": "At most one additional deepseek-v4.1-flash:cloud request through existing http://127.0.0.1:11434/api/chat using the fixed synthetic prepared context, potential cloud transfer and billing, unchanged reviewed source/closure/effect bounds.",
+  "retryOrAlternateExecution": 0,
+  "rootGOSha256": "600168e8c130dadeb6c44cc8d206a9bbbbe7b5934c03c74fc38f7ff3a2ee4f3d",
+  "sourceFreezeSha256": "9c393f553323c55adec7ccddf6ea79d0f5a5c997bb292b28ad369fe12aef9e41",
+  "sourceManifestSha256": "477ecf21beb108e4b118483963692168d6b0c03164f289043b55b6da2b89a9c9",
+  "statedReason": "This executes a cloud model request that may transmit prepared/internal context and incur billing; the user required a separate exact approval for actual inference, and no end-user approval for this concrete payload and destination is present.",
+  "syntaxActualDriverExitCode": 0,
+  "syntaxOnlyChecksPassed": 15,
+  "toolResult": "CreateProcess rejected before execution"
+}

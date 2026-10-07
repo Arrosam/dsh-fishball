@@ -1,0 +1,264 @@
+{
+  "schema": "df.ollama-live02-root-plan/v1",
+  "sourceOnly": true,
+  "go": false,
+  "applicationExecution": false,
+  "AC": {
+    "path": "docs/ollama-corrected-one-call-wave-2026-10-07.md",
+    "bytes": 5947,
+    "sha256": "c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78"
+  },
+  "requiredReviews": [
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-source-review.md",
+      "role": "independent affected CODE SOURCE review; not excluded final CODE"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-test-review.md",
+      "role": "separate independent ISTQB exact fixture/oracle review; original design remains immutable"
+    }
+  ],
+  "preExecution": [
+    "root read all sources/closure/effects; verify exact current source pins and original complete host inventory; verify Node and canonical normal peers",
+    "root freeze review hashes, actual source-freeze hash and this plan hash in NEW root-execution-go.json; standard action-time approval required; rejection stops, no alternate route",
+    "assert preflight-attempt.json/private-run/private-process-output absent; no old positions/QA touched",
+    "root read exact r2 fixture delta and controlled outcome schema; all eleven copies/six literals remain equal to r1",
+    "verify Python 3.14.5 and canonical Node22.22.2/normal peers/current complete host graph before the single command",
+    "no executed LIVE02 r1 exists; root GO must bind original AC plus remediation and preservation pins",
+    "the single command must stop on unsupported action-time approval; no alternate route, retry or extra diagnostic live call"
+  ],
+  "prospectiveSyntaxCommands": [
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/admission.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/entry.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/http-fixture.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-entry.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-owned-stream.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-source.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-worker-facts.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-worker.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/ollama-binding.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/ollama-provider.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/ollama-response-envelope.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/one-call-scenario.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/runtime-plugin.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/safe-facts.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/stable-error-code.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    }
+  ],
+  "prospectivePrivateRunnerSyntax": {
+    "method": "root-only Python ast.parse of run-private.py text; no import/execution/pycache",
+    "applicationEffects": 0
+  },
+  "prospectiveOneCommand": {
+    "argv": [
+      "python3",
+      "-I",
+      ".runtime/ollama-corrected-one-call-r2/run-private.py"
+    ],
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "shell": false,
+    "stdout": "one bounded closed runner record only; no raw child stdout/stderr",
+    "stderr": "never child streams; private capped files only",
+    "applicationChildren": 1,
+    "newOwnedNodeProcessGroup": 1,
+    "outerObservationCutoffMs": 165000,
+    "hardChildExitPromise": false,
+    "ifChildStillAlive": "BLOCKED/HOLD; explicit owned group/PID cleanup disposition before any success claim; no replay",
+    "childEnvironmentKeysOnly": [
+      "DSH_HOME",
+      "XDG_CONFIG_HOME"
+    ],
+    "localSuccessPrerequisites": [
+      "actual leader exit0",
+      "stdout EOF",
+      "stderr EOF",
+      "actual observed owned group ABSENT",
+      "strict single controlled outcome OBSERVED",
+      "completed original sequence plus scopedGoal PASS",
+      "public disposers resolved",
+      "final metadata inventory within selected caps"
+    ],
+    "exceptionDrainMsMaximum": 5000,
+    "readOnlyOwnedIdentityProbes": {
+      "getsidAttemptsMaximum": 2,
+      "getpgidAttemptsMaximum": 2,
+      "killpgZeroExistenceProbesMaximum": 1,
+      "terminatingGroupSignals": 0,
+      "childPidTERMRequestsMaximum": 1
+    },
+    "noChildTerminationOrNativeReleaseInference": true
+  },
+  "rootGOFalseTemplate": "root-execution-go.TEMPLATE.json",
+  "rootGOActualAbsent": "root-execution-go.json",
+  "sourceFreeze": "source-freeze.json",
+  "preservationBeforeAfter": "source-preservation.json plus root-owned original full host/current old-pin conservation",
+  "expectedNormalCounts": {
+    "controlHTTP": 35,
+    "dfRPC": 30,
+    "metadataHTTP": 3,
+    "modelPOST": 1,
+    "newTasks": 1,
+    "newExecute": 1,
+    "capture": 1,
+    "resultRead": 1,
+    "finish": 1,
+    "historicalAttemptsBefore": 1,
+    "historicalAggregateMaximum": 2,
+    "bindingAuditReads": 11,
+    "closedObservationFiles": 7,
+    "additionalClosedOutcomeFiles": 1
+  },
+  "noRuntimeOutcomeOrAcceptance": "browser/cold typed-currentness/native-all87/CODE HOLD",
+  "remediation": {
+    "path": "docs/ollama-corrected-one-call-r2-remediation-2026-10-07.md",
+    "bytes": 9966,
+    "sha256": "7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf"
+  },
+  "preservationClarification": {
+    "path": "docs/ollama-live02-r2-preservation-clarification-2026-10-07.md",
+    "bytes": 1162,
+    "sha256": "6052720dfae8466b415d0ffdf4bf81064aafd22b631a8b1abe3c0b2680c54747"
+  },
+  "failedOrMissingOutcome": "exit2/HOLD; scopedGoal remains separately FAIL or NOT_OBSERVED. Valid factual finish may remain observed even on goal FAIL; no second inference.",
+  "controlledOutcomeRecord": "private-run/observations/closed-outcome.json; exact schema outcome-schema.json; exclusive0600; maximum16384B; never decode child stream to extract verdict",
+  "retainedRuntimeInventory": {
+    "filesMaximum": 32,
+    "directoriesMaximum": 20,
+    "depthMaximum": 8,
+    "perFileBytesMaximum": 4194304,
+    "aggregateBytesMaximum": 16777216,
+    "scope": "metadata only below sole new private-run",
+    "kind": "final observation/refusal after final observation/outcome writes; no prewrite interception or physical quota"
+  },
+  "monotonicExecuteAdmission": {
+    "origin": "process.uptime from original Node process start",
+    "sharedWorkMs": 135000,
+    "beforePositionMinimumRemainingMs": 85000,
+    "beforeP23MinimumRemainingMs": 85000,
+    "executeHTTPMaximumMs": 75000,
+    "conditionalTailMinimumMs": 10000,
+    "slowMarker": "consumed/no transport/never refunded",
+    "phaseWaits": "clipped to remaining work, no additive ceiling or clock/TTL extension",
+    "cleanupMsMaximum": 15000,
+    "localTotalMsMaximum": 150000
+  }
+}

@@ -1,0 +1,1322 @@
+{
+  "schema": "df.ollama-live02-public-input-pins/v1",
+  "sourceOnly": true,
+  "pins": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "bytes": 24077,
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/entry.d.ts",
+      "bytes": 2465,
+      "sha256": "047a95a352588e566336593969e4a3a7164b3a6ef1bd0ca16a1eb6b766b1c6a5"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts",
+      "bytes": 1773,
+      "sha256": "82c2812f98f18b377d7ffffe1c8576a54fde3b1704d79761b3e58961d430c520"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+      "bytes": 3345,
+      "sha256": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+      "bytes": 1086,
+      "sha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "bytes": 60361,
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+      "bytes": 4749,
+      "sha256": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts",
+      "bytes": 858,
+      "sha256": "51237bf92ef225c92c897c5fb0aa8e4482267a5ae6ff1cf768726a40c9a7db86"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts",
+      "bytes": 3742,
+      "sha256": "fcc969c54b945c21a4ad9a9e4565ae0d535f45c1755910a882826c5785f160f8"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "bytes": 1274,
+      "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "bytes": 72994,
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "bytes": 8901,
+      "sha256": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json",
+      "bytes": 2014,
+      "sha256": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/index.js",
+      "bytes": 31345,
+      "sha256": "7e23c01514303b2dfa1b69a95929cb19e43ba761d3478a3104d0f565ca537be7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/index.d.ts",
+      "bytes": 6378,
+      "sha256": "47e6ec0952cfd9bffb30d1a0092c8303aa03800836cdd6d242fccc3e0770e6a9"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/package.json",
+      "bytes": 3203,
+      "sha256": "81eccf1abe20b6cfb419fe7b530069c0ca6887da42bd1a15b10f309b2e25370e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "bytes": 28207,
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "bytes": 20779,
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+      "bytes": 1985,
+      "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js",
+      "bytes": 186357,
+      "sha256": "619d80619320e953e5ddcee7c71e4b97e90e722a7d17da8819f3bb47e00587be"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-app-boot/lib/types/index.d.ts",
+      "bytes": 20334,
+      "sha256": "0f8017fadcc4659f0caa9147edd4c3a73dd0c8f75fb41f6e686cca6827ec6e81"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-app-boot/lib/types/profile-context.d.ts",
+      "bytes": 2701,
+      "sha256": "81e5e564a70ffa03e65f2651d471ca89ee5efbc63afa6674705331ed1717a901"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-app-boot/package.json",
+      "bytes": 2348,
+      "sha256": "a0016099050531d85a235368462d810cecd11c21cb9dc9e23e010b216eb2c54f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-atomic-write/lib/index.js",
+      "bytes": 9095,
+      "sha256": "5f07978ef594a2711b2da301d5cb73a835cf1a48c1f8920ab5c6625137e12029"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "bytes": 35140,
+      "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/browser-auth.d.ts",
+      "bytes": 2481,
+      "sha256": "7cc73519f69965804c5513e8648e60cdae50046c3f7bb5849a49897fc9209d75"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/index.d.ts",
+      "bytes": 3474,
+      "sha256": "d83649e8d3f48e7e28fe930df033632ae303843d5512ddd1b81a2098d4e33d78"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc-host.d.ts",
+      "bytes": 2743,
+      "sha256": "4655fdfdef83f155b6aa8d8240b8ae74972ddcc185e8873efde7b819fc0e7426"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc.d.ts",
+      "bytes": 11326,
+      "sha256": "3ca86c027408eb2dd6f1aa6efba0778b0f14802d638fc2f66bced8c5e698b0a4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+      "bytes": 1635,
+      "sha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+      "bytes": 32699,
+      "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/types/index.d.ts",
+      "bytes": 10414,
+      "sha256": "c99722ae8a63d708dac752ebdba403cd2754a348ee81efaa523d34cb65b4ebf0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/package.json",
+      "bytes": 1478,
+      "sha256": "adc1b6af2031f34c33772cb72af6aa33f321cbdd13714e31078f7f3c3f7a91e3"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-frontend-static/lib/index.js",
+      "bytes": 3899,
+      "sha256": "19bb095c5175bd5dc6532aa97512e2013a132e5073558ba4b059b8ad5b0f19a2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-frontend-static/lib/types/index.d.ts",
+      "bytes": 2338,
+      "sha256": "91bda909c4a737eec1784a82104852eff12505eddf4f758e53d8d38f354f01f0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-frontend-static/package.json",
+      "bytes": 1382,
+      "sha256": "666f3ebc6d3a03215ca435a2b8422dc39f6e83eb764f72267c5324849b8605d7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "bytes": 13284,
+      "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/types/index.d.ts",
+      "bytes": 6473,
+      "sha256": "342d45c37bfa5f17197cc2692057b112b795924d40f3b0d337d8fe156867641d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/package.json",
+      "bytes": 1122,
+      "sha256": "244a65cf447e0a0b8160fcc8942787b181f7a440fabb720656b7bf71210a8edb"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js",
+      "bytes": 2991,
+      "sha256": "6aab33b43d6caa4ee483f7d796a17afb400fca02b7a259fb55d486626e6bb7f0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/types/index.d.ts",
+      "bytes": 3782,
+      "sha256": "453cd83423580ca2b9dd5bdc3dbbc4429b97152a9c28d7e5ad527daf4ca1a0e1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/package.json",
+      "bytes": 893,
+      "sha256": "d7375a37566ed1b39cae77f4aa27229ed37d4abe2f4175695f10d986162756c7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "bytes": 103333,
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "bytes": 22871,
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+      "bytes": 2082,
+      "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "bytes": 12151,
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "bytes": 883,
+      "sha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "bytes": 142847,
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts",
+      "bytes": 14575,
+      "sha256": "806dfa610c3ed3ce80ffac89900993288d7013d4278ab21e2b55b193c542f79a"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json",
+      "bytes": 1568,
+      "sha256": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "bytes": 20021,
+      "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+      "bytes": 1272,
+      "sha256": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "bytes": 89972,
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "bytes": 27461,
+      "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "bytes": 1553,
+      "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "bytes": 17395,
+      "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "bytes": 1108,
+      "sha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/index.js",
+      "bytes": 31507,
+      "sha256": "39ed60a470b240f8bbc82befdb0bbbad1f409732e8ba8d12d41a1059de0dde05"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/estimate.js",
+      "bytes": 4200,
+      "sha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/package.json",
+      "bytes": 1910,
+      "sha256": "2c28b0db84463a5d5b2242eeb326135b5e831da272d5bf539e01ac77067dfc60"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "bytes": 158002,
+      "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "bytes": 2241,
+      "sha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "bytes": 8478,
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+      "bytes": 1767,
+      "sha256": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/package.json",
+      "bytes": 7779,
+      "sha256": "dbb4a7c1d88c412278fc8baccac7553f6d2310e85f5ffea1470a30106e99c688"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/bin/system.node",
+      "bytes": 52232,
+      "sha256": "9534cde445a865250eb7bc8cfe5e231f3f91d0fda3f4aaa694e81f3531ad1130"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/package.json",
+      "bytes": 652,
+      "sha256": "29ebc197a0f0f5e6f7ffe80f686941239cf2a36c8d5385139a201a44417bed75"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.js",
+      "bytes": 2263,
+      "sha256": "e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/package.json",
+      "bytes": 1169,
+      "sha256": "e8aebe0548e3fd3e733b03476a0a6531076ba40678137421ecd7fb191792d50a"
+    },
+    {
+      "path": ".runtime/dsh-web/package-lock.json",
+      "bytes": 388886,
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/runtime-plugin.mjs",
+      "bytes": 54931,
+      "sha256": "16d2ba6d3bbc4c1c566dd3625a875966e537fe13fe7f198541975754270274ab"
+    },
+    {
+      "path": ".runtime/ni5-result-lifetime-positive/test/selected-byte-native-positive.test.mjs",
+      "bytes": 27918,
+      "sha256": "409d7be12d06b5821ae138b058b49998db78e513d2b9b347a33439700e016ed7"
+    },
+    {
+      "path": ".runtime/ollama-approved-model-readonly-approved-2026-10-07/observations.json",
+      "bytes": 1519,
+      "sha256": "af919838e7a75f60294b8e9b2d9b935d80c9ad5e12f9054538b8bdb0ab28ced4"
+    },
+    {
+      "path": ".runtime/ollama-approved-model-readonly-approved-2026-10-07/show-thinking-metadata.json",
+      "bytes": 586,
+      "sha256": "6ec816365f61a59be4c3b4be726d9524a4e910e13580f56006814f1104dcc958"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/README.md",
+      "bytes": 5834,
+      "sha256": "c1c091606f558843ba25c93eb7e0f53e2ffee47b2e86374494f9e9460a864bf4"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/admission.mjs",
+      "bytes": 2130,
+      "sha256": "8f4b58034629c9c6cf46ff9b211b808de4bf3f1f8febd7ecde1e294771f2e040"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/before/installed-entry.mjs.txt",
+      "bytes": 7405,
+      "sha256": "08c7d8fefe6f4deb6fad99f964556ad42f54e62e6d3211aa418f10fa0a2df4b3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/before/installed-source.mjs.txt",
+      "bytes": 305,
+      "sha256": "1f9b2b71056612dcfd5ef047f9163db75ac88e52a304598fd643e3246488ecd3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/before/ollama-binding.mjs.txt",
+      "bytes": 12241,
+      "sha256": "b3a81cc87b92f8a088846a4cfdcaf7736873fe086793cdce72e66938e1a80104"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/correction-literals.json",
+      "bytes": 8004,
+      "sha256": "b98e212a288bb3c5db298c222874f65e4b888e58b2365dadc8db0a6472056e46"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/effect-plan.json",
+      "bytes": 5730,
+      "sha256": "121f79b90f56558cecce63a0353118e63e60b63698b37a6955250b41ab7471e2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/entry.mjs",
+      "bytes": 15930,
+      "sha256": "c562aaf59a91e7f473ba3466745e5a21c3a9e94d58ff6427e60aae03637be0ea"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/http-fixture.mjs",
+      "bytes": 9017,
+      "sha256": "7ddfd23b2239533a50bb9c54daf6529358d91e2619f70056b410124eccee55c1"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-entry.mjs",
+      "bytes": 7366,
+      "sha256": "985f586a4ad5631a86c2e2ececbe0b4b84689887a7a19176b2ca1c2f3e4e88fb"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-owned-stream.mjs",
+      "bytes": 1692,
+      "sha256": "0e3e2cf31a205d7af1d563df2180fde79cdffe338a5fd8100c5f78db7432a36f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-source.mjs",
+      "bytes": 268,
+      "sha256": "7800e3da9ad3b2869f4cbb504e52c1d82fc406bf3157f207a70addb91765777f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-worker-facts.mjs",
+      "bytes": 21101,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-worker.mjs",
+      "bytes": 35177,
+      "sha256": "fa02b816912efb04f9dab77dbc8d0ff8a59b5d1a661a3f8503b77d02c790895b"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/ollama-binding.mjs",
+      "bytes": 12475,
+      "sha256": "ef0b68fb54489f8731bb2733caf61c6fb4db82dc3611fd336def840de8984410"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/ollama-provider.mjs",
+      "bytes": 16997,
+      "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/ollama-response-envelope.mjs",
+      "bytes": 2596,
+      "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs",
+      "bytes": 15976,
+      "sha256": "330b6467bb0a2fad89a27c9b5bd51461bcb3b905692032059336ae80014ca1bb"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/patches/installed-entry.mjs.patch",
+      "bytes": 739,
+      "sha256": "9c19eaa7fdd0fcba0ce9469e71983ceae827122573775ea345d05246622fa47c"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/patches/installed-source.mjs.patch",
+      "bytes": 528,
+      "sha256": "322953b35b89e5c787f088f0aa2910368ab90884e132b60566255e0434924dba"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/patches/ollama-binding.mjs.patch",
+      "bytes": 2556,
+      "sha256": "d8bf0cefd47666d57ca7032d18606eb1231db4a6adfcf0628aadd29ebefbd286"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/public-input-pins.json",
+      "bytes": 43327,
+      "sha256": "78f95cb086d06fed2d6ff498552aa2f94eca2756cf9bf0b9c0bbc5a45541cf86"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/root-execution-go.TEMPLATE.json",
+      "bytes": 575,
+      "sha256": "fc6401c18339d4c2179b87cfe84b36c7ef3792de543f0e4a4ddb15b17ce3a9be"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/root-plan.json",
+      "bytes": 5945,
+      "sha256": "7ef283896e1db7fc56a32ea78d29379a5aa64f4755e237839b2d3523960eecfa"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/rpc-sequence.json",
+      "bytes": 8380,
+      "sha256": "275835cad3372bf62f7beccaf233b8cc724a224ca6e0db89a2f57506630ef82d"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/run-private.py",
+      "bytes": 7935,
+      "sha256": "09e98db695fded6686f5f7d734a7364426c0419584de49a6d9fddbeb46dc494e"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/runtime-plugin.mjs",
+      "bytes": 37737,
+      "sha256": "765835e5d5129bef4d66bf559b007cf1b72197eddfddafab71e796f2786d615b"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/safe-facts.mjs",
+      "bytes": 5289,
+      "sha256": "b8b27ccdce17188e7d838116ffbf7ac0845e5b18d3b4327be74fd223c3a979b3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-freeze.json",
+      "bytes": 50382,
+      "sha256": "b6aeca803dd22c5f075b9fba013769930263c268c14ed824212885eb5487cba0"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-import-closure.json",
+      "bytes": 33974,
+      "sha256": "bfe5f1618d08ea8cf829333d445b6a2c318e56fd57e23264137288f0d4250737"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-manifest.json",
+      "bytes": 8314,
+      "sha256": "d7c871cd791d9db7d63da207f3aacd3d3f3f693b27c28a993b1b36efeeca57a7"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-pins.json",
+      "bytes": 4034,
+      "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-preservation.json",
+      "bytes": 34159,
+      "sha256": "473ac773ee0f55524e76b24be5b690f00076141962e79fc591dfb737693bbab3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/stable-error-code.mjs",
+      "bytes": 1813,
+      "sha256": "4278acdce0b33917175267f77de2a86ad3dcf75a7ff339c0f8951a99569d01eb"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixture-followup-proposals/REDACTION-PREFLIGHT.md",
+      "bytes": 11567,
+      "sha256": "08bfb8e5ebd2515edaf7919515b25df3a2422c866ffb42b37ac49c462ae982ff"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/REVIEW.md",
+      "bytes": 12051,
+      "sha256": "4f9427a00b1e0c34ba6cc25a0380cc44f073854e3d06c58cfcf1a75706591d2c"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs",
+      "bytes": 1568,
+      "sha256": "0a4cc2f0ed4c25cbbea067fcda19b4b30b0b6318303d2abe682f7500117a4899"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/admission.mjs",
+      "bytes": 1568,
+      "sha256": "0a4cc2f0ed4c25cbbea067fcda19b4b30b0b6318303d2abe682f7500117a4899"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/entry.mjs",
+      "bytes": 6633,
+      "sha256": "2aa7ccc3e636af1f30b42359e9972a30b009f5f117de960eb55baab23a1f5230"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/installed-source.mjs",
+      "bytes": 305,
+      "sha256": "1f9b2b71056612dcfd5ef047f9163db75ac88e52a304598fd643e3246488ecd3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/native-fixture.mjs",
+      "bytes": 6938,
+      "sha256": "91c8998b977c459028aa64bae0cae0b4143f5cdb87d52478977b9571cedadac8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/prompts.mjs",
+      "bytes": 2874,
+      "sha256": "f98338affe9c2029621c0473ce0961de4e2f70ee4a22ff1b9fb02fd7da10dd2e"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/root-execution-go.TEMPLATE.json",
+      "bytes": 875,
+      "sha256": "226286db8e5da6cd202c1f77f0919b9305ad4259abb6d0379fc4ca0f9e67b2c1"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/scenario-cases.json",
+      "bytes": 22828,
+      "sha256": "5cc9f55fa0578601f260c7fc3b2c192a3156b9025afb712d7d9cb3727ed30fc0"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/scenarios.mjs",
+      "bytes": 17365,
+      "sha256": "4eb3ef8edbb1fe7bda627f0367a7160226e18fced869543284970a2823a71af3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/before/stream-observer.mjs",
+      "bytes": 3288,
+      "sha256": "2b6e4f244f932de1a1b01afad36b148ffc8d166f89bf050dd9ef4d534f78fcb0"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/entry.mjs",
+      "bytes": 8950,
+      "sha256": "557279d39ba82ae21b1bdcd97851066505d0fe183a7df122bc3a85fa77bde3bd"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/installed-source.mjs",
+      "bytes": 305,
+      "sha256": "1f9b2b71056612dcfd5ef047f9163db75ac88e52a304598fd643e3246488ecd3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/native-fixture.mjs",
+      "bytes": 6984,
+      "sha256": "ecb37bcf793a486fd14e3fff2b6d1761521f488dc137151b4a6f680e274061c6"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/admission.mjs.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/entry.mjs.patch",
+      "bytes": 7764,
+      "sha256": "c67e557168e2a76a78843b213d9e301f56605b8a38c5c334bd793a5bf22dd821"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/installed-source.mjs.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/native-fixture.mjs.patch",
+      "bytes": 1002,
+      "sha256": "44500aba0048653eb58d5a6b066e8fb7f3b0929400d4390ec86dfa784a563156"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/prompts.mjs.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/scenarios.mjs.patch",
+      "bytes": 7789,
+      "sha256": "da81640bbcd80b9db2e313ef19e60b988135e7798b15103e58dd00445fa2abe2"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/stable-error-code.mjs.patch",
+      "bytes": 1947,
+      "sha256": "e6f32f5ead0ec77168082f62f16878d374ba2bf288b92b9f839809b1dfb3c728"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/patches/stream-observer.mjs.patch",
+      "bytes": 795,
+      "sha256": "e742f4b88a32b745a9db09cb4a2b776822a629db2e84fb3ab707582d4794e96c"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/prompts.mjs",
+      "bytes": 2874,
+      "sha256": "f98338affe9c2029621c0473ce0961de4e2f70ee4a22ff1b9fb02fd7da10dd2e"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/public-contract-successor.json",
+      "bytes": 3193,
+      "sha256": "5da867d027e23f5c421d424a82fc74a77f5ab864280991ffe039aca8cb9cdbed"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/public-contract-successor.md",
+      "bytes": 1853,
+      "sha256": "1a6050676f9975f3cc263f650fdd3b925f4d07a66ad1b785af4561397267b99b"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/root-execution-go.TEMPLATE.json",
+      "bytes": 875,
+      "sha256": "226286db8e5da6cd202c1f77f0919b9305ad4259abb6d0379fc4ca0f9e67b2c1"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/scenario-cases.json",
+      "bytes": 23228,
+      "sha256": "30d049d4d0d2d33bf2c8722388a140108a82919a6d1a471f9f36aeede54574b8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/scenarios.mjs",
+      "bytes": 18504,
+      "sha256": "4d28368c15ee451b7432f709cbbf55087fbc946598307ddf0e06b16afcc0a89f"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/source-import-closure.json",
+      "bytes": 53971,
+      "sha256": "e8f0eaaf532d027a29fd01f2ba0d36d0023d621a8ec9496cb3c2342d3360c64d"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs",
+      "bytes": 1813,
+      "sha256": "4278acdce0b33917175267f77de2a86ad3dcf75a7ff339c0f8951a99569d01eb"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/stream-observer.mjs",
+      "bytes": 3308,
+      "sha256": "df7fbd6fe9a6f7d6127c2a396350cbdab1f6d061c21ec6eedcabe035902ddae8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/REVIEW.md",
+      "bytes": 8944,
+      "sha256": "76d5ff3f9a098b5197dbe4500d2c097e983fa9329fb26e910c6c6013f5944ba4"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/admission.mjs",
+      "bytes": 1568,
+      "sha256": "0a4cc2f0ed4c25cbbea067fcda19b4b30b0b6318303d2abe682f7500117a4899"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/continuity-PROPOSAL.md",
+      "bytes": 4341,
+      "sha256": "08c0693c1f47012b4b06086b0beda7d8545eba54c11271c0538e45c8e39ca4fc"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/entry.mjs",
+      "bytes": 6633,
+      "sha256": "2aa7ccc3e636af1f30b42359e9972a30b009f5f117de960eb55baab23a1f5230"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/fixture-freeze.json",
+      "bytes": 48126,
+      "sha256": "c7e057aa4f73c684482975e5a94ad69cee3087d231364cfa51642b88bb5b7523"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/installed-source.mjs",
+      "bytes": 305,
+      "sha256": "1f9b2b71056612dcfd5ef047f9163db75ac88e52a304598fd643e3246488ecd3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/native-fixture.mjs",
+      "bytes": 6938,
+      "sha256": "91c8998b977c459028aa64bae0cae0b4143f5cdb87d52478977b9571cedadac8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/prompts.mjs",
+      "bytes": 2874,
+      "sha256": "f98338affe9c2029621c0473ce0961de4e2f70ee4a22ff1b9fb02fd7da10dd2e"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/root-execution-go.TEMPLATE.json",
+      "bytes": 875,
+      "sha256": "226286db8e5da6cd202c1f77f0919b9305ad4259abb6d0379fc4ca0f9e67b2c1"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/scenario-cases.json",
+      "bytes": 22828,
+      "sha256": "5cc9f55fa0578601f260c7fc3b2c192a3156b9025afb712d7d9cb3727ed30fc0"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/scenarios.mjs",
+      "bytes": 17365,
+      "sha256": "4eb3ef8edbb1fe7bda627f0367a7160226e18fced869543284970a2823a71af3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/source-import-closure.json",
+      "bytes": 51911,
+      "sha256": "15e6657054d9e44da4b4d8cc09790a62417b33fa5462d2c191eb49a96a9169c3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures/stream-observer.mjs",
+      "bytes": 3288,
+      "sha256": "2b6e4f244f932de1a1b01afad36b148ffc8d166f89bf050dd9ef4d534f78fcb0"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/REVIEW-R1.md",
+      "bytes": 4637,
+      "sha256": "5091bbc6c06791347f0e03d102588d38d8e6e53235352042c27f880601de1790"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/installed-entry.mjs",
+      "bytes": 7374,
+      "sha256": "c9acb18b2f5773e5ed2b346d8a1b7dbcfcb3b5c3160085aff9c190c6dd9d8ce7"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/installed-owned-stream.mjs",
+      "bytes": 1071,
+      "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/installed-worker-facts.mjs",
+      "bytes": 21101,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/installed-worker.mjs",
+      "bytes": 34724,
+      "sha256": "4125037f2e4d5cee2c371cd6be6643e12099ca3c93d67d22d47744ffc30a3b69"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/ollama-binding.mjs",
+      "bytes": 11577,
+      "sha256": "66820bf481ae5bc9916924432f75f229faa09e605e4a857391cb30daa1de7d12"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/ollama-provider.mjs",
+      "bytes": 15775,
+      "sha256": "626458a9aae0777336d875827db4ee540d07a8979394586e4e1e74e49b5cb614"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/before/source-pins.json",
+      "bytes": 3349,
+      "sha256": "de32d916e3567f48f33f39ba03f63537071b23e2b1290283c0897ee91716e914"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-entry.mjs",
+      "bytes": 7374,
+      "sha256": "c9acb18b2f5773e5ed2b346d8a1b7dbcfcb3b5c3160085aff9c190c6dd9d8ce7"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-owned-stream.mjs",
+      "bytes": 1692,
+      "sha256": "0e3e2cf31a205d7af1d563df2180fde79cdffe338a5fd8100c5f78db7432a36f"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-owned-stream.mjs.patch",
+      "bytes": 1452,
+      "sha256": "3a444d881763d5500bc6400593a42da74d4763420d159bb306eb6c7dae29a1ff"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker-facts.mjs",
+      "bytes": 21101,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker.mjs",
+      "bytes": 35177,
+      "sha256": "fa02b816912efb04f9dab77dbc8d0ff8a59b5d1a661a3f8503b77d02c790895b"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker.mjs.patch",
+      "bytes": 1649,
+      "sha256": "871892435e2c35f331a1c26f998407a001c4343b8906e24bcec43deb1edf86e0"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs",
+      "bytes": 12241,
+      "sha256": "b3a81cc87b92f8a088846a4cfdcaf7736873fe086793cdce72e66938e1a80104"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs.patch",
+      "bytes": 1012,
+      "sha256": "fa8b34eb01e50608d60c35b3fa4982a7532ab4cdbbf19c8791c53cf9d46cea39"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+      "bytes": 16944,
+      "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs.patch",
+      "bytes": 6277,
+      "sha256": "351ee21e7fdfaf6b0f5cb6a09109ef23c62b7d83175236fb4f7695312ae2b938"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/public-contract-currentness-r1.json",
+      "bytes": 1953,
+      "sha256": "7a85dd198850ff6fe3f74fa9c0e0d71f42f4e78d8c61346e270f449543382960"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/public-contract-currentness-r1.md",
+      "bytes": 2184,
+      "sha256": "0b10f59c8d13e63729a3f2748753cc12747df0f6843df0c0d610c8459f034781"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/revision-manifest.json",
+      "bytes": 5145,
+      "sha256": "2f0f5899c6b96771b789ae690d4307ae02d476c8b83d26456abe5d88f4ca8da6"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/source-import-closure.json",
+      "bytes": 34042,
+      "sha256": "50f26c71eb928344db52d291fbda5bbb4479d384e444289f7ac40e0ddd6e21a7"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/source-pins.json",
+      "bytes": 4034,
+      "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/source-pins.json.patch",
+      "bytes": 1923,
+      "sha256": "165fb3b03d82f0b7798507a836ea3d4e02b5fab5d1d20b8c2f249827f7aeff34"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/FUNCTIONAL-PLAN.md",
+      "bytes": 6013,
+      "sha256": "a60187981c5cb96b8a99b9e72e1766416c937dc4959a1a1fc4bfa5dbbe23ca21"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/REVIEW.md",
+      "bytes": 7697,
+      "sha256": "9988296719071d0097a69046f2ee39c51aca47f796bba1462413d5db9576feca"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/contracts.json",
+      "bytes": 3821,
+      "sha256": "d7481ba67c7059f2ba7c621a1dacdeb81a7ec8cce96ed1219bab233ee0f35cb1"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/installed-entry.mjs",
+      "bytes": 7374,
+      "sha256": "c9acb18b2f5773e5ed2b346d8a1b7dbcfcb3b5c3160085aff9c190c6dd9d8ce7"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/installed-entry.mjs.patch",
+      "bytes": 3375,
+      "sha256": "078936399ef0910875c5149ea4c3d5f2c0a290e949689f8351b2a47fb664585d"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/installed-worker-facts.mjs",
+      "bytes": 21101,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/installed-worker-facts.mjs.patch",
+      "bytes": 7544,
+      "sha256": "2c2119e30b174870237224483c90a0f2a1fc2de2dea967551aa2b7a64442dda7"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/installed-worker.mjs",
+      "bytes": 34724,
+      "sha256": "4125037f2e4d5cee2c371cd6be6643e12099ca3c93d67d22d47744ffc30a3b69"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/installed-worker.mjs.patch",
+      "bytes": 23377,
+      "sha256": "e0e297b44580cb2629856cb284089c1eca577d7bd187ab3e5f4394f48e8927b8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/ollama-binding.mjs",
+      "bytes": 11577,
+      "sha256": "66820bf481ae5bc9916924432f75f229faa09e605e4a857391cb30daa1de7d12"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/ollama-provider.mjs",
+      "bytes": 15775,
+      "sha256": "626458a9aae0777336d875827db4ee540d07a8979394586e4e1e74e49b5cb614"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/public-contract-refinement.json",
+      "bytes": 15322,
+      "sha256": "da1adc6c56fb495aa76cb1004eab7664738333c537b851edb3ec76b7de06e913"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/public-contract-refinement.md",
+      "bytes": 8588,
+      "sha256": "c5a748dac880c58259ab19b9eaeec7040a3d6f4ca01502091e0c42c63fbb6ef8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/review-manifest.json",
+      "bytes": 2269,
+      "sha256": "459d46bbcd9102f0ecc2bd099b3a3de18d7fc0b708a4235a90032add8f8b75d4"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/source-import-closure.json",
+      "bytes": 33265,
+      "sha256": "6b8d6337d91a0138af9e2db1acd31c27e64c9a8723808ea5c70049934a7003c1"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-source/source-pins.json",
+      "bytes": 3349,
+      "sha256": "de32d916e3567f48f33f39ba03f63537071b23e2b1290283c0897ee91716e914"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/REVIEW.md",
+      "bytes": 3154,
+      "sha256": "4e2d2ec026c9d6f62b4a268529c0b39b19ba40b5b514796cfe7ecbddb29fcac8"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/amendment-manifest.json",
+      "bytes": 2349,
+      "sha256": "1dea693b0d6ec3bf17e7e3ad6e9a80f1b5f62b57f6b60707c3c222f935dcbefe"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/before/installed-entry.mjs",
+      "bytes": 7374,
+      "sha256": "c9acb18b2f5773e5ed2b346d8a1b7dbcfcb3b5c3160085aff9c190c6dd9d8ce7"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/before/runtime-plugin.mjs",
+      "bytes": 36350,
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/installed-entry.mjs",
+      "bytes": 7405,
+      "sha256": "08c7d8fefe6f4deb6fad99f964556ad42f54e62e6d3211aa418f10fa0a2df4b3"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/installed-entry.mjs.patch",
+      "bytes": 901,
+      "sha256": "a2d15384d55e276b4d445765b5aa4d2bca396e1e9cb5774729587b6412ae239f"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/public-contract-memory-correct.json",
+      "bytes": 2282,
+      "sha256": "1d735bba0e1c2c05b751a4f504f4353e4292be3722b37f4fd9d870558ede3d77"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/public-contract-memory-correct.md",
+      "bytes": 3861,
+      "sha256": "183b07f633bc9889e1c4adc87785b374c48eca7c86d1d6a8af63bd5467dc1e42"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/runtime-plugin.mjs",
+      "bytes": 37737,
+      "sha256": "765835e5d5129bef4d66bf559b007cf1b72197eddfddafab71e796f2786d615b"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/runtime-plugin.mjs.patch",
+      "bytes": 6350,
+      "sha256": "f6407a51a353964e1e77cdc1c6cce107d33f1319dced64059855d12b232aaa87"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.mjs",
+      "bytes": 16997,
+      "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/ollama-response-envelope.mjs",
+      "bytes": 2596,
+      "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/source-manifest.json",
+      "bytes": 6182,
+      "sha256": "1ba593dc9cc28457c336b453175d835b3edd6f8a7dcbaf47ed66e5a1436a22e6"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/source-pins.json",
+      "bytes": 4034,
+      "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/contracts/ollama-binding-audit-v2.md",
+      "bytes": 1899,
+      "sha256": "ac7ddc73a4bc8f87f18f0b089059d76d1a95a965f9b7d6dae0949baf5314893a"
+    },
+    {
+      "path": "docs/contracts/ollama-response-envelope-v1.md",
+      "bytes": 2692,
+      "sha256": "dd4ea5f652797e46db8197141bc4f9686307158457bc6452d143eefd708f9993"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-prerequisites.json",
+      "bytes": 53939,
+      "sha256": "6113d00b1d0d9ac03796bddb52821b57749c2ba5650d7a990e675ce117fa909b"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-prerequisites.md",
+      "bytes": 11692,
+      "sha256": "9f22bc403573ac24de7867d11841ecdac86fe5b49be53b945b3a1e2bd80943b8"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.json",
+      "bytes": 60381,
+      "sha256": "6629e12349772cc8218bf6369337c307c3c2a1c4e2efad5dcdf23f39f2626538"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.md",
+      "bytes": 29459,
+      "sha256": "e1412ca7f0933e41f344bfb2ce9c6bf93f9cbbd47598f900bb800a935a9d3efd"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-source-review.json",
+      "bytes": 88888,
+      "sha256": "1d74eae54202a607c0065f01bf82dd2290cdbcc14226d09a6c66990d849b4c8c"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-source-review.md",
+      "bytes": 14337,
+      "sha256": "a21e327a1b4ca47f4cf183b7cfd8849645dfae0dc21b75d20f3e18be716c05ce"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-test-review.json",
+      "bytes": 25949,
+      "sha256": "fca706a62c2c95f8fc3d03aa02358d9f611260f1033216a4d9e99d6e9277e6f3"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-test-review.md",
+      "bytes": 16156,
+      "sha256": "bd7c40808b3fa0d8b66c59832eda92ee74d3ba746247a009a01afc51c7673380"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-source.json",
+      "bytes": 8705,
+      "sha256": "574ea8252195d488255668ee7f8ff564f83f4fd548252f889d51945f194d3874"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-source.md",
+      "bytes": 6049,
+      "sha256": "64dddaa623a6e69f5ad8ffba7c03011a2b1f2af236933a2ff9b5eb83941dc5cb"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-installed-worker-independent-design.json",
+      "bytes": 51212,
+      "sha256": "872f4d3f484ec3704d70db1ff210ddf143b8f98457ad122a45f3b4de61412b2f"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-installed-worker-independent-design.md",
+      "bytes": 53185,
+      "sha256": "45db6968d99ca1c2d9af031bcc714b7e54d774b63c8552666f70e3277aa883b4"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-memory-correct-independent-design-amendment.json",
+      "bytes": 20594,
+      "sha256": "c59373dfb11694d5a10d6702f6344d762f71c2afcca9e55d243ee27af1f3172a"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-memory-correct-independent-design-amendment.md",
+      "bytes": 19780,
+      "sha256": "8fb4bcb9570af769d95beaf17abf79876e360f07b7f0d8d1ad61ae0f7ca46f92"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-six-slot-fixture-independent-source-review.json",
+      "bytes": 263060,
+      "sha256": "d2a75ea34df6a351749ee9cb656ee286888afc7b62ecfa8d594c307fddfd8818"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-six-slot-fixture-independent-source-review.md",
+      "bytes": 20595,
+      "sha256": "de3b7c553f832e759be247d928f1aa0e1f49d98cc28b5c9c99a6b938bc8aa78a"
+    },
+    {
+      "path": "docs/ollama-corrected-one-call-r2-remediation-2026-10-07.md",
+      "bytes": 9966,
+      "sha256": "7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf"
+    },
+    {
+      "path": "docs/ollama-corrected-one-call-wave-2026-10-07.md",
+      "bytes": 5947,
+      "sha256": "c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78"
+    },
+    {
+      "path": "docs/ollama-live02-r2-preservation-clarification-2026-10-07.md",
+      "bytes": 1162,
+      "sha256": "6052720dfae8466b415d0ffdf4bf81064aafd22b631a8b1abe3c0b2680c54747"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+    },
+    {
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "bytes": 388886,
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "path": "src/approval-preview.mjs",
+      "bytes": 12081,
+      "sha256": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792"
+    },
+    {
+      "path": "src/audit-input-pair.mjs",
+      "bytes": 7647,
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+    },
+    {
+      "path": "src/audit.mjs",
+      "bytes": 6184,
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+    },
+    {
+      "path": "src/chat.mjs",
+      "bytes": 15251,
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+    },
+    {
+      "path": "src/config.mjs",
+      "bytes": 2918,
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "path": "src/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": "src/coordinator.mjs",
+      "bytes": 13403,
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "path": "src/environment.mjs",
+      "bytes": 9792,
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+    },
+    {
+      "path": "src/event-clock.mjs",
+      "bytes": 7432,
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+    },
+    {
+      "path": "src/events.mjs",
+      "bytes": 10602,
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+    },
+    {
+      "path": "src/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+    },
+    {
+      "path": "src/host-probe.mjs",
+      "bytes": 6739,
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "path": "src/installed-config.mjs",
+      "bytes": 2173,
+      "sha256": "3da0ed1c99cd1ed920e7093fad0dafc6ce5f1653bfd09879018a10dd8d02e5ed"
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "bytes": 2341,
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+    },
+    {
+      "path": "src/installed-memory-continuity.mjs",
+      "bytes": 22246,
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+    },
+    {
+      "path": "src/installed-memory.mjs",
+      "bytes": 3538,
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "bytes": 5018,
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+    },
+    {
+      "path": "src/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258"
+    },
+    {
+      "path": "src/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01"
+    },
+    {
+      "path": "src/messages.mjs",
+      "bytes": 15586,
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "bytes": 37074,
+      "sha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0"
+    },
+    {
+      "path": "src/notifications.mjs",
+      "bytes": 11442,
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "bytes": 8628,
+      "sha256": "9227a0126e662bc150fa64b152cd4a380c8b70c7e5160a1ed151c6103422aa77"
+    },
+    {
+      "path": "src/results.mjs",
+      "bytes": 13766,
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "bytes": 36350,
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f"
+    },
+    {
+      "path": "src/scheduler.mjs",
+      "bytes": 11509,
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+    },
+    {
+      "path": "src/setup-state.mjs",
+      "bytes": 20740,
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "bytes": 12872,
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7"
+    },
+    {
+      "path": "src/worker.mjs",
+      "bytes": 36626,
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+    }
+  ],
+  "fullHostGraphReadOrReResolved": false,
+  "originalWholeGraphExpectedSha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd",
+  "wholeGraphVerification": "ROOT CURRENT ACTION-TIME PREREQUISITE; exact existing inventory, not author runtime evidence",
+  "preservedOriginalInputPins": 218,
+  "revision": "r2",
+  "addedInputsArePublicOnly": true
+}

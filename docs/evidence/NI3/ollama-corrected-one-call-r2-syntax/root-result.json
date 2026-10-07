@@ -1,0 +1,365 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "all336ManifestAndFreezeRecordsUnchanged": true,
+  "all87": "HOLD",
+  "candidateImports": 0,
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/admission.mjs"
+      ],
+      "exitCode": 0,
+      "index": 1,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.07976516685448587,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/entry.mjs"
+      ],
+      "exitCode": 0,
+      "index": 2,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.08910162490792572,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/http-fixture.mjs"
+      ],
+      "exitCode": 0,
+      "index": 3,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.0896327500231564,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-entry.mjs"
+      ],
+      "exitCode": 0,
+      "index": 4,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.08843087498098612,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-owned-stream.mjs"
+      ],
+      "exitCode": 0,
+      "index": 5,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.0885330829769373,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-source.mjs"
+      ],
+      "exitCode": 0,
+      "index": 6,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.09128324990160763,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-worker-facts.mjs"
+      ],
+      "exitCode": 0,
+      "index": 7,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.09154825005680323,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/installed-worker.mjs"
+      ],
+      "exitCode": 0,
+      "index": 8,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.09135408303700387,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/ollama-binding.mjs"
+      ],
+      "exitCode": 0,
+      "index": 9,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.0906874171923846,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/ollama-provider.mjs"
+      ],
+      "exitCode": 0,
+      "index": 10,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.088073416845873,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/ollama-response-envelope.mjs"
+      ],
+      "exitCode": 0,
+      "index": 11,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.08832945791073143,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/one-call-scenario.mjs"
+      ],
+      "exitCode": 0,
+      "index": 12,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.081666958052665,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/runtime-plugin.mjs"
+      ],
+      "exitCode": 0,
+      "index": 13,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.09151324979029596,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/safe-facts.mjs"
+      ],
+      "exitCode": 0,
+      "index": 14,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.08972266595810652,
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r2/stable-error-code.mjs"
+      ],
+      "exitCode": 0,
+      "index": 15,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "withinReadbackCap": true
+        }
+      },
+      "seconds": 0.08700729184783995,
+      "timedOut": false
+    }
+  ],
+  "commandsObserved": 15,
+  "contractVersion": "df.live02-r2-root-syntax-result/v1",
+  "expectedCommands": 15,
+  "failureCode": null,
+  "historicalModelPOSTs": 1,
+  "observedAt": "2026-10-07T17:17:54.426910+00:00",
+  "privateStreamsDecodedOrPublished": false,
+  "profileListenerHTTPModelActivation": 0,
+  "pythonAST": "PASS",
+  "result": "PASS",
+  "seconds": 1.3526513339020312
+}

@@ -1,0 +1,68 @@
+{
+  "schema": "df.ollama-live02-outcome-description/v1",
+  "sourceOnly": true,
+  "runtimeGO": false,
+  "runtimeSchema": "df.ollama-live02-outcome/v1",
+  "exactKeys": [
+    "schema",
+    "outcome",
+    "failureCode",
+    "scopedGoal",
+    "exactMarkerMatched",
+    "completedOriginalSequence",
+    "newPositionConsumed",
+    "auditReads",
+    "historicalAttemptsBefore",
+    "additionalAttemptLimit",
+    "adapterAttempted",
+    "adapterActive",
+    "adapterUncertainHold",
+    "controlHTTP",
+    "dfRPC",
+    "metadataHTTP",
+    "cleanup",
+    "rootOwnerDisposeCalls",
+    "presetOwnerDisposeCalls",
+    "durableScratchRetained",
+    "remoteTerminationFromCleanup",
+    "billing",
+    "browserAcceptance",
+    "nativeColdContinuation",
+    "all87",
+    "CODE"
+  ],
+  "nestedObjectsOrExtraKeys": false,
+  "duplicateKeysAccepted": false,
+  "NaNInfinityAccepted": false,
+  "readOnlyControlledRecord": "private-run/observations/closed-outcome.json",
+  "exclusiveMode": "0600 wx",
+  "maximumFiles": 1,
+  "maximumBytes": 16384,
+  "scopedGoal": [
+    "PASS",
+    "FAIL",
+    "NOT_OBSERVED"
+  ],
+  "nullableBooleans": [
+    "exactMarkerMatched",
+    "newPositionConsumed",
+    "adapterActive",
+    "adapterUncertainHold"
+  ],
+  "nullPositionMeaning": "entered exclusive write without confirmation; no refund or replay",
+  "nullableCounts": {
+    "adapterAttempted": 1,
+    "controlHTTP": 35,
+    "dfRPC": 30,
+    "metadataHTTP": 3
+  },
+  "counts": {
+    "auditReads": 14,
+    "rootOwnerDisposeCalls": 1,
+    "presetOwnerDisposeCalls": 1
+  },
+  "failureCode": "null or unchanged stable-error-code.mjs allowlist; no raw error string",
+  "healthyAuditReadCount": 11,
+  "wrapperVerdict": "strictly decode exactly this file; never read/forward raw child streams; missing/invalid/ambiguous => NOT_OBSERVED/refused/HOLD",
+  "nativeAuthorityOrTerminationProof": false
+}

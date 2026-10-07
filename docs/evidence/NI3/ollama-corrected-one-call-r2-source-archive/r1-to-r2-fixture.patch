@@ -1,0 +1,1404 @@
+--- .runtime/ollama-corrected-one-call-r1/admission.mjs
++++ .runtime/ollama-corrected-one-call-r2/admission.mjs
+@@ -1,6 +1,8 @@
+ // New selected realm only. This reference identifies the frozen source selection;
+ // it is not wire-carried operator authority, a price, or a billing settlement.
+ export const AC_SHA256 = 'c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78';
++export const REMEDIATION_SHA256 = '7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf';
++export const PRESERVATION_SHA256 = '6052720dfae8466b415d0ffdf4bf81064aafd22b631a8b1abe3c0b2680c54747';
+ export const cloudAdmission = Object.freeze({ costEstimateMicros: 1000000,
+   authorizationRef: AC_SHA256 });
+ export const GOAL = 'For this authorized synthetic DF test, return exactly DF_ONE_CALL_READY. Do not request tools, memory writes, or further steps.';
+@@ -11,8 +13,15 @@
+   metadataResponseBytes: 1048576, sessionBytes: 1048576, sessionEvents: 128,
+   bootMs: 30000, httpMs: 5000, executeHTTPMs: 75000, providerMs: 60000,
+   workMs: 135000, cleanupMs: 15000, outerProcessMs: 150000,
++  executeAdmissionMs: 85000, conditionalTailMs: 10000,
+   observationFiles: 8, observationBytes: 16384,
+-  retainedFiles: 32, retainedDirectories: 20, retainedBytes: 33554432 });
++  outcomeFiles: 1, outcomeBytes: 16384,
++  retainedFiles: 32, retainedDirectories: 20, retainedDepth: 8,
++  retainedFileBytes: 4194304, retainedBytes: 16777216 });
++// The original process origin includes inert imports and preflight. No phase
++// receives a new work clock, and the fixture never extends an original TTL.
++export const elapsedProcessMs = () => Math.ceil(process.uptime() * 1000);
++export const remainingWorkMs = () => Math.max(0, bounds.workMs - elapsedProcessMs());
+ export function installedConfig({ data, environment, directory }) {
+   return { databasePath: `${data}/runtime.sqlite`, hostTarget: 'dsh-web-0.2.1-alpha.1',
+     limits: { maxMetadataBytes: 4096, maxActive: 1, maxAttempts: 1,
+--- .runtime/ollama-corrected-one-call-r1/safe-facts.mjs
++++ .runtime/ollama-corrected-one-call-r2/safe-facts.mjs
+@@ -1,7 +1,7 @@
+ import { createHash } from 'node:crypto';
+ import { writeFileSync } from 'node:fs';
+ import { join } from 'node:path';
+-import { bounds } from './admission.mjs';
++import { bounds, remainingWorkMs } from './admission.mjs';
+ import { stableErrorCode } from './stable-error-code.mjs';
+ export const digest = value => createHash('sha256').update(value).digest('hex');
+ export function fail(code) { const error = new Error(code); error.code = code; throw error; }
+@@ -25,6 +25,12 @@
+   'OLLAMA_CURRENTNESS_REFUSED', 'OLLAMA_RESPONSE_BOUND', 'OLLAMA_RESPONSE_MISSING']);
+ export function safeFailure(error, boundary = 'entry') {
+   return stableErrorCode(error, boundary);
++}
++let auditReads = 0;
++export const auditReadCount = () => auditReads;
++export function readAudit(binding) {
++  requireFact(auditReads < 14, 'RESOURCE_LIMIT'); auditReads++;
++  return binding.audit();
+ }
+ export function safeUsage(usage) {
+   if (!usage) return null;
+@@ -77,6 +83,41 @@
+       { flag: 'wx', mode: 0o600 });
+   };
+ }
++export function phaseWaitMs(ceiling) {
++  const ms = Math.min(count(ceiling), remainingWorkMs());
++  requireFact(ms > 0, 'DEADLINE_UNKNOWN'); return ms;
++}
++export function closedOutcome(status) {
++  requireFact(['PASS', 'FAIL', 'NOT_OBSERVED'].includes(status.scopedGoal) &&
++    ['HOLD', 'original-sequence-observed'].includes(status.outcome) &&
++    ['not-started', 'pending', 'unknown', 'public-disposers-resolved'].includes(status.cleanup));
++  requireFact(status.exactMarkerMatched === null || typeof status.exactMarkerMatched === 'boolean');
++  requireFact(status.scopedGoal === 'NOT_OBSERVED' ? status.exactMarkerMatched === null :
++    status.exactMarkerMatched === (status.scopedGoal === 'PASS'));
++  requireFact(typeof status.completedOriginalSequence === 'boolean' &&
++    (status.newPositionConsumed === null || typeof status.newPositionConsumed === 'boolean') &&
++    typeof status.durableScratchRetained === 'boolean');
++  // A single flat, finite record is the only child verdict read by the wrapper.
++  // Reuse the already-read audit projection; this adds no original audit call.
++  return { schema: 'df.ollama-live02-outcome/v1', outcome: status.outcome,
++    failureCode: status.failureCode === null ? null : safeFailure({ code: status.failureCode }),
++    scopedGoal: status.scopedGoal, exactMarkerMatched: status.exactMarkerMatched,
++    completedOriginalSequence: status.completedOriginalSequence,
++    newPositionConsumed: status.newPositionConsumed,
++    auditReads: count(status.auditReads, 14),
++    historicalAttemptsBefore: 1, additionalAttemptLimit: 1,
++    adapterAttempted: status.adapter === null ? null : count(status.adapter.attempted, 1),
++    adapterActive: status.adapter === null ? null : status.adapter.active,
++    adapterUncertainHold: status.adapter === null ? null : status.adapter.uncertainHold,
++    controlHTTP: status.counters === null ? null : count(status.counters.controlHTTP, bounds.controlHTTP),
++    dfRPC: status.counters === null ? null : count(status.counters.dfRPC, bounds.dfRPC),
++    metadataHTTP: status.counters === null ? null : count(status.counters.metadataHTTP, bounds.metadataHTTP),
++    cleanup: status.cleanup, rootOwnerDisposeCalls: count(status.rootOwnerDisposeCalls, 1),
++    presetOwnerDisposeCalls: count(status.presetOwnerDisposeCalls, 1),
++    durableScratchRetained: status.durableScratchRetained,
++    remoteTerminationFromCleanup: 'unproved', billing: 'unknown', browserAcceptance: 'HOLD',
++    nativeColdContinuation: 'HOLD', all87: 'HOLD', CODE: 'HOLD' };
++}
+ export async function within(promise, ms, code = 'DEADLINE_UNKNOWN') {
+   let timer;
+   try { return await Promise.race([promise, new Promise((_, reject) => {
+--- .runtime/ollama-corrected-one-call-r1/http-fixture.mjs
++++ .runtime/ollama-corrected-one-call-r2/http-fixture.mjs
+@@ -1,6 +1,6 @@
+ import { request } from 'node:http';
+ import { bounds } from './admission.mjs';
+-import { requireFact, fail, safeFailure, digest } from './safe-facts.mjs';
++import { requireFact, fail, safeFailure, digest, phaseWaitMs } from './safe-facts.mjs';
+ 
+ export function createHTTP({ signal }) {
+   const counters = { controlHTTP: 0, dfRPC: 0, metadataHTTP: 0,
+@@ -9,6 +9,7 @@
+   const controlSteps = [], metadataSteps = [];
+   async function transport({ url, method, body, headers, category, step, timeoutMs, maxBytes }) {
+     signal.throwIfAborted();
++    timeoutMs = phaseWaitMs(timeoutMs);
+     const parsed = new URL(url);
+     requireFact(parsed.protocol === 'http:' && parsed.hostname === '127.0.0.1' && !parsed.username && !parsed.password);
+     if (category === 'control') {
+--- .runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs
++++ .runtime/ollama-corrected-one-call-r2/one-call-scenario.mjs
+@@ -1,10 +1,11 @@
+ import { writeFileSync } from 'node:fs';
+ import { join } from 'node:path';
+-import { GOAL, bounds, cloudAdmission } from './admission.mjs';
+-import { requireFact, reference, count, digest, safeAudit, safeUsage } from './safe-facts.mjs';
++import { isDeepStrictEqual } from 'node:util';
++import { GOAL, bounds, cloudAdmission, remainingWorkMs } from './admission.mjs';
++import { requireFact, reference, count, digest, safeAudit, safeUsage, readAudit } from './safe-facts.mjs';
+ 
+ function actualAudit(binding, attempted) {
+-  binding.assertCurrent(); const audit = binding.audit();
++  binding.assertCurrent(); const audit = readAudit(binding);
+   requireFact(audit.attempted === attempted && audit.active === false &&
+     audit.uncertainHold === false && audit.billing === 'unknown' && audit.calls.length === attempted);
+   if (attempted) requireFact(audit.calls[0].state === 'chunks_completed' &&
+@@ -23,6 +24,149 @@
+     action.spec.charges.runtimeMs === 60000 && action.spec.charges.usageUnits === bounds.usageUnits);
+   reference(action.spec.charges.costProvenanceRef);
+   return JSON.stringify(action.spec.charges);
++}
++// These projections are independent observations of the pinned public DTOs.
++// They do not replace a producer, hydrate authority, or access a private handle.
++function exactKeys(value, keys) {
++  requireFact(value && typeof value === 'object' && !Array.isArray(value) &&
++    isDeepStrictEqual(Object.keys(value).sort(), [...keys].sort()));
++}
++function same(actual, expected) { requireFact(isDeepStrictEqual(actual, expected)); }
++function canonicalJSON(value) {
++  const ordered = item => Array.isArray(item) ? item.map(ordered) :
++    item && typeof item === 'object' ? Object.fromEntries(Object.keys(item).sort().map(key => [key, ordered(item[key])])) : item;
++  return JSON.stringify(ordered(value));
++}
++function originalTask(task) {
++  exactKeys(task, ['ownerRef', 'workspaceRef', 'taskRef', 'status', 'version', 'taskVersion', 'authEpoch', 'createdAt', 'updatedAt']);
++  for (const key of ['ownerRef', 'workspaceRef', 'taskRef']) reference(task[key]);
++  for (const key of ['version', 'taskVersion', 'authEpoch', 'createdAt', 'updatedAt']) count(task[key]);
++  requireFact(task.version >= 1 && task.taskVersion === task.version && task.updatedAt >= task.createdAt &&
++    ['queued', 'running', 'blocked', 'waiting', 'completed', 'failed', 'cancel_requested', 'cancelled', 'recovery_required', 'deleted'].includes(task.status));
++  // Exact taskRecord field order from original src/runtime-store.mjs.
++  return { ownerRef: task.ownerRef, workspaceRef: task.workspaceRef, taskRef: task.taskRef,
++    status: task.status, version: task.version, taskVersion: task.taskVersion,
++    authEpoch: task.authEpoch, createdAt: task.createdAt, updatedAt: task.updatedAt };
++}
++function scopeOf(task) { return { ownerRef: task.ownerRef, workspaceRef: task.workspaceRef, taskRef: task.taskRef }; }
++function taskJoin(actual, expected) { same(originalTask(actual), originalTask(expected)); }
++function metadataJoin(actual, expected) {
++  requireFact(actual && expected);
++  for (const key of Object.keys(expected)) requireFact(Object.hasOwn(actual, key) && isDeepStrictEqual(actual[key], expected[key]));
++}
++function preparedContext({ intake, intakeCommand, initial, receipt, preparationCommand, beforeDetail, detail }) {
++  exactKeys(receipt, ['recordRef', 'digest', 'kind', 'byteLength', 'cryptoVersion', 'sourceRef', 'task',
++    'sourceTaskVersion', 'sourceAuthEpoch', 'memory', 'inputCounts', 'retainedRefs', 'droppedRefs', 'verification']);
++  exactKeys(detail, ['task', 'data']);
++  const task = originalTask(initial.task), taskRef = task.taskRef;
++  taskJoin(task, intake.task);
++  requireFact(taskRef === digest('ollama-corrected-one-call-S01') && task.status === 'queued' &&
++    task.version === 1 && task.authEpoch === 0 && initial.control === 'active');
++  requireFact(initial.data.length === 1);
++  const goal = initial.data[0];
++  exactKeys(goal, ['recordRef', 'digest', 'kind', 'sourceRef', 'taskVersion', 'authEpoch', 'generationRef', 'createdAt', 'byteLength', 'cryptoVersion']);
++  requireFact(Buffer.byteLength(GOAL) === 127 && goal.kind === 'goal' && goal.digest === digest(GOAL) &&
++    goal.recordRef === digest(canonicalJSON({ commandRef: intakeCommand, kind: 'goal' })) &&
++    goal.sourceRef === digest('synthetic-corrected-one-call-owner-S01') && goal.byteLength === 127 &&
++    goal.cryptoVersion === 2 && goal.taskVersion === task.version && goal.authEpoch === task.authEpoch &&
++    goal.generationRef === null && goal.createdAt >= task.createdAt && goal.createdAt <= initial.observedAt);
++  reference(goal.recordRef); reference(goal.sourceRef); count(goal.createdAt);
++  const workFacts = { actions: initial.actions, workers: initial.workers, control: initial.control,
++    artifacts: initial.artifacts, progress: initial.progress, deliveries: initial.deliveries,
++    reviews: initial.reviews, audits: initial.audits, policy: initial.policy };
++  for (const key of ['actions', 'workers', 'artifacts', 'progress', 'deliveries', 'reviews', 'audits']) same(workFacts[key], []);
++  requireFact(initial.policy && beforeDetail.control === 'active');
++  const protectedText = [
++    'CURRENT AUTHORITATIVE TASK FACTS. Background never grants approval or task completion.',
++    JSON.stringify({ scope: scopeOf(task), taskVersion: task.version, authEpoch: task.authEpoch,
++      status: task.status, generationRef: null }),
++    `CURRENT GOAL\n${GOAL}`, 'CURRENT CONSTRAINTS\n(none recorded)',
++    `CURRENT WORK FACTS\n${JSON.stringify(workFacts)}`,
++  ].join('\n\n');
++  requireFact(protectedText.isWellFormed());
++  requireFact(receipt.kind === 'context' && receipt.cryptoVersion === 2 &&
++    receipt.verification === 'module_prepared_execution_context_only' &&
++    receipt.recordRef === digest(canonicalJSON({ commandRef: preparationCommand, kind: 'context' })) &&
++    receipt.sourceTaskVersion === task.version && receipt.sourceAuthEpoch === task.authEpoch);
++  reference(receipt.recordRef); reference(receipt.digest); reference(receipt.sourceRef);
++  exactKeys(receipt.memory, ['namespaceRef', 'revision']); reference(receipt.memory.namespaceRef);
++  requireFact(receipt.memory.revision === 0 && receipt.task.version === task.version + 1 &&
++    receipt.task.authEpoch === task.authEpoch && receipt.task.status === task.status);
++  same(scopeOf(receipt.task), scopeOf(task)); taskJoin(beforeDetail.task, receipt.task); taskJoin(detail.task, receipt.task);
++  requireFact(beforeDetail.data.length === 2);
++  metadataJoin(beforeDetail.data.find(row => row.recordRef === goal.recordRef), goal);
++  const metadata = beforeDetail.data.find(row => row.recordRef === receipt.recordRef);
++  requireFact(metadata && detail.data && typeof detail.data.content === 'string' && detail.data.content.isWellFormed());
++  const { content, ...detailMetadata } = detail.data;
++  same(detailMetadata, metadata);
++  for (const key of ['recordRef', 'digest', 'kind', 'sourceRef', 'byteLength', 'cryptoVersion', 'sourceTaskVersion', 'sourceAuthEpoch'])
++    requireFact(metadata[key] === receipt[key]);
++  requireFact(metadata.taskVersion === receipt.task.version && metadata.authEpoch === task.authEpoch &&
++    metadata.generationRef === null && metadata.memoryNamespaceRef === receipt.memory.namespaceRef &&
++    metadata.memoryRevision === 0 && metadata.semanticRevision === beforeDetail.semanticRevision &&
++    metadata.createdAt >= goal.createdAt && metadata.createdAt <= beforeDetail.observedAt);
++  count(metadata.createdAt); count(metadata.semanticRevision);
++  requireFact(Buffer.byteLength(content) === receipt.byteLength && receipt.byteLength > 0 &&
++    receipt.byteLength <= bounds.requestBytes && digest(content) === receipt.digest);
++  // Parsed context/content remains private. No raw field is exported.
++  const body = JSON.parse(content);
++  exactKeys(body, ['contractVersion', 'materialKind', 'sourceScope', 'sourceTaskVersion', 'sourceAuthEpoch', 'generatedAt',
++    'sourceRefs', 'sourceProvenance', 'memory', 'ledgerSnapshotDigest', 'content', 'inputCounts', 'retainedRefs', 'droppedRefs', 'verification']);
++  requireFact(body.contractVersion === 'df.execution-context/v1' && body.materialKind === 'execution_context' &&
++    body.verification === receipt.verification && body.sourceTaskVersion === task.version &&
++    body.sourceAuthEpoch === task.authEpoch && body.generatedAt >= initial.observedAt && body.generatedAt <= metadata.createdAt &&
++    body.content === protectedText && JSON.stringify(body) === content);
++  count(body.generatedAt); same(body.sourceScope, scopeOf(task)); same(body.sourceRefs, [goal.recordRef]);
++  same(body.sourceProvenance, [{ recordRef: goal.recordRef, digest: goal.digest, taskVersion: goal.taskVersion,
++    authEpoch: goal.authEpoch, createdAt: goal.createdAt }]);
++  same(body.memory, { namespaceRef: receipt.memory.namespaceRef, revision: 0, provenance: [] });
++  same(body.inputCounts, { bytes: Buffer.byteLength(protectedText), tokens: Math.ceil(protectedText.length / 4) + 4 });
++  requireFact(body.inputCounts.bytes <= 16384 && body.inputCounts.tokens <= 8192);
++  same(receipt.inputCounts, body.inputCounts); same(body.retainedRefs, []); same(body.droppedRefs, []);
++  same(receipt.retainedRefs, []); same(receipt.droppedRefs, []);
++  const expectedMemory = { namespaceRef: receipt.memory.namespaceRef, revision: 0 };
++  requireFact(receipt.sourceRef === digest(JSON.stringify({ sourceScope: body.sourceScope,
++    sourceTaskVersion: body.sourceTaskVersion, sourceAuthEpoch: body.sourceAuthEpoch,
++    sourceRefs: body.sourceRefs, expectedMemory })) &&
++    body.ledgerSnapshotDigest === digest(JSON.stringify({ task, workFacts })));
++  return { body, goal, metadata };
++}
++function selectedAction(snapshot, plan, spec) {
++  requireFact(snapshot.control === 'active' && snapshot.actions.length === 1);
++  const action = snapshot.actions[0];
++  requireFact(action.actionRef === plan.actionRef && action.actionDigest === plan.actionDigest &&
++    action.plannedTaskVersion === plan.taskVersion && action.plannedAuthEpoch === plan.authEpoch);
++  if (spec) same(action.spec, spec);
++  return action;
++}
++function workerTuple(worker, tuple, phase, taskRefExposed = true) {
++  requireFact(worker && worker.phase === phase);
++  for (const key of ['actionRef', 'actionDigest', 'claimRef', 'reservationRef', 'generationRef', 'sessionRef'])
++    requireFact(worker[key] === tuple[key]);
++  if (taskRefExposed) requireFact(worker.taskRef === tuple.taskRef);
++}
++function claimedSnapshot(snapshot, plan, spec, tuple, phase) {
++  const action = selectedAction(snapshot, plan, spec);
++  requireFact(action.claimRef === tuple.claimRef && action.reservationRef === tuple.reservationRef &&
++    action.generationRef === tuple.generationRef && action.attempts === 1 &&
++    action.state === 'dispatch_intent' && action.usageState === 'estimated' &&
++    action.outcome === null && action.releaseEvidenceRef === null);
++  requireFact(snapshot.workers.length === 1);
++  workerTuple(snapshot.workers[0], tuple, phase, false);
++  count(snapshot.workers[0].cursor); reference(snapshot.workers[0].evidenceRef);
++  requireFact(snapshot.workers[0].terminalEvidenceRef === null);
++  return action;
++}
++function executionSnapshot(snapshot, executed, tuple, context, executeInput) {
++  requireFact(snapshot.executions.length === 1);
++  const row = snapshot.executions[0];
++  for (const [key, value] of Object.entries({ executionRef: executed.execution.executionRef,
++    taskRef: tuple.taskRef, actionRef: tuple.actionRef, actionDigest: tuple.actionDigest,
++    claimRef: tuple.claimRef, generationRef: tuple.generationRef, contextRecordRef: context.recordRef,
++    dataDigest: context.digest, commandRef: executeInput.commandRef })) requireFact(row[key] === value);
++  requireFact(row.state === 'dispatch_intent'); count(row.createdAt); count(row.admittedAt);
++  requireFact(row.admittedAt >= row.createdAt);
++  return row;
+ }
+ async function originalSession(ctx, worker, execution, contextDigest) {
+   await ctx.sessionPersistence.flush();
+@@ -44,7 +188,9 @@
+     requireFact(users.length === 1 && answers.length === 1 && starts.length === 1 && ends.length === 1 &&
+       ends[0].data.turn === starts[0].data.turn && ends[0].seq > answers[0].seq);
+     requireFact(events.every(row => !['tool/result', 'developer/message', 'assistant/attempt'].includes(row.type)));
+-    requireFact(users[0].data.id === execution.executionRef && users[0].data.source?.kind === 'df-context');
++    requireFact(users[0].data.id === execution.executionRef && users[0].data.role === 'user' &&
++      users[0].data.source?.kind === 'df-context' && users[0].data.source.form === 'local' &&
++      answers[0].data.interrupted !== true);
+     requireFact(Array.isArray(users[0].data.content) && users[0].data.content.length === 1 &&
+       users[0].data.content[0].type === 'text' && digest(users[0].data.content[0].text) === contextDigest);
+     const blocks = answers[0].data.message?.content;
+@@ -65,7 +211,7 @@
+       assistantCursor: answers[0].seq, turnEndCursor: ends[0].seq, eventCount: events.length };
+   } finally { await reader.close(); }
+ }
+-export async function runOneCall({ ctx, call, binding, command, observations, positionDirectory, signal }) {
++export async function runOneCall({ ctx, call, binding, command, observations, positionDirectory, signal, progress }) {
+   const invoke = (step, name, value = {}, channel = '/df-rpc') => {
+     signal.throwIfAborted(); return call(step, name, value, channel);
+   };
+@@ -97,116 +243,213 @@
+     afterPolicy.configurationRef === beforePolicy.configurationRef && afterPolicy.policyVersion === acceptedPolicy.policyVersion);
+   observations({ phase: 'setup-policy-confirmed', setupReady: true, policyConfirmed: true,
+     providerSourceRef: reference(binding.sourceRef), adapter: safeAudit(actualAudit(binding, 0)) });
++  const intakeCommand = command();
+   const intake = await invoke('P09', 'intake', { taskId: 'ollama-corrected-one-call-S01',
+     provider: 'synthetic-original-fixture', source: 'synthetic-corrected-one-call-owner-S01',
+-    eventId: 'corrected-one-call-S01', commandRef: command(), goal: GOAL });
++    eventId: 'corrected-one-call-S01', commandRef: intakeCommand, goal: GOAL });
+   requireFact(intake.deduplicated === false);
+-  const taskRef = reference(intake.task.taskRef);
++  const taskRef = reference(intake.task.taskRef); originalTask(intake.task);
+   const status = async step => taskStatus(await invoke(step, 'status', { taskRef }), taskRef);
+-  const cas = async step => {
+-    const value = await status(step);
+-    return { taskRef, commandRef: command(), expectedTaskVersion: value.task.version,
+-      expectedAuthEpoch: value.task.authEpoch };
+-  };
++  const cas = value => ({ taskRef, commandRef: command(), expectedTaskVersion: value.task.version,
++    expectedAuthEpoch: value.task.authEpoch });
+   const initial = await status('P10');
+-  const source = initial.data.find(row => row.kind === 'goal'); requireFact(source); reference(source.recordRef);
+-  const context = await invoke('P11', 'prepareContext', { taskRef, commandRef: command(),
++  const preparationCommand = command();
++  const context = await invoke('P11', 'prepareContext', { taskRef, commandRef: preparationCommand,
+     expectedTaskVersion: initial.task.version, expectedAuthEpoch: initial.task.authEpoch, terms: [], now: Date.now() });
+-  reference(context.recordRef); reference(context.digest);
+-  requireFact(context.byteLength > 0 && context.byteLength <= bounds.requestBytes &&
+-    context.inputCounts.bytes <= bounds.requestBytes);
+   const beforeDetail = await status('P12');
+   const detail = await invoke('P13', 'detail', { taskRef, recordRef: context.recordRef,
+     expectedTaskVersion: beforeDetail.task.version, expectedAuthEpoch: beforeDetail.task.authEpoch });
+-  requireFact(typeof detail.data.content === 'string' && Buffer.byteLength(detail.data.content) <= bounds.requestBytes &&
+-    digest(detail.data.content) === context.digest);
+-  // Parsed prepared context remains private in this scope; no context dump.
+-  const contextBody = JSON.parse(detail.data.content);
+-  requireFact(Array.isArray(contextBody.retainedRefs) && contextBody.retainedRefs.includes(source.recordRef));
++  const contextObservation = preparedContext({ intake, intakeCommand, initial, receipt: context,
++    preparationCommand, beforeDetail, detail });
+   const plan = await invoke('P14', 'workerPlan', { taskRef, commandRef: command(),
+     expectedTaskVersion: beforeDetail.task.version, expectedAuthEpoch: beforeDetail.task.authEpoch,
+     contextRecordRef: context.recordRef });
+   reference(plan.actionRef); reference(plan.actionDigest);
+-  const beforePreview = await status('P15');
+-  const estimatedCharges = actionCharges(beforePreview.actions.find(row => row.actionRef === plan.actionRef));
++  requireFact(plan.taskVersion === beforeDetail.task.version && plan.authEpoch === beforeDetail.task.authEpoch);
++  const beforePreview = await status('P15'); taskJoin(beforePreview.task, beforeDetail.task);
++  const planned = selectedAction(beforePreview, plan);
++  requireFact(planned.state === 'requested' && planned.attempts === 0 && planned.outcome === null &&
++    planned.terminalEvidenceRef === null && planned.releaseEvidenceRef === null &&
++    planned.plannedTaskVersion === plan.taskVersion && planned.plannedAuthEpoch === plan.authEpoch);
++  const spec = structuredClone(planned.spec);
++  exactKeys(spec, ['actionRef', 'kind', 'role', 'targetDigest', 'dataDigest', 'units', 'charges', 'attemptGroupRef',
++    'attemptIndex', 'resourcePolicyVersion', 'modelPolicyVersion', 'executor', 'model']);
++  exactKeys(spec.executor, ['mode', 'generationRef', 'sessionRef', 'environmentRef', 'bindingDigest', 'toolsDigest', 'permissionPolicyDigest']);
++  exactKeys(spec.model, ['modelRef', 'reasoningRef', 'presetRef', 'catalogEvidenceRef']);
++  requireFact(spec.actionRef === plan.actionRef && spec.kind === 'write' && spec.role === 'worker' &&
++    spec.units === 1 && spec.dataDigest === context.digest && spec.executor.mode === 'create' &&
++    spec.executor.sessionRef === digest('df-' + reference(spec.executor.generationRef)) &&
++    spec.resourcePolicyVersion === beforePreview.policy.version && spec.resourcePolicyVersion === afterPolicy.policyVersion &&
++    spec.modelPolicyVersion === beforePreview.policy.modelPolicy.version &&
++    beforePreview.policy.modelPolicy.presetRefs.includes(spec.model.presetRef) &&
++    spec.model.catalogEvidenceRef === beforePreview.policy.modelPolicy.catalogEvidenceRef);
++  for (const key of ['targetDigest', 'dataDigest', 'attemptGroupRef']) reference(spec[key]);
++  for (const [key, value] of Object.entries(spec.executor)) if (key !== 'mode') reference(value);
++  for (const value of Object.values(spec.model)) reference(value);
++  requireFact(plan.actionDigest === digest(canonicalJSON({ ownerRef: initial.task.ownerRef,
++    workspaceRef: initial.task.workspaceRef, taskRef, taskVersion: plan.taskVersion, authEpoch: plan.authEpoch, spec })));
++  const estimatedCharges = actionCharges(planned);
+   const preview = await invoke('P16', 'workerPreview', { taskRef, actionRef: plan.actionRef,
+     actionDigest: plan.actionDigest, recordRef: context.recordRef,
+     expectedTaskVersion: beforePreview.task.version, expectedAuthEpoch: beforePreview.task.authEpoch });
+-  await invoke('P17', 'workerGrant', { taskRef, commandRef: command(),
++  requireFact(preview.taskRef === taskRef && preview.actionRef === plan.actionRef && preview.actionDigest === plan.actionDigest &&
++    preview.taskVersion === beforePreview.task.version && preview.authEpoch === beforePreview.task.authEpoch &&
++    preview.description.kind === spec.kind && preview.description.role === spec.role);
++  reference(preview.previewRef); reference(preview.description.evidenceRef); count(preview.expiresAt);
++  same(preview.description.data, { recordRef: context.recordRef, digest: context.digest, kind: 'context', content: detail.data.content });
++  same(preview.description.toolNames, []);
++  same(preview.description.limits, { units: spec.units, attemptIndex: spec.attemptIndex, charges: spec.charges });
++  requireFact(preview.description.environment.environmentRef === spec.executor.environmentRef);
++  const grantExpiry = Date.now() + 59000;
++  const granted = await invoke('P17', 'workerGrant', { taskRef, commandRef: command(),
+     expectedTaskVersion: beforePreview.task.version, expectedAuthEpoch: beforePreview.task.authEpoch, actionRef: plan.actionRef,
+-    actionDigest: plan.actionDigest, previewRef: preview.previewRef, expiresAt: Date.now() + 59000, accept: true });
+-  const created = await invoke('P19', 'workerCreate', { ...await cas('P18'), actionRef: plan.actionRef,
++    actionDigest: plan.actionDigest, previewRef: preview.previewRef, expiresAt: grantExpiry, accept: true });
++  requireFact(granted.actionRef === plan.actionRef && granted.actionDigest === plan.actionDigest &&
++    granted.taskVersion === beforePreview.task.version && granted.authEpoch === beforePreview.task.authEpoch + 1 &&
++    granted.expiresAt === grantExpiry && granted.task.version === granted.taskVersion && granted.task.authEpoch === granted.authEpoch);
++  same(scopeOf(granted.task), scopeOf(initial.task));
++  const beforeCreate = await status('P18'); taskJoin(beforeCreate.task, granted.task);
++  selectedAction(beforeCreate, plan, spec);
++  requireFact(beforeCreate.workers.length === 0 && beforeCreate.executions.length === 0);
++  const created = await invoke('P19', 'workerCreate', { ...cas(beforeCreate), actionRef: plan.actionRef,
+     actionDigest: plan.actionDigest });
+-  requireFact(created.worker.phase === 'ready');
+   const generationRef = reference(created.worker.generationRef), claimRef = reference(created.worker.claimRef);
+-  reference(created.worker.sessionRef);
++  const reservationRef = reference(created.worker.reservationRef), sessionRef = reference(created.worker.sessionRef);
++  const tuple = { taskRef, actionRef: plan.actionRef, actionDigest: plan.actionDigest,
++    claimRef, reservationRef, generationRef, sessionRef };
++  workerTuple(created.worker, tuple, 'ready');
++  requireFact(generationRef === spec.executor.generationRef && sessionRef === spec.executor.sessionRef &&
++    reservationRef === digest(canonicalJSON({ claimRef, actionDigest: plan.actionDigest })) &&
++    created.task.status === 'running' && created.task.version === beforeCreate.task.version + 1 &&
++    created.task.authEpoch === beforeCreate.task.authEpoch);
++  same(scopeOf(created.task), scopeOf(initial.task)); originalTask(created.task);
+   requireFact(ctx.agents.get('df-' + generationRef)?.status === 'idle');
+   const mapping = { actionRef: plan.actionRef, actionDigest: plan.actionDigest, claimRef, generationRef };
+-  const afterCreate = await status('P20');
+-  requireFact(afterCreate.workers.some(row => row.generationRef === generationRef && row.claimRef === claimRef && row.phase === 'ready'));
++  const afterCreate = await status('P20'); taskJoin(afterCreate.task, created.task);
++  claimedSnapshot(afterCreate, plan, spec, tuple, 'ready');
++  requireFact(afterCreate.executions.length === 0);
+   const queried = await invoke('P21', 'workerQuery', { taskRef, actionRef: plan.actionRef, claimRef, generationRef });
+-  requireFact(queried.worker?.phase === 'ready'); actualAudit(binding, 0);
++  taskJoin(queried.task, created.task); workerTuple(queried.worker, tuple, 'ready'); actualAudit(binding, 0);
+   observations({ phase: 'genuine-idle-worker-prepared', taskRef, actionRef: plan.actionRef,
+-    claimRef, generationRef, sessionRef: created.worker.sessionRef, contextRef: context.recordRef,
++    claimRef, reservationRef, generationRef, sessionRef, contextRef: context.recordRef,
+     inputDigest: context.digest, preparedBytes: count(context.byteLength, bounds.requestBytes),
+-    adapter: safeAudit(actualAudit(binding, 0)), newPositionConsumed: false });
+-  const executeInput = { ...await cas('P22'), ...mapping, contextRecordRef: context.recordRef };
++    contextContractJoined: true, sourceScopeJoined: true, protectedGoalProvenanceJoined: true,
++    retainedBackgroundCount: contextObservation.body.retainedRefs.length, memoryRevision: contextObservation.body.memory.revision,
++    immutableSpecJoined: true, adapter: safeAudit(actualAudit(binding, 0)), newPositionConsumed: false });
++  const beforeExecute = await status('P22'); taskJoin(beforeExecute.task, created.task);
++  claimedSnapshot(beforeExecute, plan, spec, tuple, 'ready'); requireFact(beforeExecute.executions.length === 0);
++  const executeInput = { ...cas(beforeExecute), ...mapping, contextRecordRef: context.recordRef };
+   signal.throwIfAborted(); binding.assertCurrent();
+-  // One new position is durably consumed before entering the original execute.
+-  // A rejected/pre-transport call does not replenish it. Historical R01 is untouched.
++  requireFact(remainingWorkMs() >= bounds.executeAdmissionMs, 'DEADLINE_UNKNOWN');
++  // Exclusive persistence is one-shot; no fsync/power-loss guarantee is claimed.
++  // A slow write or pre-transport refusal does not refund S01. R01 is untouched.
++  progress({ newPositionConsumed: null }); // Entered write; outcome not confirmed yet.
+   writeFileSync(join(positionDirectory, 'S01-consumed.json'), JSON.stringify({
+     schema: 'df.ollama-live02-once-position/v1', position: 'S01', consumed: true,
+     taskRef, actionRef: plan.actionRef, claimRef, generationRef,
+     inputDigest: context.digest, sourceRef: reference(binding.sourceRef) }) + '\n', { flag: 'wx', mode: 0o600 });
++  progress({ newPositionConsumed: true });
++  signal.throwIfAborted();
++  requireFact(remainingWorkMs() >= bounds.executeAdmissionMs, 'DEADLINE_UNKNOWN');
+   const executed = await invoke('P23', 'workerExecute', executeInput);
+   requireFact(executed.execution?.state === 'committed' && executed.execution.usage?.state === 'actual' &&
+-    executed.execution.usage.accounting === 'df-ollama-api-token-units/v1' &&
+-    executed.worker.claimRef === claimRef && executed.worker.generationRef === generationRef,
+-    'EXECUTE_UNKNOWN');
++    executed.execution.usage.accounting === 'df-ollama-api-token-units/v1', 'EXECUTE_UNKNOWN');
++  taskJoin(executed.task, beforeExecute.task); workerTuple(executed.worker, tuple, 'ready');
+   reference(executed.execution.executionRef); reference(executed.execution.resultDigest);
+-  count(executed.execution.usage.units, bounds.usageUnits);
++  count(executed.execution.cursor); count(executed.execution.usage.units, bounds.usageUnits);
+   const persisted = await originalSession(ctx, created.worker, executed.execution, context.digest);
+   const adapter = actualAudit(binding, 1);
+   requireFact(JSON.stringify(safeUsage(adapter.calls[0].tokenUsage)) === JSON.stringify(persisted.tokenUsage) &&
+     adapter.calls[0].resultDigest === persisted.digest);
++  const matched = persisted.content.trim() === 'DF_ONE_CALL_READY';
++  progress({ exactMarkerMatched: matched, scopedGoal: matched ? 'PASS' : 'FAIL' });
+   observations({ phase: 'actual-committed-execution-observed', taskRef, actionRef: plan.actionRef,
+-    claimRef, generationRef, sessionRef: created.worker.sessionRef,
++    claimRef, reservationRef, generationRef, sessionRef,
+     executionRef: executed.execution.executionRef, inputDigest: context.digest,
+     resultDigest: persisted.digest, outputBytes: persisted.outputBytes, usage: persisted.tokenUsage,
+     session: { physicalBytes: persisted.physicalBytes, eventCount: persisted.eventCount,
+       assistantCursor: persisted.assistantCursor, turnEndCursor: persisted.turnEndCursor },
+-    adapter: safeAudit(adapter), billing: 'unknown', exactMarkerMatched: persisted.content.trim() === 'DF_ONE_CALL_READY' });
++    adapter: safeAudit(adapter), billing: 'unknown', exactMarkerMatched: matched, scopedGoal: matched ? 'PASS' : 'FAIL' });
+   const { actionDigest, ...closed } = mapping;
+-  const captured = await invoke('P25', 'workerCapture', { ...await cas('P24'), ...closed,
++  const beforeCapture = await status('P24'); taskJoin(beforeCapture.task, executed.task);
++  const pendingAction = claimedSnapshot(beforeCapture, plan, spec, tuple, 'ready');
++  requireFact(pendingAction.executionRef === executed.execution.executionRef);
++  const originalExecution = executionSnapshot(beforeCapture, executed, tuple, context, executeInput);
++  const captured = await invoke('P25', 'workerCapture', { ...cas(beforeCapture), ...closed,
+     executionRef: executed.execution.executionRef });
+-  reference(captured.artifactRef); requireFact(captured.version === 1);
+-  const beforeResult = await status('P26');
++  reference(captured.artifactRef); reference(captured.recordRef); reference(captured.digest);
++  requireFact(captured.version === 1 && captured.producerClaimRef === claimRef && captured.generationRef === generationRef &&
++    captured.verification === null && captured.task.version === beforeCapture.task.version + 1 &&
++    captured.task.authEpoch === beforeCapture.task.authEpoch && captured.task.status === beforeCapture.task.status);
++  same(scopeOf(captured.task), scopeOf(initial.task));
++  const beforeResult = await status('P26'); taskJoin(beforeResult.task, captured.task);
++  claimedSnapshot(beforeResult, plan, spec, tuple, 'ready');
++  same(executionSnapshot(beforeResult, executed, tuple, context, executeInput), originalExecution);
++  requireFact(beforeResult.artifacts.length === 1);
++  const artifact = beforeResult.artifacts[0], { task: ignoredCaptureTask, ...captureMetadata } = captured;
++  same(artifact, captureMetadata);
+   const result = await invoke('P27', 'workerResult', { taskRef, artifactRef: captured.artifactRef, version: captured.version,
+     expectedTaskVersion: beforeResult.task.version, expectedAuthEpoch: beforeResult.task.authEpoch });
+-  requireFact(result.content === persisted.content && digest(result.content) === result.source.resultDigest &&
++  requireFact(result.artifactRef === captured.artifactRef && result.version === captured.version &&
++    result.recordRef === captured.recordRef && result.digest === captured.digest &&
++    result.content === persisted.content && digest(result.content) === result.source.resultDigest &&
+     result.verification === 'not-reviewed' && result.delivery === 'not-requested');
+-  for (const [key, value] of Object.entries({ taskRef, ...mapping, sessionRef: created.worker.sessionRef,
+-    executionRef: executed.execution.executionRef, inputDigest: context.digest, resultDigest: persisted.digest }))
+-    requireFact(result.source[key] === value);
+-  requireFact(result.source.cursor === executed.execution.cursor);
+-  const finished = await invoke('P29', 'workerFinish', { ...await cas('P28'), ...closed,
++  const source = { taskRef, actionRef: plan.actionRef, actionDigest: plan.actionDigest,
++    claimRef, generationRef, sessionRef, executionRef: executed.execution.executionRef,
++    inputDigest: context.digest, cursor: executed.execution.cursor, resultDigest: persisted.digest };
++  same(result.source, source);
++  // Exact original captureResult field order. Wrapper and full-content hashes
++  // are separate observations, and neither implies review or delivery.
++  const wrapper = JSON.stringify({ contractVersion: 'df.native-result/v1', source, content: persisted.content });
++  requireFact(digest(wrapper) === result.digest && result.digest === artifact.digest);
++  const artifactData = beforeResult.data.find(row => row.recordRef === artifact.recordRef);
++  requireFact(artifactData && artifactData.kind === 'artifact' && artifactData.digest === artifact.digest &&
++    artifactData.sourceRef === artifact.artifactRef && artifactData.byteLength === Buffer.byteLength(wrapper) &&
++    artifactData.cryptoVersion === 2 && artifactData.generationRef === null && artifactData.taskVersion === captured.task.version &&
++    artifactData.authEpoch === captured.task.authEpoch);
++  reference(captured.producerRef); count(artifactData.createdAt);
++  const beforeFinish = await status('P28'); taskJoin(beforeFinish.task, captured.task);
++  claimedSnapshot(beforeFinish, plan, spec, tuple, 'ready');
++  same(executionSnapshot(beforeFinish, executed, tuple, context, executeInput), originalExecution);
++  same(beforeFinish.artifacts, beforeResult.artifacts);
++  const finished = await invoke('P29', 'workerFinish', { ...cas(beforeFinish), ...closed,
+     executionRef: executed.execution.executionRef });
+-  requireFact(finished.outcome === 'completed' && finished.reservationHeld === false);
++  requireFact(finished.claimRef === claimRef && finished.reservationRef === reservationRef &&
++    finished.outcome === 'completed' && finished.reservationHeld === false);
+   reference(finished.terminalEvidenceRef); reference(finished.releaseEvidenceRef);
+-  const final = await status('P30');
+-  const action = final.actions.find(row => row.actionRef === mapping.actionRef);
++  taskJoin(finished.task, beforeFinish.task);
++  const final = await status('P30'); taskJoin(final.task, finished.task);
++  const action = selectedAction(final, plan, spec);
+   requireFact(actionCharges(action) === estimatedCharges && action.usageState === 'actual' &&
+-    action.usageUnits === persisted.tokenUsage.totalTokens);
+-  requireFact(final.workers.find(row => row.generationRef === generationRef)?.phase === 'stopped' &&
+-    ctx.agents.get('df-' + generationRef) === undefined);
++    action.usageUnits === persisted.tokenUsage.totalTokens && action.state === 'completed' && action.outcome === 'completed' &&
++    action.attempts === 1 && action.claimRef === claimRef && action.reservationRef === reservationRef &&
++    action.generationRef === generationRef && action.executionRef === executed.execution.executionRef &&
++    action.terminalEvidenceRef === finished.terminalEvidenceRef && action.releaseEvidenceRef === finished.releaseEvidenceRef);
++  reference(action.outcomeEvidenceRef);
++  requireFact(action.releaseEvidenceRef === digest(canonicalJSON({ claimRef,
++    terminal: action.terminalEvidenceRef, outcome: action.outcomeEvidenceRef })));
++  requireFact(final.workers.length === 1); const stoppedWorker = final.workers[0];
++  workerTuple(stoppedWorker, tuple, 'stopped', false);
++  requireFact(stoppedWorker.terminalEvidenceRef === action.terminalEvidenceRef &&
++    stoppedWorker.evidenceRef === action.terminalEvidenceRef && stoppedWorker.cursor >= executed.execution.cursor);
++  count(stoppedWorker.cursor); requireFact(final.executions.length === 1);
++  const finalExecution = final.executions[0];
++  metadataJoin(finalExecution, { ...originalExecution, state: 'completed',
++    outcomeEvidenceRef: action.outcomeEvidenceRef, terminalEvidenceRef: action.terminalEvidenceRef });
++  same(final.artifacts, beforeResult.artifacts);
++  requireFact(final.control === 'active' && final.task.status === 'running' &&
++    final.deliveries.length === 0 && final.reviews.length === 0 &&
++    ctx.agents.get('df-' + generationRef) === undefined && ctx.sessions.get('df-' + generationRef) === undefined);
+   actualAudit(binding, 1);
+   observations({ phase: 'capture-result-finish-observed', taskRef, actionRef: plan.actionRef,
+-    claimRef, generationRef, executionRef: executed.execution.executionRef,
+-    artifactRef: reference(result.artifactRef), artifactVersion: result.version,
+-    inputDigest: context.digest, resultDigest: persisted.digest,
+-    exactMarkerMatched: result.content.trim() === 'DF_ONE_CALL_READY',
++    claimRef, reservationRef, generationRef, sessionRef, executionRef: executed.execution.executionRef,
++    artifactRef: reference(result.artifactRef), artifactVersion: result.version, recordRef: result.recordRef,
++    wrapperDigest: result.digest, inputDigest: context.digest, resultDigest: persisted.digest,
++    exactMarkerMatched: matched, scopedGoal: matched ? 'PASS' : 'FAIL',
+     terminalEvidenceRef: finished.terminalEvidenceRef, releaseEvidenceRef: finished.releaseEvidenceRef,
+-    reservationHeld: false, workerStopped: true, verification: 'not-reviewed', delivery: 'not-requested',
++    reservationHeld: false, workerStopped: true, taskCompletedByFixture: false,
++    verification: 'not-reviewed', delivery: 'not-requested',
+     adapter: safeAudit(actualAudit(binding, 1)), billing: 'unknown' });
+-  return Object.freeze({ completedOriginalSequence: true, exactMarkerMatched: result.content.trim() === 'DF_ONE_CALL_READY' });
+-}
++  return Object.freeze({ completedOriginalSequence: true, exactMarkerMatched: matched,
++    scopedGoal: matched ? 'PASS' : 'FAIL' });
++}
+--- .runtime/ollama-corrected-one-call-r1/entry.mjs
++++ .runtime/ollama-corrected-one-call-r2/entry.mjs
+@@ -3,9 +3,10 @@
+ import { readFileSync, realpathSync, lstatSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
+ import { dirname, join, resolve } from 'node:path';
+-import { AC_SHA256, bounds, installedConfig } from './admission.mjs';
++import { AC_SHA256, REMEDIATION_SHA256, PRESERVATION_SHA256, bounds, installedConfig, elapsedProcessMs } from './admission.mjs';
+ import { createHTTP } from './http-fixture.mjs';
+-import { createObservations, requireFact, reference, digest, safeFailure, safeAudit, within } from './safe-facts.mjs';
++import { createObservations, requireFact, reference, digest, safeFailure, safeAudit, within,
++  phaseWaitMs, closedOutcome, readAudit, auditReadCount } from './safe-facts.mjs';
+ import { runOneCall } from './one-call-scenario.mjs';
+ 
+ const capsule = realpathSync(fileURLToPath(new URL('.', import.meta.url)));
+@@ -16,14 +17,17 @@
+ let observations, http, binding, rootContext, rootDispose, presetDispose, runtimeCreated = false;
+ let presetDisposed = false, rootDisposed = false, cleanupRequested = false, cleanupPromise;
+ let cleanupState = 'not-started', outcome = 'HOLD', failureCode = null, markerMatched = null;
++let scopedGoal = 'NOT_OBSERVED', completedOriginalSequence = false, newPositionConsumed = false;
++let outcomePath, outcomeWriteAttempted = false;
+ let workTimer, outerTimer, rootOwnerDisposeCalls = 0, presetOwnerDisposeCalls = 0;
+ const controller = new AbortController();
+ const signal = controller.signal;
+ function closedStatus() {
+   let adapter = null;
+-  try { if (binding) adapter = safeAudit(binding.audit()); } catch { /* No raw audit fallback. */ }
++  try { if (binding) adapter = safeAudit(readAudit(binding)); } catch { /* No raw audit fallback. */ }
+   return { schema: 'df.ollama-live02-process/v1', outcome, failureCode,
+-    exactMarkerMatched: markerMatched, historicalAttemptsBefore: 1,
++    exactMarkerMatched: markerMatched, scopedGoal, completedOriginalSequence,
++    newPositionConsumed, auditReads: auditReadCount(), historicalAttemptsBefore: 1,
+     additionalAttemptLimit: 1, adapter, counters: http?.snapshot() ?? null,
+     cleanup: cleanupState, rootOwnerDisposeCalls, presetOwnerDisposeCalls,
+     durableScratchRetained: runtimeCreated, remoteTerminationFromCleanup: 'unproved', billing: 'unknown',
+@@ -37,6 +41,13 @@
+ function stop(code) {
+   failureCode ??= code; outcome = 'HOLD';
+   if (!signal.aborted) controller.abort();
++}
++function writeOutcomeOnce(status) {
++  if (!outcomePath || outcomeWriteAttempted) return;
++  outcomeWriteAttempted = true; // A failed exclusive write is never retried.
++  const text = JSON.stringify(closedOutcome(status)) + '\n';
++  requireFact(Buffer.byteLength(text) <= bounds.outcomeBytes);
++  writeFileSync(outcomePath, text, { flag: 'wx', mode: 0o600 });
+ }
+ async function disposePresetOnce() {
+   if (!presetDispose || presetDisposed) return;
+@@ -52,7 +63,7 @@
+   cleanupState = 'pending';
+   cleanupPromise = within((async () => {
+     try { await disposePresetOnce(); } finally { await disposeRootOnce(); }
+-  })(), bounds.cleanupMs, 'LOCAL_CLEANUP_UNKNOWN').then(() => {
++  })(), Math.min(bounds.cleanupMs, Math.max(0, bounds.outerProcessMs - elapsedProcessMs())), 'LOCAL_CLEANUP_UNKNOWN').then(() => {
+     cleanupState = 'public-disposers-resolved';
+   }, () => { cleanupState = 'unknown'; stop('LOCAL_CLEANUP_UNKNOWN'); });
+   return cleanupPromise;
+@@ -79,6 +90,7 @@
+   requireFact(process.argv.length === 2);
+   const go = JSON.parse(checkedFile(goPath, 16384));
+   requireFact(go.schema === 'df.ollama-live02-root-go/v1' && go.go === true && go.acSha256 === AC_SHA256 &&
++    go.remediationSha256 === REMEDIATION_SHA256 && go.preservationSha256 === PRESERVATION_SHA256 &&
+     go.onceOnly === true && go.historicalAttemptsBefore === 1 && go.maxAdditionalModelPOST === 1 &&
+     go.originalHostGraphVerified === true && go.privateCommandStreams === true &&
+     go.codeReview?.accepted === true && go.designReview?.accepted === true);
+@@ -88,6 +100,7 @@
+   requireFact(digest(checkedFile(join(capsule, 'root-plan.json'), 65536)) === go.rootPlanSha256);
+   const freeze = JSON.parse(checkedFile(freezePath, 1048576));
+   requireFact(freeze.schema === 'df.ollama-live02-source-freeze/v1' && freeze.acSha256 === AC_SHA256 &&
++    freeze.remediationSha256 === REMEDIATION_SHA256 && freeze.preservationSha256 === PRESERVATION_SHA256 &&
+     freeze.copiedSourceDeltaCount === 6 && freeze.node.version === 'v22.22.2' &&
+     process.version === freeze.node.version && realpathSync(process.execPath) === freeze.node.path &&
+     digest(checkedFile(freeze.node.path)) === freeze.node.sha256, 'HOST_CAPABILITY_UNSUPPORTED');
+@@ -106,26 +119,28 @@
+     stat.uid === process.getuid() && (stat.mode & 0o7777) === 0o700);
+ }
+ function retainedInventory() {
+-  let files = 0, directories = 0, bytes = 0;
+-  const walk = path => {
++  let files = 0, directories = 0, bytes = 0, maxDepth = 0, maxFileBytes = 0;
++  const walk = (path, depth) => {
++    requireFact(depth <= bounds.retainedDepth, 'RESOURCE_LIMIT'); maxDepth = Math.max(maxDepth, depth);
+     const stat = lstatSync(path);
+     requireFact(!stat.isSymbolicLink() && stat.uid === process.getuid());
+     if (stat.isDirectory()) {
+       requireFact(++directories <= bounds.retainedDirectories);
+-      for (const name of readdirSync(path)) walk(join(path, name));
++      for (const name of readdirSync(path)) walk(join(path, name), depth + 1);
+     } else {
+       requireFact(stat.isFile() && ++files <= bounds.retainedFiles && stat.nlink === 1);
++      requireFact(stat.size <= bounds.retainedFileBytes, 'RESOURCE_LIMIT'); maxFileBytes = Math.max(maxFileBytes, stat.size);
+       bytes += stat.size; requireFact(bytes <= bounds.retainedBytes, 'RESOURCE_LIMIT');
+     }
+   };
+-  walk(runtime); return { files, directories, bytes,
++  walk(runtime, 0); return { files, directories, bytes, maxDepth, maxFileBytes,
+     observationOnly: true, physicalPrewriteInterceptor: false };
+ }
+ async function main() {
+   const freeze = authorize();
+   signal.throwIfAborted();
+-  const elapsedProcessMs = Math.ceil(process.uptime() * 1000);
+-  requireFact(elapsedProcessMs < bounds.workMs, 'DEADLINE_UNKNOWN');
++  const elapsed = elapsedProcessMs();
++  requireFact(elapsed < bounds.workMs, 'DEADLINE_UNKNOWN');
+   exclusiveJSON(join(capsule, 'preflight-attempt.json'), { schema: 'df.ollama-live02-once-attempt/v1',
+     attempted: true, historicalAttemptsBefore: 1, additionalPosition: 'S01',
+     acSha256: AC_SHA256, freezeSha256: digest(checkedFile(freezePath, 1048576)) });
+@@ -135,10 +150,12 @@
+     // It writes no terminal/settlement to original state. Original cleanup is
+     // requested first; a still-pending disposer remains UNKNOWN in the record.
+     void cleanup();
+-    process.stdout.write(JSON.stringify(closedStatus()) + '\n');
++    const status = closedStatus();
++    try { writeOutcomeOnce(status); } catch { stop('RESOURCE_LIMIT'); }
++    process.stdout.write(JSON.stringify({ ...status, outcome, failureCode }) + '\n');
+     process.exit(2);
+-  }, bounds.outerProcessMs - elapsedProcessMs);
+-  workTimer = setTimeout(() => { stop('DEADLINE_UNKNOWN'); void cleanup(); }, bounds.workMs - elapsedProcessMs);
++  }, bounds.outerProcessMs - elapsed);
++  workTimer = setTimeout(() => { stop('DEADLINE_UNKNOWN'); void cleanup(); }, bounds.workMs - elapsed);
+   ownDirectory(runtime); runtimeCreated = true;
+   const home = join(runtime, 'home'), xdg = join(runtime, 'xdg'), profiles = join(home, 'profiles');
+   const profile = join(profiles, 'ollama-corrected-one-call'), data = join(profile, 'data');
+@@ -146,6 +163,7 @@
+   const observationDirectory = join(runtime, 'observations'), positionDirectory = join(runtime, 'position-ledger');
+   for (const path of [home, xdg, profiles, profile, data, environment, index, observationDirectory, positionDirectory]) ownDirectory(path);
+   observations = createObservations(observationDirectory);
++  outcomePath = join(observationDirectory, 'closed-outcome.json');
+   // Only these two variables are materialized and put into the original snapshot.
+   // HOME is neither changed nor consulted by the fixture. Explicit provider
+   // path/dshHome and this early environment precede every host/model import.
+@@ -187,6 +205,7 @@
+     patchPath: join(profile, 'cordis.patch.yml'), installAnchor: fileURLToPath(new URL('node_modules/@deepseek-ai/dsh/package.json', hostBase)),
+     cwd: environment, home, startedBundles: Object.freeze([]), overlays: Object.freeze([]), telemetryDisabledEnv: '1' });
+   const launch = createLaunchEnvironmentSnapshot([{ source: 'process', values: { DSH_HOME: home, XDG_CONFIG_HOME: xdg } }]);
++  const bootWaitMs = phaseWaitMs(bounds.bootMs);
+   const root = await within(boot('df-ollama-live02', join(profile, 'cordis.yml'), [], async ctx => {
+     requireFact(ctx instanceof Context);
+     rootContext = ctx; rootDispose = () => ctx.fiber.dispose();
+@@ -196,7 +215,7 @@
+     ctx[Context.intercept].logger = { level: -1 };
+     ctx.provide('profileContext', profileContext);
+     ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, launch);
+-  }, hostBase), bounds.bootMs);
++  }, hostBase), bootWaitMs);
+   requireFact(root === rootContext && !signal.aborted && !cleanupRequested);
+   for (const row of rows) {
+     const entry = root.loader.entries();
+@@ -206,7 +225,7 @@
+   }
+   const providerEntry = [...root.loader.entries()].find(item => item.options.id === 'approved-provider');
+   binding = bindingModule.getApprovedOllamaBinding(providerEntry.fiber.ctx); binding.assertCurrent();
+-  requireFact(binding.audit().attempted === 0 && binding.billingState === 'unknown');
++  requireFact(readAudit(binding).attempted === 0 && binding.billingState === 'unknown');
+   const disposer = await root.agentPresets.register({ id: 'df-ollama-empty', plugins: [] });
+   requireFact(typeof disposer === 'function'); presetDispose = disposer;
+   if (cleanupRequested || signal.aborted) { await disposePresetOnce(); signal.throwIfAborted(); }
+@@ -219,11 +238,16 @@
+   let commandSerial = 0;
+   const command = () => digest(`${AC_SHA256}:LIVE02:S01:${++commandSerial}`);
+   const result = await runOneCall({ ctx: root, call: http.call, binding, command,
+-    observations, positionDirectory, signal });
++    observations, positionDirectory, signal, progress: value => {
++      if (Object.hasOwn(value, 'newPositionConsumed')) newPositionConsumed = value.newPositionConsumed;
++      if (typeof value.exactMarkerMatched === 'boolean') markerMatched = value.exactMarkerMatched;
++      if (['PASS', 'FAIL'].includes(value.scopedGoal)) scopedGoal = value.scopedGoal;
++    } });
+   requireFact(result.completedOriginalSequence === true);
+-  markerMatched = result.exactMarkerMatched; outcome = 'original-sequence-observed';
++  completedOriginalSequence = true; markerMatched = result.exactMarkerMatched;
++  scopedGoal = result.scopedGoal; outcome = 'original-sequence-observed';
+   requireFact(http.snapshot().controlHTTP === 35 && http.snapshot().dfRPC === 30 &&
+-    http.snapshot().metadataHTTP === 3 && binding.audit().attempted === 1);
++    http.snapshot().metadataHTTP === 3 && readAudit(binding).attempted === 1);
+   return freeze;
+ }
+ const onSignal = () => { stop('REQUEST_ABORTED'); void cleanup(); };
+@@ -242,13 +266,18 @@
+   await cleanup();
+   if (observations) {
+     try { observations({ phase: 'local-public-cleanup', cleanup: cleanupState,
+-      rootOwnerDisposeCalls, presetOwnerDisposeCalls, retained: retainedInventory(),
++      rootOwnerDisposeCalls, presetOwnerDisposeCalls,
+       adapter: closedStatus().adapter, counters: http?.snapshot() ?? null,
+       remoteTermination: 'unproved', billing: 'unknown', all87: 'HOLD', CODE: 'HOLD' }); }
+     catch { stop('RESOURCE_LIMIT'); }
+   }
+   clearTimeout(outerTimer);
+-  process.stdout.write(JSON.stringify(closedStatus()) + '\n');
+-  process.exitCode = outcome === 'original-sequence-observed' && cleanupState === 'public-disposers-resolved' ? 0 : 2;
+-  if (outcome === 'HOLD' || cleanupState === 'unknown') process.exit(2);
+-}
++  const status = closedStatus();
++  let retained = null;
++  try { writeOutcomeOnce(status); if (runtimeCreated) retained = retainedInventory(); }
++  catch { stop('RESOURCE_LIMIT'); }
++  process.stdout.write(JSON.stringify({ ...status, outcome, failureCode, retained }) + '\n');
++  process.exitCode = outcome === 'original-sequence-observed' && scopedGoal === 'PASS' &&
++    cleanupState === 'public-disposers-resolved' ? 0 : 2;
++  if (process.exitCode !== 0) process.exit(2);
++}
+--- .runtime/ollama-corrected-one-call-r1/run-private.py
++++ .runtime/ollama-corrected-one-call-r2/run-private.py
+@@ -1,178 +1,516 @@
+-"""Prospective root-owned one-child runner. Never forward private child streams."""
++"""Prospective root-owned runner: one child, finite private capture, no raw forwarding."""
+ import hashlib
+ import json
+ import os
+ from pathlib import Path
+ import selectors
+ import signal
++import stat
+ import subprocess
+ import sys
+ import time
+ 
+-CAPSULE = Path(__file__).resolve().parent
+ NODE = Path('/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node')
+ STREAM_CAP = 65536
++OUTCOME_CAP = 16384
+ WORK_SECONDS = 160
+ DRAIN_SECONDS = 5
++MAX_CAPTURE_CYCLES = 700
++MAX_EXCEPTION_DRAIN_CYCLES = 64
++MAX_LEADER_POLLS = 2048
++AC_SHA256 = 'c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78'
++REMEDIATION_SHA256 = '7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf'
++PRESERVATION_SHA256 = '6052720dfae8466b415d0ffdf4bf81064aafd22b631a8b1abe3c0b2680c54747'
++REPORTED = False
++NODE_CODES = frozenset([
++    'SOURCE_ASSERTION_OR_UNSUPPORTED_PUBLIC_CONTRACT', 'GUARDED_ITERATOR_REFUSAL',
++    'EXECUTE_UNKNOWN', 'CANCEL_UNKNOWN', 'ORIGINAL_OPERATION_DENIED',
++    'ERR_ASSERTION', 'CONFIG_INVALID', 'HOST_CAPABILITY_UNSUPPORTED', 'INVALID_INPUT',
++    'OPERATION_REJECTED', 'REQUEST_ABORTED', 'SERVICE_DISPOSED', 'OPERATOR_REQUIRED',
++    'SETUP_REQUIRED', 'SETUP_UNAVAILABLE', 'SETUP_RECOVERY_REQUIRED', 'SETUP_PREVIEW_STALE',
++    'SETUP_CONFIRMATION_REQUIRED', 'SETUP_INVALID_INPUT', 'STALE_VERSION', 'STALE_AUTHORITY',
++    'STALE_MEMORY', 'COST_UNKNOWN', 'RESOURCE_LIMIT', 'RECOVERY_REQUIRED', 'RESERVATION_HELD',
++    'MODEL_UNAVAILABLE', 'WORKER_SOURCE_UNAVAILABLE', 'WORKER_REQUEST_DENIED', 'WORKER_CONTEXT_INVALID',
++    'WORKER_POLICY_REQUIRED', 'WORKER_POLICY_STALE', 'WORKER_PREVIEW_STALE',
++    'WORKER_RESULT_UNAVAILABLE', 'WORKER_FINISH_UNAVAILABLE', 'WORKER_EXECUTION_UNAVAILABLE',
++    'WORKER_EXECUTION_DENIED', 'WORKER_EXECUTION_ALREADY_SUBMITTED', 'DEADLINE_UNKNOWN',
++    'BARRIER_NOT_OBSERVED', 'ORIGINAL_ABORT_NOT_OBSERVED', 'LOCAL_DRAIN_UNKNOWN',
++    'R06_WINDOW_UNKNOWN', 'LOCAL_CLEANUP_UNKNOWN',
++])
++OUTCOME_KEYS = frozenset([
++    'schema', 'outcome', 'failureCode', 'scopedGoal', 'exactMarkerMatched',
++    'completedOriginalSequence', 'newPositionConsumed', 'auditReads',
++    'historicalAttemptsBefore', 'additionalAttemptLimit', 'adapterAttempted',
++    'adapterActive', 'adapterUncertainHold', 'controlHTTP', 'dfRPC', 'metadataHTTP',
++    'cleanup', 'rootOwnerDisposeCalls', 'presetOwnerDisposeCalls', 'durableScratchRetained',
++    'remoteTerminationFromCleanup', 'billing', 'browserAcceptance', 'nativeColdContinuation',
++    'all87', 'CODE',
++])
+ 
+ 
+ def digest(data):
+     return hashlib.sha256(data).hexdigest()
+ 
+ 
+-def bounded_regular(path, limit):
+-    stat = path.lstat()
+-    if not path.is_file() or path.is_symlink() or path.resolve() != path or stat.st_size > limit:
+-        raise ValueError('SOURCE_ASSERTION_OR_UNSUPPORTED_PUBLIC_CONTRACT')
+-    return path.read_bytes()
+-
+-
+-def emit(code, **facts):
+-    print(json.dumps({'schema': 'df.ollama-live02-private-runner/v1', 'code': code,
+-                      'rawStreamsPublished': False, 'billing': 'unknown', 'CODE': 'HOLD', **facts},
+-                     separators=(',', ':')))
++def strict_json(data):
++    def unique(pairs):
++        value = {}
++        for key, item in pairs:
++            if key in value:
++                raise ValueError('CLOSED_RECORD_INVALID')
++            value[key] = item
++        return value
++    def refuse_constant(_value):
++        raise ValueError('CLOSED_RECORD_INVALID')
++    return json.loads(data.decode('utf-8', errors='strict'), object_pairs_hook=unique,
++                      parse_constant=refuse_constant)
++
++
++def bounded_regular(path, limit, private=False):
++    before = path.lstat()
++    if (not stat.S_ISREG(before.st_mode) or path.resolve() != path
++            or before.st_size < 0 or before.st_size > limit):
++        raise ValueError('CLOSED_RECORD_INVALID')
++    if private and (before.st_nlink != 1 or before.st_uid != os.getuid() or stat.S_IMODE(before.st_mode) != 0o600):
++        raise ValueError('CLOSED_RECORD_INVALID')
++    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
++    try:
++        current = os.fstat(descriptor)
++        if (current.st_dev, current.st_ino, current.st_size) != (before.st_dev, before.st_ino, before.st_size):
++            raise ValueError('CLOSED_RECORD_INVALID')
++        with os.fdopen(descriptor, 'rb') as stream:
++            descriptor = None
++            value = stream.read(limit + 1)
++        if len(value) != before.st_size or len(value) > limit:
++            raise ValueError('CLOSED_RECORD_INVALID')
++        return value
++    finally:
++        if descriptor is not None:
++            os.close(descriptor)
++
++
++def integer(value, ceiling, nullable=False):
++    if nullable and value is None:
++        return
++    if type(value) is not int or not 0 <= value <= ceiling:
++        raise ValueError('CLOSED_RECORD_INVALID')
++
++
++def boolean(value, nullable=False):
++    if nullable and value is None:
++        return
++    if type(value) is not bool:
++        raise ValueError('CLOSED_RECORD_INVALID')
++
++
++def outcome_record(capsule):
++    # Only this controlled, exclusive Node record is decoded. Never read raw streams.
++    path = capsule / 'private-run' / 'observations' / 'closed-outcome.json'
++    value = strict_json(bounded_regular(path, OUTCOME_CAP, private=True))
++    if type(value) is not dict or set(value) != OUTCOME_KEYS:
++        raise ValueError('CLOSED_RECORD_INVALID')
++    constants = {'schema': 'df.ollama-live02-outcome/v1', 'historicalAttemptsBefore': 1,
++                 'additionalAttemptLimit': 1, 'remoteTerminationFromCleanup': 'unproved',
++                 'billing': 'unknown', 'browserAcceptance': 'HOLD', 'nativeColdContinuation': 'HOLD',
++                 'all87': 'HOLD', 'CODE': 'HOLD'}
++    for key, expected in constants.items():
++        if type(value[key]) is not type(expected) or value[key] != expected:
++            raise ValueError('CLOSED_RECORD_INVALID')
++    if (value['outcome'] not in ['HOLD', 'original-sequence-observed']
++            or value['scopedGoal'] not in ['PASS', 'FAIL', 'NOT_OBSERVED']
++            or value['cleanup'] not in ['not-started', 'pending', 'unknown', 'public-disposers-resolved']
++            or (value['failureCode'] is not None and value['failureCode'] not in NODE_CODES)):
++        raise ValueError('CLOSED_RECORD_INVALID')
++    for key in ['completedOriginalSequence', 'durableScratchRetained']:
++        boolean(value[key])
++    for key in ['newPositionConsumed', 'exactMarkerMatched', 'adapterActive', 'adapterUncertainHold']:
++        boolean(value[key], nullable=True)
++    for key, cap in [('adapterAttempted', 1), ('controlHTTP', 35), ('dfRPC', 30), ('metadataHTTP', 3)]:
++        integer(value[key], cap, nullable=True)
++    for key, cap in [('auditReads', 14), ('rootOwnerDisposeCalls', 1), ('presetOwnerDisposeCalls', 1)]:
++        integer(value[key], cap)
++    if ((value['scopedGoal'] == 'NOT_OBSERVED' and value['exactMarkerMatched'] is not None)
++            or (value['scopedGoal'] == 'PASS' and value['exactMarkerMatched'] is not True)
++            or (value['scopedGoal'] == 'FAIL' and value['exactMarkerMatched'] is not False)):
++        raise ValueError('CLOSED_RECORD_INVALID')
++    if value['outcome'] == 'original-sequence-observed' and value['completedOriginalSequence'] is not True:
++        raise ValueError('CLOSED_RECORD_INVALID')
++    if value['completedOriginalSequence'] and (value['scopedGoal'] == 'NOT_OBSERVED'
++            or value['newPositionConsumed'] is not True or value['adapterAttempted'] != 1
++            or (value['controlHTTP'], value['dfRPC'], value['metadataHTTP']) != (35, 30, 3)):
++        raise ValueError('CLOSED_RECORD_INVALID')
++    return value
++
++
++def safe_emit(code, **facts):
++    global REPORTED
++    if REPORTED:
++        return False
++    REPORTED = True  # Reporter failure is not retried or allowed to escape.
++    try:
++        text = json.dumps({'schema': 'df.ollama-live02-private-runner/v2', 'code': code,
++                           'rawStreamsPublished': False, 'billing': 'unknown', 'CODE': 'HOLD',
++                           'all87': 'HOLD', **facts}, separators=(',', ':'), allow_nan=False)
++        if len(text.encode('utf-8')) > OUTCOME_CAP:
++            return False
++        sys.stdout.write(text + '\n')
++        sys.stdout.flush()
++        return True
++    except BaseException:
++        return False
+ 
+ 
+ def main():
++    capsule = Path(__file__).resolve().parent
+     if len(sys.argv) != 1:
+-        emit('SOURCE_ASSERTION_OR_UNSUPPORTED_PUBLIC_CONTRACT')
++        safe_emit('SOURCE_ASSERTION_OR_UNSUPPORTED_PUBLIC_CONTRACT')
+         return 2
+     try:
+-        go = json.loads(bounded_regular(CAPSULE / 'root-execution-go.json', 16384))
+-        freeze_bytes = bounded_regular(CAPSULE / 'source-freeze.json', 1048576)
+-        freeze = json.loads(freeze_bytes)
+-        plan_bytes = bounded_regular(CAPSULE / 'root-plan.json', 65536)
+-        if not (go.get('schema') == 'df.ollama-live02-root-go/v1' and go.get('go') is True
++        go = strict_json(bounded_regular(capsule / 'root-execution-go.json', OUTCOME_CAP))
++        freeze_bytes = bounded_regular(capsule / 'source-freeze.json', 1048576)
++        freeze = strict_json(freeze_bytes)
++        plan_bytes = bounded_regular(capsule / 'root-plan.json', 65536)
++        if not (type(go) is dict and type(freeze) is dict
++                and go.get('schema') == 'df.ollama-live02-root-go/v1' and go.get('go') is True
+                 and go.get('onceOnly') is True and go.get('privateCommandStreams') is True
+                 and go.get('fixtureFreezeSha256') == digest(freeze_bytes)
+                 and go.get('rootPlanSha256') == digest(plan_bytes)
+-                and go.get('acSha256') == freeze.get('acSha256')
++                and go.get('acSha256') == freeze.get('acSha256') == AC_SHA256
++                and go.get('remediationSha256') == freeze.get('remediationSha256') == REMEDIATION_SHA256
++                and go.get('preservationSha256') == freeze.get('preservationSha256') == PRESERVATION_SHA256
+                 and go.get('historicalAttemptsBefore') == 1 and go.get('maxAdditionalModelPOST') == 1
+                 and go.get('originalHostGraphVerified') is True
+                 and go.get('codeReview', {}).get('accepted') is True
+                 and go.get('designReview', {}).get('accepted') is True):
+-            emit('GO_NOT_GRANTED')
++            safe_emit('GO_NOT_GRANTED')
+             return 2
+-        if NODE.resolve() != NODE or digest(bounded_regular(NODE, 209715200)) != freeze['node']['sha256']:
++        if (freeze['node']['path'] != str(NODE) or NODE.resolve() != NODE
++                or digest(bounded_regular(NODE, 209715200)) != freeze['node']['sha256']):
+             raise ValueError('HOST_CAPABILITY_UNSUPPORTED')
+         own_pin = next(item for item in freeze['files'] if item['path'].endswith('/run-private.py'))
+-        if digest(bounded_regular(CAPSULE / 'run-private.py', 65536)) != own_pin['sha256']:
++        if digest(bounded_regular(capsule / 'run-private.py', 65536)) != own_pin['sha256']:
+             raise ValueError('HOST_CAPABILITY_UNSUPPORTED')
+-        if (CAPSULE / 'preflight-attempt.json').exists() or (CAPSULE / 'private-run').exists():
++        for name in ['preflight-attempt.json', 'private-run', 'private-process-output']:
++            try:
++                (capsule / name).lstat()
++            except FileNotFoundError:
++                continue
+             raise ValueError('RESOURCE_LIMIT')
+-    except Exception:
+-        emit('SOURCE_ASSERTION_OR_UNSUPPORTED_PUBLIC_CONTRACT')
++    except BaseException:
++        safe_emit('SOURCE_ASSERTION_OR_UNSUPPORTED_PUBLIC_CONTRACT')
+         return 2
+-    output = CAPSULE / 'private-process-output'
+-    try:
+-        output.mkdir(mode=0o700)
+-    except Exception:
+-        emit('RESOURCE_LIMIT')
+-        return 2
++
++    started = time.monotonic()
+     child = None
++    selector = None
++    files = {}
++    pipes = {}
++    nonblocking = {'stdout': False, 'stderr': False}
++    eof = {'stdout': False, 'stderr': False}
++    retained = {'stdout': 0, 'stderr': 0}
++    received = {'stdout': 0, 'stderr': 0}
++    hashes = {'stdout': hashlib.sha256(), 'stderr': hashlib.sha256()}
++    retention_closed = {'stdout': False, 'stderr': False}
++    prior_signals = {}
++    failed = False
+     stop_requested = False
+-    signal_sent = False
+-    failed = False
++    term_latched = False
++    term_requests = 0
++    signal_observation = 'NOT_REQUESTED'
++    signalling_forbidden = False
+     safe_code = 'PRIVATE_CHILD_COMPLETED'
+-    counts = {'stdout': 0, 'stderr': 0}
+-    hashes = {'stdout': hashlib.sha256(), 'stderr': hashlib.sha256()}
+-    files = {}
+-    started = time.monotonic()
+-
+-    def request_stop(code):
+-        nonlocal stop_requested, signal_sent, failed, safe_code
++    identity = 'NOT_OBSERVED'
++    observed_session = None
++    observed_group = None
++    identity_reads = 0
++    group_probes = 0
++    group_absence = 'NOT_OBSERVED'
++    leader_polls = 0
++    leader_code = None
++    leader_poll_failed = False
++    capture_cycles = 0
++    drain_cycles = 0
++    pipe_reads = 0
++
++    def mark_failure(code):
++        nonlocal failed, safe_code
+         failed = True
+         if safe_code == 'PRIVATE_CHILD_COMPLETED':
+             safe_code = code
++
++    def leader_poll():
++        nonlocal leader_polls, leader_code, leader_poll_failed, signalling_forbidden
++        if child is None or leader_poll_failed:
++            return None
++        if leader_polls >= MAX_LEADER_POLLS:
++            leader_poll_failed = True
++            signalling_forbidden = True
++            mark_failure('LEADER_OBSERVATION_UNKNOWN')
++            return None
++        leader_polls += 1
++        try:
++            leader_code = child.poll()
++            return leader_code
++        except BaseException:
++            leader_poll_failed = True
++            signalling_forbidden = True
++            mark_failure('LEADER_OBSERVATION_UNKNOWN')
++            return None
++
++    def send_once():
++        nonlocal term_latched, term_requests, signal_observation, identity_reads, signalling_forbidden
++        if (not stop_requested or child is None or term_latched or signalling_forbidden
++                or identity != 'OBSERVED'):
++            return
++        term_latched = True  # Shared latch covers errors, root control and timeouts.
++        if leader_poll() is not None or leader_poll_failed:
++            return
++        try:
++            identity_reads += 1
++            session_id = os.getsid(child.pid)
++            identity_reads += 1
++            group_id = os.getpgid(child.pid)
++            if session_id != observed_session or group_id != observed_group or group_id != child.pid:
++                signalling_forbidden = True
++                signal_observation = 'IDENTITY_UNKNOWN'
++                mark_failure('OWNED_IDENTITY_UNKNOWN')
++                return
++            term_requests = 1  # At most one syscall attempt; denial is never retried.
++            child.send_signal(signal.SIGTERM)
++            signal_observation = 'REQUESTED'
++        except ProcessLookupError:
++            signalling_forbidden = True
++            signal_observation = 'TARGET_NOT_OBSERVED'
++            mark_failure('OWNED_SIGNAL_UNKNOWN')
++        except BaseException:
++            signalling_forbidden = True
++            signal_observation = 'DENIED_OR_UNKNOWN'
++            mark_failure('OWNED_SIGNAL_UNKNOWN')
++
++    def request_stop(code):
++        nonlocal stop_requested
++        mark_failure(code)
+         stop_requested = True
+-        if not signal_sent and child is not None and child.poll() is None:
+-            signal_sent = True
+-            try:
+-                child.send_signal(signal.SIGTERM)
+-            except ProcessLookupError:
+-                pass
++        send_once()
+ 
+     def root_signal(_number, _frame):
+-        request_stop('ROOT_STOP_REQUESTED')
+-
+-    prior_int = signal.signal(signal.SIGINT, root_signal)
+-    prior_term = signal.signal(signal.SIGTERM, root_signal)
+-    selector = selectors.DefaultSelector()
++        try:
++            request_stop('ROOT_STOP_REQUESTED')
++        except BaseException:
++            # Handler exceptions cannot escape into an unsanitized traceback.
++            mark_failure('PRIVATE_RUNNER_FAILURE')
++
++    def read_pipe(label):
++        nonlocal pipe_reads
++        if eof[label] or not nonblocking[label] or label not in pipes:
++            return
++        pipe_reads += 1
++        try:
++            block = os.read(pipes[label].fileno(), 8192)
++        except BlockingIOError:
++            return
++        if not block:
++            eof[label] = True
++            if selector is not None:
++                try:
++                    selector.unregister(pipes[label])
++                except KeyError:
++                    pass
++            pipes[label].close()
++            return
++        received[label] += len(block)
++        kept = block[:max(0, STREAM_CAP - retained[label])]
++        if kept:
++            written = files[label].write(kept)
++            if written != len(kept):
++                raise ValueError('PRIVATE_CAPTURE_UNKNOWN')
++            retained[label] += len(kept)
++            hashes[label].update(kept)
++        if received[label] > STREAM_CAP:
++            request_stop('PRIVATE_STREAM_BOUND')
++
+     try:
++        output = capsule / 'private-process-output'
++        output.mkdir(mode=0o700)
+         for label in ['stdout', 'stderr']:
+             descriptor = os.open(output / (label + '.bin'), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+-            files[label] = os.fdopen(descriptor, 'wb')
+-        # A prior output/root-control failure cannot permit a late child spawn.
++            try:
++                files[label] = os.fdopen(descriptor, 'wb')
++                descriptor = None
++            finally:
++                if descriptor is not None:
++                    os.close(descriptor)
++        for number in [signal.SIGINT, signal.SIGTERM]:
++            prior_signals[number] = signal.signal(number, root_signal)
++        selector = selectors.DefaultSelector()  # Exactly one allocation; no replacement on failure.
+         if failed or stop_requested:
+             raise ValueError('PRESPAWN_STOPPED')
+-        child = subprocess.Popen([str(NODE), '--no-warnings', str(CAPSULE / 'entry.mjs')],
+-                                 cwd=CAPSULE, stdin=subprocess.DEVNULL,
++        child = subprocess.Popen([str(NODE), '--no-warnings', str(capsule / 'entry.mjs')],
++                                 cwd=capsule, stdin=subprocess.DEVNULL,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False,
+                                  start_new_session=True,
+-                                 env={'DSH_HOME': str(CAPSULE / 'private-run' / 'home'),
+-                                      'XDG_CONFIG_HOME': str(CAPSULE / 'private-run' / 'xdg')})
++                                 env={'DSH_HOME': str(capsule / 'private-run' / 'home'),
++                                      'XDG_CONFIG_HOME': str(capsule / 'private-run' / 'xdg')})
++        pipes = {'stdout': child.stdout, 'stderr': child.stderr}
++        try:
++            identity_reads += 1
++            observed_session = os.getsid(child.pid)
++            identity_reads += 1
++            observed_group = os.getpgid(child.pid)
++            if observed_session != child.pid or observed_group != child.pid:
++                identity = 'MISMATCH'
++                signalling_forbidden = True
++                request_stop('OWNED_IDENTITY_UNKNOWN')
++            else:
++                identity = 'OBSERVED'
++        except BaseException:
++            identity = 'NOT_OBSERVED'
++            signalling_forbidden = True
++            request_stop('OWNED_IDENTITY_UNKNOWN')
++        for label, stream in pipes.items():
++            os.set_blocking(stream.fileno(), False)
++            nonblocking[label] = True
++            selector.register(stream, selectors.EVENT_READ, label)
+         if stop_requested:
+-            request_stop(safe_code)
+-        for label, stream in [('stdout', child.stdout), ('stderr', child.stderr)]:
+-            os.set_blocking(stream.fileno(), False)
+-            selector.register(stream, selectors.EVENT_READ, label)
+-        while selector.get_map() or child.poll() is None:
++            send_once()
++        while True:
++            code = leader_poll()
++            if all(eof.values()) and code is not None:
++                break
+             elapsed = time.monotonic() - started
+             if elapsed >= WORK_SECONDS:
+                 request_stop('OUTER_WINDOW_UNKNOWN')
+             if elapsed >= WORK_SECONDS + DRAIN_SECONDS:
+                 request_stop('LOCAL_DRAIN_UNKNOWN')
+                 break
+-            for key, _events in selector.select(timeout=0.25):
+-                block = os.read(key.fileobj.fileno(), 8192)
+-                if not block:
+-                    selector.unregister(key.fileobj)
+-                    key.fileobj.close()
+-                    continue
+-                label = key.data
+-                remaining = max(0, STREAM_CAP - counts[label])
+-                kept = block[:remaining]
+-                if kept:
+-                    files[label].write(kept)
+-                    hashes[label].update(kept)
+-                counts[label] += len(block)
+-                if counts[label] > STREAM_CAP:
+-                    request_stop('PRIVATE_STREAM_BOUND')
+-        returncode = child.poll()
+-        if returncode is None:
+-            request_stop('LOCAL_DRAIN_UNKNOWN')
+-            # No force, process-group signal, new request, or pretend cleanup.
+-            # Root owns any further lifecycle disposition of this exact child.
+-        elif returncode != 0:
+-            failed = True
+-            if safe_code == 'PRIVATE_CHILD_COMPLETED':
+-                safe_code = 'PRIVATE_CHILD_HOLD'
+-        emit(safe_code, exitCode=returncode, childPid=child.pid,
+-             ownedSessionAndProcessGroup=True, processGroupId=child.pid,
+-             childStillAlive=returncode is None, gracefulSignalRequests=int(signal_sent),
+-             elapsedMs=round((time.monotonic() - started) * 1000),
+-             stdoutBytes=min(counts['stdout'], STREAM_CAP), stderrBytes=min(counts['stderr'], STREAM_CAP),
+-             stdoutTruncated=counts['stdout'] > STREAM_CAP, stderrTruncated=counts['stderr'] > STREAM_CAP,
+-             stdoutSha256=hashes['stdout'].hexdigest(), stderrSha256=hashes['stderr'].hexdigest())
+-        return 2 if failed or returncode != 0 else 0
+-    except Exception:
++            if capture_cycles >= MAX_CAPTURE_CYCLES:
++                request_stop('PRIVATE_CAPTURE_WINDOW_UNKNOWN')
++                raise ValueError('PRIVATE_CAPTURE_WINDOW_UNKNOWN')
++            capture_cycles += 1
++            ready = selector.select(timeout=min(0.25, WORK_SECONDS + DRAIN_SECONDS - elapsed))
++            for key, _events in ready:
++                read_pipe(key.data)
++    except BaseException:
+         request_stop('PRIVATE_RUNNER_FAILURE')
+-        emit('PRIVATE_RUNNER_FAILURE', childPid=None if child is None else child.pid,
+-             ownedSessionAndProcessGroup=child is not None,
+-             processGroupId=None if child is None else child.pid,
+-             childStillAlive=child is not None and child.poll() is None,
+-             gracefulSignalRequests=int(signal_sent))
+-        return 2
++        # Bounded post-exception drain uses the same owned pipes and no second
++        # selector. A stream whose nonblocking setup failed is never read here.
++        try:
++            drain_until = min(started + WORK_SECONDS + DRAIN_SECONDS, time.monotonic() + DRAIN_SECONDS)
++            while child is not None and drain_cycles < MAX_EXCEPTION_DRAIN_CYCLES and time.monotonic() < drain_until:
++                drain_cycles += 1
++                for label in ['stdout', 'stderr']:
++                    try:
++                        read_pipe(label)
++                    except BaseException:
++                        mark_failure('PRIVATE_CAPTURE_UNKNOWN')
++                        nonblocking[label] = False  # No failed capture/setup is retried.
++                if leader_poll() is not None and all(eof.values()):
++                    break
++                time.sleep(min(0.1, max(0, drain_until - time.monotonic())))
++        except BaseException:
++            request_stop('PRIVATE_DRAIN_UNKNOWN')
+     finally:
+-        selector.close()
+-        for stream in files.values():
++        # Every close/restore failure becomes a finite HOLD; no finally traceback.
++        if selector is not None:
++            try:
++                selector.close()
++            except BaseException:
++                request_stop('PRIVATE_TEARDOWN_UNKNOWN')
++        for label, stream in pipes.items():
+             try:
+                 stream.close()
+-            except Exception:
+-                pass
+-        signal.signal(signal.SIGINT, prior_int)
+-        signal.signal(signal.SIGTERM, prior_term)
++            except BaseException:
++                request_stop('PRIVATE_TEARDOWN_UNKNOWN')
++        for label, stream in files.items():
++            try:
++                stream.close()
++                retention_closed[label] = True
++            except BaseException:
++                request_stop('PRIVATE_TEARDOWN_UNKNOWN')
++        for number, previous in prior_signals.items():
++            try:
++                signal.signal(number, previous)
++            except BaseException:
++                request_stop('PRIVATE_TEARDOWN_UNKNOWN')
++
++    if child is not None:
++        leader_poll()
++    if identity == 'OBSERVED':
++        group_probes = 1
++        try:
++            os.killpg(observed_group, 0)  # Read-only existence probe; never a terminating group signal.
++            group_absence = 'PRESENT'
++            mark_failure('OWNED_GROUP_STILL_PRESENT')
++        except ProcessLookupError:
++            group_absence = 'ABSENT'
++        except BaseException:
++            group_absence = 'NOT_OBSERVED'
++            signalling_forbidden = True
++            mark_failure('OWNED_GROUP_UNKNOWN')
++    else:
++        mark_failure('OWNED_IDENTITY_UNKNOWN')
++    local_drain = (child is not None and not leader_poll_failed and leader_code is not None
++                   and all(eof.values()) and group_absence == 'ABSENT')
++    if not local_drain:
++        mark_failure('LOCAL_DRAIN_UNKNOWN')
++    node_outcome = None
++    outcome_observation = 'NOT_OBSERVED'
++    if child is not None:
++        try:
++            node_outcome = outcome_record(capsule)
++            outcome_observation = 'OBSERVED'
++        except FileNotFoundError:
++            mark_failure('CLOSED_OUTCOME_NOT_OBSERVED')
++        except BaseException:
++            outcome_observation = 'REFUSED'
++            mark_failure('CLOSED_OUTCOME_REFUSED')
++    scoped_goal = 'NOT_OBSERVED' if node_outcome is None else node_outcome['scopedGoal']
++    if scoped_goal == 'FAIL':
++        mark_failure('SCOPED_GOAL_FAIL')
++    if child is not None and leader_code != 0:
++        mark_failure('PRIVATE_CHILD_HOLD')
++    node_success = (node_outcome is not None and node_outcome['outcome'] == 'original-sequence-observed'
++                    and node_outcome['completedOriginalSequence'] is True and scoped_goal == 'PASS'
++                    and node_outcome['cleanup'] == 'public-disposers-resolved'
++                    and node_outcome['failureCode'] is None and node_outcome['auditReads'] == 11
++                    and node_outcome['adapterActive'] is False and node_outcome['adapterUncertainHold'] is False
++                    and node_outcome['rootOwnerDisposeCalls'] == 1 and node_outcome['presetOwnerDisposeCalls'] == 1)
++    if not node_success:
++        mark_failure('CLOSED_OUTCOME_HOLD')
++    if not all(retention_closed.values()):
++        mark_failure('PRIVATE_RETENTION_UNKNOWN')
++    streams = {}
++    for label in ['stdout', 'stderr']:
++        complete = eof[label]
++        streams[label] = {'retainedPrefixBytes': retained[label],
++                          'retainedPrefixSha256': hashes[label].hexdigest(),
++                          'retentionClosed': retention_closed[label], 'receivedAtLeastBytes': received[label],
++                          'eofObserved': complete, 'receivedCompleteness': 'COMPLETE' if complete else 'NOT_OBSERVED',
++                          'truncation': 'KNOWN_TRUE' if received[label] > retained[label] else
++                                        'KNOWN_FALSE' if complete and retention_closed[label] else 'NOT_OBSERVED'}
++    reported = safe_emit(safe_code, exitCode=leader_code,
++                         childPid=None if child is None else child.pid,
++                         childStillAliveObservation='NOT_OBSERVED' if leader_poll_failed or child is None else
++                                                   'ALIVE' if leader_code is None else 'EXITED',
++                         ownedIdentityObservation=identity, observedSessionId=observed_session,
++                         observedProcessGroupId=observed_group, ownedGroupAbsence=group_absence,
++                         identityReadAttempts=identity_reads, groupExistenceProbes=group_probes,
++                         gracefulSignalRequests=term_requests, signalObservation=signal_observation,
++                         signallingForbidden=signalling_forbidden, leaderPolls=leader_polls,
++                         captureCycles=capture_cycles, exceptionDrainCycles=drain_cycles, pipeReadAttempts=pipe_reads,
++                         elapsedMs=round((time.monotonic() - started) * 1000), streams=streams,
++                         localDrainObserved=local_drain, localProcessSuccess=not failed and local_drain and leader_code == 0,
++                         scopedGoal=scoped_goal, closedOutcomeObservation=outcome_observation, nodeOutcome=node_outcome,
++                         remoteNativeTerminationFromLocalExit='unproved', unexpectedEscapedDescendants='NOT_OBSERVED')
++    return 0 if reported and not failed and local_drain and leader_code == 0 and node_success else 2
+ 
+ 
+ if __name__ == '__main__':
+-    raise SystemExit(main())
++    # Includes main setup, bounded drain, teardown and reporter errors. Never
++    # publish an arbitrary exception, traceback, raw Node stream or retry.
++    try:
++        result = main()
++    except BaseException:
++        safe_emit('PRIVATE_RUNNER_FAILURE')
++        result = 2
++    raise SystemExit(result)

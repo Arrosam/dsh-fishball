@@ -1,0 +1,342 @@
+{
+  "schema": "df.ollama-live02-http-budget/v1",
+  "sourceOnly": true,
+  "counterReset": false,
+  "countBeforeTransport": true,
+  "authHTTP": [
+    {
+      "id": "H01",
+      "method": "GET",
+      "path": "/",
+      "authentication": "none",
+      "expectedStatus": 401,
+      "DFHandlerCalls": 0
+    },
+    {
+      "id": "H02",
+      "method": "POST",
+      "path": "/df-setup/v1/status",
+      "authentication": "none",
+      "expectedStatus": 401,
+      "DFHandlerCalls": 0
+    },
+    {
+      "id": "H03",
+      "method": "GET",
+      "path": "private ctx.connection.authenticatedUrl(baseRoot)",
+      "authentication": "original process launch token; never output",
+      "expectedStatus": 303,
+      "expectedLocation": "./",
+      "DFHandlerCalls": 0
+    },
+    {
+      "id": "H04",
+      "method": "GET",
+      "path": "/",
+      "authentication": "original returned cookie; private memory only",
+      "expectedStatus": 200,
+      "DFHandlerCalls": 0
+    },
+    {
+      "id": "H05",
+      "method": "POST",
+      "path": "/df-setup/v1/status",
+      "authentication": "valid cookie, one synthetic mismatched Origin",
+      "expectedStatus": 403,
+      "DFHandlerCalls": 0
+    }
+  ],
+  "authenticatedRPC": [
+    {
+      "id": "P01",
+      "method": "POST",
+      "channel": "/df-setup",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P02",
+      "method": "POST",
+      "channel": "/df-setup",
+      "endpoint": "v1/prepare",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P03",
+      "method": "POST",
+      "channel": "/df-setup",
+      "endpoint": "v1/confirm",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P04",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerCatalog",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P05",
+      "method": "POST",
+      "channel": "/df-setup",
+      "endpoint": "v1/workerStatus",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P06",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerPolicyPreview",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P07",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerPolicyConfirm",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P08",
+      "method": "POST",
+      "channel": "/df-setup",
+      "endpoint": "v1/workerStatus",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P09",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/intake",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "not a payload field"
+    },
+    {
+      "id": "P10",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P11",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/prepareContext",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P12",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P13",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/detail",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P14",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerPlan",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P15",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P16",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerPreview",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P17",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerGrant",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P18",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P19",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerCreate",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P20",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P21",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerQuery",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P22",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P23",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerExecute",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P24",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P25",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerCapture",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P26",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P27",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerResult",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P28",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P29",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/workerFinish",
+      "mutation": true,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    },
+    {
+      "id": "P30",
+      "method": "POST",
+      "channel": "/df-rpc",
+      "endpoint": "v1/status",
+      "mutation": false,
+      "expectedStatus": 200,
+      "taskRef": "actual fresh taskRef"
+    }
+  ],
+  "maxControlHTTP": 35,
+  "maxDFRPC": 30,
+  "maxReadOnlyMetadataHTTP": 3,
+  "maxModelPOST": 1,
+  "selectedMutations": 10,
+  "selectedReadonlyOrPreview": 20,
+  "ordinaryHTTPMs": 5000,
+  "executeHTTPMs": 75000,
+  "notAdditiveTimeAllowances": true,
+  "globalNodeWorkMs": 135000,
+  "reservedCleanupMs": 15000,
+  "totalNodeProcessMs": 150000,
+  "unexpectedFailure": "stop current sequence; no conditional capture/result/finish after failure; preserve all entered effects/unknowns",
+  "publicContractRefinement": "Two global workerStatus reads use /df-setup after catalog and after policy confirmation. Every task status uses actual taskRef. Initial/context/detail/pre-grant CAS snapshots are reused across adjacent readonly operations; original mutation CAS still independently rejects drift.",
+  "successorRevision": "r2",
+  "remainingWorkAdmissionMs": 85000,
+  "phaseWaitsClippedToRemainingWork": true,
+  "bindingAuditReadsHealthy": 11,
+  "bindingAuditReadsFailureCleanupMaximum": 14,
+  "extraRPCOrFaultOrInferenceProbe": false,
+  "scopedGoal": "PASS/FAIL/NOT_OBSERVED; FAIL cannot overall exit0; missing remains HOLD"
+}

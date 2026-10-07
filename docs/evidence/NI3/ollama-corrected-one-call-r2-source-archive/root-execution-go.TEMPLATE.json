@@ -1,0 +1,23 @@
+{
+  "schema": "df.ollama-live02-root-go/v1",
+  "go": false,
+  "onceOnly": true,
+  "acSha256": "c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78",
+  "fixtureFreezeSha256": null,
+  "rootPlanSha256": null,
+  "historicalAttemptsBefore": 1,
+  "maxAdditionalModelPOST": 1,
+  "originalHostGraphVerified": false,
+  "privateCommandStreams": false,
+  "codeReview": {
+    "accepted": false,
+    "sha256": null
+  },
+  "designReview": {
+    "accepted": false,
+    "sha256": null
+  },
+  "runtimeApproval": "NOT_GRANTED; root-only separate supported action-time approval",
+  "remediationSha256": "7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf",
+  "preservationSha256": "6052720dfae8466b415d0ffdf4bf81064aafd22b631a8b1abe3c0b2680c54747"
+}

@@ -1,0 +1,971 @@
+{
+  "schema": "df.ollama-corrected-one-call-independent-test-review/v1",
+  "wave": "NR-OLLAMA-LIVE02",
+  "revision": "r2",
+  "sealedAtUTC": "2026-10-07T16:46:54.157012+00:00",
+  "reviewer": {
+    "agent": "/root/ni5_lifetime_independent_design",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "language": "English",
+    "role": "Independent ISTQB affected SOURCE review"
+  },
+  "disposition": "SOURCE_ACCEPTABLE_FOR_ROOT_PREEXECUTION_REVIEW_NO_RUNTIME_GO",
+  "runtimeGO": false,
+  "summary": {
+    "newSourceBlockers": 0,
+    "priorFindingsResolvedAtSource": 6,
+    "sourceAdequateSelectedFamilies": 13,
+    "partialFamilies": 2,
+    "separateSourceGateFamilies": 1,
+    "originalFamilies": 16,
+    "functionalComplete": 0,
+    "functionalNotRun": 16,
+    "heldOriginalPartitions": 8,
+    "newStandaloneRunnableCases": 0
+  },
+  "independence": {
+    "designSealedBeforeCandidateAssertions": true,
+    "expectedBehavior": "Unchanged independent original design and original public source/requirements; additive root remediation/preservation selection",
+    "authorAssertionsAreReviewedSubjectNotOracle": true,
+    "separateCodeReviewerReportNotUsedAsBehaviorOracle": true
+  },
+  "reviewPins": [
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/source-manifest.json",
+      "bytes": 11288,
+      "sha256": "477ecf21beb108e4b118483963692168d6b0c03164f289043b55b6da2b89a9c9"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/source-freeze.json",
+      "bytes": 60219,
+      "sha256": "9c393f553323c55adec7ccddf6ea79d0f5a5c997bb292b28ad369fe12aef9e41"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r2-source.md",
+      "bytes": 8257,
+      "sha256": "c546fa41c02e73698f5b647a821e3065d7f3d3c9e37903344f76740f5dae9f4e"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r2-source.json",
+      "bytes": 15484,
+      "sha256": "43d2c5a4b3fe28d6efd5cb061367e28436310e40d8e23581c9f4fbc23e316bf8"
+    },
+    {
+      "path": "docs/ollama-corrected-one-call-r2-remediation-2026-10-07.md",
+      "bytes": 9966,
+      "sha256": "7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf"
+    },
+    {
+      "path": "docs/ollama-live02-r2-preservation-clarification-2026-10-07.md",
+      "bytes": 1162,
+      "sha256": "6052720dfae8466b415d0ffdf4bf81064aafd22b631a8b1abe3c0b2680c54747"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.md",
+      "bytes": 29459,
+      "sha256": "e1412ca7f0933e41f344bfb2ce9c6bf93f9cbbd47598f900bb800a935a9d3efd"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.json",
+      "bytes": 60381,
+      "sha256": "6629e12349772cc8218bf6369337c307c3c2a1c4e2efad5dcdf23f39f2626538"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-test-review.md",
+      "bytes": 16156,
+      "sha256": "bd7c40808b3fa0d8b66c59832eda92ee74d3ba746247a009a01afc51c7673380"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-test-review.json",
+      "bytes": 25949,
+      "sha256": "fca706a62c2c95f8fc3d03aa02358d9f611260f1033216a4d9e99d6e9277e6f3"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/ollama-corrected-one-call-wave-2026-10-07.md",
+      "bytes": 5947,
+      "sha256": "c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+    },
+    {
+      "path": "docs/contracts/ollama-binding-audit-v2.md",
+      "bytes": 1899,
+      "sha256": "ac7ddc73a4bc8f87f18f0b089059d76d1a95a965f9b7d6dae0949baf5314893a"
+    },
+    {
+      "path": "docs/contracts/ollama-response-envelope-v1.md",
+      "bytes": 2692,
+      "sha256": "dd4ea5f652797e46db8197141bc4f9686307158457bc6452d143eefd708f9993"
+    },
+    {
+      "path": "src/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": "src/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01"
+    },
+    {
+      "path": "src/worker.mjs",
+      "bytes": 36626,
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "bytes": 37074,
+      "sha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+    },
+    {
+      "path": "src/coordinator.mjs",
+      "bytes": 13403,
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "path": "src/installed-memory.mjs",
+      "bytes": 3538,
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/estimate.js",
+      "bytes": 4200,
+      "sha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/admission.mjs",
+      "bytes": 2793,
+      "sha256": "28e041806616e9cc3be6816967189eeda0d92743d221c312f30ea4ab8e6cf6e2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/effect-plan.json",
+      "bytes": 9047,
+      "sha256": "8935851b8182f678736f79fa28ac939d3e51633b48c240e73405ded78a5d0f8f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/entry.mjs",
+      "bytes": 17993,
+      "sha256": "d8329cbb32ba206b3538b5524a9e7a2feed127ef52d8ad6536798601de006d0c"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/http-fixture.mjs",
+      "bytes": 9070,
+      "sha256": "d215028752eea0f440adc1771b6edde73b7a1547367ac4a8e679f887140dcca4"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/installed-entry.mjs",
+      "bytes": 7366,
+      "sha256": "985f586a4ad5631a86c2e2ececbe0b4b84689887a7a19176b2ca1c2f3e4e88fb"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/installed-owned-stream.mjs",
+      "bytes": 1692,
+      "sha256": "0e3e2cf31a205d7af1d563df2180fde79cdffe338a5fd8100c5f78db7432a36f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/installed-source.mjs",
+      "bytes": 268,
+      "sha256": "7800e3da9ad3b2869f4cbb504e52c1d82fc406bf3157f207a70addb91765777f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/installed-worker-facts.mjs",
+      "bytes": 21101,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/installed-worker.mjs",
+      "bytes": 35177,
+      "sha256": "fa02b816912efb04f9dab77dbc8d0ff8a59b5d1a661a3f8503b77d02c790895b"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/ollama-binding.mjs",
+      "bytes": 12475,
+      "sha256": "ef0b68fb54489f8731bb2733caf61c6fb4db82dc3611fd336def840de8984410"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/ollama-provider.mjs",
+      "bytes": 16997,
+      "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/ollama-response-envelope.mjs",
+      "bytes": 2596,
+      "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/one-call-scenario.mjs",
+      "bytes": 35824,
+      "sha256": "a4071e65652f05592220c84dccf3e1da1fdf30bcf1b5fcdaf77dbb911d3e969f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/outcome-schema.json",
+      "bytes": 1854,
+      "sha256": "d4cc813759188989ee43ad50716ff9152041c6d289ff425262e8c286462fd86d"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/r1-conservation.json",
+      "bytes": 12779,
+      "sha256": "d6c9aa0df9734ee73c66d08b57cc698cad4b325ed9b2a0e0bf465103f13375f5"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/r1-to-r2-fixture-delta.json",
+      "bytes": 3842,
+      "sha256": "2ed03373e5601dca7c236016714cca20cde51e56a3996cbfe99bf7bd3aa26705"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/root-plan.json",
+      "bytes": 9172,
+      "sha256": "caa7b9e0ee3b22bc7087773f8d3c389f0c76c154cee0e0de3fdbc5c68d8c8874"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/rpc-sequence.json",
+      "bytes": 8707,
+      "sha256": "99aa93b879dea0695db7370b6c818ca678925b905e12e55f25edfb1076f53055"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/run-private.py",
+      "bytes": 24332,
+      "sha256": "b6ff488ee7b0caac69a7cf63f5155eff4f5354bdb07109685410a9e2c92f72b3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/runtime-plugin.mjs",
+      "bytes": 37737,
+      "sha256": "765835e5d5129bef4d66bf559b007cf1b72197eddfddafab71e796f2786d615b"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/safe-facts.mjs",
+      "bytes": 8009,
+      "sha256": "d5c911670a33bc0b5f6ba0c6281e6e13cad9a9923ee9fff1c324811bdf9b2995"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/source-import-closure.json",
+      "bytes": 34380,
+      "sha256": "0eb68ee77117854cf270a4575fde8cd6130b366ce8fa3b26731bc52ae4b4da21"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r2/stable-error-code.mjs",
+      "bytes": 1813,
+      "sha256": "4278acdce0b33917175267f77de2a86ad3dcf75a7ff339c0f8951a99569d01eb"
+    }
+  ],
+  "originalDesignPins": {
+    "MD": {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.md",
+      "bytes": 29459,
+      "sha256": "e1412ca7f0933e41f344bfb2ce9c6bf93f9cbbd47598f900bb800a935a9d3efd"
+    },
+    "JSON": {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.json",
+      "bytes": 60381,
+      "sha256": "6629e12349772cc8218bf6369337c307c3c2a1c4e2efad5dcdf23f39f2626538"
+    },
+    "modified": false
+  },
+  "originalCaseGridVerbatim": [
+    {
+      "id": "L01",
+      "disposition": "SOURCE_GATE_NOT_RUN",
+      "AC": "AC1/9",
+      "preconditions": "Frozen root AC and original pins.",
+      "stimulus": "Review eventual exact new capsule/diff and complete host graph.",
+      "expectedPublicObservations": "Only six frozen binding/import semantic changes; byte-exact provider/helper, unchanged worker/facts/stream/memory, genuine module/class/service identities and helper source/currentness membership. Extra delta requires separate freeze.",
+      "effectTimeLimit": "Zero execution; source equality is not functional guard proof."
+    },
+    {
+      "id": "L02",
+      "disposition": "NOT_RUN",
+      "AC": "AC2/3",
+      "preconditions": "New absent owned realm; old R01/UI/profile/listener untouched.",
+      "stimulus": "One original boot/Loader with complete original ProfileContext/snapshot supplied in prepare.",
+      "expectedPublicObservations": "All original profile fields exist before activation; only owned DSH_HOME/XDG_CONFIG_HOME values; HOME unchanged/no ambient .env/profile/key. Credential path/dshHome owned/watch=false. Actual current startup, not returned-disposed root.",
+      "effectTimeLimit": "Boot1/profile1/root1/listener1 on127.0.0.1:port0, actual port !=3080; no polling/restart."
+    },
+    {
+      "id": "L03",
+      "disposition": "NOT_RUN",
+      "AC": "AC5/6",
+      "preconditions": "Existing approved exact endpoint; root GO pending.",
+      "stimulus": "Three selected metadata requests counted before transport.",
+      "expectedPublicObservations": "Exact version/model and factual think:false support; empty tags valid; no switch/pull/account/settings action. Metadata proves neither inference nor quota/billing.",
+      "effectTimeLimit": "Metadata<=3, finite bytes/time; no repeated quota query."
+    },
+    {
+      "id": "L04",
+      "disposition": "NOT_RUN",
+      "AC": "AC3/5/8",
+      "preconditions": "Settled original listener/Connection/BrowserAuth/static services.",
+      "stimulus": "A01\u2013A05 via genuine Node HTTP/original cookie.",
+      "expectedPublicObservations": "401/401/303/200/403 as public facts; auth fence before operation. No captured handler/private table/fake operator, auth URL/cookie/header publication or browser claim.",
+      "effectTimeLimit": "Control HTTP5; rejected setup requests authorize zero mutations/model calls."
+    },
+    {
+      "id": "L05",
+      "disposition": "NOT_RUN",
+      "AC": "AC6/7",
+      "preconditions": "Actual cookie/operator, current original setup/catalogue.",
+      "stimulus": "RPC1\u20138 genuine setup/policy preview and explicit confirms.",
+      "expectedPublicObservations": "Actual setup ready; pre-consent needs_policy/actionsEnabled=false, post-consent original ready/actual confirmed policyVersion/actionsEnabled. Exact model/preset/no-tools/bounds; API accounting and owner_admission_estimate. No readonly success grants authority.",
+      "effectTimeLimit": "Two mutations: setup confirm and workerPolicyConfirm; no auto intake/execute."
+    },
+    {
+      "id": "L06",
+      "disposition": "NOT_RUN",
+      "AC": "AC4/7",
+      "preconditions": "Actual setup/policy/source.",
+      "stimulus": "RPC9\u201313 one intake, task CAS, original prepareContext/status/detail.",
+      "expectedPublicObservations": "New source/event/command/task; exact goal127 bytes. Actual owner/workspace/task/version/authEpoch/prepared namespace/revision/provenance/digest. Context may include protected ledger text: its digest need not equal goal digest.",
+      "effectTimeLimit": "One task/context; two mutation slots; no memoryRemember/raw context publication."
+    },
+    {
+      "id": "L07",
+      "disposition": "NOT_RUN",
+      "AC": "AC6/7",
+      "preconditions": "Actual prepared record/current task/source/policy.",
+      "stimulus": "RPC14\u201318 original plan/status/preview/explicit grant/status.",
+      "expectedPublicObservations": "Action/spec/actionDigest/dataDigest join actual context; exact owner/task/target/model/preset/environment/limits/version and unexpired preview/grant. Use actual fresh facts, no permission boolean/clock/expiry override.",
+      "effectTimeLimit": "One action/grant; two mutations; no dispatch before original admission."
+    },
+    {
+      "id": "L08",
+      "disposition": "NOT_RUN",
+      "AC": "AC3/4/7",
+      "preconditions": "Actual current granted action.",
+      "stimulus": "RPC19\u201322 original create/status/query/fresh status.",
+      "expectedPublicObservations": "Single genuine original agent/claim/reservation/generation/session bound to task/action/context and original host/source identities. DTO tags alone supply no native authority. Query-ready is pre-execute state only.",
+      "effectTimeLimit": "Create1/active1/agent1/session1; one mutation; no second create."
+    },
+    {
+      "id": "L09",
+      "disposition": "SOURCE_AND_LIVE_NOT_RUN",
+      "AC": "AC1/5/6",
+      "preconditions": "Actual binding/source/grant/task and sufficient shared time.",
+      "stimulus": "Consume new exclusive position before RPC23; review independent issued1 fence; count before transport.",
+      "expectedPublicObservations": "No reuse/reset/replenishment; original product alone issues permit. Actual audit attempted0 before execute in new realm. No issued-permit getter or fixture agent/caller/permit construction. Position consumption and model request attempt are different facts.",
+      "effectTimeLimit": "Position1/execute1/attempts1/active1; second-issue refusal functional proof HOLD."
+    },
+    {
+      "id": "L10",
+      "disposition": "NOT_RUN",
+      "AC": "AC4/5/7",
+      "preconditions": "L09 and original current admission hold.",
+      "stimulus": "RPC23 real HTTP\u2192original worker/agent loop/LlmRuntime\u2192copied adapter.",
+      "expectedPublicObservations": "At most one actual /api/chat POST to127.0.0.1:11434 with exact request model and think:false/zero retries. Require genuine committed execution/cursor/resultDigest/actual API usage before continuation. Optional finite envelope alone cannot authorize it.",
+      "effectTimeLimit": "ModelPOST<=1; original request32768/response98304/result16384/output512/usage33280/provider60000ms."
+    },
+    {
+      "id": "L11",
+      "disposition": "CONDITIONAL_NOT_RUN",
+      "AC": "AC7",
+      "preconditions": "Factual committed execute/actual usage/current joins.",
+      "stimulus": "RPC24\u201327 fresh CAS/original capture/status/authenticated workerResult.",
+      "expectedPublicObservations": "Actual artifact/record/version/wrapper digest; exact task/action/actionDigest/claim/generation/session/execution/inputDigest/cursor/resultDigest joins. Hash(wrapper)=artifact/read digest; hash(full content)=source/execute/usage resultDigest. verification not-reviewed/delivery not-requested.",
+      "effectTimeLimit": "Capture<=1/result read<=1; private full bounded content, no truncation/fixture artifact."
+    },
+    {
+      "id": "L12",
+      "disposition": "CONDITIONAL_NOT_RUN",
+      "AC": "AC4/8",
+      "preconditions": "Actual L11 result, nonempty/well-formed <=16384 bytes.",
+      "stimulus": "Independently compare full trimmed text to DF_ONE_CALL_READY.",
+      "expectedPublicObservations": "Publish markerMatch true/false only with digest/bytes; absent result NOT_OBSERVED, never fabricated. Mismatch is goal failure/no repair/retry. No model reviewer or authoritative audit.",
+      "effectTimeLimit": "No additional request or task; deterministic full-content comparison only."
+    },
+    {
+      "id": "L13",
+      "disposition": "CONDITIONAL_NOT_RUN",
+      "AC": "AC7/8",
+      "preconditions": "Validated factual result and fresh lifecycle/CAS authority.",
+      "stimulus": "RPC28\u201330 status/original workerFinish/final status.",
+      "expectedPublicObservations": "Actual same task/claim/reservation/execution receipt; corresponding stop/terminal/release claim needs original evidence. seal/idle/disposal insufficient. workerFinish has no invented usage/cost fields. Actual task status, no complete operation.",
+      "effectTimeLimit": "Finish<=1; retain unproved holds; safe owned finish after marker mismatch remains separate from goal verdict."
+    },
+    {
+      "id": "L14",
+      "disposition": "CONDITIONAL_NOT_RUN",
+      "AC": "AC6/7/8",
+      "preconditions": "Allowlisted actual execute/final ledger/audit observations.",
+      "stimulus": "Join actual usage/charges/estimate/hold with optional audit fields.",
+      "expectedPublicObservations": "Safe nonnegative bounded actual API units; aggregate input includes cache reads, uncached input distinct, totalUnits=inputUnits+outputUnits=tokenUsage.totalTokens. Configured1000000 estimate not bill/price; billing unknown. Missing audit fields NOT_OBSERVED.",
+      "effectTimeLimit": "Audit snapshots<=2; local attempted<=1 not global quota/current authority/drain/release."
+    },
+    {
+      "id": "L15",
+      "disposition": "NOT_RUN",
+      "AC": "AC6/8/9",
+      "preconditions": "Only new public ownership/shared monotonic deadline.",
+      "stimulus": "Retained original preset disposer then original root fiber disposer on every outcome.",
+      "expectedPublicObservations": "Actual public settled cleanup facts only; original WebServer owns listener close. Reserve15s. Local abort/idle/source refusal/process exit does not prove cloud/native drain or release. Retain synthetic durable state/private streams/unknowns.",
+      "effectTimeLimit": "Preset disposer<=1/root disposer<=1; no post-close probe/restart; outer150s."
+    },
+    {
+      "id": "L16",
+      "disposition": "SOURCE_GATE_AND_NOT_RUN",
+      "AC": "AC6/8/9",
+      "preconditions": "Exact new closure/owned physical plan not yet frozen.",
+      "stimulus": "Review finite source/import/input/output/file envelope; later owned metadata-only inventory.",
+      "expectedPublicObservations": "No raw auth/model/context/arbitrary error publication or private lifecycle override. Freeze original SQLite/session/credential file categories/cardinalities/bytes, independent of ten RPC mutations. Inventory proves no syscall count or private payload contents.",
+      "effectTimeLimit": "Proposed files32/dirs32/depth8/file4MiB/aggregate16MiB; streams1MiB each/report65536. Proposed, not proven/enforced."
+    }
+  ],
+  "originalHeldPartitionsVerbatim": [
+    {
+      "id": "H01",
+      "partition": "Old realm/marker/counter reuse",
+      "requiredBehavior": "R01 remains authoritative attempted1/remote unknown/billing unknown/uncertain hold; new local0 never resets history.",
+      "disposition": "Source isolation/marker review only; no old store/profile/task/marker read/reset/replay stimulus."
+    },
+    {
+      "id": "H02",
+      "partition": "Helper/hash/module/fiber/service/currentness loss or replacement",
+      "requiredBehavior": "Captured original invocation/source checks and helper source identity remain. Healthy original call plus source-equality does not prove all refusal races.",
+      "disposition": "Functional negative proof HOLD; no tamper/protected security experiment or counterfeit Context."
+    },
+    {
+      "id": "H03",
+      "partition": "Second issue/execute, overlap or exhausted allowance",
+      "requiredBehavior": "One product-issued permit/execute/POST fence; no public issued/reset getter. A fixture-issued permit or second inference cannot manufacture the missing proof.",
+      "disposition": "Source cap and positive factual counts only; negative concurrency/exhaustion proof NOT_RUN/HOLD."
+    },
+    {
+      "id": "H04",
+      "partition": "Stale CAS/policy/expiry, cancellation/task/source change during awaits",
+      "requiredBehavior": "Actual freshest selected reads/receipts and original rechecks; natural refusal stops.",
+      "disposition": "No extra control/mutation or injected clock in this selection; genuine public race stimuli require separate exact bounded plan."
+    },
+    {
+      "id": "H05",
+      "partition": "Quota/refusal/malformed envelope/downstream content/tools/thinking/finish/usage failure or lost reply",
+      "requiredBehavior": "If naturally observed, publish stable factual failure/optional finite diagnostics, preserve unknown/reservation and stop. Accepted envelope cannot repair missing usage/native proof.",
+      "disposition": "No fault-producing extra inference, retry, fake carrier/native subject. Prior pure36 does not prove downstream/native negatives."
+    },
+    {
+      "id": "H06",
+      "partition": "Cleanup/iterator refusal, drain, remote termination or settlement",
+      "requiredBehavior": "Guarded return/disposal may refuse; only factual original termination/effect/reconciliation can justify release.",
+      "disposition": "Local abort/idle/close/process exit insufficient; original observer lifecycle/drain/remote termination proof remains HOLD."
+    },
+    {
+      "id": "H07",
+      "partition": "Audit/reviewer/repair/memory write/UI/cold continuation",
+      "requiredBehavior": "Only workerResult and deterministic marker classification selected; no source_zero price/authoritative audit recipe/reviewer/tools/memoryRemember/browser result.",
+      "disposition": "No extra task/inference/grant; typed NI6/cold/browser/other regressions HOLD."
+    },
+    {
+      "id": "H08",
+      "partition": "Historical cause/permanent CODE/aggregate acceptance",
+      "requiredBehavior": "New diagnostics never backfill R01 cause, which remains undetermined. Final protected CODE permanently excluded; all87 accepted0/HOLD.",
+      "disposition": "No raw historical oracle/log/profile/blocked investigation; no acceptance promotion."
+    }
+  ],
+  "affectedSourceCoverage": [
+    {
+      "id": "L01",
+      "sourceCoverage": "SOURCE_GATE_PENDING",
+      "assessment": "Six historical literals and eleven copied outputs conserved; current full transitive host graph/canonical loaded peers remain root-only gate.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L02",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Original boot/prepare/full profile/two-key launch snapshot/explicit credential/public ownership; no runtime boot proof.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L03",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Exact three metadata routes/version/show/thinkfalse, bounded carrier and no fallback; no metadata/inference executed.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L04",
+      "sourceCoverage": "PARTIAL_UNASSERTED_PUBLIC_HEADERS",
+      "assessment": "Auth5 actual public HTTP status/location/cookie predicates retained; original no-store/no-referrer response headers remain unasserted and denied-handler effects are source ordering only.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L05",
+      "sourceCoverage": "PARTIAL_REPRESENTATIVE_POLICY_FIELDS",
+      "assessment": "Pre/post explicit setup and policy phase/version/accounting checks and selected limit predicates remain meaningful; the fixture does not independently assert every policy-description/selection field.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L06",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "TD01 corrected complete original context/source/memory/provenance/count/serialization joins.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L07",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Actual immutable spec/action/context/preview/grant/task/auth/model-policy/executor/charges correlations; direct plan taskRef is unexposed, not invented.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L08",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Actual created task/action/digest/claim/reservation/generation/session/status/query tuple and original public idle agent observations.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L09",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Exclusive marker + both85s guards + original source issued fence/audit0; no public issued getter or negative second-issue proof.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L10",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "One genuine public execute requires actual committed/usage before original persistence/cursor/digest/audit joins; no native/model execution here.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L11",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "TD02 corrected capture/status/read/artifact/full-wrapper/source/content/cursor joins.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L12",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "TD05 explicit full-result marker/goal FAIL versus sequence/lifecycle and strictly decoded verdict; no retry.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L13",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "TD03 corrected finish/final original tuple; running task and no review/delivery preserve scope; unavailable direct fields not fabricated.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L14",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Actual API usage arithmetic/persistence/execute/audit/final usage and unchanged admission estimate; selected11/14 audit addendum explicit, billing unknown.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L15",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Public once-only disposers/remaining clipped cleanup and bounded private runner ownership/EOF/group/drain proposal; native/cloud/escaped absence holds retained.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L16",
+      "sourceCoverage": "SOURCE_ADEQUATE_SELECTED",
+      "assessment": "Final metadata caps32/20/depth8/4MiB/16MiB and controlled private output match selected additive freeze; no prewrite/write-event proof.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    }
+  ],
+  "priorFindingDispositions": [
+    {
+      "priorFinding": "TD-LIVE02-01",
+      "disposition": "RESOLVED_SOURCE_ONLY",
+      "families": [
+        "L06"
+      ],
+      "r2Windows": [
+        "one-call-scenario.mjs:40-132",
+        "one-call-scenario.mjs:246-263"
+      ],
+      "originalWindows": [
+        "src/context.mjs:191-197,258-279",
+        "src/memory.mjs:88-89,267-295",
+        "src/runtime-store.mjs:24-26,414-416",
+        "src/installed-memory.mjs:38-53",
+        "dsh-token-meter/lib/types/estimate.js:34-54"
+      ],
+      "independentAssessment": "Full actual task/scope/CAS/receipt/status/detail/goal/sourceProvenance/memory/count/ledger projections replace the wrong goal-in-retainedRefs predicate. Protected text and exact original serialization are reproduced from actual public observations; fixed-density count is original ceil(text.length/4)+4. Correct empty retained/dropped background lists and pristine revision0 are checked without altering the original producer.",
+      "functionalProof": "NOT_RUN"
+    },
+    {
+      "priorFinding": "TD-LIVE02-02",
+      "disposition": "RESOLVED_SOURCE_ONLY",
+      "families": [
+        "L11"
+      ],
+      "r2Windows": [
+        "one-call-scenario.mjs:374-410"
+      ],
+      "originalWindows": [
+        "src/worker.mjs:254-270",
+        "installed-worker.mjs:228-229"
+      ],
+      "independentAssessment": "Capture receipt/P26 artifact/P27 artifactRef/version/recordRef/digest and record metadata are joined; exact original ordered full native-result wrapper hash is distinct from visible-content hash, both tied to actual source/cursor/context/session/provider facts. Verification/delivery remain not-reviewed/not-requested.",
+      "functionalProof": "NOT_RUN"
+    },
+    {
+      "priorFinding": "TD-LIVE02-03",
+      "disposition": "RESOLVED_SOURCE_ONLY",
+      "families": [
+        "L13",
+        "L14"
+      ],
+      "r2Windows": [
+        "one-call-scenario.mjs:411-452"
+      ],
+      "originalWindows": [
+        "src/worker.mjs:288-313",
+        "src/runtime-store.mjs:873-902",
+        "installed-worker.mjs:30-32,230"
+      ],
+      "independentAssessment": "Genuine public finish task/claim/reservation/held/outcome/evidence tuple is correlated with final selected action/spec/usage/claim/generation/execution/evidence/stopped worker. Original release digest projection is checked; task remains running, no deliveries/reviews and public agent/session removed. Unexposed finish execution/usage/billing fields are not invented.",
+      "functionalProof": "NOT_RUN; local cleanup is not native/cloud release evidence"
+    },
+    {
+      "priorFinding": "TD-LIVE02-04",
+      "disposition": "RESOLVED_SOURCE_ONLY",
+      "families": [
+        "L09",
+        "L15"
+      ],
+      "r2Windows": [
+        "admission.mjs:14-24",
+        "one-call-scenario.mjs:339-354",
+        "http-fixture.mjs:10-12",
+        "safe-facts.mjs:86-89",
+        "entry.mjs:60-69,139-158,208-218"
+      ],
+      "independentAssessment": "Same monotonic Node process origin owns135s work. Both pre-exclusive-position and pre-P23 require >=85000ms remaining; phase waits clip to remaining work and15s cleanup clips to150s. Entered/confirmed marker state is nullable/true and never refunded after slow/refused transport. No clock/TTL extension or retry.",
+      "functionalProof": "NOT_RUN"
+    },
+    {
+      "priorFinding": "TD-LIVE02-05",
+      "disposition": "RESOLVED_SOURCE_ONLY",
+      "families": [
+        "L12"
+      ],
+      "r2Windows": [
+        "one-call-scenario.mjs:364-372,444-454",
+        "entry.mjs:240-250,275-282",
+        "safe-facts.mjs:90-120",
+        "run-private.py:106-142,456-505"
+      ],
+      "independentAssessment": "Full actual bounded marker sets scopedGoal PASS/FAIL/NOT_OBSERVED, separate from original sequence/lifecycle. Markerfalse may retain factual capture/finish but cannot yield Node or wrapper success. Missing/invalid controlled outcome refuses/HOLD; no raw stream verdict, repair or second inference.",
+      "functionalProof": "NOT_RUN"
+    },
+    {
+      "priorFinding": "TD-LIVE02-06",
+      "disposition": "RESOLVED_SOURCE_ONLY_WITH_NATIVE_HOLDS",
+      "families": [
+        "L15",
+        "L16"
+      ],
+      "r2Windows": [
+        "run-private.py:163-202,235-330,332-455,482-516"
+      ],
+      "independentAssessment": "One child/selector/new owned session-group; startup identity and optional pre-TERM identity are observed, terminal read-only group probe refuses unknown/present. At most one child-PID TERM, no force/terminating group signal. Bounded post-exception drain, contained setup/teardown/final-main/reporter paths and explicit prefix/EOF/completeness facts replace r1 gaps. Local success requires leader0/both EOF/group absent/strict Node outcome. Escaped descendants and original remote/native termination remain unproved.",
+      "functionalProof": "NOT_RUN; no OS process/signal/fault probe"
+    }
+  ],
+  "newBlockingFindings": [],
+  "remainingPartialCoverage": [
+    {
+      "family": "L04",
+      "gap": "Original no-store/no-referrer response headers are unasserted; denied-handler effects source ordering, no runtime counter",
+      "blockingNarrowR2Selection": false
+    },
+    {
+      "family": "L05",
+      "gap": "Representative explicit policy predicates do not assert every policy-description/selection field",
+      "blockingNarrowR2Selection": false
+    },
+    {
+      "family": "L01",
+      "gap": "Current full transitive graph/canonical loaded peers/source conservation is root prerequisite",
+      "runtimeGOBlockedUntilRootGate": true
+    }
+  ],
+  "auditSourceMapping": {
+    "healthyReads": [
+      {
+        "ordinal": 1,
+        "path": "entry.mjs",
+        "line": 228,
+        "route": "initial binding audit"
+      },
+      {
+        "ordinal": 2,
+        "path": "one-call-scenario.mjs",
+        "line": 224,
+        "route": "setup-confirmed actualAudit0"
+      },
+      {
+        "ordinal": 3,
+        "path": "one-call-scenario.mjs",
+        "line": 245,
+        "route": "policy observation actualAudit0"
+      },
+      {
+        "ordinal": 4,
+        "path": "one-call-scenario.mjs",
+        "line": 332,
+        "route": "query check actualAudit0"
+      },
+      {
+        "ordinal": 5,
+        "path": "one-call-scenario.mjs",
+        "line": 338,
+        "route": "prepared-worker observation actualAudit0"
+      },
+      {
+        "ordinal": 6,
+        "path": "one-call-scenario.mjs",
+        "line": 361,
+        "route": "committed actualAudit1"
+      },
+      {
+        "ordinal": 7,
+        "path": "one-call-scenario.mjs",
+        "line": 443,
+        "route": "final actualAudit1"
+      },
+      {
+        "ordinal": 8,
+        "path": "one-call-scenario.mjs",
+        "line": 452,
+        "route": "final observation actualAudit1"
+      },
+      {
+        "ordinal": 9,
+        "path": "entry.mjs",
+        "line": 250,
+        "route": "final count check"
+      },
+      {
+        "ordinal": 10,
+        "path": "entry.mjs",
+        "line": 270,
+        "route": "cleanup observation through closedStatus"
+      },
+      {
+        "ordinal": 11,
+        "path": "entry.mjs",
+        "line": 275,
+        "route": "final closedStatus reused for outcome"
+      }
+    ],
+    "healthyCount": 11,
+    "additionalLexicalExceptionalSites": [
+      {
+        "path": "entry.mjs",
+        "line": 260,
+        "via": "checkpointFailure at36-39/closedStatus at25-34",
+        "maximumAdditionalLexicalCalls": 1
+      },
+      {
+        "path": "entry.mjs",
+        "line": 148,
+        "via": "outer timer checkpointFailure/closedStatus",
+        "maximumAdditionalLexicalCalls": 1
+      },
+      {
+        "path": "entry.mjs",
+        "line": 153,
+        "via": "outer timer closedStatus reused for outcome",
+        "maximumAdditionalLexicalCalls": 1
+      }
+    ],
+    "hardAttemptCap": 14,
+    "guard": "safe-facts.mjs:31-34; increment before binding.audit; refuse at14; no reset",
+    "outcomeProjectionExtraReads": 0,
+    "workSignalUnhandledExtraDirectReads": 0,
+    "fourteenJointlyReachableOrObservedClaim": false,
+    "runtimeReadCountsObserved": false
+  },
+  "controlledOutcome": {
+    "schemaPin": {
+      "path": ".runtime/ollama-corrected-one-call-r2/outcome-schema.json",
+      "bytes": 1854,
+      "sha256": "d4cc813759188989ee43ad50716ff9152041c6d289ff425262e8c286462fd86d"
+    },
+    "newExclusiveFilesMax": 1,
+    "mode": "0600 wx",
+    "bytesMax": 16384,
+    "readbackMax": 1,
+    "rawStreamVerdictReads": 0,
+    "duplicateKeys": "refused via object_pairs_hook including escaped equivalence",
+    "unknownNestedAmbiguousFields": "refused exact flat allowlist/types/cross-field predicates",
+    "nonFiniteNumbers": "refused",
+    "boolAsCount": "refused strict int type",
+    "failureOrMissing": "HOLD/exit2/NOT_OBSERVED or scoped FAIL retained",
+    "nativeAuthority": false,
+    "actualSchemaExecution": "NOT_RUN"
+  },
+  "finiteSourceEffects": {
+    "authHTTPMax": 5,
+    "controlHTTPMax": 35,
+    "DFRPCMax": 30,
+    "mutationsMax": 10,
+    "readonlyPreviewMax": 20,
+    "metadataHTTPMax": 3,
+    "modelPOSTMax": 1,
+    "directSelectedHTTPMax": 39,
+    "integratedPositionsMax": 1,
+    "taskActionWorkerSessionExecuteMaxEach": 1,
+    "conditionalCaptureResultReadFinishMaxEach": 1,
+    "fixturePermitIssue": 0,
+    "originalIssuedSourceFence": 1,
+    "issuedGetter": false,
+    "retryPollFallbackReplenishment": 0,
+    "outputTokensMax": 512,
+    "requestBytesMax": 32768,
+    "resultBytesMax": 16384,
+    "usageUnitsMax": 33280,
+    "providerMs": 60000,
+    "estimateMicros": 1000000,
+    "billingPriceQuota": "unknown",
+    "runtimeEffectsObserved": false
+  },
+  "selectedTimeAddendum": {
+    "sharedNodeProcessOrigin": "process.uptime includes inert imports/preflight",
+    "workMs": 135000,
+    "minimumRemainingPrePositionMs": 85000,
+    "minimumRemainingPreP23Ms": 85000,
+    "carrierCeilingMs": 75000,
+    "conditionalTailReserveMs": 10000,
+    "bootCeilingMs": 30000,
+    "ordinaryHTTPMs": 5000,
+    "cleanupCeilingMs": 15000,
+    "nodeLocalExpirationMs": 150000,
+    "runnerSoftStopMs": 160000,
+    "runnerObservationCutoffMs": 165000,
+    "slowPositionWrite": "consumed or unconfirmed/never refunded/no replay",
+    "phaseWaits": "clipped to original remaining work/cleanup",
+    "hardChildGroupOrRemoteTerminationGuarantee": false
+  },
+  "ownedPrivateRunnerSource": {
+    "childMax": 1,
+    "selectorMax": 1,
+    "newSessionGroupMax": 1,
+    "startupIdentityReadsMax": 2,
+    "optionalPreTERMIdentityReadsMax": 2,
+    "terminalGroupSignalZeroProbesMax": 1,
+    "identityExistenceAttemptsMax": 5,
+    "childPIDTERMRequestsMax": 1,
+    "terminatingGroupSignals": 0,
+    "forceSignals": 0,
+    "deniedUnknown": "forbid further signalling/HOLD",
+    "localSuccess": "leader0 plus both EOF plus observed owned group absence plus strict successful outcome; no remote/native proof",
+    "captureCyclesMax": 700,
+    "exceptionDrainCyclesMax": 64,
+    "postExceptionDrainMsMax": 5000,
+    "pipeReadAttemptsMax": 1528,
+    "readBytesPerAttemptMax": 8192,
+    "receivedAtLeastPerStreamMax": 6258688,
+    "publicLeaderPollCallsMax": 2048,
+    "PopenSendSignalInternalPollMax": 1,
+    "privateRetainedBytesPerStreamMax": 65536,
+    "prefixEOFCompletenessTruncation": "separate explicit fields",
+    "escapedDescendants": "NOT_OBSERVED",
+    "OSProbeExecution": 0
+  },
+  "selectedPhysicalObservationAddendum": {
+    "filesMax": 32,
+    "directoriesMax": 20,
+    "depthMax": 8,
+    "perFileBytesMax": 4194304,
+    "aggregateBytesMax": 16777216,
+    "healthyObservationFiles": 7,
+    "observationFilesMax": 8,
+    "additionalOutcomeMax": 1,
+    "afterFinalWrites": true,
+    "metadataOnly": true,
+    "prewriteQuotaOrSyscallWriteCountProof": false,
+    "originalDesignProposalUnchanged": true,
+    "inventoryExecuted": false
+  },
+  "verification": {
+    "manifestRowsMatched": 37,
+    "capsuleFilesIncludingManifest": 38,
+    "freezeRowsMatched": 299,
+    "publicInputsMatched": 262,
+    "originalInputsPreserved": 218,
+    "historicalMembersMatched": 174,
+    "r1FilesMatched": 34,
+    "copies11ByteExact": true,
+    "sixHistoricalLiteralsUnchanged": true,
+    "oneOccurrenceLiteralSubstitutionsVerified": 6,
+    "literalIds": [
+      "B01",
+      "B02",
+      "B03",
+      "B04",
+      "E01",
+      "W01"
+    ],
+    "fullChangedInertFixtureBodiesRead": 6,
+    "moduleCount": 15,
+    "declaredLiteralEdges": 98,
+    "nodeByteHashMatched": true,
+    "nodeVersionExecuted": false,
+    "applicationParseImportEvaluationBuildTest": 0,
+    "PythonRunnerSyntaxParse": 0,
+    "runtimePrivateDataNativeModelNetworkProfileDatabaseListenerBrowserServiceGit": 0,
+    "OSProcessSignalFaultProbes": 0,
+    "writesOnlyNewReviewPair": true
+  },
+  "notRunRootPrerequisites": [
+    "Both exact affected r2 reviews/root readback",
+    "15 Node syntax and Python AST/canonical binaries",
+    "Current complete host graph/canonical loaded peers/service identities/source conservation",
+    "Fresh true once-only GO/exact finite root command/supported action-time approval",
+    "Actual boot/auth/metadata30RPC/native/model single call",
+    "Actual owned cleanup/EOF/group/drain/held-outcome observations"
+  ],
+  "history": {
+    "R01Attempts": 1,
+    "R01HTTP": 200,
+    "R01LocalCode": "OLLAMA_INVALID_RESPONSE",
+    "R01RemoteBilling": "unknown",
+    "R01UncertainHold": "retained",
+    "R01Cause": "undetermined",
+    "oldRawPrivateEvidenceRead": false,
+    "historyResetReplay": false,
+    "newDistinctRealmLocalStart": 0,
+    "selectedHistoricalPlusNewMax": 2,
+    "globalQuotaClaim": false,
+    "r1Executed": false,
+    "all87Accepted": 0,
+    "all87Disposition": "HOLD",
+    "finalCODE": "PERMANENTLY_EXCLUDED_BLOCKED"
+  },
+  "companionMD": {
+    "path": "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-test-review.md",
+    "bytes": 17151,
+    "sha256": "a1c8281c4106ad7a2029d1cdc261e76d1876f47d3c6d1dcce0fd3088a6ced1a8"
+  }
+}

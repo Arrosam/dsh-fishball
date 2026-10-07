@@ -1,0 +1,41 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GOAndRuntimeTargetsAbsent": [
+    "root-execution-go.json",
+    "preflight-attempt.json",
+    "private-run",
+    "private-process-output"
+  ],
+  "accepted": 0,
+  "all87": "HOLD",
+  "applicationOrModelExecution": 0,
+  "canonicalBinariesMatch": true,
+  "contractVersion": "df.live02-r2-root-source-readback/v1",
+  "exactReviews": {
+    "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-source-review.json": "f97005f41155f6ef36b498349b0c5aeab59ae08bdc65e87c0eac0d644594fd5a",
+    "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-source-review.md": "fb5e12e5813262855ba1a1d9db3e4005b3a36e326a0860a42c4f8623bd5dbc12",
+    "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-test-review.json": "f2fa924d7b64531813014c16cf28d3197f8a8da6a27899380bbafcdd82e38683",
+    "docs/evidence/NI3/ollama-corrected-one-call-r2-independent-test-review.md": "a1c8281c4106ad7a2029d1cdc261e76d1876f47d3c6d1dcce0fd3088a6ced1a8"
+  },
+  "fixtureSeals": {
+    "root-plan.json": "caa7b9e0ee3b22bc7087773f8d3c389f0c76c154cee0e0de3fdbc5c68d8c8874",
+    "source-freeze.json": "9c393f553323c55adec7ccddf6ea79d0f5a5c997bb292b28ad369fe12aef9e41",
+    "source-manifest.json": "477ecf21beb108e4b118483963692168d6b0c03164f289043b55b6da2b89a9c9"
+  },
+  "freezeRecords": 299,
+  "historicalModelPOSTs": 1,
+  "injectionKeysAbsent": 8,
+  "lexicalImportEdges": 98,
+  "manifestRecords": 37,
+  "newSourceBlockers": 0,
+  "observedAt": "2026-10-07T17:16:44.421481+00:00",
+  "publicInputRecords": 262,
+  "rootFinalSourcesReviewNarrativesClosureEffectsFullRead": true,
+  "runtimeApprovalStillRequired": true,
+  "seconds": 3.611516415840015,
+  "sourceAndMetadataOnly": true,
+  "wholeHostCompleteDependencyTopologyAndBytesMatch": true,
+  "wholeHostFiles": 27577,
+  "wholeHostInventoryScope": "Exact complete node_modules transitive dependency graph defined by original immutable manifest, plus independently verified299 source-freeze pins. Root-level review archives/package artifacts are outside that original dependency inventory.",
+  "wholeHostLinks": 12
+}

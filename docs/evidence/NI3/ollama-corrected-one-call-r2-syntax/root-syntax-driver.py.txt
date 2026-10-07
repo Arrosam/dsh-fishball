@@ -1,0 +1,63 @@
+"""Root-only syntax preflight: no candidate imports or runtime/model activation."""
+from pathlib import Path
+import ast, datetime, hashlib, json, os, stat, subprocess, time
+ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+CAPSULE=ROOT/'.runtime/ollama-corrected-one-call-r2'
+PUBLIC=ROOT/'docs/evidence/NI3/ollama-corrected-one-call-r2-syntax'
+PRIVATE=ROOT/'.runtime/root-live02-r2-syntax-private'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+now=lambda:datetime.datetime.now(datetime.timezone.utc).isoformat()
+def exclusive(path,raw):
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+    with os.fdopen(fd,'wb') as h:h.write(raw)
+def save(path,obj):exclusive(path,(json.dumps(obj,indent=2,sort_keys=True)+'\n').encode())
+def verify(records):
+    for row in records:
+        p=Path(row['path']) if row['path'].startswith('/') else ROOT/row['path']
+        assert p.resolve()==p and stat.S_ISREG(p.lstat().st_mode)
+        b=p.read_bytes();assert len(b)==row['bytes'] and sha(b)==row['sha256']
+assert Path.cwd()==ROOT and not PUBLIC.exists() and not PRIVATE.exists()
+assert not any((CAPSULE/n).exists() for n in ['root-execution-go.json','preflight-attempt.json','private-run','private-process-output'])
+assert not any(k in os.environ for k in ['NODE_OPTIONS','NODE_PATH','NODE_TEST_CONTEXT','PYTHONPATH','PYTHONHOME','DYLD_INSERT_LIBRARIES','DYLD_LIBRARY_PATH','DYLD_FRAMEWORK_PATH'])
+plan_raw=(CAPSULE/'root-plan.json').read_bytes();assert sha(plan_raw)=='caa7b9e0ee3b22bc7087773f8d3c389f0c76c154cee0e0de3fdbc5c68d8c8874'
+plan=json.loads(plan_raw);commands=[row['argv'] for row in plan['prospectiveSyntaxCommands']]
+assert len(commands)==15 and all(len(v)==3 and v[0]=='/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node' and v[1]=='--check' for v in commands)
+assert sha(Path(commands[0][0]).read_bytes())=='463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de'
+records=json.loads((CAPSULE/'source-manifest.json').read_bytes())['files']+json.loads((CAPSULE/'source-freeze.json').read_bytes())['files']
+verify(records)
+PUBLIC.mkdir(mode=0o700);PRIVATE.mkdir(mode=0o700)
+save(ROOT/'.runtime/root-live02-r2-syntax-attempt.json',{'onceOnly':True,'startedAt':now(),'commandsMaximum':15,'planSha256':sha(plan_raw),'modelCalls':0})
+rows=[];failure=None;ast_result='NOT_RUN';started=time.monotonic();deadline=started+60
+for index,argv in enumerate(commands,1):
+    timer=time.monotonic();remaining=deadline-timer
+    if remaining<=0:failure='SYNTAX_SHARED_DEADLINE';break
+    paths=[PRIVATE/(str(index)+'-'+kind) for kind in ['stdout','stderr']]
+    handles=[];code=None;timed_out=False
+    try:
+        for p in paths:
+            fd=os.open(p,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600);handles.append(os.fdopen(fd,'wb'))
+        try:
+            code=subprocess.run(argv,cwd=ROOT,stdin=subprocess.DEVNULL,stdout=handles[0],stderr=handles[1],env={},shell=False,timeout=min(4,remaining)).returncode
+        except subprocess.TimeoutExpired:timed_out=True;failure='SYNTAX_TIMEOUT'
+        except OSError:failure='SYNTAX_PROCESS_ERROR'
+    finally:
+        for h in handles:h.close()
+    streams={}
+    for kind,p in zip(['stdout','stderr'],paths):
+        if p.exists():
+            size=p.stat().st_size
+            streams[kind]={'bytes':size,'sha256':sha(p.read_bytes()) if size<=65536 else None,'withinReadbackCap':size<=65536}
+            if size>65536:failure='SYNTAX_OUTPUT_OVERSIZE'
+        else:streams[kind]={'present':False};failure='SYNTAX_OUTPUT_MISSING'
+    rows.append({'index':index,'argv':argv,'exitCode':code,'timedOut':timed_out,'seconds':time.monotonic()-timer,'privateStreams':streams})
+    if failure is not None or code!=0:
+        failure=failure or 'SYNTAX_NONZERO';break
+if failure is None:
+    try:ast.parse((CAPSULE/'run-private.py').read_text(encoding='utf-8'),filename='run-private.py');ast_result='PASS'
+    except (SyntaxError,ValueError,MemoryError):ast_result='FAIL';failure='PYTHON_AST_REFUSAL'
+verify(records)
+result={'contractVersion':'df.live02-r2-root-syntax-result/v1','observedAt':now(),'commands':rows,'commandsObserved':len(rows),'expectedCommands':15,'pythonAST':ast_result,'result':'PASS' if failure is None else 'FAILED_HOLD','failureCode':failure,'seconds':time.monotonic()-started,'all336ManifestAndFreezeRecordsUnchanged':True,'privateStreamsDecodedOrPublished':False,'candidateImports':0,'profileListenerHTTPModelActivation':0,'historicalModelPOSTs':1,'accepted':0,'all87':'HOLD','CODE':'BLOCKED_UNCHANGED'}
+save(PUBLIC/'root-result.json',result)
+exclusive(PUBLIC/'root-syntax-driver.py.txt',Path(__file__).read_bytes())
+print(json.dumps({k:v for k,v in result.items() if k!='commands'},sort_keys=True),flush=True)
+raise SystemExit(0 if failure is None else 2)

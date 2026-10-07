@@ -1,0 +1,113 @@
+{
+  "schema": "df.ollama-live02-r2-fixture-delta/v1",
+  "sourceOnly": true,
+  "runtimeGO": false,
+  "fixtureSourceChangedFiles": 6,
+  "rows": [
+    {
+      "file": "admission.mjs",
+      "before": {
+        "path": ".runtime/ollama-corrected-one-call-r1/admission.mjs",
+        "bytes": 2130,
+        "sha256": "8f4b58034629c9c6cf46ff9b211b808de4bf3f1f8febd7ecde1e294771f2e040"
+      },
+      "after": {
+        "path": ".runtime/ollama-corrected-one-call-r2/admission.mjs",
+        "bytes": 2793,
+        "sha256": "28e041806616e9cc3be6816967189eeda0d92743d221c312f30ea4ab8e6cf6e2"
+      },
+      "kind": "inert fixture delta only; no product/provider/host delta"
+    },
+    {
+      "file": "safe-facts.mjs",
+      "before": {
+        "path": ".runtime/ollama-corrected-one-call-r1/safe-facts.mjs",
+        "bytes": 5289,
+        "sha256": "b8b27ccdce17188e7d838116ffbf7ac0845e5b18d3b4327be74fd223c3a979b3"
+      },
+      "after": {
+        "path": ".runtime/ollama-corrected-one-call-r2/safe-facts.mjs",
+        "bytes": 8009,
+        "sha256": "d5c911670a33bc0b5f6ba0c6281e6e13cad9a9923ee9fff1c324811bdf9b2995"
+      },
+      "kind": "inert fixture delta only; no product/provider/host delta"
+    },
+    {
+      "file": "http-fixture.mjs",
+      "before": {
+        "path": ".runtime/ollama-corrected-one-call-r1/http-fixture.mjs",
+        "bytes": 9017,
+        "sha256": "7ddfd23b2239533a50bb9c54daf6529358d91e2619f70056b410124eccee55c1"
+      },
+      "after": {
+        "path": ".runtime/ollama-corrected-one-call-r2/http-fixture.mjs",
+        "bytes": 9070,
+        "sha256": "d215028752eea0f440adc1771b6edde73b7a1547367ac4a8e679f887140dcca4"
+      },
+      "kind": "inert fixture delta only; no product/provider/host delta"
+    },
+    {
+      "file": "one-call-scenario.mjs",
+      "before": {
+        "path": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs",
+        "bytes": 15976,
+        "sha256": "330b6467bb0a2fad89a27c9b5bd51461bcb3b905692032059336ae80014ca1bb"
+      },
+      "after": {
+        "path": ".runtime/ollama-corrected-one-call-r2/one-call-scenario.mjs",
+        "bytes": 35824,
+        "sha256": "a4071e65652f05592220c84dccf3e1da1fdf30bcf1b5fcdaf77dbb911d3e969f"
+      },
+      "kind": "inert fixture delta only; no product/provider/host delta"
+    },
+    {
+      "file": "entry.mjs",
+      "before": {
+        "path": ".runtime/ollama-corrected-one-call-r1/entry.mjs",
+        "bytes": 15930,
+        "sha256": "c562aaf59a91e7f473ba3466745e5a21c3a9e94d58ff6427e60aae03637be0ea"
+      },
+      "after": {
+        "path": ".runtime/ollama-corrected-one-call-r2/entry.mjs",
+        "bytes": 17993,
+        "sha256": "d8329cbb32ba206b3538b5524a9e7a2feed127ef52d8ad6536798601de006d0c"
+      },
+      "kind": "inert fixture delta only; no product/provider/host delta"
+    },
+    {
+      "file": "run-private.py",
+      "before": {
+        "path": ".runtime/ollama-corrected-one-call-r1/run-private.py",
+        "bytes": 7935,
+        "sha256": "09e98db695fded6686f5f7d734a7364426c0419584de49a6d9fddbeb46dc494e"
+      },
+      "after": {
+        "path": ".runtime/ollama-corrected-one-call-r2/run-private.py",
+        "bytes": 24332,
+        "sha256": "b6ff488ee7b0caac69a7cf63f5155eff4f5354bdb07109685410a9e2c92f72b3"
+      },
+      "kind": "inert fixture delta only; no product/provider/host delta"
+    }
+  ],
+  "exactPatch": {
+    "path": ".runtime/ollama-corrected-one-call-r2/r1-to-r2-fixture.patch",
+    "bytes": 86849,
+    "sha256": "0d10b644777ebab71b162b3c18bb64aec1de8fad4ba01b9bed6ac93058ac47ac"
+  },
+  "unchangedCopiedOutputCount": 11,
+  "unchangedHistoricalLiteralCount": 6,
+  "noExtraApplicationModule": true,
+  "physicalMjsCount": 15,
+  "selectedCorrections": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "authorApplicationParseImportTestBuildRuntimeModelGit": 0
+}
