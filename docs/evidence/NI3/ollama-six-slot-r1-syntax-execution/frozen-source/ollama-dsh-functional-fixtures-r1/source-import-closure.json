@@ -1,0 +1,1647 @@
+{
+  "schema": "df.ollama-functional-lexical-import-closure/v1",
+  "sourceOnly": true,
+  "JSParseImportOrGraphExecution": false,
+  "entry": ".runtime/ollama-dsh-functional-fixtures-r1/entry.mjs",
+  "literalFileImports": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+      "imports": [
+        {
+          "specifier": "@deepseek-ai/cordis",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/cosmokit",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "node:module",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "imports": [
+        {
+          "specifier": "@deepseek-ai/cosmokit",
+          "kind": "original installed package; no resolution executed"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+      "imports": [
+        {
+          "specifier": "@deepseek-ai/cordis",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-llm",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-scope",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "node:async_hooks",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util/types",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+      "imports": [
+        {
+          "specifier": "@deepseek-ai/dsh-brand",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-timeout",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-typert-protocol",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-util-crypto",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-util-values",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/schemastery",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "node:module",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca",
+      "imports": [
+        {
+          "specifier": "@deepseek-ai/cordis",
+          "kind": "original installed package; no resolution executed"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+      "imports": [
+        {
+          "specifier": "@deepseek-ai/cordis",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-brand",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-llm",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-scope",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "@deepseek-ai/dsh-util-values",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs",
+      "sha256": "0a4cc2f0ed4c25cbbea067fcda19b4b30b0b6318303d2abe682f7500117a4899",
+      "bytes": 1568,
+      "imports": [],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/entry.mjs",
+      "sha256": "557279d39ba82ae21b1bdcd97851066505d0fe183a7df122bc3a85fa77bde3bd",
+      "bytes": 8950,
+      "imports": [
+        {
+          "specifier": "./stable-error-code.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs"
+        },
+        {
+          "specifier": "node:assert/strict",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "./admission.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs"
+        },
+        {
+          "specifier": "./native-fixture.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/native-fixture.mjs"
+        },
+        {
+          "specifier": "./scenarios.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/scenarios.mjs"
+        }
+      ],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/installed-source.mjs",
+      "sha256": "1f9b2b71056612dcfd5ef047f9163db75ac88e52a304598fd643e3246488ecd3",
+      "bytes": 305,
+      "imports": [
+        {
+          "specifier": "../ollama-dsh-memory-continuity-source/installed-entry.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-memory-continuity-source/installed-entry.mjs"
+        },
+        {
+          "specifier": "./admission.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs"
+        }
+      ],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/native-fixture.mjs",
+      "sha256": "ecb37bcf793a486fd14e3fff2b6d1761521f488dc137151b4a6f680e274061c6",
+      "bytes": 6984,
+      "imports": [
+        {
+          "specifier": "./stable-error-code.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs"
+        },
+        {
+          "specifier": "node:assert/strict",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:stream",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "../../src/host-probe.mjs",
+          "kind": "literal file import",
+          "resolved": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "kind": "literal file import",
+          "resolved": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "../ollama-dsh-integration-currentness-r1/ollama-binding.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs"
+        },
+        {
+          "specifier": "./admission.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs"
+        },
+        {
+          "specifier": "./stream-observer.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/stream-observer.mjs"
+        }
+      ],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/prompts.mjs",
+      "sha256": "f98338affe9c2029621c0473ce0961de4e2f70ee4a22ff1b9fb02fd7da10dd2e",
+      "bytes": 2874,
+      "imports": [],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/scenarios.mjs",
+      "sha256": "4d28368c15ee451b7432f709cbbf55087fbc946598307ddf0e06b16afcc0a89f",
+      "bytes": 18504,
+      "imports": [
+        {
+          "specifier": "./stable-error-code.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs"
+        },
+        {
+          "specifier": "node:assert/strict",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "kind": "literal file import",
+          "resolved": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "./admission.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/admission.mjs"
+        },
+        {
+          "specifier": "./prompts.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/prompts.mjs"
+        },
+        {
+          "specifier": "./native-fixture.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/native-fixture.mjs"
+        }
+      ],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs",
+      "sha256": "4278acdce0b33917175267f77de2a86ad3dcf75a7ff339c0f8951a99569d01eb",
+      "bytes": 1813,
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-functional-fixtures-r1/stream-observer.mjs",
+      "sha256": "df7fbd6fe9a6f7d6127c2a396350cbdab1f6d061c21ec6eedcabe035902ddae8",
+      "bytes": 3308,
+      "imports": [
+        {
+          "specifier": "./stable-error-code.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-functional-fixtures-r1/stable-error-code.mjs"
+        },
+        {
+          "specifier": "node:assert/strict",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        }
+      ],
+      "inspection": "new literal successor source; regex inventory only, no JS parsing"
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-entry.mjs",
+      "sha256": "c9acb18b2f5773e5ed2b346d8a1b7dbcfcb3b5c3160085aff9c190c6dd9d8ce7",
+      "imports": [
+        {
+          "specifier": "../../src/config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "../../src/host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "../../src/installed-config.mjs",
+          "path": "src/installed-config.mjs"
+        },
+        {
+          "specifier": "../../src/installed-memory.mjs",
+          "path": "src/installed-memory.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-plugin.mjs",
+          "path": "src/runtime-plugin.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "../../src/setup-state.mjs",
+          "path": "src/setup-state.mjs"
+        },
+        {
+          "specifier": "./installed-worker.mjs",
+          "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker.mjs"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-owned-stream.mjs",
+      "sha256": "0e3e2cf31a205d7af1d563df2180fde79cdffe338a5fd8100c5f78db7432a36f",
+      "imports": [
+        {
+          "specifier": "../../src/installed-invocation.mjs",
+          "path": "src/installed-invocation.mjs"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker-facts.mjs",
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2",
+      "imports": [
+        {
+          "specifier": "../../src/config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "../../src/host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "../../src/testing-provider.mjs",
+          "path": "src/testing-provider.mjs"
+        },
+        {
+          "specifier": "./ollama-binding.mjs",
+          "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker.mjs",
+      "sha256": "fa02b816912efb04f9dab77dbc8d0ff8a59b5d1a661a3f8503b77d02c790895b",
+      "imports": [
+        {
+          "specifier": "../../src/config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "../../src/context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "../../src/installed-invocation.mjs",
+          "path": "src/installed-invocation.mjs"
+        },
+        {
+          "specifier": "../../src/installed-worker-config.mjs",
+          "path": "src/installed-worker-config.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "./installed-owned-stream.mjs",
+          "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-owned-stream.mjs"
+        },
+        {
+          "specifier": "./installed-worker-facts.mjs",
+          "path": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker-facts.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs",
+      "sha256": "b3a81cc87b92f8a088846a4cfdcaf7736873fe086793cdce72e66938e1a80104",
+      "imports": [
+        {
+          "specifier": "../../src/config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "../../src/host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "../../src/installed-worker-config.mjs",
+          "path": "src/installed-worker-config.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js"
+        },
+        {
+          "specifier": "./ollama-provider.mjs",
+          "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+      "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c",
+      "imports": [
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js"
+        },
+        {
+          "specifier": "../dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/installed-entry.mjs",
+      "sha256": "08c7d8fefe6f4deb6fad99f964556ad42f54e62e6d3211aa418f10fa0a2df4b3",
+      "bytes": 7405,
+      "imports": [
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "../../src/installed-config.mjs",
+          "kind": "literal file import",
+          "resolved": "src/installed-config.mjs"
+        },
+        {
+          "specifier": "../../src/installed-memory.mjs",
+          "kind": "literal file import",
+          "resolved": "src/installed-memory.mjs"
+        },
+        {
+          "specifier": "../ollama-dsh-integration-currentness-r1/installed-worker.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-integration-currentness-r1/installed-worker.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-security.mjs",
+          "kind": "literal file import",
+          "resolved": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "../../src/host-probe.mjs",
+          "kind": "literal file import",
+          "resolved": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "./runtime-plugin.mjs",
+          "kind": "literal file import",
+          "resolved": ".runtime/ollama-dsh-memory-continuity-source/runtime-plugin.mjs"
+        },
+        {
+          "specifier": "../../src/setup-state.mjs",
+          "kind": "literal file import",
+          "resolved": "src/setup-state.mjs"
+        },
+        {
+          "specifier": "../../src/config.mjs",
+          "kind": "literal file import",
+          "resolved": "src/config.mjs"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ],
+      "inspection": "new literal source"
+    },
+    {
+      "path": ".runtime/ollama-dsh-memory-continuity-source/runtime-plugin.mjs",
+      "sha256": "765835e5d5129bef4d66bf559b007cf1b72197eddfddafab71e796f2786d615b",
+      "bytes": 37737,
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:async_hooks",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "../../src/config.mjs",
+          "kind": "literal file import",
+          "resolved": "src/config.mjs"
+        },
+        {
+          "specifier": "../../src/host-probe.mjs",
+          "kind": "literal file import",
+          "resolved": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "../../src/runtime-store.mjs",
+          "kind": "literal file import",
+          "resolved": "src/runtime-store.mjs"
+        },
+        {
+          "specifier": "../../src/coordinator.mjs",
+          "kind": "literal file import",
+          "resolved": "src/coordinator.mjs"
+        },
+        {
+          "specifier": "../../src/operator-bridge.mjs",
+          "kind": "literal file import",
+          "resolved": "src/operator-bridge.mjs"
+        },
+        {
+          "specifier": "../../src/approval-preview.mjs",
+          "kind": "literal file import",
+          "resolved": "src/approval-preview.mjs"
+        },
+        {
+          "specifier": "../../src/memory.mjs",
+          "kind": "literal file import",
+          "resolved": "src/memory.mjs"
+        },
+        {
+          "specifier": "../../src/installed-memory-continuity.mjs",
+          "kind": "literal file import",
+          "resolved": "src/installed-memory-continuity.mjs"
+        },
+        {
+          "specifier": "../../src/context.mjs",
+          "kind": "literal file import",
+          "resolved": "src/context.mjs"
+        },
+        {
+          "specifier": "../../src/native-adapter.mjs",
+          "kind": "literal file import",
+          "resolved": "src/native-adapter.mjs"
+        },
+        {
+          "specifier": "../../src/worker.mjs",
+          "kind": "literal file import",
+          "resolved": "src/worker.mjs"
+        },
+        {
+          "specifier": "../../src/audit.mjs",
+          "kind": "literal file import",
+          "resolved": "src/audit.mjs"
+        },
+        {
+          "specifier": "../../src/results.mjs",
+          "kind": "literal file import",
+          "resolved": "src/results.mjs"
+        },
+        {
+          "specifier": "../../src/notifications.mjs",
+          "kind": "literal file import",
+          "resolved": "src/notifications.mjs"
+        },
+        {
+          "specifier": "../../src/events.mjs",
+          "kind": "literal file import",
+          "resolved": "src/events.mjs"
+        },
+        {
+          "specifier": "../../src/scheduler.mjs",
+          "kind": "literal file import",
+          "resolved": "src/scheduler.mjs"
+        },
+        {
+          "specifier": "../../src/chat.mjs",
+          "kind": "literal file import",
+          "resolved": "src/chat.mjs"
+        },
+        {
+          "specifier": "../../src/installed-invocation.mjs",
+          "kind": "literal file import",
+          "resolved": "src/installed-invocation.mjs"
+        },
+        {
+          "specifier": "../../src/environment.mjs",
+          "kind": "literal file import",
+          "resolved": "src/environment.mjs"
+        }
+      ],
+      "inspection": "new literal source"
+    },
+    {
+      "path": "src/approval-preview.mjs",
+      "sha256": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+      "imports": [
+        {
+          "specifier": "./audit-input-pair.mjs",
+          "path": "src/audit-input-pair.mjs"
+        },
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/audit-input-pair.mjs",
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc",
+      "imports": [
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/audit.mjs",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+      "imports": [
+        {
+          "specifier": "./messages.mjs",
+          "path": "src/messages.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/chat.mjs",
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./events.mjs",
+          "path": "src/events.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "imports": [
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/coordinator.mjs",
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/event-clock.mjs",
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+      "imports": [
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/events.mjs",
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "imports": [
+        {
+          "specifier": ", ",
+          "kind": "original installed package; no resolution executed"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:sqlite",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/installed-config.mjs",
+      "sha256": "3da0ed1c99cd1ed920e7093fad0dafc6ce5f1653bfd09879018a10dd8d02e5ed",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "./installed-worker-config.mjs",
+          "path": "src/installed-worker-config.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "node:async_hooks",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/installed-memory-continuity.mjs",
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382",
+      "bytes": 22246,
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "./memory.mjs",
+          "kind": "literal file import",
+          "resolved": "src/memory.mjs"
+        },
+        {
+          "specifier": "./fishball-memory-core.mjs",
+          "kind": "literal file import",
+          "resolved": "src/fishball-memory-core.mjs"
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "literal file import",
+          "resolved": "src/context.mjs"
+        },
+        {
+          "specifier": "./runtime-store.mjs",
+          "kind": "literal file import",
+          "resolved": "src/runtime-store.mjs"
+        },
+        {
+          "specifier": "./installed-invocation.mjs",
+          "kind": "literal file import",
+          "resolved": "src/installed-invocation.mjs"
+        }
+      ],
+      "inspection": "permitted original import header + whole-file hash"
+    },
+    {
+      "path": "src/installed-memory.mjs",
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "./host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "imports": [
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:os",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:sqlite",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/memory.mjs",
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./fishball-memory-core.mjs",
+          "path": "src/fishball-memory-core.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/messages.mjs",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+      "imports": [
+        {
+          "specifier": "./audit-input-pair.mjs",
+          "path": "src/audit-input-pair.mjs"
+        },
+        {
+          "specifier": "./environment.mjs",
+          "path": "src/environment.mjs"
+        },
+        {
+          "specifier": "./host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/notifications.mjs",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+      "imports": [
+        {
+          "specifier": "./messages.mjs",
+          "path": "src/messages.mjs"
+        },
+        {
+          "specifier": "./results.mjs",
+          "path": "src/results.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "sha256": "9227a0126e662bc150fa64b152cd4a380c8b70c7e5160a1ed151c6103422aa77",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/results.mjs",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+      "imports": [
+        {
+          "specifier": "./messages.mjs",
+          "path": "src/messages.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2",
+      "imports": [
+        {
+          "specifier": "./approval-preview.mjs",
+          "path": "src/approval-preview.mjs"
+        },
+        {
+          "specifier": "./audit.mjs",
+          "path": "src/audit.mjs"
+        },
+        {
+          "specifier": "./chat.mjs",
+          "path": "src/chat.mjs"
+        },
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./coordinator.mjs",
+          "path": "src/coordinator.mjs"
+        },
+        {
+          "specifier": "./environment.mjs",
+          "path": "src/environment.mjs"
+        },
+        {
+          "specifier": "./events.mjs",
+          "path": "src/events.mjs"
+        },
+        {
+          "specifier": "./host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "./installed-invocation.mjs",
+          "path": "src/installed-invocation.mjs"
+        },
+        {
+          "specifier": "./memory.mjs",
+          "path": "src/memory.mjs"
+        },
+        {
+          "specifier": "./native-adapter.mjs",
+          "path": "src/native-adapter.mjs"
+        },
+        {
+          "specifier": "./notifications.mjs",
+          "path": "src/notifications.mjs"
+        },
+        {
+          "specifier": "./operator-bridge.mjs",
+          "path": "src/operator-bridge.mjs"
+        },
+        {
+          "specifier": "./results.mjs",
+          "path": "src/results.mjs"
+        },
+        {
+          "specifier": "./runtime-store.mjs",
+          "path": "src/runtime-store.mjs"
+        },
+        {
+          "specifier": "./scheduler.mjs",
+          "path": "src/scheduler.mjs"
+        },
+        {
+          "specifier": "./worker.mjs",
+          "path": "src/worker.mjs"
+        },
+        {
+          "specifier": "node:async_hooks",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "imports": [
+        {
+          "specifier": "./ledger.mjs",
+          "path": "src/ledger.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "path": "src/ledger.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/scheduler.mjs",
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+      "imports": [
+        {
+          "specifier": "./context.mjs",
+          "path": "src/context.mjs"
+        },
+        {
+          "specifier": "./event-clock.mjs",
+          "path": "src/event-clock.mjs"
+        },
+        {
+          "specifier": "./events.mjs",
+          "path": "src/events.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        }
+      ]
+    },
+    {
+      "path": "src/setup-state.mjs",
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "./runtime-store.mjs",
+          "path": "src/runtime-store.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/testing-provider.mjs",
+      "sha256": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+      "imports": [
+        {
+          "specifier": "./config.mjs",
+          "path": "src/config.mjs"
+        },
+        {
+          "specifier": "./host-probe.mjs",
+          "path": "src/host-probe.mjs"
+        },
+        {
+          "specifier": "./installed-worker-config.mjs",
+          "path": "src/installed-worker-config.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:url",
+          "kind": "Node built-in"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "Node built-in"
+        }
+      ]
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+      "imports": [
+        {
+          "specifier": "./audit-input-pair.mjs",
+          "path": "src/audit-input-pair.mjs"
+        },
+        {
+          "specifier": "./environment.mjs",
+          "path": "src/environment.mjs"
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "path": "src/runtime-security.mjs"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "Node built-in"
+        }
+      ]
+    }
+  ],
+  "dynamicOriginalPublicModules": [
+    {
+      "package": "@deepseek-ai/cordis",
+      "version": "4.0.5-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "manifestSha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "sourceSha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+    },
+    {
+      "package": "@deepseek-ai/cordis-plugin-loader",
+      "version": "1.0.6-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+      "manifestSha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "sourceSha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+    },
+    {
+      "package": "@deepseek-ai/dsh",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/package.json",
+      "manifestSha256": "dbb4a7c1d88c412278fc8baccac7553f6d2310e85f5ffea1470a30106e99c688",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "metadataOnly": true
+    },
+    {
+      "package": "@deepseek-ai/dsh-agent",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+      "manifestSha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sourceSha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    {
+      "package": "@deepseek-ai/dsh-agent-loop",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json",
+      "manifestSha256": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sourceSha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "package": "@deepseek-ai/dsh-agent-preset-registry",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/package.json",
+      "manifestSha256": "81eccf1abe20b6cfb419fe7b530069c0ca6887da42bd1a15b10f309b2e25370e",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/index.js",
+      "sourceSha256": "7e23c01514303b2dfa1b69a95929cb19e43ba761d3478a3104d0f565ca537be7"
+    },
+    {
+      "package": "@deepseek-ai/dsh-client-connection",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+      "manifestSha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "sourceSha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+    },
+    {
+      "package": "@deepseek-ai/dsh-host-webserver",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/package.json",
+      "manifestSha256": "244a65cf447e0a0b8160fcc8942787b181f7a440fabb720656b7bf71210a8edb",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "sourceSha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+    },
+    {
+      "package": "@deepseek-ai/dsh-llm",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+      "manifestSha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "sourceSha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    {
+      "package": "@deepseek-ai/dsh-scope",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "manifestSha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "sourceSha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca"
+    },
+    {
+      "package": "@deepseek-ai/dsh-session",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "manifestSha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sourceSha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "package": "@deepseek-ai/dsh-session-persistence-jsonl",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json",
+      "manifestSha256": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "sourceSha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    },
+    {
+      "package": "@deepseek-ai/dsh-session-projection",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+      "manifestSha256": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "sourceSha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8"
+    },
+    {
+      "package": "@deepseek-ai/dsh-system-prompt",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "manifestSha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "sourceSha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+    },
+    {
+      "package": "@deepseek-ai/dsh-token-meter",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/package.json",
+      "manifestSha256": "2c28b0db84463a5d5b2242eeb326135b5e831da272d5bf539e01ac77067dfc60",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/index.js",
+      "sourceSha256": "39ed60a470b240f8bbc82befdb0bbbad1f409732e8ba8d12d41a1059de0dde05"
+    },
+    {
+      "package": "@deepseek-ai/dsh-tools",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "manifestSha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "sourceSha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+    },
+    {
+      "package": "@deepseek-ai/dsh-user-approval",
+      "version": "0.2.1-alpha.1",
+      "manifest": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+      "manifestSha256": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e",
+      "provenance": "original pinned installed public module; resolution/import NOT RUN",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "sourceSha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+    },
+    {
+      "publicSpecifier": "@deepseek-ai/dsh-token-meter/estimate",
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/estimate.js",
+      "sourceSha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f",
+      "provenance": "unchanged original installed-memory literal public export"
+    }
+  ],
+  "originalGraphExpectedSha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd",
+  "originalHostLock": {
+    "path": ".runtime/dsh-web/package-lock.json",
+    "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+  },
+  "nodeExpectedSha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+  "entryDependencies": [
+    "original Cordis public services/Loader/Entry",
+    "new concrete memory continuity installed entry",
+    "preserved r1 provider/binding/worker/facts/owned-stream",
+    "unchanged original RuntimeStore/NativeAdapter/WorkerManager/MemoryAdapter/ContextAssembler/permission/session/persistence"
+  ],
+  "nonJSDependencies": [
+    "r1 source-pins.json",
+    "read-only approved exact version/show metadata",
+    "root-execution-go.json (root-only future)",
+    "fixture-freeze.json",
+    "original package metadata + lock + runtime source lock"
+  ],
+  "resolutionCaveat": "Lexical/source metadata only; bare/transitive original graph, Node imports and runtime identity checks remain root-authorization prerequisites. Before files/patches are evidence and never imported.",
+  "successorRefinement": {
+    "previousClosureSha256": "15e6657054d9e44da4b4d8cc09790a62417b33fa5462d2c191eb49a96a9169c3",
+    "newFixturePhysicalMjs": 8,
+    "newConcreteMemoryCompositionMjs": 2,
+    "preservedR1PhysicalMjs": 6,
+    "preservedR1ReachableMjs": 5,
+    "reachableCandidateMjs": 15,
+    "allListedCandidateMjsIncludingUnusedHistoricalEntry": 16,
+    "beforeAndPatchesNeverImported": true,
+    "nativeImportsDeferredUntilGateAndPreflightMarker": true
+  }
+}
