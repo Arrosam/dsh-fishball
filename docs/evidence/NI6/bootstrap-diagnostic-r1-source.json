@@ -1,0 +1,628 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GitOperations": false,
+  "LIVE02": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "accepted": 0,
+  "actualBuiltClient": {
+    "bytes": 151584,
+    "path": ".runtime/ni6-public-preparation-r3/package/lib/client.js",
+    "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+  },
+  "actualBuiltDescriptor": {
+    "bytes": 17236,
+    "path": ".runtime/ni6-public-preparation-r3/package/native-source-manifest.json",
+    "sha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382"
+  },
+  "actualSuccessfulBuildReturn": {
+    "bytes": 759,
+    "path": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "sha256": "71769b976186b302fd455a2728c904b7d02cb5cf5d5f63ad2d69e9751b2d4c14"
+  },
+  "all87": "HOLD",
+  "ancestorManifest": {
+    "bytes": 103159,
+    "path": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+    "sha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2"
+  },
+  "author": "/root/ni6_request_validation_rootcause",
+  "boundedFailureCodeProjection": {
+    "bytes": 773,
+    "path": "docs/evidence/NI6/public-preparation-r3-bounded-failure-code.json",
+    "sha256": "04895d56c95a6861cbe72e429754ffa99696933d3ca9be668eddb80d40f8bc66"
+  },
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 7,
+    "primaryAbsoluteEnd": 55,
+    "setupPreflight": 8,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidateParsingImportEvaluationBuildTestRuntime": false,
+  "captureReadCap": "exact expected stored length+1, at most131073; raw bytes never decoded",
+  "categories": [
+    "NONE",
+    "REJECTION",
+    "INVARIANT",
+    "DEADLINE"
+  ],
+  "categoryCount": 4,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-source/v1",
+  "date": "2026-10-07",
+  "diagnosticByteCap": 512,
+  "diagnosticCommandsProposed": 1,
+  "diagnosticFieldCount": 10,
+  "diagnosticFields": [
+    "contractVersion",
+    "result",
+    "phase",
+    "category",
+    "completedPlugins",
+    "entryRemoved",
+    "rootClosed",
+    "zeroNative",
+    "all87",
+    "CODE"
+  ],
+  "diagnosticReadCap": 513,
+  "diagnosticStatus": "NOT_RUN",
+  "directHostPluginCount": 11,
+  "directOriginalHostImportCount": 13,
+  "directOriginalHostImports": [
+    {
+      "configMetadata": null,
+      "localName": "Context",
+      "module": "@deepseek-ai/cordis",
+      "phase": "CONTEXT",
+      "publicExport": "Context",
+      "source": {
+        "bytes": 60361,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+      }
+    },
+    {
+      "configMetadata": {
+        "baseUrl": "immutable r3 package.json file URL"
+      },
+      "localName": "Loader",
+      "module": "@deepseek-ai/cordis-plugin-loader",
+      "phase": "PLUGIN_LOADER",
+      "publicExport": "default",
+      "source": {
+        "bytes": 24077,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+        "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+      }
+    },
+    {
+      "configMetadata": null,
+      "localName": "Projections",
+      "module": "@deepseek-ai/dsh-session-projection",
+      "phase": "PLUGIN_PROJECTIONS",
+      "publicExport": "default",
+      "source": {
+        "bytes": 20021,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+        "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8"
+      }
+    },
+    {
+      "configMetadata": null,
+      "localName": "Sessions",
+      "module": "@deepseek-ai/dsh-session",
+      "phase": "PLUGIN_SESSIONS",
+      "publicExport": "default",
+      "source": {
+        "bytes": 89972,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+      }
+    },
+    {
+      "configMetadata": {
+        "policy": "never"
+      },
+      "localName": "Approval",
+      "module": "@deepseek-ai/dsh-user-approval",
+      "phase": "PLUGIN_APPROVAL",
+      "publicExport": "default",
+      "source": {
+        "bytes": 8478,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+        "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+      }
+    },
+    {
+      "configMetadata": null,
+      "localName": "Agents",
+      "module": "@deepseek-ai/dsh-agent",
+      "phase": "PLUGIN_AGENTS",
+      "publicExport": "default",
+      "source": {
+        "bytes": 28207,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+      }
+    },
+    {
+      "configMetadata": null,
+      "localName": "Llm",
+      "module": "@deepseek-ai/dsh-llm",
+      "phase": "PLUGIN_LLM",
+      "publicExport": "default",
+      "source": {
+        "bytes": 103333,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+      }
+    },
+    {
+      "configMetadata": {},
+      "localName": "SystemPrompt",
+      "module": "@deepseek-ai/dsh-system-prompt",
+      "phase": "PLUGIN_SYSTEM_PROMPT",
+      "publicExport": "default",
+      "source": {
+        "bytes": 17395,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+        "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+      }
+    },
+    {
+      "configMetadata": {
+        "maxParallelSubCalls": 1,
+        "mode": "native"
+      },
+      "localName": "Tools",
+      "module": "@deepseek-ai/dsh-tools",
+      "phase": "PLUGIN_TOOLS",
+      "publicExport": "default",
+      "source": {
+        "bytes": 158002,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+        "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+      }
+    },
+    {
+      "configMetadata": {
+        "debounceMs": 100,
+        "dshHome": "fresh profile/auth",
+        "path": "fresh profile/auth/.credentials.yaml",
+        "watch": false
+      },
+      "localName": "LocalCredentialProvider",
+      "module": "@deepseek-ai/dsh-credentials-local",
+      "phase": "PLUGIN_CREDENTIALS",
+      "publicExport": "LocalCredentialProvider",
+      "source": {
+        "bytes": 32699,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+        "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea"
+      }
+    },
+    {
+      "configMetadata": {
+        "layers": [
+          {
+            "keys": [
+              "DSH_HOME",
+              "XDG_CONFIG_HOME"
+            ],
+            "source": "process",
+            "values": "fresh profile/auth"
+          }
+        ]
+      },
+      "localName": "createLaunchEnvironmentSnapshot",
+      "module": "@deepseek-ai/dsh-launch-environment",
+      "phase": "CONTEXT",
+      "publicExport": "createLaunchEnvironmentSnapshot",
+      "source": {
+        "bytes": 2991,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js",
+        "sha256": "6aab33b43d6caa4ee483f7d796a17afb400fca02b7a259fb55d486626e6bb7f0"
+      }
+    },
+    {
+      "configMetadata": {
+        "compression": "none",
+        "host": "127.0.0.1",
+        "port": 0
+      },
+      "localName": "WebServer",
+      "module": "@deepseek-ai/dsh-host-webserver",
+      "phase": "PLUGIN_WEB_SERVER",
+      "publicExport": "default",
+      "source": {
+        "bytes": 13284,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+        "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+      }
+    },
+    {
+      "configMetadata": {
+        "cookieMaxAgeDays": 1,
+        "maxRequestBodyBytes": 65536,
+        "recovery": {},
+        "trustedHosts": []
+      },
+      "localName": "Connection",
+      "module": "@deepseek-ai/dsh-client-connection",
+      "phase": "PLUGIN_CONNECTION",
+      "publicExport": "module namespace",
+      "source": {
+        "bytes": 35140,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+      }
+    }
+  ],
+  "discrepancyAssessment": {
+    "correctionProvesOriginalCause": false,
+    "observedPublicError": "PREP01_ORIGINAL_BOOTSTRAP_FAILED",
+    "r3FailingPluginOrCall": "NOT_OBSERVED",
+    "r3UnderlyingCause": "NOT_ESTABLISHED",
+    "supportedWaitingCorrection": "Raw Loader entry uses explicit entry.fiber.await(); public plugin result remains awaited as PromiseLike"
+  },
+  "effects": {
+    "agentCreationsMaximum": 0,
+    "claimOrGrantEffectsMaximum": 0,
+    "contextConstructionsMaximum": 1,
+    "dispatchedHttpRequestsMaximum": 0,
+    "domainRpcRequestsMaximum": 0,
+    "driverOwnProcessGroupObservation": "only freshly spawned own groups; no native execution authority proof",
+    "durableLedgerCreationMaximum": 0,
+    "entryFiberAwaitMaximum": 2,
+    "ephemeralLoopbackListenersMaximum": 1,
+    "freshRuntimeDirectoriesMaximum": 5,
+    "hostPluginInvocationsMaximum": 11,
+    "hostPluginOrder": [
+      "Loader",
+      "Projections",
+      "Sessions",
+      "Approval",
+      "Agents",
+      "Llm",
+      "SystemPrompt",
+      "Tools",
+      "LocalCredentialProvider",
+      "WebServer",
+      "Connection"
+    ],
+    "liveReadyOrRemovalWindowsMaximum": 3,
+    "loaderAwaitMaximum": 2,
+    "loaderCreateMaximum": 1,
+    "loaderRemoveAttemptsMaximum": 1,
+    "loaderResolveMaximum": 1,
+    "loopbackHost": "127.0.0.1",
+    "modelOrCloudCallsMaximum": 0,
+    "naturalEventCategories": 7,
+    "naturalObservationQualification": "original counters plus current ready/removal inventory; retained history only during/after root unload, no continuous cleanup coverage or post-root registry proof",
+    "ordinaryAtomicLock": "original fresh credential-file lock create/release; predecessor/stale-lock contention path is not selected",
+    "ordinaryCredentialFileCreation": "original LocalCredentialProvider, fresh owned synthetic auth path, private contents never inspected",
+    "ordinarySqliteEffect": "original installed-entry capability probe: in-memory open/query/close; no durable setup confirmation",
+    "originalAtomicStaleBranchQualification": "Library includes holder-record read/PID probe; no absolute no-PID claim. Diagnostic/executor never inspect credential/lock records or unrelated PIDs.",
+    "portSelection": "original public port0; positive actual port excludes3080",
+    "providerRegistrationsMaximum": 0,
+    "qualification": "PROSPECTIVE_NOT_RUN; direct counts are not transitive-effect claims",
+    "registryProviderToolReadsMaximum": 12,
+    "rootPublicDisposeAttemptsMaximum": 1,
+    "runtimeChildWorkerStartsMaximum": 0,
+    "sessionCreationsMaximum": 0,
+    "setupPreviewOrConfirmMaximum": 0,
+    "taskDataContextOperationsMaximum": 0,
+    "toolCallsMaximum": 0
+  },
+  "freezeRecords": [
+    {
+      "bytes": 8555,
+      "path": "docs/ni6-bootstrap-diagnostic-r1-freeze-2026-10-07.md",
+      "sha256": "3b3f9cd28317c5b94b3c8f1564d1b53483efc5088753c18a69027b3a1a9f9d40"
+    },
+    {
+      "bytes": 2845,
+      "path": "docs/ni6-bootstrap-diagnostic-r1-lifecycle-clarification-2026-10-07.md",
+      "sha256": "37d5a51c8fb5d1ccbec5727a7de998c33a7f951564caef4aa5e898430c3b9826"
+    }
+  ],
+  "functionalPreparationAssertionsSatisfied": false,
+  "hostPluginOrder": [
+    "Loader",
+    "Projections",
+    "Sessions",
+    "Approval",
+    "Agents",
+    "Llm",
+    "SystemPrompt",
+    "Tools",
+    "LocalCredentialProvider",
+    "WebServer",
+    "Connection"
+  ],
+  "immutableBuiltPackage": {
+    "descriptorProductEntries": 64,
+    "nativeDescriptorHostFiles": 77,
+    "nativeDescriptorHostModules": 25,
+    "normalPeerLinks": 1,
+    "path": ".runtime/ni6-public-preparation-r3/package",
+    "physicalRegularFilesIncludingDescriptor": 65,
+    "productBuildInputs": 63,
+    "rebuiltCopiedOrMutated": false
+  },
+  "independentReviews": "PENDING_FOUR_ACTUAL_REPORTS; names only, no future hashes",
+  "inputBytes": 16421471,
+  "inputFileCount": 418,
+  "lifecycleQualification": {
+    "driverEofAndOwnedGroupAbsence": "independent from native/root lifecycle",
+    "entryRemoval": "one original Loader.remove attempt, saved raw Fiber.await and original Loader.await, independently observed entry absence and terminal state",
+    "firstWorkFailurePreserved": true,
+    "rootCleanup": "original public root dispose and original UIDnull/state4 observation retained; standalone root restart may yield UID0 active, rootClosedfalse/FAILED_HOLD",
+    "wrappedHostPrivateUnloadMutationOrClosureAlias": false,
+    "zeroNative": "reset before each guard; current covered ready/removal windows plus retained natural zero history, no continuous root cleanup proof"
+  },
+  "maximumDirectInterpreterStarts": 3,
+  "maximumNodeChildStarts": 2,
+  "modelCloudNetworkBrowserActions": false,
+  "nodeBuiltins": [
+    "node:fs",
+    "node:path",
+    "node:url",
+    "node:crypto",
+    "node:assert/strict",
+    "node:perf_hooks"
+  ],
+  "oldMarkersLedgerPrivateProfilesReadOrModified": false,
+  "ownedDraftRecords": [
+    {
+      "bytes": 18973,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+      "sha256": "1f8123a742aeff56abb14e674f7493ed7d3090d775d002a0f1433a0d43b3e8dc"
+    },
+    {
+      "bytes": 31438,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
+      "sha256": "91addca4c96124727801bf985747c1d863369f5a7e9ba5f12618e68cdc02ebef"
+    },
+    {
+      "bytes": 5636,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/execution-plan.proposed.json",
+      "sha256": "0b8eb8702860fd9366d9f8b0f596a356bea79f2ec3eb05a51b05984e40b165ed"
+    },
+    {
+      "bytes": 81744,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-delta.diff",
+      "sha256": "f89dd70579ac2adf110ecaa8fa2f4a9a86f818713115e87c91eef0e4878a31ba"
+    },
+    {
+      "bytes": 5227,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/README.md",
+      "sha256": "5f9c16d8bd0b37f8477dbc672fdfde87f27f869e3e9062590fa6c28bf387324a"
+    }
+  ],
+  "ownershipAndStopGuards": {
+    "allEvidenceWritesRequireSuccessfulNewCreationAndOwnership": true,
+    "captureAndDiagnosticReads": "lstat size and owner600 before bounded O_NOFOLLOW read; fd/path inode equality before/after; expected prefix hash and EOF separate",
+    "catchableSignals": "SIGTERM/SIGINT flags latched; sole own-group cleanup; denied/unknown halts all future signals",
+    "exclusiveFdToPathInodeLatch": true,
+    "failureDefault": true,
+    "freshMarkerBeforePlanEnvironmentPins": true,
+    "markerOverwrite": "verify original fd/path identity before truncate",
+    "preexistingDestinationWrites": 0,
+    "spawnAdmission": "last observed stop guard before Popen; later stops are cleanup of already-admitted child",
+    "terminalSuccess": "last postwrite stop/deadline and actual successful driver return; persisted PASS alone insufficient"
+  },
+  "phaseCount": 30,
+  "phases": [
+    "PREFLIGHT",
+    "IMPORTS",
+    "NAMESPACE",
+    "CONTEXT",
+    "PLUGIN_LOADER",
+    "PLUGIN_PROJECTIONS",
+    "PLUGIN_SESSIONS",
+    "PLUGIN_APPROVAL",
+    "PLUGIN_AGENTS",
+    "PLUGIN_LLM",
+    "PLUGIN_SYSTEM_PROMPT",
+    "PLUGIN_TOOLS",
+    "PLUGIN_CREDENTIALS",
+    "PLUGIN_WEB_SERVER",
+    "PLUGIN_CONNECTION",
+    "LISTENER_FENCE",
+    "INDEX_ROUTE",
+    "BEFORE_ENTRY",
+    "LOADER_CREATE",
+    "LOADER_SETTLE",
+    "ENTRY_RESOLVE",
+    "ENTRY_START",
+    "ENTRY_STATE",
+    "AFTER_ENTRY",
+    "ENTRY_REMOVE",
+    "ENTRY_DISPOSAL",
+    "LOADER_REMOVAL_SETTLE",
+    "AFTER_REMOVAL",
+    "ROOT_CLEANUP",
+    "COMPLETE"
+  ],
+  "preparationR3AttemptResetOrRepeated": false,
+  "preservedAncestorRecordCount": 395,
+  "privateStreamAggregateByteCap": 262144,
+  "privateStreamByteCap": 131072,
+  "privateStreamsDecodedOrPublished": false,
+  "publicApiCitations": [
+    {
+      "declarations": [
+        "Fiber.uid/state/dispose",
+        "Fiber.await(): Promise<this>",
+        "Fiber.restart(): Promise<void>"
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts"
+    },
+    {
+      "declarations": [
+        "Context.plugin returns PromiseLike original fiber wrapper"
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts"
+    },
+    {
+      "facts": [
+        "runtime-null root UID0/state2 public dispose delegates restart",
+        "raw Fiber.await waits lifecycle and rethrows startup error",
+        "ctx.plugin wrapper delegates PromiseLike to Fiber.await"
+      ],
+      "lines": [
+        1100,
+        1113,
+        1399,
+        1410,
+        1635
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+    },
+    {
+      "declarations": [
+        "create(): Promise<string>",
+        "resolve(id): Entry",
+        "remove(id): void",
+        "entries(): Generator<Entry>",
+        "await(): Promise<void>"
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts"
+    },
+    {
+      "facts": [
+        "Loader.await allSettled lifecycle",
+        "remove stop-and-remove",
+        "entry.fiber raw original fiber"
+      ],
+      "lines": [
+        154,
+        187,
+        194,
+        453,
+        463
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js"
+    }
+  ],
+  "pythonStandardLibraryImports": [
+    "time",
+    "datetime",
+    "hashlib",
+    "json",
+    "os",
+    "pathlib",
+    "re",
+    "selectors",
+    "signal",
+    "stat",
+    "subprocess",
+    "sys"
+  ],
+  "rawCaughtErrorTextStackPropertiesInspectedOrSerialized": false,
+  "remainingPrerequisites": [
+    "Root full source/manifest/readback review",
+    "Actual separate independent SOURCE and test-design report pairs on this exact seal",
+    "Resolve findings through separately authorized successors; no sealed edit",
+    "Supported exact local diagnostic action approval",
+    "Root exclusive owned600 true plan with complete actual pin union",
+    "Root once-only runtime and public allowlisted result readback; retain all failures"
+  ],
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json"
+  ],
+  "revision": "bootstrap-diagnostic-r1",
+  "rootOnlyExecution": true,
+  "rootReviewedExecutionGO": false,
+  "runCountAuthorizedProposed": 1,
+  "sealedSource": true,
+  "selectedPhysicalTopology": [
+    {
+      "path": "/opt/homebrew/opt/node@22",
+      "resolved": "/opt/homebrew/Cellar/node@22/22.22.2_1",
+      "target": "../Cellar/node@22/22.22.2_1"
+    },
+    {
+      "path": "/opt/homebrew/bin/python3",
+      "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "target": "../Cellar/python@3.14/3.14.5/bin/python3"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/bin/python3",
+      "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "target": "../Frameworks/Python.framework/Versions/3.14/bin/python3"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/Current",
+      "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14",
+      "target": "3.14"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3",
+      "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "target": "python3.14"
+    },
+    {
+      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package/node_modules",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules",
+      "target": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules"
+    }
+  ],
+  "sourceCopies": [
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-delta.diff",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/execution-plan.proposed.json",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/README.md",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-manifest.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-source.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-source.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json",
+    "docs/ni6-bootstrap-diagnostic-r1-freeze-2026-10-07.md",
+    "docs/ni6-bootstrap-diagnostic-r1-lifecycle-clarification-2026-10-07.md",
+    ".runtime/ni6-public-preparation-r3/source-manifest.json",
+    ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+    ".runtime/ni6-prep01-executor-r3/runner.py",
+    ".runtime/ni3-native-runtime/public-graph-pins.json",
+    ".runtime/ni6-public-preparation-r3/build-readback.json",
+    "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json",
+    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "docs/evidence/NI6/public-preparation-r3-bounded-failure-code.json"
+  ],
+  "sourceCopyCount": 23,
+  "sourceDelta": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-delta.diff",
+  "sourceManifest": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-manifest.json",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "syntaxCommandsProposed": 1,
+  "syntaxStatus": "NOT_RUN",
+  "testsOrFaultCasesProposed": 0,
+  "wholeHostGraph": {
+    "actualLoadedTransitiveModules": "NOT_OBSERVED",
+    "bytes": 479383316,
+    "fileCount": 27577,
+    "linkCount": 12,
+    "moduleEvaluation": false,
+    "record": {
+      "bytes": 4028913,
+      "path": ".runtime/ni3-native-runtime/public-graph-pins.json",
+      "sha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd"
+    },
+    "scope": ".runtime/dsh-web/node_modules ONLY",
+    "sourceHashAndClosedPhysicalInventoryReadback": true
+  }
+}
