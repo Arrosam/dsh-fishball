@@ -1,0 +1,11 @@
+diff --git a/src/runtime-plugin.mjs b/src/runtime-plugin.mjs
+--- a/src/runtime-plugin.mjs
++++ b/src/runtime-plugin.mjs
+@@ -246,2 +246,2 @@
+           registrationOpen=true;
+-          contributions=new NativeContributions({readCurrentTask:taskRef=>{checkOwner();return store.task(owner,taskRef);},assertOwnerCurrent:()=>{if(registrationOpen){assertAlive();return true;}return checkOwner();},verifyClaimBinding:binding=>{
++          contributions=new NativeContributions({readCurrentTask:taskRef=>{checkOwner();return store.task(owner,taskRef);},assertOwnerCurrent:()=>{if(registrationOpen){if(!active||installedSealed||ctx.fiber.state!==1||ctx.fiber.uid===null)throw new BootstrapError('SERVICE_DISPOSED');return true;}return checkOwner();},verifyClaimBinding:binding=>{
+@@ -265,2 +265,2 @@
+-        } catch { installedSealed = true; throw new BootstrapError('RUNTIME_ADAPTER_INVALID'); }
++        } catch { registrationOpen = false; installedSealed = true; throw new BootstrapError('RUNTIME_ADAPTER_INVALID'); }
+       } else if (previewResolver) preview = new ApprovalPreview({ store, ownerHandle: owner, resolve: previewResolver, ttlMs: previewTtlMs, isAlive: alive, knownSecrets: forbiddenSecrets });

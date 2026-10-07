@@ -1,0 +1,13 @@
+{
+  "reason": "Root exact CB01 SOURCE disposition after preserved8e constructor retest failure, no executable retry before newfreeze",
+  "files": {
+    "src/runtime-plugin.mjs": {
+      "sha256": "8e1d2a2fed33545e86be76fc6b566eebde1bb9ae0b3a9abcb25593891e3b73fc",
+      "bytes": 54803
+    },
+    "root-bootstrap-execution-closure.json": {
+      "sha256": "934da575dd2de08364b7adb3b58480506e924aac1f8ff902dcd7131daced4f66",
+      "bytes": 113968
+    }
+  }
+}
