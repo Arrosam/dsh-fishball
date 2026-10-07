@@ -1,0 +1,4038 @@
+{
+  "contractVersion": "df.ni6-schema7-combined-api-proposal/v1",
+  "status": "SOURCE_ONLY_AUTHOR_HOLD_ROOT_DISPOSITION_REQUIRED_NOT_RUN",
+  "sourceSchema": 6,
+  "targetSchema": 7,
+  "baseline": {
+    "head": "216bf372db097c7a1efa20d6ad5198ae72eadfab",
+    "branch": "feat/S3-integrations",
+    "remotes": [],
+    "ledgerSha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+    "storeSha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f"
+  },
+  "constructor": {
+    "originalRequired": [
+      "databasePath",
+      "encryptionKey",
+      "principals"
+    ],
+    "originalOptional": [
+      "limits",
+      "clock",
+      "hostPermission",
+      "forbiddenSecrets",
+      "fixtureMode",
+      "fixtureFaults",
+      "migrationFault",
+      "fixtureMaxPageCount",
+      "auditExecutionBounds"
+    ],
+    "proposedOptional": {
+      "preparationPrincipals": "PreparationPrincipal[0..64]",
+      "nativeObservers": "NativeObserver[0..64]"
+    },
+    "ContextAssembler": {
+      "optional": "preparationBinding:AssemblerPreparationBinding",
+      "method": "assembleForPreparation(capability,input)"
+    },
+    "MemoryAdapter": {
+      "allOrNeitherOptional": [
+        "preparationCapability:Capability",
+        "onPreparedCommit:synchronous(PreparedCommitObservation)=>void"
+      ],
+      "publicPrepare": "prepareExecutionContext(PrepareRequest)->Promise<PreparedReceipt>"
+    },
+    "ApprovalPreview": {
+      "optional": "readResumeInput:synchronous({taskRef,resumeRef})->NormalResumeInputPair",
+      "branch": "spec.resumeBinding only; description.resume required only resume, ordinary envelope unchanged; full pair/currentness repeated at prepare/grant before original locked grant"
+    }
+  },
+  "definitions": {
+    "Ref": {
+      "kind": "alias",
+      "type": "lowercase hex64"
+    },
+    "Digest": {
+      "kind": "alias",
+      "type": "Ref"
+    },
+    "UInt": {
+      "kind": "alias",
+      "type": "safe integer0..MAX_SAFE_INTEGER"
+    },
+    "Positive": {
+      "kind": "alias",
+      "type": "safe integer1..MAX_SAFE_INTEGER"
+    },
+    "Text": {
+      "kind": "alias",
+      "type": "wellformed secret-checked UTF8 bounded string"
+    },
+    "Capability": {
+      "kind": "alias",
+      "type": "unique empty nonProxy object identity, never serialized"
+    },
+    "OwnerHandle": {
+      "kind": "alias",
+      "type": "actual same-store owner object"
+    },
+    "PrepareHandle": {
+      "kind": "alias",
+      "type": "actual same-store owner/coordinator object"
+    },
+    "HostHandle": {
+      "kind": "alias",
+      "type": "actual same-store host object"
+    },
+    "NativeKind": {
+      "kind": "enum",
+      "values": [
+        "normal_native_intent",
+        "normal_native_origin",
+        "normal_native_capture",
+        "normal_native_finish",
+        "normal_resume",
+        "normal_resume_claim"
+      ]
+    },
+    "Purpose": {
+      "kind": "enum",
+      "values": [
+        "producer",
+        "audit_review",
+        "audit_repair"
+      ]
+    },
+    "SelectionMode": {
+      "kind": "enum",
+      "values": [
+        "all_eligible",
+        "explicit_records"
+      ]
+    },
+    "SummaryDisposition": {
+      "kind": "enum",
+      "values": [
+        "retained_background",
+        "dropped_for_budget",
+        "excluded_stale_summary"
+      ]
+    },
+    "CurrentnessReason": {
+      "kind": "enum",
+      "values": [
+        "SEMANTIC_CHANGED",
+        "WINNING_SOURCE_CHANGED",
+        "CHECKED_SET_CHANGED",
+        "SOURCE_UNAVAILABLE",
+        "MEMORY_CHANGED",
+        "TASK_SNAPSHOT_CHANGED"
+      ]
+    },
+    "TaskStatus": {
+      "kind": "enum",
+      "values": [
+        "queued",
+        "running",
+        "waiting",
+        "blocked",
+        "recovery_required",
+        "cancel_requested",
+        "completed",
+        "failed",
+        "cancelled",
+        "deleted"
+      ]
+    },
+    "Task": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "ownerRef",
+        "workspaceRef",
+        "taskRef",
+        "status",
+        "version",
+        "taskVersion",
+        "authEpoch",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "taskRef": "Ref",
+        "status": "TaskStatus",
+        "version": "Positive",
+        "taskVersion": "Positive equals version",
+        "authEpoch": "UInt",
+        "createdAt": "UInt",
+        "updatedAt": "UInt"
+      }
+    },
+    "Scope": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "ownerRef",
+        "workspaceRef",
+        "taskRef"
+      ],
+      "properties": {
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "taskRef": "Ref"
+      }
+    },
+    "MemoryVersion": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "namespaceRef",
+        "revision"
+      ],
+      "properties": {
+        "namespaceRef": "Ref",
+        "revision": "UInt,0 true absence only"
+      }
+    },
+    "InputCounts": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "bytes",
+        "tokens"
+      ],
+      "properties": {
+        "bytes": "UInt",
+        "tokens": "UInt"
+      }
+    },
+    "PrepareRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "terms",
+        "now"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "terms": "Text[0..32],each<=8192bytes",
+        "now": "UInt",
+        "recordRefs": "Ref[0..64],original order and duplicate meaning",
+        "vectors": "FiniteFloat32[0..32][0..128] on normal transport original private bound unchanged",
+        "limit": "integer0..32"
+      }
+    },
+    "SummaryDispositionRow": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "disposition"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "disposition": "SummaryDisposition"
+      }
+    },
+    "AssemblerSourceObservation": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "selectionMode",
+        "examinedSummaryRefs",
+        "winningSourceRefs",
+        "summaryChecks"
+      ],
+      "properties": {
+        "selectionMode": "SelectionMode",
+        "examinedSummaryRefs": "sorted distinct Ref[0..64]",
+        "winningSourceRefs": "sorted distinct Ref[1..64]",
+        "summaryChecks": "sorted distinct SummaryDispositionRow[0..64]"
+      }
+    },
+    "PreparationObservation": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "sourceScope",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "generatedAt",
+        "ledgerSnapshotDigest",
+        "selectionMode",
+        "examinedSummaryRefs",
+        "winningSourceRefs",
+        "retainedRefs",
+        "droppedRefs",
+        "inputCounts"
+      ],
+      "properties": {
+        "contractVersion": "'df.preparation-observation/v1'",
+        "sourceScope": "Scope",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "generatedAt": "UInt",
+        "ledgerSnapshotDigest": "Digest",
+        "selectionMode": "SelectionMode",
+        "examinedSummaryRefs": "sorted distinct Ref[0..64]",
+        "winningSourceRefs": "sorted distinct Ref[1..64]",
+        "retainedRefs": "Ref[0..64] exact final original order",
+        "droppedRefs": "Ref[0..64] exact final original order",
+        "inputCounts": "InputCounts"
+      }
+    },
+    "WinningSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "kind"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "kind": "'goal'|'constraints'|'current_instruction'"
+      }
+    },
+    "SummaryCheck": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "generatedAt",
+        "sourceRefs",
+        "disposition"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "generatedAt": "UInt",
+        "sourceRefs": "Ref[1..16],original ordered duplicates retained",
+        "disposition": "SummaryDisposition"
+      }
+    },
+    "ContextConflict": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "reason",
+        "winningTaskVersion",
+        "winningAuthEpoch"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "reason": "'stale_summary'",
+        "winningTaskVersion": "Positive",
+        "winningAuthEpoch": "UInt"
+      }
+    },
+    "PreparedCheck": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "checkRef",
+        "taskRef",
+        "contextRecordRef",
+        "contextDigest",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "committedTaskVersion",
+        "committedAuthEpoch",
+        "semanticRevision",
+        "generatedAt",
+        "ledgerSnapshotDigest",
+        "memory",
+        "method",
+        "winningSources",
+        "summaryChecks",
+        "conflicts",
+        "ownerRef",
+        "workspaceRef",
+        "commandRef",
+        "preparationPrincipalRef",
+        "preparationRequestDigest",
+        "selectionMode",
+        "checkedSetDigest"
+      ],
+      "properties": {
+        "contractVersion": "'df.prepared-context-check/v1'",
+        "checkRef": "Ref",
+        "taskRef": "Ref",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "committedTaskVersion": "Positive",
+        "committedAuthEpoch": "UInt",
+        "semanticRevision": "UInt",
+        "generatedAt": "UInt",
+        "ledgerSnapshotDigest": "Digest",
+        "memory": "MemoryVersion",
+        "method": "'version-currentness/v1'",
+        "winningSources": "sorted distinct WinningSource[1..64]",
+        "summaryChecks": "sorted distinct SummaryCheck[0..64]",
+        "conflicts": "sorted distinct ContextConflict[0..64]",
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "commandRef": "Ref",
+        "preparationPrincipalRef": "Ref",
+        "preparationRequestDigest": "Digest",
+        "selectionMode": "SelectionMode",
+        "checkedSetDigest": "Digest"
+      }
+    },
+    "PreparedBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "checkRef",
+        "taskRef",
+        "contextRecordRef",
+        "contextDigest",
+        "checkRecordRef",
+        "checkDigest",
+        "commandRef",
+        "preparationPrincipalRef",
+        "preparationRequestDigest",
+        "selectionMode",
+        "checkedSetDigest",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "committedTaskVersion",
+        "committedAuthEpoch",
+        "semanticRevision",
+        "generatedAt",
+        "namespaceRef",
+        "memoryRevision",
+        "method"
+      ],
+      "properties": {
+        "contractVersion": "'df.prepared-context-binding/v1'",
+        "checkRef": "Ref",
+        "taskRef": "Ref",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "checkRecordRef": "Ref",
+        "checkDigest": "Digest",
+        "commandRef": "Ref",
+        "preparationPrincipalRef": "Ref",
+        "preparationRequestDigest": "Digest",
+        "selectionMode": "SelectionMode",
+        "checkedSetDigest": "Digest",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "committedTaskVersion": "Positive",
+        "committedAuthEpoch": "UInt",
+        "semanticRevision": "UInt",
+        "generatedAt": "UInt",
+        "namespaceRef": "Ref",
+        "memoryRevision": "UInt",
+        "method": "'version-currentness/v1'"
+      }
+    },
+    "PreparedRegistry": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "recordCount",
+        "recordDigest"
+      ],
+      "properties": {
+        "contractVersion": "'df.prepared-context-registry/v1'",
+        "recordCount": "UInt original aggregate cap",
+        "recordDigest": "Digest"
+      }
+    },
+    "PreparedRegistryMember": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "contextRecordRef",
+        "contextDigest",
+        "checkRef"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "checkRef": "Ref"
+      }
+    },
+    "Currentness": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "instructionsCurrent",
+        "memoryCurrent",
+        "taskSnapshotCurrent",
+        "reasonCodes"
+      ],
+      "properties": {
+        "instructionsCurrent": "boolean",
+        "memoryCurrent": "boolean",
+        "taskSnapshotCurrent": "boolean",
+        "reasonCodes": "sorted unique CurrentnessReason[0..6]"
+      }
+    },
+    "RawContextReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "kind",
+        "sourceRef",
+        "taskVersion",
+        "authEpoch",
+        "generationRef",
+        "createdAt",
+        "byteLength",
+        "cryptoVersion",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "semanticRevision",
+        "memoryNamespaceRef",
+        "memoryRevision",
+        "task"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "kind": "'context'",
+        "sourceRef": "Ref",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt",
+        "generationRef": "null",
+        "createdAt": "UInt",
+        "byteLength": "UInt",
+        "cryptoVersion": "2",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "semanticRevision": "UInt",
+        "memoryNamespaceRef": "Ref",
+        "memoryRevision": "UInt",
+        "task": "Task"
+      }
+    },
+    "PreparedReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "kind",
+        "byteLength",
+        "cryptoVersion",
+        "sourceRef",
+        "task",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "memory",
+        "inputCounts",
+        "retainedRefs",
+        "droppedRefs",
+        "verification"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "kind": "'context'",
+        "byteLength": "UInt",
+        "cryptoVersion": "2",
+        "sourceRef": "Ref",
+        "task": "Task",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "memory": "MemoryVersion",
+        "inputCounts": "InputCounts",
+        "retainedRefs": "Ref[0..64] original order",
+        "droppedRefs": "Ref[0..64] original order",
+        "verification": "'module_prepared_execution_context_only'"
+      }
+    },
+    "PreparationBounds": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contextByteLimit",
+        "checkByteLimit",
+        "metadataByteLimit",
+        "wireByteLimit",
+        "minBindingBytes"
+      ],
+      "properties": {
+        "contextByteLimit": "Positive<=min(65536,selected maxDataBytes)",
+        "checkByteLimit": "Positive<=min(49152,selected maxDataBytes)",
+        "metadataByteLimit": "Positive<=min(4096,selected maxMetadataBytes)",
+        "wireByteLimit": "65536",
+        "minBindingBytes": "Positive actual complete signed wrapper feasibility"
+      }
+    },
+    "PreparationStatus": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "reasonCode",
+        "configured",
+        "ready",
+        "bounds"
+      ],
+      "properties": {
+        "phase": "'disabled'|'unavailable'|'limited'|'ready'",
+        "reasonCode": "null|'CONTEXT_PREPARATION_DISABLED'|'CONTEXT_PREPARATION_UNAVAILABLE'|'CONTEXT_PREPARATION_LIMIT'",
+        "configured": "boolean",
+        "ready": "boolean",
+        "bounds": "PreparationBounds|null"
+      }
+    },
+    "PreparationPrincipal": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "capability",
+        "ownerHandle",
+        "namespaceRef"
+      ],
+      "properties": {
+        "capability": "Capability",
+        "ownerHandle": "PrepareHandle",
+        "namespaceRef": "Ref"
+      }
+    },
+    "NativeObserver": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "capability",
+        "ownerHandle",
+        "hostHandle",
+        "source"
+      ],
+      "properties": {
+        "capability": "Capability",
+        "ownerHandle": "OwnerHandle",
+        "hostHandle": "HostHandle",
+        "source": "StableSource"
+      }
+    },
+    "AssemblerPreparationBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "capability",
+        "handle"
+      ],
+      "properties": {
+        "capability": "Capability",
+        "handle": "PrepareHandle same actual store/scope as issuer"
+      }
+    },
+    "SourceFile": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "digest"
+      ],
+      "properties": {
+        "path": "Text package-relative<=512bytes sorted unique",
+        "digest": "Digest"
+      }
+    },
+    "HostSourceModule": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "files"
+      ],
+      "properties": {
+        "name": "Text<=128bytes",
+        "version": "Text<=64bytes",
+        "files": "SourceFile[1..32] sorted unique"
+      }
+    },
+    "StableHostSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "lockDigest",
+        "modules"
+      ],
+      "properties": {
+        "version": "'0.2.1-alpha.1'",
+        "lockDigest": "Digest exact original host lock",
+        "modules": "HostSourceModule[1..32] sorted unique names"
+      }
+    },
+    "StableProductSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "files"
+      ],
+      "properties": {
+        "name": "'dsh-fishball'",
+        "version": "Text actual final preview package<=64bytes",
+        "files": "SourceFile[1..64] sorted unique"
+      }
+    },
+    "StableSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "host",
+        "product"
+      ],
+      "properties": {
+        "contractVersion": "'df.native-source/v1'",
+        "host": "StableHostSource",
+        "product": "StableProductSource"
+      }
+    },
+    "Backend": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "sourceRef",
+        "directory",
+        "compression",
+        "retention",
+        "encrypted"
+      ],
+      "properties": {
+        "contractVersion": "'df.native-backend/v1'",
+        "sourceRef": "Digest H(StableSource)",
+        "directory": "Text canonical original profile-owned sibling<=1024bytes",
+        "compression": "'none'|'zstd'",
+        "retention": "'owner-managed'",
+        "encrypted": "false"
+      }
+    },
+    "Environment": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "cwd"
+      ],
+      "properties": {
+        "root": "Text canonical current-owner directory<=1024bytes",
+        "cwd": "Text canonical root/subdirectory<=1024bytes"
+      }
+    },
+    "PersistenceSelection": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "directory",
+        "compression",
+        "retention"
+      ],
+      "properties": {
+        "directory": "Text canonical sibling<=1024bytes",
+        "compression": "'none'|'zstd'",
+        "retention": "'owner-managed'"
+      }
+    },
+    "ModelSelection": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model",
+        "agentPreset",
+        "reasoningEffort",
+        "maxOutputTokens"
+      ],
+      "properties": {
+        "provider": "Text<=128bytes",
+        "model": "Text<=256bytes",
+        "agentPreset": "Text<=128bytes",
+        "reasoningEffort": "Text<=128bytes|null original selection",
+        "maxOutputTokens": "integer128..4096"
+      }
+    },
+    "SelectedCharges": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeMs",
+        "usageUnits"
+      ],
+      "properties": {
+        "runtimeMs": "integer1..60000",
+        "usageUnits": "integer1..100000000"
+      }
+    },
+    "SelectedPolicy": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "maxRuntimeMs",
+        "maxUsageUnits",
+        "maxCostEstimateMicros"
+      ],
+      "properties": {
+        "maxRuntimeMs": "integer1..3600000",
+        "maxUsageUnits": "integer1..100000000",
+        "maxCostEstimateMicros": "integer0..100000000"
+      }
+    },
+    "RequestBounds": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "requestBytes",
+        "resultBytes"
+      ],
+      "properties": {
+        "requestBytes": "integer512..131072",
+        "resultBytes": "integer128..16384"
+      }
+    },
+    "NormalizedWorker": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "selection",
+        "environment",
+        "persistence",
+        "bounds",
+        "policy",
+        "charges",
+        "previewTtlMs",
+        "grantTtlMs"
+      ],
+      "properties": {
+        "enabled": "true",
+        "selection": "ModelSelection",
+        "environment": "Environment",
+        "persistence": "PersistenceSelection",
+        "bounds": "RequestBounds",
+        "policy": "SelectedPolicy",
+        "charges": "SelectedCharges",
+        "previewTtlMs": "integer1..60000",
+        "grantTtlMs": "integer1..60000"
+      }
+    },
+    "AuditRole": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "selection",
+        "charges"
+      ],
+      "properties": {
+        "selection": "ModelSelection",
+        "charges": "SelectedCharges"
+      }
+    },
+    "AuditSelection": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "inputByteLimit",
+        "resultByteLimit",
+        "maxPrivateReviewers",
+        "blockingSeverities",
+        "maxRepairRounds",
+        "maxTotalAttempts",
+        "review"
+      ],
+      "properties": {
+        "enabled": "true",
+        "inputByteLimit": "Positive<=65536",
+        "resultByteLimit": "Positive<=65536",
+        "maxPrivateReviewers": "integer1..32",
+        "blockingSeverities": "distinct original('fatal'|'blocking'|'warning'|'info')[0..4]",
+        "maxRepairRounds": "integer0..8",
+        "maxTotalAttempts": "integer2..32",
+        "review": "AuditRole",
+        "repair": "AuditRole"
+      }
+    },
+    "ContinuationHistoryBounds": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "maxEvents",
+        "maxMessages",
+        "maxBytes"
+      ],
+      "properties": {
+        "maxEvents": "integer1..96",
+        "maxMessages": "integer3..17",
+        "maxBytes": "integer256..49152"
+      }
+    },
+    "ContinuationSelection": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "maxContinuations",
+        "maxTotalAttempts",
+        "history"
+      ],
+      "properties": {
+        "enabled": "true",
+        "maxContinuations": "integer1..8",
+        "maxTotalAttempts": "integer2..32",
+        "history": "ContinuationHistoryBounds"
+      }
+    },
+    "FullLimits": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "queueCapacity",
+        "maxActive",
+        "maxAttempts",
+        "maxTotalAttempts",
+        "maxTasks",
+        "maxActionsPerTask",
+        "maxEventsPerTask",
+        "maxMetadataBytes",
+        "maxDataBytes",
+        "maxRecordsPerTask",
+        "maxCommands",
+        "maxRuntimeMs",
+        "maxUsageUnits",
+        "maxCostEstimateMicros",
+        "maxControlCommands"
+      ],
+      "properties": {
+        "queueCapacity": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxActive": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxAttempts": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxTotalAttempts": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxTasks": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxActionsPerTask": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxEventsPerTask": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxMetadataBytes": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxDataBytes": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxRecordsPerTask": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxCommands": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxRuntimeMs": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxUsageUnits": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxCostEstimateMicros": "ORIGINAL limits integer domain and selected constructor ceiling",
+        "maxControlCommands": "ORIGINAL limits integer domain and selected constructor ceiling"
+      }
+    },
+    "ModelPolicy": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "presetRefs",
+        "catalogEvidenceRef"
+      ],
+      "properties": {
+        "version": "Positive",
+        "presetRefs": "Ref[1..32] original validation",
+        "catalogEvidenceRef": "Ref"
+      }
+    },
+    "AcceptedPolicy": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "limits",
+        "modelPolicy"
+      ],
+      "properties": {
+        "version": "Positive",
+        "limits": "FullLimits",
+        "modelPolicy": "ModelPolicy"
+      }
+    },
+    "NativeConfigurationSelection": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "worker",
+        "audit",
+        "continuation",
+        "acceptedPolicy"
+      ],
+      "properties": {
+        "worker": "NormalizedWorker",
+        "audit": "AuditSelection|null",
+        "continuation": "ContinuationSelection|null",
+        "acceptedPolicy": "AcceptedPolicy"
+      }
+    },
+    "RoleSelection": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "selection",
+        "charges",
+        "bounds",
+        "systemPrompt",
+        "recipeDigest"
+      ],
+      "properties": {
+        "purpose": "Purpose",
+        "selection": "ModelSelection effective explicit deterministic effort",
+        "charges": "SelectedCharges",
+        "bounds": "RequestBounds",
+        "systemPrompt": "Text exact literal held role prompt",
+        "recipeDigest": "Digest actual source-owned literal recipe"
+      }
+    },
+    "PresetDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "presetRef",
+        "documentDigest",
+        "moduleRefs",
+        "leakedServiceRefs"
+      ],
+      "properties": {
+        "id": "Text<=128bytes",
+        "presetRef": "Ref",
+        "documentDigest": "Digest actual selected preset document",
+        "moduleRefs": "Ref[0]",
+        "leakedServiceRefs": "Ref[0]"
+      }
+    },
+    "ToolsDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "schemaRefs",
+        "restriction",
+        "vetoCode",
+        "toolsDigest"
+      ],
+      "properties": {
+        "schemaRefs": "Ref[0]",
+        "restriction": "'allow-empty'",
+        "vetoCode": "'DF_TOOL_DISPATCH_UNAVAILABLE'",
+        "toolsDigest": "Ref"
+      }
+    },
+    "PermissionDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "resourcePolicyVersion",
+        "modelPolicyVersion",
+        "permissionPolicyDigest"
+      ],
+      "properties": {
+        "policy": "SelectedPolicy",
+        "resourcePolicyVersion": "Positive",
+        "modelPolicyVersion": "Positive",
+        "permissionPolicyDigest": "Ref"
+      }
+    },
+    "RolePresetDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "description"
+      ],
+      "properties": {
+        "purpose": "Purpose",
+        "description": "PresetDescription"
+      }
+    },
+    "NativeConfiguration": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "configuration",
+        "backend",
+        "environment",
+        "selection",
+        "preset",
+        "tools",
+        "permission"
+      ],
+      "properties": {
+        "source": "StableSource",
+        "configuration": "NativeConfigurationSelection",
+        "backend": "Backend",
+        "environment": "Environment",
+        "selection": "distinct purpose RoleSelection[1..3]",
+        "preset": "distinct purpose RolePresetDescription[1..3]",
+        "tools": "ToolsDescription",
+        "permission": "PermissionDescription"
+      }
+    },
+    "NativeIdentity": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "nativeId"
+      ],
+      "properties": {
+        "nativeId": "Text<=128bytes exact df-originalGenerationRef"
+      }
+    },
+    "NativeSurface": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "nodes",
+        "replaceGeneration",
+        "contentGeneration"
+      ],
+      "properties": {
+        "nodes": "ORIGINAL SessionSeq[0..128]",
+        "replaceGeneration": "UInt",
+        "contentGeneration": "UInt"
+      }
+    },
+    "NativeHeader": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "id",
+        "createdAt",
+        "cwd",
+        "isSeeded"
+      ],
+      "properties": {
+        "version": "4",
+        "id": "Text actual original native ID",
+        "createdAt": "UInt",
+        "cwd": "Text exact origin canonical environment.cwd",
+        "isSeeded": "false",
+        "agentPreset": "Text exact selected origin preset when originally present"
+      }
+    },
+    "AdmittedNativeEventType": {
+      "kind": "enum",
+      "values": [
+        "session/end-seed",
+        "turn/start",
+        "turn/end",
+        "step/start",
+        "step/end",
+        "request/header",
+        "request/context",
+        "system/message",
+        "user/message",
+        "assistant/message",
+        "agent-preset/selected",
+        "approval/policy",
+        "agent/inbox/spliced"
+      ]
+    },
+    "NativeEvent": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "seq",
+        "time",
+        "data"
+      ],
+      "properties": {
+        "type": "AdmittedNativeEventType",
+        "seq": "UInt contiguous0-based",
+        "time": "UInt",
+        "data": "ExactPinnedNativeEventData(type)",
+        "ignorable": "true",
+        "surfaceOp": "'append'",
+        "sourceEventSeqs": "UInt[1..128] earlier existing native seqs"
+      }
+    },
+    "ExactPinnedNativeEventData(type)": {
+      "kind": "alias",
+      "type": "Exact original SessionEventMap[type] union from pinned public Session types plus public Agent inbox, preset session and approval policy declarations. No unrecognised ignorable event exemption. Native sourceEventSeqs and surfaceOp only on surface events; assistant forbids sourceEventSeqs. session/end-seed data exactly empty object for supported own restore; approval/policy exactly policy=never with absent source; preset exact selected ID; inbox original splices exact authenticated new df-context input and empty reconstructed queues. request/context exact approved provider/model/contextWindow/systemPromptUpdate; no added model-visible runtime context."
+    },
+    "TextBlock": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": "'text'",
+        "text": "Text"
+      }
+    },
+    "SystemSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": "'system-prompt'"
+      }
+    },
+    "ContextSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "form"
+      ],
+      "properties": {
+        "kind": "'df-context'",
+        "form": "'local'"
+      }
+    },
+    "ModelSource": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "kind": "'model'",
+        "provider": "Text exact original selected provider",
+        "model": "Text exact original selected model"
+      }
+    },
+    "SystemMessage": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role",
+        "content",
+        "source"
+      ],
+      "properties": {
+        "id": "Text exact original MessageId",
+        "role": "'system'",
+        "content": "TextBlock[1] exact unchanged fixed prompt",
+        "source": "SystemSource"
+      }
+    },
+    "ContextMessage": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role",
+        "content",
+        "source"
+      ],
+      "properties": {
+        "id": "Text exact executionRef",
+        "role": "'user'",
+        "content": "TextBlock[1] exact whole approved execution_context or audit input",
+        "source": "ContextSource"
+      }
+    },
+    "AssistantMessage": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role",
+        "content",
+        "source"
+      ],
+      "properties": {
+        "id": "Text exact original committed MessageId",
+        "role": "'assistant'",
+        "content": "TextBlock[1] exact captured source response",
+        "source": "ModelSource"
+      }
+    },
+    "NativeMessage": {
+      "kind": "alias",
+      "type": "SystemMessage|ContextMessage|AssistantMessage, exact original public Message fields. Provider replayState absent for source-owned simulated route."
+    },
+    "OriginalContextProvenance": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "taskVersion",
+        "authEpoch",
+        "createdAt"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt",
+        "createdAt": "UInt",
+        "sourceScope": "Scope",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "generatedAt": "UInt",
+        "sourceRefs": "Ref[1..16] original ordered duplicates",
+        "observation": "queried_snapshot",
+        "observedAt": "UInt",
+        "observationDigest": "Digest",
+        "supplement": "OriginalSupplement"
+      }
+    },
+    "OriginalSupplement": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "sourceRef",
+        "subscriptionRef",
+        "eventRef",
+        "eventDigest",
+        "observedAt",
+        "taskRef"
+      ],
+      "properties": {
+        "contractVersion": "'df.supplement/v1'",
+        "sourceRef": "Ref",
+        "subscriptionRef": "Ref",
+        "eventRef": "Ref",
+        "eventDigest": "Digest",
+        "observedAt": "UInt",
+        "taskRef": "Ref"
+      }
+    },
+    "OriginalAssemblerConflict": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "reason",
+        "winningTaskVersion"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "reason": "'stale_summary'",
+        "winningTaskVersion": "Positive"
+      }
+    },
+    "OriginalAssembledContext": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "bytes",
+        "tokens",
+        "compressed",
+        "retainedRefs",
+        "droppedRefs",
+        "taskVersion",
+        "authEpoch",
+        "generationRef",
+        "conflicts",
+        "provenance",
+        "ledgerSnapshotDigest",
+        "verification"
+      ],
+      "properties": {
+        "text": "Text",
+        "bytes": "UInt",
+        "tokens": "UInt",
+        "compressed": "boolean",
+        "retainedRefs": "Ref[0..64] exact original order",
+        "droppedRefs": "Ref[0..64] exact original order",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt",
+        "generationRef": "Ref|null",
+        "conflicts": "OriginalAssemblerConflict[0..64]",
+        "provenance": "OriginalContextProvenance[0..64]",
+        "ledgerSnapshotDigest": "Digest",
+        "verification": "'module_assembled_input_only'"
+      }
+    },
+    "NativeHistoryObservation": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "ownerRef",
+        "workspaceRef",
+        "taskRef",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "sourceRef",
+        "configurationDigest",
+        "header",
+        "events",
+        "surface",
+        "messages"
+      ],
+      "properties": {
+        "schema": "'df.native-history/v1'",
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "taskRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "sourceRef": "Ref actual historical live observation",
+        "configurationDigest": "Digest",
+        "header": "NativeHeader",
+        "events": "NativeEvent[0..128] contiguous0-based complete",
+        "surface": "NativeSurface",
+        "messages": "NativeMessage[0..19] complete derived messages,17 approved predecessor plus new user/assistant"
+      }
+    },
+    "PreparedInputBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "checkRef",
+        "contextRecordRef",
+        "contextDigest",
+        "preparationPrincipalRef",
+        "preparationRequestDigest"
+      ],
+      "properties": {
+        "checkRef": "Ref",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "preparationPrincipalRef": "Ref",
+        "preparationRequestDigest": "Digest"
+      }
+    },
+    "ArtifactTarget": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "artifactRef",
+        "version"
+      ],
+      "properties": {
+        "artifactRef": "Ref",
+        "version": "Positive exact original input artifactVersion+1"
+      }
+    },
+    "AuditInputBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "inputRecordRef",
+        "inputDigest",
+        "auditRef",
+        "bindingDigest",
+        "materialDigest",
+        "previousReportRef",
+        "artifactTarget"
+      ],
+      "properties": {
+        "inputRecordRef": "Ref",
+        "inputDigest": "Digest",
+        "auditRef": "Ref",
+        "bindingDigest": "Digest",
+        "materialDigest": "Digest",
+        "previousReportRef": "Ref|null",
+        "artifactTarget": "ArtifactTarget|null"
+      }
+    },
+    "AuditCaptureBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "resultRef",
+        "resultRecordRef",
+        "resultDigest",
+        "inputRecordRef",
+        "inputDigest",
+        "auditRef",
+        "bindingDigest",
+        "materialDigest",
+        "previousReportRef",
+        "artifactTarget"
+      ],
+      "properties": {
+        "resultRef": "Ref",
+        "resultRecordRef": "Ref",
+        "resultDigest": "Digest",
+        "inputRecordRef": "Ref",
+        "inputDigest": "Digest",
+        "auditRef": "Ref",
+        "bindingDigest": "Digest",
+        "materialDigest": "Digest",
+        "previousReportRef": "Ref|null",
+        "artifactTarget": "ArtifactTarget|null"
+      }
+    },
+    "NativeIntent": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "intentRef",
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "identityRecordRef",
+        "identityDigest",
+        "configurationRecordRef",
+        "configurationDigest",
+        "sourceRef",
+        "createConfigDigest",
+        "backendRef",
+        "createdAt",
+        "purpose",
+        "inputBinding"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native/normal_native_intent/v1'",
+        "intentRef": "Ref equals claimRef",
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "identityRecordRef": "Ref",
+        "identityDigest": "Digest",
+        "configurationRecordRef": "Ref",
+        "configurationDigest": "Digest",
+        "sourceRef": "Ref stableSourceRef",
+        "createConfigDigest": "Digest configurationDigest",
+        "backendRef": "Ref",
+        "createdAt": "UInt",
+        "purpose": "Purpose",
+        "inputBinding": "PreparedInputBinding if producer else AuditInputBinding"
+      }
+    },
+    "NativeOrigin": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "originRef",
+        "intentRef",
+        "taskRef",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "creationEvidenceRef",
+        "baselineHistoryRecordRef",
+        "baselineHistoryDigest",
+        "createdAt"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native/normal_native_origin/v1'",
+        "originRef": "Ref",
+        "intentRef": "Ref",
+        "taskRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "creationEvidenceRef": "Ref",
+        "baselineHistoryRecordRef": "Ref",
+        "baselineHistoryDigest": "Digest",
+        "createdAt": "UInt"
+      }
+    },
+    "NativeCapture": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "captureRef",
+        "originRef",
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "executionRef",
+        "contextRecordRef",
+        "contextDigest",
+        "resumeRef",
+        "fullInputDigest",
+        "artifactRef",
+        "artifactVersion",
+        "artifactDigest",
+        "resultDigest",
+        "cursor",
+        "persistenceEvidenceRef",
+        "committedHistoryRecordRef",
+        "committedHistoryDigest",
+        "eventCount",
+        "headerDigest",
+        "messagesDigest",
+        "usageUnits",
+        "accounting",
+        "createdAt",
+        "phase",
+        "purpose",
+        "inputCursor",
+        "auditBinding",
+        "outputCaptureRef"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native/normal_native_capture/v1'",
+        "captureRef": "Ref",
+        "originRef": "Ref",
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "executionRef": "Ref",
+        "contextRecordRef": "Ref actual protected context",
+        "contextDigest": "Digest actual protected context",
+        "resumeRef": "Ref|null",
+        "fullInputDigest": "Digest|null",
+        "artifactRef": "Ref|null",
+        "artifactVersion": "Positive|null",
+        "artifactDigest": "Digest|null",
+        "resultDigest": "Digest",
+        "cursor": "UInt",
+        "persistenceEvidenceRef": "Ref",
+        "committedHistoryRecordRef": "Ref",
+        "committedHistoryDigest": "Digest",
+        "eventCount": "UInt<=128",
+        "headerDigest": "Digest",
+        "messagesDigest": "Digest",
+        "usageUnits": "UInt<=actual reserved bound",
+        "accounting": "'df-testing-utf8-byte-units/v1'",
+        "createdAt": "UInt",
+        "phase": "'output'|'repair_artifact'",
+        "purpose": "Purpose",
+        "inputCursor": "UInt<cursor",
+        "auditBinding": "AuditCaptureBinding|null",
+        "outputCaptureRef": "Ref|null"
+      }
+    },
+    "NativeFinish": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "finishRef",
+        "taskRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "captureRef",
+        "terminalEvidenceRef",
+        "outcomeEvidenceRef",
+        "releaseEvidenceRef",
+        "usageState",
+        "usageUnits",
+        "releaseState",
+        "createdAt",
+        "commandRef",
+        "ownerRequestDigest",
+        "artifactCaptureRef"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native/normal_native_finish/v1'",
+        "finishRef": "Ref equals claimRef",
+        "taskRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "executionRef": "Ref",
+        "captureRef": "Ref primary output",
+        "terminalEvidenceRef": "Ref",
+        "outcomeEvidenceRef": "Ref",
+        "releaseEvidenceRef": "Ref|null",
+        "usageState": "'actual'|'unknown'",
+        "usageUnits": "UInt|null only unknown",
+        "releaseState": "'held'|'released'",
+        "createdAt": "UInt",
+        "commandRef": "Ref",
+        "ownerRequestDigest": "Digest",
+        "artifactCaptureRef": "Ref|null"
+      }
+    },
+    "NativeResume": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "resumeRef",
+        "taskRef",
+        "originRef",
+        "predecessorClaimRef",
+        "predecessorCaptureRef",
+        "predecessorFinishRef",
+        "ordinal",
+        "sessionRef",
+        "contextRecordRef",
+        "contextDigest",
+        "historyRecordRef",
+        "historyDigest",
+        "inputRecordRef",
+        "inputDigest",
+        "configurationRecordRef",
+        "configurationDigest",
+        "semanticRevision",
+        "sourceTaskVersion",
+        "sourceAuthEpoch",
+        "createdAt"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native/normal_resume/v1'",
+        "resumeRef": "Ref",
+        "taskRef": "Ref",
+        "originRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "predecessorCaptureRef": "Ref",
+        "predecessorFinishRef": "Ref",
+        "ordinal": "integer1..8",
+        "sessionRef": "Ref",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "historyRecordRef": "Ref",
+        "historyDigest": "Digest",
+        "inputRecordRef": "Ref",
+        "inputDigest": "Digest",
+        "configurationRecordRef": "Ref",
+        "configurationDigest": "Digest",
+        "semanticRevision": "UInt",
+        "sourceTaskVersion": "Positive",
+        "sourceAuthEpoch": "UInt",
+        "createdAt": "UInt"
+      }
+    },
+    "NativeResumeClaim": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "claimRef",
+        "resumeRef",
+        "taskRef",
+        "originRef",
+        "predecessorClaimRef",
+        "actionRef",
+        "actionDigest",
+        "generationRef",
+        "sessionRef",
+        "reservationRef",
+        "createdAt"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native/normal_resume_claim/v1'",
+        "claimRef": "Ref",
+        "resumeRef": "Ref",
+        "taskRef": "Ref",
+        "originRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "reservationRef": "Ref",
+        "createdAt": "UInt"
+      }
+    },
+    "NativeRegistry": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "recordCount",
+        "recordDigest"
+      ],
+      "properties": {
+        "contractVersion": "'df.normal-native-registry/v1'",
+        "recordCount": "UInt original aggregate cap",
+        "recordDigest": "Digest"
+      }
+    },
+    "NativeRegistryMember": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "taskRef",
+        "id"
+      ],
+      "properties": {
+        "kind": "NativeKind",
+        "taskRef": "Ref",
+        "id": "Ref"
+      }
+    },
+    "NormalOriginSpecBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRef",
+        "createConfigDigest",
+        "backendRef",
+        "sessionRef"
+      ],
+      "properties": {
+        "sourceRef": "Ref stableSourceRef",
+        "createConfigDigest": "Digest",
+        "backendRef": "Ref",
+        "sessionRef": "Ref"
+      }
+    },
+    "NormalResumeSpecBinding": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "resumeRef",
+        "predecessorOriginRef",
+        "predecessorClaimRef",
+        "historyDigest",
+        "inputDigest"
+      ],
+      "properties": {
+        "resumeRef": "Ref",
+        "predecessorOriginRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "historyDigest": "Digest",
+        "inputDigest": "Digest"
+      }
+    },
+    "OriginalSpecModel": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "presetRef",
+        "modelRef",
+        "reasoningRef",
+        "catalogEvidenceRef"
+      ],
+      "properties": {
+        "presetRef": "Ref",
+        "modelRef": "Ref",
+        "reasoningRef": "Ref",
+        "catalogEvidenceRef": "Ref"
+      }
+    },
+    "OriginalSpecExecutor": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "generationRef",
+        "environmentRef",
+        "bindingDigest",
+        "toolsDigest",
+        "permissionPolicyDigest"
+      ],
+      "properties": {
+        "mode": "'create'|'resume'|'none'",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "environmentRef": "Ref",
+        "bindingDigest": "Ref",
+        "toolsDigest": "Ref",
+        "permissionPolicyDigest": "Ref"
+      }
+    },
+    "OriginalSpecExecutionInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "purpose",
+        "auditRef",
+        "bindingDigest",
+        "materialDigest"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "purpose": "'audit_review'|'audit_repair'",
+        "auditRef": "Ref",
+        "bindingDigest": "Ref",
+        "materialDigest": "Ref",
+        "previousReportRef": "Ref"
+      }
+    },
+    "OriginalNormalizedSpec": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "actionRef",
+        "kind",
+        "role",
+        "targetDigest",
+        "dataDigest",
+        "units",
+        "charges",
+        "attemptGroupRef",
+        "attemptIndex",
+        "resourcePolicyVersion",
+        "modelPolicyVersion",
+        "model",
+        "executor"
+      ],
+      "properties": {
+        "actionRef": "Ref",
+        "kind": "'read'|'write'|'review'|'repair'",
+        "role": "'worker'|'review'|'repair'",
+        "targetDigest": "Digest",
+        "dataDigest": "Digest",
+        "units": "Positive",
+        "charges": "OriginalSpecCharges",
+        "attemptGroupRef": "Ref",
+        "attemptIndex": "Positive",
+        "resourcePolicyVersion": "Positive",
+        "modelPolicyVersion": "Positive",
+        "model": "OriginalSpecModel",
+        "executor": "OriginalSpecExecutor",
+        "executionInput": "OriginalSpecExecutionInput",
+        "nativeOriginBinding": "NormalOriginSpecBinding",
+        "resumeBinding": "NormalResumeSpecBinding"
+      }
+    },
+    "Predecessor": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "predecessorActionRef",
+        "predecessorClaimRef",
+        "predecessorGenerationRef",
+        "predecessorExecutionRef",
+        "artifactRef",
+        "artifactVersion",
+        "artifactDigest",
+        "releaseEvidenceRef"
+      ],
+      "properties": {
+        "predecessorActionRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "predecessorGenerationRef": "Ref",
+        "predecessorExecutionRef": "Ref",
+        "artifactRef": "Ref",
+        "artifactVersion": "1",
+        "artifactDigest": "Digest",
+        "releaseEvidenceRef": "Ref"
+      }
+    },
+    "ResumeHistory": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "ownerRef",
+        "workspaceRef",
+        "taskRef",
+        "originRef",
+        "predecessor",
+        "ordinal",
+        "sessionRef",
+        "persistence",
+        "header",
+        "events",
+        "surface",
+        "messages",
+        "contextRecordRef",
+        "contextDigest",
+        "configurationRef",
+        "sourceRef"
+      ],
+      "properties": {
+        "schema": "'df.resume-history/v1'",
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "taskRef": "Ref",
+        "originRef": "Ref",
+        "predecessor": "Predecessor",
+        "ordinal": "integer1..8",
+        "sessionRef": "Ref",
+        "persistence": "Backend",
+        "header": "NativeHeader",
+        "events": "NativeEvent[0..96]",
+        "surface": "NativeSurface",
+        "messages": "NativeMessage[3..17]",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "configurationRef": "Ref current explicit source-owned configuration",
+        "sourceRef": "Ref stableSourceRef"
+      }
+    },
+    "ResumeInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "ownerRef",
+        "workspaceRef",
+        "taskRef",
+        "originRef",
+        "ordinal",
+        "sessionRef",
+        "historyDigest",
+        "historyMessages",
+        "contextRecordRef",
+        "contextDigest",
+        "contextContent"
+      ],
+      "properties": {
+        "schema": "'df.resume-input/v1'",
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "taskRef": "Ref",
+        "originRef": "Ref",
+        "ordinal": "integer1..8",
+        "sessionRef": "Ref",
+        "historyDigest": "Digest",
+        "historyMessages": "NativeMessage[3..17] exact prefix",
+        "contextRecordRef": "Ref",
+        "contextDigest": "Digest",
+        "contextContent": "Text exact whole current execution_context bytes"
+      }
+    },
+    "ActualUsage": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "units"
+      ],
+      "properties": {
+        "state": "'actual'",
+        "units": "UInt"
+      }
+    },
+    "OwnerFinishRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "actionRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "executionRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "Budget": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "attempts",
+        "runtimeMs",
+        "usageUnits",
+        "costEstimateMicros"
+      ],
+      "properties": {
+        "attempts": "UInt",
+        "runtimeMs": "UInt",
+        "usageUnits": "UInt",
+        "costEstimateMicros": "UInt"
+      }
+    },
+    "RemainingBudget": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "attempts",
+        "runtimeMs",
+        "usageUnits",
+        "costEstimateMicros"
+      ],
+      "properties": {
+        "attempts": "UInt|null",
+        "runtimeMs": "UInt|null",
+        "usageUnits": "UInt|null",
+        "costEstimateMicros": "UInt|null"
+      }
+    },
+    "OriginalClaimReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "claimRef",
+        "reservationRef",
+        "actionRef",
+        "actionDigest",
+        "generationRef",
+        "sessionRef",
+        "task"
+      ],
+      "properties": {
+        "claimRef": "Ref",
+        "reservationRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref|null",
+        "task": "Task"
+      }
+    },
+    "OriginalSettlementReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "claimRef",
+        "reservationRef",
+        "reservationHeld",
+        "outcome"
+      ],
+      "properties": {
+        "task": "Task",
+        "claimRef": "Ref",
+        "reservationRef": "Ref",
+        "reservationHeld": "boolean",
+        "outcome": "'completed'|'failed'|'unknown'|'terminated'",
+        "terminalEvidenceRef": "Ref",
+        "releaseEvidenceRef": "Ref"
+      }
+    },
+    "OriginalArtifactReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "artifactRef",
+        "version",
+        "recordRef",
+        "digest",
+        "producerClaimRef",
+        "generationRef",
+        "producerRef",
+        "verification",
+        "task"
+      ],
+      "properties": {
+        "artifactRef": "Ref",
+        "version": "Positive",
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "producerClaimRef": "Ref|null",
+        "generationRef": "Ref|null",
+        "producerRef": "Ref",
+        "verification": "OriginalVerification|null",
+        "task": "Task"
+      }
+    },
+    "OriginalVerification": {
+      "kind": "alias",
+      "type": "EXACT original signed verification from authoritative source6 artifact record; native initial capture has null, later original review facts preserved"
+    },
+    "OriginalAuditResultReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "ownerRef",
+        "workspaceRef",
+        "taskRef",
+        "resultRef",
+        "recordRef",
+        "digest",
+        "byteLength",
+        "inputDigest",
+        "inputRecordRef",
+        "executionRef",
+        "actionRef",
+        "actionDigest",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "auditRef",
+        "bindingDigest",
+        "materialDigest",
+        "purpose",
+        "inputCursor",
+        "cursor",
+        "evidenceRef",
+        "state",
+        "createdAt"
+      ],
+      "properties": {
+        "contractVersion": "'df.audit-result-association/v1'",
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "taskRef": "Ref",
+        "resultRef": "Ref",
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "byteLength": "UInt",
+        "inputDigest": "Digest",
+        "inputRecordRef": "Ref",
+        "executionRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "auditRef": "Ref",
+        "bindingDigest": "Digest",
+        "materialDigest": "Digest",
+        "purpose": "'audit_review'|'audit_repair'",
+        "inputCursor": "UInt",
+        "cursor": "UInt>inputCursor",
+        "evidenceRef": "Ref",
+        "state": "'captured'",
+        "createdAt": "UInt",
+        "deduplicated": "boolean"
+      }
+    },
+    "OriginalPlanReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "actionRef",
+        "actionDigest",
+        "taskVersion",
+        "authEpoch"
+      ],
+      "properties": {
+        "actionRef": "Ref",
+        "actionDigest": "Digest",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt"
+      }
+    },
+    "OriginalGrantReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "taskVersion",
+        "authEpoch",
+        "actionRef",
+        "actionDigest",
+        "expiresAt"
+      ],
+      "properties": {
+        "task": "Task",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt",
+        "actionRef": "Ref",
+        "actionDigest": "Digest",
+        "expiresAt": "UInt"
+      }
+    },
+    "OriginalMemoryReceipt": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "ownerRef",
+        "workspaceRef",
+        "namespaceRef",
+        "revision",
+        "digest",
+        "recordRef",
+        "deleted",
+        "createdAt",
+        "updatedAt",
+        "sourceRefs",
+        "byteLength",
+        "cryptoVersion"
+      ],
+      "properties": {
+        "ownerRef": "Ref",
+        "workspaceRef": "Ref",
+        "namespaceRef": "Ref",
+        "revision": "Positive",
+        "digest": "Digest",
+        "recordRef": "Ref",
+        "deleted": "boolean",
+        "createdAt": "UInt",
+        "updatedAt": "UInt",
+        "sourceRefs": "Ref[1..16]",
+        "byteLength": "UInt",
+        "cryptoVersion": "2",
+        "requestDigest": "Digest",
+        "deduplicated": "boolean",
+        "result": "OriginalMemoryResult"
+      }
+    },
+    "OriginalMemoryResult": {
+      "kind": "alias",
+      "type": "EXACT original correction {id,factRevision,authority:memory_only} OR forget {id,factRevision,deleted:true} OR import {imported,authority:memory_only}. Historical store reads do not fabricate result."
+    },
+    "ApprovalData": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "kind",
+        "content"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "kind": "Text original kind",
+        "content": "Text complete exact current context or original audit input"
+      }
+    },
+    "ApprovalModelLabels": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model",
+        "reasoning",
+        "preset"
+      ],
+      "properties": {
+        "provider": "Text original label",
+        "model": "Text original label",
+        "reasoning": "Text original label",
+        "preset": "Text original label"
+      }
+    },
+    "ApprovalEnvironmentLabels": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "cwd",
+        "environmentRef"
+      ],
+      "properties": {
+        "label": "Text original label",
+        "cwd": "Text actual original canonical cwd",
+        "environmentRef": "Ref"
+      }
+    },
+    "ApprovalLimits": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "units",
+        "attemptIndex",
+        "charges"
+      ],
+      "properties": {
+        "units": "Positive",
+        "attemptIndex": "Positive",
+        "charges": "OriginalSpecCharges"
+      }
+    },
+    "ApprovalDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "role",
+        "targetLabel",
+        "data",
+        "model",
+        "toolNames",
+        "environment",
+        "limits",
+        "evidenceRef"
+      ],
+      "properties": {
+        "kind": "'read'|'write'|'review'|'repair'",
+        "role": "'worker'|'review'|'repair'",
+        "targetLabel": "Text original label",
+        "data": "ApprovalData",
+        "model": "ApprovalModelLabels",
+        "toolNames": "Text[0..64] original distinct names,normal empty",
+        "environment": "ApprovalEnvironmentLabels",
+        "limits": "ApprovalLimits",
+        "evidenceRef": "Ref",
+        "resume": "ResumeDescription"
+      }
+    },
+    "OriginalApprovalPreview": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "previewRef",
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "taskVersion",
+        "authEpoch",
+        "expiresAt",
+        "description"
+      ],
+      "properties": {
+        "previewRef": "Ref",
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Digest",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt",
+        "expiresAt": "UInt",
+        "description": "ApprovalDescription"
+      }
+    },
+    "NativeRecordBody": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "kind",
+        "sourceRef",
+        "taskVersion",
+        "authEpoch",
+        "generationRef",
+        "createdAt",
+        "byteLength",
+        "cryptoVersion",
+        "content"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "kind": "'native_history'|'native_request'|'native_configuration'",
+        "sourceRef": "Ref",
+        "taskVersion": "Positive",
+        "authEpoch": "UInt",
+        "generationRef": "Ref|null",
+        "createdAt": "UInt",
+        "byteLength": "UInt",
+        "cryptoVersion": "2",
+        "content": "Text complete canonical exact envelope"
+      }
+    },
+    "NormalResumeInputPair": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "association",
+        "history",
+        "request",
+        "configuration"
+      ],
+      "properties": {
+        "association": "NativeResume",
+        "history": "NativeRecordBody kind native_history",
+        "request": "NativeRecordBody kind native_request",
+        "configuration": "NativeRecordBody kind native_configuration"
+      }
+    },
+    "PreparedContextCommandReceiptInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "request"
+      ],
+      "properties": {
+        "request": "PrepareRequest"
+      }
+    },
+    "PutPreparedContextInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "expectedMemory",
+        "content",
+        "sourceRef",
+        "summaryChecks",
+        "request",
+        "observation"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "expectedMemory": "MemoryVersion",
+        "content": "Text exact original JSON.stringify envelope",
+        "sourceRef": "Ref original recipe",
+        "summaryChecks": "SummaryDispositionRow[0..64]",
+        "request": "PrepareRequest",
+        "observation": "PreparationObservation"
+      }
+    },
+    "ReadPreparedContextCheckInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "contextRecordRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "contextRecordRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "PreparedContextStatusInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "ReadMemoryCommandInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "namespaceRef",
+        "commandRef"
+      ],
+      "properties": {
+        "namespaceRef": "Ref private fixed namespace",
+        "commandRef": "Ref"
+      }
+    },
+    "AuditRepairClaim": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "auditRef",
+        "round",
+        "previousReportRef",
+        "evidenceRef"
+      ],
+      "properties": {
+        "auditRef": "Ref",
+        "round": "integer1..8",
+        "previousReportRef": "Ref",
+        "evidenceRef": "Ref"
+      }
+    },
+    "PlanNormalNativeActionInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "contextRecordRef",
+        "configurationContent",
+        "spec"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "contextRecordRef": "Ref",
+        "configurationContent": "Text canonical actual NativeConfiguration",
+        "spec": "OriginalNormalizedSpec exact nativeOriginBinding"
+      }
+    },
+    "ClaimNormalCreateInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "actionRef",
+        "actionDigest",
+        "nativeId",
+        "configurationContent"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "nativeId": "Text actual preallocated df-generationRef",
+        "configurationContent": "Text canonical NativeConfiguration",
+        "auditRepair": "AuditRepairClaim"
+      }
+    },
+    "RecordNormalNativeOriginInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "actionRef",
+        "actionDigest",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "originRef",
+        "creationEvidenceRef",
+        "baselineHistoryContent",
+        "baselineHistoryDigest"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "originRef": "Ref",
+        "creationEvidenceRef": "Ref",
+        "baselineHistoryContent": "Text canonical NativeHistoryObservation",
+        "baselineHistoryDigest": "Digest"
+      }
+    },
+    "CaptureNormalNativeResultInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "actionRef",
+        "actionDigest",
+        "claimRef",
+        "generationRef",
+        "sessionRef",
+        "executionRef",
+        "artifactRef",
+        "version",
+        "resultContent",
+        "resultDigest",
+        "inputDigest",
+        "inputCursor",
+        "cursor",
+        "persistenceEvidenceRef",
+        "committedHistoryContent",
+        "committedHistoryDigest",
+        "usageUnits"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref",
+        "executionRef": "Ref",
+        "artifactRef": "Ref",
+        "version": "1",
+        "resultContent": "Text original exact df.native-result/v1 envelope",
+        "resultDigest": "Digest inner output bytes",
+        "inputDigest": "Digest ORIGINAL current context meaning",
+        "inputCursor": "UInt",
+        "cursor": "UInt>inputCursor",
+        "persistenceEvidenceRef": "Ref",
+        "committedHistoryContent": "Text canonical NativeHistoryObservation",
+        "committedHistoryDigest": "Digest",
+        "usageUnits": "UInt"
+      }
+    },
+    "CaptureNormalNativeAuditResultInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "sessionRef",
+        "inputCursor",
+        "cursor",
+        "content",
+        "evidenceRef",
+        "committedHistoryContent",
+        "committedHistoryDigest",
+        "usageUnits"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "executionRef": "Ref",
+        "sessionRef": "Ref",
+        "inputCursor": "UInt",
+        "cursor": "UInt>inputCursor",
+        "content": "Text original raw response",
+        "evidenceRef": "Ref",
+        "committedHistoryContent": "Text canonical NativeHistoryObservation",
+        "committedHistoryDigest": "Digest",
+        "usageUnits": "UInt"
+      }
+    },
+    "WriteNormalNativeRepairArtifactInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "artifactRef",
+        "version",
+        "producerClaimRef",
+        "generationRef",
+        "content",
+        "outputCaptureRef"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "artifactRef": "Ref",
+        "version": "Positive fixed original inputVersion+1",
+        "producerClaimRef": "Ref",
+        "generationRef": "Ref",
+        "content": "Text exact original raw audit response",
+        "outputCaptureRef": "Ref"
+      }
+    },
+    "FinishNormalNativeExecutionInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "captureRef",
+        "terminalEvidenceRef",
+        "outcomeEvidenceRef",
+        "usage",
+        "ownerRequest",
+        "artifactCaptureRef"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "executionRef": "Ref",
+        "captureRef": "Ref",
+        "terminalEvidenceRef": "Ref",
+        "outcomeEvidenceRef": "Ref",
+        "usage": "ActualUsage",
+        "ownerRequest": "OwnerFinishRequest",
+        "artifactCaptureRef": "Ref|null"
+      }
+    },
+    "ReadNormalNativeFinishInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "actionRef",
+        "claimRef",
+        "generationRef",
+        "executionRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "claimRef": "Ref",
+        "generationRef": "Ref",
+        "executionRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "ReadNormalResumeOriginInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "predecessorActionRef",
+        "predecessorClaimRef",
+        "predecessorGenerationRef",
+        "predecessorExecutionRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "predecessorActionRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "predecessorGenerationRef": "Ref",
+        "predecessorExecutionRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "ReadNormalNativeArtifactInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "artifactRef",
+        "version",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "artifactRef": "Ref",
+        "version": "Positive",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "ReadNormalNativeAuditResultInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "resultRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "resultRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "ReadNormalResumeInputInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "resumeRef"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "resumeRef": "Ref"
+      }
+    },
+    "ResolveNormalNativeIdentityInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "originRef",
+        "sessionRef"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "originRef": "Ref",
+        "sessionRef": "Ref"
+      }
+    },
+    "PlanNormalResumeInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "contextRecordRef",
+        "predecessorClaimRef",
+        "historyContent",
+        "requestContent",
+        "configurationContent",
+        "spec"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "contextRecordRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "historyContent": "Text canonical ResumeHistory",
+        "requestContent": "Text canonical ResumeInput",
+        "configurationContent": "Text canonical current NativeConfiguration",
+        "spec": "OriginalNormalizedSpec exact resumeBinding"
+      }
+    },
+    "ClaimNormalResumeInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "actionRef",
+        "actionDigest",
+        "resumeRef"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "resumeRef": "Ref"
+      }
+    },
+    "AssembleForPreparationInput": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "recordRefs": "Ref[0..64] original semantics"
+      }
+    },
+    "PreparedCommitObservation": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "receipt",
+        "checkRef",
+        "commitDisposition"
+      ],
+      "properties": {
+        "input": "PrepareRequest",
+        "receipt": "PreparedReceipt",
+        "checkRef": "Ref",
+        "commitDisposition": "'new'|'historical'"
+      }
+    },
+    "NativeValidatedFacts": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "usageUnits",
+        "evidenceRef",
+        "resultDigest",
+        "historyObservation"
+      ],
+      "properties": {
+        "usageUnits": "UInt",
+        "evidenceRef": "Ref",
+        "resultDigest": "Digest",
+        "inputCursor": "UInt",
+        "historyObservation": "NativeHistoryObservation"
+      }
+    },
+    "WorkerResumeStatusRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "predecessorActionRef",
+        "predecessorClaimRef",
+        "predecessorGenerationRef",
+        "predecessorExecutionRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "predecessorActionRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "predecessorGenerationRef": "Ref",
+        "predecessorExecutionRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "WorkerResumePrepareRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "predecessorActionRef",
+        "predecessorClaimRef",
+        "predecessorGenerationRef",
+        "predecessorExecutionRef",
+        "contextRecordRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "predecessorActionRef": "Ref",
+        "predecessorClaimRef": "Ref",
+        "predecessorGenerationRef": "Ref",
+        "predecessorExecutionRef": "Ref",
+        "contextRecordRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "WorkerResumePlanRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "previewRef",
+        "planDigest",
+        "contextRecordRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "accept"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "previewRef": "Ref",
+        "planDigest": "Digest",
+        "contextRecordRef": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "accept": "true"
+      }
+    },
+    "WorkerResumePreviewRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "recordRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "recordRef": "Ref=current contextRecordRef",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "WorkerResumeGrantRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "expiresAt",
+        "previewRef",
+        "accept"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt",
+        "expiresAt": "UInt future<=now+grantTtlMs",
+        "previewRef": "Ref",
+        "accept": "true"
+      }
+    },
+    "WorkerResumeRequest": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "commandRef": "Ref",
+        "expectedTaskVersion": "Positive",
+        "expectedAuthEpoch": "UInt"
+      }
+    },
+    "ResumeCode": {
+      "kind": "enum",
+      "values": [
+        "WORKER_RESUME_DISABLED",
+        "WORKER_RESUME_ORIGIN_UNAVAILABLE",
+        "WORKER_RESUME_PREDECESSOR_UNRESOLVED",
+        "WORKER_RESUME_HISTORY_UNAVAILABLE",
+        "WORKER_RESUME_HISTORY_STALE",
+        "WORKER_RESUME_HISTORY_LIMIT",
+        "WORKER_RESUME_INBOX_PENDING",
+        "WORKER_RESUME_REPAIR_REQUIRED",
+        "WORKER_RESUME_LINEAGE_CONFLICT"
+      ]
+    },
+    "OriginalWorkerView": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "claimRef",
+        "reservationRef",
+        "generationRef",
+        "sessionRef",
+        "phase"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "actionRef": "Ref",
+        "actionDigest": "Ref",
+        "claimRef": "Ref",
+        "reservationRef": "Ref",
+        "generationRef": "Ref",
+        "sessionRef": "Ref|null",
+        "phase": "'created'|'ready'|'running'|'unknown'|'cancel_requested'|'stopped'|'not_created'"
+      }
+    },
+    "ResumeHistoryDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "header",
+        "eventsDigest",
+        "eventCount",
+        "surfaceDigest",
+        "messages",
+        "messagesDigest",
+        "historyBytes"
+      ],
+      "properties": {
+        "header": "NativeHeader",
+        "eventsDigest": "Digest",
+        "eventCount": "UInt<=96",
+        "surfaceDigest": "Digest",
+        "messages": "NativeMessage[3..17] complete prefix",
+        "messagesDigest": "Digest",
+        "historyBytes": "UInt<=selected maxBytes"
+      }
+    },
+    "ResumeContextDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "recordRef",
+        "digest",
+        "content"
+      ],
+      "properties": {
+        "recordRef": "Ref",
+        "digest": "Digest",
+        "content": "Text exact full current execution_context envelope"
+      }
+    },
+    "OriginalSpecCharges": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeMs",
+        "usageUnits"
+      ],
+      "properties": {
+        "runtimeMs": "UInt",
+        "usageUnits": "UInt",
+        "costEstimateMicros": "UInt",
+        "costState": "'estimated'|'unknown'",
+        "costProvenanceRef": "Ref"
+      }
+    },
+    "ResumeDescription": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "taskRef",
+        "originRef",
+        "predecessor",
+        "ordinal",
+        "sessionRef",
+        "history",
+        "context",
+        "selection",
+        "effectiveReasoningEffort",
+        "environment",
+        "persistence",
+        "bounds",
+        "limits",
+        "charges",
+        "spent",
+        "remaining",
+        "systemPrompt"
+      ],
+      "properties": {
+        "taskRef": "Ref",
+        "originRef": "Ref",
+        "predecessor": "Predecessor",
+        "ordinal": "integer1..8",
+        "sessionRef": "Ref",
+        "history": "ResumeHistoryDescription",
+        "context": "ResumeContextDescription",
+        "selection": "ModelSelection",
+        "effectiveReasoningEffort": "'deterministic'",
+        "environment": "Environment",
+        "persistence": "Backend",
+        "bounds": "RequestBounds",
+        "limits": "FullLimits explicit sufficient shared aggregate",
+        "charges": "OriginalSpecCharges",
+        "spent": "Budget",
+        "remaining": "RemainingBudget",
+        "systemPrompt": "Text exact unchanged producer literal"
+      }
+    },
+    "ResumeProviderPermit": {
+      "kind": "closed-object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "agent",
+        "executionRef",
+        "content",
+        "maxOutputTokens",
+        "requestBytes",
+        "resultBytes",
+        "usageUnits",
+        "assertCurrent",
+        "historyMessages",
+        "historyMessagesDigest",
+        "historyPrefixDigest",
+        "resumeRef"
+      ],
+      "properties": {
+        "mode": "'resume'",
+        "agent": "actual original Agent object never JSON",
+        "executionRef": "Ref",
+        "content": "Text exact whole context",
+        "maxOutputTokens": "integer128..4096",
+        "requestBytes": "integer512..131072",
+        "resultBytes": "integer128..16384",
+        "usageUnits": "UInt",
+        "assertCurrent": "trusted synchronous original late gate",
+        "historyMessages": "NativeMessage[3..17]",
+        "historyMessagesDigest": "Digest",
+        "historyPrefixDigest": "Digest",
+        "resumeRef": "Ref"
+      }
+    }
+  },
+  "coreAndSourceMethods": [
+    {
+      "name": "preparedContextCommandReceipt",
+      "authority": "preparation Capability",
+      "input": "PreparedContextCommandReceiptInput",
+      "output": "{receipt:PreparedReceipt,checkRef:Ref}|null",
+      "operation": null,
+      "sourceBinding": "actual adapter BEFORE #assemble, no current CAS/memory/source reads",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "putPreparedContext",
+      "authority": "preparation Capability",
+      "input": "PutPreparedContextInput",
+      "output": "{receipt:RawContextReceipt,checkRef:Ref,commitDisposition:new|historical}",
+      "operation": "putPreparedContext",
+      "sourceBinding": "same actual assembler source path and MemoryAdapter original final compaction",
+      "effects": "atomic context+check+binding+registry+keyed command;task/semantic once;0native"
+    },
+    {
+      "name": "readPreparedContextCheck",
+      "authority": "OwnerHandle",
+      "input": "ReadPreparedContextCheckInput",
+      "output": "{check:PreparedCheck,currentness:Currentness}",
+      "operation": null,
+      "sourceBinding": "normal contextConflicts complete wire current read",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "preparedContextStatus",
+      "authority": "preparation Capability",
+      "input": "PreparedContextStatusInput",
+      "output": "PreparationStatus",
+      "operation": null,
+      "sourceBinding": "actual issued source and complete pure signed-wrapper feasibility",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "readMemoryCommand",
+      "authority": "OwnerHandle",
+      "input": "ReadMemoryCommandInput",
+      "output": "OriginalMemoryReceipt|null",
+      "operation": null,
+      "sourceBinding": "normal memoryCommandStatus original signed receipt, no requestDigest",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "planNormalNativeAction",
+      "authority": "native Capability",
+      "input": "PlanNormalNativeActionInput",
+      "output": "OriginalPlanReceipt",
+      "operation": "planNormalNativeAction",
+      "sourceBinding": "normal installed producer/audit planner AFTER actual current source facts/context/private origin/aggregate accepted policy, role derived signed exact spec",
+      "effects": "atomic ORIGINAL planAction effect+keyed normal command;no orphan config/native record or seventh kind"
+    },
+    {
+      "name": "claimNormalCreate",
+      "authority": "native Capability",
+      "input": "ClaimNormalCreateInput",
+      "output": "{receipt:OriginalClaimReceipt,originRef:Ref,sessionRef:Ref,identityRecordRef:Ref}",
+      "operation": "claimNormalCreate",
+      "sourceBinding": "root manager original claim boundary BEFORE public AgentRegistry.create",
+      "effects": "atomic original claim/reservation+identity+configuration+intent+registry+keyed command"
+    },
+    {
+      "name": "recordNormalNativeOrigin",
+      "authority": "native Capability",
+      "input": "RecordNormalNativeOriginInput",
+      "output": "{originRef:Ref,claimRef:Ref,generationRef:Ref,sessionRef:Ref,baselineHistoryRecordRef:Ref}",
+      "operation": "recordNormalNativeOrigin",
+      "sourceBinding": "actual own idle created receipt+flushtrue/fresh public backend baseline read",
+      "effects": "atomic baseline history+origin+registry+keyed command;0model"
+    },
+    {
+      "name": "captureNormalNativeResult",
+      "authority": "native Capability",
+      "input": "CaptureNormalNativeResultInput",
+      "output": "{receipt:OriginalArtifactReceipt,captureRef:Ref}",
+      "operation": "captureNormalNativeResult",
+      "sourceBinding": "actual original validateResult enriched history/usage witness and current owned output",
+      "effects": "atomic original version1 artifact+history+output capture+registry+keyed command"
+    },
+    {
+      "name": "captureNormalNativeAuditResult",
+      "authority": "native Capability",
+      "input": "CaptureNormalNativeAuditResultInput",
+      "output": "{receipt:OriginalAuditResultReceipt,captureRef:Ref}",
+      "operation": "captureNormalNativeAuditResult",
+      "sourceBinding": "actual original persisted audit collector and usage+signed association, role derived core",
+      "effects": "atomic ORIGINAL captureAuditResult+history+output capture+registry+keyed command;no artifact/submit"
+    },
+    {
+      "name": "writeNormalNativeRepairArtifact",
+      "authority": "native Capability",
+      "input": "WriteNormalNativeRepairArtifactInput",
+      "output": "{receipt:OriginalArtifactReceipt,captureRef:Ref}",
+      "operation": "writeNormalNativeRepairArtifact",
+      "sourceBinding": "actual retained original response receipt+fixed child target/tag+original phase intent",
+      "effects": "atomic ORIGINAL writeArtifact+repair_artifact capture+registry+keyed command;no recapture/stream"
+    },
+    {
+      "name": "finishNormalNativeExecution",
+      "authority": "native Capability",
+      "input": "FinishNormalNativeExecutionInput",
+      "output": "{receipt:OriginalSettlementReceipt,finishRef:Ref}",
+      "operation": "finishNormalNativeExecution",
+      "sourceBinding": "actual current detached Q before own handle stop/drain wait and authenticated capture/usage",
+      "effects": "atomic ORIGINAL settlement+finish+registry+keyed command;separate ownerRequestDigest/full command digest"
+    },
+    {
+      "name": "readNormalNativeFinish",
+      "authority": "OwnerHandle",
+      "input": "ReadNormalNativeFinishInput",
+      "output": "{receipt:OriginalSettlementReceipt,finishRef:Ref}|null",
+      "operation": null,
+      "sourceBinding": "BEFORE current CAS/maps/native/source lookup, old Q allowed under current read authority",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "readNormalResumeOrigin",
+      "authority": "OwnerHandle",
+      "input": "ReadNormalResumeOriginInput",
+      "output": "{intent:NativeIntent,origin:NativeOrigin,capture:NativeCapture,finish:NativeFinish,predecessorResume:NativeResume|null,ordinal:UInt,successors:NativeResumeClaim[0..8],spent:Budget,remaining:RemainingBudget}|null",
+      "operation": null,
+      "sourceBinding": "producer-only authentic signed predecessor+spent/remaining, no history/native reads",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "readNormalNativeArtifact",
+      "authority": "OwnerHandle",
+      "input": "ReadNormalNativeArtifactInput",
+      "output": "{artifact:OriginalArtifactReceipt,capture:NativeCapture,outputCapture:NativeCapture,intent:NativeIntent,origin:NativeOrigin,finish:NativeFinish|null}",
+      "operation": null,
+      "sourceBinding": "normal producer/repair artifact historical source graph only; never live permit",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "readNormalNativeAuditResult",
+      "authority": "OwnerHandle",
+      "input": "ReadNormalNativeAuditResultInput",
+      "output": "{result:OriginalAuditResultReceipt,capture:NativeCapture,intent:NativeIntent,origin:NativeOrigin,finish:NativeFinish|null}",
+      "operation": null,
+      "sourceBinding": "normal audit response historical graph, no reviewer/submission restore",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "readNormalResumeInput",
+      "authority": "OwnerHandle",
+      "input": "ReadNormalResumeInputInput",
+      "output": "NormalResumeInputPair",
+      "operation": null,
+      "sourceBinding": "original synchronous ApprovalPreview readResumeInput root owner closure, authentic complete association/history/request/configuration, not generic native-data read",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "resolveNormalNativeIdentity",
+      "authority": "native Capability",
+      "input": "ResolveNormalNativeIdentityInput",
+      "output": "{nativeId:Text}",
+      "operation": null,
+      "sourceBinding": "only manager resolver AFTER fresh original stable source/backend/live instance/private scope gate; never wire",
+      "effects": "readonly;0native calls;0writes"
+    },
+    {
+      "name": "planNormalResume",
+      "authority": "native Capability",
+      "input": "PlanNormalResumeInput",
+      "output": "{action:OriginalPlanReceipt,resumeRef:Ref,predecessorOriginRef:Ref,predecessorClaimRef:Ref,sessionRef:Ref,historyRecordRef:Ref,historyDigest:Digest,inputRecordRef:Ref,inputDigest:Digest,contextRecordRef:Ref,contextDigest:Digest,semanticRevision:UInt,sourceTaskVersion:Positive,sourceAuthEpoch:UInt}",
+      "operation": "planNormalResume",
+      "sourceBinding": "actual full private preview+explicit owner accept+fresh prepared source/config/history+original backend recheck",
+      "effects": "atomic original plan+configuration+history+request+resume+registry+keyed command"
+    },
+    {
+      "name": "claimNormalResume",
+      "authority": "native Capability",
+      "input": "ClaimNormalResumeInput",
+      "output": "{receipt:OriginalClaimReceipt,resumeRef:Ref,originRef:Ref,sessionRef:Ref,identityRecordRef:Ref}",
+      "operation": "claimNormalResume",
+      "sourceBinding": "original charged claim BEFORE public AgentRegistry.resume; known released producer+one successor",
+      "effects": "atomic original claim/reservation+resume_claim+registry+keyed command"
+    },
+    {
+      "name": "assembleForPreparation",
+      "authority": "same-instance assembler Capability",
+      "input": "AssembleForPreparationInput",
+      "output": "{context:OriginalAssembledContext,sourceObservation:AssemblerSourceObservation}",
+      "operation": null,
+      "sourceBinding": "same original source read/compaction path, no retained-only guess",
+      "effects": "original assembly reads/tokenizer/optional queryHost only;0writes"
+    }
+  ],
+  "normalOwnerResumeRoutes": [
+    {
+      "name": "workerResumeStatus",
+      "input": "WorkerResumeStatusRequest",
+      "output": "{taskRef:Ref,sessionRef:Ref|null,originRef:Ref|null,ordinal:UInt|null,eligible:boolean,reasonCode:ResumeCode|null,policyVersion:Positive,spent:Budget,remaining:RemainingBudget}",
+      "behavior": "readonly metadata0history/grant/claim/native",
+      "wireMaxBytes": 65536
+    },
+    {
+      "name": "workerResumePrepare",
+      "input": "WorkerResumePrepareRequest",
+      "output": "{previewRef:Ref,planDigest:Digest,expiresAt:UInt,taskVersion:Positive,authEpoch:UInt,description:ResumeDescription}",
+      "behavior": "original owned bounded readonly history+fresh current context, volatile pool64/TTL<=60000",
+      "wireMaxBytes": 65536
+    },
+    {
+      "name": "workerResumePlan",
+      "input": "WorkerResumePlanRequest",
+      "output": "{action:OriginalPlanReceipt,historyRecordRef:Ref,historyDigest:Digest,resumeRef:Ref}",
+      "behavior": "explicit complete history consent, consume preview, atomic plan only",
+      "wireMaxBytes": 65536
+    },
+    {
+      "name": "workerResumePreview",
+      "input": "WorkerResumePreviewRequest",
+      "output": "OriginalApprovalPreview",
+      "behavior": "whole current context+whole history+selection/shared policy, no digest-only approval",
+      "wireMaxBytes": 65536
+    },
+    {
+      "name": "workerResumeGrant",
+      "input": "WorkerResumeGrantRequest",
+      "output": "OriginalGrantReceipt",
+      "behavior": "separate explicit grant no native work",
+      "wireMaxBytes": 65536
+    },
+    {
+      "name": "workerResume",
+      "input": "WorkerResumeRequest",
+      "output": "{task:Task,worker:OriginalWorkerView}",
+      "behavior": "charged successor claim then ORIGINAL public resume, idle0streams,60000timeout, no fallback",
+      "wireMaxBytes": 65536
+    }
+  ],
+  "nativeKinds": [
+    "normal_native_intent",
+    "normal_native_origin",
+    "normal_native_capture",
+    "normal_native_finish",
+    "normal_resume",
+    "normal_resume_claim"
+  ],
+  "newEncryptedKinds": [
+    "context_check",
+    "native_identity",
+    "native_configuration",
+    "native_history",
+    "native_request"
+  ],
+  "constraints": [
+    "Every closed object rejects extra/undefined/sparse/accessor/symbol/hidden/Proxy/custom-prototype, original depth12/object64/array128/whole65536 jointly.",
+    "Finite numeric request encoding is narrow original MemoryAdapter domain only; all authority canonicalization remains integer.",
+    "Producer output: auditBinding/outputCaptureRef null, artifact fields nonnull version1, create resumeRef/fullInputDigest null, resume both nonnull.",
+    "Audit review output: auditBinding nonnull previousReportRef/artifactTarget null, artifact/resume/fullInput/outputCaptureRef fields null.",
+    "Audit repair output: auditBinding nonnull previousReportRef/artifactTarget nonnull, artifact fields null; second immutable repair_artifact record authenticates fixed target/write.",
+    "Repair artifact record purpose audit_repair/outputCaptureRef authentic primary, artifact exact fixed target version/result digest, same history/usage/source/input. No new stream or recapture.",
+    "Finish artifactCaptureRef nonnull only actual repaired artifact. Released requires known actual usage/owned stop/drain/no obligations and authentic required role submission/write. Exact held replay stays held; no fabricated unsupported held writer.",
+    "AuditRepairClaim required iff actual signed spec purpose audit_repair, absent otherwise, original atomic #commitRepair lineage retained. Original command mutation principal is separately derived native observer principal, original private core effect context remains bound owner/host as appropriate.",
+    "Native baseline header.agentPreset optional original absence is preserved. Effective selected preset must match complete original projection/log/current composition, no invented header field. Capture witnesses permit19 messages while preparation history caps17, allowing the completed new user/assistant pair without weakening history-plan bound.",
+    "Only producer chains resume; advanced/legacy/pre7/review/repair/fork/copy never adopted.",
+    "Native types reuse pinned ORIGINAL public discriminated schemas and exact complete admitted plain-text lineage, no generic JSON or private reducer.",
+    "All new records preserve original crypto2 exact-kind AAD and command-kind data-ID recipe. Old ciphertext/AAD/receipts/specs/grants/history/key/vault/holds untouched.",
+    "Exactly six native kinds with separate mandatory prepared registry and existing6 registry/receipt policies; no later hidden7 kind, backfill, eviction or boot auto-reseal.",
+    "Stable source hashes actual final installed bytes, live service/fiber/catalog/provider epoch/current gates remain independent and unchanged.",
+    "Fresh current private context origin required for new work even if historical check is currently true; historical ack cannot mint origin.",
+    "No callbacks/tokenizer/native/provider/async/recursive public transaction under original core lock.",
+    "Public native resume has no expectedRevision/maxRead, no atomic filesystem CAS/native decompression quota/physical rollback/exactly-once arbitrary effect or instant cancellation promise.",
+    "ApprovalDescription.resume required iff spec.resumeBinding, absent otherwise; complete pair/decrypted canonical body/native lineage/current protected context/config/policy repeated prepare and grant; full65536wire preflight no digest-only output.",
+    "Source currentness is not contradiction detection/quality/permission/native provenance/grant/review/completion/release.",
+    "Original actionDigest retains H({ownerRef,workspaceRef,taskRef,taskVersion,authEpoch,spec}) per genuine6 source, not old-doc spec-only shorthand.",
+    "No protected-row/tamper/header/legacy/quarantine experiment, original blocked CODE no rerun/reroute."
+  ],
+  "requiredRootDispositions": [
+    "stable-versus-live source/backend final manifest compatibility",
+    "actual assembler observation and adapter private source observer",
+    "remove generic fanout origin mint",
+    "complete original persisted native collector witness",
+    "purpose/phase/audit binding/second repair capture+ID/finish binding",
+    "create configuration input and original command-kind native IDs",
+    "readonly Q-first finish and separate command digests",
+    "version7 marked spec normalizer/private planNormalNativeAction/bypass/shared explicit cumulative policy",
+    "full signed-graph readiness under preserved metadata limits",
+    "correct actual original scoped planned-CAS actionDigest recipe",
+    "literal synchronous complete readResumeInput and description.resume approval branch"
+  ],
+  "executionCounters": {
+    "productImports": 0,
+    "nodeSyntaxOrTestRuns": 0,
+    "databaseOperations": 0,
+    "nativeCalls": 0,
+    "hostProfileListenerActions": 0,
+    "networkModelInferenceToolAccountAccess": 0,
+    "dependencyInstalls": 0,
+    "browserActions": 0,
+    "GitMutations": 0,
+    "storedTranscriptPersonalDataReads": 0,
+    "protectedRowExperiments": 0
+  },
+  "readManifest": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "dea33c79f404cbab39acfc96b70b5e01962b9214cfd44f5cb6524764b1e45fc4",
+      "bytes": 7668,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/owner-normal-entry-continuation-2026-10-04.md",
+      "sha256": "e1370ac0a8fe31be56a111d443a1110307d195e2c24389470619df5716351078",
+      "bytes": 2024,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/owner-ni2-continuation-2026-10-04.md",
+      "sha256": "5fd20898836545a7dd0b3858e935bd7213c50901fdc524977ed97508d9e5ebd1",
+      "bytes": 2021,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-independent-design.md",
+      "sha256": "a91351522959c30eb3312e37d1f347920b858716f36f6540c1ea1a7f072c63c4",
+      "bytes": 80937,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-independent-checks.json",
+      "sha256": "75fd3c25993c3e5f5bf7516ad2ff88451bf8361358e6565af7b127fabd40db3b",
+      "bytes": 92120,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-schema7-addendum.md",
+      "sha256": "7ccf2c20c9deb560703a39d2f60891b8bef1e37ff1f91b5c03d05545589b5637",
+      "bytes": 12242,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-preparation-api-addendum.md",
+      "sha256": "c8c9d66fa9f5bc08f24ba5cdf87de56accd3b92f79fd233868a3fd8a7d9959e9",
+      "bytes": 33342,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-controls-api-addendum.md",
+      "sha256": "1614b0ee0459607b8db1c072617758d894b7566354e840c9721eefb59c7654c7",
+      "bytes": 27256,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-controls-root-freeze.md",
+      "sha256": "057614e65753e464d44527d366e0e0b26230956d93b506a8d193321a7b289f46",
+      "bytes": 3574,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI1/continuity-candidate-root-hold.md",
+      "sha256": "1e3fc8a4d1c65f90d382462f9ccb121438aacbcd9a2754d12dac2b842f155494",
+      "bytes": 1290,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/normal-memory-continuity-contract.md",
+      "sha256": "2dbf5e07d6978d6457d7f1adff7069a34022ac3bd99bc27d3c4a0ed5b6d715cf",
+      "bytes": 30187,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "bytes": 51095,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/normal-worker-resume-contract.md",
+      "sha256": "fce0b6567eb550be2e96e0c4a8aedf696cf5ad0aa8897cf5dae91abaed68e14e",
+      "bytes": 40507,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-design-proposal.md",
+      "sha256": "f0e21ced82011fcd6b29434b67e8e9b6f774fded940bf72c93feb824383525fd",
+      "bytes": 43051,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-author-notes.md",
+      "sha256": "3049517d96b2f09b6007b9bc4bf8a873e9a52f4d4739ff7f28a631148a0280f3",
+      "bytes": 17501,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-candidate-root-hold.md",
+      "sha256": "d4b44b9d3ca1e5d166736946f02ec6b139e7e60ed13ca6262c7ae3ccda6cde8b",
+      "bytes": 1006,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-cold-finish-addendum.md",
+      "sha256": "5b5de10f9acc350e4217a8ba8ee5d0e508be2dadf324016017c65003e069278e",
+      "bytes": 6206,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-cold-finish-root-binding.md",
+      "sha256": "4e0f30c12dba86b33f59db39e84ec5594dce8a83b3e4ee09ce9922d412941291",
+      "bytes": 2055,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-cold-finish-test-addendum.md",
+      "sha256": "2e562cd0d9e132ea92b6b1fbf98e07c9760d59ae76d90e1bbccc610af41e1f4d",
+      "bytes": 25293,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-test-design.md",
+      "sha256": "a9b36b634a43e623d42dec26029dac3ca3f721de47d2c83b52ce328d8a7743f1",
+      "bytes": 75280,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI2/resume-cold-finish-design-checks.json",
+      "sha256": "9e682e4f92e11d44099c344980b1c7bf767c7308254a401bcff35d6d340af676",
+      "bytes": 16058,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI3/native-composition-proposal.md",
+      "sha256": "d1171c2480db6683e2f5c76d1fef237781eb75eae9530cfe5e91e6b376909a4c",
+      "bytes": 29997,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI3/native-composition-proposal.json",
+      "sha256": "94f50ac9005ce8bdf6d407e581cd1a4cbb94e8d9e57efd246f17817ef6b4da95",
+      "bytes": 43146,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI3/native-composition-root-decisions.md",
+      "sha256": "b29448325300410b15f6cc071663d35b23dfc62795891ded77d12036acb8589a",
+      "bytes": 4061,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI3/native-composition-author-source-hold.json",
+      "sha256": "239d67419b471c64ac8438824cf6a0e80e66cb7ac06ecf99b37025ef2dab5bb8",
+      "bytes": 39603,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "docs/evidence/NI6/continuation-checkpoint.md",
+      "sha256": "748727538d220237329559b3f252d64abb733e06711c9c989209aec1d9a57a99",
+      "bytes": 5632,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": "src/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/memory.mjs",
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "bytes": 31812,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/installed-memory-continuity.mjs",
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382",
+      "bytes": 22246,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "sha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb",
+      "bytes": 33262,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/installed-worker-facts.mjs",
+      "sha256": "22cb737371b43575a81eaf5281027a0cfae5c90b7fdbb89895d501f5dabc18b8",
+      "bytes": 20368,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2",
+      "bytes": 36350,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "sha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+      "bytes": 37074,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+      "bytes": 36626,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/installed-audit.mjs",
+      "sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+      "bytes": 49288,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/installed-plugin.mjs",
+      "sha256": "73f65198c642b3b3c1413c7fbb8ffd0a2a6b56605abbc0a5bfce875a9177ea1d",
+      "bytes": 7194,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "src/approval-preview.mjs",
+      "sha256": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+      "bytes": 12081,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "shared-genuine6"
+    },
+    {
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+      "bytes": 388886,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "held-reference"
+    },
+    {
+      "path": ".runtime/ni3-native-composition/execution-closure.json",
+      "sha256": "a7cf6104d468e38a51c441c20983962eaadcb1c7b0a55b89fd5075dfeefcac6f",
+      "bytes": 11678,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "separate-evolving-NI3-dependency"
+    },
+    {
+      "path": ".runtime/ni3-native-composition/src/native-adapter.mjs",
+      "sha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+      "bytes": 37074,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "separate-evolving-NI3-dependency"
+    },
+    {
+      "path": ".runtime/ni3-native-composition/src/worker.mjs",
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+      "bytes": 36626,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "separate-evolving-NI3-dependency"
+    },
+    {
+      "path": ".runtime/ni3-native-composition/src/runtime-plugin.mjs",
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2",
+      "bytes": 36350,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "separate-evolving-NI3-dependency"
+    },
+    {
+      "path": ".runtime/ni3-native-composition/src/installed-worker.mjs",
+      "sha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb",
+      "bytes": 33262,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "separate-evolving-NI3-dependency"
+    },
+    {
+      "path": ".runtime/ni3-native-composition/src/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "bytes": 52497,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "separate-evolving-NI3-dependency"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+      "bytes": 20779,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f",
+      "bytes": 27461,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.d.ts",
+      "sha256": "d46f867afad2ce27298dcc99762dc241d803e6d2102a4587587fddccedf1c733",
+      "bytes": 23780,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.d.ts",
+      "sha256": "bdeda5e930c9e5f839089aaed2bbe23296a8d06523b6e8300e21e5ca9259ef8b",
+      "bytes": 9616,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/repair.d.ts",
+      "sha256": "b273d04d155f944ce374a71b01f408a60ee33db36cafe566e0c50b7b0151233f",
+      "bytes": 3782,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/handle.d.ts",
+      "sha256": "0218ad845fb8191dc46c507a41bc56587321236cb6a2a9ac25ef78f83a4ddcc5",
+      "bytes": 5491,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/storage-contract.d.ts",
+      "sha256": "44be027eb9dfd3bc55c801d1b804b9699127ae238f5d1e56b5056094f115d80d",
+      "bytes": 3214,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.d.ts",
+      "sha256": "f29f3512b31036e12c5adf45f5ea7ef7dac319cf3a110f12ea2ac56de494fe16",
+      "bytes": 17075,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55",
+      "bytes": 22871,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "sha256": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e",
+      "bytes": 8901,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/types.d.ts",
+      "sha256": "5a081173f2064e948b5652f9090ccdc41351fc3ef49d3f9b9e9f11e7ce18bbf7",
+      "bytes": 3946,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/session.d.ts",
+      "sha256": "cb0895d351021fb585c65eea57f7f9480873cfde3ea8288fdd3554136154e117",
+      "bytes": 1914,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+      "sha256": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2",
+      "bytes": 7437,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/message.d.ts",
+      "sha256": "c1e9b9f05fc0eab9bb791d6cbfc42828e608539ba16cd0e441164aff005b9775",
+      "bytes": 10469,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/types.d.ts",
+      "sha256": "6b7f5b81f6b680b1bf33346950f43e1cb760182f14d54cb71f5f0c1f2ce20352",
+      "bytes": 22861,
+      "purpose": "static API/proposal/migration definition, no product imports or state reads",
+      "classification": "original-public-source"
+    }
+  ],
+  "lookupMisses": [
+    "src/installed-audit-native-source.mjs",
+    "src/installed-role-recipes.mjs",
+    "src/worker-security.mjs",
+    ".runtime/ni3-native-composition/runtime/src (actual candidate src/)",
+    ".runtime/ni3-native-composition/src/installed-audit-native.mjs",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/projection.d.ts",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/system-message.d.ts"
+  ],
+  "acceptance": {
+    "all87": "UNACCEPTED",
+    "sourceImplementation": "NOT_STARTED",
+    "migration": "NOT_RUN",
+    "originalNativePhysicalProof": "NOT_RUN",
+    "CODE": "BLOCKED_ORIGINAL_CYBERFLAG_DAYBREAK_NO_REROUTE",
+    "browser": "HELD",
+    "realModelQuality": "DEFERRED_SIMULATED_ONLY",
+    "publication": "NOT_AUTHORIZED"
+  },
+  "supportingDocument": "docs/evidence/NI6/schema7-combined-api-proposal.md",
+  "deliverables": {
+    "docs/evidence/NI6/schema7-combined-api-proposal.md": "523308225b96173368a8259df23510918cd32174c665e5092f078e0886c8d973",
+    ".runtime/ni6-schema7-proposal/schema7-contracts.d.ts.txt": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+    ".runtime/ni6-schema7-proposal/proposed-contract-diff.txt": "6811e12d731e5e84495dffce313f174a46264c8471cad4d4f2020233e03df195",
+    ".runtime/ni6-schema7-proposal/source-manifest.json": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+    ".runtime/ni6-schema7-proposal/proposed-operation-bindings.txt": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e"
+  }
+}

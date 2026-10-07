@@ -1,0 +1,1536 @@
+--- /dev/null
++++ b/src/schema7-contracts.d.ts [PROPOSAL TEXT ONLY]
+@@ -0,0 +1,1533 @@
++// SOURCE-ONLY DECLARATION PROPOSAL. No implementation/import authorization.
++// Domain notation below is intentionally review text, not a compilable TypeScript program.
++// Runtime validation must reject all extra fields; structural typing alone is insufficient.
++
++type Ref = lowercase hex64;
++
++type Digest = Ref;
++
++type UInt = safe integer0..MAX_SAFE_INTEGER;
++
++type Positive = safe integer1..MAX_SAFE_INTEGER;
++
++type Text = wellformed secret-checked UTF8 bounded string;
++
++type Capability = unique empty nonProxy object identity, never serialized;
++
++type OwnerHandle = actual same-store owner object;
++
++type PrepareHandle = actual same-store owner/coordinator object;
++
++type HostHandle = actual same-store host object;
++
++type NativeKind = 'normal_native_intent' | 'normal_native_origin' | 'normal_native_capture' | 'normal_native_finish' | 'normal_resume' | 'normal_resume_claim';
++
++type Purpose = 'producer' | 'audit_review' | 'audit_repair';
++
++type SelectionMode = 'all_eligible' | 'explicit_records';
++
++type SummaryDisposition = 'retained_background' | 'dropped_for_budget' | 'excluded_stale_summary';
++
++type CurrentnessReason = 'SEMANTIC_CHANGED' | 'WINNING_SOURCE_CHANGED' | 'CHECKED_SET_CHANGED' | 'SOURCE_UNAVAILABLE' | 'MEMORY_CHANGED' | 'TASK_SNAPSHOT_CHANGED';
++
++type TaskStatus = 'queued' | 'running' | 'waiting' | 'blocked' | 'recovery_required' | 'cancel_requested' | 'completed' | 'failed' | 'cancelled' | 'deleted';
++
++interface Task {
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  taskRef: Ref;
++  status: TaskStatus;
++  version: Positive;
++  taskVersion: Positive equals version;
++  authEpoch: UInt;
++  createdAt: UInt;
++  updatedAt: UInt;
++}
++
++interface Scope {
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  taskRef: Ref;
++}
++
++interface MemoryVersion {
++  namespaceRef: Ref;
++  revision: UInt,0 true absence only;
++}
++
++interface InputCounts {
++  bytes: UInt;
++  tokens: UInt;
++}
++
++interface PrepareRequest {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  terms: Text[0..32],each<=8192bytes;
++  now: UInt;
++  recordRefs?: Ref[0..64],original order and duplicate meaning;
++  vectors?: FiniteFloat32[0..32][0..128] on normal transport original private bound unchanged;
++  limit?: integer0..32;
++}
++
++interface SummaryDispositionRow {
++  recordRef: Ref;
++  disposition: SummaryDisposition;
++}
++
++interface AssemblerSourceObservation {
++  selectionMode: SelectionMode;
++  examinedSummaryRefs: sorted distinct Ref[0..64];
++  winningSourceRefs: sorted distinct Ref[1..64];
++  summaryChecks: sorted distinct SummaryDispositionRow[0..64];
++}
++
++interface PreparationObservation {
++  contractVersion: 'df.preparation-observation/v1';
++  sourceScope: Scope;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  generatedAt: UInt;
++  ledgerSnapshotDigest: Digest;
++  selectionMode: SelectionMode;
++  examinedSummaryRefs: sorted distinct Ref[0..64];
++  winningSourceRefs: sorted distinct Ref[1..64];
++  retainedRefs: Ref[0..64] exact final original order;
++  droppedRefs: Ref[0..64] exact final original order;
++  inputCounts: InputCounts;
++}
++
++interface WinningSource {
++  recordRef: Ref;
++  digest: Digest;
++  kind: 'goal'|'constraints'|'current_instruction';
++}
++
++interface SummaryCheck {
++  recordRef: Ref;
++  digest: Digest;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  generatedAt: UInt;
++  sourceRefs: Ref[1..16],original ordered duplicates retained;
++  disposition: SummaryDisposition;
++}
++
++interface ContextConflict {
++  recordRef: Ref;
++  reason: 'stale_summary';
++  winningTaskVersion: Positive;
++  winningAuthEpoch: UInt;
++}
++
++interface PreparedCheck {
++  contractVersion: 'df.prepared-context-check/v1';
++  checkRef: Ref;
++  taskRef: Ref;
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  committedTaskVersion: Positive;
++  committedAuthEpoch: UInt;
++  semanticRevision: UInt;
++  generatedAt: UInt;
++  ledgerSnapshotDigest: Digest;
++  memory: MemoryVersion;
++  method: 'version-currentness/v1';
++  winningSources: sorted distinct WinningSource[1..64];
++  summaryChecks: sorted distinct SummaryCheck[0..64];
++  conflicts: sorted distinct ContextConflict[0..64];
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  commandRef: Ref;
++  preparationPrincipalRef: Ref;
++  preparationRequestDigest: Digest;
++  selectionMode: SelectionMode;
++  checkedSetDigest: Digest;
++}
++
++interface PreparedBinding {
++  contractVersion: 'df.prepared-context-binding/v1';
++  checkRef: Ref;
++  taskRef: Ref;
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  checkRecordRef: Ref;
++  checkDigest: Digest;
++  commandRef: Ref;
++  preparationPrincipalRef: Ref;
++  preparationRequestDigest: Digest;
++  selectionMode: SelectionMode;
++  checkedSetDigest: Digest;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  committedTaskVersion: Positive;
++  committedAuthEpoch: UInt;
++  semanticRevision: UInt;
++  generatedAt: UInt;
++  namespaceRef: Ref;
++  memoryRevision: UInt;
++  method: 'version-currentness/v1';
++}
++
++interface PreparedRegistry {
++  contractVersion: 'df.prepared-context-registry/v1';
++  recordCount: UInt original aggregate cap;
++  recordDigest: Digest;
++}
++
++interface PreparedRegistryMember {
++  taskRef: Ref;
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  checkRef: Ref;
++}
++
++interface Currentness {
++  instructionsCurrent: boolean;
++  memoryCurrent: boolean;
++  taskSnapshotCurrent: boolean;
++  reasonCodes: sorted unique CurrentnessReason[0..6];
++}
++
++interface RawContextReceipt {
++  recordRef: Ref;
++  digest: Digest;
++  kind: 'context';
++  sourceRef: Ref;
++  taskVersion: Positive;
++  authEpoch: UInt;
++  generationRef: null;
++  createdAt: UInt;
++  byteLength: UInt;
++  cryptoVersion: 2;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  semanticRevision: UInt;
++  memoryNamespaceRef: Ref;
++  memoryRevision: UInt;
++  task: Task;
++}
++
++interface PreparedReceipt {
++  recordRef: Ref;
++  digest: Digest;
++  kind: 'context';
++  byteLength: UInt;
++  cryptoVersion: 2;
++  sourceRef: Ref;
++  task: Task;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  memory: MemoryVersion;
++  inputCounts: InputCounts;
++  retainedRefs: Ref[0..64] original order;
++  droppedRefs: Ref[0..64] original order;
++  verification: 'module_prepared_execution_context_only';
++}
++
++interface PreparationBounds {
++  contextByteLimit: Positive<=min(65536,selected maxDataBytes);
++  checkByteLimit: Positive<=min(49152,selected maxDataBytes);
++  metadataByteLimit: Positive<=min(4096,selected maxMetadataBytes);
++  wireByteLimit: 65536;
++  minBindingBytes: Positive actual complete signed wrapper feasibility;
++}
++
++interface PreparationStatus {
++  phase: 'disabled'|'unavailable'|'limited'|'ready';
++  reasonCode: null|'CONTEXT_PREPARATION_DISABLED'|'CONTEXT_PREPARATION_UNAVAILABLE'|'CONTEXT_PREPARATION_LIMIT';
++  configured: boolean;
++  ready: boolean;
++  bounds: PreparationBounds|null;
++}
++
++interface PreparationPrincipal {
++  capability: Capability;
++  ownerHandle: PrepareHandle;
++  namespaceRef: Ref;
++}
++
++interface NativeObserver {
++  capability: Capability;
++  ownerHandle: OwnerHandle;
++  hostHandle: HostHandle;
++  source: StableSource;
++}
++
++interface AssemblerPreparationBinding {
++  capability: Capability;
++  handle: PrepareHandle same actual store/scope as issuer;
++}
++
++interface SourceFile {
++  path: Text package-relative<=512bytes sorted unique;
++  digest: Digest;
++}
++
++interface HostSourceModule {
++  name: Text<=128bytes;
++  version: Text<=64bytes;
++  files: SourceFile[1..32] sorted unique;
++}
++
++interface StableHostSource {
++  version: '0.2.1-alpha.1';
++  lockDigest: Digest exact original host lock;
++  modules: HostSourceModule[1..32] sorted unique names;
++}
++
++interface StableProductSource {
++  name: 'dsh-fishball';
++  version: Text actual final preview package<=64bytes;
++  files: SourceFile[1..64] sorted unique;
++}
++
++interface StableSource {
++  contractVersion: 'df.native-source/v1';
++  host: StableHostSource;
++  product: StableProductSource;
++}
++
++interface Backend {
++  contractVersion: 'df.native-backend/v1';
++  sourceRef: Digest H(StableSource);
++  directory: Text canonical original profile-owned sibling<=1024bytes;
++  compression: 'none'|'zstd';
++  retention: 'owner-managed';
++  encrypted: false;
++}
++
++interface Environment {
++  root: Text canonical current-owner directory<=1024bytes;
++  cwd: Text canonical root/subdirectory<=1024bytes;
++}
++
++interface PersistenceSelection {
++  directory: Text canonical sibling<=1024bytes;
++  compression: 'none'|'zstd';
++  retention: 'owner-managed';
++}
++
++interface ModelSelection {
++  provider: Text<=128bytes;
++  model: Text<=256bytes;
++  agentPreset: Text<=128bytes;
++  reasoningEffort: Text<=128bytes|null original selection;
++  maxOutputTokens: integer128..4096;
++}
++
++interface SelectedCharges {
++  runtimeMs: integer1..60000;
++  usageUnits: integer1..100000000;
++}
++
++interface SelectedPolicy {
++  maxRuntimeMs: integer1..3600000;
++  maxUsageUnits: integer1..100000000;
++  maxCostEstimateMicros: integer0..100000000;
++}
++
++interface RequestBounds {
++  requestBytes: integer512..131072;
++  resultBytes: integer128..16384;
++}
++
++interface NormalizedWorker {
++  enabled: true;
++  selection: ModelSelection;
++  environment: Environment;
++  persistence: PersistenceSelection;
++  bounds: RequestBounds;
++  policy: SelectedPolicy;
++  charges: SelectedCharges;
++  previewTtlMs: integer1..60000;
++  grantTtlMs: integer1..60000;
++}
++
++interface AuditRole {
++  selection: ModelSelection;
++  charges: SelectedCharges;
++}
++
++interface AuditSelection {
++  enabled: true;
++  inputByteLimit: Positive<=65536;
++  resultByteLimit: Positive<=65536;
++  maxPrivateReviewers: integer1..32;
++  blockingSeverities: distinct original('fatal'|'blocking'|'warning'|'info')[0..4];
++  maxRepairRounds: integer0..8;
++  maxTotalAttempts: integer2..32;
++  review: AuditRole;
++  repair?: AuditRole;
++}
++
++interface ContinuationHistoryBounds {
++  maxEvents: integer1..96;
++  maxMessages: integer3..17;
++  maxBytes: integer256..49152;
++}
++
++interface ContinuationSelection {
++  enabled: true;
++  maxContinuations: integer1..8;
++  maxTotalAttempts: integer2..32;
++  history: ContinuationHistoryBounds;
++}
++
++interface FullLimits {
++  queueCapacity: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxActive: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxAttempts: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxTotalAttempts: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxTasks: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxActionsPerTask: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxEventsPerTask: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxMetadataBytes: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxDataBytes: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxRecordsPerTask: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxCommands: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxRuntimeMs: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxUsageUnits: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxCostEstimateMicros: ORIGINAL limits integer domain and selected constructor ceiling;
++  maxControlCommands: ORIGINAL limits integer domain and selected constructor ceiling;
++}
++
++interface ModelPolicy {
++  version: Positive;
++  presetRefs: Ref[1..32] original validation;
++  catalogEvidenceRef: Ref;
++}
++
++interface AcceptedPolicy {
++  version: Positive;
++  limits: FullLimits;
++  modelPolicy: ModelPolicy;
++}
++
++interface NativeConfigurationSelection {
++  worker: NormalizedWorker;
++  audit: AuditSelection|null;
++  continuation: ContinuationSelection|null;
++  acceptedPolicy: AcceptedPolicy;
++}
++
++interface RoleSelection {
++  purpose: Purpose;
++  selection: ModelSelection effective explicit deterministic effort;
++  charges: SelectedCharges;
++  bounds: RequestBounds;
++  systemPrompt: Text exact literal held role prompt;
++  recipeDigest: Digest actual source-owned literal recipe;
++}
++
++interface PresetDescription {
++  id: Text<=128bytes;
++  presetRef: Ref;
++  documentDigest: Digest actual selected preset document;
++  moduleRefs: Ref[0];
++  leakedServiceRefs: Ref[0];
++}
++
++interface ToolsDescription {
++  schemaRefs: Ref[0];
++  restriction: 'allow-empty';
++  vetoCode: 'DF_TOOL_DISPATCH_UNAVAILABLE';
++  toolsDigest: Ref;
++}
++
++interface PermissionDescription {
++  policy: SelectedPolicy;
++  resourcePolicyVersion: Positive;
++  modelPolicyVersion: Positive;
++  permissionPolicyDigest: Ref;
++}
++
++interface RolePresetDescription {
++  purpose: Purpose;
++  description: PresetDescription;
++}
++
++interface NativeConfiguration {
++  source: StableSource;
++  configuration: NativeConfigurationSelection;
++  backend: Backend;
++  environment: Environment;
++  selection: distinct purpose RoleSelection[1..3];
++  preset: distinct purpose RolePresetDescription[1..3];
++  tools: ToolsDescription;
++  permission: PermissionDescription;
++}
++
++interface NativeIdentity {
++  nativeId: Text<=128bytes exact df-originalGenerationRef;
++}
++
++interface NativeSurface {
++  nodes: ORIGINAL SessionSeq[0..128];
++  replaceGeneration: UInt;
++  contentGeneration: UInt;
++}
++
++interface NativeHeader {
++  version: 4;
++  id: Text actual original native ID;
++  createdAt: UInt;
++  cwd: Text exact origin canonical environment.cwd;
++  isSeeded: false;
++  agentPreset?: Text exact selected origin preset when originally present;
++}
++
++type AdmittedNativeEventType = 'session/end-seed' | 'turn/start' | 'turn/end' | 'step/start' | 'step/end' | 'request/header' | 'request/context' | 'system/message' | 'user/message' | 'assistant/message' | 'agent-preset/selected' | 'approval/policy' | 'agent/inbox/spliced';
++
++interface NativeEvent {
++  type: AdmittedNativeEventType;
++  seq: UInt contiguous0-based;
++  time: UInt;
++  data: ExactPinnedNativeEventData(type);
++  ignorable?: true;
++  surfaceOp?: 'append';
++  sourceEventSeqs?: UInt[1..128] earlier existing native seqs;
++}
++
++type ExactPinnedNativeEventData(type) = Exact original SessionEventMap[type] union from pinned public Session types plus public Agent inbox, preset session and approval policy declarations. No unrecognised ignorable event exemption. Native sourceEventSeqs and surfaceOp only on surface events; assistant forbids sourceEventSeqs. session/end-seed data exactly empty object for supported own restore; approval/policy exactly policy=never with absent source; preset exact selected ID; inbox original splices exact authenticated new df-context input and empty reconstructed queues. request/context exact approved provider/model/contextWindow/systemPromptUpdate; no added model-visible runtime context.;
++
++interface TextBlock {
++  type: 'text';
++  text: Text;
++}
++
++interface SystemSource {
++  kind: 'system-prompt';
++}
++
++interface ContextSource {
++  kind: 'df-context';
++  form: 'local';
++}
++
++interface ModelSource {
++  kind: 'model';
++  provider: Text exact original selected provider;
++  model: Text exact original selected model;
++}
++
++interface SystemMessage {
++  id: Text exact original MessageId;
++  role: 'system';
++  content: TextBlock[1] exact unchanged fixed prompt;
++  source: SystemSource;
++}
++
++interface ContextMessage {
++  id: Text exact executionRef;
++  role: 'user';
++  content: TextBlock[1] exact whole approved execution_context or audit input;
++  source: ContextSource;
++}
++
++interface AssistantMessage {
++  id: Text exact original committed MessageId;
++  role: 'assistant';
++  content: TextBlock[1] exact captured source response;
++  source: ModelSource;
++}
++
++type NativeMessage = SystemMessage|ContextMessage|AssistantMessage, exact original public Message fields. Provider replayState absent for source-owned simulated route.;
++
++interface OriginalContextProvenance {
++  recordRef: Ref;
++  digest: Digest;
++  taskVersion: Positive;
++  authEpoch: UInt;
++  createdAt: UInt;
++  sourceScope?: Scope;
++  sourceTaskVersion?: Positive;
++  sourceAuthEpoch?: UInt;
++  generatedAt?: UInt;
++  sourceRefs?: Ref[1..16] original ordered duplicates;
++  observation?: queried_snapshot;
++  observedAt?: UInt;
++  observationDigest?: Digest;
++  supplement?: OriginalSupplement;
++}
++
++interface OriginalSupplement {
++  contractVersion: 'df.supplement/v1';
++  sourceRef: Ref;
++  subscriptionRef: Ref;
++  eventRef: Ref;
++  eventDigest: Digest;
++  observedAt: UInt;
++  taskRef: Ref;
++}
++
++interface OriginalAssemblerConflict {
++  recordRef: Ref;
++  reason: 'stale_summary';
++  winningTaskVersion: Positive;
++}
++
++interface OriginalAssembledContext {
++  text: Text;
++  bytes: UInt;
++  tokens: UInt;
++  compressed: boolean;
++  retainedRefs: Ref[0..64] exact original order;
++  droppedRefs: Ref[0..64] exact original order;
++  taskVersion: Positive;
++  authEpoch: UInt;
++  generationRef: Ref|null;
++  conflicts: OriginalAssemblerConflict[0..64];
++  provenance: OriginalContextProvenance[0..64];
++  ledgerSnapshotDigest: Digest;
++  verification: 'module_assembled_input_only';
++}
++
++interface NativeHistoryObservation {
++  schema: 'df.native-history/v1';
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  taskRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  sourceRef: Ref actual historical live observation;
++  configurationDigest: Digest;
++  header: NativeHeader;
++  events: NativeEvent[0..128] contiguous0-based complete;
++  surface: NativeSurface;
++  messages: NativeMessage[0..19] complete derived messages,17 approved predecessor plus new user/assistant;
++}
++
++interface PreparedInputBinding {
++  checkRef: Ref;
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  preparationPrincipalRef: Ref;
++  preparationRequestDigest: Digest;
++}
++
++interface ArtifactTarget {
++  artifactRef: Ref;
++  version: Positive exact original input artifactVersion+1;
++}
++
++interface AuditInputBinding {
++  inputRecordRef: Ref;
++  inputDigest: Digest;
++  auditRef: Ref;
++  bindingDigest: Digest;
++  materialDigest: Digest;
++  previousReportRef: Ref|null;
++  artifactTarget: ArtifactTarget|null;
++}
++
++interface AuditCaptureBinding {
++  resultRef: Ref;
++  resultRecordRef: Ref;
++  resultDigest: Digest;
++  inputRecordRef: Ref;
++  inputDigest: Digest;
++  auditRef: Ref;
++  bindingDigest: Digest;
++  materialDigest: Digest;
++  previousReportRef: Ref|null;
++  artifactTarget: ArtifactTarget|null;
++}
++
++interface NativeIntent {
++  contractVersion: 'df.normal-native/normal_native_intent/v1';
++  intentRef: Ref equals claimRef;
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  identityRecordRef: Ref;
++  identityDigest: Digest;
++  configurationRecordRef: Ref;
++  configurationDigest: Digest;
++  sourceRef: Ref stableSourceRef;
++  createConfigDigest: Digest configurationDigest;
++  backendRef: Ref;
++  createdAt: UInt;
++  purpose: Purpose;
++  inputBinding: PreparedInputBinding if producer else AuditInputBinding;
++}
++
++interface NativeOrigin {
++  contractVersion: 'df.normal-native/normal_native_origin/v1';
++  originRef: Ref;
++  intentRef: Ref;
++  taskRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  creationEvidenceRef: Ref;
++  baselineHistoryRecordRef: Ref;
++  baselineHistoryDigest: Digest;
++  createdAt: UInt;
++}
++
++interface NativeCapture {
++  contractVersion: 'df.normal-native/normal_native_capture/v1';
++  captureRef: Ref;
++  originRef: Ref;
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  executionRef: Ref;
++  contextRecordRef: Ref actual protected context;
++  contextDigest: Digest actual protected context;
++  resumeRef: Ref|null;
++  fullInputDigest: Digest|null;
++  artifactRef: Ref|null;
++  artifactVersion: Positive|null;
++  artifactDigest: Digest|null;
++  resultDigest: Digest;
++  cursor: UInt;
++  persistenceEvidenceRef: Ref;
++  committedHistoryRecordRef: Ref;
++  committedHistoryDigest: Digest;
++  eventCount: UInt<=128;
++  headerDigest: Digest;
++  messagesDigest: Digest;
++  usageUnits: UInt<=actual reserved bound;
++  accounting: 'df-testing-utf8-byte-units/v1';
++  createdAt: UInt;
++  phase: 'output'|'repair_artifact';
++  purpose: Purpose;
++  inputCursor: UInt<cursor;
++  auditBinding: AuditCaptureBinding|null;
++  outputCaptureRef: Ref|null;
++}
++
++interface NativeFinish {
++  contractVersion: 'df.normal-native/normal_native_finish/v1';
++  finishRef: Ref equals claimRef;
++  taskRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  executionRef: Ref;
++  captureRef: Ref primary output;
++  terminalEvidenceRef: Ref;
++  outcomeEvidenceRef: Ref;
++  releaseEvidenceRef: Ref|null;
++  usageState: 'actual'|'unknown';
++  usageUnits: UInt|null only unknown;
++  releaseState: 'held'|'released';
++  createdAt: UInt;
++  commandRef: Ref;
++  ownerRequestDigest: Digest;
++  artifactCaptureRef: Ref|null;
++}
++
++interface NativeResume {
++  contractVersion: 'df.normal-native/normal_resume/v1';
++  resumeRef: Ref;
++  taskRef: Ref;
++  originRef: Ref;
++  predecessorClaimRef: Ref;
++  predecessorCaptureRef: Ref;
++  predecessorFinishRef: Ref;
++  ordinal: integer1..8;
++  sessionRef: Ref;
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  historyRecordRef: Ref;
++  historyDigest: Digest;
++  inputRecordRef: Ref;
++  inputDigest: Digest;
++  configurationRecordRef: Ref;
++  configurationDigest: Digest;
++  semanticRevision: UInt;
++  sourceTaskVersion: Positive;
++  sourceAuthEpoch: UInt;
++  createdAt: UInt;
++}
++
++interface NativeResumeClaim {
++  contractVersion: 'df.normal-native/normal_resume_claim/v1';
++  claimRef: Ref;
++  resumeRef: Ref;
++  taskRef: Ref;
++  originRef: Ref;
++  predecessorClaimRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  reservationRef: Ref;
++  createdAt: UInt;
++}
++
++interface NativeRegistry {
++  contractVersion: 'df.normal-native-registry/v1';
++  recordCount: UInt original aggregate cap;
++  recordDigest: Digest;
++}
++
++interface NativeRegistryMember {
++  kind: NativeKind;
++  taskRef: Ref;
++  id: Ref;
++}
++
++interface NormalOriginSpecBinding {
++  sourceRef: Ref stableSourceRef;
++  createConfigDigest: Digest;
++  backendRef: Ref;
++  sessionRef: Ref;
++}
++
++interface NormalResumeSpecBinding {
++  resumeRef: Ref;
++  predecessorOriginRef: Ref;
++  predecessorClaimRef: Ref;
++  historyDigest: Digest;
++  inputDigest: Digest;
++}
++
++interface OriginalSpecModel {
++  presetRef: Ref;
++  modelRef: Ref;
++  reasoningRef: Ref;
++  catalogEvidenceRef: Ref;
++}
++
++interface OriginalSpecExecutor {
++  mode: 'create'|'resume'|'none';
++  generationRef: Ref;
++  sessionRef?: Ref;
++  environmentRef: Ref;
++  bindingDigest: Ref;
++  toolsDigest: Ref;
++  permissionPolicyDigest: Ref;
++}
++
++interface OriginalSpecExecutionInput {
++  recordRef: Ref;
++  digest: Digest;
++  purpose: 'audit_review'|'audit_repair';
++  auditRef: Ref;
++  bindingDigest: Ref;
++  materialDigest: Ref;
++  previousReportRef?: Ref;
++}
++
++interface OriginalNormalizedSpec {
++  actionRef: Ref;
++  kind: 'read'|'write'|'review'|'repair';
++  role: 'worker'|'review'|'repair';
++  targetDigest: Digest;
++  dataDigest: Digest;
++  units: Positive;
++  charges: OriginalSpecCharges;
++  attemptGroupRef: Ref;
++  attemptIndex: Positive;
++  resourcePolicyVersion: Positive;
++  modelPolicyVersion: Positive;
++  model: OriginalSpecModel;
++  executor: OriginalSpecExecutor;
++  executionInput?: OriginalSpecExecutionInput;
++  nativeOriginBinding?: NormalOriginSpecBinding;
++  resumeBinding?: NormalResumeSpecBinding;
++}
++
++interface Predecessor {
++  predecessorActionRef: Ref;
++  predecessorClaimRef: Ref;
++  predecessorGenerationRef: Ref;
++  predecessorExecutionRef: Ref;
++  artifactRef: Ref;
++  artifactVersion: 1;
++  artifactDigest: Digest;
++  releaseEvidenceRef: Ref;
++}
++
++interface ResumeHistory {
++  schema: 'df.resume-history/v1';
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  taskRef: Ref;
++  originRef: Ref;
++  predecessor: Predecessor;
++  ordinal: integer1..8;
++  sessionRef: Ref;
++  persistence: Backend;
++  header: NativeHeader;
++  events: NativeEvent[0..96];
++  surface: NativeSurface;
++  messages: NativeMessage[3..17];
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  configurationRef: Ref current explicit source-owned configuration;
++  sourceRef: Ref stableSourceRef;
++}
++
++interface ResumeInput {
++  schema: 'df.resume-input/v1';
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  taskRef: Ref;
++  originRef: Ref;
++  ordinal: integer1..8;
++  sessionRef: Ref;
++  historyDigest: Digest;
++  historyMessages: NativeMessage[3..17] exact prefix;
++  contextRecordRef: Ref;
++  contextDigest: Digest;
++  contextContent: Text exact whole current execution_context bytes;
++}
++
++interface ActualUsage {
++  state: 'actual';
++  units: UInt;
++}
++
++interface OwnerFinishRequest {
++  taskRef: Ref;
++  actionRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  executionRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface Budget {
++  attempts: UInt;
++  runtimeMs: UInt;
++  usageUnits: UInt;
++  costEstimateMicros: UInt;
++}
++
++interface RemainingBudget {
++  attempts: UInt|null;
++  runtimeMs: UInt|null;
++  usageUnits: UInt|null;
++  costEstimateMicros: UInt|null;
++}
++
++interface OriginalClaimReceipt {
++  claimRef: Ref;
++  reservationRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  generationRef: Ref;
++  sessionRef: Ref|null;
++  task: Task;
++}
++
++interface OriginalSettlementReceipt {
++  task: Task;
++  claimRef: Ref;
++  reservationRef: Ref;
++  reservationHeld: boolean;
++  outcome: 'completed'|'failed'|'unknown'|'terminated';
++  terminalEvidenceRef?: Ref;
++  releaseEvidenceRef?: Ref;
++}
++
++interface OriginalArtifactReceipt {
++  artifactRef: Ref;
++  version: Positive;
++  recordRef: Ref;
++  digest: Digest;
++  producerClaimRef: Ref|null;
++  generationRef: Ref|null;
++  producerRef: Ref;
++  verification: OriginalVerification|null;
++  task: Task;
++}
++
++type OriginalVerification = EXACT original signed verification from authoritative source6 artifact record; native initial capture has null, later original review facts preserved;
++
++interface OriginalAuditResultReceipt {
++  contractVersion: 'df.audit-result-association/v1';
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  taskRef: Ref;
++  resultRef: Ref;
++  recordRef: Ref;
++  digest: Digest;
++  byteLength: UInt;
++  inputDigest: Digest;
++  inputRecordRef: Ref;
++  executionRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  auditRef: Ref;
++  bindingDigest: Digest;
++  materialDigest: Digest;
++  purpose: 'audit_review'|'audit_repair';
++  inputCursor: UInt;
++  cursor: UInt>inputCursor;
++  evidenceRef: Ref;
++  state: 'captured';
++  createdAt: UInt;
++  deduplicated?: boolean;
++}
++
++interface OriginalPlanReceipt {
++  actionRef: Ref;
++  actionDigest: Digest;
++  taskVersion: Positive;
++  authEpoch: UInt;
++}
++
++interface OriginalGrantReceipt {
++  task: Task;
++  taskVersion: Positive;
++  authEpoch: UInt;
++  actionRef: Ref;
++  actionDigest: Digest;
++  expiresAt: UInt;
++}
++
++interface OriginalMemoryReceipt {
++  ownerRef: Ref;
++  workspaceRef: Ref;
++  namespaceRef: Ref;
++  revision: Positive;
++  digest: Digest;
++  recordRef: Ref;
++  deleted: boolean;
++  createdAt: UInt;
++  updatedAt: UInt;
++  sourceRefs: Ref[1..16];
++  byteLength: UInt;
++  cryptoVersion: 2;
++  requestDigest?: Digest;
++  deduplicated?: boolean;
++  result?: OriginalMemoryResult;
++}
++
++type OriginalMemoryResult = EXACT original correction {id,factRevision,authority:memory_only} OR forget {id,factRevision,deleted:true} OR import {imported,authority:memory_only}. Historical store reads do not fabricate result.;
++
++interface ApprovalData {
++  recordRef: Ref;
++  digest: Digest;
++  kind: Text original kind;
++  content: Text complete exact current context or original audit input;
++}
++
++interface ApprovalModelLabels {
++  provider: Text original label;
++  model: Text original label;
++  reasoning: Text original label;
++  preset: Text original label;
++}
++
++interface ApprovalEnvironmentLabels {
++  label: Text original label;
++  cwd: Text actual original canonical cwd;
++  environmentRef: Ref;
++}
++
++interface ApprovalLimits {
++  units: Positive;
++  attemptIndex: Positive;
++  charges: OriginalSpecCharges;
++}
++
++interface ApprovalDescription {
++  kind: 'read'|'write'|'review'|'repair';
++  role: 'worker'|'review'|'repair';
++  targetLabel: Text original label;
++  data: ApprovalData;
++  model: ApprovalModelLabels;
++  toolNames: Text[0..64] original distinct names,normal empty;
++  environment: ApprovalEnvironmentLabels;
++  limits: ApprovalLimits;
++  evidenceRef: Ref;
++  resume?: ResumeDescription;
++}
++
++interface OriginalApprovalPreview {
++  previewRef: Ref;
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Digest;
++  taskVersion: Positive;
++  authEpoch: UInt;
++  expiresAt: UInt;
++  description: ApprovalDescription;
++}
++
++interface NativeRecordBody {
++  recordRef: Ref;
++  digest: Digest;
++  kind: 'native_history'|'native_request'|'native_configuration';
++  sourceRef: Ref;
++  taskVersion: Positive;
++  authEpoch: UInt;
++  generationRef: Ref|null;
++  createdAt: UInt;
++  byteLength: UInt;
++  cryptoVersion: 2;
++  content: Text complete canonical exact envelope;
++}
++
++interface NormalResumeInputPair {
++  association: NativeResume;
++  history: NativeRecordBody kind native_history;
++  request: NativeRecordBody kind native_request;
++  configuration: NativeRecordBody kind native_configuration;
++}
++
++interface PreparedContextCommandReceiptInput {
++  request: PrepareRequest;
++}
++
++interface PutPreparedContextInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  expectedMemory: MemoryVersion;
++  content: Text exact original JSON.stringify envelope;
++  sourceRef: Ref original recipe;
++  summaryChecks: SummaryDispositionRow[0..64];
++  request: PrepareRequest;
++  observation: PreparationObservation;
++}
++
++interface ReadPreparedContextCheckInput {
++  taskRef: Ref;
++  contextRecordRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface PreparedContextStatusInput {
++}
++
++interface ReadMemoryCommandInput {
++  namespaceRef: Ref private fixed namespace;
++  commandRef: Ref;
++}
++
++interface AuditRepairClaim {
++  auditRef: Ref;
++  round: integer1..8;
++  previousReportRef: Ref;
++  evidenceRef: Ref;
++}
++
++interface PlanNormalNativeActionInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  contextRecordRef: Ref;
++  configurationContent: Text canonical actual NativeConfiguration;
++  spec: OriginalNormalizedSpec exact nativeOriginBinding;
++}
++
++interface ClaimNormalCreateInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  actionRef: Ref;
++  actionDigest: Ref;
++  nativeId: Text actual preallocated df-generationRef;
++  configurationContent: Text canonical NativeConfiguration;
++  auditRepair?: AuditRepairClaim;
++}
++
++interface RecordNormalNativeOriginInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  originRef: Ref;
++  creationEvidenceRef: Ref;
++  baselineHistoryContent: Text canonical NativeHistoryObservation;
++  baselineHistoryDigest: Digest;
++}
++
++interface CaptureNormalNativeResultInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  actionRef: Ref;
++  actionDigest: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref;
++  executionRef: Ref;
++  artifactRef: Ref;
++  version: 1;
++  resultContent: Text original exact df.native-result/v1 envelope;
++  resultDigest: Digest inner output bytes;
++  inputDigest: Digest ORIGINAL current context meaning;
++  inputCursor: UInt;
++  cursor: UInt>inputCursor;
++  persistenceEvidenceRef: Ref;
++  committedHistoryContent: Text canonical NativeHistoryObservation;
++  committedHistoryDigest: Digest;
++  usageUnits: UInt;
++}
++
++interface CaptureNormalNativeAuditResultInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  executionRef: Ref;
++  sessionRef: Ref;
++  inputCursor: UInt;
++  cursor: UInt>inputCursor;
++  content: Text original raw response;
++  evidenceRef: Ref;
++  committedHistoryContent: Text canonical NativeHistoryObservation;
++  committedHistoryDigest: Digest;
++  usageUnits: UInt;
++}
++
++interface WriteNormalNativeRepairArtifactInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  artifactRef: Ref;
++  version: Positive fixed original inputVersion+1;
++  producerClaimRef: Ref;
++  generationRef: Ref;
++  content: Text exact original raw audit response;
++  outputCaptureRef: Ref;
++}
++
++interface FinishNormalNativeExecutionInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  executionRef: Ref;
++  captureRef: Ref;
++  terminalEvidenceRef: Ref;
++  outcomeEvidenceRef: Ref;
++  usage: ActualUsage;
++  ownerRequest: OwnerFinishRequest;
++  artifactCaptureRef: Ref|null;
++}
++
++interface ReadNormalNativeFinishInput {
++  taskRef: Ref;
++  actionRef: Ref;
++  claimRef: Ref;
++  generationRef: Ref;
++  executionRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface ReadNormalResumeOriginInput {
++  taskRef: Ref;
++  predecessorActionRef: Ref;
++  predecessorClaimRef: Ref;
++  predecessorGenerationRef: Ref;
++  predecessorExecutionRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface ReadNormalNativeArtifactInput {
++  taskRef: Ref;
++  artifactRef: Ref;
++  version: Positive;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface ReadNormalNativeAuditResultInput {
++  taskRef: Ref;
++  resultRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface ReadNormalResumeInputInput {
++  taskRef: Ref;
++  resumeRef: Ref;
++}
++
++interface ResolveNormalNativeIdentityInput {
++  taskRef: Ref;
++  originRef: Ref;
++  sessionRef: Ref;
++}
++
++interface PlanNormalResumeInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  contextRecordRef: Ref;
++  predecessorClaimRef: Ref;
++  historyContent: Text canonical ResumeHistory;
++  requestContent: Text canonical ResumeInput;
++  configurationContent: Text canonical current NativeConfiguration;
++  spec: OriginalNormalizedSpec exact resumeBinding;
++}
++
++interface ClaimNormalResumeInput {
++  taskRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  actionRef: Ref;
++  actionDigest: Ref;
++  resumeRef: Ref;
++}
++
++interface AssembleForPreparationInput {
++  taskRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  recordRefs?: Ref[0..64] original semantics;
++}
++
++interface PreparedCommitObservation {
++  input: PrepareRequest;
++  receipt: PreparedReceipt;
++  checkRef: Ref;
++  commitDisposition: 'new'|'historical';
++}
++
++interface NativeValidatedFacts {
++  usageUnits: UInt;
++  evidenceRef: Ref;
++  resultDigest: Digest;
++  inputCursor?: UInt;
++  historyObservation: NativeHistoryObservation;
++}
++
++interface WorkerResumeStatusRequest {
++  taskRef: Ref;
++  predecessorActionRef: Ref;
++  predecessorClaimRef: Ref;
++  predecessorGenerationRef: Ref;
++  predecessorExecutionRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface WorkerResumePrepareRequest {
++  taskRef: Ref;
++  predecessorActionRef: Ref;
++  predecessorClaimRef: Ref;
++  predecessorGenerationRef: Ref;
++  predecessorExecutionRef: Ref;
++  contextRecordRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface WorkerResumePlanRequest {
++  taskRef: Ref;
++  previewRef: Ref;
++  planDigest: Digest;
++  contextRecordRef: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  accept: true;
++}
++
++interface WorkerResumePreviewRequest {
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  recordRef: Ref=current contextRecordRef;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++interface WorkerResumeGrantRequest {
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++  expiresAt: UInt future<=now+grantTtlMs;
++  previewRef: Ref;
++  accept: true;
++}
++
++interface WorkerResumeRequest {
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  commandRef: Ref;
++  expectedTaskVersion: Positive;
++  expectedAuthEpoch: UInt;
++}
++
++type ResumeCode = 'WORKER_RESUME_DISABLED' | 'WORKER_RESUME_ORIGIN_UNAVAILABLE' | 'WORKER_RESUME_PREDECESSOR_UNRESOLVED' | 'WORKER_RESUME_HISTORY_UNAVAILABLE' | 'WORKER_RESUME_HISTORY_STALE' | 'WORKER_RESUME_HISTORY_LIMIT' | 'WORKER_RESUME_INBOX_PENDING' | 'WORKER_RESUME_REPAIR_REQUIRED' | 'WORKER_RESUME_LINEAGE_CONFLICT';
++
++interface OriginalWorkerView {
++  taskRef: Ref;
++  actionRef: Ref;
++  actionDigest: Ref;
++  claimRef: Ref;
++  reservationRef: Ref;
++  generationRef: Ref;
++  sessionRef: Ref|null;
++  phase: 'created'|'ready'|'running'|'unknown'|'cancel_requested'|'stopped'|'not_created';
++}
++
++interface ResumeHistoryDescription {
++  header: NativeHeader;
++  eventsDigest: Digest;
++  eventCount: UInt<=96;
++  surfaceDigest: Digest;
++  messages: NativeMessage[3..17] complete prefix;
++  messagesDigest: Digest;
++  historyBytes: UInt<=selected maxBytes;
++}
++
++interface ResumeContextDescription {
++  recordRef: Ref;
++  digest: Digest;
++  content: Text exact full current execution_context envelope;
++}
++
++interface OriginalSpecCharges {
++  runtimeMs: UInt;
++  usageUnits: UInt;
++  costEstimateMicros?: UInt;
++  costState?: 'estimated'|'unknown';
++  costProvenanceRef?: Ref;
++}
++
++interface ResumeDescription {
++  taskRef: Ref;
++  originRef: Ref;
++  predecessor: Predecessor;
++  ordinal: integer1..8;
++  sessionRef: Ref;
++  history: ResumeHistoryDescription;
++  context: ResumeContextDescription;
++  selection: ModelSelection;
++  effectiveReasoningEffort: 'deterministic';
++  environment: Environment;
++  persistence: Backend;
++  bounds: RequestBounds;
++  limits: FullLimits explicit sufficient shared aggregate;
++  charges: OriginalSpecCharges;
++  spent: Budget;
++  remaining: RemainingBudget;
++  systemPrompt: Text exact unchanged producer literal;
++}
++
++interface ResumeProviderPermit {
++  mode: 'resume';
++  agent: actual original Agent object never JSON;
++  executionRef: Ref;
++  content: Text exact whole context;
++  maxOutputTokens: integer128..4096;
++  requestBytes: integer512..131072;
++  resultBytes: integer128..16384;
++  usageUnits: UInt;
++  assertCurrent: trusted synchronous original late gate;
++  historyMessages: NativeMessage[3..17];
++  historyMessagesDigest: Digest;
++  historyPrefixDigest: Digest;
++  resumeRef: Ref;
++}
++
++interface ProposedStoreAndSourceProtocols {
++  // actual adapter BEFORE #assemble, no current CAS/memory/source reads
++  // readonly;0native calls;0writes
++  preparedContextCommandReceipt(authority: preparation Capability, input: PreparedContextCommandReceiptInput): {receipt:PreparedReceipt,checkRef:Ref}|null;
++  // same actual assembler source path and MemoryAdapter original final compaction
++  // atomic context+check+binding+registry+keyed command;task/semantic once;0native
++  putPreparedContext(authority: preparation Capability, input: PutPreparedContextInput): {receipt:RawContextReceipt,checkRef:Ref,commitDisposition:new|historical};
++  // normal contextConflicts complete wire current read
++  // readonly;0native calls;0writes
++  readPreparedContextCheck(authority: OwnerHandle, input: ReadPreparedContextCheckInput): {check:PreparedCheck,currentness:Currentness};
++  // actual issued source and complete pure signed-wrapper feasibility
++  // readonly;0native calls;0writes
++  preparedContextStatus(authority: preparation Capability, input: PreparedContextStatusInput): PreparationStatus;
++  // normal memoryCommandStatus original signed receipt, no requestDigest
++  // readonly;0native calls;0writes
++  readMemoryCommand(authority: OwnerHandle, input: ReadMemoryCommandInput): OriginalMemoryReceipt|null;
++  // normal installed producer/audit planner AFTER actual current source facts/context/private origin/aggregate accepted policy, role derived signed exact spec
++  // atomic ORIGINAL planAction effect+keyed normal command;no orphan config/native record or seventh kind
++  planNormalNativeAction(authority: native Capability, input: PlanNormalNativeActionInput): OriginalPlanReceipt;
++  // root manager original claim boundary BEFORE public AgentRegistry.create
++  // atomic original claim/reservation+identity+configuration+intent+registry+keyed command
++  claimNormalCreate(authority: native Capability, input: ClaimNormalCreateInput): {receipt:OriginalClaimReceipt,originRef:Ref,sessionRef:Ref,identityRecordRef:Ref};
++  // actual own idle created receipt+flushtrue/fresh public backend baseline read
++  // atomic baseline history+origin+registry+keyed command;0model
++  recordNormalNativeOrigin(authority: native Capability, input: RecordNormalNativeOriginInput): {originRef:Ref,claimRef:Ref,generationRef:Ref,sessionRef:Ref,baselineHistoryRecordRef:Ref};
++  // actual original validateResult enriched history/usage witness and current owned output
++  // atomic original version1 artifact+history+output capture+registry+keyed command
++  captureNormalNativeResult(authority: native Capability, input: CaptureNormalNativeResultInput): {receipt:OriginalArtifactReceipt,captureRef:Ref};
++  // actual original persisted audit collector and usage+signed association, role derived core
++  // atomic ORIGINAL captureAuditResult+history+output capture+registry+keyed command;no artifact/submit
++  captureNormalNativeAuditResult(authority: native Capability, input: CaptureNormalNativeAuditResultInput): {receipt:OriginalAuditResultReceipt,captureRef:Ref};
++  // actual retained original response receipt+fixed child target/tag+original phase intent
++  // atomic ORIGINAL writeArtifact+repair_artifact capture+registry+keyed command;no recapture/stream
++  writeNormalNativeRepairArtifact(authority: native Capability, input: WriteNormalNativeRepairArtifactInput): {receipt:OriginalArtifactReceipt,captureRef:Ref};
++  // actual current detached Q before own handle stop/drain wait and authenticated capture/usage
++  // atomic ORIGINAL settlement+finish+registry+keyed command;separate ownerRequestDigest/full command digest
++  finishNormalNativeExecution(authority: native Capability, input: FinishNormalNativeExecutionInput): {receipt:OriginalSettlementReceipt,finishRef:Ref};
++  // BEFORE current CAS/maps/native/source lookup, old Q allowed under current read authority
++  // readonly;0native calls;0writes
++  readNormalNativeFinish(authority: OwnerHandle, input: ReadNormalNativeFinishInput): {receipt:OriginalSettlementReceipt,finishRef:Ref}|null;
++  // producer-only authentic signed predecessor+spent/remaining, no history/native reads
++  // readonly;0native calls;0writes
++  readNormalResumeOrigin(authority: OwnerHandle, input: ReadNormalResumeOriginInput): {intent:NativeIntent,origin:NativeOrigin,capture:NativeCapture,finish:NativeFinish,predecessorResume:NativeResume|null,ordinal:UInt,successors:NativeResumeClaim[0..8],spent:Budget,remaining:RemainingBudget}|null;
++  // normal producer/repair artifact historical source graph only; never live permit
++  // readonly;0native calls;0writes
++  readNormalNativeArtifact(authority: OwnerHandle, input: ReadNormalNativeArtifactInput): {artifact:OriginalArtifactReceipt,capture:NativeCapture,outputCapture:NativeCapture,intent:NativeIntent,origin:NativeOrigin,finish:NativeFinish|null};
++  // normal audit response historical graph, no reviewer/submission restore
++  // readonly;0native calls;0writes
++  readNormalNativeAuditResult(authority: OwnerHandle, input: ReadNormalNativeAuditResultInput): {result:OriginalAuditResultReceipt,capture:NativeCapture,intent:NativeIntent,origin:NativeOrigin,finish:NativeFinish|null};
++  // original synchronous ApprovalPreview readResumeInput root owner closure, authentic complete association/history/request/configuration, not generic native-data read
++  // readonly;0native calls;0writes
++  readNormalResumeInput(authority: OwnerHandle, input: ReadNormalResumeInputInput): NormalResumeInputPair;
++  // only manager resolver AFTER fresh original stable source/backend/live instance/private scope gate; never wire
++  // readonly;0native calls;0writes
++  resolveNormalNativeIdentity(authority: native Capability, input: ResolveNormalNativeIdentityInput): {nativeId:Text};
++  // actual full private preview+explicit owner accept+fresh prepared source/config/history+original backend recheck
++  // atomic original plan+configuration+history+request+resume+registry+keyed command
++  planNormalResume(authority: native Capability, input: PlanNormalResumeInput): {action:OriginalPlanReceipt,resumeRef:Ref,predecessorOriginRef:Ref,predecessorClaimRef:Ref,sessionRef:Ref,historyRecordRef:Ref,historyDigest:Digest,inputRecordRef:Ref,inputDigest:Digest,contextRecordRef:Ref,contextDigest:Digest,semanticRevision:UInt,sourceTaskVersion:Positive,sourceAuthEpoch:UInt};
++  // original charged claim BEFORE public AgentRegistry.resume; known released producer+one successor
++  // atomic original claim/reservation+resume_claim+registry+keyed command
++  claimNormalResume(authority: native Capability, input: ClaimNormalResumeInput): {receipt:OriginalClaimReceipt,resumeRef:Ref,originRef:Ref,sessionRef:Ref,identityRecordRef:Ref};
++  // same original source read/compaction path, no retained-only guess
++  // original assembly reads/tokenizer/optional queryHost only;0writes
++  assembleForPreparation(authority: same-instance assembler Capability, input: AssembleForPreparationInput): {context:OriginalAssembledContext,sourceObservation:AssemblerSourceObservation};
++}
++
++interface ProposedOwnerResumeProtocol {
++  workerResumeStatus(input: WorkerResumeStatusRequest): {taskRef:Ref,sessionRef:Ref|null,originRef:Ref|null,ordinal:UInt|null,eligible:boolean,reasonCode:ResumeCode|null,policyVersion:Positive,spent:Budget,remaining:RemainingBudget};
++  workerResumePrepare(input: WorkerResumePrepareRequest): {previewRef:Ref,planDigest:Digest,expiresAt:UInt,taskVersion:Positive,authEpoch:UInt,description:ResumeDescription};
++  workerResumePlan(input: WorkerResumePlanRequest): {action:OriginalPlanReceipt,historyRecordRef:Ref,historyDigest:Digest,resumeRef:Ref};
++  workerResumePreview(input: WorkerResumePreviewRequest): OriginalApprovalPreview;
++  workerResumeGrant(input: WorkerResumeGrantRequest): OriginalGrantReceipt;
++  workerResume(input: WorkerResumeRequest): {task:Task,worker:OriginalWorkerView};
++}

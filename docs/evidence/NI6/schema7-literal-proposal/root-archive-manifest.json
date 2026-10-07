@@ -1,0 +1,31 @@
+{
+  "kind": "immutable-original-schema7-source-proposal-not-implementation",
+  "rows": [
+    {
+      "source": ".runtime/ni6-schema7-proposal/schema7-contracts.d.ts.txt",
+      "archive": "docs/evidence/NI6/schema7-literal-proposal/schema7-contracts.d.ts.txt",
+      "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+      "bytes": 45312
+    },
+    {
+      "source": ".runtime/ni6-schema7-proposal/proposed-operation-bindings.txt",
+      "archive": "docs/evidence/NI6/schema7-literal-proposal/proposed-operation-bindings.txt",
+      "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+      "bytes": 8878
+    },
+    {
+      "source": ".runtime/ni6-schema7-proposal/proposed-contract-diff.txt",
+      "archive": "docs/evidence/NI6/schema7-literal-proposal/proposed-contract-diff.txt",
+      "sha256": "6811e12d731e5e84495dffce313f174a46264c8471cad4d4f2020233e03df195",
+      "bytes": 46932
+    },
+    {
+      "source": ".runtime/ni6-schema7-proposal/source-manifest.json",
+      "archive": "docs/evidence/NI6/schema7-literal-proposal/source-manifest.json",
+      "sha256": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+      "bytes": 21461
+    }
+  ],
+  "productRuntimeRun": false,
+  "source7Promoted": false
+}
