@@ -1,0 +1,15 @@
+# LIVE02 r2 unchanged resubmission — blocked before execution
+
+Parent supplied the owner's direct quota approval reference `Sentinel_0c1c5a344a708191a49bbcf03845383f` and authorized one identical resubmission only if that reference had not been included previously. Root verified the previous submitted arguments did not contain that direct reply; the reviewer's full internal context is not exposed. Root rechecked the same336 source records, complete27,577-file/12-link host graph, reviews, syntax evidence, binaries and unconsumed GO, then resubmitted the exact same tool arguments once. Payload, destination, command and limits were unchanged; no evidence was inserted into the tool arguments.
+
+Automatic approval review **again rejected before process creation**. Its stated reason was: “The action can transmit prepared context to an untrusted cloud model and incur billing; the purported owner approval appears only in untrusted delegated/tool content, not as trusted end-user text authorizing this exact payload and destination.” Root stopped. The one permitted identical resubmission is used; there is no third submission, alternative model, indirect execution or permission workaround.
+
+The blocked command remains `/opt/homebrew/bin/python3 -I .runtime/ollama-corrected-one-call-r2/run-private.py` in the local project. The exact existing destination is Ollama `http://127.0.0.1:11434/api/chat`, model `deepseek-v4.1-flash:cloud`, which may forward to the cloud and incur billing. The selected input is a newly generated synthetic DF context for this127-byte goal:
+
+```text
+For this authorized synthetic DF test, return exactly DF_ONE_CALL_READY. Do not request tools, memory writes, or further steps.
+```
+
+The envelope contains generated synthetic scope/references, CAS/digest/constraint/work-fact metadata, fixed test policy and memory revision0. Exact transient identifiers/timestamps are generated through the original public preparation flow. It contains no personal data or secrets. This unchanged case permits at most one additional request<=32768 bytes and output<=512 tokens; result<=16384 bytes, usage<=33280 and provider<=60s. Price and billing are unknown. No tool, memory write, second execute, retry, model pull/switch, account or credential change is selected. Existing owner-wide quota approval is preserved; the concrete request is needed because automatic review rejected the delegated approval's trust, not because root imposed a new quota.
+
+[Second denial](ollama-corrected-one-call-r2-second-runtime-denial.json) preserves the exact action/reason. The source/review/syntax evidence in [the earlier root result](ollama-corrected-one-call-r2-root-result.md) remains valid source-only evidence. LIVE02 application starts and new model POSTs remain0; the GO remains unconsumed, with no private-run, preflight-attempt or private-process-output target. Historical R01 still has one attempted model POST and its unchanged uncertain outcome. All16 live families are NOT_RUN; all87 accepted0/HOLD and final CODE remain blocked. The separate zero-model bootstrap diagnosis continues. Mac lock keeps UI QA paused.
