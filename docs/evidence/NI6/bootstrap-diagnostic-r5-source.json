@@ -1,0 +1,258 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GitOperations": 0,
+  "accepted": 0,
+  "actualPlanMaterializedByAuthor": false,
+  "actualR4Diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+    "entryRemoved": false,
+    "phase": "ENTRY_APPLY_RPC_REGISTRATION",
+    "result": "FAILED_HOLD",
+    "rootClosed": false,
+    "zeroNative": true
+  },
+  "actualR4Return": {
+    "bytes": 3503,
+    "path": "docs/evidence/NI6/bootstrap-diagnostic-r4-actual-return.json",
+    "sha256": "66033a01f12983791e742a3b1b15c7a22b88d045b4c185b2eac8bf61d74e60f8"
+  },
+  "additionalInputCount": 80,
+  "all87": "HOLD",
+  "allocationEquation": "20+5+35+25+5=90",
+  "author": "/root/entry_start_minimal_fix",
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidateParsingImportEvaluationBuildTestRuntime": false,
+  "connectionConfigurationUnchanged": true,
+  "connectionFiberAwaitMaximum": 1,
+  "connectionLoaderEntryOwnLocalIdAndRawFiber": true,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-source/v1",
+  "credentialsMergedByOriginalLoader": true,
+  "date": "2026-10-07",
+  "diagnosis": {
+    "classification": "SOURCE_SUPPORTED_FIXTURE_DEPENDENCY_OMISSION_HYPOTHESIS_PENDING_CORRECTED_RUN",
+    "directPrivateRegisterCalled": false,
+    "observedFailure": "ENTRY_APPLY_RPC_REGISTRATION/REJECTION",
+    "productSourceChanged": false,
+    "runtimeConfirmationPending": true,
+    "selectedCorrection": "Original Connection Loader.create with inject:[webServer], unchanged configuration, Loader.await/resolve/raw fiber.await, original state/UID/count assertions.",
+    "sourceChain": [
+      {
+        "finding": "Original Connection inject is credentials only. The scoped rpc getter captures this.ctx; registration synchronously resolves owner.webServer in owner.effect.",
+        "lines": [
+          573,
+          640,
+          657,
+          798
+        ],
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js"
+      },
+      {
+        "finding": "Service.ctx is shadowed to the original Connection context for service dependency lookup; the installed entry already declares webServer.",
+        "lines": [
+          110,
+          674,
+          1770
+        ],
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+      },
+      {
+        "finding": "Original internal/plugin hook merges entry options.inject with plugin fiber.inject, preserving original credentials.",
+        "lines": [
+          628,
+          631
+        ],
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js"
+      },
+      {
+        "finding": "Existing native fixture loads original Connection through Loader with inject:[webServer] and awaits the resolved raw fiber.",
+        "lines": [
+          22
+        ],
+        "path": "test/installed-worker-setup.test.mjs"
+      }
+    ],
+    "underlyingException": "NOT_ESTABLISHED"
+  },
+  "diagnosticStatus": "NOT_RUN",
+  "entryFiberAwaitMaximum": 2,
+  "firstFailureAndStageCaptureConserved": true,
+  "freezeRecord": {
+    "bytes": 3040,
+    "path": "docs/ni6-connection-dependency-fix-freeze-2026-10-07.md",
+    "sha256": "97249dda303476b6d51931c9ade59f2b6efaef38aff33dd7f7bcdf18abbc85f3"
+  },
+  "futureActualPinUnionCountIncludingSelfAndReviews": 554,
+  "inheritedInputCount": 462,
+  "inheritedInputRowsPreservedExactly": true,
+  "inheritedInputsPackageAndFullGraphReaudited": false,
+  "inputBytes": 19782394,
+  "inputFileCount": 542,
+  "largestStaticResultBytes": 274,
+  "literalDiagnosticChanges": [
+    "Fresh namespace names",
+    "PRODUCT points to unchanged sealed r4 package",
+    "Original Connection public Loader entry inject:[webServer] and raw-fiber readiness"
+  ],
+  "loaderAwaitMaximum": 3,
+  "loaderCreateMaximum": 2,
+  "loaderResolveMaximum": 2,
+  "manifestOwnedCount": 7,
+  "manifestSelfAndOwnReportHashes": "Root seals externally; no recursive own-report or manifest digest.",
+  "modelCloudNetworkBrowserActions": 0,
+  "nativePrecedent": {
+    "bytes": 8655,
+    "path": "test/installed-worker-setup.test.mjs",
+    "sha256": "83b5e9aa11359892e5a42c990f5b70872ede70da91015bdfad7fb9e3bdebd6cc"
+  },
+  "newProductFilesOrPeerCopied": 0,
+  "nextFunctionalVerification": "After confirmed startup, separately select the ordinary bounded coordinator→task→one synthetic DSH worker→result fixture using the same original Connection Loader composition; no protected CODE or cloud probe.",
+  "observationalDerivativeAuthorityReusedExactly": {
+    "changedRegularFiles": [
+      "src/installed-plugin.mjs",
+      "native-source-manifest.json"
+    ],
+    "classification": "OBSERVATIONAL_DERIVATIVE_OF_SUCCESSFUL_ORIGINAL_R3_BUILD_NOT_NEW_BUILD",
+    "derivativeBuildPerformed": false,
+    "derivativeDescriptorGeneratedByBuilder": false,
+    "derivativePackage": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r4/package",
+    "descriptorChangedOnlyProductEntryDigest": true,
+    "descriptorDerivativeSha256": "a4bf46f4e3329abd833f0000f7a00b67b693040616be38bb4d30b5b05f3dee6a",
+    "descriptorOriginalSha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382",
+    "entryDerivativeSha256": "d9fc03896c32b020519def51832f96899b40a9f5a9ad806f63b4ec3c35e18067",
+    "entryOriginalSha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5",
+    "literalEntryInstrumentationReversesExactlyToOriginal": true,
+    "normalPeer": {
+      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-bootstrap-diagnostic-r4/package/node_modules",
+      "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules",
+      "target": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules"
+    },
+    "originalBuildAuthorities": [
+      {
+        "bytes": 103159,
+        "path": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+        "sha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2"
+      },
+      {
+        "bytes": 739,
+        "path": ".runtime/ni6-public-preparation-r3/build-readback.json",
+        "sha256": "007b657e8d7f07d36cfa279acb8a27dfd0415f8876f2597eb68e2e319f6a67ce"
+      },
+      {
+        "bytes": 759,
+        "path": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+        "sha256": "71769b976186b302fd455a2728c904b7d02cb5cf5d5f63ad2d69e9751b2d4c14"
+      }
+    ],
+    "originalBuiltClientSha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+    "originalDefaultPluginShapeUnchanged": true,
+    "originalPackage": ".runtime/ni6-public-preparation-r3/package",
+    "regularFileCount": 65,
+    "unchangedRegularFileCount": 63
+  },
+  "originalBuildAncestorSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "originalGuardsAndBudgetsConserved": true,
+  "originalPluginOrderAndCountPreserved": true,
+  "ownedDraftRecords": [
+    {
+      "bytes": 3587,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/README.md",
+      "sha256": "41db1d9e9d0b0195fdc924f3aaf531fa6be1e553618f835ec689f7623b82f083"
+    },
+    {
+      "bytes": 23577,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/diagnostic.mjs",
+      "sha256": "a4ff1ba859b15509660ce88e3c4088ff1aa0747cf74fe3ac18c75be6130b486a"
+    },
+    {
+      "bytes": 6694,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/execution-plan.proposed.json",
+      "sha256": "d8f995e5b56f612557f247c81c6209f2e7c24ff5117e66fe37cca5d4675df4ea"
+    },
+    {
+      "bytes": 31440,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+      "sha256": "66111ac925361ae4a13c19e02f2293a3e289ab16b8618a9776aaf6a6c820fd40"
+    },
+    {
+      "bytes": 18105,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-delta.diff",
+      "sha256": "66e0e0e1f856f6bac5e1449e1f071bd4927ab0d2a9cd9d0f491d84e66afe3ffd"
+    }
+  ],
+  "phaseCount": 78,
+  "physicalCapsuleRegularFilesIncludingManifest": 6,
+  "predecessorManifest": {
+    "bytes": 135573,
+    "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r4/source-manifest.json",
+    "sha256": "7a9e6320aa15dabf841edfc7ccf62b4f84910acf0a9ce4f2486c021c14a1a68e"
+  },
+  "predecessorMarkerResetOrReplay": false,
+  "privateRuntimeOrRawStreamReads": false,
+  "productBuildPerformed": false,
+  "productFilesOrDescriptorChanged": false,
+  "productPackage": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r4/package",
+  "r4CommonWallClockOrInvocationIntervalProved": false,
+  "r4TimingQualification": "Supported-call clock records21:35:59→21:36:08 while executor-local records21:32:01→21:32:13. Preserve both; no common wall clock, enclosing process interval or precise final execution duration is proved. Preterminal executor scalars remain separate.",
+  "remainingPrerequisites": [
+    "Four narrow affected reports and root final byte readback",
+    "Root owned600 closed-pin actual plan and supported approval",
+    "Root once-only corrected run and actual readback"
+  ],
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json"
+  ],
+  "revision": "bootstrap-diagnostic-r5",
+  "rootOnlyExecution": true,
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "runnerOnlyNamesChanged": true,
+  "sealedSource": true,
+  "sourceCopies": [
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/diagnostic.mjs",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/execution-plan.proposed.json",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/README.md",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-delta.diff",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-source.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-source.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json",
+    "docs/ni6-connection-dependency-fix-freeze-2026-10-07.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r4-actual-return.json"
+  ],
+  "sourceCopyCount": 14,
+  "sourceDelta": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-delta.diff",
+  "sourceManifest": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "strictRootLifecycleQualification": "Original root public dispose restarts UID0. Retain original terminal assertion; active root means rootClosed=false/FAILED_HOLD. No functional acceptance or continuous root-cleanup event proof.",
+  "syntaxStatus": "NOT_RUN",
+  "topologyCount": 7,
+  "topologyRowsPreservedExactly": true,
+  "uiHandoffReady": false,
+  "underlyingStartupException": "NOT_ESTABLISHED"
+}

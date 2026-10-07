@@ -1,0 +1,12 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "category": "INVARIANT",
+  "completedPlugins": 11,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+  "entryRemoved": true,
+  "phase": "ROOT_CLEANUP",
+  "result": "FAILED_HOLD",
+  "rootClosed": false,
+  "zeroNative": true
+}
