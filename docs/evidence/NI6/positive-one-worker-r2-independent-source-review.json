@@ -1,0 +1,214 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-source-review/v1",
+  "revision": "positive-one-worker-r2",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_code_review",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "sourceDisposition": "NO_AFFECTED_SOURCE_GATE_BLOCKER",
+  "sourceGateBlockers": [],
+  "scope": "Only exact synthetic usage oracle, fresh namespace/provenance and conservation; reuse r1 complete flow and r5 guard authority.",
+  "runtimeGO": false,
+  "runtimeResultGenerated": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "reviewedFinalArtifacts": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/fixture.mjs",
+      "bytes": 32061,
+      "sha256": "414547d5dcda859b41c0d41551d83ebf5862a92595ca0db34c8185b49d64afdd"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/run-once.py",
+      "bytes": 31987,
+      "sha256": "8cf8cfa6a258ee35b31fb1a5c5f19459aeec937b7272a9705540bdc3220ddc6b"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/execution-plan.proposed.json",
+      "bytes": 8282,
+      "sha256": "00101ceca8c67265fc9a398e20ec64188417354205beb5e6e5a568dc7be2179f"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/source-delta.diff",
+      "bytes": 16405,
+      "sha256": "5989a943f7ddc5c3b790e718881f600f2f430c3e79266e403a23c1fb98def79c"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/README.md",
+      "bytes": 4111,
+      "sha256": "bc3fbe4e4676a1f9fc672594e976ba4946eec8975be3a1ad2ef262c0aa01d6cb"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/source-manifest.json",
+      "bytes": 113487,
+      "sha256": "357bd5d18c5d7dbaded35b06ab56a1380c56fd057652cb64407e5f7b33540e47"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r2-source.md",
+      "bytes": 2827,
+      "sha256": "443eb73654432ac6c8738999ee6fc1bf23991f48e8543327e9a1e82db5f89b0f"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r2-source.json",
+      "bytes": 12839,
+      "sha256": "be69865ee60f6ac26eadbac5917a33441b4bf064a6fcc516212e3fc8b849572c"
+    }
+  ],
+  "supportingAuthority": [
+    {
+      "path": "docs/ni6-positive-one-worker-r2-usage-fix-2026-10-07.md",
+      "bytes": 2603,
+      "sha256": "c6815b6475be1931d244fdbc8c86c737d46020c01094587459cf870401a239e4"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
+      "bytes": 31759,
+      "sha256": "02bcbe5e2d11d58edb2534ccdf22014e3b426d123cfe64c78e25d7e9f4719111"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r1/run-once.py",
+      "bytes": 31987,
+      "sha256": "1e9e7a932b58916d936a67f5e622c7bc5cf1f5f293f8e4583647c4b998d8dfe0"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
+      "bytes": 109628,
+      "sha256": "41cbd77dfdde3cca0cd86c4d15ad82ed65ea696974601c71b9f70cf3f4b131c2"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
+      "bytes": 5126,
+      "sha256": "419d6eeec51e6ff7a0d93a57c9289f4ea69b211722ed86f4703df0ed9e1bae3d"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
+      "bytes": 12271,
+      "sha256": "35be257279fb1fec2d68b59e5888f8eae197f664449df155461a160161d131fa"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "bytes": 103333,
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+      "bytes": 15937,
+      "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+    }
+  ],
+  "readQualification": "Complete affected delta, proposal, README and author MD/JSON read; final fixture/runner compared as inert text with prior fully reviewed r1 source. Relevant public Llm/provider forwarding portions read without candidate evaluation or a full host/package re-audit.",
+  "affectedSourceChecks": {
+    "literalFourFileDeltaExact": true,
+    "fixtureNamespaceSubstitutions": 2,
+    "fixtureOracleOperations": 3,
+    "runnerNamespaceSubstitutions": 3,
+    "runnerOtherwiseByteEquivalent": true,
+    "nextUnchanged": true,
+    "messagesMutated": false,
+    "extraRequests": 0,
+    "publicProjectionAddedFields": 0,
+    "r1SourceAndReportsPreserved": true
+  },
+  "usageOracle": {
+    "input": "Internal UTF-8 byte length of JSON.stringify(options.messages) at the sole public llm/stream observer.",
+    "inputPositiveSafeInteger": true,
+    "inputMaximum": 16384,
+    "actualUnitsEquality": "inputMessageBytes + Buffer.byteLength(expected, utf8)",
+    "actualUnitsMaximum": 32768,
+    "retainedState": "actual",
+    "retainedAccounting": "df-testing-utf8-byte-units/v1",
+    "publicMessagesForwardingSupported": true,
+    "scope": "Fresh two system/user text-only messages with empty tools/history; original genuine r3 deterministic provider.",
+    "rawMessagesOrByteCountPublished": false
+  },
+  "forwardingEvidence": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "lines": [
+        1734,
+        1737,
+        2361,
+        2365,
+        2296,
+        2317,
+        756,
+        786,
+        2236,
+        2259
+      ],
+      "finding": "Original waterfall and adapter call forwarding; message-neutral configuration; selected text/tool projections and non-assistant replay filtering retain message values."
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+      "lines": [
+        82,
+        92,
+        118,
+        121
+      ],
+      "finding": "Original source-selected system/user content and JSON.stringify(rawMessages) input accounting; deterministic output bytes; totalUnits=inputUnits+outputUnits."
+    }
+  ],
+  "conservation": {
+    "inheritedInputRecordsExactByPath": 438,
+    "additionalInputsHashed": 13,
+    "ownedRecordsHashed": 7,
+    "inputCount": 451,
+    "inputBytes": 17363903,
+    "futureActualPinUnionIncludingManifestAndFourReviews": 463,
+    "sourceCopies": 42,
+    "originalProductBuildGraphAuthorityUnchanged": true,
+    "selectedTopologyMetadataUnchanged": true,
+    "budgetsEffectsProjectionUnchanged": true,
+    "fullGraphRehashed": false,
+    "productRebuilt": false
+  },
+  "projection": {
+    "fields": 26,
+    "phases": 49,
+    "categories": 4,
+    "refusalLabels": 25,
+    "byteCap": 1024,
+    "boundedExecutorReadMaximum": 1025
+  },
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "retainedQualifications": [
+    "R1 exact-usage test gate and sealed artifacts remain historical and unmodified; the correction is prospective source support, not actual runtime proof.",
+    "Strict original root restart keeps rootClosed=false/FAILED_HOLD if active; earlier firstFailure remains latched.",
+    "Loader helper startup failures use coarse PUBLIC_SERVICES phase; no finer cause is established.",
+    "Deadlines do not prove immediate cancellation of outstanding asynchronous work or interruptibility of synchronous OS calls.",
+    "Root-owned observer removal precludes a continuous post-root event/inventory claim.",
+    "Decoded child schema, actual command exits/capture/EOF/groups, executor finalization and supported driver return stay separate; no nonzero exit or partial positive path becomes acceptance.",
+    "Ordinary deterministic output remains not-reviewed/not-requested; no task completion, full AC/all87 acceptance or protected CODE finding."
+  ],
+  "allThreeProposalGOFalse": true,
+  "proposalPinsEmpty": true,
+  "freshActualDestinationsAbsentAtReadback": true,
+  "remainingRootActions": [
+    "Read final independent test review and seal all four actual review pins.",
+    "Root select exact owned plan/GO and supported execution approval.",
+    "Root execute once and preserve actual-return evidence separately from child/executor observations."
+  ],
+  "reviewLaneActions": {
+    "candidateParseCompileImportBuildCheckTestRuntime": false,
+    "privateContentInspection": false,
+    "applicationListenerModelBrowserActions": false,
+    "sourceProductGitMutation": false,
+    "helperDelegation": false,
+    "faultOrProtectedCODEInvestigation": false
+  }
+}
