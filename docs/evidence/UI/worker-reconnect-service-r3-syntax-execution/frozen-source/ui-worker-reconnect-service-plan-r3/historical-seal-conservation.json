@@ -1,0 +1,578 @@
+{
+  "acceptance": "HOLD",
+  "activeProfileReadByAuthor": false,
+  "allPriorR2HistoricalPinsMatched": 76,
+  "historicalFiles": [
+    {
+      "bytes": 8719,
+      "path": ".runtime/ui-worker-public-contract-original/public-signatures-r1.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "979899b4cd7170f95d4e95c9360fc4020f99673df9615d65ec52710c2e38f920"
+    },
+    {
+      "bytes": 8327,
+      "path": ".runtime/ui-worker-public-contract-original/public-signatures.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "9af8b587787345cf06f90183b8e76c31cfd972541c5f2f6631d12c55953b02aa"
+    },
+    {
+      "bytes": 3745,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/README.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "c559c73670c9ddde96770c088c500f1d55580c25dfa03c8c1f81c80a42fd05f9"
+    },
+    {
+      "bytes": 55818,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/cases-mapping.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "ec03e198a1e7536f4e589f9f7082c53f5bafb1e534188f70886522e9aa27d500"
+    },
+    {
+      "bytes": 1591,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/closure.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "ec1881da6a659a8fa1876d731335315a28a2c7aa2a3da914c3ef65f969cfc76c"
+    },
+    {
+      "bytes": 8199,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/controller-apply-readonly.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "ee34de9c12df5ef19ce4fb0d7cb6f9ace5a3ef83963cac827d65f682ae7c4f85"
+    },
+    {
+      "bytes": 9942,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/fixture-inventory.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "ea04386003a06eaa76ebe08e84110d9716586fe7260b0543d5a2988c398aad47"
+    },
+    {
+      "bytes": 19308,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/fixture-source.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "df74705cbaf019d871c073971e94c7911d9673cf3e2c7fdd804cfbe3b489567c"
+    },
+    {
+      "bytes": 14599,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/historical-conservation.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "255d64d6ab79cba6d0f3aabd08e6ddc3756797525a8681bd952aad075378b2e2"
+    },
+    {
+      "bytes": 8473,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/manifest.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "e2d0de82e217eb8dfb23c40a64ea7bfe71e9124cd5ee670167265636c5f4288d"
+    },
+    {
+      "bytes": 80,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/manifest.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "5b800d53d0fd9d3977ce8ddb860d715b258357638d82eadd853686de52c23833"
+    },
+    {
+      "bytes": 1486,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/run-apply-readonly.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "3204286ca277ea00df8eb838adeb6e11347848b1946fafc072a151d0c0d22eaa"
+    },
+    {
+      "bytes": 9046,
+      "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/support/apply-public-face.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "c1930f21528f45a04796f2186542e3e501444b37e8d4a3da082e487abad8f141"
+    },
+    {
+      "bytes": 3960,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/README.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "65bab67d7b4d6915271d3deee5b458bb6da8ca79f33b15fbaf279f4fc7cc99da"
+    },
+    {
+      "bytes": 106631,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/candidate/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "bytes": 46888,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/cases-mapping.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "74088a81735f8bbaa5c2c63f6d1aced31adfc2d33d56f5d5d77c8fb8688868b9"
+    },
+    {
+      "bytes": 2197,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/closure.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "9b09306b6f3914183d820e690220d5f4afcd5c65d5098c1d3e95a1e030e87407"
+    },
+    {
+      "bytes": 7365,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/controller-execute-preparation.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8"
+    },
+    {
+      "bytes": 10596,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/fixture-inventory.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "7d7b67514095a7b60e06e70e32fda18388afa891e480207c8ba309edb13ca8f4"
+    },
+    {
+      "bytes": 42123,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/fixture-source.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "c0f2efcdeeb891fa2e2b913957c109a40318b18a5705e67000621d73db4e0110"
+    },
+    {
+      "bytes": 11056,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/historical-conservation.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fa871f11853d9bdc5a26e3bd419ab65a2975ff51f014841306c176eaf991c4ad"
+    },
+    {
+      "bytes": 13679,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/manifest.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "dc93312e388aaa4022e7c08ee82d4c804cff663f7ecf0b63572999fc5d4b056f"
+    },
+    {
+      "bytes": 80,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/manifest.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "04d7a0d2a3f3a5ce4efe817738e10905a1697a03c94bb139e115feb5588cd58e"
+    },
+    {
+      "bytes": 1826,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/run-ep4.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb"
+    },
+    {
+      "bytes": 1682,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/support/finite-deferred.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d"
+    },
+    {
+      "bytes": 350,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/support/model-only-react.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123"
+    },
+    {
+      "bytes": 8269,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-carrier.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4"
+    },
+    {
+      "bytes": 13884,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-dtos.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481"
+    },
+    {
+      "bytes": 7309,
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-model-fixture.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "adb456e1d17841597e2704bf3ac703778696a795c5476135b9631f6354d604e5"
+    },
+    {
+      "bytes": 2520,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/README.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "4380ab4b83b1dabd18bf208f0db50a3eabf43eae74e0c804460fc604bc68154b"
+    },
+    {
+      "bytes": 106631,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "bytes": 47033,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/cases-mapping.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "55403cc6a1f476af62cc6820676d301b782907ddd5b1d409fb3718e5a4aa732e"
+    },
+    {
+      "bytes": 2460,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/closure.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "88b772916d7cfa8a9152815bd1335a5bceab107d23cb2bf4a77c0b60ddc37f8e"
+    },
+    {
+      "bytes": 7365,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8"
+    },
+    {
+      "bytes": 1133,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/correction-literals.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "f98ea3b74e71de92cf2503fa201cfbdf8ddbb4e954b538de9a1caf081ba52651"
+    },
+    {
+      "bytes": 12018,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/fixture-inventory.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "c6dc10727eb7efdcec826d48a55e39119e697e0f1b126145d64a4fc845633d6e"
+    },
+    {
+      "bytes": 1048,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/generation-only.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "545963f2f20de251f17cdc6f4ed1c587bd3e04b09b3fb0b895364ae229dac3c2"
+    },
+    {
+      "bytes": 17200,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/historical-conservation.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "49c6692dc2b71b6fa5dff470caf272641fc4d3a9648c997408c461724a68e60c"
+    },
+    {
+      "bytes": 15573,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/manifest.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "4ddba4463b30e7fc7cda9989a56bd3c1a7e2bf8fc79efefd157bb6974152e64d"
+    },
+    {
+      "bytes": 80,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/manifest.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "c4b6c483b57e90adfd0c571fd8f32e52088fb4feed4a67623693c0cf5704315e"
+    },
+    {
+      "bytes": 4458,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/module-conservation.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "a1daf16c93ab03e98004febab745f01f04a30d713b01c670f490de4fdddbe7be"
+    },
+    {
+      "bytes": 1826,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb"
+    },
+    {
+      "bytes": 1682,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d"
+    },
+    {
+      "bytes": 350,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123"
+    },
+    {
+      "bytes": 8269,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4"
+    },
+    {
+      "bytes": 13884,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481"
+    },
+    {
+      "bytes": 7351,
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "55f9132ed3d3a55a6ccf9b7223e6fbfcade7fc3f7831a3622264edce037bf994"
+    },
+    {
+      "bytes": 101214,
+      "path": ".runtime/ui-worker-reconnect-proposal/before/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+    },
+    {
+      "bytes": 1234,
+      "path": ".runtime/ui-worker-reconnect-proposal/closure.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "8e551b04bcc308234e2fbdb0efaf1adfd36d639bef4e162fffda3ec663de8885"
+    },
+    {
+      "bytes": 8425,
+      "path": ".runtime/ui-worker-reconnect-proposal/literal-before-after.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "56f24f0420b35d9cb7a802b27e25548468db5fbc405bc1c7be7b19e1f332eaa3"
+    },
+    {
+      "bytes": 10651,
+      "path": ".runtime/ui-worker-reconnect-proposal/literal-client.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f"
+    },
+    {
+      "bytes": 12228,
+      "path": ".runtime/ui-worker-reconnect-proposal/manifest.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222"
+    },
+    {
+      "bytes": 118,
+      "path": ".runtime/ui-worker-reconnect-proposal/manifest.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fdff5a333684fbf47f600aba0430c8c65969e745660118a53cc4463b2e0d449e"
+    },
+    {
+      "bytes": 5463,
+      "path": ".runtime/ui-worker-reconnect-proposal/proposal.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "67c8754afff405407f0e30704a23a9e9a1b5785ca07e12f189a123b4108fb7ee"
+    },
+    {
+      "bytes": 9644,
+      "path": ".runtime/ui-worker-reconnect-proposal/public-design-contract.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "d9e015440715563a0c6299a26b58b0d714db51a74c208839fde33b0c532a82f8"
+    },
+    {
+      "bytes": 103523,
+      "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384"
+    },
+    {
+      "bytes": 103523,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/before/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384"
+    },
+    {
+      "bytes": 1398,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/closure.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "ea2c3bae06b9dd5ed0b77a905796ea7fbce20dc7501dcb60da21a18f7f412832"
+    },
+    {
+      "bytes": 24719,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-before-after.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "5ee4b48c6c0e8300b1e92774af83a64a5cd218fea96c8650aa06b1b42250b080"
+    },
+    {
+      "bytes": 45188,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-client.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "a4d279d875334bf9e36d8b616fdb5ff19cf13360d4c0617b9eb9226ab0cd6c20"
+    },
+    {
+      "bytes": 48014,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-original-a58.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fe7d6b5db1126e1eb334948273d6dd29c48bab6d30512732909328ffb06b5d55"
+    },
+    {
+      "bytes": 18205,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/manifest.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "aef427be1175ba278922e3af1c13cee27f46c7dfb921560cf683cfc0222e119e"
+    },
+    {
+      "bytes": 121,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/manifest.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "2f8fdaa85684e74987de8516fd3c6f67d8aec539e5ebcdc6bf922f45d7504d50"
+    },
+    {
+      "bytes": 7350,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/proposal.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "b5f5dd8245f8ebc80bfdb91170e408b2f0cae9655d71ba2aca855a7d32b0b8c3"
+    },
+    {
+      "bytes": 6154,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/public-design-contract.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "d5b61ad30951407e5ea112cd524f8a8b19cccb63fab7499dc78da581c7bc66d3"
+    },
+    {
+      "bytes": 106403,
+      "path": ".runtime/ui-worker-reconnect-proposal-r1/src/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6"
+    },
+    {
+      "bytes": 106403,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/before/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6"
+    },
+    {
+      "bytes": 1398,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/closure.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "26f4ea6e627294edf7a4744d36ab38449762f3e47dcd3db7706612aeaec70f89"
+    },
+    {
+      "bytes": 1762,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-before-after.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "f0406d5d611de1bf5f915df30a6b398f068f7fe94376e90b301d885d9195bd11"
+    },
+    {
+      "bytes": 2631,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-client.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "6cc149dae3579e68bc80087717523283a7123fbb1b8e835858591244b1812b09"
+    },
+    {
+      "bytes": 48242,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-original-a58.patch",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "fa640b2f0ec2383c7d0d64b25fd4d944cc91ad369892a5fe65ecd32c205cde45"
+    },
+    {
+      "bytes": 18949,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.json",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38"
+    },
+    {
+      "bytes": 121,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.sha256",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "78c40dd1d792112a8fee2c6f6bfd7253b2ef5d803cbd85893e467989f5626dab"
+    },
+    {
+      "bytes": 4474,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/proposal.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "1d86db887e5fc68b26188487ad79741c3356551fb90255938bb3adeed1eb2c98"
+    },
+    {
+      "bytes": 2388,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/public-design-contract.md",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "f04413b200a59110bd5dae822d98adf34b40bf6dd7d15acd44deed3221f9ee96"
+    },
+    {
+      "bytes": 106631,
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+      "role": "unchanged pre-r2 historical SOURCE",
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "bytes": 2414,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/access-handoff-r2.mjs",
+      "role": "unchanged r2 source capsule",
+      "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8"
+    },
+    {
+      "bytes": 3708,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/closure.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d"
+    },
+    {
+      "bytes": 37199,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/historical-seal-conservation.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "a6b7d555ed2b5d0f3ef2ada873edfdba4ca5bd01da58840ef16c52e10cb23491"
+    },
+    {
+      "bytes": 7322,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/launch-successor-r2.mjs",
+      "role": "unchanged r2 source capsule",
+      "sha256": "200f46e47c33c8fa0e1e7e8ebed5e9fffd1ca02824705912928eca22ee4bba0e"
+    },
+    {
+      "bytes": 207899,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/lifecycle-pins.rollback.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "93cd402ab3e23d032b15dacda35a189dd6699f7ac0cb30588a7f030cc66113ad"
+    },
+    {
+      "bytes": 207958,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/lifecycle-pins.successor.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "e0e1dd0a253b82bd1f91ed537a68375b63e4b0c214ac0ca8baefeececb02bbd9"
+    },
+    {
+      "bytes": 12259,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/manifest.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c"
+    },
+    {
+      "bytes": 2586,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/open-browser-handoff-r2.mjs",
+      "role": "unchanged r2 source capsule",
+      "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986"
+    },
+    {
+      "bytes": 16346,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/plan.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "fe4c6d88f6c62bf69158821b578c70791f71456ec7e23d8817de02f9064a71cc"
+    },
+    {
+      "bytes": 12248,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/plan.md",
+      "role": "unchanged r2 source capsule",
+      "sha256": "8e7ea46e6c04ab434adcd70fbb0b6e9a99895e7f24c3cd551b5210e8e38ec743"
+    },
+    {
+      "bytes": 13818,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/proposed-new-helpers.patch",
+      "role": "unchanged r2 source capsule",
+      "sha256": "7ae7be002564a8ecea667ed4fde81c1c757045d8a516dc47faae81c5e51e41b3"
+    },
+    {
+      "bytes": 1026,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/public-composite-identity.template.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "60f2eb381cb9172eeb688829d1b8ff5d92446223f5098dcbf3c200a9bd7bc3f9"
+    },
+    {
+      "bytes": 7223,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/public-source-pins.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "fd95d321de6a97a1996b21a49b509ce79b16d6cbc9ac9e724b4649fb6a873dcc"
+    },
+    {
+      "bytes": 388,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.rollback.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "efcfad45684de627e37d34a94d98e9b5e902052d44bdbbc0e22b633b7921516d"
+    },
+    {
+      "bytes": 389,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.successor.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "341beb22d5bb3b0b9bd81d570be7a3a148cd3f5f71f0401029c4b8847f55e462"
+    },
+    {
+      "bytes": 1357,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/two-package-body-replacements.json",
+      "role": "unchanged r2 source capsule",
+      "sha256": "9668d3269477c6214877dd2847fd4fc5222f78f7595cbf0670b8c282758bfb43"
+    },
+    {
+      "bytes": 12248,
+      "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r2.md",
+      "role": "unchanged r2 evidence report",
+      "sha256": "8e7ea46e6c04ab434adcd70fbb0b6e9a99895e7f24c3cd551b5210e8e38ec743"
+    },
+    {
+      "bytes": 16346,
+      "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r2.json",
+      "role": "unchanged r2 evidence report",
+      "sha256": "fe4c6d88f6c62bf69158821b578c70791f71456ec7e23d8817de02f9064a71cc"
+    }
+  ],
+  "parseImportRuntime": 0,
+  "r2CapsuleFiles": 16,
+  "r2ClosureArtifactPinsMatched": 16,
+  "r2ClosureSHA256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d",
+  "r2Docs": 2,
+  "r2ManifestSHA256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c",
+  "status": "SOURCE_HASH_CONSERVATION_ONLY"
+}

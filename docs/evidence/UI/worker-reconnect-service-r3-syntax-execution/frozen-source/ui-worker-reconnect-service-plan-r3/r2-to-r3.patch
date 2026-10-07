@@ -1,0 +1,217 @@
+--- a/.runtime/ui-worker-reconnect-service-plan-r2/launch-successor-r2.mjs
++++ b/.runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs
+@@ -21,11 +21,17 @@
+ };
+ // Exact SOURCE templates: root copies bytes unchanged after binding its composite seal.
+ // This prevents the manifest from authorizing arbitrary private file reads.
+-const lifecyclePin=rollback?'93cd402ab3e23d032b15dacda35a189dd6699f7ac0cb30588a7f030cc66113ad':'e0e1dd0a253b82bd1f91ed537a68375b63e4b0c214ac0ca8baefeececb02bbd9';
++const lifecyclePin=rollback?'ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7':'e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696';
+ const lifecyclePath=service+`lifecycle-pins.${mode}.json`;
+ if(hash(lifecyclePath)!==lifecyclePin)throw new Error('QA_LIFECYCLE_TEMPLATE_CHANGED');
+ const inputs=JSON.parse(readFileSync(lifecyclePath,'utf8'));
+ if(inputs.contractVersion!==1 || inputs.mode!==mode || inputs.generation!==generation || inputs.target!==base.slice(0,-1) || inputs.originalCLI!==original || inputs.host!=='127.0.0.1' || inputs.port!==3080 || !Array.isArray(inputs.publicInputs) || !Array.isArray(inputs.installedFiles) || inputs.installedFiles.length!==1114)throw new Error('QA_LIFECYCLE_MANIFEST_INVALID');
++// This generated PUBLIC root is rewritten by the original CLI, not by this helper.
++const generatedRoot=base+'home/profiles/web/cordis.yml',rootInfo=lstatSync(generatedRoot);
++if(!rootInfo.isFile() || rootInfo.isSymbolicLink() || realpathSync(generatedRoot)!==generatedRoot || rootInfo.uid!==process.getuid() || (rootInfo.mode&0o077) || rootInfo.size!==223 || hash(generatedRoot)!=='c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e')throw new Error('QA_ORIGINAL_GENERATED_ROOT_CHANGED');
++// The original optional home patch is not an approved configuration layer here.
++try{lstatSync(base+'home/cordis.patch.yml');throw new Error('QA_UNAPPROVED_HOME_PATCH_FORBIDDEN');}
++catch(error){if(error.code!=='ENOENT')throw error;}
+ for(const row of inputs.publicInputs)if(hash(row.path)!==row.sha256)throw new Error('QA_PUBLIC_PIN_CHANGED');
+ const installed=base+'home/profiles/web/node_modules/dsh-fishball/';
+ for(const row of inputs.installedFiles){
+@@ -62,18 +68,22 @@
+ rejectEnv(base+'home');rejectEnv(base+'workspace');
+ const port=spawnSync('/usr/sbin/lsof',['-nP','-iTCP:3080','-sTCP:LISTEN'],{encoding:'utf8'});
+ if(port.status!==1 || port.stdout || port.stderr || port.error)throw new Error('QA_PORT_3080_NOT_CONFIRMED_FREE');
++let child,failed=false,stopRequested=false,stdoutBytes=0,stderrBytes=0;
++// Every error/control path shares this one owned graceful stop request.
++const requestStop=(signal)=>{if(stopRequested)return;stopRequested=true;child?.kill(signal);};
++const failClosed=()=>{failed=true;process.exitCode=1;requestStop('SIGTERM');};
++for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>requestStop(signal));
+ const output=createWriteStream(base+`private/original-cli-${generation}.stdout.log`,{flags:'wx',mode:0o600});
+ const errors=createWriteStream(base+`private/original-cli-${generation}.stderr.log`,{flags:'wx',mode:0o600});
+-let child,failed=false,stdoutBytes=0,stderrBytes=0;
+-const failClosed=()=>{failed=true;child?.kill('SIGTERM');process.exitCode=1;};
+ output.on('error',failClosed);errors.on('error',failClosed);
+ await Promise.all([new Promise((resolve,reject)=>{output.once('open',resolve);output.once('error',reject);}),new Promise((resolve,reject)=>{errors.once('open',resolve);errors.once('error',reject);})]);
++// A stop/error observed after opening but before spawn may never start a child.
++if(failed || stopRequested){output.end();errors.end();throw new Error('QA_LAUNCH_STOPPED_BEFORE_SPAWN');}
+ child=spawn(node,[original,'--profile','web','--patch',inputs.overlayPath,'--host','127.0.0.1','--port','3080','--no-open'],{
+   cwd:base+'workspace',env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',DSH_HOME:base+'home',DSH_AGENTS_HOME:base+'agents',DSH_TELEMETRY_DISABLED:'1',DSH_PERMISSION_MODE:'read-only'},stdio:['ignore','pipe','pipe'],
+ });
+ child.stdout.on('data',data=>{stdoutBytes+=data.length;});child.stderr.on('data',data=>{stderrBytes+=data.length;});
+ child.stdout.pipe(output);child.stderr.pipe(errors);
+-for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));
+ child.on('error',()=>{failClosed();output.end();errors.end();console.error(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_FAILED',generation}));});
+ child.on('exit',(code,signal)=>{console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_EXITED',generation,code,signal,stdoutBytes,stderrBytes}));process.exitCode=failed?1:(code??1);});
+-console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_REQUESTED',generation,pid:child.pid,host:'127.0.0.1',port:3080,originalCLI:true,owner:'root',frontendConnection:'NOT_OBSERVED',criteria87:'HOLD'}));
++console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_REQUESTED',generation,wrapperPID:process.pid,pid:child.pid,host:'127.0.0.1',port:3080,originalCLI:true,owner:'root',frontendConnection:'NOT_OBSERVED',criteria87:'HOLD'}));
+--- a/.runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.successor.json
++++ b/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json
+@@ -10,7 +10,7 @@
+           "generation": "r2-successor-1"
+         },
+         "id": "df-qa-private-access-handoff-r2",
+-        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/access-handoff-r2.mjs"
++        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs"
+       }
+     ]
+   }
+--- a/.runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.rollback.json
++++ b/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json
+@@ -10,7 +10,7 @@
+           "generation": "r2-rollback-1"
+         },
+         "id": "df-qa-private-access-handoff-r2",
+-        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/access-handoff-r2.mjs"
++        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs"
+       }
+     ]
+   }
+--- a/.runtime/ui-worker-reconnect-service-plan-r2/lifecycle-pins.successor.json
++++ b/.runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.successor.json
+@@ -1,6 +1,20 @@
+ {
+   "contractVersion": 1,
++  "generatedRootContract": {
++    "expectedBytes": 223,
++    "expectedSHA256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e",
++    "mtimeChangeAllowed": true,
++    "operatorWrites": 0,
++    "originalAutomaticRewritesPerStart": 1,
++    "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.yml",
++    "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml"
++  },
+   "generation": "r2-successor-1",
++  "homePatchPrecondition": {
++    "mustBeAbsent": true,
++    "newHomeLayerOptionWrites": 0,
++    "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/cordis.patch.yml"
++  },
+   "host": "127.0.0.1",
+   "installedFiles": [
+     {
+@@ -5577,7 +5591,7 @@
+   "mode": "successor",
+   "originalCLI": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/bin.js",
+   "overlayPath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.successor.json",
+-  "overlaySHA256": "341beb22d5bb3b0b9bd81d570be7a3a148cd3f5f71f0401029c4b8847f55e462",
++  "overlaySHA256": "3d0444c3723a75da5d56200b9c799d4e2ad153a32c7d0ddbb61e92672ace22b5",
+   "packageIdentity": {
+     "baseArchiveSHA256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+     "baseRevision": "a58c522f32dd2be2ec29a697ec32ed295e154614",
+@@ -5669,10 +5683,10 @@
+       "sha256": "eaa33ba83cad740d0b0aa94d5fbc86918ecfbf76c609709d1f4cfdcf0f76da43"
+     },
+     {
+-      "bytes": 68,
++      "bytes": 223,
+       "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.yml",
+-      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522-preparation-source/cordis.yml",
+-      "sha256": "752d0dd14f655a392c55432801ceb46909f1d593bae640e05fae949fba970e70"
++      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml",
++      "sha256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e"
+     },
+     {
+       "bytes": 361,
+@@ -5682,19 +5696,19 @@
+     },
+     {
+       "bytes": 2414,
+-      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/access-handoff-r2.mjs",
++      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs",
+       "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8"
+     },
+     {
+       "bytes": 2586,
+-      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/open-browser-handoff-r2.mjs",
++      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/open-browser-handoff-r2.mjs",
+       "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986"
+     },
+     {
+       "bytes": 389,
+       "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.successor.json",
+-      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.successor.json",
+-      "sha256": "341beb22d5bb3b0b9bd81d570be7a3a148cd3f5f71f0401029c4b8847f55e462"
++      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json",
++      "sha256": "3d0444c3723a75da5d56200b9c799d4e2ad153a32c7d0ddbb61e92672ace22b5"
+     },
+     {
+       "bytes": 84640,
+--- a/.runtime/ui-worker-reconnect-service-plan-r2/lifecycle-pins.rollback.json
++++ b/.runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.rollback.json
+@@ -1,6 +1,20 @@
+ {
+   "contractVersion": 1,
++  "generatedRootContract": {
++    "expectedBytes": 223,
++    "expectedSHA256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e",
++    "mtimeChangeAllowed": true,
++    "operatorWrites": 0,
++    "originalAutomaticRewritesPerStart": 1,
++    "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.yml",
++    "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml"
++  },
+   "generation": "r2-rollback-1",
++  "homePatchPrecondition": {
++    "mustBeAbsent": true,
++    "newHomeLayerOptionWrites": 0,
++    "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/cordis.patch.yml"
++  },
+   "host": "127.0.0.1",
+   "installedFiles": [
+     {
+@@ -5577,7 +5591,7 @@
+   "mode": "rollback",
+   "originalCLI": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/bin.js",
+   "overlayPath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.rollback.json",
+-  "overlaySHA256": "efcfad45684de627e37d34a94d98e9b5e902052d44bdbbc0e22b633b7921516d",
++  "overlaySHA256": "da978b2eba85606ec9a2731e44651862f9af886b966432442be6ca22908e4b7f",
+   "packageIdentity": {
+     "baseArchiveSHA256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+     "baseRevision": "a58c522f32dd2be2ec29a697ec32ed295e154614",
+@@ -5666,10 +5680,10 @@
+       "sha256": "eaa33ba83cad740d0b0aa94d5fbc86918ecfbf76c609709d1f4cfdcf0f76da43"
+     },
+     {
+-      "bytes": 68,
++      "bytes": 223,
+       "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.yml",
+-      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522-preparation-source/cordis.yml",
+-      "sha256": "752d0dd14f655a392c55432801ceb46909f1d593bae640e05fae949fba970e70"
++      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml",
++      "sha256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e"
+     },
+     {
+       "bytes": 361,
+@@ -5679,19 +5693,19 @@
+     },
+     {
+       "bytes": 2414,
+-      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/access-handoff-r2.mjs",
++      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs",
+       "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8"
+     },
+     {
+       "bytes": 2586,
+-      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/open-browser-handoff-r2.mjs",
++      "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/open-browser-handoff-r2.mjs",
+       "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986"
+     },
+     {
+       "bytes": 388,
+       "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.rollback.json",
+-      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.rollback.json",
+-      "sha256": "efcfad45684de627e37d34a94d98e9b5e902052d44bdbbc0e22b633b7921516d"
++      "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json",
++      "sha256": "da978b2eba85606ec9a2731e44651862f9af886b966432442be6ca22908e4b7f"
+     },
+     {
+       "bytes": 84640,
+--- /dev/null
++++ b/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml
+@@ -0,0 +1,4 @@
++# dsh profile root — an empty entry list. The tree is composed as patches:
++# each bundle in package.json's dsh.profile.bundles, then cordis.patch.yml, then any
++# --patch overlays. Edit cordis.patch.yml, not this file.
++[]

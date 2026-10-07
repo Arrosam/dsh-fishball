@@ -1,0 +1,233 @@
+{
+  "schema": "df.ui.root-composite-package.independent-source-safety-review.v1",
+  "dateUTC": "2026-10-07",
+  "reviewer": {
+    "identity": "/root/ni5_r3_affected_review",
+    "role": "Independent bounded ordinary SOURCE safety auditor",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "independentOf": "root operator executor"
+  },
+  "status": "NO_SOURCE_BLOCKER_FOR_EXACT_PINNED_ONE_TIME_PACKAGING_UNDER_STATED_PREREQUISITES",
+  "GOGranted": false,
+  "operatorExecution": "NOT_RUN",
+  "artifactProduced": false,
+  "scope": "6087B frozen root packaging operator, readonly public original archive and exact owned installed public package, two client byte pins and npm consumer entry; no prior broad UI/backend review reopened",
+  "acceptance": {
+    "all87": {
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    "finalCODE": "BLOCKED_UNTOUCHED",
+    "installationOrRuntimeAcceptance": false
+  },
+  "operatorPin": {
+    "path": ".runtime/root-ui-composite-package.py",
+    "bytes": 6087,
+    "sha256": "d5a1e3b6b813e034f4dc728d12a365a1637e6e6d1fd4d39282f115bfc32fd1ba"
+  },
+  "rulesPin": {
+    "path": "AGENTS.md",
+    "bytes": 8292,
+    "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+  },
+  "baseArchivePin": {
+    "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+    "bytes": 4114465,
+    "sha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0"
+  },
+  "replacementPins": [
+    {
+      "path": "src/client-entry.cjs",
+      "bytes": 106631,
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "path": "lib/client.js",
+      "bytes": 106599,
+      "sha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8"
+    }
+  ],
+  "readEmitterSourcePin": {
+    "path": "scripts/build-client.mjs",
+    "bytes": 1166,
+    "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+  },
+  "findings": [],
+  "executionPrerequisites": [
+    {
+      "id": "PKG-ASSERT",
+      "status": "REQUIRED",
+      "fact": "Operator uses assert for its closed-scope/hash/path/inventory/bound checks; Python optimization strips assert statements.",
+      "concreteRootInvocation": "python3 -E .runtime/root-ui-composite-package.py",
+      "instruction": "Use no -O/-OO. -E ignores PYTHONOPTIMIZE and other Python environment flags, retaining the reviewed guards. Operator not invoked by this lane."
+    },
+    {
+      "id": "PKG-FRESH",
+      "status": "REQUIRED",
+      "fact": "Destination absent at readonly review, canonical fixed inputs exact.",
+      "instruction": "Same fixed pinned inputs and exclusive new destination; operator rechecks before writing. No overwrite/resume or new package scope."
+    },
+    {
+      "id": "PKG-OUTPUT",
+      "status": "ROOT_FUTURE_CHECK",
+      "instruction": "Record once-invocation success, completed archive/package/manifest hashes and exact1114 files/two changed paths before any later separate install/lifecycle action."
+    }
+  ],
+  "closedReadScope": {
+    "absoluteRoot": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "baseArchive": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+    "oldOwnedInstalledPublicPackage": ".runtime/ui-qa-a58c522/home/profiles/web/node_modules/dsh-fishball",
+    "twoCurrentFiles": [
+      "src/client-entry.cjs",
+      "lib/client.js"
+    ],
+    "operatorFutureReReadOnlyNewOutput": [
+      "new archive",
+      "new package files",
+      "new package/package.json",
+      "new archive.stat and final hash"
+    ],
+    "profileOutsideOwnedPublicPackageRead": false,
+    "personalDataCredentialsPrivateFilesRead": false
+  },
+  "closedWriteScope": {
+    "destination": ".runtime/ui-qa-client-cb75",
+    "destinationAbsentAtReview": true,
+    "onlyFutureWrites": [
+      "new0700 destination",
+      "new0700 package directory and parent directories",
+      "exclusive .tgz archive",
+      "exclusive1114 package files with original mode masked0777",
+      "exclusive final composite manifest"
+    ],
+    "originalsAndSharedSourceWrites": false,
+    "listenerProfileLifecycleStorageAuthNativeModelNetworkGitWrites": false,
+    "method": "New destination mkdir without exist_ok; exclusive xb/x file opens; canonical package member paths and resolve containment. No extract/extractall/subprocess. Parent directories within fresh owner-only destination.",
+    "failureBoundary": "Partial new destination may remain after an I/O/postcondition failure; no overwrite/resume/delete or complete-artifact claim on failure."
+  },
+  "archiveAndOwnedInputFacts": {
+    "canonicalUniqueMemberNames": true,
+    "archiveMemberCount": 1114,
+    "regularFileCount": 1114,
+    "archiveDirectories": 0,
+    "installedOrdinaryDirectories": 36,
+    "installedFileSetAndBytesExactlyMatch": true,
+    "installedNoLinksOrSpecialsObserved": true,
+    "operatorInstalledScanLimit": "Rejects links and matches regular file inventory; not a generic rejection of every possible extra special node. Independent lstat/walk proof establishes none in the exact immutable owned input.",
+    "unpackedBaseFileBytes": 21338906,
+    "maximumEntryBytes": 2428635,
+    "entryLimitBytes": 33554432,
+    "aggregateFileLimitBytes": 134217728,
+    "expectedCompositeUnpackedFileBytesSourceOnly": 21349740,
+    "twoChangedPaths": [
+      "src/client-entry.cjs",
+      "lib/client.js"
+    ],
+    "fullPublicInventoryMetadataDigest": {
+      "records": 1114,
+      "representation": "json.dumps(filePinsAndPublicMetadata,sort_keys=True,separators=(comma,colon)).encode(); each has path/bytes/SHA256/mode/tar-type/PAX-key names",
+      "bytes": 208535,
+      "sha256": "0d7e69b71c895bbe36f8b093f37b70033000be410c1112ad0485030b3594247e",
+      "includesRawFileBodies": false
+    },
+    "separateReadonlyReplayMetadataPin": {
+      "path": "/tmp/root-ui-composite-package-independent-public-byte-verification.json",
+      "bytes": 277928,
+      "sha256": "d430d0e3997bc23d71c223c78de211b9a0c5b10c24de089299d01825ee73431d"
+    },
+    "metadataReplayContains": "Complete1114 public file pins and entry metadata; no raw application/private file bodies."
+  },
+  "npmConsumerDisposition": {
+    "originalPackageName": "dsh-fishball",
+    "originalVersion": "0.1.0-preview.1",
+    "private": true,
+    "originalExports": {
+      ".": "./src/index.mjs",
+      "./runtime": "./src/runtime-plugin.mjs",
+      "./installed": "./src/installed-plugin.mjs",
+      "./client": "./lib/client.js",
+      "./testing-provider": "./src/testing-provider.mjs"
+    },
+    "originalClientInjection": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-workspace"
+      ]
+    },
+    "correctExportPath": true,
+    "compiledClientLiteralMatchesEntireNewFactoryAndPublishedEmitterWrapper": true,
+    "checkMethod": "Pure byte literal comparison: remove the fixed module.exports prefix and final semicolon/newline, assemble fixed documented ModuleLoader wrapper, compare complete existing lib/client.js. No JavaScript syntax parsing/import or build.",
+    "sameEmitterSourceInBaseArchive": true,
+    "buildRun": false,
+    "backendOrDependencyUpdate": false,
+    "remaining1112PackageFiles": "Copy original archive bytes; no current whole-working-tree pack or broader Git tree claim."
+  },
+  "operatorPostconditionsSourceOnly": {
+    "beforeWrites": [
+      "canonical fixed root/base/installed/destination",
+      "base archive hash",
+      "two replacement hashes",
+      "unique canonical package entries",
+      "regular/dir archive types only",
+      "32MiB entry/128MiB total",
+      "1114 archived records",
+      "all archived files match installed bytes",
+      "installed file set exact/no links",
+      "exactly two changed paths"
+    ],
+    "writeMechanism": "Copy validated TarInfo and member bytes, replace only two paths, update sizes and PAX size if present, preserve archive metadata; masked0777 file modes in fresh package tree; fixed gzip mtime0/empty filename.",
+    "afterWrites": [
+      "reopen built archive",
+      "expected file set",
+      "every archive and unpacked file hash matches record",
+      "unchanged package name/version",
+      "write exclusive composite manifest with archive SHA/size/file records"
+    ],
+    "manifestAttribution": {
+      "identity": "a58 native package base / cb75 reviewed client only",
+      "baseRevision": "a58c522f32dd2be2ec29a697ec32ed295e154614",
+      "clientRevision": "cb75fdfd97842c89c78d8e96b8c4de1804261ed7",
+      "wholeGitRevisionClaim": false,
+      "revisionLabelsSource": "root-provided attribution; no Git verification in this lane"
+    },
+    "diagnosticOutput": "Allowlisted composite identity/new relative archive path/size/hash/fileCount/changedPaths only; no raw payloads or credentials.",
+    "completedArtifactObserved": false
+  },
+  "performed": {
+    "entireOperatorReadAsText": true,
+    "operatorParsedImportedExecuted": false,
+    "publicArchiveMetadataAndHashReadViaSeparatePythonChecker": true,
+    "ownedInstalledPublicPackageBytesAndLstatRead": true,
+    "literalSourceBundleByteComparison": true,
+    "readBuildEmitterSourceOnly": true,
+    "applicationJSParsedImportedExecuted": false,
+    "buildFixtureTestRun": false,
+    "listenerProfileLifecycleStorageAuthNativeModelNetworkDBGitActions": false,
+    "protectedFinalCODETouched": false,
+    "wroteOnlyNewIndependentEvidenceAndTemporaryMetadata": true
+  },
+  "evidenceOnlyVerification": {
+    "language": "Separate Python -E file bytes/public tar metadata/public JSON checker, not operator",
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "exactCommand": "python3 -E - <<'PY'\nfrom pathlib import Path,PurePosixPath\nimport json,hashlib,tarfile,os,stat,sys\nROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')\nbase=ROOT/'.runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz'\ninstalled=ROOT/'.runtime/ui-qa-a58c522/home/profiles/web/node_modules/dsh-fishball'\ndest=ROOT/'.runtime/ui-qa-client-cb75'\nsha=lambda b:hashlib.sha256(b).hexdigest()\ndef pin(p):\n b=p.read_bytes();return {'path':str(p.relative_to(ROOT)),'bytes':len(b),'sha256':sha(b)}\noperator=pin(ROOT/'.runtime/root-ui-composite-package.py')\nassert operator['bytes']==6087 and operator['sha256']=='d5a1e3b6b813e034f4dc728d12a365a1637e6e6d1fd4d39282f115bfc32fd1ba'\nbasepin=pin(base);assert basepin['sha256']=='fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0'\nassert base.resolve()==base and not base.is_symlink() and installed.resolve()==installed and installed.is_dir()\nassert dest.resolve()==dest and not dest.exists() and not dest.is_symlink()\nreplacements={}\nfor name,expected in [('src/client-entry.cjs','4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82'),('lib/client.js','9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8')]:\n p=ROOT/name;assert not p.is_symlink() and p.resolve().is_relative_to(ROOT) and stat.S_ISREG(p.stat().st_mode)\n replacements[name]=pin(p);assert replacements[name]['sha256']==expected\nnames=set();files=[];directories=[];total=0;pkg=None;changed=[];maxsize=0\nwith tarfile.open(base,mode='r:gz') as tar:\n for m in tar.getmembers():\n  parts=PurePosixPath(m.name).parts\n  assert parts and parts[0]=='package' and not m.name.startswith('/') and '..' not in parts and '.' not in parts and m.name=='/'.join(parts)\n  assert m.name not in names;names.add(m.name);assert m.isfile() or m.isdir()\n  assert 0<=m.size<=32*1024*1024;maxsize=max(maxsize,m.size)\n  if m.isdir():directories.append({'path':m.name,'size':m.size,'mode':m.mode});continue\n  name='/'.join(parts[1:]);assert name\n  stream=tar.extractfile(m);assert stream\n  data=stream.read(m.size+1);assert len(data)==m.size;total+=len(data);assert total<=128*1024*1024\n  local=installed/name;assert local.resolve().is_relative_to(installed) and not local.is_symlink() and stat.S_ISREG(local.stat().st_mode)\n  assert local.read_bytes()==data\n  if name in replacements:\n   assert sha(data)!=replacements[name]['sha256'];changed.append(name)\n  if name=='package.json':pkg=json.loads(data)\n  files.append({'path':name,'bytes':len(data),'sha256':sha(data),'mode':m.mode,'type':m.type.decode('ascii'),'paxHeaderKeys':list(m.pax_headers)})\nassert len(files)==1114 and set(changed)==set(replacements) and len(changed)==2\nactual=set();extraspecial=[];directorycount=0\nfor top,dirs,names in os.walk(installed,topdown=True,followlinks=False):\n for name in dirs:\n  p=Path(top)/name;mode=p.lstat().st_mode;assert stat.S_ISDIR(mode);directorycount+=1\n for name in names:\n  p=Path(top)/name;mode=p.lstat().st_mode;assert stat.S_ISREG(mode);actual.add(p.relative_to(installed).as_posix())\nassert actual=={x['path'] for x in files}\nsrc=(ROOT/'src/client-entry.cjs').read_bytes();lib=(ROOT/'lib/client.js').read_bytes()\nstart=b'module.exports = function clientFactory(require) {'\nassert src.count(start)==1 and src.endswith(b';\\n')\nfactory=src.partition(b'module.exports = ')[2][:-2]\nexpectedLib=b'// Generated from src/client-entry.cjs by scripts/build-client.mjs.\\nwindow.__ModuleLoader__.load({id:\"dsh-fishball\",factory:'+factory+b'});\\n'\nassert lib==expectedLib\nassert pkg['name']=='dsh-fishball' and pkg['version']=='0.1.0-preview.1' and pkg['private'] is True and pkg['exports']['./client']=='./lib/client.js'\nbuildPin=pin(ROOT/'scripts/build-client.mjs');assert next(x for x in files if x['path']=='scripts/build-client.mjs')['sha256']==buildPin['sha256']\nnewtotal=total+sum(x['bytes']-next(f['bytes'] for f in files if f['path']==name) for name,x in replacements.items())\nassert newtotal<=128*1024*1024 and all(x['bytes']<=32*1024*1024 for x in replacements.values())\nassert sys.flags.optimize==0\nrecord={'operatorPin':operator,'baseArchivePin':basepin,'replacementPins':list(replacements.values()),'ownedInstalledPublicPackage':str(installed.relative_to(ROOT)),'destination':str(dest.relative_to(ROOT)),'destinationAbsent':True,'canonicalMemberNamesUnique':True,'memberCount':len(files)+len(directories),'regularFileCount':len(files),'directoryCount':len(directories),'installedDirectories':directorycount,'installedFilesExactByteMatch':True,'installedNoLinksOrSpecialEntriesObserved':True,'unpackedFileBytes':total,'maximumEntrySize':maxsize,'archivedDirectories':directories,'filePinsAndPublicMetadata':files,'twoChangedPaths':changed,'newUnpackedFileBytesSourceOnly':newtotal,'npmClientExportCorrect':True,'compiledClientExactFactoryTextAndPublishedWrapper':True,'buildEmitterReadSourcePin':buildPin,'replacementBuildNotRun':True,'assertGuardsEnabledInMetadataChecker':sys.flags.optimize==0,'packageJsonPublic':pkg,'operatorParsedImportedExecuted':False,'applicationJSParsedImportedExecuted':False,'listenerProfileOutsideOwnedPublicPackageStorageAuthNativeModelNetworkGitActions':False}\nPath('/tmp/root-ui-composite-package-independent-public-byte-verification.json').write_text(json.dumps(record,indent=2)+'\\n')\nprint(json.dumps({k:record[k] for k in ['operatorPin','baseArchivePin','replacementPins','destination','destinationAbsent','memberCount','regularFileCount','directoryCount','installedDirectories','installedFilesExactByteMatch','installedNoLinksOrSpecialEntriesObserved','unpackedFileBytes','maximumEntrySize','twoChangedPaths','newUnpackedFileBytesSourceOnly','npmClientExportCorrect','compiledClientExactFactoryTextAndPublishedWrapper','buildEmitterReadSourcePin','assertGuardsEnabledInMetadataChecker','operatorParsedImportedExecuted']},indent=2))\nPY\n",
+    "exitCode": 0,
+    "assertGuardsEnabled": true,
+    "allPublicBytesPinsInventoryAndNpmConsumerChecks": "MATCH",
+    "destinationCreatedByChecker": false
+  },
+  "remainingObligations": [
+    "Root once-invocation under exact guards/scope and completed output inspection",
+    "Separate root installation/lifecycle plan and actual UI QA",
+    "All87 acceptance and final CODE remain HOLD/blocked"
+  ],
+  "markdownCompanion": {
+    "path": "docs/evidence/UI/worker-reconnect-composite-package-independent-source-review.md",
+    "bytes": 6445,
+    "sha256": "5d56626a227a3446e71a0c3c91d7dd4ff6087ffc417fe95926b96d312b4e4689"
+  }
+}

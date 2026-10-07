@@ -1,0 +1,110 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "Mac": "LOCKED_REQUIRES_MANUAL_UNLOCK",
+  "UIOwnerThread": "01a11541-bd03-7669-9a89-7baca8daf0bf",
+  "all87": "HOLD",
+  "amendment": {
+    "bytes": 5611,
+    "currentPublicPatchBytes": 6091,
+    "currentPublicPatchSHA256": "3f67b95920158694e9b5af41a3856db11941a43d18756da61c1cd0c15c50c1f5",
+    "path": ".runtime/ui-worker-reconnect-public-patch-amendment/amendment.json",
+    "semantics": "All38 original rows unchanged. Only welcomeNoticeVersion2026-09-28.1 row added by original UI Settings. No settings rewritten by root.",
+    "sha256": "5c24e655221af7c2d477553caa6b3f753ff9715c4c178edab0e1b9d7c159e924"
+  },
+  "failures": "Any failed guard before stop leaves original live fixture unchanged. After one signal unconfirmed/error/denial remains HOLD with no repeat/force/alternate endpoint. Second directory rename failure restores original before any start. Actual CLI permission denial remains HOLD, no alternate entrypoint or automatic rollback execution. Later conditional rollback needs fresh owned-PID verification and the exact independently reviewed rollback helper; no ambiguous or repeated effect.",
+  "historicalFailure": "Original operator prepare failed public pin before any maintenance output/effect; original plan preserved, not rerun. This successor changes only exact public patch pin provenance/templates/digest references.",
+  "knownEffects": {
+    "CLIStarts": 1,
+    "browserActionsWhileLocked": 0,
+    "fourPublicTemplateCopies": 4,
+    "modelCalls": 0,
+    "networkInstalls": 0,
+    "newPrivateAccess": 1,
+    "newPrivateCLILogs": 2,
+    "newReadinessMetadata": 1,
+    "normalOwnerStop": 1,
+    "operatorProfileSettingWrites": 0,
+    "originalAutomaticGeneratedRootRewrite": 1,
+    "packageDirectoryRenames": 2,
+    "taskWorkerMutations": 0
+  },
+  "launchOnceAfterConfirmedActivation": [
+    "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-public-patch-amendment/launch-successor-r2.mjs"
+  ],
+  "operationInvocationsMaxEach": 1,
+  "operations": [
+    [
+      "python3",
+      "-E",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ui-reconnect-owner-operation-r2.py",
+      "prepare"
+    ],
+    [
+      "python3",
+      "-E",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ui-reconnect-owner-operation-r2.py",
+      "stop"
+    ],
+    [
+      "python3",
+      "-E",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ui-reconnect-owner-operation-r2.py",
+      "activate"
+    ]
+  ],
+  "operator": {
+    "bytes": 12906,
+    "path": ".runtime/root-ui-reconnect-owner-operation-r2.py",
+    "sha256": "1360e8b555d7b4b0524a202f800c0022667b2175e89e71dbc570213b7f4d1225"
+  },
+  "ownedStop": {
+    "CLIpid": 91027,
+    "PTYInput": 0,
+    "forceKill": 0,
+    "observationSecondsMax": 10,
+    "parentSignalsMax": 1,
+    "processGroupSignals": 0,
+    "signal": "SIGINT",
+    "wrapperPID": 91018
+  },
+  "preconditions": [
+    "Root three-helper syntax checks PASS with unchanged pins",
+    "Root old session36229 observation still running before owned stop",
+    "All1114 original files and all1114 staged composite files exact/canonical/no links",
+    "Same filesystem for package renames",
+    "Existing profile/home/setup namespace/DB/key/state/auth metadata binding preserved; private contents never read/copied/hashed",
+    "Generated PUBLIC root223B/c300 before and after; original one rewrite/start, no operator configuration writes",
+    "Home cordis.patch.yml ABSENT and no dangling symlink",
+    "Exact profile/.dsh-module-fallback ABSENT and no dangling symlink; original cleanup source pinned",
+    "No layered .env in home/workspace outside pinned dependencies",
+    "Service/retention/generation/log/access outputs unused",
+    "Fresh lsof singleton127.0.0.1:3080 PID91027 PPID91018 same user; wrapper executable canonical Node and cwdrepo",
+    "No inherited NODE_OPTIONS/NODE_PATH/NODE_TEST_CONTEXT"
+  ],
+  "privateContentHandling": "No URL, secret, auth record, key, state metadata contents, encrypted store contents or old private logs are opened by owner operations. The future original browser handoff is HELD while Mac locked and not included in owner operations.",
+  "readiness": {
+    "doesNotProve": [
+      "corrected browser bundle loaded",
+      "original frontend Connection ready",
+      "native worker connected",
+      "worker controls enabled",
+      "UI acceptance"
+    ],
+    "pollsMax": 4,
+    "totalSecondsMax": 20,
+    "verify": [
+      "Actual emitted wrapperPID/newCLIpid and singleton owned loopback listener",
+      "Original auditStartupEntries readiness generation/CLIpid metadata",
+      "Canonical active1114 composite files and retained1114 original files",
+      "Metadata-only private DB/key/auth/setup binding preservation",
+      "Generated PUBLIC root223B/c300 poststart"
+    ]
+  },
+  "root": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "schema": 1,
+  "sourceCapsuleClosureSHA256": "1796aeedde275e0fc6054266fd8a78c87dcd86c15bb00f6e31b9ceac2a610635",
+  "sourceCapsuleManifestSHA256": "4cf3b6c1891324d8016ccc4fa8dfcba5f76db9e949f4a1ca69be504b3cd4c7fd",
+  "status": "FROZEN_MINIMAL_CURRENT_PUBLIC_CONFIG_AMENDMENT_REQUIRES_AFFECTED_REVIEW",
+  "syntheticTask": "4da34a6d cancellation_requested V2/authEpoch1 preserved; NEVER reused for worker execution"
+}

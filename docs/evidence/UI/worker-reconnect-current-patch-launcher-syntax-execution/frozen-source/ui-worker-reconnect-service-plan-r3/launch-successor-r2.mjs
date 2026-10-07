@@ -1,0 +1,89 @@
+// PROPOSED SOURCE ONLY. No stop/swap/install logic; root completes those explicitly.
+// Starts exactly one pinned original CLI, never retries or changes endpoint/profile.
+import {spawn,spawnSync} from 'node:child_process';
+import {readFileSync,lstatSync,realpathSync,existsSync,createWriteStream,readdirSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+const base='/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/';
+const service='/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/';
+const original='/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/bin.js';
+const node='/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+const rollback=process.argv.length===3 && process.argv[2]==='--rollback';
+if(process.argv.length!==(rollback?3:2))throw new Error('QA_LAUNCH_ARGUMENT_INVALID');
+const mode=rollback?'rollback':'successor',generation=rollback?'r2-rollback-1':'r2-successor-1';
+if(process.execPath!==node || process.version!=='v22.22.2' || process.arch!=='arm64')throw new Error('QA_PINNED_NODE_REQUIRED');
+const hash=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
+const expected=rollback?{
+  source:'e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99',
+  bundle:'a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f',
+}:{
+  source:'4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82',
+  bundle:'9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8',
+};
+// Exact SOURCE templates: root copies bytes unchanged after binding its composite seal.
+// This prevents the manifest from authorizing arbitrary private file reads.
+const lifecyclePin=rollback?'ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7':'e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696';
+const lifecyclePath=service+`lifecycle-pins.${mode}.json`;
+if(hash(lifecyclePath)!==lifecyclePin)throw new Error('QA_LIFECYCLE_TEMPLATE_CHANGED');
+const inputs=JSON.parse(readFileSync(lifecyclePath,'utf8'));
+if(inputs.contractVersion!==1 || inputs.mode!==mode || inputs.generation!==generation || inputs.target!==base.slice(0,-1) || inputs.originalCLI!==original || inputs.host!=='127.0.0.1' || inputs.port!==3080 || !Array.isArray(inputs.publicInputs) || !Array.isArray(inputs.installedFiles) || inputs.installedFiles.length!==1114)throw new Error('QA_LIFECYCLE_MANIFEST_INVALID');
+// This generated PUBLIC root is rewritten by the original CLI, not by this helper.
+const generatedRoot=base+'home/profiles/web/cordis.yml',rootInfo=lstatSync(generatedRoot);
+if(!rootInfo.isFile() || rootInfo.isSymbolicLink() || realpathSync(generatedRoot)!==generatedRoot || rootInfo.uid!==process.getuid() || (rootInfo.mode&0o077) || rootInfo.size!==223 || hash(generatedRoot)!=='c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e')throw new Error('QA_ORIGINAL_GENERATED_ROOT_CHANGED');
+// The original optional home patch is not an approved configuration layer here.
+try{lstatSync(base+'home/cordis.patch.yml');throw new Error('QA_UNAPPROVED_HOME_PATCH_FORBIDDEN');}
+catch(error){if(error.code!=='ENOENT')throw error;}
+for(const row of inputs.publicInputs)if(hash(row.path)!==row.sha256)throw new Error('QA_PUBLIC_PIN_CHANGED');
+const installed=base+'home/profiles/web/node_modules/dsh-fishball/';
+for(const row of inputs.installedFiles){
+  if(typeof row.path!=='string' || row.path.startsWith('/') || row.path.split('/').includes('..'))throw new Error('QA_PACKAGE_PATH_INVALID');
+  const path=installed+row.path,info=lstatSync(path);
+  if(!info.isFile() || info.isSymbolicLink() || realpathSync(path)!==path || info.size!==row.bytes || hash(path)!==row.sha256)throw new Error('QA_COMPOSITE_PACKAGE_CHANGED');
+}
+const actualFiles=[];
+const inspectPackage=(directory,prefix='')=>{for(const entry of readdirSync(directory,{withFileTypes:true})){
+  const relative=prefix+entry.name,path=directory+entry.name;
+  if(entry.isSymbolicLink())throw new Error('QA_PACKAGE_LINK_FORBIDDEN');
+  if(entry.isDirectory())inspectPackage(path+'/',relative+'/');
+  else if(entry.isFile())actualFiles.push(relative);
+  else throw new Error('QA_PACKAGE_NONFILE_FORBIDDEN');
+}};
+inspectPackage(installed);
+if(JSON.stringify(actualFiles.sort())!==JSON.stringify(inputs.installedFiles.map(row=>row.path).sort()))throw new Error('QA_PACKAGE_INVENTORY_CHANGED');
+if(hash(installed+'src/client-entry.cjs')!==expected.source || hash(installed+'lib/client.js')!==expected.bundle)throw new Error('QA_CLIENT_IDENTITY_CHANGED');
+if(inputs.overlayPath!==service+`restart-overlay.${mode}.json` || hash(inputs.overlayPath)!==inputs.overlaySHA256)throw new Error('QA_OVERLAY_CHANGED');
+for(const name of ['home','workspace','agents','private','evidence','home/profiles/web','home/profiles/web/df-data']){
+  const path=base+name;
+  if(!lstatSync(path).isDirectory() || lstatSync(path).isSymbolicLink() || realpathSync(path)!==path || lstatSync(path).uid!==process.getuid() || (lstatSync(path).mode&0o077))throw new Error('QA_CANONICAL_OWNER_PATH_REQUIRED');
+}
+// Presence/permissions only: NEVER read, copy, hash or regenerate the auth secret.
+const auth=base+'private/browser-auth.yml';
+if(!existsSync(auth) || !lstatSync(auth).isFile() || lstatSync(auth).isSymbolicLink() || lstatSync(auth).uid!==process.getuid() || (lstatSync(auth).mode&0o077))throw new Error('QA_EXISTING_AUTH_REQUIRED');
+for(const path of [base+`private/fresh-native-access-${generation}.txt`,base+`evidence/access-ready-${generation}.json`])if(existsSync(path))throw new Error('QA_GENERATION_ALREADY_USED');
+// Preserve original layered-env exclusion without reading any file contents.
+const rejectEnv=(directory)=>{for(const entry of readdirSync(directory,{withFileTypes:true})){
+  if(entry.name==='node_modules')continue;
+  if(entry.name==='.env')throw new Error('QA_LAYERED_ENV_FORBIDDEN');
+  if(entry.isDirectory() && !entry.isSymbolicLink())rejectEnv(directory+'/'+entry.name);
+}};
+rejectEnv(base+'home');rejectEnv(base+'workspace');
+const port=spawnSync('/usr/sbin/lsof',['-nP','-iTCP:3080','-sTCP:LISTEN'],{encoding:'utf8'});
+if(port.status!==1 || port.stdout || port.stderr || port.error)throw new Error('QA_PORT_3080_NOT_CONFIRMED_FREE');
+let child,failed=false,stopRequested=false,stdoutBytes=0,stderrBytes=0;
+// Every error/control path shares this one owned graceful stop request.
+const requestStop=(signal)=>{if(stopRequested)return;stopRequested=true;child?.kill(signal);};
+const failClosed=()=>{failed=true;process.exitCode=1;requestStop('SIGTERM');};
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>requestStop(signal));
+const output=createWriteStream(base+`private/original-cli-${generation}.stdout.log`,{flags:'wx',mode:0o600});
+const errors=createWriteStream(base+`private/original-cli-${generation}.stderr.log`,{flags:'wx',mode:0o600});
+output.on('error',failClosed);errors.on('error',failClosed);
+await Promise.all([new Promise((resolve,reject)=>{output.once('open',resolve);output.once('error',reject);}),new Promise((resolve,reject)=>{errors.once('open',resolve);errors.once('error',reject);})]);
+// A stop/error observed after opening but before spawn may never start a child.
+if(failed || stopRequested){output.end();errors.end();throw new Error('QA_LAUNCH_STOPPED_BEFORE_SPAWN');}
+child=spawn(node,[original,'--profile','web','--patch',inputs.overlayPath,'--host','127.0.0.1','--port','3080','--no-open'],{
+  cwd:base+'workspace',env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',DSH_HOME:base+'home',DSH_AGENTS_HOME:base+'agents',DSH_TELEMETRY_DISABLED:'1',DSH_PERMISSION_MODE:'read-only'},stdio:['ignore','pipe','pipe'],
+});
+child.stdout.on('data',data=>{stdoutBytes+=data.length;});child.stderr.on('data',data=>{stderrBytes+=data.length;});
+child.stdout.pipe(output);child.stderr.pipe(errors);
+child.on('error',()=>{failClosed();output.end();errors.end();console.error(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_FAILED',generation}));});
+child.on('exit',(code,signal)=>{console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_EXITED',generation,code,signal,stdoutBytes,stderrBytes}));process.exitCode=failed?1:(code??1);});
+console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_REQUESTED',generation,wrapperPID:process.pid,pid:child.pid,host:'127.0.0.1',port:3080,originalCLI:true,owner:'root',frontendConnection:'NOT_OBSERVED',criteria87:'HOLD'}));

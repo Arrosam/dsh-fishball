@@ -1,0 +1,94 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "UI": "HOLD_MAC_LOCKED",
+  "all87": "HOLD",
+  "allMatched": true,
+  "browserActions": 0,
+  "copies": [
+    {
+      "bytes": 12154,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/root-ui-reconnect-owner-operation.py",
+      "copyMatches": true,
+      "sha256": "341d46438f823c3d903f81305c091d081ecb9774ff998b1e5300102cd09ff141",
+      "source": ".runtime/root-ui-reconnect-owner-operation.py"
+    },
+    {
+      "bytes": 4706,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/root-ui-reconnect-lifecycle-plan.json",
+      "copyMatches": true,
+      "sha256": "5b904460897b5e16873b4af5d0acdd565dde7a482381effa1150827e00680bca",
+      "source": ".runtime/root-ui-reconnect-lifecycle-plan.json"
+    },
+    {
+      "bytes": 12906,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/root-ui-reconnect-owner-operation-r2.py",
+      "copyMatches": true,
+      "sha256": "1360e8b555d7b4b0524a202f800c0022667b2175e89e71dbc570213b7f4d1225",
+      "source": ".runtime/root-ui-reconnect-owner-operation-r2.py"
+    },
+    {
+      "bytes": 5470,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/root-ui-reconnect-lifecycle-plan-r2.json",
+      "copyMatches": true,
+      "sha256": "c481ea0c6061ff7b64d04d3851f31c5c6b34ec93a08e233336a6330f5cc19b5e",
+      "source": ".runtime/root-ui-reconnect-lifecycle-plan-r2.json"
+    },
+    {
+      "bytes": 1226,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-patch-amendment/README.md",
+      "copyMatches": true,
+      "sha256": "0ead239c030e069eee8934bb6327b9daf7fc92f6c147f2a5d3920c0f703599dc",
+      "source": ".runtime/ui-worker-reconnect-public-patch-amendment/README.md"
+    },
+    {
+      "bytes": 5611,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-patch-amendment/amendment.json",
+      "copyMatches": true,
+      "sha256": "5c24e655221af7c2d477553caa6b3f753ff9715c4c178edab0e1b9d7c159e924",
+      "source": ".runtime/ui-worker-reconnect-public-patch-amendment/amendment.json"
+    },
+    {
+      "bytes": 8457,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-patch-amendment/launch-successor-r2.mjs",
+      "copyMatches": true,
+      "sha256": "06769626b327dc4bfe9c726f0cf4e2ec6c2db792dfb76149df657487bb8871dd",
+      "source": ".runtime/ui-worker-reconnect-public-patch-amendment/launch-successor-r2.mjs"
+    },
+    {
+      "bytes": 208696,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.rollback.json",
+      "copyMatches": true,
+      "sha256": "aac72c03074059f61205abc550b42dbf6c841219a3c304bc6b93af5eb2737ac6",
+      "source": ".runtime/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.rollback.json"
+    },
+    {
+      "bytes": 208755,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.successor.json",
+      "copyMatches": true,
+      "sha256": "4d89f7d9004c5e7823ff11ed1b863d9420c8073a2efba7335276587ec1e619d9",
+      "source": ".runtime/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.successor.json"
+    },
+    {
+      "bytes": 6091,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-profile-current/cordis.patch.yml",
+      "copyMatches": true,
+      "sha256": "3f67b95920158694e9b5af41a3856db11941a43d18756da61c1cd0c15c50c1f5",
+      "source": ".runtime/ui-worker-reconnect-public-profile-current/cordis.patch.yml"
+    },
+    {
+      "bytes": 1015,
+      "copy": "docs/evidence/UI/worker-reconnect-service-root-execution/frozen-maintenance-source/ui-worker-reconnect-public-profile-current/root-public-semantic-observation.json",
+      "copyMatches": true,
+      "sha256": "cf364f12c0545dcf5ad925e299341c91b89232ee36407a9b74f148cc06601b18",
+      "source": ".runtime/ui-worker-reconnect-public-profile-current/root-public-semantic-observation.json"
+    }
+  ],
+  "correctedPlanPrepareStopActivateEachInvokedOnce": true,
+  "originalExit": "Expected response to one parent SIGINT; no force/second signal",
+  "originalOncePrepareFailedBeforeEffects": true,
+  "originalSessionExitCode": 130,
+  "realInference": 0,
+  "successorCLIpid": 17114,
+  "successorSessionID": 62029,
+  "successorWrapperPID": 17111
+}

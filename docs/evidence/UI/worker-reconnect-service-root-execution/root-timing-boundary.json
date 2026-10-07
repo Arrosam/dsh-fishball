@@ -1,0 +1,13 @@
+{
+  "UI": "HOLD_MAC_LOCKED",
+  "activeMetadataPollingAttempts": 1,
+  "activeMetadataPollingObservationSeconds": 0.35158,
+  "all87": "HOLD",
+  "currentOwnedListenerAndBootstrapIdentity": "VERIFIED_AT_READINESS_RECORD",
+  "elapsedFromLaunchFreezeSeconds": 70.95757,
+  "launchFreezeAt": "2026-10-07T11:22:12.247998+00:00",
+  "launchFreezeIsNotExactChildSpawnTimestamp": true,
+  "noRerunOrSecondStart": true,
+  "readinessRecordAt": "2026-10-07T11:23:23.205568+00:00",
+  "startupReadinessWithin20Seconds": "NOT_PROVEN_FIRST_ROOT_VERIFICATION_OCCURRED_LATER"
+}

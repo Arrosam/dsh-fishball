@@ -1,0 +1,42 @@
+{
+  "baseArchiveSHA256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+  "baseRevision": "a58c522f32dd2be2ec29a697ec32ed295e154614",
+  "changes": [
+    {
+      "after": {
+        "bytes": 106599,
+        "path": "lib/client.js",
+        "sha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8"
+      },
+      "before": {
+        "bytes": 101182,
+        "path": "lib/client.js",
+        "sha256": "a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f"
+      },
+      "path": "lib/client.js"
+    },
+    {
+      "after": {
+        "bytes": 106631,
+        "path": "src/client-entry.cjs",
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+      },
+      "before": {
+        "bytes": 101214,
+        "path": "src/client-entry.cjs",
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+      },
+      "path": "src/client-entry.cjs"
+    }
+  ],
+  "clientRevision": "cb75fdfd97842c89c78d8e96b8c4de1804261ed7",
+  "compositeArchiveSHA256": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c",
+  "extraPackageFilesPermitted": 0,
+  "kind": "a58 base / cb75 reviewed client",
+  "previewVersion": "0.1.0-preview.1",
+  "regularFiles": 1114,
+  "rootCompositeManifestSHA256": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4",
+  "status": "SOURCE_EXPECTATION_NOT_PACKAGE_EXECUTION",
+  "unchangedFileBodies": 1112,
+  "wholeGitSnapshotClaim": false
+}

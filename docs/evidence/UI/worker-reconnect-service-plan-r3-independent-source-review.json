@@ -1,0 +1,1991 @@
+{
+  "schema": 1,
+  "reviewer": "/root/ni3_fixture_source_safety_review",
+  "author": "/root/ui_worker_connection_rootcause",
+  "reviewedAtUTC": "2026-10-07T11:07:20.224176+00:00",
+  "scope": "Narrow independent ordinary CODE SOURCE review of exact r2→r3 corrections and affected lifecycle/import/effect metadata. No repeat semantic audit of unrelated historical UI fixtures or separate test design.",
+  "status": "AFFECTED_SOURCE_ACCEPTED_WITH_ROOT_EXECUTION_PRECONDITIONS",
+  "sourceAcceptance": true,
+  "executionGO": false,
+  "runtimeAcceptance": false,
+  "openSourceBlockers": 0,
+  "capsule": {
+    "path": ".runtime/ui-worker-reconnect-service-plan-r3",
+    "manifestSHA256": "4cf3b6c1891324d8016ccc4fa8dfcba5f76db9e949f4a1ca69be504b3cd4c7fd",
+    "closureSHA256": "1796aeedde275e0fc6054266fd8a78c87dcd86c15bb00f6e31b9ceac2a610635",
+    "manifestBytes": 15313,
+    "declaredMembers": 20,
+    "authorMD_SHA256": "793e172f20cc64e8b04b29fbbfb31da925abd1a8d8180ed3748a85d921d619a4",
+    "authorJSON_SHA256": "f5436180fd8a140eff6cada8396428e5b4dfca864c6a05143f8609f105d084a3"
+  },
+  "predecessor": {
+    "capsule": ".runtime/ui-worker-reconnect-service-plan-r2",
+    "manifestSHA256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c",
+    "closureSHA256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d",
+    "independentMD_SHA256": "1d9a4657b7259d4135d37ffb37b95c6b5fa47d1bf07f778696b1202e4588a0d2",
+    "independentJSON_SHA256": "4464b7637bc6d6d9585d36ddc954fa2e321281d4568fa92a760c358ab3af65ce",
+    "allPreserved": true,
+    "historicalR2StatusRemains": "SOURCE_REVIEW_BLOCKED; remediation is recorded only on this exact new r3 seal"
+  },
+  "reviewBoundary": {
+    "fullR3LauncherRead": true,
+    "launcherSevenOperationsAndSixFileDiffReadAndMatched": true,
+    "r3PlanMDJSONAndAffectedMetadataRead": true,
+    "unchangedAccessAndOpenerByteCheckedAgainstFullyReviewedR2": true,
+    "officialRootAndShutdownSitesReRead": true,
+    "newFixtureTestAssertionsAuthoredOrChanged": false,
+    "independentTestDesign": false,
+    "unrelatedSemanticReAudits": false,
+    "historicalPreservationHashOnly": true,
+    "wholeTransitiveRuntimeGraphNewlyProved": false,
+    "activeProfileProcessPackagePrivateContentsInspected": false,
+    "protectedFinalCODEOpenedOrRerouted": false
+  },
+  "byteVerification": {
+    "checkRecords": 260,
+    "uniquePaths": 148,
+    "uniqueChecks": [
+      {
+        "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+        "bytes": 4114465,
+        "sha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+        "bytes": 24077,
+        "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "bytes": 60361,
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js",
+        "bytes": 186357,
+        "sha256": "619d80619320e953e5ddcee7c71e4b97e90e722a7d17da8819f3bb47e00587be",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-base/cordis.patch.yml",
+        "bytes": 20780,
+        "sha256": "9c2be64f46a193eff3cca190c26e697e8e8eee25c9b40149dfdb56f8142c252d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "bytes": 35140,
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+        "bytes": 32699,
+        "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-credentials/lib/index.js",
+        "bytes": 6755,
+        "sha256": "c1008e2a37c62ba13e61c2ffdd7451c886e214f131c30ced1a5a67bf06a8df5e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+        "bytes": 13284,
+        "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml",
+        "bytes": 22549,
+        "sha256": "3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/lib/index.js",
+        "bytes": 10774,
+        "sha256": "c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/lib/types/index.d.ts",
+        "bytes": 3699,
+        "sha256": "0e53c01dacb4bb838d3ee321e8a7d2ab764f18aff33a826f882b9177cfa87b0b",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/bin.js",
+        "bytes": 11697,
+        "sha256": "1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+        "bytes": 12593,
+        "sha256": "c394b2aa2ce08a3b1fcc8c544257c7d689dd4d0b1cfaf8602687e65eeaba5aa1",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ni2-install/host/package-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/root-ui-composite-package.py",
+        "bytes": 6087,
+        "sha256": "d5a1e3b6b813e034f4dc728d12a365a1637e6e6d1fd4d39282f115bfc32fd1ba",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-a58c522-preparation-source/cordis.patch.yml",
+        "bytes": 5809,
+        "sha256": "eaa33ba83cad740d0b0aa94d5fbc86918ecfbf76c609709d1f4cfdcf0f76da43",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-a58c522-preparation-source/cordis.yml",
+        "bytes": 68,
+        "sha256": "752d0dd14f655a392c55432801ceb46909f1d593bae640e05fae949fba970e70",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-a58c522-preparation-source/profile-package.json",
+        "bytes": 361,
+        "sha256": "e0167fd1a092e1526abf7ca49357b3934314aec4937253994ca4433608023cdd",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-a58c522-preparation-source/source-pins.json",
+        "bytes": 206427,
+        "sha256": "e7fc41c20af487d1464abb9c64cb455c27ed0d6be799e73f1a6d73cc4c7b6d62",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-a58c522/access-handoff.mjs",
+        "bytes": 2067,
+        "sha256": "4e7bc9e802eef5770ccbd7e7396d6653157e54f19a91be09eba9ea16f4ecb481",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-a58c522/launch.mjs",
+        "bytes": 4706,
+        "sha256": "a93b3eb98dfcc113d201557562798767b6eaf185e3cf1cd3924bbfc13d1fd4dd",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-client-cb75/composite-package-manifest.json",
+        "bytes": 353203,
+        "sha256": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-qa-client-cb75/dsh-fishball-0.1.0-preview.1-ui-cb75.tgz",
+        "bytes": 4115975,
+        "sha256": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-public-contract-original/public-signatures-r1.md",
+        "bytes": 8719,
+        "sha256": "979899b4cd7170f95d4e95c9360fc4020f99673df9615d65ec52710c2e38f920",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-public-contract-original/public-signatures.md",
+        "bytes": 8327,
+        "sha256": "9af8b587787345cf06f90183b8e76c31cfd972541c5f2f6631d12c55953b02aa",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/README.md",
+        "bytes": 3745,
+        "sha256": "c559c73670c9ddde96770c088c500f1d55580c25dfa03c8c1f81c80a42fd05f9",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/cases-mapping.json",
+        "bytes": 55818,
+        "sha256": "ec03e198a1e7536f4e589f9f7082c53f5bafb1e534188f70886522e9aa27d500",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/closure.sha256",
+        "bytes": 1591,
+        "sha256": "ec1881da6a659a8fa1876d731335315a28a2c7aa2a3da914c3ef65f969cfc76c",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/controller-apply-readonly.mjs",
+        "bytes": 8199,
+        "sha256": "ee34de9c12df5ef19ce4fb0d7cb6f9ace5a3ef83963cac827d65f682ae7c4f85",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/fixture-inventory.json",
+        "bytes": 9942,
+        "sha256": "ea04386003a06eaa76ebe08e84110d9716586fe7260b0543d5a2988c398aad47",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/fixture-source.patch",
+        "bytes": 19308,
+        "sha256": "df74705cbaf019d871c073971e94c7911d9673cf3e2c7fdd804cfbe3b489567c",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/historical-conservation.json",
+        "bytes": 14599,
+        "sha256": "255d64d6ab79cba6d0f3aabd08e6ddc3756797525a8681bd952aad075378b2e2",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/manifest.json",
+        "bytes": 8473,
+        "sha256": "e2d0de82e217eb8dfb23c40a64ea7bfe71e9124cd5ee670167265636c5f4288d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/manifest.sha256",
+        "bytes": 80,
+        "sha256": "5b800d53d0fd9d3977ce8ddb860d715b258357638d82eadd853686de52c23833",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/run-apply-readonly.mjs",
+        "bytes": 1486,
+        "sha256": "3204286ca277ea00df8eb838adeb6e11347848b1946fafc072a151d0c0d22eaa",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-apply-fixture-r2/support/apply-public-face.mjs",
+        "bytes": 9046,
+        "sha256": "c1930f21528f45a04796f2186542e3e501444b37e8d4a3da082e487abad8f141",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/README.md",
+        "bytes": 3960,
+        "sha256": "65bab67d7b4d6915271d3deee5b458bb6da8ca79f33b15fbaf279f4fc7cc99da",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/candidate/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/cases-mapping.json",
+        "bytes": 46888,
+        "sha256": "74088a81735f8bbaa5c2c63f6d1aced31adfc2d33d56f5d5d77c8fb8688868b9",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/closure.sha256",
+        "bytes": 2197,
+        "sha256": "9b09306b6f3914183d820e690220d5f4afcd5c65d5098c1d3e95a1e030e87407",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/controller-execute-preparation.mjs",
+        "bytes": 7365,
+        "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/fixture-inventory.json",
+        "bytes": 10596,
+        "sha256": "7d7b67514095a7b60e06e70e32fda18388afa891e480207c8ba309edb13ca8f4",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/fixture-source.patch",
+        "bytes": 42123,
+        "sha256": "c0f2efcdeeb891fa2e2b913957c109a40318b18a5705e67000621d73db4e0110",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/historical-conservation.json",
+        "bytes": 11056,
+        "sha256": "fa871f11853d9bdc5a26e3bd419ab65a2975ff51f014841306c176eaf991c4ad",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/manifest.json",
+        "bytes": 13679,
+        "sha256": "dc93312e388aaa4022e7c08ee82d4c804cff663f7ecf0b63572999fc5d4b056f",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/manifest.sha256",
+        "bytes": 80,
+        "sha256": "04d7a0d2a3f3a5ce4efe817738e10905a1697a03c94bb139e115feb5588cd58e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/run-ep4.mjs",
+        "bytes": 1826,
+        "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/finite-deferred.mjs",
+        "bytes": 1682,
+        "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/model-only-react.mjs",
+        "bytes": 350,
+        "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-carrier.mjs",
+        "bytes": 8269,
+        "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-dtos.mjs",
+        "bytes": 13884,
+        "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-model-fixture.mjs",
+        "bytes": 7309,
+        "sha256": "adb456e1d17841597e2704bf3ac703778696a795c5476135b9631f6354d604e5",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/README.md",
+        "bytes": 2520,
+        "sha256": "4380ab4b83b1dabd18bf208f0db50a3eabf43eae74e0c804460fc604bc68154b",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/cases-mapping.json",
+        "bytes": 47033,
+        "sha256": "55403cc6a1f476af62cc6820676d301b782907ddd5b1d409fb3718e5a4aa732e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/closure.sha256",
+        "bytes": 2460,
+        "sha256": "88b772916d7cfa8a9152815bd1335a5bceab107d23cb2bf4a77c0b60ddc37f8e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+        "bytes": 7365,
+        "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/correction-literals.json",
+        "bytes": 1133,
+        "sha256": "f98ea3b74e71de92cf2503fa201cfbdf8ddbb4e954b538de9a1caf081ba52651",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/fixture-inventory.json",
+        "bytes": 12018,
+        "sha256": "c6dc10727eb7efdcec826d48a55e39119e697e0f1b126145d64a4fc845633d6e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/generation-only.patch",
+        "bytes": 1048,
+        "sha256": "545963f2f20de251f17cdc6f4ed1c587bd3e04b09b3fb0b895364ae229dac3c2",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/historical-conservation.json",
+        "bytes": 17200,
+        "sha256": "49c6692dc2b71b6fa5dff470caf272641fc4d3a9648c997408c461724a68e60c",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/manifest.json",
+        "bytes": 15573,
+        "sha256": "4ddba4463b30e7fc7cda9989a56bd3c1a7e2bf8fc79efefd157bb6974152e64d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/manifest.sha256",
+        "bytes": 80,
+        "sha256": "c4b6c483b57e90adfd0c571fd8f32e52088fb4feed4a67623693c0cf5704315e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/module-conservation.json",
+        "bytes": 4458,
+        "sha256": "a1daf16c93ab03e98004febab745f01f04a30d713b01c670f490de4fdddbe7be",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+        "bytes": 1826,
+        "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+        "bytes": 1682,
+        "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+        "bytes": 350,
+        "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+        "bytes": 8269,
+        "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+        "bytes": 13884,
+        "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+        "bytes": 7351,
+        "sha256": "55f9132ed3d3a55a6ccf9b7223e6fbfcade7fc3f7831a3622264edce037bf994",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/before/client-entry.cjs",
+        "bytes": 103523,
+        "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/closure.sha256",
+        "bytes": 1398,
+        "sha256": "ea2c3bae06b9dd5ed0b77a905796ea7fbce20dc7501dcb60da21a18f7f412832",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-before-after.json",
+        "bytes": 24719,
+        "sha256": "5ee4b48c6c0e8300b1e92774af83a64a5cd218fea96c8650aa06b1b42250b080",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-client.patch",
+        "bytes": 45188,
+        "sha256": "a4d279d875334bf9e36d8b616fdb5ff19cf13360d4c0617b9eb9226ab0cd6c20",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-original-a58.patch",
+        "bytes": 48014,
+        "sha256": "fe7d6b5db1126e1eb334948273d6dd29c48bab6d30512732909328ffb06b5d55",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/manifest.json",
+        "bytes": 18205,
+        "sha256": "aef427be1175ba278922e3af1c13cee27f46c7dfb921560cf683cfc0222e119e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/manifest.sha256",
+        "bytes": 121,
+        "sha256": "2f8fdaa85684e74987de8516fd3c6f67d8aec539e5ebcdc6bf922f45d7504d50",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/proposal.md",
+        "bytes": 7350,
+        "sha256": "b5f5dd8245f8ebc80bfdb91170e408b2f0cae9655d71ba2aca855a7d32b0b8c3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/public-design-contract.md",
+        "bytes": 6154,
+        "sha256": "d5b61ad30951407e5ea112cd524f8a8b19cccb63fab7499dc78da581c7bc66d3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/src/client-entry.cjs",
+        "bytes": 106403,
+        "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/before/client-entry.cjs",
+        "bytes": 106403,
+        "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/closure.sha256",
+        "bytes": 1398,
+        "sha256": "26f4ea6e627294edf7a4744d36ab38449762f3e47dcd3db7706612aeaec70f89",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-before-after.json",
+        "bytes": 1762,
+        "sha256": "f0406d5d611de1bf5f915df30a6b398f068f7fe94376e90b301d885d9195bd11",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-client.patch",
+        "bytes": 2631,
+        "sha256": "6cc149dae3579e68bc80087717523283a7123fbb1b8e835858591244b1812b09",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-original-a58.patch",
+        "bytes": 48242,
+        "sha256": "fa640b2f0ec2383c7d0d64b25fd4d944cc91ad369892a5fe65ecd32c205cde45",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.json",
+        "bytes": 18949,
+        "sha256": "9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.sha256",
+        "bytes": 121,
+        "sha256": "78c40dd1d792112a8fee2c6f6bfd7253b2ef5d803cbd85893e467989f5626dab",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/proposal.md",
+        "bytes": 4474,
+        "sha256": "1d86db887e5fc68b26188487ad79741c3356551fb90255938bb3adeed1eb2c98",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/public-design-contract.md",
+        "bytes": 2388,
+        "sha256": "f04413b200a59110bd5dae822d98adf34b40bf6dd7d15acd44deed3221f9ee96",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/before/client-entry.cjs",
+        "bytes": 101214,
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/closure.sha256",
+        "bytes": 1234,
+        "sha256": "8e551b04bcc308234e2fbdb0efaf1adfd36d639bef4e162fffda3ec663de8885",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-before-after.json",
+        "bytes": 8425,
+        "sha256": "56f24f0420b35d9cb7a802b27e25548468db5fbc405bc1c7be7b19e1f332eaa3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-client.patch",
+        "bytes": 10651,
+        "sha256": "ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/manifest.json",
+        "bytes": 12228,
+        "sha256": "fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/manifest.sha256",
+        "bytes": 118,
+        "sha256": "fdff5a333684fbf47f600aba0430c8c65969e745660118a53cc4463b2e0d449e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/proposal.md",
+        "bytes": 5463,
+        "sha256": "67c8754afff405407f0e30704a23a9e9a1b5785ca07e12f189a123b4108fb7ee",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/public-design-contract.md",
+        "bytes": 9644,
+        "sha256": "d9e015440715563a0c6299a26b58b0d714db51a74c208839fde33b0c532a82f8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+        "bytes": 103523,
+        "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/access-handoff-r2.mjs",
+        "bytes": 2414,
+        "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/closure.json",
+        "bytes": 3708,
+        "sha256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/historical-seal-conservation.json",
+        "bytes": 37199,
+        "sha256": "a6b7d555ed2b5d0f3ef2ada873edfdba4ca5bd01da58840ef16c52e10cb23491",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/launch-successor-r2.mjs",
+        "bytes": 7322,
+        "sha256": "200f46e47c33c8fa0e1e7e8ebed5e9fffd1ca02824705912928eca22ee4bba0e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/lifecycle-pins.rollback.json",
+        "bytes": 207899,
+        "sha256": "93cd402ab3e23d032b15dacda35a189dd6699f7ac0cb30588a7f030cc66113ad",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/lifecycle-pins.successor.json",
+        "bytes": 207958,
+        "sha256": "e0e1dd0a253b82bd1f91ed537a68375b63e4b0c214ac0ca8baefeececb02bbd9",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/manifest.json",
+        "bytes": 12259,
+        "sha256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins",
+          "declaredHistoricalHashOnly"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/open-browser-handoff-r2.mjs",
+        "bytes": 2586,
+        "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/plan.json",
+        "bytes": 16346,
+        "sha256": "fe4c6d88f6c62bf69158821b578c70791f71456ec7e23d8817de02f9064a71cc",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/plan.md",
+        "bytes": 12248,
+        "sha256": "8e7ea46e6c04ab434adcd70fbb0b6e9a99895e7f24c3cd551b5210e8e38ec743",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/proposed-new-helpers.patch",
+        "bytes": 13818,
+        "sha256": "7ae7be002564a8ecea667ed4fde81c1c757045d8a516dc47faae81c5e51e41b3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/public-composite-identity.template.json",
+        "bytes": 1026,
+        "sha256": "60f2eb381cb9172eeb688829d1b8ff5d92446223f5098dcbf3c200a9bd7bc3f9",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/public-source-pins.json",
+        "bytes": 7223,
+        "sha256": "fd95d321de6a97a1996b21a49b509ce79b16d6cbc9ac9e724b4649fb6a873dcc",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.rollback.json",
+        "bytes": 388,
+        "sha256": "efcfad45684de627e37d34a94d98e9b5e902052d44bdbbc0e22b633b7921516d",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/restart-overlay.successor.json",
+        "bytes": 389,
+        "sha256": "341beb22d5bb3b0b9bd81d570be7a3a148cd3f5f71f0401029c4b8847f55e462",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r2/two-package-body-replacements.json",
+        "bytes": 1357,
+        "sha256": "9668d3269477c6214877dd2847fd4fc5222f78f7595cbf0670b8c282758bfb43",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs",
+        "bytes": 2414,
+        "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/closure.json",
+        "bytes": 4663,
+        "sha256": "1796aeedde275e0fc6054266fd8a78c87dcd86c15bb00f6e31b9ceac2a610635",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "parentR3Closure"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root-source-evidence.json",
+        "bytes": 1806,
+        "sha256": "b27305991ccd89a3dd953dffef590e6d302c31f8e9f53486b26e5506dad4739a",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml",
+        "bytes": 223,
+        "sha256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/historical-seal-conservation.json",
+        "bytes": 23849,
+        "sha256": "f8268c21ea80e820b7c40f1ac1a31697232de2d583091ab3989afdaa431d3e09",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs",
+        "bytes": 8457,
+        "sha256": "5b20e6b5a84eaf44d849d19ab8fa2f8b76d4c8a0dd8e46ea94bcfdcb6e70da98",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.rollback.json",
+        "bytes": 208686,
+        "sha256": "ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.successor.json",
+        "bytes": 208745,
+        "sha256": "e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/manifest.json",
+        "bytes": 15313,
+        "sha256": "4cf3b6c1891324d8016ccc4fa8dfcba5f76db9e949f4a1ca69be504b3cd4c7fd",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ClosureManifest"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/open-browser-handoff-r2.mjs",
+        "bytes": 2586,
+        "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles",
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/plan.json",
+        "bytes": 22284,
+        "sha256": "f5436180fd8a140eff6cada8396428e5b4dfca864c6a05143f8609f105d084a3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/plan.md",
+        "bytes": 15580,
+        "sha256": "793e172f20cc64e8b04b29fbbfb31da925abd1a8d8180ed3748a85d921d619a4",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/proposed-new-helpers.patch",
+        "bytes": 14963,
+        "sha256": "fd0f759982e651e92ebc6d5847946dca8b78058b90c5afa8ce5ef3a1c2f970bf",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/public-composite-identity.template.json",
+        "bytes": 1328,
+        "sha256": "b9ed249963f6fc42d92a744dad50327c9047dc088d05d1cd29d532e1fb7bacf8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/public-source-pins.json",
+        "bytes": 9023,
+        "sha256": "4c7c9bde6564128511b211fb1acde3d46b472f3b10c8c2f153cc70e7f1f7e27f",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/r2-to-r3-literals.json",
+        "bytes": 6042,
+        "sha256": "19b796ac741c66f91ed29820f540dcc9da73151ad054275365cb4043d66a6117",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/r2-to-r3.patch",
+        "bytes": 14953,
+        "sha256": "fab9e063c01e4aad8a9d65e310dc6b02c4dc2ecc08c60dfa14d3dc7d77d1e2d5",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json",
+        "bytes": 388,
+        "sha256": "da978b2eba85606ec9a2731e44651862f9af886b966432442be6ca22908e4b7f",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json",
+        "bytes": 389,
+        "sha256": "3d0444c3723a75da5d56200b9c799d4e2ad153a32c7d0ddbb61e92672ace22b5",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles",
+          "successorFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/two-package-body-replacements.json",
+        "bytes": 1485,
+        "sha256": "3f842af429f870790ccff5c2ff955b6e238ac26bca90b77bdcf568cfe6fd817a",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": "/opt/homebrew/opt/node@22/bin/node",
+        "bytes": 84640,
+        "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "successorFuturePublicSourceOrTemplate",
+          "rollbackFuturePublicSourceOrTemplate"
+        ]
+      },
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r2.json",
+        "bytes": 16346,
+        "sha256": "fe4c6d88f6c62bf69158821b578c70791f71456ec7e23d8817de02f9064a71cc",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r2.md",
+        "bytes": 12248,
+        "sha256": "8e7ea46e6c04ab434adcd70fbb0b6e9a99895e7f24c3cd551b5210e8e38ec743",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "declaredHistoricalHashOnly",
+          "r2ClosureFiles"
+        ]
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r3.json",
+        "bytes": 22284,
+        "sha256": "f5436180fd8a140eff6cada8396428e5b4dfca864c6a05143f8609f105d084a3",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r3.md",
+        "bytes": 15580,
+        "sha256": "793e172f20cc64e8b04b29fbbfb31da925abd1a8d8180ed3748a85d921d619a4",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestFiles",
+          "r3ClosureFiles"
+        ]
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-service-plan-r2-independent-source-review.json",
+        "bytes": 68765,
+        "sha256": "4464b7637bc6d6d9585d36ddc954fa2e321281d4568fa92a760c358ab3af65ce",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r2IndependentSeal"
+        ]
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-service-plan-r2-independent-source-review.md",
+        "bytes": 11080,
+        "sha256": "1d9a4657b7259d4135d37ffb37b95c6b5fa47d1bf07f778696b1202e4588a0d2",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r2IndependentSeal"
+        ]
+      },
+      {
+        "path": "lib/client.js",
+        "bytes": 106599,
+        "sha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": "package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": "scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      },
+      {
+        "path": "src/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+        "hashMatch": true,
+        "bytesMatch": true,
+        "groups": [
+          "r3ManifestPublic",
+          "r3PublicSourcePins"
+        ]
+      }
+    ],
+    "mismatches": [],
+    "r3DeclaredMembers": 20,
+    "r3PublicInputs": 32,
+    "historicalHashOnlyRecords": 94,
+    "r2ClosureMembersConserved": 16,
+    "r2IndependentSealsConserved": 2,
+    "futureTargetsNotInspected": [
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.patch.yml",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522-preparation-source/cordis.patch.yml",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.yml",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/package.json",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522-preparation-source/profile-package.json",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.successor.json",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.patch.yml",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522-preparation-source/cordis.patch.yml",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/cordis.yml",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/package.json",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522-preparation-source/profile-package.json",
+        "targetNotInspected": true
+      },
+      {
+        "futureTarget": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.rollback.json",
+        "publicSource": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json",
+        "targetNotInspected": true
+      }
+    ],
+    "launcherSevenOperationsExact": true,
+    "launcherOperations": [
+      {
+        "operation": "replace",
+        "beforeLine": 24,
+        "afterLine": 24,
+        "beforeLiteral": "const lifecyclePin=rollback?'93cd402ab3e23d032b15dacda35a189dd6699f7ac0cb30588a7f030cc66113ad':'e0e1dd0a253b82bd1f91ed537a68375b63e4b0c214ac0ca8baefeececb02bbd9';\n",
+        "afterLiteral": "const lifecyclePin=rollback?'ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7':'e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696';\n"
+      },
+      {
+        "operation": "insert",
+        "beforeLine": 29,
+        "afterLine": 29,
+        "beforeLiteral": "",
+        "afterLiteral": "// This generated PUBLIC root is rewritten by the original CLI, not by this helper.\nconst generatedRoot=base+'home/profiles/web/cordis.yml',rootInfo=lstatSync(generatedRoot);\nif(!rootInfo.isFile() || rootInfo.isSymbolicLink() || realpathSync(generatedRoot)!==generatedRoot || rootInfo.uid!==process.getuid() || (rootInfo.mode&0o077) || rootInfo.size!==223 || hash(generatedRoot)!=='c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e')throw new Error('QA_ORIGINAL_GENERATED_ROOT_CHANGED');\n// The original optional home patch is not an approved configuration layer here.\ntry{lstatSync(base+'home/cordis.patch.yml');throw new Error('QA_UNAPPROVED_HOME_PATCH_FORBIDDEN');}\ncatch(error){if(error.code!=='ENOENT')throw error;}\n"
+      },
+      {
+        "operation": "insert",
+        "beforeLine": 65,
+        "afterLine": 71,
+        "beforeLiteral": "",
+        "afterLiteral": "let child,failed=false,stopRequested=false,stdoutBytes=0,stderrBytes=0;\n// Every error/control path shares this one owned graceful stop request.\nconst requestStop=(signal)=>{if(stopRequested)return;stopRequested=true;child?.kill(signal);};\nconst failClosed=()=>{failed=true;process.exitCode=1;requestStop('SIGTERM');};\nfor(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>requestStop(signal));\n"
+      },
+      {
+        "operation": "delete",
+        "beforeLine": 67,
+        "afterLine": 78,
+        "beforeLiteral": "let child,failed=false,stdoutBytes=0,stderrBytes=0;\nconst failClosed=()=>{failed=true;child?.kill('SIGTERM');process.exitCode=1;};\n",
+        "afterLiteral": ""
+      },
+      {
+        "operation": "insert",
+        "beforeLine": 71,
+        "afterLine": 80,
+        "beforeLiteral": "",
+        "afterLiteral": "// A stop/error observed after opening but before spawn may never start a child.\nif(failed || stopRequested){output.end();errors.end();throw new Error('QA_LAUNCH_STOPPED_BEFORE_SPAWN');}\n"
+      },
+      {
+        "operation": "delete",
+        "beforeLine": 76,
+        "afterLine": 87,
+        "beforeLiteral": "for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));\n",
+        "afterLiteral": ""
+      },
+      {
+        "operation": "replace",
+        "beforeLine": 79,
+        "afterLine": 89,
+        "beforeLiteral": "console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_REQUESTED',generation,pid:child.pid,host:'127.0.0.1',port:3080,originalCLI:true,owner:'root',frontendConnection:'NOT_OBSERVED',criteria87:'HOLD'}));\n",
+        "afterLiteral": "console.log(JSON.stringify({result:'QA_ORIGINAL_CLI_SPAWN_REQUESTED',generation,wrapperPID:process.pid,pid:child.pid,host:'127.0.0.1',port:3080,originalCLI:true,owner:'root',frontendConnection:'NOT_OBSERVED',criteria87:'HOLD'}));\n"
+      }
+    ],
+    "r2ToR3PatchExact": true,
+    "r2ToR3PatchFiles": 6,
+    "newHelperPatchExact": true,
+    "newHelperPatchFiles": 5,
+    "unchangedHelperBodies": [
+      "access-handoff-r2.mjs",
+      "open-browser-handoff-r2.mjs"
+    ],
+    "generatedRootExactOfficialLiteral": true,
+    "generatedRootBytes": 223,
+    "generatedRootSHA256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e",
+    "directTextualImportsUnchanged": {
+      "access-handoff-r2.mjs": [
+        "node:fs/promises",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js"
+      ],
+      "launch-successor-r2.mjs": [
+        "node:child_process",
+        "node:fs",
+        "node:crypto"
+      ],
+      "open-browser-handoff-r2.mjs": [
+        "node:fs/promises",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/lib/index.js"
+      ]
+    },
+    "packageInventory": {
+      "original": 1114,
+      "successor": 1114,
+      "rollback": 1114,
+      "changedPaths": [
+        "lib/client.js",
+        "src/client-entry.cjs"
+      ],
+      "unchangedBodies": 1112,
+      "rollbackExactOriginal": true,
+      "bothR2AndR3InventoriesByteIdentical": true,
+      "compositeManifestAfterRowsExact": 1114,
+      "compositeManifestBeforeRowsExact": 1114,
+      "activeAndStagedPackagesInspected": false,
+      "archiveHashOnlyNotExtracted": true
+    },
+    "privateFileReadOrHash": 0
+  },
+  "findings": [
+    {
+      "id": "F-SR01",
+      "predecessorStatus": "OPEN_SOURCE_BLOCKER_ON_R2",
+      "status": "SOURCE_REMEDIATED_ON_EXACT_R3",
+      "evidence": "Both lifecycle templates now map active generated root to genuine223-byte public PROFILE_ROOT_CONFIG / c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e. Launcher checks owner/canonical/type/mode/size/hash before start; public source literal and generated-profile-root.expected.yml exactly agree. Plan counts one automatic original rewrite/start plus at most one conditional rollback rewrite, separate from zero explicit user-setting writes.",
+      "sourceLocations": [
+        {
+          "path": ".runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs",
+          "line": 29
+        },
+        {
+          "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+          "line": 121
+        },
+        {
+          "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+          "line": 189
+        },
+        {
+          "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+          "line": 207
+        }
+      ],
+      "runtimeBoundary": "Source-derived write count and expected bytes only. No active root was read by auditor; post-start metadata/mtime and actual original write are root-owned NOT_RUN."
+    },
+    {
+      "id": "F-SR02",
+      "predecessorStatus": "OPEN_SOURCE_BLOCKER_ON_R2",
+      "status": "SOURCE_REMEDIATED_ON_EXACT_R3",
+      "evidence": "requestStop sets its latch before child.kill; stream errors, spawn error and root SIGINT/SIGTERM share it. failClosed sets sticky failed/exitCode1 even if stop already requested. Signal handlers install before private log opening; after log-open await, failed||stopRequested refuses spawn and closes streams. Original child argv/env/cwd remains exact, and process.pid is emitted as wrapperPID separately from child.pid. Root plan specifies one direct verified wrapper-parent signal and excludes Ctrl-C/group/concurrent-child signals.",
+      "sourceLocations": [
+        {
+          "path": ".runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs",
+          "line": 71
+        },
+        {
+          "path": ".runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs",
+          "line": 80
+        },
+        {
+          "path": ".runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs",
+          "line": 89
+        },
+        {
+          "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+          "line": 63
+        }
+      ],
+      "runtimeBoundary": "At most one forwarded child signal per new wrapper is established by the literal, not execution. Existing old wrapper is unchanged and unlatched; fresh sole ownership and one direct root parent signal remain mandatory. No promise about old IO errors or disposer success."
+    }
+  ],
+  "affectedEffects": {
+    "imports": "All7 direct import declarations /6 unique specifiers remain byte-for-byte the r2 import lists:4 unique Node builtins + original dsh-app-boot and dsh-web-app roots. No new native/service/Gateway/Connection helper or import effect introduced. Existing source-only direct-graph review carries forward; full original runtime graph is root-owned provenance, not new auditor execution.",
+    "generatedRoot": "Helper adds only guarded metadata and hash reads of the public generated root, no write. Original CLI writes the same223B/c300 constant once/start; root source-derived bound1 normal+1 conditional rollback is correct. Actual poststart bytes/mtime/rewrite are not observed.",
+    "homePatch": "lstat-based absence check admits only ENOENT; existing regular file/directory/symlink/dangling symlink and other failures stop. It does not read contents or install a configuration layer.",
+    "stopAndPID": "One common stop latch spans IO/error/control; sticky failure and explicit failed||stopRequested pre-spawn guard. One real process.pid wrapper identity is published alongside requested original child.pid. PID metadata still needs fresh ownership verification.",
+    "unchangedLaunchAndSecrets": "Fixed original CLI, canonical pinned Node22.22.2/arm64, exact profileweb/loopback3080/no-open args, sparse env, workspace, original provider/native/permission/storage patch, public pin/full installed inventory checks,0700 owner dirs/0600 wx new private logs/access/readiness, existing auth metadata-only, no raw URL/error payload in public output remain unchanged.",
+    "helperBodies": "Access and opener are the exact old reviewed bodies with the same service/runtime generation names. Only source-capsule paths relocate in overlays/public templates; same genuine loader audit/authenticatedUrl/public opener provenance. No generation reset or extra allowance.",
+    "legacyFallback": "Original app-boot LINK_PROJECTION_DIR at599; removeLinkProjections607–616 removes <profile>/.dsh-module-fallback and projection links into its node_modules. Exact future absence check remains root final-freeze responsibility; no legacy data is inspected or removed by auditor.",
+    "normalProspectiveCounts": {
+      "ownedStops": 1,
+      "packageRenames": 2,
+      "originalCLIStarts": 1,
+      "originalGeneratedRootRewrites": 1,
+      "privateAccessWrites": 1,
+      "readinessWrites": 1,
+      "privateCLILogs": 2,
+      "userPackagePatchOptionsWrites": 0,
+      "homeLayerWrites": 0,
+      "taskWorkerNativeModelMutations": 0,
+      "browserBeforeUnlock": 0
+    },
+    "conditionalRollbackAdditionalCounts": {
+      "ownedStops": 1,
+      "packageRenames": 2,
+      "originalCLIStarts": 1,
+      "originalGeneratedRootRewrites": 1,
+      "privateAccessWrites": 1,
+      "readinessWrites": 1,
+      "privateCLILogs": 2
+    },
+    "proposedExternalObservations": {
+      "originalShutdownGraceSeconds": 5,
+      "rootShutdownObservationCapSeconds": 10,
+      "metadataPollsMax": 4,
+      "metadataWaitCapSeconds": 20,
+      "measuredByAuditor": false,
+      "internalProbeOpenerTimerOrLogLifetimeSizeCaps": false
+    }
+  },
+  "compositePackage": {
+    "archivePath": ".runtime/ui-qa-client-cb75/dsh-fishball-0.1.0-preview.1-ui-cb75.tgz",
+    "archiveBytes": 4115975,
+    "archiveSHA256": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c",
+    "manifestPath": ".runtime/ui-qa-client-cb75/composite-package-manifest.json",
+    "manifestBytes": 353203,
+    "manifestSHA256": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4",
+    "classification": "a58 base / cb75 reviewed client;0.1.0-preview.1 COMPOSITE, not whole Git snapshot",
+    "rootReportedActuallyBuilt": true,
+    "installedByAuditor": false,
+    "rootReportsNotInstalled": true,
+    "manifestBeforeAfterRowsVerified": 1114,
+    "unchangedBodies": 1112,
+    "stagedOrActiveContentsIndependentlyInspected": false,
+    "archiveHashOnlyNotExtracted": true
+  },
+  "parentReportedOnly": {
+    "oldCLIPID": 91027,
+    "oldWrapperParentPID": 91018,
+    "PTY": "36229 observation only",
+    "actualOldServiceUntouched": "Parent report, not auditor process observation",
+    "activePublicRoot": "Parent reports223B/c300/0600/canonical; auditor read only public expected/source copies",
+    "unitCells": "Parent reports4EP+11readonlyApply cells; no rerun or native/browser promotion",
+    "Mac": "Locked; no browser action permitted by this review"
+  },
+  "executionHolds": [
+    {
+      "id": "H-R3-01",
+      "status": "HOLD",
+      "requirement": "Root must bind exact reviewed source/evidence seals, actual archive55fc…/manifest424c… and current original host provenance into a fresh concrete execution freeze/GO. Three prospective helper syntax checks are root-owned; none were run by auditor."
+    },
+    {
+      "id": "H-R3-02",
+      "status": "HOLD",
+      "requirement": "Immediately reverify old wrapper91018→CLI91027 singleton127.0.0.1:3080 relationship, UID/executable/source/cwd and current identity. Numeric historical PIDs/PTY36229 alone confer no authority. Send one direct wrapper-parent signal; no Ctrl-C/process-group/direct-concurrent-child/repeated signal."
+    },
+    {
+      "id": "H-R3-03",
+      "status": "HOLD",
+      "requirement": "Before stop, verify staged/old active1114-file inventories, same filesystem, canonical owner-only dirs, unchanged1112 bodies, retention/generation outputs absent and exact copied4 metadata/overlay files. Auditor verified only public archive hashes/manifest/template rows, not staged or active package contents."
+    },
+    {
+      "id": "H-R3-04",
+      "status": "HOLD",
+      "requirement": "Root final freeze must explicitly require metadata-only absence, including no dangling symlink, of .runtime/ui-qa-a58c522/home/profiles/web/.dsh-module-fallback. Original removeLinkProjections uses this path and its node_modules subtree to remove/unlink projections. R3 does not itself add this check; this carries forward the prior root-execution precondition and is not a reopened helper source blocker."
+    },
+    {
+      "id": "H-R3-05",
+      "status": "HOLD",
+      "requirement": "R3 rejects optional home/cordis.patch.yml unless lstat returns ENOENT, including dangling symlinks. Root must verify absence pre-stop and maintain that control; preserve .env exclusion and original user profile package/patch/options. No additional home layer/settings write."
+    },
+    {
+      "id": "H-R3-06",
+      "status": "HOLD",
+      "requirement": "Preserve profile/home/store/key/auth-source identity, original package modes and cancelled task4da34a6d cancellation_requestedV2/authEpoch1 using package-only renames after shutdown. No direct private auth/URL/key/storage read/hash, no setup confirmation, task repair, storage reset, policy grant or native worker dispatch."
+    },
+    {
+      "id": "H-R3-07",
+      "status": "HOLD",
+      "requirement": "Root observes original shutdown5s grace within10s; confirms owned CLI/wrapper exit and portfree before rename/start. At most4 readiness metadata polls within20s, actual wrapper/child/listener/access-ready identity plus poststart public generated-root223B/c300. These are proposed external limits, not an internally timed helper or measured runtime outcome."
+    },
+    {
+      "id": "H-R3-08",
+      "status": "HOLD",
+      "requirement": "Port probe/log opening/original browser opener lack internal deadlines; CLI byte counters do not cap log size/service lifetime. Root concrete GO must bound owner observation/capture. Unknown/error or unsuccessful child termination remains HOLD with no force/retry/alternate port."
+    },
+    {
+      "id": "H-R3-09",
+      "status": "HOLD_MAC_LOCKED",
+      "requirement": "No browser/CUA/opener now. Later actual manual unlock, supported sole UI-owner availability, current metadata CLI PID equals actual owned listener, and both streams captured in new owner-only no-clobber private logs before one unchanged original public opener/navigation."
+    },
+    {
+      "id": "H-R3-10",
+      "status": "HOLD",
+      "requirement": "Actual corrected client/build, complete original connection state/generation, retained setup, native worker and enabled rendered controls require supported browser/native observations. Listener/bootstrap/URL and parent-reported15 unit cells establish no such acceptance."
+    },
+    {
+      "id": "H-R3-11",
+      "status": "HOLD",
+      "requirement": "Conditional rollback is root-owned after one verified stop/freeport, retain composite then restore original, separate unused r2-rollback-1 generation/start/outputs and one original rewrite. Never rerun old launcher, delete used outputs, recreate state, repeat unknown effect or retry denied security/model actions."
+    },
+    {
+      "id": "H-R3-12",
+      "status": "HOLD",
+      "requirement": "Five ORIGINAL_CONNECTION_PUBLIC families, real React/DOM/native/cold unknown/thrown-dependency evidence and all87 accepted0 remain HOLD. Protected finalCODE remains HOLD; this ordinary affected source gate does not reopen, reroute or replace it."
+    }
+  ],
+  "auditorActual": {
+    "sourceTextAndPythonStdlibHashJSONDiffUtilitiesOnly": true,
+    "newReviewFiles": 2,
+    "JSParse": 0,
+    "JSImport": 0,
+    "NodeOrCLI": 0,
+    "tests": 0,
+    "buildPackageInstall": 0,
+    "profileLifecycleOrProcessListenerInspectionOrSignals": 0,
+    "browserCUAOpener": 0,
+    "DBSQL": 0,
+    "networkModelInference": 0,
+    "GitSourceEdits": 0,
+    "privateAuthURLKeyStorageReadsOrHashes": 0
+  },
+  "acceptance": {
+    "all87": "HOLD",
+    "acceptedCriteria": 0,
+    "finalCODE": "HOLD",
+    "correctedClientLoaded": "HOLD",
+    "originalConnection": "HOLD",
+    "nativeWorkerConnected": "HOLD",
+    "enabledControls": "HOLD",
+    "listenerBootstrapByAuditor": "NOT_RUN",
+    "browserDOM": "NOT_RUN",
+    "modelInferenceByAuditor": "NOT_RUN"
+  },
+  "requiredNextOwner": "Root alone freezes current artifact/source/metadata identity, exact bounded control/readiness plan, syntax checks and lifecycle GO. Browser remains deferred until actual unlock/support. No execution is authorized by this source report."
+}

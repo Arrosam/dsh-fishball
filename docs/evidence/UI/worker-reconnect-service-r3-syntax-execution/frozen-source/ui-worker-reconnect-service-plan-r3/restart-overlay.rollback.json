@@ -1,0 +1,17 @@
+[
+  {
+    "disabled": true,
+    "id": "df-qa-private-access-handoff"
+  },
+  {
+    "insert": [
+      {
+        "config": {
+          "generation": "r2-rollback-1"
+        },
+        "id": "df-qa-private-access-handoff-r2",
+        "name": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs"
+      }
+    ]
+  }
+]

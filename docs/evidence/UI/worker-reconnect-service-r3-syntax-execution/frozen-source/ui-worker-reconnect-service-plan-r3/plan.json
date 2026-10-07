@@ -1,0 +1,421 @@
+{
+  "UIOwnerThread": "01a11541-bd03-7669-9a89-7baca8daf0bf",
+  "affectedReviewerFindings": [
+    "F-SR01: original automatic generated profile root differs from wrong68B preparation prerequisite",
+    "F-SR02: unlatched error/root-control paths can signal twice and force original shutdown"
+  ],
+  "authSemantics": {
+    "URLPrinted": false,
+    "cookie": "valid unexpired same-authority cookie may survive restart, without guaranteed browser recovery",
+    "handoffWrites": [
+      "private/fresh-native-access-r2-successor-1.txt",
+      "evidence/access-ready-r2-successor-1.json"
+    ],
+    "newWritesOnly": true,
+    "oldLauncherRerun": false,
+    "oldURL": "never fresh generation proof; old token plus valid cookie may still redirect cleanly",
+    "signingSecret": "existing valid persisted browser-session signing secret reused by original credentials implementation",
+    "token": "original authenticatedUrl; process-specific launchToken changes on restart"
+  },
+  "author": "/root/ui_worker_connection_rootcause",
+  "authorExecutionActual": {
+    "Git": 0,
+    "JSImport": 0,
+    "JSParse": 0,
+    "browserActions": 0,
+    "build": 0,
+    "listenerActions": 0,
+    "modelCalls": 0,
+    "networkCalls": 0,
+    "package": 0,
+    "privateContentsRead": 0,
+    "processSignals": 0,
+    "profileActions": 0,
+    "spawns": 0,
+    "tests": 0
+  },
+  "authoredAtUTC": "2026-10-07T10:52:44.339096+00:00",
+  "classification": {
+    "controlsEnabled": "NOT_RUN",
+    "correctedClientLoaded": "NOT_RUN",
+    "criteria87": "HOLD",
+    "finalCODE": "HOLD",
+    "listener": "NOT_OBSERVED_BY_THIS_LANE",
+    "nativeWorkerConnected": "NOT_RUN"
+  },
+  "conditionalRollback": {
+    "additionalOriginalCLIGeneratedRootRewritesMax": 1,
+    "additionalRenamesMax": 2,
+    "additionalStartsMax": 1,
+    "additionalStopsMax": 1,
+    "automaticRetry": false,
+    "browserOpensBeforeUnlock": 0,
+    "childStopRequestsAcrossAllErrorControlPathsMax": 1,
+    "needsFreshDisposition": "Any generation collision, permission drift, unknown process ownership, failure to release listener, unpreserved profile/db binding, incomplete package seal or unsupported setup state: HOLD; no retry/new port/reset/force kill.",
+    "newRollbackAccessWXWritesMax": 1,
+    "newRollbackMetadataWXWritesMax": 1,
+    "newRollbackPrivateCLILogFilesMax": 2,
+    "operatorProfileConfigWrites": 0,
+    "owner": "root",
+    "partialActivationFailure": "Restore retained a58 directory to canonical path before any start.",
+    "preStopFailure": "Leave old package/process/profile unchanged.",
+    "successorFailure": "Root sends one PID-directed signal only to verified emitted successor wrapperPID; common latch handles prior error stop. After owned child exits/3080 free, retain composite and restore a58 canonical directory. Start original CLI once via same reviewed r3 wrapper --rollback and unchanged r2-rollback-1 overlay/fresh wx outputs. Original CLI automatically rewrites generated root once more to same223B/c300. No original-launcher rerun/output deletion/config setting/state reset.",
+    "terminalCtrlCOrProcessGroupSignals": 0
+  },
+  "fixedRuntime": {
+    "CLI": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/bin.js",
+    "CLIArgs": [
+      "--profile",
+      "web",
+      "--patch",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.successor.json",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "3080",
+      "--no-open"
+    ],
+    "agents": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/agents",
+    "architecture": "arm64",
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/workspace",
+    "existingOwnedCLIPID": 91027,
+    "existingOwnedLauncherPID": 91018,
+    "existingOwnedPTY": "36229 observation only; never Ctrl-C or group signal",
+    "home": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home",
+    "host": "127.0.0.1",
+    "node": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "nodeVersion": "v22.22.2",
+    "port": 3080,
+    "profile": "web",
+    "rootReportedProcessOwnership": {
+      "CLIPID": 91027,
+      "launcherCwd": "repo",
+      "launcherExecutable": "same canonical pinned Node",
+      "launcherParentPID": 91018,
+      "listener": "127.0.0.1:3080 only",
+      "observedBy": "/root only; child did not inspect processes",
+      "user": "Samuel"
+    },
+    "sparseEnv": {
+      "DSH_AGENTS_HOME": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/agents",
+      "DSH_HOME": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home",
+      "DSH_PERMISSION_MODE": "read-only",
+      "DSH_TELEMETRY_DISABLED": "1",
+      "PATH": "/opt/homebrew/bin:/usr/bin:/bin"
+    }
+  },
+  "generatedRootContract": {
+    "UTF8Bytes": 223,
+    "conditionalRollbackAdditionalOriginalWritesMax": 1,
+    "constant": "PROFILE_ROOT_CONFIG",
+    "literal": "# dsh profile root \u2014 an empty entry list. The tree is composed as patches:\n# each bundle in package.json's dsh.profile.bundles, then cordis.patch.yml, then any\n# --patch overlays. Edit cordis.patch.yml, not this file.\n[]\n",
+    "literalSHA256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e",
+    "mtimeMayChange": true,
+    "normalCallSite": {
+      "function": "prepareProfile",
+      "line": 189,
+      "operation": "writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)"
+    },
+    "operatorRootWrites": 0,
+    "originalWritesPerSuccessfulCLIStart": 1,
+    "poststartRequired": "same generated bytes/hash expected; original write may altermtime. Root records observed metadata, not implementation counters.",
+    "prestartRequired": "existing canonical owner-only active generated root exactly matches223B/c300 literal; otherwise HOLD without manual correction",
+    "resolvedProfileAlternateCallSite": {
+      "function": "composeProfile",
+      "line": 207,
+      "operation": "if resolvedProfile is present, write same root constant instead of prepareProfile"
+    },
+    "rootReportedActiveMetadata": {
+      "SHA256MatchesLiteral": true,
+      "bytes": 223,
+      "canonical": true,
+      "mode": "0600",
+      "observedBy": "/root only; source author did not read active public file"
+    },
+    "source": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+    "sourceBytes": 12593,
+    "sourceSHA256": "c394b2aa2ce08a3b1fcc8c544257c7d689dd4d0b1cfaf8602687e65eeaba5aa1",
+    "status": "PUBLIC_SOURCE_LITERAL_NOT_RUNTIME_WRITE_PROOF",
+    "userPackageOrPatchOptionWrites": 0
+  },
+  "importContract": {
+    "newAccessPlugin": [
+      "node:fs/promises",
+      "original @deepseek-ai/dsh-app-boot/lib/index.js; auditStartupEntries"
+    ],
+    "newBrowserHelper": [
+      "node:fs/promises",
+      "original @deepseek-ai/dsh-web-app/lib/index.js; internals.openBrowser"
+    ],
+    "newLaunchModule": [
+      "node:child_process",
+      "node:fs",
+      "node:crypto"
+    ],
+    "originalConnectionCases": "Five ORIGINAL_CONNECTION_PUBLIC families remain HOLD; no model/controller fixture substituted for actual host.",
+    "publicHostGraph": "unchanged original pinned @deepseek-ai packages and package-lock; no copied/invented service constructors or replacement helpers",
+    "sourceReviewLimit": "Direct import/public option signatures source pinned; root must review/import effects before execution. No complete new transitive graph proof claimed by author."
+  },
+  "launchInvocation": [
+    "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs"
+  ],
+  "normalEffectBound": {
+    "additionalListenerOrPort": 0,
+    "browserOpensAfterExplicitAvailability": 1,
+    "browserOpensBeforeUnlock": 0,
+    "childStopRequestsAcrossAllErrorControlPathsMax": 1,
+    "credentialResetOrDirectRead": 0,
+    "dependencyOrNetworkInstall": 0,
+    "metadataPollsMax": 4,
+    "metadataWXWrites": 1,
+    "metadataWaitTotalSecondsMax": 20,
+    "modelCalls": 0,
+    "nativeExecutionCalls": 0,
+    "newHomeLayerWrites": 0,
+    "operatorProfileConfigWrites": 0,
+    "ordinarySupportedFrontendLoads": 1,
+    "originalCLIGeneratedRootRewriteMax": 1,
+    "originalCLIGeneratedRootRewritesPerSuccessfulStart": 1,
+    "originalCLIStarts": 1,
+    "ownedOriginalStops": 1,
+    "packageDirectoryRenames": 2,
+    "privateAccessWXWrites": 1,
+    "privateCLILogWXFiles": 2,
+    "taskMutations": 0,
+    "terminalCtrlCOrProcessGroupSignals": 0,
+    "userPackageOrPatchOptionWrites": 0,
+    "workerMutations": 0
+  },
+  "normalFiniteLifecycle": [
+    {
+      "action": "Fresh independent affected r3 source review; root rechecks measured composite/archive pins and1114-file inventory. Verify old CLI91027 parent91018 and singleton loopback ownership, same filesystem/canonical owner-only paths, no fresh output/retained destination collisions, no layered .env, optional DSH_HOME/cordis.patch.yml ABSENT, and prestart generated PUBLIC root canonical223B/c300. No secret/storage contents or settings writes.",
+      "owner": "root",
+      "step": 1
+    },
+    {
+      "action": "Stage composite outside active profile; create new owner-only service directory and copy four exact sealed metadata/overlay templates. Bind root composite digest outside package. Leave old live package/process unchanged.",
+      "owner": "root",
+      "step": 2
+    },
+    {
+      "action": "Send exactly one PID-directed SIGINT to verified owned old launcher parent91018; its original forwarder signals CLI91027 once. Never terminal Ctrl-C, process-group signal, direct concurrent child signal or repeated cleanup. Original grace5s/root observation cap10s, then confirm exit and3080 free; any ownership/release failure is HOLD.",
+      "owner": "root",
+      "step": 3
+    },
+    {
+      "action": "After shutdown only: rename original canonical dsh-fishball directory to retained-a58-package; rename exact staged composite package to original canonical path. Do not move profile/home or change any file within preserved state. If second rename fails, restore original package immediately.",
+      "owner": "root",
+      "step": 4
+    },
+    {
+      "action": "Start exactly one original CLI with reviewed r3 launch helper, unchanged no-open args/env/cwd/public overlay. Original prepareProfile automatically rewrites generated cordis.yml once to pinned223B/c300; no user package/patch/options or secret/store recreation. Shared stop latch spans stream errors and PID-directed root control. Sticky pre-spawn failure/stop forbids a late child.",
+      "owner": "root",
+      "step": 5
+    },
+    {
+      "action": "At most4 metadata polls/20s: root verifies emitted wrapperPID parent owns new CLI PID and exact127.0.0.1:3080 listener; access-ready generation/CLI PID/startup audit matches. Metadata-only poststart generated PUBLIC root must still be223B/c300; record expected rewrite/may change mtime. Listener/HTTP/bootstrap are not frontend/native/control proof.",
+      "owner": "root",
+      "step": 6
+    },
+    {
+      "action": "HOLD all browser opening and CUA until actual Mac unlocked and supported UI tools available. Then one original public openBrowser handoff with all stdio captured in new private owner-only no-clobber logs; private token never enters tools/messages/evidence. Root checks ready PID equals owned listener first.",
+      "owner": "root and sole UI owner",
+      "step": 7
+    },
+    {
+      "action": "One ordinary original authenticated navigation/reload when supported. Verify actual new bundle/build identity, original complete connection state/generation observation, setup status and fresh worker status/card controls. Loaded SPA, access token exchange, generation metadata or listener do not establish native worker connected or enabled controls.",
+      "owner": "sole UI owner",
+      "step": 8
+    }
+  ],
+  "package": {
+    "activeCanonicalPackage": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/profiles/web/node_modules/dsh-fishball",
+    "changes": [
+      {
+        "after": {
+          "bytes": 106599,
+          "path": "lib/client.js",
+          "sha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8"
+        },
+        "before": {
+          "bytes": 101182,
+          "path": "lib/client.js",
+          "sha256": "a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f"
+        },
+        "path": "lib/client.js"
+      },
+      {
+        "after": {
+          "bytes": 106631,
+          "path": "src/client-entry.cjs",
+          "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+        },
+        "before": {
+          "bytes": 101214,
+          "path": "src/client-entry.cjs",
+          "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+        },
+        "path": "src/client-entry.cjs"
+      }
+    ],
+    "identity": {
+      "base": {
+        "archiveSHA256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+        "files": 1114,
+        "revision": "a58c522f32dd2be2ec29a697ec32ed295e154614"
+      },
+      "classification": "COMPOSITE",
+      "clientOnly": {
+        "files": [
+          {
+            "bytes": 106631,
+            "path": "src/client-entry.cjs",
+            "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+          },
+          {
+            "bytes": 106599,
+            "path": "lib/client.js",
+            "sha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8"
+          }
+        ],
+        "revision": "cb75fdfd97842c89c78d8e96b8c4de1804261ed7"
+      },
+      "criteria87": "HOLD",
+      "displayBuildIdentity": "a58 base / cb75 reviewed client",
+      "extraPackageFiles": 0,
+      "notWholeGitSnapshot": true,
+      "packageBuiltByRoot": "root-only actual packaging, not source-author execution",
+      "packageName": "dsh-fishball",
+      "packageVersion": "0.1.0-preview.1",
+      "publicMetadataLocation": "outside package only",
+      "rootCompositeArchiveBytes": 4115975,
+      "rootCompositeArchiveDigest": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c",
+      "rootCompositeManifestBytes": 353203,
+      "rootCompositeManifestDigest": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4",
+      "schema": 1,
+      "storeOrBackendChange": false
+    },
+    "requiredRootPackageSeal": "Root already produced pinned composite archive/manifest matching all1114 expected file hashes. Root rechecks these exact pins before owned stop. No npm lifecycle/dependency operation.",
+    "retainedFailedSuccessor": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/retained-composite-package",
+    "retainedOriginalPackage": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/retained-a58-package",
+    "rootCompositePins": {
+      "archive": {
+        "bytes": 4115975,
+        "path": ".runtime/ui-qa-client-cb75/dsh-fishball-0.1.0-preview.1-ui-cb75.tgz",
+        "sha256": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c"
+      },
+      "manifest": {
+        "bytes": 353203,
+        "path": ".runtime/ui-qa-client-cb75/composite-package-manifest.json",
+        "sha256": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4"
+      }
+    },
+    "rootPackagingOperator": ".runtime/root-ui-composite-package.py",
+    "rootPackagingOperatorReportedBytes": 6087,
+    "rootPackagingOperatorReportedHashPrefix": "d5a1e3b6",
+    "stagedRootPackage": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-client-cb75/package"
+  },
+  "parentReportedUnitEvidence": {
+    "Apply": {
+      "M": 0,
+      "R": 48,
+      "directory": "docs/evidence/UI/worker-reconnect-apply-r2-execution/",
+      "internalCells": 11,
+      "nodeTestFiles": 1,
+      "pinsUnchanged": 101,
+      "result": "PASS",
+      "rootOnly": true,
+      "syntaxChecks": 3
+    },
+    "EP4": {
+      "C": 0,
+      "E": 3,
+      "P": 16,
+      "R": 61,
+      "S": 19,
+      "directory": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/",
+      "internalCells": 4,
+      "nodeTestFiles": 1,
+      "pinsUnchanged": 135,
+      "result": "PASS",
+      "rootOnly": true,
+      "syntaxChecks": 8
+    },
+    "limit": "Parent report; source author neither reran nor converted unit results to native/browser acceptance."
+  },
+  "preparedFiles": [
+    {
+      "from": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.successor.json",
+      "sha256": "e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696",
+      "to": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/lifecycle-pins.successor.json"
+    },
+    {
+      "from": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.rollback.json",
+      "sha256": "ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7",
+      "to": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/lifecycle-pins.rollback.json"
+    },
+    {
+      "from": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json",
+      "sha256": "3d0444c3723a75da5d56200b9c799d4e2ad153a32c7d0ddbb61e92672ace22b5",
+      "to": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.successor.json"
+    },
+    {
+      "from": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json",
+      "sha256": "da978b2eba85606ec9a2731e44651862f9af886b966432442be6ca22908e4b7f",
+      "to": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-r2/restart-overlay.rollback.json"
+    }
+  ],
+  "preservedState": {
+    "authorizationEpoch": 1,
+    "credentialFile": "same private/browser-auth.yml content and inode; metadata only in launcher",
+    "databaseAndKey": "same paths/dev/inode/key provider/store/ledger; never inspect, delete, restore, reset or checkpoint manually",
+    "oldAccessAndLogs": "unchanged and never read by these helpers",
+    "oldArchive": "unchanged",
+    "oldPackageBodiesAndModes": "retained unchanged; original package directory is moved explicitly after shutdown, then may be restored",
+    "originalProfileConfigFiles": "User profile package.json, cordis.patch.yml and all options unchanged. Generated PUBLIC cordis.yml must match original223B/c300 constant before and after start; original CLI rewrites once/start, so mtime may change.",
+    "profileDirectoryIdentity": "unchanged realpath/dev/inode/UID/name; never move/recreate profile/home",
+    "taskID": "4da34a6d",
+    "taskState": "cancellation_requested",
+    "taskVersion": 2
+  },
+  "publicHomeLayerPrecondition": {
+    "contentRead": false,
+    "danglingSymlinkAllowed": false,
+    "mustBeAbsent": true,
+    "newHomeLayerWrites": 0,
+    "originalPublicReadSite": "dsh-app-boot/lib/index.js readProfilePatches1093\u20131102",
+    "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-qa-a58c522/home/cordis.patch.yml"
+  },
+  "remainingHolds": [
+    "Fresh independent affected r3 review of generated-root/latch/PID-control/home-layer literals",
+    "Root preflight and three helper syntax checks; then reviewed singleton lifecycle if approved. No source-author execution.",
+    "Actual Mac unlock + supported sole UI-owner browser verification",
+    "Original standalone public Connection/Gateway regression gaps",
+    "Real React/native/unknown cold recovery/thrown-dependency boundaries",
+    "All87 final functional/visual criteria and protected finalCODE",
+    "Denied six-call cloud action: no retries/circumvention and no inference claim"
+  ],
+  "rootOwner": "/root",
+  "schema": 1,
+  "sourcePredecessor": {
+    "capsule": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ui-worker-reconnect-service-plan-r2",
+    "closureSHA256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d",
+    "manifestSHA256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c",
+    "untouched": true
+  },
+  "status": "SOURCE_ONLY_R3_REQUIRES_FRESH_INDEPENDENT_AFFECTED_REVIEW",
+  "stopInterface": {
+    "beforeSpawn": "error/stop during log opening is sticky and explicit guarded failure closes streams and prohibits child spawn",
+    "existing": "ONE PID-directed SIGINT to independently verified launcher parent91018; no PTY Ctrl-C/group signal",
+    "failureFlag": "sticky even when a stop was already requested",
+    "forceKillOrRetry": false,
+    "successorAndRollback": "ONE PID-directed SIGINT/SIGTERM only to emitted wrapperPID after ownership revalidation; never directly to child/group. Shared helper requestStop latch permits at most one forwarded child signal across every error/control path."
+  },
+  "supportedFrontendFlow": {
+    "cancelledTask": "readonly verification only; task4da34a6d cancellation_requested V2/authEpoch1 preserved. A new task/worker test is a later root-owned phase after actual enabled controls verified.",
+    "newEmptySetup": "original prepareSetup preview -> explicit exact acceptance -> confirmSetup only for separately approved truly empty profile, outside this plan.",
+    "retainedProfile": "original SetupState.resume should restore existing confirmed storage. Unexpected setup_required/recovery_required/unavailable is HOLD with truthful readonly status; never prepare/confirm create-local-storage on this retained profile.",
+    "workerPolicy": "readonly preview/status then explicit worker policy confirmation only if needed and separately bounded; never automatic grant/confirm/dispatch on recovery."
+  }
+}

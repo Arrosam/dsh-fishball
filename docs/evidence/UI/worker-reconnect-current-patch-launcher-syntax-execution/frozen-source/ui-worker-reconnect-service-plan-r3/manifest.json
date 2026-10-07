@@ -1,0 +1,372 @@
+{
+  "accessAndBrowserHelperByteEquality": true,
+  "affectedFindings": [
+    "F-SR01 generated-root prerequisite/write accounting",
+    "F-SR02 one shared stop latch/pre-spawn failclosed window"
+  ],
+  "author": "/root/ui_worker_connection_rootcause",
+  "authorActualExecution": {
+    "Git": 0,
+    "JSImport": 0,
+    "JSParse": 0,
+    "activePublicProfileReads": 0,
+    "browserActions": 0,
+    "build": 0,
+    "listenerActions": 0,
+    "modelCalls": 0,
+    "networkCalls": 0,
+    "packageCreation": 0,
+    "privateContentsRead": 0,
+    "processActions": 0,
+    "profileActions": 0,
+    "tests": 0
+  },
+  "before": {
+    "capsule16AndDocs2Unchanged": true,
+    "r2Closure": {
+      "bytes": 3708,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/closure.json",
+      "sha256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d"
+    },
+    "r2Manifest": {
+      "bytes": 12259,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/manifest.json",
+      "sha256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c"
+    }
+  },
+  "classification": "MINIMAL_ORIGINAL_HOST_LIFECYCLE_CORRECTION_NOT_RUNTIME_EVIDENCE",
+  "conditionalRollbackAdditionalGeneratedRootRewriteMax": 1,
+  "directImportEffects": "Same three helper direct-import modules as r2; only launcher guards/latch/wrapperPID changed. No import or new Connection/Gateway service helpers, no private hooks. Full original transitive runtime graph not newly proven.",
+  "files": [
+    {
+      "bytes": 2414,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs",
+      "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8"
+    },
+    {
+      "bytes": 1806,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root-source-evidence.json",
+      "sha256": "b27305991ccd89a3dd953dffef590e6d302c31f8e9f53486b26e5506dad4739a"
+    },
+    {
+      "bytes": 223,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/generated-profile-root.expected.yml",
+      "sha256": "c300dcf2ebc5f02062d6591268d29d3db6fe45e0cb138f5467276fe2ba06076e"
+    },
+    {
+      "bytes": 23849,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/historical-seal-conservation.json",
+      "sha256": "f8268c21ea80e820b7c40f1ac1a31697232de2d583091ab3989afdaa431d3e09"
+    },
+    {
+      "bytes": 8457,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/launch-successor-r2.mjs",
+      "sha256": "5b20e6b5a84eaf44d849d19ab8fa2f8b76d4c8a0dd8e46ea94bcfdcb6e70da98"
+    },
+    {
+      "bytes": 208686,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.rollback.json",
+      "sha256": "ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7"
+    },
+    {
+      "bytes": 208745,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.successor.json",
+      "sha256": "e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696"
+    },
+    {
+      "bytes": 2586,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/open-browser-handoff-r2.mjs",
+      "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986"
+    },
+    {
+      "bytes": 22284,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/plan.json",
+      "sha256": "f5436180fd8a140eff6cada8396428e5b4dfca864c6a05143f8609f105d084a3"
+    },
+    {
+      "bytes": 15580,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/plan.md",
+      "sha256": "793e172f20cc64e8b04b29fbbfb31da925abd1a8d8180ed3748a85d921d619a4"
+    },
+    {
+      "bytes": 14963,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/proposed-new-helpers.patch",
+      "sha256": "fd0f759982e651e92ebc6d5847946dca8b78058b90c5afa8ce5ef3a1c2f970bf"
+    },
+    {
+      "bytes": 1328,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/public-composite-identity.template.json",
+      "sha256": "b9ed249963f6fc42d92a744dad50327c9047dc088d05d1cd29d532e1fb7bacf8"
+    },
+    {
+      "bytes": 9023,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/public-source-pins.json",
+      "sha256": "4c7c9bde6564128511b211fb1acde3d46b472f3b10c8c2f153cc70e7f1f7e27f"
+    },
+    {
+      "bytes": 6042,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/r2-to-r3-literals.json",
+      "sha256": "19b796ac741c66f91ed29820f540dcc9da73151ad054275365cb4043d66a6117"
+    },
+    {
+      "bytes": 14953,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/r2-to-r3.patch",
+      "sha256": "fab9e063c01e4aad8a9d65e310dc6b02c4dc2ecc08c60dfa14d3dc7d77d1e2d5"
+    },
+    {
+      "bytes": 388,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json",
+      "sha256": "da978b2eba85606ec9a2731e44651862f9af886b966432442be6ca22908e4b7f"
+    },
+    {
+      "bytes": 389,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json",
+      "sha256": "3d0444c3723a75da5d56200b9c799d4e2ad153a32c7d0ddbb61e92672ace22b5"
+    },
+    {
+      "bytes": 1485,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r3/two-package-body-replacements.json",
+      "sha256": "3f842af429f870790ccff5c2ff955b6e238ac26bca90b77bdcf568cfe6fd817a"
+    },
+    {
+      "bytes": 15580,
+      "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r3.md",
+      "sha256": "793e172f20cc64e8b04b29fbbfb31da925abd1a8d8180ed3748a85d921d619a4"
+    },
+    {
+      "bytes": 22284,
+      "path": "docs/evidence/UI/worker-reconnect-service-handoff-source-r3.json",
+      "sha256": "f5436180fd8a140eff6cada8396428e5b4dfca864c6a05143f8609f105d084a3"
+    }
+  ],
+  "historicalFilesConserved": 94,
+  "installedInventoriesUnchanged": true,
+  "operatorUserConfigSettingWrites": 0,
+  "originalGeneratedRootRewritesPerSuccessfulStart": 1,
+  "packageCompositePins": {
+    "archiveBytes": 4115975,
+    "archiveSHA256": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c",
+    "changedBodies": 2,
+    "files": 1114,
+    "manifestBytes": 353203,
+    "manifestSHA256": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4",
+    "wholeGitSnapshotClaim": false
+  },
+  "permittedAdditionalPreconditions": [
+    "optional home-level patch must be absent",
+    "PID-directed wrapper control only"
+  ],
+  "publicInputs": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "role": "repository rules",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 1166,
+      "path": "scripts/build-client.mjs",
+      "role": "unchanged original emitter; read/hash only",
+      "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+    },
+    {
+      "bytes": 2691,
+      "path": "package.json",
+      "role": "public package metadata; not a deployable whole-current-branch package",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "bytes": 106631,
+      "path": "src/client-entry.cjs",
+      "role": "root-adopted exact reviewed r2 source",
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "bytes": 106599,
+      "path": "lib/client.js",
+      "role": "root-emitted exact reviewed r2 bundle",
+      "sha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8"
+    },
+    {
+      "bytes": 4706,
+      "path": ".runtime/ui-qa-a58c522/launch.mjs",
+      "role": "old original public launcher; must not rerun",
+      "sha256": "a93b3eb98dfcc113d201557562798767b6eaf185e3cf1cd3924bbfc13d1fd4dd"
+    },
+    {
+      "bytes": 2067,
+      "path": ".runtime/ui-qa-a58c522/access-handoff.mjs",
+      "role": "old original public access helper; preserve",
+      "sha256": "4e7bc9e802eef5770ccbd7e7396d6653157e54f19a91be09eba9ea16f4ecb481"
+    },
+    {
+      "bytes": 206427,
+      "path": ".runtime/ui-qa-a58c522-preparation-source/source-pins.json",
+      "role": "public original installation inventory",
+      "sha256": "e7fc41c20af487d1464abb9c64cb455c27ed0d6be799e73f1a6d73cc4c7b6d62"
+    },
+    {
+      "bytes": 68,
+      "path": ".runtime/ui-qa-a58c522-preparation-source/cordis.yml",
+      "role": "historical68B preparation source; explicitly not the active/generated root prerequisite",
+      "sha256": "752d0dd14f655a392c55432801ceb46909f1d593bae640e05fae949fba970e70"
+    },
+    {
+      "bytes": 5809,
+      "path": ".runtime/ui-qa-a58c522-preparation-source/cordis.patch.yml",
+      "role": "original public profile overlay source",
+      "sha256": "eaa33ba83cad740d0b0aa94d5fbc86918ecfbf76c609709d1f4cfdcf0f76da43"
+    },
+    {
+      "bytes": 361,
+      "path": ".runtime/ui-qa-a58c522-preparation-source/profile-package.json",
+      "role": "original public profile package source",
+      "sha256": "e0167fd1a092e1526abf7ca49357b3934314aec4937253994ca4433608023cdd"
+    },
+    {
+      "bytes": 8719,
+      "path": ".runtime/ui-worker-public-contract-original/public-signatures-r1.md",
+      "role": "corrected original public companion",
+      "sha256": "979899b4cd7170f95d4e95c9360fc4020f99673df9615d65ec52710c2e38f920"
+    },
+    {
+      "bytes": 3699,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/lib/types/index.d.ts",
+      "role": "original exported openBrowser/internals public signature",
+      "sha256": "0e53c01dacb4bb838d3ee321e8a7d2ab764f18aff33a826f882b9177cfa87b0b"
+    },
+    {
+      "bytes": 4114465,
+      "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0"
+    },
+    {
+      "bytes": 388886,
+      "path": ".runtime/ni2-install/host/package-lock.json",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "bytes": 11697,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/bin.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f"
+    },
+    {
+      "bytes": 12593,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "c394b2aa2ce08a3b1fcc8c544257c7d689dd4d0b1cfaf8602687e65eeaba5aa1"
+    },
+    {
+      "bytes": 186357,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "619d80619320e953e5ddcee7c71e4b97e90e722a7d17da8819f3bb47e00587be"
+    },
+    {
+      "bytes": 20780,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-base/cordis.patch.yml",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "9c2be64f46a193eff3cca190c26e697e8e8eee25c9b40149dfdb56f8142c252d"
+    },
+    {
+      "bytes": 22549,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192"
+    },
+    {
+      "bytes": 10774,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-web-app/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85"
+    },
+    {
+      "bytes": 35140,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+    },
+    {
+      "bytes": 32699,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea"
+    },
+    {
+      "bytes": 6755,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-credentials/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "c1008e2a37c62ba13e61c2ffdd7451c886e214f131c30ced1a5a67bf06a8df5e"
+    },
+    {
+      "bytes": 13284,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+    },
+    {
+      "bytes": 60361,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+    },
+    {
+      "bytes": 24077,
+      "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "role": "unchanged original public host/archive dependency",
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+    },
+    {
+      "bytes": 353203,
+      "path": ".runtime/ui-qa-client-cb75/composite-package-manifest.json",
+      "role": "root-produced measured composite package manifest; source metadata hash only",
+      "sha256": "424c679c2add09e3163823c940cdecc4bacce1d18375c478d11ff0af188fefe4"
+    },
+    {
+      "bytes": 4115975,
+      "path": ".runtime/ui-qa-client-cb75/dsh-fishball-0.1.0-preview.1-ui-cb75.tgz",
+      "role": "root-produced measured composite archive; source hash only",
+      "sha256": "55fc6802acc54bf10a63ba8a3a37e62c4dbb656aefc01d11605fc5296766f40c"
+    },
+    {
+      "bytes": 6087,
+      "path": ".runtime/root-ui-composite-package.py",
+      "role": "root-owned previously independently reviewed packager; not executed by author",
+      "sha256": "d5a1e3b6b813e034f4dc728d12a365a1637e6e6d1fd4d39282f115bfc32fd1ba"
+    },
+    {
+      "bytes": 12259,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/manifest.json",
+      "role": "unchanged r2 manifest",
+      "sha256": "a633b2ded48bb24505345abac59e7b8a86b71fc8e57f6e81dfc8fd70b5eda80c"
+    },
+    {
+      "bytes": 3708,
+      "path": ".runtime/ui-worker-reconnect-service-plan-r2/closure.json",
+      "role": "unchanged r2 closure",
+      "sha256": "b2243597743274e15528f3fdb0e1dcbc41ff788d0f8c9c589606cb5697ff5d2d"
+    }
+  ],
+  "r2ClosureArtifactPinsMatched": 16,
+  "readiness": {
+    "actualBrowserOpen": "HOLD_MAC_LOCKED",
+    "correctedClientLoaded": "HOLD",
+    "criteria87": "HOLD",
+    "enabledControls": "HOLD",
+    "finalCODE": "HOLD",
+    "nativeWorkerConnected": "HOLD"
+  },
+  "runtimeGenerationNamesUnchanged": true,
+  "schema": 1,
+  "selfHash": "External closure.json pins completed manifest.",
+  "sharedStopRequestBound": 1,
+  "status": "SOURCE_ONLY_R3_FROZEN_REQUIRES_FRESH_INDEPENDENT_AFFECTED_REVIEW",
+  "writeBoundary": [
+    "NEW .runtime/ui-worker-reconnect-service-plan-r3/",
+    "NEW docs/evidence/UI/worker-reconnect-service-handoff-source-r3.md",
+    "NEW docs/evidence/UI/worker-reconnect-service-handoff-source-r3.json"
+  ]
+}

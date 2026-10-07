@@ -1,0 +1,280 @@
+{
+  "schema": "df.ui.public-patch-amendment.independent-affected-source-review.v1",
+  "dateUTC": "2026-10-07",
+  "reviewer": {
+    "identity": "/root/ni5_r3_affected_review",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "role": "Independent narrow affected SOURCE reviewer",
+    "independentOf": [
+      "root executor",
+      "amendment author"
+    ]
+  },
+  "status": "ACCEPTED_WITH_BOUNDARIES_SOURCE_ONLY",
+  "sourceBlockers": [],
+  "rootMaintenanceDisposition": "SOURCE_AMENDMENT_ACCEPTED_ROOT_OWNS_NEW_ONCE_ONLY_PLAN_AND_RUNTIME",
+  "runtimeAcceptanceGranted": false,
+  "scope": "Exact two public patch template rows, two launcher digest literals, fixed root operator-r2 provenance/source-copy bindings and owner plan-r2; no broad historical review repeated or new general verification layer.",
+  "acceptance": {
+    "all87": {
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    "finalCODE": "PERMANENT_BLOCK_UNTOUCHED",
+    "Mac": "LOCKED_REQUIRES_MANUAL_UNLOCK",
+    "browserFrontendNativeConnectedEnabledControls": "HOLD"
+  },
+  "byteVerification": {
+    "amendmentPin": {
+      "path": ".runtime/ui-worker-reconnect-public-patch-amendment/amendment.json",
+      "bytes": 5611,
+      "sha256": "5c24e655221af7c2d477553caa6b3f753ff9715c4c178edab0e1b9d7c159e924"
+    },
+    "authorFilePins": [
+      {
+        "path": ".runtime/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.successor.json",
+        "bytes": 208755,
+        "sha256": "4d89f7d9004c5e7823ff11ed1b863d9420c8073a2efba7335276587ec1e619d9"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.rollback.json",
+        "bytes": 208696,
+        "sha256": "aac72c03074059f61205abc550b42dbf6c841219a3c304bc6b93af5eb2737ac6"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-public-patch-amendment/launch-successor-r2.mjs",
+        "bytes": 8457,
+        "sha256": "06769626b327dc4bfe9c726f0cf4e2ec6c2db792dfb76149df657487bb8871dd"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-public-patch-amendment/README.md",
+        "bytes": 1226,
+        "sha256": "0ead239c030e069eee8934bb6327b9daf7fc92f6c147f2a5d3920c0f703599dc"
+      }
+    ],
+    "publicSnapshotPin": {
+      "path": ".runtime/ui-worker-reconnect-public-profile-current/cordis.patch.yml",
+      "bytes": 6091,
+      "sha256": "3f67b95920158694e9b5af41a3856db11941a43d18756da61c1cd0c15c50c1f5"
+    },
+    "rootSemanticObservationPin": {
+      "path": ".runtime/ui-worker-reconnect-public-profile-current/root-public-semantic-observation.json",
+      "bytes": 1015,
+      "sha256": "cf364f12c0545dcf5ad925e299341c91b89232ee36407a9b74f148cc06601b18"
+    },
+    "rootSemanticObservationAttribution": "Root actual YAML2.9.1 parse/isDeepStrictEqual, not re-executed or YAML-parsed by reviewer",
+    "exactTemplateRowChanges": [
+      {
+        "mode": "successor",
+        "before": {
+          "path": ".runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.successor.json",
+          "bytes": 208745,
+          "sha256": "e0f38c126490ea407b250eee6f253b887619ac97d93e384a761cca570f3db696"
+        },
+        "after": {
+          "path": ".runtime/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.successor.json",
+          "bytes": 208755,
+          "sha256": "4d89f7d9004c5e7823ff11ed1b863d9420c8073a2efba7335276587ec1e619d9"
+        },
+        "exactOneRowFields": [
+          "bytes",
+          "sha256",
+          "publicSource"
+        ],
+        "otherFieldsUnchanged": true
+      },
+      {
+        "mode": "rollback",
+        "before": {
+          "path": ".runtime/ui-worker-reconnect-service-plan-r3/lifecycle-pins.rollback.json",
+          "bytes": 208686,
+          "sha256": "ced55314939c2efb5472f18018c77ec5afdc4fd667b5a0f7fe2129b028ed01a7"
+        },
+        "after": {
+          "path": ".runtime/ui-worker-reconnect-public-patch-amendment/lifecycle-pins.rollback.json",
+          "bytes": 208696,
+          "sha256": "aac72c03074059f61205abc550b42dbf6c841219a3c304bc6b93af5eb2737ac6"
+        },
+        "exactOneRowFields": [
+          "bytes",
+          "sha256",
+          "publicSource"
+        ],
+        "otherFieldsUnchanged": true
+      }
+    ],
+    "launcherExactTwoDigestReconstruction": true,
+    "launcherPin": {
+      "path": ".runtime/ui-worker-reconnect-public-patch-amendment/launch-successor-r2.mjs",
+      "bytes": 8457,
+      "sha256": "06769626b327dc4bfe9c726f0cf4e2ec6c2db792dfb76149df657487bb8871dd"
+    },
+    "oldOperatorPin": {
+      "path": ".runtime/root-ui-reconnect-owner-operation.py",
+      "bytes": 12154,
+      "sha256": "341d46438f823c3d903f81305c091d081ecb9774ff998b1e5300102cd09ff141"
+    },
+    "newOperatorPin": {
+      "path": ".runtime/root-ui-reconnect-owner-operation-r2.py",
+      "bytes": 12906,
+      "sha256": "1360e8b555d7b4b0524a202f800c0022667b2175e89e71dbc570213b7f4d1225"
+    },
+    "operatorWholeLiteralReconstructionExact": true,
+    "stopActivateSuffixByteEqual": true,
+    "oldPlanPin": {
+      "path": ".runtime/root-ui-reconnect-lifecycle-plan.json",
+      "bytes": 4706,
+      "sha256": "5b904460897b5e16873b4af5d0acdd565dde7a482381effa1150827e00680bca"
+    },
+    "newPlanPin": {
+      "path": ".runtime/root-ui-reconnect-lifecycle-plan-r2.json",
+      "bytes": 5470,
+      "sha256": "c481ea0c6061ff7b64d04d3851f31c5c6b34ec93a08e233336a6330f5cc19b5e"
+    },
+    "planChangedExistingKeys": [
+      "launchOnceAfterConfirmedActivation",
+      "operations",
+      "operator",
+      "status"
+    ],
+    "planAddedKeys": [
+      "amendment",
+      "historicalFailure"
+    ],
+    "planOtherFieldsUnchanged": true,
+    "unchangedAccessOpenerOverlayPins": [
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/access-handoff-r2.mjs",
+        "bytes": 2414,
+        "sha256": "744c5d9e3ba8015212fb0f5e138eb72060f1ab1d0674911bbff0c9a3ab7fabc8"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/open-browser-handoff-r2.mjs",
+        "bytes": 2586,
+        "sha256": "1221ccfeee79ca3da04123a3f9338d8be1f14641e5246f877b0782e3f4200986"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.successor.json",
+        "bytes": 389,
+        "sha256": "3d0444c3723a75da5d56200b9c799d4e2ad153a32c7d0ddbb61e92672ace22b5"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-service-plan-r3/restart-overlay.rollback.json",
+        "bytes": 388,
+        "sha256": "da978b2eba85606ec9a2731e44651862f9af886b966432442be6ca22908e4b7f"
+      }
+    ],
+    "preservedOriginalReviewPins": [
+      {
+        "path": "docs/evidence/UI/worker-reconnect-owner-lifecycle-independent-source-review.md",
+        "bytes": 7093,
+        "sha256": "fdf30c610a7c76ee1611a463a7c4535f2922aeab5a7218dc348d4c3f8a5e0222"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-owner-lifecycle-independent-source-review.json",
+        "bytes": 22770,
+        "sha256": "26c68a86c8187589deac53d2378ed68bbcd44afe7ac2e97c1aa908992868e393"
+      }
+    ],
+    "operatorHelpersParsedImportedExecuted": false,
+    "livePrivateProfileProcessBrowserModelNetworkGitActions": false
+  },
+  "affectedDisposition": {
+    "twoTemplates": "Only one publicInputs row per mode changes bytes5809->6091, SHAeaa33->3f67, publicSource to sealed current snapshot. Actual path and all other JSON fields including1114 installed rows unchanged.",
+    "launcher": "Entire source exactly old launcher plus only rollback/successor template digest substitutions; no runtime instruction/latch/guard changes.",
+    "newOperator": "Entire source exactly four reviewed literal substitutions: fixed AMENDMENT constant; comment/four exact pins/load source; two conditional copy/compare references. Source choice only lifecycle-pins names in unchanged four-name list; overlays remain original r3.",
+    "stopActivate": "Byte-identical suffix and inherited full guard logic; one parentSIGINT/no repeated effect/ownership/private metadata/reversible renames preserved.",
+    "newPlan": "Only launch/operator path/pin/status existing fields plus amendment/history provenance added; every effect/bound/failure/readiness/private/UI field unchanged.",
+    "binding": "New operator pins exact amendment, both templates and amended launcher; prepare copies new pinned templates; new plan starts amended launcher whose two digests match them. No old-digest mismatch remains.",
+    "activeConfigEdits": 0,
+    "runtimeBackendPackageChanges": 0
+  },
+  "semanticObservation": {
+    "pin": {
+      "path": ".runtime/ui-worker-reconnect-public-profile-current/root-public-semantic-observation.json",
+      "bytes": 1015,
+      "sha256": "cf364f12c0545dcf5ad925e299341c91b89232ee36407a9b74f148cc06601b18"
+    },
+    "snapshot": {
+      "path": ".runtime/ui-worker-reconnect-public-profile-current/cordis.patch.yml",
+      "bytes": 6091,
+      "sha256": "3f67b95920158694e9b5af41a3856db11941a43d18756da61c1cd0c15c50c1f5"
+    },
+    "attribution": "Root actual original yaml2.9.1 parse and Node deepStrictEqual/isDeepStrictEqual reported in pinned public observation; not parsed/imported/re-executed by reviewer.",
+    "all38ExistingRowsUnchangedRootObserved": true,
+    "only39thRow": {
+      "name": "@deepseek-ai/dsh-client-ui-settings-general",
+      "id": "ui-settings-general",
+      "config": {
+        "welcomeNoticeVersion": "2026-09-28.1"
+      }
+    },
+    "permissionModelStorageOptionChangesRootReported": 0,
+    "purpose": "Preserve already-current public welcome acknowledgement without settings rewrite or reverting to preparation copy."
+  },
+  "historicalFailure": {
+    "originalOperator": {
+      "path": ".runtime/root-ui-reconnect-owner-operation.py",
+      "bytes": 12154,
+      "sha256": "341d46438f823c3d903f81305c091d081ecb9774ff998b1e5300102cd09ff141"
+    },
+    "originalPlan": {
+      "path": ".runtime/root-ui-reconnect-lifecycle-plan.json",
+      "bytes": 4706,
+      "sha256": "5b904460897b5e16873b4af5d0acdd565dde7a482381effa1150827e00680bca"
+    },
+    "originalIndependentReview": [
+      {
+        "path": "docs/evidence/UI/worker-reconnect-owner-lifecycle-independent-source-review.md",
+        "bytes": 7093,
+        "sha256": "fdf30c610a7c76ee1611a463a7c4535f2922aeab5a7218dc348d4c3f8a5e0222"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-owner-lifecycle-independent-source-review.json",
+        "bytes": 22770,
+        "sha256": "26c68a86c8187589deac53d2378ed68bbcd44afe7ac2e97c1aa908992868e393"
+      }
+    ],
+    "rootReportedOncePrepare": "PUBLIC_PIN_SIZE_CHANGED,6091 current vs5809 required;0 maintenance outputs/copies/signals/renames/starts; old session alive.",
+    "originalGuard": "Preserved correct fail-closed behavior; original plan historical and not retried.",
+    "newPlan": "Fresh narrow reviewed exact-pin successor, not same-plan retry or policy-denial workaround."
+  },
+  "rootAdditionalChecksAttributed": {
+    "amendedLauncherCheck": "One actual --check PASS reported by root",
+    "twoDigestReconstructionAndTwoRowComparison": "PASS reported by root",
+    "unchangedPins": 17,
+    "performedByReviewer": false
+  },
+  "retainedBoundaries": [
+    "Actual fixed public configuration/package/private metadata/owned PID guards must still pass before any effect.",
+    "Root new once-only prepare/stop/activate and later original CLI launch; child performs none.",
+    "Unconfirmed/error/denial remains HOLD; no repeated signal/force/alternate endpoint or automatic launch rollback.",
+    "Existing direct inverse directory rename recovery before a start unchanged; original retained package/data/key/setup/recovery paths preserved.",
+    "Original generated public root223B/c300 and one original rewrite per successful start unchanged; operator settings writes0.",
+    "Original r3 access/opener/overlay bytes and endpoint/profile/generations unchanged.",
+    "Mac locked; browser/client loaded/frontend/native worker/controls observations not accepted.",
+    "All87 accepted0/HOLD and permanent final CODE block unchanged."
+  ],
+  "performedByReviewer": {
+    "readExactPublicSourceDiffsAmendmentAndEvidence": true,
+    "fileBytesJSONMetadataAndLiteralReconstruction": true,
+    "YAMLParsed": false,
+    "operatorOrJSParsedImportedExecuted": false,
+    "runtimeTestsBuildPrivateLiveProfileProcessListenerBrowserNetworkModelGitActions": false,
+    "protectedFinalCODETouched": false,
+    "wroteOnlyNewEvidenceAndTemporaryMetadata": true
+  },
+  "evidenceOnlyVerification": {
+    "language": "Separate Python -E bytes/source text/evidence JSON metadata, no operator or application execution",
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "exitCode": 0,
+    "exactCommand": "python3 -E - <<'PY'\nfrom pathlib import Path\nimport json,hashlib,difflib\nsha=lambda b:hashlib.sha256(b).hexdigest()\ndef pin(p):\n p=Path(p);b=p.read_bytes();return {'path':str(p),'bytes':len(b),'sha256':sha(b)}\ndef checked(p,n,h):\n x=pin(p);assert x['bytes']==n and x['sha256']==h;return x\na=Path('.runtime/ui-worker-reconnect-public-patch-amendment');b=Path('.runtime/ui-worker-reconnect-service-plan-r3')\nam=checked(a/'amendment.json',5611,'5c24e655221af7c2d477553caa6b3f753ff9715c4c178edab0e1b9d7c159e924')\nm=json.loads((a/'amendment.json').read_bytes());pins=[checked(x['path'],x['bytes'],x['sha256']) for x in m['files']]\nsnapshot=checked(m['publicApprovedSnapshot']['path'],6091,'3f67b95920158694e9b5af41a3856db11941a43d18756da61c1cd0c15c50c1f5')\nobservation=checked(m['rootSemanticObservation']['path'],1015,'cf364f12c0545dcf5ad925e299341c91b89232ee36407a9b74f148cc06601b18')\nobs=json.loads(Path(observation['path']).read_bytes());assert obs['allExistingRowsDeepStrictEqual'] is True and obs['oldRows']==38 and obs['newRows']==39 and obs['onlyAddedRow']==m['rootConfirmedDifference']\nrowChanges=[]\nfor x in m['templateRowOnlyChanges']:\n old=json.loads((b/f\"lifecycle-pins.{x['mode']}.json\").read_bytes());new=json.loads((a/f\"lifecycle-pins.{x['mode']}.json\").read_bytes())\n expected=json.loads(json.dumps(old));hits=0\n for i,row in enumerate(expected['publicInputs']):\n  if row==x['beforeRow']:expected['publicInputs'][i]=x['afterRow'];hits+=1\n assert hits==1 and expected==new\n assert {k for k in x['beforeRow'] if x['beforeRow'][k]!=x['afterRow'][k]}=={'bytes','sha256','publicSource'}\n rowChanges.append({'mode':x['mode'],'before':pin(b/f\"lifecycle-pins.{x['mode']}.json\"),'after':pin(a/f\"lifecycle-pins.{x['mode']}.json\"),'exactOneRowFields':['bytes','sha256','publicSource'],'otherFieldsUnchanged':True})\noldLauncher=(b/'launch-successor-r2.mjs').read_text();newLauncher=(a/'launch-successor-r2.mjs').read_text();expected=oldLauncher\nfor x in m['launcherDigestLiteralChangesOnly']:\n assert expected.count(x['beforeLiteral'])==1 and newLauncher.count(x['afterLiteral'])==1\n expected=expected.replace(x['beforeLiteral'],x['afterLiteral'],1)\nassert expected==newLauncher\noldOp=checked('.runtime/root-ui-reconnect-owner-operation.py',12154,'341d46438f823c3d903f81305c091d081ecb9774ff998b1e5300102cd09ff141')\nnewOp=checked('.runtime/root-ui-reconnect-owner-operation-r2.py',12906,'1360e8b555d7b4b0524a202f800c0022667b2175e89e71dbc570213b7f4d1225')\no=Path(oldOp['path']).read_text();n=Path(newOp['path']).read_text();e=o\nchanges=[\n (\"CAPSULE = ROOT / '.runtime/ui-worker-reconnect-service-plan-r3'\\n\",\"CAPSULE = ROOT / '.runtime/ui-worker-reconnect-service-plan-r3'\\nAMENDMENT = ROOT / '.runtime/ui-worker-reconnect-public-patch-amendment'\\n\"),\n (\"    plans = {mode: json.loads((CAPSULE / f'lifecycle-pins.{mode}.json').read_text()) for mode in ['successor', 'rollback']}\\n\",\"    # Narrow amendment preserves the current public welcome acknowledgement.\\n    pin(AMENDMENT / 'amendment.json', '5c24e655221af7c2d477553caa6b3f753ff9715c4c178edab0e1b9d7c159e924', 5611)\\n    pin(AMENDMENT / 'lifecycle-pins.successor.json', '4d89f7d9004c5e7823ff11ed1b863d9420c8073a2efba7335276587ec1e619d9', 208755)\\n    pin(AMENDMENT / 'lifecycle-pins.rollback.json', 'aac72c03074059f61205abc550b42dbf6c841219a3c304bc6b93af5eb2737ac6', 208696)\\n    pin(AMENDMENT / 'launch-successor-r2.mjs', '06769626b327dc4bfe9c726f0cf4e2ec6c2db792dfb76149df657487bb8871dd', 8457)\\n    plans = {mode: json.loads((AMENDMENT / f'lifecycle-pins.{mode}.json').read_text()) for mode in ['successor', 'rollback']}\\n\"),\n (\"            output.write((CAPSULE / name).read_bytes())\",\"            output.write(((AMENDMENT if name.startswith('lifecycle-pins.') else CAPSULE) / name).read_bytes())\"),\n (\"        require((SERVICE / name).read_bytes() == (CAPSULE / name).read_bytes(), 'COPIED_TEMPLATE_CHANGED')\",\"        require((SERVICE / name).read_bytes() == ((AMENDMENT if name.startswith('lifecycle-pins.') else CAPSULE) / name).read_bytes(), 'COPIED_TEMPLATE_CHANGED')\")\n]\nfor before,after in changes:\n assert e.count(before)==1;e=e.replace(before,after,1)\nassert e==n\nassert o.partition(\"elif phase == 'stop':\")[2]==n.partition(\"elif phase == 'stop':\")[2]\noldPlan=checked('.runtime/root-ui-reconnect-lifecycle-plan.json',4706,'5b904460897b5e16873b4af5d0acdd565dde7a482381effa1150827e00680bca')\nnewPlan=checked('.runtime/root-ui-reconnect-lifecycle-plan-r2.json',5470,'c481ea0c6061ff7b64d04d3851f31c5c6b34ec93a08e233336a6330f5cc19b5e')\np0=json.loads(Path(oldPlan['path']).read_bytes());p1=json.loads(Path(newPlan['path']).read_bytes())\nchanged=[k for k in p0 if p0[k]!=p1.get(k)]\nassert set(changed)=={'launchOnceAfterConfirmedActivation','operations','operator','status'}\nassert set(p1)-set(p0)=={'amendment','historicalFailure'}\nassert p1['operator']==newOp and p1['operationInvocationsMaxEach']==1\nassert p1['launchOnceAfterConfirmedActivation'][0]==p0['launchOnceAfterConfirmedActivation'][0] and p1['launchOnceAfterConfirmedActivation'][1].endswith('/.runtime/ui-worker-reconnect-public-patch-amendment/launch-successor-r2.mjs')\nfor x,y in zip(p0['operations'],p1['operations']):\n assert x[:2]==y[:2]==['python3','-E'] and x[3]==y[3] and y[2].endswith('/.runtime/root-ui-reconnect-owner-operation-r2.py')\nassert p1['amendment']['sha256']==am['sha256'] and p1['amendment']['currentPublicPatchSHA256']==snapshot['sha256'] and p1['amendment']['currentPublicPatchBytes']==6091\npriorMD=checked('docs/evidence/UI/worker-reconnect-owner-lifecycle-independent-source-review.md',7093,'fdf30c610a7c76ee1611a463a7c4535f2922aeab5a7218dc348d4c3f8a5e0222')\npriorJSON=checked('docs/evidence/UI/worker-reconnect-owner-lifecycle-independent-source-review.json',22770,'26c68a86c8187589deac53d2378ed68bbcd44afe7ac2e97c1aa908992868e393')\nretained=[pin(b/x) for x in ['access-handoff-r2.mjs','open-browser-handoff-r2.mjs','restart-overlay.successor.json','restart-overlay.rollback.json']]\nprior=json.loads(Path(priorJSON['path']).read_bytes())['publicSourceVerification']\nfor x in retained:\n assert x in prior['threeHelperPins']+prior['fourCopiedPublicTemplatePins']\nr={'amendmentPin':am,'authorFilePins':pins,'publicSnapshotPin':snapshot,'rootSemanticObservationPin':observation,'rootSemanticObservationAttribution':'Root actual YAML2.9.1 parse/isDeepStrictEqual, not re-executed or YAML-parsed by reviewer','exactTemplateRowChanges':rowChanges,'launcherExactTwoDigestReconstruction':True,'launcherPin':pin(a/'launch-successor-r2.mjs'),'oldOperatorPin':oldOp,'newOperatorPin':newOp,'operatorWholeLiteralReconstructionExact':True,'stopActivateSuffixByteEqual':True,'operatorLiteralChanges':changes,'operatorUnifiedDiff':''.join(difflib.unified_diff(o.splitlines(keepends=True),n.splitlines(keepends=True),fromfile=oldOp['path'],tofile=newOp['path'])),'oldPlanPin':oldPlan,'newPlanPin':newPlan,'planChangedExistingKeys':changed,'planAddedKeys':sorted(set(p1)-set(p0)),'planOtherFieldsUnchanged':True,'unchangedAccessOpenerOverlayPins':retained,'preservedOriginalReviewPins':[priorMD,priorJSON],'operatorHelpersParsedImportedExecuted':False,'livePrivateProfileProcessBrowserModelNetworkGitActions':False}\nPath('/tmp/root-ui-public-patch-amendment-independent-byte-verification.json').write_text(json.dumps(r,indent=2)+'\\n')\nprint(json.dumps({'amendment':am,'newOperator':newOp,'newPlan':newPlan,'templateChanges':'one row each,only3fields','launcher':'exact2digestliterals','operator':'exactfixedprovenance/source-selectionchanges','stopActivate':'BYTE_IDENTICAL','planOtherFields':'UNCHANGED','originalFailedReview':'PRESERVED','newSourceBlockers':0,'reviewerRuntime':False},indent=2))\nPY\n",
+    "results": "Exact pins, two row-only template reconstructions, two literal launcher reconstruction, complete operator-r2 literal reconstruction, unchanged stop/activate suffix, limited plan diff and historical original review preservation MATCH."
+  },
+  "markdownCompanion": {
+    "path": "docs/evidence/UI/worker-reconnect-public-patch-amendment-independent-source-review.md",
+    "bytes": 5199,
+    "sha256": "981d37be9af121bebf74013ca31ef8737381cf171f1126cd5b373973aa28dea9"
+  }
+}
