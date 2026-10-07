@@ -1,0 +1,30 @@
+{
+  "contractVersion": "df.ni3-runtime-affected-result-verification/v1",
+  "checkedAt": "2026-10-07T04:28:46.038340+00:00",
+  "freezeSha256": "c8d1b04946f4e805c63551a24b3e4ae3aa27540c307860de30e540fa036bcbfa",
+  "resultsSha256": "5900f43b033558562c03b21dedfd9c868c332d8f9728c14f8a2ee9e9a3349ca4",
+  "commandsAttempted": 5,
+  "stoppedAtCommand": 5,
+  "parseChecks": 2,
+  "directoryCases": {
+    "pass": 7,
+    "fail": 0
+  },
+  "disabledLifecycleCases": {
+    "pass": 1,
+    "fail": 0
+  },
+  "nativeChainCases": {
+    "pass": 0,
+    "fail": 1,
+    "failure": "MEMORY_UNAVAILABLE at MemoryAdapter constructor during runtime initialization",
+    "agentModelProviderOperationsReached": false
+  },
+  "inputsVerified": 91,
+  "publicFilesVerified": 27577,
+  "linksVerified": 12,
+  "streamsVerified": 10,
+  "inputChanges": [],
+  "publicChanges": [],
+  "scope": "Affected directory7retest plus originaldisabledlifecycle/nativechain firstexecution. No first-run client15/source5/build repeats; chain failed before native work. All original first failures and holds retained."
+}

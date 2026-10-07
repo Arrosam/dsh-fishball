@@ -1,0 +1,48 @@
+--- a/test/native-runtime-directory.test.mjs
++++ b/test/native-runtime-directory.test.mjs
+@@ -37,6 +37,7 @@
+   const ctx = new Context(), baseUrl = new URL('../', import.meta.url).href;
+   ctx.baseUrl = baseUrl; ctx.logger.exporters?.clear?.();
+   const profile = { dir, name: 'ni3-directory-synthetic' }; ctx.provide('profileContext', profile);
++  const verifiedProfile = Object.freeze({ ...profile });
+   t.after(async () => { try { await ctx.fiber.dispose(); } finally { rmSync(dir, { recursive: true, force: true }); } });
+   const install = async (plugin, config) => { const fiber = ctx.plugin(plugin, config); await fiber; assert.equal(fiber.state, 2); return fiber; };
+   await install(Projections); await install(Sessions); await install(Approval, { policy: 'never' });
+@@ -53,7 +54,7 @@
+   const run = callback => runInstalledWorkerInvocation(sourceCtx, guard, callback);
+   const isAlive = () => sourceCtx.fiber.state === 2 && sourceCtx.fiber.uid !== null;
+   const choice = role => ({ enabled: true, selection: { provider: 'df-testing-local', model: models[role], agentPreset: 'ni3-directory-empty', reasoningEffort: 'deterministic', maxOutputTokens: role === 'producer' ? 128 : 2048 }, environment: { root: environment, cwd: environment }, persistence: { directory, compression: 'none', retention: 'owner-managed' }, bounds: { requestBytes: 131072, resultBytes: 2048 }, policy: { maxRuntimeMs: 60000, maxUsageUnits: 600000, maxCostEstimateMicros: 0 }, charges: { runtimeMs: 1000, usageUnits: 135168 }, previewTtlMs: 60000, grantTtlMs: 60000 });
+-  const resolve = (role, previous, directoryBinding, changes = {}) => run(() => resolveInstalledWorkerFacts({ ctx: sourceCtx, choice: choice(role), profile, isAlive, previous, ...(directoryBinding === undefined ? {} : { directoryBinding }), assertInvocation: () => assertInstalledWorkerInvocation(sourceCtx), ...changes }));
++  const resolve = (role, previous, directoryBinding, changes = {}) => run(() => resolveInstalledWorkerFacts({ ctx: sourceCtx, choice: choice(role), profile: verifiedProfile, isAlive, previous, ...(directoryBinding === undefined ? {} : { directoryBinding }), assertInvocation: () => assertInstalledWorkerInvocation(sourceCtx), ...changes }));
+   let serial = 0;
+   const claim = facts => run(() => facts.claimDirectory(Object.fromEntries(['taskRef','actionRef','claimRef','generationRef'].map(key => [key, hash('ni3-directory-' + key + '-' + (++serial))]))));
+   const assertNoExecution = () => { assert.equal(streams, 0); assert.equal(ctx.agents.list().length, 0); assert.equal(ctx.sessions.list().length, 0); assert.deepEqual(ctx.tools.schemas(), []); };
+@@ -134,7 +135,7 @@
+   await assert.rejects(backend.run(() => br.review.assertCurrent()), denied);
+   const source = await fixture(t), sr = await roles(source); await source.claim(sr.producer);
+   await source.providerEntry.update({ disabled: true }); await source.ctx.loader.await();
+-  await assert.rejects(source.run(() => sr.repair.assertCurrent()), denied);
++  await assert.rejects(source.run(() => sr.repair.assertCurrent()), error => error instanceof BootstrapError && error.code === 'WORKER_REQUEST_DENIED');
+   const owner = await fixture(t), or = await roles(owner); owner.revokeOwner();
+   await assert.rejects(owner.claim(or.review), error => error.code === 'OPERATOR_REQUIRED'); assert.equal(existsSync(owner.directory), false);
+   owner.assertNoExecution();
+--- a/src/runtime-plugin.mjs
++++ b/src/runtime-plugin.mjs
+@@ -103,7 +103,7 @@
+         const publish = receipt => {
+           checkOwner();
+           if (operation === 'plan' && origin) {
+-            const pair = origin === 'audit' ? frozenCopy(store.readAuditInput(owner,{taskRef:captured.taskRef,inputRecordRef:captured.spec.executionInput.recordRef})) : null;
++            const pair = origin === 'audit' ? frozenCopy(store.readAuditInput(hostHandle,{taskRef:captured.taskRef,inputRecordRef:captured.spec.executionInput.recordRef})) : null;
+             originalPlans.set(`${captured.taskRef}:${captured.spec.actionRef}`,{origin,spec:frozenCopy(captured.spec),actionDigest:receipt.actionDigest,pair});
+           }
+           if(['control','revise'].includes(operation))for(const[key,value]of protectedContexts)if(value.task.taskRef===captured.taskRef)protectedContexts.delete(key);
+@@ -247,7 +247,7 @@
+           // This facade forwards to the one original authoritative store. Only
+           // the actual original grantAction success creates an observer event.
+           const previewStore = Object.freeze({ snapshot: (...args) => store.snapshot(...args), readData: (...args) => store.readData(...args), grantAction: (handle, input) => observe('grant', input, () => store.grantAction(handle, input)) });
+-          preview = new ApprovalPreview({ store: previewStore, ownerHandle: owner, readAuditInput: installedAuditSelection?.enabled ? input=>{checkOwner();const out=store.readAuditInput(owner,input);checkOwner();return out;} : undefined, resolve: (spec,task)=>spec.executionInput ? auditInstalled.previewResolver(spec,task) : installed.previewResolver(spec,task), ttlMs: installed.previewTtlMs, isAlive: installedAlive, knownSecrets: forbiddenSecrets });
++          preview = new ApprovalPreview({ store: previewStore, ownerHandle: owner, readAuditInput: installedAuditSelection?.enabled ? input=>{checkOwner();const out=store.readAuditInput(hostHandle,input);checkOwner();return out;} : undefined, resolve: (spec,task)=>spec.executionInput ? auditInstalled.previewResolver(spec,task) : installed.previewResolver(spec,task), ttlMs: installed.previewTtlMs, isAlive: installedAlive, knownSecrets: forbiddenSecrets });
+         } catch { installedSealed = true; throw new BootstrapError('RUNTIME_ADAPTER_INVALID'); }
+       } else if (previewResolver) preview = new ApprovalPreview({ store, ownerHandle: owner, resolve: previewResolver, ttlMs: previewTtlMs, isAlive: alive, knownSecrets: forbiddenSecrets });
+       if(installedAuditInstaller&&!installedWorkerInstaller){

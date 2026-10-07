@@ -1,0 +1,13 @@
+{
+  "reason": "Root reviewed89291a constructor-only authentic loading metadata proposal; affected5commandrun8PASS1FAIL preserved unchanged",
+  "files": {
+    "src/runtime-plugin.mjs": {
+      "sha256": "4bb9aea5130e420cdcb30ae05e555e1dbfdb664543eed9069ef3c52fa973e71d",
+      "bytes": 54046
+    },
+    "root-repaired-execution-closure.json": {
+      "sha256": "eb66e4cda383a05e723269b699e0a826bc68fd47f1c1b7f1f8272db2eb487cd1",
+      "bytes": 113156
+    }
+  }
+}

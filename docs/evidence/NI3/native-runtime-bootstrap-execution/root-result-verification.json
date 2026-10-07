@@ -1,0 +1,15 @@
+{
+  "contractVersion": "df.ni3-runtime-bootstrap-result-verification/v1",
+  "checkedAt": "2026-10-07T04:49:24.637408+00:00",
+  "freezeSha256": "39f39c57b3c61589fbc00ad5a656d6b683899f61999c9e967954196cacd9aff4",
+  "resultsSha256": "16c3227d7f3ad245a8e3cf671fd0cdefbf2ecf569a12a2b65f8483115be6a55b",
+  "commandsAttempted": 2,
+  "stoppedAtCommand": 2,
+  "inputsVerified": 102,
+  "publicFilesVerified": 27577,
+  "linksVerified": 12,
+  "streamFilesVerified": 4,
+  "inputChanges": [],
+  "publicChanges": [],
+  "scope": "Changed-runtime parse and affected original native chain only; first directory failures/bootstrap failure and directory7/lifecycle1 passing history retained. No client/source/build or passing directory/lifecycle repeat; all87/CODE/UI/native acceptance held."
+}

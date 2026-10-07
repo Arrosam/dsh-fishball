@@ -1,0 +1,177 @@
+{
+  "contractVersion": "df.ni3-native-runtime-bootstrap-memory-rootcause/v1",
+  "date": "2026-10-07",
+  "author": "/root/ni3_runtime_failure_rootcause",
+  "status": "SOURCE_REVIEW_COMPLETE_NO_REPAIR_OR_EXECUTION_BY_THIS_LANE",
+  "scope": "MemoryAdapter constructor/initialization, projection facade currentness, original Cordis lifecycle, and original memoryBinding principal roles only.",
+  "capsule": ".runtime/ni3-native-runtime",
+  "reviewedSourceClosureSha256": "eb66e4cda383a05e723269b699e0a826bc68fd47f1c1b7f1f8272db2eb487cd1",
+  "affectedFreezeSha256": "c8d1b04946f4e805c63551a24b3e4ae3aa27540c307860de30e540fa036bcbfa",
+  "pinsAndFindingsAttributeOriginalAffectedRun": true,
+  "rootRun": {
+    "commandsPlanned": 5,
+    "commandsExecuted": 5,
+    "parseChecks": { "commands": [1, 2], "exitCode": 0 },
+    "directory": { "command": 3, "passed": 7, "failed": 0, "preserved": true },
+    "disabledLifecycle": { "command": 4, "passed": 1, "failed": 0, "preserved": true },
+    "originalChain": { "command": 5, "passed": 0, "failed": 1, "code": "MEMORY_UNAVAILABLE", "name": "MemoryAdapterError", "preserved": true },
+    "stoppedAtFirstNonzeroCommand": 5,
+    "retryOrReproByThisLane": false,
+    "laterChainOutcomeClaimed": false
+  },
+  "finding": {
+    "id": "NI3-RF-MEMORY-BOOTSTRAP",
+    "classification": "SOURCE_CONFIRMED_INSTALLATION_PHASE_CURRENTNESS_MISMATCH",
+    "rawFailureLocation": "src/memory.mjs:47 constructor binding read, called from src/runtime-plugin.mjs:146 during fixture installation at test/native-runtime-original-chain.test.mjs:33",
+    "rootCause": "Persistent projectionStore requires ACTIVE state2 for the constructor-time metadata call, while original Cordis executes the plugin/effect body in LOADING state1.",
+    "underlyingSourceError": "BootstrapError SERVICE_DISPOSED from assertAlive before original store.memoryBinding is reached",
+    "visibleErrorMapping": "MemoryAdapter.guarded at line38 lacks SERVICE_DISPOSED in SAFE_CODES and maps it to MEMORY_UNAVAILABLE.",
+    "sourceTrace": [
+      "runtime-plugin:75 actual original effect registration",
+      "runtime-plugin:76,84-86 actual owner/coordinator/host principal creation/registration",
+      "runtime-plugin:89-95 active flag plus strict ACTIVE2/non-null UID alive/assertAlive/checkOwner",
+      "runtime-plugin:141-147 persistent facade followed by actual synchronous adapter initialization",
+      "context:133-139 constructor checks availability/configuration but invokes no store method",
+      "memory:43-47 constructor immediately calls guarded store.memoryBinding(handle)",
+      "runtime-plugin:143 facade assertAlive throws before forwarding outside preparation",
+      "memory:37-38 error code maps to MEMORY_UNAVAILABLE"
+    ],
+    "coordinatorRoleMismatch": false,
+    "roleEvidence": {
+      "runtimeStoreSha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "storeSource": "src/runtime-store.mjs:1368-1372",
+      "storeAllowedRoles": ["owner", "coordinator", "host"],
+      "adapterSource": "src/memory.mjs:48-54",
+      "adapterAllowedRoles": ["owner", "coordinator", "host"],
+      "UNAUTHORIZEDAlreadyPreservedByGuard": true,
+      "syntheticBindingNeeded": false
+    },
+    "genuinePriorCaller": {
+      "path": ".runtime/ni3-native-runtime/original/runtime-plugin.mjs",
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2",
+      "lines": "123-124",
+      "contract": "Constructor received actual original store directly before the active-only projection facade was added."
+    },
+    "unreachedRuntimePhases": [
+      "worker/audit installed-runtime installer calls",
+      "operator bridge publication",
+      "explicit worker/audit operations",
+      "later native chain assertions and planned streams"
+    ],
+    "fixtureSetupDistinction": "Original fixture host-service and local synthetic-provider registrations precede runtime install; registration is distinct from executing a native/model stream.",
+    "repairedRuntimeResult": "NOT_RUN_OR_REVIEWED_BY_THIS_LANE"
+  },
+  "originalCordisContract": {
+    "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+    "sourceSha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+    "declarationPath": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+    "declarationSha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4",
+    "states": { "PENDING": 0, "LOADING": 1, "ACTIVE": 2, "FAILED": 3, "DISPOSED": 4, "UNLOADING": 5 },
+    "loadingTransition": "source:1335-1356 starts _reload, sets state1, then awaits before invoking original callback",
+    "callbackEffectExecution": "source:1066-1071,1142-1153 runs actual callback and synchronous effect iterator during loading",
+    "activeTransition": "source:1364-1370,1288-1292 updates state after callback completion; successful original epoch yields state2",
+    "lifetime": "source:1012,1078,1131-1133 UID is null after disposal; original assertActive accepts non-null UID during installation"
+  },
+  "proposal": {
+    "path": ".runtime/ni3-runtime-memory-bootstrap-proposal/literal-memory-bootstrap.patch",
+    "sha256": "89291a8074b5a95152cc510098f3ff064768e6542770b0b3e1239241454fd81a",
+    "status": "LITERAL_TEXT_NOT_APPLIED_OR_EXECUTED_BY_THIS_LANE",
+    "targetPathBase": ".runtime/ni3-native-runtime",
+    "targetFiles": ["src/runtime-plugin.mjs"],
+    "reviewedTargetSha256": "4bb9aea5130e420cdcb30ae05e555e1dbfdb664543eed9069ef3c52fa973e71d",
+    "hunks": 2,
+    "addedLines": 16,
+    "removedLines": 2,
+    "mechanism": "Private synchronous construction window; at most one exact original memoryBinding(coordinatorHandle) read in state1 with active/non-null UID; consume before forward, recheck lifecycle after, close in finally.",
+    "originalStoreCallPreserved": true,
+    "originalReceiverAndExactPrincipalPreserved": true,
+    "originalAdapterBindingValidationPreserved": true,
+    "generalAliveAssertAliveCheckOwnerChanged": false,
+    "originalInvocationChanged": false,
+    "storeRoleListsOrPrincipalRegistrationChanged": false,
+    "MemoryAdapterErrorMappingChanged": false,
+    "runtimeMetadataOrDataForwardingGuardsChanged": false,
+    "syntheticOrCachedBindingIntroduced": false,
+    "publicInitialisationFlagOrToolIntroduced": false,
+    "restorationRetryOrLateFinalizerIntroduced": false,
+    "nonRunnableCaseDesign": {
+      "path": ".runtime/ni3-runtime-memory-bootstrap-proposal/proposed-cases.md",
+      "sha256": "c06ffd7c10e758fe53ca65367ec527c798e690891b434417694b89cc85fcf6d6",
+      "status": "SOURCE_ONLY_NOT_MATERIALIZED_NOT_RUN_BY_THIS_LANE"
+    }
+  },
+  "effectBounds": {
+    "thisLaneRuntimeOrParserOrTestOrBuildInvocations": 0,
+    "thisLaneDatabaseProfileProviderAgentIteratorListenerGitNetworkInvocations": 0,
+    "thisLaneExistingSourceEdits": 0,
+    "newFilesOnly": [
+      "docs/evidence/NI3/native-runtime-bootstrap-memory-rootcause.md",
+      "docs/evidence/NI3/native-runtime-bootstrap-memory-rootcause.json",
+      ".runtime/ni3-runtime-memory-bootstrap-proposal/literal-memory-bootstrap.patch",
+      ".runtime/ni3-runtime-memory-bootstrap-proposal/proposed-cases.md"
+    ],
+    "constructor": {
+      "ContextAssemblerStoreCalls": 0,
+      "MemoryAdapterIntendedPrincipalMetadataCalls": 1,
+      "originalFailureReachedStoreBindingMethod": false,
+      "memoryDataReadOrMutationInitiatedByConstructor": false,
+      "maximumAdapterByteLimit": 262144,
+      "maximumAdapterTokenLimit": 131072,
+      "originalChainByteLimit": 65536,
+      "originalChainTokenLimit": 131072,
+      "namespaceHexCharacters": 64
+    },
+    "proposal": {
+      "maximumLoadingMetadataCallsPerConfiguredConstruction": 1,
+      "loadingPermittedMethodOnly": "memoryBinding",
+      "argumentsRequired": "Exactly one, identity-equal to private registered coordinatorHandle",
+      "lifecycleRequired": "active=true, LOADING1, non-null original fiber UID before/after",
+      "consumeBeforeOriginalCall": true,
+      "windowClosedInFinally": true,
+      "secondLoadingReadOrClosedLifecycleRefuses": true,
+      "ordinaryActiveConstructionUsesOriginalGuard": true,
+      "allLaterBindingAndDataCallsUseOriginalGuard": true,
+      "newStoreTaskDataMutationModelAgentSessionProviderRegistrationIteratorListenerCleanupEffects": 0
+    }
+  },
+  "inputPinsForOriginalAffectedRun": {
+    ".runtime/ni3-native-runtime/root-repaired-execution-closure.json": "eb66e4cda383a05e723269b699e0a826bc68fd47f1c1b7f1f8272db2eb487cd1",
+    ".runtime/ni3-native-runtime/src/runtime-plugin.mjs": "4bb9aea5130e420cdcb30ae05e555e1dbfdb664543eed9069ef3c52fa973e71d",
+    ".runtime/ni3-native-runtime/src/memory.mjs": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+    ".runtime/ni3-native-runtime/src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+    ".runtime/ni3-native-runtime/src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    ".runtime/ni3-native-runtime/src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+    ".runtime/ni3-native-runtime/src/installed-memory.mjs": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+    ".runtime/ni3-native-runtime/test/native-runtime-original-chain.test.mjs": "5155043b548c832479a2c56e61fa261523eb8569109ae1bd5e44306bc0496272",
+    ".runtime/ni3-native-runtime/test/native-runtime-original-lifecycle.test.mjs": "41226d5e1370b47c4ebe625627949404262a81cd8cdda84dad962057f2ca3f40",
+    ".runtime/ni3-native-runtime/test/native-runtime-directory.test.mjs": "a9965e0d45c96da3ccd8fb2e87ded9df08dae05876f23aae8279f182fea2b302",
+    "docs/evidence/NI3/native-runtime-affected-execution/root-execution-freeze.json": "c8d1b04946f4e805c63551a24b3e4ae3aa27540c307860de30e540fa036bcbfa",
+    "docs/evidence/NI3/native-runtime-affected-execution/command-results.json": "5900f43b033558562c03b21dedfd9c868c332d8f9728c14f8a2ee9e9a3349ca4",
+    "docs/evidence/NI3/native-runtime-affected-execution/command-03.stdout.txt": "cbcef16957e007bb39ef332519aa124fa39da4ed278c7323036aecbf0a375b9c",
+    "docs/evidence/NI3/native-runtime-affected-execution/command-04.stdout.txt": "a978f0cd010fa10db8106e908dd7d7719255ed88684986599e01421f0f34359d",
+    "docs/evidence/NI3/native-runtime-affected-execution/command-05.stdout.txt": "7df659031380e5840d04419d71f9ee3c0d1d1f28ca70548bb42443dc628d8ed9",
+    "docs/evidence/NI3/native-runtime-affected-execution/command-05.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "previousDeliverablesPreserved": {
+    "docs/evidence/NI3/native-runtime-first-failure-rootcause.md": "0ec89b912993d7c99d26acfeb118ff465cddcc42898c0ea9bd87f12557429553",
+    "docs/evidence/NI3/native-runtime-first-failure-rootcause.json": "cb38bfe617297ada861e1cf23649dc0d090a797df13820482915e2ca83876248",
+    ".runtime/ni3-runtime-failure-proposal/literal-repairs.patch": "c6e917b5826f3bb0d8e239a5df3177d80c375c71850b9a176e63c8f15ffe3524"
+  },
+  "scopeBoundaries": {
+    "noExecutionReproNewToolOrRunner": true,
+    "noMemoryContentsDatabaseRowsReceiptsResultEnvelopesOrCODEInvestigation": true,
+    "noLaterNativeProviderChainLogicInvestigation": true,
+    "noInferenceNetworkListenerProfileGit": true,
+    "noBlockedActionRerunOrRerouting": true,
+    "qaOriginal3080ProfileUntouchedByThisLane": true,
+    "rootSoleRepairAndGOOwner": true,
+    "originalDirectoryAndLifecyclePassesAndOneChainFailurePreserved": true
+  },
+  "remainingHold": [
+    "Literal source proposal and non-runnable designs need independent review.",
+    "Root alone may archive/apply/refreeze and grant exact bounded execution.",
+    "No constructor repair or repaired-chain runtime success is demonstrated by this lane.",
+    "Original affected command05 failure and directory/lifecycle passes remain authoritative for that run.",
+    "Any later chain result or independent failure must be separately retained; no acceptance or blocked-lane conclusion is made here."
+  ]
+}

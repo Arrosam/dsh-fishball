@@ -1,0 +1,54 @@
+TAP version 13
+# (node:68104) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: original absent directory allocation survives producer aggregate spread and review repair fresh-review refresh
+ok 1 - original absent directory allocation survives producer aggregate spread and review repair fresh-review refresh
+  ---
+  duration_ms: 424.597375
+  type: 'test'
+  ...
+# Subtest: original review-first allocation is the same authenticated backend leaf for later repair and producer
+ok 2 - original review-first allocation is the same authenticated backend leaf for later repair and producer
+  ---
+  duration_ms: 205.462958
+  type: 'test'
+  ...
+# Subtest: genuine preexisting leaf stays approved and source-issued token refuses copied or foreign provenance
+ok 3 - genuine preexisting leaf stays approved and source-issued token refuses copied or foreign provenance
+  ---
+  duration_ms: 367.5945
+  type: 'test'
+  ...
+# Subtest: original allocated leaf mode replacement symlink and unowned creation remain closed refusals
+ok 4 - original allocated leaf mode replacement symlink and unowned creation remain closed refusals
+  ---
+  duration_ms: 303.96175
+  type: 'test'
+  ...
+# Subtest: actual original backend source lifecycle and original owner carrier refuse stale allocation access
+ok 5 - actual original backend source lifecycle and original owner carrier refuse stale allocation access
+  ---
+  duration_ms: 396.532083
+  type: 'test'
+  ...
+# Subtest: original profile environment and backend configuration drift cannot adopt the retained directory token
+ok 6 - original profile environment and backend configuration drift cannot adopt the retained directory token
+  ---
+  duration_ms: 399.178292
+  type: 'test'
+  ...
+# Subtest: another genuine original contribution context cannot reuse an authentic source directory token
+ok 7 - another genuine original contribution context cannot reuse an authentic source directory token
+  ---
+  duration_ms: 128.190458
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2419.009291
