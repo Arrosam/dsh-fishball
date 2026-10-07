@@ -1,0 +1,67 @@
+{
+  "contractVersion": "df.ni6-bootstrap-diagnostic-root-supported-invocation/v1",
+  "argv": [
+    "/opt/homebrew/bin/python3",
+    "-I",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
+    ".runtime/root-ni6-bootstrap-diagnostic-r1-execution-plan.json"
+  ],
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "beforeClock": "2026-10-07 19:43:43 UTC",
+  "requestMs": 1791402223200,
+  "rootPlanSha256": "533935f191a09823d7c93e8ed28545de0b33eb992a2a09a48d36e3217088336c",
+  "calls": [
+    {
+      "chunkId": "33481a",
+      "sessionId": 33451,
+      "exitCode": null,
+      "wallTimeSeconds": 1.000538989,
+      "outputCharacters": 0
+    },
+    {
+      "chunkId": "8277e0",
+      "sessionId": 33451,
+      "exitCode": null,
+      "wallTimeSeconds": 5.001458141,
+      "outputCharacters": 0
+    },
+    {
+      "chunkId": "745f2c",
+      "sessionId": null,
+      "exitCode": 1,
+      "wallTimeSeconds": 1.915200459,
+      "outputCharacters": 0
+    }
+  ],
+  "finished": true,
+  "actualDriverExitCode": 1,
+  "returnMs": 1791402240387,
+  "wholeSupportedInvocationIntervalSeconds": 17.187,
+  "intervalQualification": "Orchestrator wall-clock interval from supported request to actual return, including approval/transport/polling; separate from preterminal driver scalar and not a claim of interruptible OS calls.",
+  "afterClock": "2026-10-07 19:44:00 UTC",
+  "result": "FAILED_HOLD",
+  "runtimePolicyRejection": false,
+  "marker": {
+    "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-invocation/v1",
+    "failureCode": "EXECUTOR_AGGREGATE_DEADLINE",
+    "finalized": false,
+    "finishedAt": "2026-10-07T19:44:00.321608+00:00",
+    "startedAt": "2026-10-07T19:43:52.335513+00:00",
+    "state": "FAILED_HOLD"
+  },
+  "markerSha256": "066edbfb99fe3cc866d50bbaa66c6553a8f5808e90b07a3f4bc24aa1ef39a97c",
+  "selectedNodeCommandsStarted": 0,
+  "selectedNodeSyntax": "NOT_RUN",
+  "selectedDiagnostic": "NOT_RUN",
+  "privateRuntimePresent": false,
+  "privateCapturePresent": false,
+  "diagnosticResultPresent": false,
+  "executionEvidencePresent": false,
+  "observedStage": "EXECUTOR_PREFLIGHT",
+  "stageDeadlineSeconds": 8,
+  "originalR3Cause": "NOT_ESTABLISHED",
+  "replayOrMarkerReset": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED"
+}

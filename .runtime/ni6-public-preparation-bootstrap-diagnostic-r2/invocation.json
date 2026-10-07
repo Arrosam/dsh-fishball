@@ -1,0 +1,8 @@
+{
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-invocation/v1",
+  "failureCode": "EXECUTOR_COMMAND_NONZERO",
+  "finalized": false,
+  "finishedAt": "2026-10-07T20:34:09.462177+00:00",
+  "startedAt": "2026-10-07T20:33:52.843885+00:00",
+  "state": "FAILED_HOLD"
+}

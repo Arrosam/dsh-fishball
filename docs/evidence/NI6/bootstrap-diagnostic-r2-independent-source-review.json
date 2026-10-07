@@ -1,0 +1,200 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "LIVE02": "NOT_RUN_BLOCKED_AFTER_SECOND_REJECTION",
+  "accepted": 0,
+  "actualR2DiagnosticResult": null,
+  "all87": "HOLD",
+  "applicationBehaviorAndGuardsUnchanged": true,
+  "author": "/root/bootstrap_budget_fix_author",
+  "budget": {
+    "diagnosticByteCap": 512,
+    "diagnosticTotalSeconds": 35,
+    "nodeAbsoluteEndSeconds": 30,
+    "nodeCleanupSeconds": 5,
+    "nodeResultReserveSeconds": 0.5,
+    "nodeWorkSeconds": 24,
+    "postReadbackSeconds": 25,
+    "primaryAbsoluteEndSeconds": 85,
+    "runtimeFeasibilityObserved": false,
+    "setupSeconds": 20,
+    "sharedMaximumSeconds": 90,
+    "sourceProposalManifestNarrativeConsistent": true,
+    "sumEquals90": true,
+    "synchronousOsCallsClaimedInterruptible": false,
+    "syntaxTotalSeconds": 5,
+    "terminalReserveSeconds": 5
+  },
+  "candidateParseCompileImportRuntime": "NOT_RUN",
+  "completeAuthorMdAndJsonRead": true,
+  "completePublishedLiteralDeltaRead": true,
+  "conservation": {
+    "addedInputRows": 14,
+    "allAddedInputSizeAndSha256Verified": true,
+    "exactAddedRecordAuthority": {
+      "bytes": 14216,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-source.json",
+      "sha256": "b27c7a0d10338e98a597cf809153ce8ef23cfbea98685f7474a687ca3136e6f5"
+    },
+    "futureActualPinsIncludingSelfAndFourReports": 444,
+    "hostGraphAndBinaryTopologyAuthorityInherited": true,
+    "inherited418FileBytesRehashedInThisReview": false,
+    "inheritedInputRows": 418,
+    "inheritedRowsExactlyEqual": true,
+    "largeReviewMatricesRegenerated": false,
+    "originalBuildReturnAuthorityUnchanged": true,
+    "originalR1FreezeNamesPreserved": true,
+    "ownedRows": 7,
+    "r1ManifestSha256": "2b7b3afb67296e8a7709d272cf32c7048aca08a95f29ba4030f16bf8dc8bfdb1",
+    "r3AncestorManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+    "r3AncestorRows": 395,
+    "r3AncestorRowsExactlyEqual": true,
+    "sourceCopiesClosedAndProposalManifestEqual": true,
+    "sourceCopyNames": 37,
+    "totalInputBytes": 17007071,
+    "totalInputRows": 432,
+    "wholeHostGraphRehashedInThisReview": false
+  },
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-independent-affected-source-review/v1",
+  "date": "2026-10-07",
+  "decision": "NARROW_SOURCE_REVIEW_COMPLETE_NO_NEW_SOURCE_GATE_BLOCKER",
+  "diagnosticExactTwoNameSubstitutions": true,
+  "diagnosticStatus": "NOT_RUN",
+  "driverExactThreeNameAndFiveAllocationSubstitutions": true,
+  "falseProposalGatesVerified": {
+    "pins": {},
+    "rootReviewedExecutionGO": false,
+    "rootReviewedFinalAffectedReports": false,
+    "rootSupportedExecutionApprovalGranted": false
+  },
+  "fourFileLiteralDeltaExact": true,
+  "freeze": {
+    "bytes": 3717,
+    "path": "docs/ni6-bootstrap-diagnostic-r2-budget-fix-2026-10-07.md",
+    "sha256": "efc09788151b6248143ac309aac33891215047a54e8f6f5811312b8b4c1b753d"
+  },
+  "functionalPreparationAcceptance": false,
+  "inertTimingQualification": "2-4second source helpers do not establish actual executor contained()/resolve(), repeated filesystem check and setup timing. No benchmark or new runtime timing oracle was performed.",
+  "inheritedReviewAuthorities": [
+    {
+      "bytes": 128862,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+      "sha256": "bf4b8b386448eaf506281b4713b6bbfadc4c144ae94481b4779f30e6c4fc7a65"
+    },
+    {
+      "bytes": 14325,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+      "sha256": "cf122b45b69fbb70e4fb6b44718cd21e1b79064e051ca3446fa8306079832802"
+    },
+    {
+      "bytes": 133996,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json",
+      "sha256": "2811c816c66ff147802ca56a4450e7c9ed9d9ae9ab3fbcf5b5e82e0e09209e33"
+    },
+    {
+      "bytes": 24361,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+      "sha256": "b55ee6326e956127e7d2b4f3a0e3a53cdfa834cc4971884d953ce3332d1c8d41"
+    }
+  ],
+  "markdownCompanion": {
+    "bytes": 4414,
+    "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.md",
+    "sha256": "b928085cafec1a5f9d51ff6ee17afc15f2b602ef3e386e18949e0faf72b024e0"
+  },
+  "r1ObservedFailureAuthority": {
+    "actualDriverExitCode": 1,
+    "applicationStartupOutcome": "NOT_OBSERVED",
+    "observedStage": "EXECUTOR_PREFLIGHT",
+    "oldMarkerResetOrReplay": false,
+    "originalR3Cause": "NOT_ESTABLISHED",
+    "particularPreflightFailingOperation": "NOT_OBSERVED",
+    "selectedNodeAdmissions": 0,
+    "setupDeadlineSeconds": 8,
+    "sourceRecord": {
+      "bytes": 2308,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-pre-admission-failure.json",
+      "sha256": "6d56966696c1cd4956dfded51b1f37943747e2d9c172c6b97b38f588614f7bed"
+    },
+    "wholeIntervalIncludesApprovalTransportPolling": true,
+    "wholeSupportedInvocationSeconds": 17.187
+  },
+  "recordedAt": "2026-10-07T20:31:19.529185+00:00",
+  "remainingGates": [
+    "Root final affected-report and actual pin selection",
+    "Supported exact separate r2 action approval",
+    "Exclusive owned600 true plan and supported once-only execution with qualified actual-return readback"
+  ],
+  "reportSelfHashPolicy": "Root pins actual finished reports; no recursive or future report hash invented.",
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.json"
+  ],
+  "reservedUILockedAndCancelledTaskUnchanged": true,
+  "restrictions": {
+    "noBenchmark": true,
+    "noCandidateSourceMutation": true,
+    "noFullGraphReaudit": true,
+    "noGitMutation": true,
+    "noModelNetworkListenerBrowserAction": true,
+    "noPrivateContentRead": true,
+    "noProtectedReceiptEnvelopeInvestigation": true
+  },
+  "retainedQualifications": [
+    "zeroNative is latest successful covered inventory plus retained natural event history; first failure remains authoritative; no every-boundary or continuous root cleanup claim",
+    "Child diagnostic, command exit/capture/group, persisted executor result and actual driver return are separate; persisted records cannot override failure or unknown return",
+    "Original standalone root dispose restartsUID0; active root requires rootClosedfalse/FAILED_HOLD with earlier first phase/category retained",
+    "Stored timing scalars precede terminal bookkeeping; whole supported interval and actual driver return need separate root observations"
+  ],
+  "reviewedFinalArtifactHashes": [
+    {
+      "bytes": 18973,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs",
+      "sha256": "18d3e8b033e57b12dd3201319c55cb439ceb1142622376501738e7e083745bef"
+    },
+    {
+      "bytes": 31440,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py",
+      "sha256": "5a77b2a28fb46208277dcd246d54298dd97440e81d888442f49bc44177a1aef5"
+    },
+    {
+      "bytes": 6708,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/execution-plan.proposed.json",
+      "sha256": "c6a27df1384075ea7d048a288598df5b301714846c71fb3f0ac11203776a35a0"
+    },
+    {
+      "bytes": 17974,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-delta.diff",
+      "sha256": "606b25d6ade4fc110da8e49c2f1a35b589c73644bbaa743a20d73253ef7494d1"
+    },
+    {
+      "bytes": 6205,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/README.md",
+      "sha256": "defca14852cc828437c8c70a2318ba00da612abfcc7c8ed908ef166480ac6a64"
+    },
+    {
+      "bytes": 109098,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-manifest.json",
+      "sha256": "8816e58b853ac328df5012462b61534da596eb93e0e7aa82a04288b379b16cb7"
+    },
+    {
+      "bytes": 3478,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-source.md",
+      "sha256": "ef27a7898e925a7969df1a1cf03153cb227f4be9b89e9824a6dc2cfe91e7730a"
+    },
+    {
+      "bytes": 14216,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-source.json",
+      "sha256": "b27c7a0d10338e98a597cf809153ce8ef23cfbea98685f7474a687ca3136e6f5"
+    }
+  ],
+  "reviewer": "/root/bootstrap_diagnostic_r1_code_review",
+  "reviewerCheckCorrection": "A copy-union comparison initially over-renamed inherited r1 freeze names. Corrected by renaming only successor capsule and source/report copy names; candidate bytes were unchanged.",
+  "rootExecutionApprovalIssued": false,
+  "runtimeGOIssued": false,
+  "scope": "Budget/namespace/metadata literal delta and conservation only; completed r1 full reviews inherited",
+  "sourceGateBlockers": [],
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "syntaxStatus": "NOT_RUN"
+}

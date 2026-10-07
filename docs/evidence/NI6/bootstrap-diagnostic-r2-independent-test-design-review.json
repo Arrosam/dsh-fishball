@@ -1,0 +1,393 @@
+{
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-independent-test-design-review/v1",
+  "revision": "bootstrap-diagnostic-r2",
+  "date": "2026-10-07",
+  "sealedAtUtc": "2026-10-07T20:27:39.457518+00:00",
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "sourceAuthor": "/root/bootstrap_budget_fix_author",
+  "independentOfAuthor": true,
+  "status": "NARROW_AFFECTED_SOURCE_ONLY_REVIEW_COMPLETE_NOT_RUN",
+  "decision": "NO_NARROW_AFFECTED_TEST_DESIGN_BLOCKER_WITH_INHERITED_QUALIFICATIONS",
+  "sourceOnly": true,
+  "rootReviewedExecutionGO": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "syntaxStatus": "NOT_RUN",
+  "diagnosticStatus": "NOT_RUN",
+  "accepted": 0,
+  "all87": "HOLD",
+  "CODE": "BLOCKED_UNCHANGED",
+  "finalCodeSecurityInvestigation": "PERMANENTLY_BLOCKED_UNCHANGED",
+  "lockedMacUi": "PAUSED",
+  "originalR3Cause": "NOT_ESTABLISHED",
+  "scope": {
+    "narrowAffectedBudgetNamespaceMetadataConservationOnly": true,
+    "inheritedFullR1TestDesignPreserved": true,
+    "newRuntimeFamilies": false,
+    "candidateParsingCompilingImportingOrExecuting": false,
+    "faultProbes": false,
+    "privateDataReads": false,
+    "listenerModelNetworkBrowserWork": false,
+    "sourceMutationRebuildGit": false,
+    "fullGraphRehash": false,
+    "full425RowMatrixRegenerated": false,
+    "writesOnly": [
+      "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.md",
+      "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.json"
+    ]
+  },
+  "finalReviewedSourceSeal": [
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/README.md",
+      "bytes": 6205,
+      "sha256": "defca14852cc828437c8c70a2318ba00da612abfcc7c8ed908ef166480ac6a64"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs",
+      "bytes": 18973,
+      "sha256": "18d3e8b033e57b12dd3201319c55cb439ceb1142622376501738e7e083745bef"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/execution-plan.proposed.json",
+      "bytes": 6708,
+      "sha256": "c6a27df1384075ea7d048a288598df5b301714846c71fb3f0ac11203776a35a0"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py",
+      "bytes": 31440,
+      "sha256": "5a77b2a28fb46208277dcd246d54298dd97440e81d888442f49bc44177a1aef5"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-delta.diff",
+      "bytes": 17974,
+      "sha256": "606b25d6ade4fc110da8e49c2f1a35b589c73644bbaa743a20d73253ef7494d1"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-source.json",
+      "bytes": 14216,
+      "sha256": "b27c7a0d10338e98a597cf809153ce8ef23cfbea98685f7474a687ca3136e6f5"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-source.md",
+      "bytes": 3478,
+      "sha256": "ef27a7898e925a7969df1a1cf03153cb227f4be9b89e9824a6dc2cfe91e7730a"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-manifest.json",
+      "bytes": 109098,
+      "sha256": "8816e58b853ac328df5012462b61534da596eb93e0e7aa82a04288b379b16cb7"
+    }
+  ],
+  "successorFreeze": {
+    "path": "docs/ni6-bootstrap-diagnostic-r2-budget-fix-2026-10-07.md",
+    "bytes": 3717,
+    "sha256": "efc09788151b6248143ac309aac33891215047a54e8f6f5811312b8b4c1b753d"
+  },
+  "inheritedReviewPins": [
+    {
+      "bytes": 14325,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+      "sha256": "cf122b45b69fbb70e4fb6b44718cd21e1b79064e051ca3446fa8306079832802"
+    },
+    {
+      "bytes": 128862,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+      "sha256": "bf4b8b386448eaf506281b4713b6bbfadc4c144ae94481b4779f30e6c4fc7a65"
+    },
+    {
+      "bytes": 24361,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+      "sha256": "b55ee6326e956127e7d2b4f3a0e3a53cdfa834cc4971884d953ce3332d1c8d41"
+    },
+    {
+      "bytes": 133996,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json",
+      "sha256": "2811c816c66ff147802ca56a4450e7c9ed9d9ae9ab3fbcf5b5e82e0e09209e33"
+    }
+  ],
+  "fourteenAdditionalInputRecordsByteVerified": [
+    {
+      "bytes": 5227,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/README.md",
+      "sha256": "5f9c16d8bd0b37f8477dbc672fdfde87f27f869e3e9062590fa6c28bf387324a"
+    },
+    {
+      "bytes": 18973,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+      "sha256": "1f8123a742aeff56abb14e674f7493ed7d3090d775d002a0f1433a0d43b3e8dc"
+    },
+    {
+      "bytes": 5636,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/execution-plan.proposed.json",
+      "sha256": "0b8eb8702860fd9366d9f8b0f596a356bea79f2ec3eb05a51b05984e40b165ed"
+    },
+    {
+      "bytes": 31438,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
+      "sha256": "91addca4c96124727801bf985747c1d863369f5a7e9ba5f12618e68cdc02ebef"
+    },
+    {
+      "bytes": 81744,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-delta.diff",
+      "sha256": "f89dd70579ac2adf110ecaa8fa2f4a9a86f818713115e87c91eef0e4878a31ba"
+    },
+    {
+      "bytes": 103870,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-manifest.json",
+      "sha256": "2b7b3afb67296e8a7709d272cf32c7048aca08a95f29ba4030f16bf8dc8bfdb1"
+    },
+    {
+      "bytes": 128862,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+      "sha256": "bf4b8b386448eaf506281b4713b6bbfadc4c144ae94481b4779f30e6c4fc7a65"
+    },
+    {
+      "bytes": 14325,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+      "sha256": "cf122b45b69fbb70e4fb6b44718cd21e1b79064e051ca3446fa8306079832802"
+    },
+    {
+      "bytes": 133996,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json",
+      "sha256": "2811c816c66ff147802ca56a4450e7c9ed9d9ae9ab3fbcf5b5e82e0e09209e33"
+    },
+    {
+      "bytes": 24361,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+      "sha256": "b55ee6326e956127e7d2b4f3a0e3a53cdfa834cc4971884d953ce3332d1c8d41"
+    },
+    {
+      "bytes": 2308,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-pre-admission-failure.json",
+      "sha256": "6d56966696c1cd4956dfded51b1f37943747e2d9c172c6b97b38f588614f7bed"
+    },
+    {
+      "bytes": 23460,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-source.json",
+      "sha256": "20bd3757df8cb54c6ffcf63e6c02bc5b015637fe01533a2b2cc260186a512686"
+    },
+    {
+      "bytes": 7683,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-source.md",
+      "sha256": "1eaf52b4472a7412b46c8174f9ed9e8a1e77bb4432e94d71ac5b4e5488bc5a96"
+    },
+    {
+      "bytes": 3717,
+      "path": "docs/ni6-bootstrap-diagnostic-r2-budget-fix-2026-10-07.md",
+      "sha256": "efc09788151b6248143ac309aac33891215047a54e8f6f5811312b8b4c1b753d"
+    }
+  ],
+  "metadataConservation": {
+    "inherited418RowsExact": true,
+    "inheritedInputsRehashed": false,
+    "inputCount": 432,
+    "inputBytes": 17007071,
+    "newOwnedCount": 7,
+    "manifestSelfPins": 1,
+    "futureActualReportPins": 4,
+    "requiredActualUnion": 444,
+    "sourceCopyNames": 37,
+    "proposalManifestSourceCopiesExact": true,
+    "fourRequiredAffectedReportNamesExact": true,
+    "actualReportHashesRequireRootFinalPinning": true
+  },
+  "literalSourceConservation": {
+    "diagnosticOnlyTwoNameSubstitutions": true,
+    "diagnosticAllOtherBytesIdentical": true,
+    "executorOnlyThreeNamesAndFiveOuterAllocationChangesComment": true,
+    "executorAllOtherBytesIdentical": true,
+    "fourPartDeltaExactLiteralReconstruction": true,
+    "delta": {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-delta.diff",
+      "bytes": 17974,
+      "sha256": "606b25d6ade4fc110da8e49c2f1a35b589c73644bbaa743a20d73253ef7494d1"
+    },
+    "unchangedSelectedProductEffectsContractsGuards": true,
+    "fullOriginalGraphAuthorityInheritedNotReaudited": true,
+    "actualR3BuildReturnAndAncestorBindingConserved": true
+  },
+  "originalR1ActualSupportedEvidence": {
+    "pin": {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r1-pre-admission-failure.json",
+      "bytes": 2308,
+      "sha256": "6d56966696c1cd4956dfded51b1f37943747e2d9c172c6b97b38f588614f7bed"
+    },
+    "actualDriverExitCode": 1,
+    "sessionId": 33451,
+    "outputCharacters": 0,
+    "wholeSupportedRequestIntervalSeconds": 17.187,
+    "intervalIncludesApprovalTransportPolling": true,
+    "markerFailureCode": "EXECUTOR_AGGREGATE_DEADLINE",
+    "markerState": "FAILED_HOLD",
+    "markerFinalized": false,
+    "markerStartedAt": "2026-10-07T19:43:52.335513+00:00",
+    "markerFinishedAt": "2026-10-07T19:44:00.321608+00:00",
+    "markerTimestampSpanSeconds": 7.986095,
+    "selectedNodeCommandsStartedAsSupportedByPublicEvidenceAndAdmissionOrder": 0,
+    "syntaxStatus": "NOT_RUN",
+    "diagnosticStatus": "NOT_RUN",
+    "runtimeCaptureResultEvidencePresent": false,
+    "observedStage": "EXECUTOR_PREFLIGHT",
+    "setupDeadlineSeconds": 8,
+    "sixtySecondGlobalExhaustionEstablished": false,
+    "exactFailingPreflightReadOrHashEstablished": false,
+    "applicationFailureObserved": false,
+    "runtimePolicyRejection": false,
+    "oldMarkerResetOrReplay": false,
+    "existingFamilyMapping": [
+      "D31 natural setup refusal",
+      "D04/D32 consumed-once preservation"
+    ],
+    "deliberatelyInjectedFaultCase": false
+  },
+  "selectedRootInvocation": {
+    "argv": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py",
+      ".runtime/root-ni6-bootstrap-diagnostic-r2-execution-plan.json"
+    ],
+    "status": "NOT_RUN",
+    "maximumDirectInterpreterStarts": 3,
+    "maximumNodeStarts": 2,
+    "retriesOrExtraTests": false
+  },
+  "selectedCommands": [
+    {
+      "id": "D01",
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs"
+      ],
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs"
+      ],
+      "status": "NOT_RUN"
+    }
+  ],
+  "budgetDesign": {
+    "sharedAbsoluteDriverSeconds": 90,
+    "primaryAbsoluteEndSeconds": 85,
+    "setupPreflightSeconds": 20,
+    "syntaxTotalSeconds": 5,
+    "diagnosticTotalSeconds": 35,
+    "postReadbackMaximumSeconds": 25,
+    "terminalReserveSeconds": 5,
+    "allocation": "20+5+35+25+5=90",
+    "proposalManifestRunnerConsistent": true,
+    "remainingTimeControlsEveryAdmission": true,
+    "instantOsIoCancellationClaim": false,
+    "nodeWorkCleanupFinalSeconds": [
+      24,
+      5,
+      30
+    ],
+    "nodeResultReserveSeconds": 0.5,
+    "commandBookkeepingSeconds": 1,
+    "preterminalScalarIsFinalDriverDurationProof": false,
+    "actualSupportedReturnAndWholeIntervalRequired": true,
+    "availabilityOrStartupSuccessGuaranteed": false
+  },
+  "affectedExistingFamilies": [
+    {
+      "ids": [
+        "D01",
+        "D02"
+      ],
+      "oracle": "Same selected Node syntax and natural diagnostic, sequential once under canonical Python -I; only names change.",
+      "runtimeStatus": "NOT_RUN"
+    },
+    {
+      "ids": [
+        "D31"
+      ],
+      "oracle": "Updated20/5/35/25/5 nested absolute90/primary85; unchanged strict deadline comparisons, actual final return and timing qualification.",
+      "runtimeStatus": "NOT_RUN"
+    },
+    {
+      "ids": [
+        "D04",
+        "D05",
+        "D06",
+        "D09"
+      ],
+      "oracle": "Fresh r2 identities, complete actual444 pins, no consumed-r1 reset or uncertain preexisting destination writes.",
+      "runtimeStatus": "NOT_RUN"
+    },
+    {
+      "ids": [
+        "D23",
+        "D32"
+      ],
+      "oracle": "Finite512-byte result/513-byte read, owned capture/evidence/marker/copy identity and held uncertain finalization remain.",
+      "runtimeStatus": "NOT_RUN"
+    }
+  ],
+  "allOtherExistingFamilies": "Carried forward from hashed completed r1 pair without new cases or runtime authorization; all prospective fault families remain NOT_RUN.",
+  "inheritedFindings": [
+    {
+      "id": "Q01",
+      "title": "Public root disposal restarts UID0; original strict terminal assertion remains unmet.",
+      "severity": "MATERIAL_ORIGINAL_FUNCTIONAL_LIMITATION",
+      "blockingForSelectedHeldDiagnostic": false
+    },
+    {
+      "id": "N01",
+      "title": "Failed command may supply a schema-valid child PASS observation despite the source comment.",
+      "severity": "MINOR_COMMENT_REPORTING_DISCREPANCY",
+      "blockingForSelectedHeldDiagnostic": false
+    },
+    {
+      "id": "N02",
+      "title": "zeroNative means latest covered inventory plus retained event-counter history.",
+      "severity": "MINOR_OBSERVATION_MEANING",
+      "blockingForSelectedHeldDiagnostic": false
+    },
+    {
+      "id": "N03",
+      "title": "Persisted duration fields are preterminal observations.",
+      "severity": "INFORMATIONAL_TIMING_EVIDENCE_LIMIT",
+      "blockingForSelectedHeldDiagnostic": false
+    }
+  ],
+  "inheritedQualifications": [
+    "Original public root dispose restarts UID0; if active strict rootClosed=false/FAILED_HOLD remains required. Earlier first phase/category stays primary; no original r3 cause proof.",
+    "zeroNative is latest completed covered ready/removal inventory plus retained event history; no all-history conjunction, continuous root cleanup or post-root registry proof.",
+    "Schema-valid childPASS may remain selected after nonzero command, but FIRST_REASON forces executor hold. Child/command/persisted result/actual return/acceptance stay separate.",
+    "Stored duration fields are preterminal; root actual supported exit and whole invocation interval are separate evidence, not substituted by a reserve."
+  ],
+  "unchangedBounds": {
+    "diagnosticFields": 10,
+    "phases": 30,
+    "categories": 4,
+    "resultBytes": 512,
+    "maximumResultReadBytes": 513,
+    "streamBytes": 131072,
+    "aggregateStreamBytes": 262144,
+    "rawDecodedOrPublished": false,
+    "publicPlugins": 11,
+    "originalHostImports": 13,
+    "rootClosureAssertionWeakened": false,
+    "noNewHttpSetupTaskDomainRuntimeChildProviderModelToolSessionAgentWorkSelected": true,
+    "originalFreshCredentialsLockAndInMemorySqliteEffectsStillDeclared": true
+  },
+  "sourceOnlyAffectedBlockingFindings": [],
+  "writeOrTransportBlocker": null,
+  "remainingRootGates": [
+    "Complete final affected source/test report readbacks and actual hashes.",
+    "Select owned true-GO plan with exact444 actual pins and supported approval.",
+    "Own fresh once-only invocation and separately observe actual driver return/time.",
+    "Preserve r1 consumed attempt and all acceptance/CODE/UI limitations."
+  ],
+  "companionMarkdown": {
+    "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.md",
+    "bytes": 6148,
+    "sha256": "a440590cedf6a5e1c7a320d67d8cad733257cd1e5c5e7f086eb2e27e0936d2b0"
+  },
+  "selfHashPolicy": "Root hashes final JSON and MD externally after complete readback; no self-referential JSON hash is invented."
+}
