@@ -1,0 +1,48 @@
+{
+  "contractVersion": "df.ni3-native-runtime-result-verification/v1",
+  "checkedAt": "2026-10-07T04:14:00.240961+00:00",
+  "freezeSha256": "dbbdc56100da180698df1a1ff5b77569e9ec28654ec87b90b7d30b9e3a19b62a",
+  "commandResultsSha256": "f882631b93ddbd0210b2ecf42c7e930c3a5e3d3d7a83cf15dbbf1f236c9f2f52",
+  "commandsAttempted": 24,
+  "stoppedAtCommand": 24,
+  "unrunCommands": [
+    25,
+    26
+  ],
+  "parseOnly": {
+    "commands": 19,
+    "passed": 19
+  },
+  "clientTests": {
+    "cases": 15,
+    "pass": 15,
+    "fail": 0
+  },
+  "sourceTests": {
+    "cases": 5,
+    "pass": 5,
+    "fail": 0
+  },
+  "directoryTests": {
+    "cases": 7,
+    "pass": 5,
+    "fail": 2
+  },
+  "buildCommands": {
+    "commands": 2,
+    "passed": 2
+  },
+  "rawStreamsVerified": 48,
+  "inputsVerified": 85,
+  "publicFilesVerified": 27577,
+  "linksVerified": 12,
+  "namespaceSetMatched": true,
+  "inputChanges": [],
+  "publicChanges": [],
+  "generatedClient": {
+    "path": ".runtime/ni3-native-runtime/lib/client.js",
+    "bytes": 116886,
+    "sha256": "cfaaf3be29c4552c48644782d5bebd531ec078b0f025afd22dd667e72578b035"
+  },
+  "scope": "One author run halted at first nonzero command. No lifecycle/chain command, native stream/listener/browser/real inference or CODE acceptance. Original frozen inputs remain exact; generatedclient is new bounded buildoutput."
+}

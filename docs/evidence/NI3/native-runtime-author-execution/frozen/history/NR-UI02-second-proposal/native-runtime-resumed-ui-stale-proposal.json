@@ -1,0 +1,13 @@
+{
+  "status": "SOURCE_ONLY_PROPOSED_NOT_APPLIED_NOT_RUN",
+  "id": "NR-UI02",
+  "beforeSHA256": "b4ec3368a0b0af0ab223e5e937e282bab8392dc0dc54a117fe55257964672aad",
+  "projectedSHA256": "be50796739ab15604b1abc01b1213cde6a3a586d7814895cdcb69937fdf51619",
+  "patch": ".runtime/ni3-native-runtime/proposals/NR-UI02.patch",
+  "patchSHA256": "adb67d620512d9ed36678f0fa2764bec291d79aac9133bca384bb50a6c59329d",
+  "firstProposalPreserved": ".runtime/ni3-native-runtime/history/NR-UI02-first-proposal",
+  "rootSteering": "Preserve safe readonly current-owner mapping query/status while disabling stale audit mutation/card gates.",
+  "proposal": "run admission adds mutation&&state.stale only. auditCard current includes audit stale bit; Query role facts separately gates enabled/current task/not busy/existing worker. Status refresh is unchanged and recovers; no auto replay/new native API. Host verifies current owner/task/action/claim/generation on query. Different selected task already clears state.worker.",
+  "fixtures": "After configured/planned/idle role, external same-task version/auth drift retains worker mapping but prevents prepare/plan/grant/create/execute/collect/finish sends and disables mutation controls. Exact retained query remains enabled and sends only auditQuery; explicit auditStatus refresh recovers. Existing deferred configure establishes current auditStatus before mutation. Different task clears worker and query refuses without send.",
+  "execution": false
+}

@@ -1,0 +1,668 @@
+{
+  "formatVersion": "df.ni3.native-runtime-independent-design/v1",
+  "status": "SOURCE_ONLY_INDEPENDENT_ISTQB_DESIGN_SEVENTEEN_CASES_NO_FIXTURE_OR_EXECUTABLE_GO",
+  "date": "2026-10-07",
+  "repository": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "document": {
+    "path": "docs/evidence/NI3/native-runtime-independent-design.md",
+    "sha256": "27baca014a36841dd580247a1e9810fa42e3a11f38d80ac862e6a167d1bb56fd",
+    "bytes": 19033
+  },
+  "ownedWrites": [
+    "docs/evidence/NI3/native-runtime-independent-design.md",
+    "docs/evidence/NI3/native-runtime-independent-design.json"
+  ],
+  "authorOracleBoundary": {
+    "authorRuntimeTestRead": false,
+    "proposalTestRead": false,
+    "historicalNTAExecutableRead": false,
+    "authorOracleFieldsUsed": false,
+    "sourceCallbacksAndPublicContractsOnly": true,
+    "PDIExecutionUsedAsNativeOracle": false
+  },
+  "sourceObservationPins": [
+    {
+      "path": ".runtime/ni3-native-runtime/src/runtime-plugin.mjs",
+      "sha256": "36aab1b8683b97c32d8db72889b06c8c88f7239ea313d2a8f8022c767fd6eae3",
+      "bytes": 54036
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-plugin.mjs",
+      "sha256": "c57d089d50013af6fcee7d36831dd631a970d72e2e5d8f0bc4b2c6ffba0aee97",
+      "bytes": 8075
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-owned-stream.mjs",
+      "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+      "bytes": 1071
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-worker-facts.mjs",
+      "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+      "bytes": 21961
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-worker.mjs",
+      "sha256": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+      "bytes": 37381
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/client-entry.cjs",
+      "sha256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+      "bytes": 116918
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/native-contributions.mjs",
+      "sha256": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+      "bytes": 10890
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/testing-provider.mjs",
+      "sha256": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+      "bytes": 14405
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-role-recipes.mjs",
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+      "bytes": 2127
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-audit-native-source.mjs",
+      "sha256": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+      "bytes": 10963
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+      "bytes": 6739
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-config.mjs",
+      "sha256": "8161a5ed881d413e0b889ba20d4167b5ec502619240f5a1ef2b33808d12bccee",
+      "bytes": 2885
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/operator-bridge.mjs",
+      "sha256": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+      "bytes": 8984
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/execution-closure.json",
+      "sha256": "fec01c4266695214f72710defcfa9d173839c9d41d471fa94a35d15cd0f6cb4f",
+      "bytes": 113326
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/public-graph-pins.json",
+      "sha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd",
+      "bytes": 4028913
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/literal-runtime-diff.patch",
+      "sha256": "44678ff03ecab883dba5ecd6a9c25eec913f2791aade70e985dc53dbd37f4d46",
+      "bytes": 213511
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-resumed-source-hold.md",
+      "sha256": "5b35547c6df379f14935cc2829633803b94e0de7b2a75854ac39dc6600599804",
+      "bytes": 3600
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-resumed-source-hold.json",
+      "sha256": "6399d8af39ce912229ab883b24c3fc47b6f423cf75ee257a9a940e5a91662489",
+      "bytes": 21621
+    },
+    {
+      "path": "docs/normal-runtime-audit-contract.md",
+      "sha256": "9e806aaf1c224581d43ae54fffe6775e18d58400c20fcc42814b844859a1c012",
+      "bytes": 34346
+    },
+    {
+      "path": "docs/runtime-api.md",
+      "sha256": "f6263a663dc2fff31f871a157a987b321abc1736e2d56f5c2642988b66e704ab",
+      "bytes": 23123
+    },
+    {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "bytes": 51095
+    },
+    {
+      "path": "docs/normal-worker-resume-contract.md",
+      "sha256": "fce0b6567eb550be2e96e0c4a8aedf696cf5ad0aa8897cf5dae91abaed68e14e",
+      "bytes": 40507
+    }
+  ],
+  "selectiveSourceInventoryIsFullExecutionClosure": false,
+  "sourceAnchors": [
+    {
+      "path": ".runtime/ni3-native-runtime/src/runtime-plugin.mjs",
+      "anchors": [
+        "Public composition32-58",
+        "Original principals/effective permission66-100",
+        "Actual lifecycle cleanup120-138",
+        "Original manager/native callback153-177",
+        "Producer/audit callbacks189-245",
+        "Disabled audit253-258",
+        "Owner/installed operation wrappers397-415",
+        "Original adapter run/disposal546-570"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-owned-stream.mjs",
+      "anchors": [
+        "Public ownInstalledStream4-27: every next/check/return under captured original carrier"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-worker-facts.mjs",
+      "anchors": [
+        "Public original facts resolver144-218",
+        "Original class/loader/backend checks154-184",
+        "Opaque shared directory lifetime187-201",
+        "Actual source/currentness/allocation203-218"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-worker.mjs",
+      "anchors": [
+        "current49-60",
+        "Original policy/read context checks77-85",
+        "Original grant/current full hostPermission128-136",
+        "Actual hook/directory/permit/transcript validation160-204",
+        "Role facts/source currentness229"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/client-entry.cjs",
+      "anchors": [
+        "Original model539 onward, exact queryWorker and checkedWorker",
+        "Original disconnected pending/retained uncertainty",
+        "Original disabled audit/card/canQuery",
+        "Original Panel always-visible auditCard658 and clientfactoryexport"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+      "anchors": [
+        "Original public constructor role records",
+        "readAuditInput2275-2279 requiresHOST",
+        "writeArtifact1043-1045 allowsowner/coordinator/worker",
+        "Previously sealed public planning/snapshot contract only"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-runtime/src/operator-bridge.mjs",
+      "anchors": [
+        "Original AbortSignal/currentness admission92,105-115"
+      ]
+    }
+  ],
+  "sourceFindings": [
+    {
+      "id": "NRI-F01",
+      "historicalSource": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+      "finding": "Original owner supplied to HOST-only public readAuditInput",
+      "rootConfirmed": true,
+      "sourceAmendment": "NR-API01 exact owner-to-hostHandle callback change",
+      "currentSource": "36aab1b8683b97c32d8db72889b06c8c88f7239ea313d2a8f8022c767fd6eae3",
+      "status": "SOURCE_FIXED_NATIVE_NOT_RUN",
+      "coreOrPrincipalChange": false
+    },
+    {
+      "id": "NRI-F02",
+      "historicalSource": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+      "finding": "Original host supplied to public owner/coordinator/worker-only writeArtifact",
+      "rootConfirmed": true,
+      "sourceAmendment": "NR-API01 exact hostHandle-to-owner callback change",
+      "currentSource": "36aab1b8683b97c32d8db72889b06c8c88f7239ea313d2a8f8022c767fd6eae3",
+      "status": "SOURCE_FIXED_NATIVE_NOT_RUN",
+      "coreOrPrincipalChange": false
+    },
+    {
+      "id": "NRI-F03",
+      "historicalSource": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
+      "finding": "Original disconnected() erased uncertain marker and did not retain pending dispatch/execute",
+      "sourceAmendment": "NR-UI03 original pending-marker-before-abort retention and exact readonly mapping query",
+      "currentSource": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+      "status": "SOURCE_AMENDED_CLIENT_NOT_RUN"
+    }
+  ],
+  "actualAuthorityOracle": {
+    "originalPublicDSHClasses": true,
+    "exactOriginalLoaderServiceSourceLifetime": true,
+    "originalInstalledEntrySetup": true,
+    "normalNativeProducerRequired": true,
+    "advancedClaimCannotSubstitute": true,
+    "sourceFactsLabelsCannotSubstitute": true,
+    "currentFullMatcherFalseNotOverridden": true,
+    "lockedFullRoutePublicStoreTransactions": 0,
+    "minimalNativeRecordDerivesFullScopeOutsideClaim": true,
+    "callerCopiedRefsProofNotAccepted": true,
+    "toolSchemas": 0,
+    "originalOneUseProviderBindingRequired": true
+  },
+  "semanticOracles": {
+    "review": "Original source recipe unknown verdict, coverage empty, unexaminedRefs exact original material",
+    "repair": "Actual unknown report/requirement/round/input/claim to actual new artifact version2, fresh review",
+    "usage": "Actual original provider/agent/session transcript and source-defined accounting, never typed counters",
+    "directory": "Original source-owned missing/allocated leaf dev/ino/uid/mode and same original ctx/backend/source/token identity",
+    "client": "Original public model progression; explicit typed RPC/task-model doubles only; no private model state injection",
+    "nativeProjectionForClientRecovery": "Must additionally observe original normal current task worker mapping fields through NRI-L01; typed client reply cannot prove native projection"
+  },
+  "streamAndDisposal": {
+    "denial": "Original RPC AbortSignal preserves REQUEST_ABORTED under original captured carrier",
+    "preFirstEffect": "No original review consume/output",
+    "postFirstDelta": "Later next/return may reject; partial provider effect distinct from complete result",
+    "generatorFinallyTerminationOrInstantCancellationClaim": false,
+    "lateSafeFinalizerCallbackInvented": false,
+    "currentnessNeverRestored": true,
+    "separateOracle": "Actual original manager/agent/session/persistence-handle cleanup through installed public child lifetime",
+    "disposalFailure": "Retain actual uncertain/held outcome as hold; no arbitrary termination/release evidence"
+  },
+  "cases": [
+    {
+      "id": "NRI-L01",
+      "fixture": "original-native",
+      "expected": "Genuine producer and one review: exact native associations/usage; unknown report, no coverage/all material unexamined; actual original finish evidence",
+      "maxNativeClaims": 2,
+      "maxProviderEffects": 2,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-L02",
+      "fixture": "original-native",
+      "expected": "Genuine unknown review to one repair artifact version2 to new review; distinct original claims/sessions/lineage; still unknown business audit",
+      "maxNativeClaims": 4,
+      "maxProviderEffects": 4,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-P01",
+      "fixture": "original-native",
+      "expected": "One owner revoke after genuine producer/granted review plan refuses original full/native dispatch; no new review claim or fallback/nested callback transaction",
+      "maxNativeClaims": 1,
+      "maxProviderEffects": 1,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-S01",
+      "fixture": "original-native",
+      "expected": "Original RPC AbortSignal before lazy first effect preserves REQUEST_ABORTED; no review provider consume; separate original disposal/held uncertainty",
+      "maxNativeClaims": 2,
+      "maxProviderEffects": 1,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-S02",
+      "fixture": "original-native",
+      "expected": "Original RPC abort after deterministic delta denies next/possibly return; no manufactured complete result/report/release; separate actual manager/handle disposal",
+      "maxNativeClaims": 2,
+      "maxProviderEffects": 2,
+      "partialProviderEffects": 1,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-D01",
+      "fixture": "original-native-source",
+      "expected": "Approved missing leaf; one genuine idle create allocates0700; same original opaque directory token/backend/source across producer/review/repair",
+      "maxNativeClaims": 1,
+      "maxProviderEffects": 0,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-D02",
+      "fixture": "original-native-source",
+      "expected": "Unexpected owned leaf before original first native claim refuses adoption; preserve identity/bytes; no fallback",
+      "maxNativeClaims": 0,
+      "maxProviderEffects": 0,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-D03",
+      "fixture": "original-native-source",
+      "expected": "Replacement inode after original idle create refuses future execution/admission, preserves real claim; separate disposal observation without restoring currentness",
+      "maxNativeClaims": 1,
+      "maxProviderEffects": 0,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-T01",
+      "fixture": "original-native-source",
+      "expected": "Foreign empty directoryBinding with otherwise genuine context/backend fails WORKER_SOURCE_UNAVAILABLE",
+      "maxNativeClaims": 0,
+      "maxProviderEffects": 0,
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C01",
+      "fixture": "typed-client-only",
+      "expected": "Disabled audit card explanation visible without artifact; audit mutation controls absent; worker usable; zero audit mutation",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C02",
+      "fixture": "typed-client-only",
+      "expected": "Lost execute/pending disconnect retains executeAudit; exact read-only query updates facts but preserves stale/uncertain and prevents create/execute",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C03",
+      "fixture": "typed-client-only",
+      "expected": "Valid foreign generationRef only in query response => INVALID_RESPONSE; original mapping/uncertainty retained",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C04",
+      "fixture": "typed-client-only",
+      "expected": "Task change while query pending prevents late old-task result admission; no foreign query candidate",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C05",
+      "fixture": "typed-client-only",
+      "expected": "Disconnect during pending dispatch captures dispatchAudit before abort/epoch; rejects late result; no new create/execute",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C06",
+      "fixture": "typed-client-only",
+      "candidateCount": 1,
+      "expected": "One exact fresh-task action+digest worker supports bounded readonly query; exact all-field response; retained uncertainty; no reexecution",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C07",
+      "fixture": "typed-client-only",
+      "candidateCount": 0,
+      "expected": "No matching fresh-task worker: canQueryfalse/AUDIT_COLLECTION_UNAVAILABLE, zero query/mutation, preserve unknown intent",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    },
+    {
+      "id": "NRI-C08",
+      "fixture": "typed-client-only",
+      "candidateCount": 2,
+      "expected": "Multiple exact fresh-task workers: no first-row selection, canQueryfalse, zero query/mutation, preserve unknown intent",
+      "status": "SOURCE_DESIGNED_NOT_AUTHORED_NOT_RUN"
+    }
+  ],
+  "caseCounts": {
+    "total": 17,
+    "nativeOrOriginalSourceFixtures": 9,
+    "typedClientOnlyFixtures": 8,
+    "nestedNodesProposed": 0,
+    "skipsProposed": 0,
+    "BooleanMatrix": false,
+    "stressReplaySweep": false
+  },
+  "futureFixture": {
+    "path": ".runtime/ni3-native-runtime/test/native-runtime-independent.test.mjs",
+    "authored": false,
+    "dataRoot": ".runtime/ni3-native-runtime/test/independent-fixtures/",
+    "dataCreated": false,
+    "authoringLease": false,
+    "executableGO": false,
+    "command": null,
+    "reason": "Exact original host/principals/barrier/import/input/source/Node/effects closure must exist for separate root review before a command can be leased"
+  },
+  "futureExplicitOwnerPolicy": {
+    "maxActive": 1,
+    "maxAttempts": 1,
+    "maxTotalAttempts": 4,
+    "maxRepairRounds": 1,
+    "maxOutputTokens": 4096,
+    "requestBytes": 32768,
+    "resultBytes": 4096,
+    "auditInputBytes": 16384,
+    "resourceCharges": "Literal validated bounds and declared sufficient real shared resources must be reviewed in fixture; no automatic increase/guessed usage",
+    "models": [
+      "df-testing-worker-v1",
+      "df-testing-review-v1",
+      "df-testing-repair-v1"
+    ],
+    "provider": "Actual source-defined df-testing-local",
+    "tools": []
+  },
+  "proposedUpperEffects": {
+    "nativeSourceFixtures": 9,
+    "clientOnlyFixtures": 8,
+    "originalFreshNativeClaims": 13,
+    "sourceDefinedOneUseProviderEffects": 10,
+    "partialProviderEffectsIncluded": 1,
+    "completeNativeExecutionsUpper": 9,
+    "unexpectedProviderEffects": 0,
+    "externalProviderPaidLiveModel": 0,
+    "tools": 0,
+    "network": 0,
+    "servicesListenersStartedThisDesign": 0,
+    "setupReadsCommandsDisposalCounts": "Must be refined from later literal fixture before GO"
+  },
+  "authorClosureState": {
+    "current": "fec01c4266695214f72710defcfa9d173839c9d41d471fa94a35d15cd0f6cb4f",
+    "currentStatus": "SOURCE_FROZEN_PENDING_ROOT_BOUNDED_EXECUTION_NOT_RUN",
+    "earlier": "STALE_NOT_EXECUTABLE_AFTER_ROOT_APPROVED_NR_API01",
+    "prior0bf1Executable": false,
+    "authorCommandOrFixtureGOTransfersToIndependent": false,
+    "sourceOnlyAuthorClosureNotIndependentExecutionAuthority": true
+  },
+  "blockers": [
+    {
+      "id": "NRI-B01",
+      "status": "HOLD",
+      "reason": "No independent literal fixture/full imports/principals/setup/barrier/command/source/Node/effects freeze or authoring/executable GO"
+    },
+    {
+      "id": "NRI-B02",
+      "status": "HOLD",
+      "reason": "Actual normal native source/private manager/currentness/usage/handle disposal and snapshot mapping projection not yet observed by this independent lane"
+    },
+    {
+      "id": "NRI-B03",
+      "status": "UNIMPLEMENTED_EXPLICIT_DEBT",
+      "reason": "Collection after lost execute response without executionRef; no owner detail.executions alias/guessed recovery path added"
+    },
+    {
+      "id": "NRI-B04",
+      "status": "UNIMPLEMENTED_EXPLICIT_DEBT",
+      "reason": "Controlled mkdir-failure fault seam absent; genuine unexpected-leaf refusal does not cover it"
+    },
+    {
+      "id": "NRI-B05",
+      "status": "HOLD",
+      "reason": "Retained schema7/native acceptance/CODE/browser/useful model/global criteria prerequisites"
+    }
+  ],
+  "preservation": {
+    "PDISealedDesignAndSourceAndOnceExecutionUnchanged": true,
+    "PDIOrdinaryTOnly": true,
+    "originalNormalSourceAndCoreUnchangedByThisDesign": true,
+    "source5and6NotSubstituted": true,
+    "rootGitOnly": true,
+    "sourceHistoriesPreserved": true
+  },
+  "protectedBoundary": {
+    "blockedReceiptRevisionExperiment": false,
+    "wholeFinalEnvelopeInvestigation": false,
+    "SQL": false,
+    "privateCoreRowsExportsReceipts": false,
+    "cipherHeaderTamperLegacyQuarantineRecovery": false,
+    "rerouteOrReplacementCODE": false
+  },
+  "retainedOriginalFamilies": [
+    "N3-01",
+    "N3-02",
+    "N3-03",
+    "N3-04",
+    "N3-05",
+    "N3-06",
+    "N3-07",
+    "N3-08",
+    "N3-09",
+    "N3-10",
+    "N3-11",
+    "N3-12",
+    "N3-13",
+    "N3-14",
+    "N3-15",
+    "N3-16",
+    "N3-17",
+    "N3-18",
+    "N3-19",
+    "N3-20"
+  ],
+  "retainedAdditiveFamilies": [
+    "N3A-01",
+    "N3A-02",
+    "N3A-03",
+    "N3A-04",
+    "N3A-05",
+    "N3A-06",
+    "N3A-07",
+    "N3A-08",
+    "N3A-09",
+    "N3A-10",
+    "N3A-11",
+    "N3A-12",
+    "N3A-13",
+    "N3A-14",
+    "N3A-15",
+    "N3A-16",
+    "N3A-17",
+    "N3A-18",
+    "N3A-19",
+    "N3A-20"
+  ],
+  "retainedCriterionIds": [
+    "BUB001-01",
+    "BUB001-02",
+    "BUB001-03",
+    "BUB001-04",
+    "BUB001-05",
+    "BUB002-01",
+    "BUB002-02",
+    "BUB002-03",
+    "BUB002-04",
+    "BUB002-05",
+    "BUB003-01",
+    "BUB003-02",
+    "BUB003-03",
+    "BUB003-04",
+    "BUB003-05",
+    "BUB004-01",
+    "BUB004-02",
+    "BUB004-03",
+    "BUB004-04",
+    "BUB004-05",
+    "BUB005-01",
+    "BUB005-02",
+    "BUB005-03",
+    "BUB005-04",
+    "BUB005-05",
+    "BUB006-01",
+    "BUB006-02",
+    "BUB006-03",
+    "BUB006-04",
+    "BUB006-05",
+    "BUB007-01",
+    "BUB007-02",
+    "BUB007-03",
+    "BUB007-04",
+    "BUB007-05",
+    "BUB007-06",
+    "BUB008-01",
+    "BUB008-02",
+    "BUB008-03",
+    "BUB008-04",
+    "BUB008-05",
+    "BUB009-01",
+    "BUB009-02",
+    "BUB009-03",
+    "BUB009-04",
+    "BUB009-05",
+    "BUB010-01",
+    "BUB010-02",
+    "BUB010-03",
+    "BUB010-04",
+    "BUB010-05",
+    "BUB011-01",
+    "BUB011-02",
+    "BUB011-03",
+    "BUB011-04",
+    "BUB011-05",
+    "BUB012-01",
+    "BUB012-02",
+    "BUB012-03",
+    "BUB012-04",
+    "BUB012-05",
+    "BUB013-01",
+    "BUB013-02",
+    "BUB013-03",
+    "BUB013-04",
+    "BUB013-05",
+    "BUB014-01",
+    "BUB014-02",
+    "BUB014-03",
+    "BUB014-04",
+    "BUB014-05",
+    "BUB015-01",
+    "BUB015-02",
+    "BUB015-03",
+    "BUB015-04",
+    "BUB015-05",
+    "BUB016-01",
+    "BUB016-02",
+    "BUB016-03",
+    "BUB016-04",
+    "BUB016-05",
+    "BUB016-06",
+    "DF010-C01",
+    "DF010-C02",
+    "DF010-C03",
+    "DF010-C04",
+    "DF010-C05"
+  ],
+  "priorIndividualCriterionMappingSource": {
+    "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+    "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+    "bytes": 165459
+  },
+  "acceptedCriteria": [],
+  "remainingHolds": [
+    "Actual original normal native lifecycle/current source/private manager/usage/disposal",
+    "Literal independent runtime fixture and exact executable GO",
+    "Lost execute response collection/ref recovery",
+    "Controlled mkdir failure fault coverage",
+    "Schema7/native prerequisite results",
+    "Independent CODE platform hold",
+    "Supported browser/accessibility",
+    "Useful model quality",
+    "All87/full MVP/publication unaccepted"
+  ],
+  "sourceOnlyActions": {
+    "evidenceDocsWritten": 2,
+    "executableFixtureFilesAuthored": 0,
+    "sourceImports": 0,
+    "NodeSyntaxTestCommands": 0,
+    "databaseNativeServicesListenersProviderToolNetworkBrowserGit": 0
+  },
+  "leaseRelease": "This source-only design lease is released on reporting exact docs; later fixture/execution work requires a distinct root lease"
+}

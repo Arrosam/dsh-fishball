@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: disabled audit producer policy accepts its exact old fields while missing fields extras and malformed auditRoles refuse
+ok 1 - disabled audit producer policy accepts its exact old fields while missing fields extras and malformed auditRoles refuse
+  ---
+  duration_ms: 7.637792
+  type: 'test'
+  ...
+# Subtest: audit delayed refresh suppresses an external revision response and releases busy for explicit fresh status
+ok 2 - audit delayed refresh suppresses an external revision response and releases busy for explicit fresh status
+  ---
+  duration_ms: 3.115459
+  type: 'test'
+  ...
+# Subtest: audit delayed configure suppresses external auth drift and releases busy without replaying mutation
+ok 3 - audit delayed configure suppresses external auth drift and releases busy without replaying mutation
+  ---
+  duration_ms: 9.504959
+  type: 'test'
+  ...
+# Subtest: audit old connection cleanup cannot clear a new refresh busy or publish its stale result
+ok 4 - audit old connection cleanup cannot clear a new refresh busy or publish its stale result
+  ---
+  duration_ms: 0.561458
+  type: 'test'
+  ...
+# Subtest: audit task drift disables every mutation and preview with zero sends while preserving a separate safe query control
+ok 5 - audit task drift disables every mutation and preview with zero sends while preserving a separate safe query control
+  ---
+  duration_ms: 8.745333
+  type: 'test'
+  ...
+# Subtest: audit safe same-task query preserves stale uncertainty and cleared consent until explicit refresh
+ok 6 - audit safe same-task query preserves stale uncertainty and cleared consent until explicit refresh
+  ---
+  duration_ms: 1.572625
+  type: 'test'
+  ...
+# Subtest: audit different selected task drops the retained worker and refuses query without a send
+ok 7 - audit different selected task drops the retained worker and refuses query without a send
+  ---
+  duration_ms: 0.606542
+  type: 'test'
+  ...
+# Subtest: audit late same-task query response after auth drift cannot publish a worker phase or recover stale state
+ok 8 - audit late same-task query response after auth drift cannot publish a worker phase or recover stale state
+  ---
+  duration_ms: 2.007709
+  type: 'test'
+  ...
+# Subtest: audit well-formed foreign same-task query identity cannot replace the retained uncertain mapping
+ok 9 - audit well-formed foreign same-task query identity cannot replace the retained uncertain mapping
+  ---
+  duration_ms: 2.928125
+  type: 'test'
+  ...
+# Subtest: audit lost create derives only one exact current task worker and query preserves unknown dispatch without replay
+ok 10 - audit lost create derives only one exact current task worker and query preserves unknown dispatch without replay
+  ---
+  duration_ms: 0.906167
+  type: 'test'
+  ...
+# Subtest: audit unknown create refuses missing ambiguous foreign or malformed current-task worker candidates without query send
+ok 11 - audit unknown create refuses missing ambiguous foreign or malformed current-task worker candidates without query send
+  ---
+  duration_ms: 3.948875
+  type: 'test'
+  ...
+# Subtest: audit unknown-create query rejects a foreign returned identity and late selected-task responses without adoption
+ok 12 - audit unknown-create query rejects a foreign returned identity and late selected-task responses without adoption
+  ---
+  duration_ms: 2.474833
+  type: 'test'
+  ...
+# Subtest: audit disconnect during pending create preserves unknown dispatch through exact readonly recovery without create or execute repeat
+ok 13 - audit disconnect during pending create preserves unknown dispatch through exact readonly recovery without create or execute repeat
+  ---
+  duration_ms: 0.573292
+  type: 'test'
+  ...
+# Subtest: audit disconnect after create response loss retains dispatch uncertainty through refresh and query
+ok 14 - audit disconnect after create response loss retains dispatch uncertainty through refresh and query
+  ---
+  duration_ms: 0.545209
+  type: 'test'
+  ...
+# Subtest: audit disconnect during pending execute retains execution uncertainty and never repeats that send
+ok 15 - audit disconnect during pending execute retains execution uncertainty and never repeats that send
+  ---
+  duration_ms: 0.958292
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 148.837833

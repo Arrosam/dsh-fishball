@@ -1,0 +1,4 @@
+{
+  "src/client-entry.cjs": "b4ec3368a0b0af0ab223e5e937e282bab8392dc0dc54a117fe55257964672aad",
+  "test/native-runtime-client.test.mjs": "13c18e1d3f381ea37dc1ed72079b00f34fd3c4dac9918582a11dad66beb39b1e"
+}

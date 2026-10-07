@@ -1,0 +1,560 @@
+{
+  "contractVersion": "df.ni3-native-runtime-command-results/v1",
+  "freezeSha256": "dbbdc56100da180698df1a1ff5b77569e9ec28654ec87b90b7d30b9e3a19b62a",
+  "startedAt": "2026-10-07T04:12:20.165869+00:00",
+  "completedAt": "2026-10-07T04:12:24.622516+00:00",
+  "commands": [
+    {
+      "ordinal": 1,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/client-entry.cjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.166028+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.253581+00:00",
+      "durationSeconds": 0.08756766701117158,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-01.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-01.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 2,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-audit-native-source.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.254643+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.342443+00:00",
+      "durationSeconds": 0.0878185408655554,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-02.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-02.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 3,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-audit-phases.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.343293+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.434538+00:00",
+      "durationSeconds": 0.09130054200068116,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-03.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-03.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 4,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-config.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.435491+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.522808+00:00",
+      "durationSeconds": 0.0873713749460876,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-04.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-04.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 5,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-owned-stream.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.523762+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.609316+00:00",
+      "durationSeconds": 0.08559733303263783,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-05.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-05.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 6,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-plugin.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.610301+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.701551+00:00",
+      "durationSeconds": 0.09129250003024936,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-06.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-06.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 7,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-role-recipes.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.702471+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.793568+00:00",
+      "durationSeconds": 0.09114250005222857,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-07.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-07.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 8,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-worker-facts.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.794562+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.885806+00:00",
+      "durationSeconds": 0.09128745901398361,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-08.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-08.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 9,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-worker.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.886696+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:20.978032+00:00",
+      "durationSeconds": 0.09137766691856086,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-09.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-09.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 10,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/operator-bridge.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:20.978957+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.070240+00:00",
+      "durationSeconds": 0.09133229218423367,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-10.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-10.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 11,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/runtime-plugin.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.071191+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.162596+00:00",
+      "durationSeconds": 0.09145587496459484,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-11.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-11.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 12,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/testing-provider.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.163560+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.254883+00:00",
+      "durationSeconds": 0.09136970806866884,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-12.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-12.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 13,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "test/native-runtime-client.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.255929+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.343534+00:00",
+      "durationSeconds": 0.08765383390709758,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-13.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-13.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 14,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "test/native-runtime-directory.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.344537+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.436022+00:00",
+      "durationSeconds": 0.09153654193505645,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-14.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-14.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 15,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "test/native-runtime-original-chain.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.437052+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.527151+00:00",
+      "durationSeconds": 0.09013879112899303,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-15.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-15.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 16,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "test/native-runtime-original-lifecycle.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.528157+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.619689+00:00",
+      "durationSeconds": 0.09159545809961855,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-16.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-16.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 17,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "test/native-runtime-source.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.620719+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.699059+00:00",
+      "durationSeconds": 0.07836291613057256,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-17.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-17.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 18,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "src/installed-audit.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.700033+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.784890+00:00",
+      "durationSeconds": 0.08490254217758775,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-18.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-18.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 19,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        "scripts/build-client.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.785870+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:21.873819+00:00",
+      "durationSeconds": 0.08800433413125575,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-19.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-19.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 20,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "test/native-runtime-client.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:21.874906+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:22.137601+00:00",
+      "durationSeconds": 0.2627503329422325,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-20.stdout.txt",
+        "bytes": 4351,
+        "sha256": "0adbc3257560de51eca1b96c4e312a8b0fd793a362ab8a05501e57538b851d1c"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-20.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 21,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "test/native-runtime-source.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:22.138758+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:22.405504+00:00",
+      "durationSeconds": 0.26679129083640873,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-21.stdout.txt",
+        "bytes": 1702,
+        "sha256": "d09695f615de74bd3c67496733fb35cb7ac0dc68f93046c3d15a8bcef8895966"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-21.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 22,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/build-client.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:22.406577+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:22.495680+00:00",
+      "durationSeconds": 0.08915587491355836,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-22.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-22.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 23,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/build-client.mjs",
+        "--check"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:22.496637+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T04:12:22.586575+00:00",
+      "durationSeconds": 0.0899854579474777,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-23.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-23.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "ordinal": 24,
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "test/native-runtime-directory.test.mjs"
+      ],
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+      "startedAt": "2026-10-07T04:12:22.587510+00:00",
+      "exitCode": 1,
+      "finishedAt": "2026-10-07T04:12:24.621383+00:00",
+      "durationSeconds": 2.0339342090301216,
+      "stdout": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-24.stdout.txt",
+        "bytes": 3527,
+        "sha256": "94a3d0d264473bd1663653b8d0e813eefe9dc024d561e56c875c0f49f7f63181"
+      },
+      "stderr": {
+        "path": "docs/evidence/NI3/native-runtime-author-execution/command-24.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "stoppedAtCommand": 24
+}

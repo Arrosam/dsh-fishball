@@ -1,0 +1,11 @@
+{
+  "execution-closure.json": "0bf1a8ae61b416da0c3d798aa161009b32f8ae5e22b058c25a1c58f427221f59",
+  "literal-runtime-diff.patch": "b5b36da4837959f412c3a637289f96beda9e2c6b784bdbfba7bba1bc83985399",
+  "native-runtime-author-source-hold.json": "37bb804fb93778089ecfb189473a10978b048354f87b1ecc348b45d7d13b535e",
+  "native-runtime-author-source-hold.md": "56e873d839ed52869a98b40e1cd7ca6a3a5c33bca012b95c4208077dd90da8c3",
+  "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+  "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+  "src/installed-worker-facts.mjs": "5291442042971664eef10ae23ac27011ab6d27636d5c6c05c03cdb2c30e6eef7",
+  "src/installed-worker.mjs": "df2eae365c522b468591af7182ca2ef01d95052adeee187d6c216214de1ee552",
+  "test/native-runtime-original-chain.test.mjs": "289ed767130aa7470fb88fe25bc699fee79d440c2bee1c66acf8bce067aac941"
+}

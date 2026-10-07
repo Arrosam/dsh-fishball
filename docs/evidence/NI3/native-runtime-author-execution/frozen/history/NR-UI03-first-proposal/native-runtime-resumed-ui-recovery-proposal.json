@@ -1,0 +1,22 @@
+{
+  "id": "NR-UI03",
+  "status": "SOURCE_ONLY_PROPOSED_NOT_APPLIED_NOT_RUN",
+  "beforeSHA256": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
+  "projectedSHA256": "01ea443cba706c8d0f2919ffc07f600c5fbf24e6935ff21003514a85485db72d",
+  "patch": ".runtime/ni3-native-runtime/proposals/NR-UI03.patch",
+  "patchSHA256": "41c3820da4abfe8c6556f43310dd04f27e861ed2d64e4e63b852348cecac0a69",
+  "literalChoices": [
+    "Retained state.worker still follows original same-task exact identity query gate. Only missing worker with uncertain===dispatchAudit plus known planned action may use current authenticated task detail workers.",
+    "Current snapshot must be fresh and exactly same task/version/auth epoch; bounded<=128 workers; exactly one actionRef+actionDigest match. Explicit foreign taskRef rejects. Full refs and checked safe phase required; only intent/submitted normalize to unknown. No session/claim/generation fabricated.",
+    "Query captures frozen projected requested mapping from current task detail before send; result must match all7 original identity fields. No ambiguous/missing/malformed/foreign adoption.",
+    "canQuery exposes same readonly zero-effect predicate for Query role facts button; named auditQuery remains sole stale run exception, preserving stale/uncertainty/no consent.",
+    "create remains blocked while uncertain dispatchAudit; no retry, create,execute,capture,grant,permit,settlement or provider effects. Original host query authority remains unchanged."
+  ],
+  "fixtures": [
+    "Lost dispatchAudit response but exact original task detail unique worker: create fenced, canQuery true, query sends only exact mapping and retains dispatch uncertainty/stale.",
+    "Missing/ambiguous/foreign action+digest/foreign task/malformed phase or refs rows: canQuery false, query zero send, no mapping adoption.",
+    "Changed query response identity: rejects while original retained/candidate facts and dispatch uncertainty remain.",
+    "Late query response after selected task/version/auth drift ignored; no replacement or replay."
+  ],
+  "execution": false
+}

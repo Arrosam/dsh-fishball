@@ -1,0 +1,23 @@
+{
+  "id": "NR-UI04-followup",
+  "status": "PUBLIC_PROJECTION_FOLLOWUP_NOT_IMPLEMENTED_NOT_RUN",
+  "currentClientSHA256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+  "originalRuntimeStoreSHA256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+  "confirmedPublicSurface": "Original snapshot returns same-scope detail.executions; worker/reviewer rows are generation-filtered, owner current snapshot retains task-scoped execution records. No core/public role changes needed.",
+  "concreteGap": "After lost executeAudit response, audit state.execution remains null and uncertain executeAudit survives disconnect/query/status. Query restores/observes worker only. collect/finish require executionRef, so client collection is unavailable although original server may retain an execution/result. This is not runtime PASS or cold/native adoption proof.",
+  "minimalFutureAlgorithm": [
+    "Require active fresh selected task snapshot and an existing exact current action/input/worker; do not mutate or request new execution.",
+    "Select exactly one current detail.executions record matching same selected task, known actionRef+actionDigest, claimRef+generationRef+sessionRef, approved input recordRef+digest+purpose. Reject none/multiple, foreign/malformed/unsupported state, changed version/epoch or mismatched original source associations.",
+    "Original exported execution-record field names/state whitelist must be frozen literally before implementation; no guessed aliases, row index, label, arbitrary supplied executionRef or JSON cold authority.",
+    "Project only authentic observed executionRef and factual state for explicit original collect/query; preserve execute uncertainty and stale consent, never create/re-execute/reserve/grant/settle or fake result/usage.",
+    "Original retained native manager and original result collector remain authoritative for explicit collection/finish. If no actual retained original result/manager association is available, preserve unknown instead of guessing or replaying."
+  ],
+  "neededDiscriminators": [
+    "Lost execute acknowledgement with one exact original current owner execution record can identify only that retained execution for explicit collection, never another send.",
+    "Absent/duplicate/foreign task/action/digest/claim/generation/session/input/source or malformed/state row refuses without collection/execution.",
+    "Read-only query/status plus disconnect cannot clear uncertainty or authorize a retry; late response/task/auth drift ignored."
+  ],
+  "executionRecordFieldMapping": "NOT_FROZEN; this followup is requirements/algorithm proposal only, not a code patch or successful native recovery claim.",
+  "effectsPerformed": "Python source read/hash and new JSON evidence write only. No JS/import/test/native/DB/network/listener/Git action.",
+  "mainSourceFreeze": "Approved ordinary positive original producer/reviewer/repair/freshreview chain remains separately frozen for root bounded GO; followup does not alter approved source."
+}

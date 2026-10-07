@@ -1,0 +1,2964 @@
+{
+  "contractVersion": "df.ni3-native-runtime-source-closure/v2",
+  "status": "SOURCE_FROZEN_PENDING_ROOT_BOUNDED_EXECUTION_NOT_RUN",
+  "owner": "/root/ni3_runtime_resume",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-runtime",
+  "runtime": {
+    "binary": "/opt/homebrew/opt/node@22/bin/node",
+    "resolvedBinary": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "expectedVersion": "v22.22.2"
+  },
+  "commandsProposedNotAuthorized": [
+    "/opt/homebrew/opt/node@22/bin/node --check src/client-entry.cjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-audit-native-source.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-audit-phases.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-config.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-owned-stream.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-plugin.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-role-recipes.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-worker-facts.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-worker.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/operator-bridge.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/runtime-plugin.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/testing-provider.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check test/native-runtime-client.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check test/native-runtime-directory.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check test/native-runtime-original-chain.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check test/native-runtime-original-lifecycle.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check test/native-runtime-source.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check src/installed-audit.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --check scripts/build-client.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test test/native-runtime-client.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test test/native-runtime-source.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node scripts/build-client.mjs",
+    "/opt/homebrew/opt/node@22/bin/node scripts/build-client.mjs --check",
+    "/opt/homebrew/opt/node@22/bin/node --test test/native-runtime-directory.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test test/native-runtime-original-lifecycle.test.mjs",
+    "/opt/homebrew/opt/node@22/bin/node --test test/native-runtime-original-chain.test.mjs"
+  ],
+  "stopRule": "Every listed executable command remains HOLD until root grants this exact complete dependency/source closure plus separate bounded command GO. Stop at first failed/denied action; retain first outcome; no retry/workaround or broadened runner.",
+  "allCandidateFiles": {
+    "src/approval-preview.mjs": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+    "src/audit-input-pair.mjs": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc",
+    "src/audit.mjs": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+    "src/chat.mjs": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+    "src/client-entry.cjs": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
+    "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+    "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+    "src/control.mjs": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f",
+    "src/coordinator.mjs": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+    "src/environment.mjs": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+    "src/event-clock.mjs": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+    "src/events.mjs": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+    "src/fishball-memory-core.mjs": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+    "src/foundation.mjs": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+    "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+    "src/index.mjs": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929",
+    "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+    "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+    "src/installed-audit.mjs": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+    "src/installed-config.mjs": "8161a5ed881d413e0b889ba20d4167b5ec502619240f5a1ef2b33808d12bccee",
+    "src/installed-events.mjs": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a",
+    "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+    "src/installed-memory-continuity.mjs": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382",
+    "src/installed-memory.mjs": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+    "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+    "src/installed-plugin.mjs": "c57d089d50013af6fcee7d36831dd631a970d72e2e5d8f0bc4b2c6ffba0aee97",
+    "src/installed-results.mjs": "f98296928737a7f8a2feb7c487fe8ff06af17a4d5fed631b561a5ece7d5c77d8",
+    "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+    "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+    "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+    "src/installed-worker.mjs": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+    "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+    "src/memory.mjs": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+    "src/messages.mjs": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+    "src/native-adapter.mjs": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+    "src/native-contributions.mjs": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+    "src/notifications.mjs": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+    "src/operator-bridge.mjs": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+    "src/results.mjs": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+    "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+    "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+    "src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+    "src/scheduler.mjs": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+    "src/setup-state.mjs": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+    "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+    "src/worker.mjs": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+    "test/native-runtime-client.test.mjs": "6ae5613fc5b948f7e2e9fdba4368dcf967f8a0b302a71022e46706450af065a4",
+    "test/native-runtime-directory.test.mjs": "240cc8b8df280076863bcff4a65b2e4f379458072514c02a8b904ce147471ef3",
+    "test/native-runtime-original-chain.test.mjs": "5155043b548c832479a2c56e61fa261523eb8569109ae1bd5e44306bc0496272",
+    "test/native-runtime-original-lifecycle.test.mjs": "41226d5e1370b47c4ebe625627949404262a81cd8cdda84dad962057f2ca3f40",
+    "test/native-runtime-source.test.mjs": "16e7cd79bd893fba3c659d76afff56cef12cb93ba219b35918cccec1d8c6e248",
+    "scripts/build-client.mjs": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+    "scripts/dsh-web-runtime-lock.json": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+    "original/client-entry.cjs": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+    "original/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+    "original/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+    "original/installed-config.mjs": "3da0ed1c99cd1ed920e7093fad0dafc6ce5f1653bfd09879018a10dd8d02e5ed",
+    "original/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+    "original/installed-plugin.mjs": "73f65198c642b3b3c1413c7fbb8ffd0a2a6b56605abbc0a5bfce875a9177ea1d",
+    "original/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+    "original/installed-worker-facts.mjs": "22cb737371b43575a81eaf5281027a0cfae5c90b7fdbb89895d501f5dabc18b8",
+    "original/installed-worker.mjs": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb",
+    "original/operator-bridge.mjs": "9227a0126e662bc150fa64b152cd4a380c8b70c7e5160a1ed151c6103422aa77",
+    "original/runtime-plugin.mjs": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2",
+    "original/testing-provider.mjs": "524ac375aaf4011536ebc1e2b9f8c418d96a2c5f242329a278f55afcfbb3d8d7",
+    "LICENSE": "e65cdd31ae4a1bbbb2ff700b6e12c2317de385c355af15c4d473ead81468a6fa",
+    "THIRD_PARTY_NOTICES.md": "1d2774c8a7b25728afda591265f1d46509eefc3f0437448fbe9625ca1a99f182",
+    "package.json": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+  },
+  "authorChangedFiles": {
+    "src/client-entry.cjs": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
+    "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+    "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+    "src/installed-config.mjs": "8161a5ed881d413e0b889ba20d4167b5ec502619240f5a1ef2b33808d12bccee",
+    "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+    "src/installed-plugin.mjs": "c57d089d50013af6fcee7d36831dd631a970d72e2e5d8f0bc4b2c6ffba0aee97",
+    "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+    "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+    "src/installed-worker.mjs": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+    "src/operator-bridge.mjs": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+    "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+    "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+    "test/native-runtime-client.test.mjs": "6ae5613fc5b948f7e2e9fdba4368dcf967f8a0b302a71022e46706450af065a4",
+    "test/native-runtime-directory.test.mjs": "240cc8b8df280076863bcff4a65b2e4f379458072514c02a8b904ce147471ef3",
+    "test/native-runtime-original-chain.test.mjs": "5155043b548c832479a2c56e61fa261523eb8569109ae1bd5e44306bc0496272",
+    "test/native-runtime-original-lifecycle.test.mjs": "41226d5e1370b47c4ebe625627949404262a81cd8cdda84dad962057f2ca3f40",
+    "test/native-runtime-source.test.mjs": "16e7cd79bd893fba3c659d76afff56cef12cb93ba219b35918cccec1d8c6e248"
+  },
+  "literalDiff": {
+    "path": "literal-runtime-diff.patch",
+    "sha256": "d5b1b4b17885b6d694887f7f183ddd0152549878777522b9cbcc82bfe1f0f698"
+  },
+  "sourceTextClosures": [
+    {
+      "entry": "src/runtime-plugin.mjs",
+      "localModules": {
+        "src/approval-preview.mjs": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+        "src/audit-input-pair.mjs": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc",
+        "src/audit.mjs": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+        "src/chat.mjs": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "src/coordinator.mjs": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+        "src/environment.mjs": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+        "src/event-clock.mjs": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+        "src/events.mjs": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+        "src/fishball-memory-core.mjs": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+        "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/memory.mjs": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "src/messages.mjs": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+        "src/native-adapter.mjs": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+        "src/native-contributions.mjs": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+        "src/notifications.mjs": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+        "src/operator-bridge.mjs": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+        "src/results.mjs": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+        "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "src/scheduler.mjs": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+        "src/worker.mjs": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+      },
+      "nodeBuiltins": [
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/approval-preview.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/audit.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/chat.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/coordinator.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-native-source.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-phases.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/memory.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-adapter.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-contributions.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/notifications.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/operator-bridge.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-store.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/scheduler.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/worker.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/environment.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/audit-input-pair.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/event-clock.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/event-clock.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-store.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/results.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/fishball-memory-core.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-owned-stream.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/coordinator.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/audit.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/runtime-security.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "src/installed-plugin.mjs",
+      "localModules": {
+        "src/approval-preview.mjs": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+        "src/audit-input-pair.mjs": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc",
+        "src/audit.mjs": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+        "src/chat.mjs": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "src/coordinator.mjs": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+        "src/environment.mjs": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+        "src/event-clock.mjs": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+        "src/events.mjs": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+        "src/fishball-memory-core.mjs": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+        "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+        "src/installed-audit.mjs": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "src/installed-config.mjs": "8161a5ed881d413e0b889ba20d4167b5ec502619240f5a1ef2b33808d12bccee",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-memory.mjs": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320",
+        "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "src/installed-plugin.mjs": "c57d089d50013af6fcee7d36831dd631a970d72e2e5d8f0bc4b2c6ffba0aee97",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/installed-worker.mjs": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/memory.mjs": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "src/messages.mjs": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+        "src/native-adapter.mjs": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+        "src/native-contributions.mjs": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+        "src/notifications.mjs": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+        "src/operator-bridge.mjs": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+        "src/results.mjs": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+        "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "src/scheduler.mjs": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+        "src/setup-state.mjs": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+        "src/worker.mjs": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+      },
+      "nodeBuiltins": [
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/installed-config.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/installed-memory.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/installed-worker.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/runtime-plugin.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-plugin.mjs",
+          "to": "src/setup-state.mjs"
+        },
+        {
+          "from": "src/setup-state.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/setup-state.mjs",
+          "to": "src/runtime-store.mjs"
+        },
+        {
+          "from": "src/runtime-store.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/approval-preview.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/audit.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/chat.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/coordinator.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-native-source.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-phases.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/memory.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-adapter.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-contributions.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/notifications.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/operator-bridge.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-store.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/scheduler.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/worker.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/environment.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/audit-input-pair.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/event-clock.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/event-clock.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/results.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/fishball-memory-core.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-owned-stream.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/coordinator.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/audit.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-memory.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-memory.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-config.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "src/installed-config.mjs",
+          "to": "src/installed-worker-config.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "src/installed-worker.mjs",
+      "localModules": {
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-audit.mjs": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/installed-worker.mjs": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c"
+      },
+      "nodeBuiltins": [
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-owned-stream.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/runtime-security.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "src/installed-audit.mjs",
+      "localModules": {
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "src/installed-audit.mjs": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+      },
+      "nodeBuiltins": [
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [],
+      "literalLocalEdges": [
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "src/client-entry.cjs",
+      "localModules": {
+        "src/client-entry.cjs": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620"
+      },
+      "nodeBuiltins": [],
+      "literalBareSpecifiers": [
+        "react"
+      ],
+      "literalLocalEdges": [],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "scripts/build-client.mjs",
+      "localModules": {
+        "scripts/build-client.mjs": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+        "src/client-entry.cjs": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620"
+      },
+      "nodeBuiltins": [
+        "node:fs",
+        "node:module",
+        "node:url",
+        "node:vm"
+      ],
+      "literalBareSpecifiers": [
+        "react"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "scripts/build-client.mjs",
+          "to": "src/client-entry.cjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "test/native-runtime-client.test.mjs",
+      "localModules": {
+        "src/client-entry.cjs": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
+        "test/native-runtime-client.test.mjs": "6ae5613fc5b948f7e2e9fdba4368dcf967f8a0b302a71022e46706450af065a4"
+      },
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:module",
+        "node:test"
+      ],
+      "literalBareSpecifiers": [
+        "react"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "test/native-runtime-client.test.mjs",
+          "to": "src/client-entry.cjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "test/native-runtime-directory.test.mjs",
+      "localModules": {
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+        "test/native-runtime-directory.test.mjs": "240cc8b8df280076863bcff4a65b2e4f379458072514c02a8b904ce147471ef3"
+      },
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:test",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "test/native-runtime-directory.test.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "test/native-runtime-directory.test.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "test/native-runtime-directory.test.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "test/native-runtime-directory.test.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "test/native-runtime-directory.test.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "test/native-runtime-original-chain.test.mjs",
+      "localModules": {
+        "src/approval-preview.mjs": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+        "src/audit-input-pair.mjs": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc",
+        "src/audit.mjs": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+        "src/chat.mjs": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "src/coordinator.mjs": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+        "src/environment.mjs": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+        "src/event-clock.mjs": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+        "src/events.mjs": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+        "src/fishball-memory-core.mjs": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+        "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+        "src/installed-audit.mjs": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/installed-worker.mjs": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/memory.mjs": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "src/messages.mjs": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+        "src/native-adapter.mjs": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+        "src/native-contributions.mjs": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+        "src/notifications.mjs": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+        "src/operator-bridge.mjs": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+        "src/results.mjs": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+        "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "src/scheduler.mjs": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+        "src/worker.mjs": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+        "test/native-runtime-original-chain.test.mjs": "5155043b548c832479a2c56e61fa261523eb8569109ae1bd5e44306bc0496272"
+      },
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:stream",
+        "node:test",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "test/native-runtime-original-chain.test.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "test/native-runtime-original-chain.test.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "test/native-runtime-original-chain.test.mjs",
+          "to": "src/installed-worker.mjs"
+        },
+        {
+          "from": "test/native-runtime-original-chain.test.mjs",
+          "to": "src/runtime-plugin.mjs"
+        },
+        {
+          "from": "test/native-runtime-original-chain.test.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/approval-preview.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/audit.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/chat.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/coordinator.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-native-source.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-phases.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/memory.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-adapter.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-contributions.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/notifications.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/operator-bridge.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-store.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/scheduler.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/worker.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/environment.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/audit-input-pair.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/event-clock.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/event-clock.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-store.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/results.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/fishball-memory-core.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-owned-stream.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/coordinator.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/audit.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/runtime-security.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "test/native-runtime-original-lifecycle.test.mjs",
+      "localModules": {
+        "src/approval-preview.mjs": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+        "src/audit-input-pair.mjs": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc",
+        "src/audit.mjs": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+        "src/chat.mjs": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556",
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/context.mjs": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "src/coordinator.mjs": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365",
+        "src/environment.mjs": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63",
+        "src/event-clock.mjs": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+        "src/events.mjs": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f",
+        "src/fishball-memory-core.mjs": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+        "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+        "src/installed-audit.mjs": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/memory.mjs": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "src/messages.mjs": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+        "src/native-adapter.mjs": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+        "src/native-contributions.mjs": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+        "src/notifications.mjs": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+        "src/operator-bridge.mjs": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+        "src/results.mjs": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+        "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "src/scheduler.mjs": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+        "src/worker.mjs": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+        "test/native-runtime-original-lifecycle.test.mjs": "41226d5e1370b47c4ebe625627949404262a81cd8cdda84dad962057f2ca3f40"
+      },
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:stream",
+        "node:test",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "test/native-runtime-original-lifecycle.test.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "test/native-runtime-original-lifecycle.test.mjs",
+          "to": "src/installed-audit.mjs"
+        },
+        {
+          "from": "test/native-runtime-original-lifecycle.test.mjs",
+          "to": "src/runtime-plugin.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/approval-preview.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/audit.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/chat.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/coordinator.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-native-source.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-audit-phases.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/memory.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-adapter.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/native-contributions.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/notifications.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/operator-bridge.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/runtime-store.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/scheduler.mjs"
+        },
+        {
+          "from": "src/runtime-plugin.mjs",
+          "to": "src/worker.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/worker.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/environment.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/audit-input-pair.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/event-clock.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/scheduler.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/events.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/event-clock.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-store.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/results.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/notifications.mjs",
+          "to": "src/results.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-contributions.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/environment.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/native-adapter.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/memory.mjs",
+          "to": "src/fishball-memory-core.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-native-source.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-owned-stream.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/coordinator.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/events.mjs"
+        },
+        {
+          "from": "src/chat.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/audit.mjs",
+          "to": "src/messages.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/audit-input-pair.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/approval-preview.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/context.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/installed-audit.mjs",
+          "to": "src/runtime-security.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    },
+    {
+      "entry": "test/native-runtime-source.test.mjs",
+      "localModules": {
+        "src/config.mjs": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "src/host-probe.mjs": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+        "src/installed-audit-phases.mjs": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792",
+        "src/installed-invocation.mjs": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "src/installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+        "src/installed-worker-config.mjs": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "src/runtime-security.mjs": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "src/testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+        "test/native-runtime-source.test.mjs": "16e7cd79bd893fba3c659d76afff56cef12cb93ba219b35918cccec1d8c6e248"
+      },
+      "nodeBuiltins": [
+        "node:assert/strict",
+        "node:async_hooks",
+        "node:crypto",
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:sqlite",
+        "node:test",
+        "node:url",
+        "node:util"
+      ],
+      "literalBareSpecifiers": [
+        "@deepseek-ai/dsh/package.json",
+        "dsh-fishball/testing-provider"
+      ],
+      "literalLocalEdges": [
+        {
+          "from": "test/native-runtime-source.test.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "test/native-runtime-source.test.mjs",
+          "to": "src/installed-audit-phases.mjs"
+        },
+        {
+          "from": "test/native-runtime-source.test.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "test/native-runtime-source.test.mjs",
+          "to": "src/installed-owned-stream.mjs"
+        },
+        {
+          "from": "test/native-runtime-source.test.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "test/native-runtime-source.test.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/runtime-security.mjs",
+          "to": "src/ledger.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-role-recipes.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-owned-stream.mjs",
+          "to": "src/installed-invocation.mjs"
+        },
+        {
+          "from": "src/installed-invocation.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/installed-worker-facts.mjs"
+        },
+        {
+          "from": "src/installed-audit-phases.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-facts.mjs",
+          "to": "src/testing-provider.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/host-probe.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-role-recipes.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/installed-worker-config.mjs"
+        },
+        {
+          "from": "src/testing-provider.mjs",
+          "to": "src/runtime-security.mjs"
+        },
+        {
+          "from": "src/installed-worker-config.mjs",
+          "to": "src/config.mjs"
+        },
+        {
+          "from": "src/host-probe.mjs",
+          "to": "src/config.mjs"
+        }
+      ],
+      "missingLiteralLocalModules": []
+    }
+  ],
+  "engineSecondFreeze": {
+    ".runtime/ni3-native-composition/execution-closure.json": "a7cf6104d468e38a51c441c20983962eaadcb1c7b0a55b89fd5075dfeefcac6f",
+    ".runtime/ni3-native-composition/literal-diffs.patch": "e9441843864a0aeb22e0ee05625fa3a497088ad97d5568cd7e8e418fa34d9250",
+    ".runtime/ni3-native-composition/src/native-contributions.mjs": "8610b7ef36b401bad3733b793b0641664e588b85c97ba39d1419b97333f0f99b",
+    ".runtime/ni3-native-composition/src/native-adapter.mjs": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0",
+    ".runtime/ni3-native-composition/src/approval-preview.mjs": "b5eee2bcb86422368b1c0059c94d274cd80dedab43722127882abf311642c792",
+    ".runtime/ni3-native-composition/src/worker.mjs": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d",
+    ".runtime/ni3-native-composition/src/audit-input-pair.mjs": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+  },
+  "core6": {
+    "src/ledger.mjs": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+    "src/runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+    "sourceAlgorithmsChanged": false,
+    "original5": "Engine/root exact original5 schema5-core fixture provenance retained separately; no version5 bytes relabeled6."
+  },
+  "publicGraph": {
+    "path": "public-graph-pins.json",
+    "sha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd",
+    "scope": "All original flat host node_modules files, package metadata, binary and symbolic link paths are pinned; source/hash reads only.",
+    "normalResolution": "Actual original import.meta.resolve/resolveHostSource remains mandatory at execution, no path fallback/registry patch. Candidate testing-provider self export is expected to resolve to this exact candidate src/testing-provider.mjs through original Loader baseUrl.",
+    "runtimeLockSha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+  },
+  "testLeaves": [
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "disabled audit producer policy accepts its exact old fields while missing fields extras and malformed auditRoles refuse",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit delayed refresh suppresses an external revision response and releases busy for explicit fresh status",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit delayed configure suppresses external auth drift and releases busy without replaying mutation",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit old connection cleanup cannot clear a new refresh busy or publish its stale result",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit task drift disables every mutation and preview with zero sends while preserving a separate safe query control",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit safe same-task query preserves stale uncertainty and cleared consent until explicit refresh",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit different selected task drops the retained worker and refuses query without a send",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit late same-task query response after auth drift cannot publish a worker phase or recover stale state",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-client.test.mjs",
+      "name": "audit well-formed foreign same-task query identity cannot replace the retained uncertain mapping",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "original absent directory allocation survives producer aggregate spread and review repair fresh-review refresh",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "original review-first allocation is the same authenticated backend leaf for later repair and producer",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "genuine preexisting leaf stays approved and source-issued token refuses copied or foreign provenance",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "original allocated leaf mode replacement symlink and unowned creation remain closed refusals",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "actual original backend source lifecycle and original owner carrier refuse stale allocation access",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "original profile environment and backend configuration drift cannot adopt the retained directory token",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-directory.test.mjs",
+      "name": "another genuine original contribution context cannot reuse an authentic source directory token",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-original-chain.test.mjs",
+      "name": "original source chain produces unknown review, fixed119 repair and fresh unknown re-review with separate charged native sessions",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-original-lifecycle.test.mjs",
+      "name": "original disabled audit installs once without resolving sources or allocating sessions, and seals at owned lifecycle close",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-source.test.mjs",
+      "name": "source role recipes remain truthful unknown, exact repair119 and separate explicitly selected models",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-source.test.mjs",
+      "name": "typed source phases bind a fresh opaque reviewer and retain exact source capture/submission commands",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-source.test.mjs",
+      "name": "typed repair acknowledgement cut reconciles original fixed version and never recollects or recomputes child input",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-source.test.mjs",
+      "name": "lazy original owner carrier covers iterator steps, await, consumer close and late revocation",
+      "status": "NOT_RUN"
+    },
+    {
+      "file": "test/native-runtime-source.test.mjs",
+      "name": "original captured carrier reaches awaited iterator return and refuses a midstream revoked finalizer without claiming cleanup",
+      "status": "NOT_RUN"
+    }
+  ],
+  "effects": {
+    "sourceOnlyPerformed": "Read/hash/source-text indexing only plus Python standard library histories/diff/candidate/evidence writes and apply_patch source edits. All27577 original graph files and12 links verified byte-for-byte against prior manifest; Node binary hash verified by file read without invocation. No JS parse/import/syntax/build/test/DB/native/listener/network/Git/browser execution.",
+    "syntaxProposed": "Parse only named changed sources/tests/build script; no module imports.",
+    "typedTestProposed": "5 named source groups; original recipe/phases plus explicitly typed phase doubles and actual run/capture/assert invocation APIs. Host-probe module imports pinned public modules and node:sqlite binding, but no DatabaseSync/native-service construction or network. Actual owner tokens test lazy next/await/current return and awaited return; revoked prefirst/midstream return refuses before new effects/finalizer. No native handle disposal/release claim from helper.",
+    "clientBuildProposed": "Require exact candidate client-entry.cjs factory, create candidate/lib only, write/rename generated client.js, parse generated source with vm.Script without evaluating; no browser, listener or network.",
+    "lifecycleTestProposed": "One new mode700 tmp profile; genuine pinned Context/SessionStore/Projections/Approval/WebServer/HostConnection. Original runtime creates ephemeral SQLite. Actual original in-process RPC route with explicit synthetic auth predicate, nine structurally valid disabled operation calls;17 callbacks and single disposal checked. No listen or socket, zero agents/sessions/provider/LLM stream.",
+    "chainTestProposed": "Original public package classes, original pinned Loader/AgentLoop/JSONL persistence/ToolRegistry/empty preset/provider registration. Actual source-owned deterministic provider recipe only, four distinct native idle agents/sessions with explicit native send/collection per producer/review/repair/freshreview; SQLite and uncompressed JSONL only under new owner-mode700 temporary synthetic profile, no original installed profile. Original two-message UTF8 request+response charges and actual persisted result evidence; tools restricted allow[] plus dispatch veto; never tool dispatch, system command, provider account, network, listener, HTTP socket, browser, CODE, external inference, task auto-complete, semantic pass/quality claim. Actual module imports may load original native package dependencies; exact full host graph pinned. Owner/lifetime assertions and disposal remain source-owned. Additional original backend read handles stat/open/read/close before and after each finish verify four materialized logs, actual UTF8 usage and exact producer113/repair119/unknown review payloads. Actual workerCatalog refresh asserts accepted policy and single original dev/ino/uid/mode leaf remain stable. One new fixture profile; exactly four native agents/sessions and four source-owned synthetic provider streams.",
+    "receipts": "Actual store capture/publish creates audit data/report/fixed-version repair under fixture explicit CAS only. Lost typed acknowledgement reconciles same fixed private child command/input without recollect. Query may persist authenticated observations but never create/execute/capture/submit/artifact/grant/settle/release.",
+    "clientTestProposed": "9 named client source groups, explicit wire RPC and React tree doubles only. Require exact self-contained candidate CJS factory; builtin test/assert/module/crypto; no host classes, DB, actual DOM, browser, listener, model, provider or source replacements.",
+    "directoryTestProposed": "7 named original service source groups using13 new mode700 tmp synthetic profiles and genuine pinned public Context/Loader/SessionPersistenceJsonl/AgentRegistry/LlmRuntime/Tools/Approval/AgentLoop/Prompt/Presets/Projections plus source-owned testing provider metadata. No WorkerManager/NativeAdapter/DB construction/session or agent create/LLM stream; stream callback throws if invoked; each fixture checks zero registry/session/tools. Actual original source claimDirectory creates owned0700 leaf; original Loader entry update/disable, filesystem chmod/rename/create/symlink/delete on owned fixture paths induce source refusals, no original installed profile touched.",
+    "dynamicOriginalImports": "Source-text index is conservative literal inventory, not Node resolution proof. Genuine public class imports are source-owned resolveHostSource + pathToFileURL expressions; original installed facts uses actual import.meta.resolve(package) and pinned public modules/services/classes/Loader lifetimes. Original Loader imports original loop/backend and candidate self-export testing provider through exact package name/baseUrl. Entire existing27577-file/12-link host graph is pinned and rehashed; no fallback path/import shim/registry replacement. Client requires React only when factory is called; explicit React wire tree double supplies it in client test. Build requires CJS factory without calling it; generated lib/client.js is future build output, presently absent and not represented as successful."
+  },
+  "pendingDependency": null,
+  "remainingAcceptedScope": "Source authoring complete within approved ordinary runtime lane; no executable verification yet. DIR7 forced mkdir failure remains explicit oracle gap. Independent source/test design/code subsets, final bounded runtime execution, promotion and all40/all87/native installed/UI/model-quality/cold7 acceptance remain held.",
+  "holds": [
+    "all40 NI3 families and all87 dispositions",
+    "useful-model semantic review/repair quality",
+    "CODE",
+    "browser",
+    "live models/accounts/network/real tools",
+    "cold schema7 provenance/adoption",
+    "original installed profile/DB/native HTTP host"
+  ],
+  "amendments": {
+    "NR-C01": {
+      "beforeHistory": "history/NR-C01-before/pins.json",
+      "sha256": "05c906ec16331b55b060ead16b108c99f4306d4c2e3360cf13ee26824cc6d14c",
+      "newHelper": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+      "reason": "Drive lazy iterator steps and close, rather than its construction, under actual captured original owner token; preserve checks before/after await/yield/catch/close.",
+      "test": "Fourth typed source leaf checks actual installed invocation carrier outside original run and late revocation before effect. NOT_RUN."
+    },
+    "NR-DIR01": {
+      "facts": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+      "worker": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+      "authority": "Root approved exact two-file patch before interruption; only actual original source opaque directory token shared; guards unchanged.",
+      "fixture": "240cc8b8df280076863bcff4a65b2e4f379458072514c02a8b904ce147471ef3"
+    },
+    "PD01": {
+      "path": "src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "authority": "Root approved PD01 overlay before quota interruption; exact source copied, no installer edits here",
+      "before": "history/PD01-before/pins.json",
+      "fullChainRunnableClaim": false
+    },
+    "NR-UI01": {
+      "before": "history/NR-UI01-before/pins.json",
+      "approvedPatch": "4d88ac0cbc4d5b995f22e3384d18c815b9532ce53a8fa0da9f382e92a412c94c",
+      "approvedClient": "b4ec3368a0b0af0ab223e5e937e282bab8392dc0dc54a117fe55257964672aad"
+    },
+    "NR-UI02": {
+      "before": "history/NR-UI02-before/pins.json",
+      "approvedPatch": "fbbf17cc1e6dca3171fff65c7d28aedb6a2f9254bf1527a8f4d1dc3fca297501",
+      "approvedClient": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
+      "rejectedProposalHistory": [
+        "history/NR-UI02-first-proposal",
+        "history/NR-UI02-second-proposal",
+        "history/NR-UI02-third-proposal"
+      ]
+    },
+    "NR-return-discriminator": {
+      "fixture": "16e7cd79bd893fba3c659d76afff56cef12cb93ba219b35918cccec1d8c6e248",
+      "sourceChanged": false,
+      "status": "NOT_RUN",
+      "meaning": "Current awaited return uses authentic carrier; revoked midstream return refuses arbitrary late finalizer. Original native manager/handle disposal remains separate; no instant cancellation/release promise."
+    }
+  },
+  "executionAuthorized": false,
+  "executionPerformed": false,
+  "literalImportIndex": {
+    "src/approval-preview.mjs": [
+      "./audit-input-pair.mjs",
+      "./context.mjs",
+      "./runtime-security.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/audit-input-pair.mjs": [
+      "./runtime-security.mjs"
+    ],
+    "src/audit.mjs": [
+      "./messages.mjs"
+    ],
+    "src/chat.mjs": [
+      "./context.mjs",
+      "./events.mjs",
+      "./runtime-security.mjs",
+      "node:util"
+    ],
+    "src/client-entry.cjs": [
+      "react"
+    ],
+    "src/config.mjs": [
+      "node:path",
+      "node:util"
+    ],
+    "src/context.mjs": [
+      "node:crypto",
+      "node:util"
+    ],
+    "src/control.mjs": [
+      "./messages.mjs"
+    ],
+    "src/coordinator.mjs": [
+      "./context.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/environment.mjs": [
+      "./context.mjs",
+      "node:crypto",
+      "node:fs",
+      "node:path",
+      "node:util"
+    ],
+    "src/event-clock.mjs": [
+      "./runtime-security.mjs"
+    ],
+    "src/events.mjs": [
+      "./context.mjs",
+      "./runtime-security.mjs"
+    ],
+    "src/fishball-memory-core.mjs": [
+      "node:util"
+    ],
+    "src/foundation.mjs": [
+      "./ledger.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/host-probe.mjs": [
+      "./config.mjs",
+      "@deepseek-ai/dsh/package.json",
+      "node:crypto",
+      "node:fs",
+      "node:path",
+      "node:sqlite",
+      "node:url"
+    ],
+    "src/index.mjs": [
+      "./config.mjs",
+      "./foundation.mjs",
+      "./host-probe.mjs"
+    ],
+    "src/installed-audit-native-source.mjs": [
+      "./config.mjs",
+      "./installed-invocation.mjs",
+      "./installed-owned-stream.mjs",
+      "./installed-role-recipes.mjs",
+      "./installed-worker-facts.mjs",
+      "./runtime-security.mjs",
+      "node:util"
+    ],
+    "src/installed-audit-phases.mjs": [
+      "./config.mjs",
+      "./installed-worker-facts.mjs",
+      "./runtime-security.mjs"
+    ],
+    "src/installed-audit.mjs": [
+      "./config.mjs",
+      "./context.mjs",
+      "./installed-invocation.mjs",
+      "./installed-worker-config.mjs",
+      "./runtime-security.mjs",
+      "node:util"
+    ],
+    "src/installed-config.mjs": [
+      "./config.mjs",
+      "./installed-audit.mjs",
+      "./installed-worker-config.mjs"
+    ],
+    "src/installed-events.mjs": [
+      "./context.mjs",
+      "./event-clock.mjs",
+      "./runtime-security.mjs"
+    ],
+    "src/installed-invocation.mjs": [
+      "./config.mjs",
+      "node:async_hooks"
+    ],
+    "src/installed-memory-continuity.mjs": [
+      "./context.mjs",
+      "./fishball-memory-core.mjs",
+      "./installed-invocation.mjs",
+      "./memory.mjs",
+      "./runtime-store.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/installed-memory.mjs": [
+      "./config.mjs",
+      "./host-probe.mjs",
+      "node:crypto",
+      "node:fs",
+      "node:url"
+    ],
+    "src/installed-owned-stream.mjs": [
+      "./installed-invocation.mjs"
+    ],
+    "src/installed-plugin.mjs": [
+      "./config.mjs",
+      "./host-probe.mjs",
+      "./installed-audit.mjs",
+      "./installed-config.mjs",
+      "./installed-memory.mjs",
+      "./installed-worker.mjs",
+      "./runtime-plugin.mjs",
+      "./runtime-security.mjs",
+      "./setup-state.mjs",
+      "node:url",
+      "node:util"
+    ],
+    "src/installed-results.mjs": [
+      "./context.mjs",
+      "./notifications.mjs",
+      "./runtime-security.mjs",
+      "node:util"
+    ],
+    "src/installed-role-recipes.mjs": [
+      "./config.mjs",
+      "./runtime-security.mjs"
+    ],
+    "src/installed-worker-config.mjs": [
+      "./config.mjs",
+      "node:fs",
+      "node:path",
+      "node:util"
+    ],
+    "src/installed-worker-facts.mjs": [
+      "./config.mjs",
+      "./host-probe.mjs",
+      "./runtime-security.mjs",
+      "./testing-provider.mjs",
+      "node:crypto",
+      "node:fs",
+      "node:path",
+      "node:url",
+      "node:util"
+    ],
+    "src/installed-worker.mjs": [
+      "./config.mjs",
+      "./context.mjs",
+      "./installed-audit.mjs",
+      "./installed-invocation.mjs",
+      "./installed-owned-stream.mjs",
+      "./installed-role-recipes.mjs",
+      "./installed-worker-config.mjs",
+      "./installed-worker-facts.mjs",
+      "./runtime-security.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/ledger.mjs": [
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:sqlite"
+    ],
+    "src/memory.mjs": [
+      "./context.mjs",
+      "./fishball-memory-core.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/messages.mjs": [
+      "node:crypto",
+      "node:util"
+    ],
+    "src/native-adapter.mjs": [
+      "./audit-input-pair.mjs",
+      "./environment.mjs",
+      "./host-probe.mjs",
+      "./runtime-security.mjs",
+      "node:crypto",
+      "node:fs",
+      "node:url",
+      "node:util"
+    ],
+    "src/native-contributions.mjs": [
+      "./environment.mjs",
+      "./runtime-security.mjs",
+      "node:util"
+    ],
+    "src/notifications.mjs": [
+      "./messages.mjs",
+      "./results.mjs"
+    ],
+    "src/operator-bridge.mjs": [
+      "node:util"
+    ],
+    "src/results.mjs": [
+      "./messages.mjs"
+    ],
+    "src/runtime-plugin.mjs": [
+      "./approval-preview.mjs",
+      "./audit.mjs",
+      "./chat.mjs",
+      "./config.mjs",
+      "./context.mjs",
+      "./coordinator.mjs",
+      "./environment.mjs",
+      "./events.mjs",
+      "./host-probe.mjs",
+      "./installed-audit-native-source.mjs",
+      "./installed-audit-phases.mjs",
+      "./installed-invocation.mjs",
+      "./memory.mjs",
+      "./native-adapter.mjs",
+      "./native-contributions.mjs",
+      "./notifications.mjs",
+      "./operator-bridge.mjs",
+      "./results.mjs",
+      "./runtime-security.mjs",
+      "./runtime-store.mjs",
+      "./scheduler.mjs",
+      "./worker.mjs",
+      "node:async_hooks",
+      "node:url",
+      "node:util"
+    ],
+    "src/runtime-security.mjs": [
+      "./ledger.mjs",
+      "node:crypto",
+      "node:util"
+    ],
+    "src/runtime-store.mjs": [
+      "./context.mjs",
+      "node:util"
+    ],
+    "src/scheduler.mjs": [
+      "./context.mjs",
+      "./event-clock.mjs",
+      "./events.mjs",
+      "./runtime-security.mjs"
+    ],
+    "src/setup-state.mjs": [
+      "./config.mjs",
+      "./runtime-store.mjs",
+      "node:crypto",
+      "node:fs",
+      "node:path",
+      "node:util"
+    ],
+    "src/testing-provider.mjs": [
+      "./config.mjs",
+      "./host-probe.mjs",
+      "./installed-role-recipes.mjs",
+      "./installed-worker-config.mjs",
+      "./runtime-security.mjs",
+      "dsh-fishball/testing-provider",
+      "node:crypto",
+      "node:fs",
+      "node:url",
+      "node:util"
+    ],
+    "src/worker.mjs": [
+      "./audit-input-pair.mjs",
+      "./environment.mjs",
+      "./runtime-security.mjs",
+      "node:crypto"
+    ],
+    "test/native-runtime-client.test.mjs": [
+      "../src/client-entry.cjs",
+      "node:assert/strict",
+      "node:crypto",
+      "node:module",
+      "node:test"
+    ],
+    "test/native-runtime-directory.test.mjs": [
+      "../src/config.mjs",
+      "../src/host-probe.mjs",
+      "../src/installed-invocation.mjs",
+      "../src/installed-worker-facts.mjs",
+      "../src/runtime-security.mjs",
+      "node:assert/strict",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:test",
+      "node:url"
+    ],
+    "test/native-runtime-original-chain.test.mjs": [
+      "../src/host-probe.mjs",
+      "../src/installed-audit.mjs",
+      "../src/installed-worker.mjs",
+      "../src/runtime-plugin.mjs",
+      "../src/runtime-security.mjs",
+      "node:assert/strict",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:stream",
+      "node:test",
+      "node:url"
+    ],
+    "test/native-runtime-original-lifecycle.test.mjs": [
+      "../src/host-probe.mjs",
+      "../src/installed-audit.mjs",
+      "../src/runtime-plugin.mjs",
+      "node:assert/strict",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:stream",
+      "node:test",
+      "node:url"
+    ],
+    "test/native-runtime-source.test.mjs": [
+      "../src/config.mjs",
+      "../src/installed-audit-phases.mjs",
+      "../src/installed-invocation.mjs",
+      "../src/installed-owned-stream.mjs",
+      "../src/installed-role-recipes.mjs",
+      "../src/runtime-security.mjs",
+      "node:assert/strict",
+      "node:test"
+    ],
+    "scripts/build-client.mjs": [
+      "../src/client-entry.cjs",
+      "node:fs",
+      "node:module",
+      "node:url",
+      "node:vm"
+    ]
+  },
+  "dependencyOverlay": {
+    "path": "src/installed-audit.mjs",
+    "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+    "authority": "Root approved PD01 overlay before quota interruption; exact source copied, no installer edits here",
+    "before": "history/PD01-before/pins.json",
+    "fullChainRunnableClaim": false
+  },
+  "preservedStaleClosure": {
+    "path": "history/NR-final-freeze-before/execution-closure.json",
+    "sha256": "0bf1a8ae61b416da0c3d798aa161009b32f8ae5e22b058c25a1c58f427221f59",
+    "status": "STALE_NOT_EXECUTABLE"
+  },
+  "directoryOracleGap": {
+    "DIR7": "NOT_AUTHORED_NOT_RUN. No approved literal original post-guard mkdir failure seam; no test hook/fault bypass."
+  }
+}
