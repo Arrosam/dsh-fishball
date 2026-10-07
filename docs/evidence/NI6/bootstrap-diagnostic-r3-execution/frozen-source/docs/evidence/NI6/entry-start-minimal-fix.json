@@ -1,0 +1,121 @@
+{
+  "contractVersion": "df.ni6-entry-start-source-diagnosis/v1",
+  "date": "2026-10-07",
+  "scope": "public startup source/config/provenance/lifecycle only",
+  "result": "NO_CONCRETE_STATIC_DISCREPANCY",
+  "underlyingStartupCause": "NOT_ESTABLISHED",
+  "earlierR3Cause": "NOT_ESTABLISHED",
+  "applicationSourceChanged": false,
+  "fixtureSourceChanged": false,
+  "newDeliverables": [
+    "docs/evidence/NI6/entry-start-minimal-fix.md",
+    "docs/evidence/NI6/entry-start-minimal-fix.json"
+  ],
+  "observed": {
+    "record": "docs/evidence/NI6/bootstrap-diagnostic-r2-actual-return.json",
+    "sessionId": 46343,
+    "syntaxExitCode": 0,
+    "diagnosticExitCode": 1,
+    "driverExitCode": 1,
+    "firstFailure": "ENTRY_START/REJECTION",
+    "completedPlugins": 11,
+    "zeroNative": true,
+    "entryRemoved": false,
+    "rootClosed": false,
+    "bothCommandStreamsComplete": true,
+    "allOwnedGroupsAbsentObserved": true,
+    "signalAttempts": 0,
+    "requestToReturnSeconds": 27.177,
+    "exactFinalMonotonicDriverDurationProved": false,
+    "establishedPinsAndFullHostGraphUnchanged": true
+  },
+  "actualEntry": {
+    "path": ".runtime/ni6-public-preparation-r3/package/src/installed-plugin.mjs",
+    "originalBuildInput": ".runtime/ni6-runtime-composition-r4/src/installed-plugin.mjs",
+    "bytes": 10275,
+    "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5",
+    "originalAndBuiltBytesEqual": true,
+    "currentOrdinaryEntryIsSameCandidate": false
+  },
+  "staticEvidence": {
+    "frozenConfigLocation": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs:180",
+    "visibleConfigShapesBoundsAndPathRelationshipsCompatible": true,
+    "runtimeDirectoryFactsEvaluated": false,
+    "hostExpectedSourceDigestsMatched": 6,
+    "hostExpectedPackageNamesAndVersionsMatched": 6,
+    "expectedAndInstalledLockBytesEqual": true,
+    "runtimeLockSha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+    "memoryEstimatorPublicExportTarget": "./lib/types/estimate.js",
+    "memoryEstimatorVersion": "0.2.1-alpha.1",
+    "memoryEstimatorExpectedSha256Matched": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f",
+    "loaderDefaultPluginShapeCompatible": true,
+    "loaderInterpolationProducesOrdinaryRecords": true,
+    "directStartupNamedExportsPresent": true,
+    "startupFunctionsExecuted": false,
+    "startupExceptionInspected": false
+  },
+  "sourceInferences": [
+    "ENTRY_RESOLVE required entry.fiber, which Loader assigns after module import and registry creation.",
+    "Raw Fiber.await may rethrow a retained Standard Schema config or apply rejection; ENTRY_START does not identify a specific apply gate.",
+    "Static parity does not prove dynamic context identity, service provenance, path facts, SQLite availability or any actual startup gate return."
+  ],
+  "minimalCorrection": {
+    "justified": false,
+    "reason": "No concrete static discrepancy was established. An application change would be speculative.",
+    "changedApplicationFiles": []
+  },
+  "futureVerificationProposal": {
+    "selected": false,
+    "owner": "root after affected code and independent ISTQB review",
+    "candidate": "same immutable built r3, fresh diagnostic namespace and once marker",
+    "predeclaredPublicPhases": [
+      "CONFIG_GATE",
+      "NORMAL_SELECTION_GATE",
+      "HOST_GATE",
+      "MEMORY_GATE",
+      "CONNECTION_GATE",
+      "PEER_PROFILE_GATE"
+    ],
+    "publicOperations": [
+      "validateInstalledConfig(config)",
+      "splitNormalWorkerSelection(validated.worker, validated.memory.enabled)",
+      "probeHost(ctx): supported and fixed predeclared boolean check keys only",
+      "prepareInstalledMemory(validated.memory): discard binder without invocation",
+      "ctx.connection instanceof original HostConnectionService",
+      "boolean presence of original operator and profileContext"
+    ],
+    "hostBooleanKeys": [
+      "harnessVersion", "harnessSource", "cordisVersion", "cordisSource",
+      "sessionsVersion", "sessionsSource", "approvalVersion", "approvalSource",
+      "webVersion", "webSource", "webServerVersion", "webServerSource",
+      "nativeContext", "sessionsProvenance", "approvalProvenance",
+      "context.provide", "context.effect", "context.on",
+      "sessions.create", "sessions.get", "sessions.list",
+      "approval.request", "approval.effectivePolicy",
+      "runtimeVersion", "runtimeLock", "sqlite"
+    ],
+    "caughtErrorsReadOrSerialized": false,
+    "binderInvoked": false,
+    "setupActivatedOrRequestsDispatched": false,
+    "preserveOriginalFirstFailureAndZeroNativeChecks": true,
+    "preserveOriginalEntryReadyAndRemovalChecks": true,
+    "preserveStrictRootClosedAssertion": true,
+    "knownRootDisposeRestartLimitation": "UNCHANGED_HOLD",
+    "passingRootContextGatesProvesEntryContextGates": false,
+    "newModelCalls": 0,
+    "protectedCodeInvestigation": "EXCLUDED_PERMANENTLY_BLOCKED"
+  },
+  "authorActions": {
+    "publicTextJsonByteHashInspectionOnly": true,
+    "candidateParseCompileImportSyntaxBuildTestRuntime": false,
+    "privateCredentialsKeysDatabaseRawStreamsRead": false,
+    "newListenerProfileProviderModelHttpBrowserFaultSignalAction": false,
+    "oldMarkerResetOrReplay": false,
+    "gitMutation": false,
+    "fullHostGraphReaudit": false
+  },
+  "all87": "HOLD",
+  "CODE": "BLOCKED_UNCHANGED",
+  "uiHandoffReady": false,
+  "acceptance": "HOLD"
+}

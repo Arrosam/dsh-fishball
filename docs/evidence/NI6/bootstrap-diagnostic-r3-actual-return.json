@@ -1,0 +1,110 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "acceptance": "HOLD",
+  "actualDriverExitCode": 1,
+  "actualPlanSha256": "705ccc408601597b7a6db77b1cfceaa3347019ee41183ddcdb8924c5a4fcda03",
+  "afterUtc": "2026-10-07 21:01:42 UTC",
+  "all26RootHostBooleansPassedBySequentialSourceOrder": true,
+  "all87": "HOLD",
+  "allOwnedGroupsAbsentObserved": true,
+  "argv": [
+    "/opt/homebrew/bin/python3",
+    "-I",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py",
+    ".runtime/root-ni6-bootstrap-diagnostic-r3-execution-plan.json"
+  ],
+  "beforeUtc": "2026-10-07 21:01:18 UTC",
+  "bothCommandStreamsComplete": true,
+  "chunks": [
+    {
+      "actualExitCode": null,
+      "chunkId": "fc575f",
+      "outputCharacters": 0,
+      "sessionId": 53766,
+      "wallTimeSeconds": 1.001583349
+    },
+    {
+      "actualExitCode": null,
+      "chunkId": "5c2fec",
+      "outputCharacters": 0,
+      "sessionId": 53766,
+      "wallTimeSeconds": 5.001222836
+    },
+    {
+      "actualExitCode": null,
+      "chunkId": "5c117b",
+      "outputCharacters": 0,
+      "sessionId": 53766,
+      "wallTimeSeconds": 5.001474291
+    },
+    {
+      "actualExitCode": 1,
+      "chunkId": "a52eeb",
+      "outputCharacters": 0,
+      "sessionId": null,
+      "wallTimeSeconds": 4.460268693
+    }
+  ],
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-observed-driver-return/v1",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+    "entryRemoved": false,
+    "phase": "ENTRY_START",
+    "result": "FAILED_HOLD",
+    "rootClosed": false,
+    "zeroNative": true
+  },
+  "diagnosticActualExitCode": 1,
+  "earlierR3Cause": "NOT_ESTABLISHED",
+  "entryContextGateResultsProved": false,
+  "exactFinalMonotonicDriverDurationProved": false,
+  "firstObservedFailure": "ENTRY_START/REJECTION",
+  "intervalIncludesApprovalTransportPolling": true,
+  "maximumActiveSeconds": 90,
+  "newModelCalls": 0,
+  "preterminalConservativeActiveSeconds": 20.546590458136052,
+  "preterminalObservedSeconds": 15.546589625068009,
+  "records": [
+    {
+      "bytes": 3992,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-execution/executor-result.json",
+      "sha256": "b32488d562ce49a82118c4b7a0ba81ff8d8045478ec5cdabd547187e8fc62087"
+    },
+    {
+      "bytes": 3042,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-execution/command-results.json",
+      "sha256": "7aca0b833a54d5387bd696619b921a3f03e9cfc3fde62ae2d6fbb580c526f720"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-execution/before-after.json",
+      "sha256": "a040c54c76ddb0cb93010498e3bcd43b5272a77f214ad721c08c0ccca4e5ffe5"
+    },
+    {
+      "bytes": 291,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-execution/diagnostic-result.json",
+      "sha256": "09a57a04b09cecfea48d24ecfb5f2b554853095f50684a182537e02ce901dbed"
+    },
+    {
+      "bytes": 70813,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-execution/root-plan.json",
+      "sha256": "705ccc408601597b7a6db77b1cfceaa3347019ee41183ddcdb8924c5a4fcda03"
+    }
+  ],
+  "replayedOrReset": false,
+  "requestMs": 1791406878897,
+  "returnMs": 1791406902220,
+  "revision": "bootstrap-diagnostic-r3",
+  "signalAttempts": 0,
+  "sixRootContextGatesPassedBySequentialSourceOrder": true,
+  "supportedActionRejected": false,
+  "syntaxActualExitCode": 0,
+  "uiHandoffReady": false,
+  "underlyingStartupCause": "NOT_ESTABLISHED",
+  "wholeSupportedRequestIntervalSeconds": 23.323
+}

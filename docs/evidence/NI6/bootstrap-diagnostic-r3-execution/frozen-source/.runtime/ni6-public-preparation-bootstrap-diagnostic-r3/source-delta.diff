@@ -1,0 +1,308 @@
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs
++++ .runtime/ni6-public-preparation-bootstrap-diagnostic-r3/diagnostic.mjs
+@@ -10,20 +10,41 @@
+ const STARTED = performance.now();
+ const WORK_END = STARTED + 24000, FINAL_END = STARTED + 30000;
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const NAME = '.runtime/ni6-public-preparation-bootstrap-diagnostic-r2';
++const NAME = '.runtime/ni6-public-preparation-bootstrap-diagnostic-r3';
+ const CAPSULE = resolve(ROOT, NAME), HOST = resolve(ROOT, '.runtime/dsh-web');
+ const PRODUCT = resolve(ROOT, '.runtime/ni6-public-preparation-r3/package');
+-const PLAN_NAME = '.runtime/root-ni6-bootstrap-diagnostic-r2-execution-plan.json';
++const PLAN_NAME = '.runtime/root-ni6-bootstrap-diagnostic-r3-execution-plan.json';
+ const RESULT = resolve(CAPSULE, 'diagnostic-result.json');
+ const GRAPH_NAME = '.runtime/ni3-native-runtime/public-graph-pins.json';
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+ const PYTHON = '/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14';
+-const PHASES = Object.freeze(['PREFLIGHT','IMPORTS','NAMESPACE','CONTEXT','PLUGIN_LOADER',
+-  'PLUGIN_PROJECTIONS','PLUGIN_SESSIONS','PLUGIN_APPROVAL','PLUGIN_AGENTS','PLUGIN_LLM',
+-  'PLUGIN_SYSTEM_PROMPT','PLUGIN_TOOLS','PLUGIN_CREDENTIALS','PLUGIN_WEB_SERVER','PLUGIN_CONNECTION',
+-  'LISTENER_FENCE','INDEX_ROUTE','BEFORE_ENTRY','LOADER_CREATE','LOADER_SETTLE','ENTRY_RESOLVE',
+-  'ENTRY_START','ENTRY_STATE','AFTER_ENTRY','ENTRY_REMOVE','ENTRY_DISPOSAL','LOADER_REMOVAL_SETTLE',
+-  'AFTER_REMOVAL','ROOT_CLEANUP','COMPLETE']);
++const HOST_KEYS = Object.freeze([
++  "harnessVersion", "harnessSource", "cordisVersion", "cordisSource",
++  "sessionsVersion", "sessionsSource", "approvalVersion", "approvalSource",
++  "webVersion", "webSource", "webServerVersion", "webServerSource",
++  "nativeContext", "sessionsProvenance", "approvalProvenance", "context.provide",
++  "context.effect", "context.on", "sessions.create", "sessions.get",
++  "sessions.list", "approval.request", "approval.effectivePolicy", "runtimeVersion",
++  "runtimeLock", "sqlite",
++]);
++const PHASES = Object.freeze([
++  "PREFLIGHT", "IMPORTS", "NAMESPACE", "CONTEXT",
++  "PLUGIN_LOADER", "PLUGIN_PROJECTIONS", "PLUGIN_SESSIONS", "PLUGIN_APPROVAL",
++  "PLUGIN_AGENTS", "PLUGIN_LLM", "PLUGIN_SYSTEM_PROMPT", "PLUGIN_TOOLS",
++  "PLUGIN_CREDENTIALS", "PLUGIN_WEB_SERVER", "PLUGIN_CONNECTION", "LISTENER_FENCE",
++  "INDEX_ROUTE", "BEFORE_ENTRY", "CONFIG_GATE", "NORMAL_SELECTION_GATE",
++  "HOST_GATE", "HOST_GATE_HARNESSVERSION", "HOST_GATE_HARNESSSOURCE", "HOST_GATE_CORDISVERSION",
++  "HOST_GATE_CORDISSOURCE", "HOST_GATE_SESSIONSVERSION", "HOST_GATE_SESSIONSSOURCE", "HOST_GATE_APPROVALVERSION",
++  "HOST_GATE_APPROVALSOURCE", "HOST_GATE_WEBVERSION", "HOST_GATE_WEBSOURCE", "HOST_GATE_WEBSERVERVERSION",
++  "HOST_GATE_WEBSERVERSOURCE", "HOST_GATE_NATIVECONTEXT", "HOST_GATE_SESSIONSPROVENANCE", "HOST_GATE_APPROVALPROVENANCE",
++  "HOST_GATE_CONTEXT_PROVIDE", "HOST_GATE_CONTEXT_EFFECT", "HOST_GATE_CONTEXT_ON", "HOST_GATE_SESSIONS_CREATE",
++  "HOST_GATE_SESSIONS_GET", "HOST_GATE_SESSIONS_LIST", "HOST_GATE_APPROVAL_REQUEST", "HOST_GATE_APPROVAL_EFFECTIVEPOLICY",
++  "HOST_GATE_RUNTIMEVERSION", "HOST_GATE_RUNTIMELOCK", "HOST_GATE_SQLITE", "MEMORY_GATE",
++  "CONNECTION_GATE", "PEER_PROFILE_GATE", "LOADER_CREATE", "LOADER_SETTLE",
++  "ENTRY_RESOLVE", "ENTRY_START", "ENTRY_STATE", "AFTER_ENTRY",
++  "ENTRY_REMOVE", "ENTRY_DISPOSAL", "LOADER_REMOVAL_SETTLE", "AFTER_REMOVAL",
++  "ROOT_CLEANUP", "COMPLETE",
++]);
+ const CATEGORIES = Object.freeze(['NONE','REJECTION','INVARIANT','DEADLINE']);
+ const ZERO = Object.freeze({agentCreated:0,agentDisposed:0,sessionCreated:0,sessionDisposed:0,sessionEvents:0,streams:0,tools:0});
+ const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+@@ -218,6 +239,32 @@
+       if (ctx.connection.authorizeIndex(req,res)) { res.writeHead(200,{'cache-control':'no-store'}); res.end(); }
+     }}),'ni6.prep01.original-index-auth'); // Registered original route; never dispatched.
+     phase = 'BEFORE_ENTRY'; clock(); noNative(); clock();
++    // Original public startup gates; only fixed phase/boolean outcomes escape.
++    const validated = await step('CONFIG_GATE',async () => {
++      const {validateInstalledConfig} = await import('../ni6-public-preparation-r3/package/src/installed-config.mjs');
++      return validateInstalledConfig(config);
++    });
++    await step('NORMAL_SELECTION_GATE',async () => {
++      const {splitNormalWorkerSelection} = await import('../ni6-public-preparation-r3/package/src/normal-native-selection.mjs');
++      splitNormalWorkerSelection(validated.worker,validated.memory.enabled);
++    });
++    await step('HOST_GATE',async () => {
++      const {probeHost} = await import('../ni6-public-preparation-r3/package/src/host-probe.mjs');
++      const report = probeHost(ctx);
++      for (const key of HOST_KEYS) {
++        if (report.checks[key] !== true) {
++          phase = 'HOST_GATE_' + key.toUpperCase().replaceAll('.', '_');
++          invariant(false);
++        }
++      }
++      invariant(report.supported === true);
++    });
++    await step('MEMORY_GATE',async () => {
++      const {prepareInstalledMemory} = await import('../ni6-public-preparation-r3/package/src/installed-memory.mjs');
++      await prepareInstalledMemory(validated.memory); // Discard binder; never invoke it.
++    });
++    await step('CONNECTION_GATE',() => invariant(ctx.connection instanceof Connection.HostConnectionService));
++    await step('PEER_PROFILE_GATE',() => invariant(!!ctx.connection.operator && !!ctx.profileContext));
+     entryId = await step('LOADER_CREATE',() => ctx.loader.create({name:pathToFileURL(resolve(PRODUCT,'src/installed-plugin.mjs')).href,config}));
+     await step('LOADER_SETTLE',() => ctx.loader.await());
+     phase = 'ENTRY_RESOLVE'; clock(); entry = ctx.loader.resolve(entryId); invariant(entry && entry.fiber); clock();
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py
++++ .runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-public-preparation-bootstrap-diagnostic-r2'
++NAME='.runtime/ni6-public-preparation-bootstrap-diagnostic-r3'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-bootstrap-diagnostic-r2-execution-plan.json'
++PLAN_NAME='.runtime/root-ni6-bootstrap-diagnostic-r3-execution-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -472,7 +472,7 @@
+     marker_owned=evidence_owned=private_owned=False
+     marker_id=evidence_id=private_id=None
+     marker=CAPSULE/'invocation.json'
+-    evidence=ROOT/'docs/evidence/NI6/bootstrap-diagnostic-r2-execution'
++    evidence=ROOT/'docs/evidence/NI6/bootstrap-diagnostic-r3-execution'
+     private=CAPSULE/'private-capture'
+     result_path=CAPSULE/'diagnostic-result.json'
+     rows=[]; before=after=None; selected=None; finalized=False; plan_digest=None
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r2/execution-plan.proposed.json
++++ .runtime/ni6-public-preparation-bootstrap-diagnostic-r3/execution-plan.proposed.json
+@@ -26,11 +26,11 @@
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs"
++      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/diagnostic.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs"
++      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/diagnostic.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -49,11 +49,11 @@
+     "all87",
+     "CODE"
+   ],
+-  "diagnosticResult": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic-result.json",
+-  "effects": "Original eleven host plugins and installed Loader entry only; fresh synthetic credentials and one original in-memory SQLite probe are declared; one ephemeral loopback listener; zero dispatched HTTP/domain/setup/model/provider/tool/session/agent work.",
+-  "evidenceDirectory": "docs/evidence/NI6/bootstrap-diagnostic-r2-execution",
+-  "freshInvocationMarker": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/invocation.json",
+-  "freshRuntimeDirectory": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/private-runtime",
++  "diagnosticResult": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/diagnostic-result.json",
++  "effects": "Original eleven host plugins and installed Loader entry plus six original public startup gates only; fresh synthetic credentials, one additional original in-memory SQLite probe and memory-source validation are declared alongside the ordinary entry probe if reached; one ephemeral loopback listener; zero dispatched HTTP/domain/setup/model/provider/tool/session/agent work. Root-context gates do not prove entry-context gates.",
++  "evidenceDirectory": "docs/evidence/NI6/bootstrap-diagnostic-r3-execution",
++  "freshInvocationMarker": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/invocation.json",
++  "freshRuntimeDirectory": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/private-runtime",
+   "maximumActiveSeconds": 90,
+   "maximumDirectInterpreterStarts": 3,
+   "maximumNodeChildStarts": 2,
+@@ -76,6 +76,38 @@
+     "LISTENER_FENCE",
+     "INDEX_ROUTE",
+     "BEFORE_ENTRY",
++    "CONFIG_GATE",
++    "NORMAL_SELECTION_GATE",
++    "HOST_GATE",
++    "HOST_GATE_HARNESSVERSION",
++    "HOST_GATE_HARNESSSOURCE",
++    "HOST_GATE_CORDISVERSION",
++    "HOST_GATE_CORDISSOURCE",
++    "HOST_GATE_SESSIONSVERSION",
++    "HOST_GATE_SESSIONSSOURCE",
++    "HOST_GATE_APPROVALVERSION",
++    "HOST_GATE_APPROVALSOURCE",
++    "HOST_GATE_WEBVERSION",
++    "HOST_GATE_WEBSOURCE",
++    "HOST_GATE_WEBSERVERVERSION",
++    "HOST_GATE_WEBSERVERSOURCE",
++    "HOST_GATE_NATIVECONTEXT",
++    "HOST_GATE_SESSIONSPROVENANCE",
++    "HOST_GATE_APPROVALPROVENANCE",
++    "HOST_GATE_CONTEXT_PROVIDE",
++    "HOST_GATE_CONTEXT_EFFECT",
++    "HOST_GATE_CONTEXT_ON",
++    "HOST_GATE_SESSIONS_CREATE",
++    "HOST_GATE_SESSIONS_GET",
++    "HOST_GATE_SESSIONS_LIST",
++    "HOST_GATE_APPROVAL_REQUEST",
++    "HOST_GATE_APPROVAL_EFFECTIVEPOLICY",
++    "HOST_GATE_RUNTIMEVERSION",
++    "HOST_GATE_RUNTIMELOCK",
++    "HOST_GATE_SQLITE",
++    "MEMORY_GATE",
++    "CONNECTION_GATE",
++    "PEER_PROFILE_GATE",
+     "LOADER_CREATE",
+     "LOADER_SETTLE",
+     "ENTRY_RESOLVE",
+@@ -90,61 +122,40 @@
+     "COMPLETE"
+   ],
+   "pins": {},
+-  "privateCaptureDirectory": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/private-capture",
++  "privateCaptureDirectory": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/private-capture",
+   "privateStreamAggregateByteCap": 262144,
+   "privateStreamByteCap": 131072,
+   "privateStreamsDecodedOrPublished": false,
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.json"
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-source-review.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-source-review.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-test-design-review.json"
+   ],
+-  "rootPlan": ".runtime/root-ni6-bootstrap-diagnostic-r2-execution-plan.json",
++  "rootPlan": ".runtime/root-ni6-bootstrap-diagnostic-r3-execution-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "rootTerminalQualification": "Public root dispose is restart in the original standalone Context. Keep original terminal observation; active UID0 means rootClosed=false/FAILED_HOLD. No preparation acceptance.",
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py",
++  "runner": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py",
+   "sourceCopies": [
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/diagnostic.mjs",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-delta.diff",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/execution-plan.proposed.json",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/README.md",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-manifest.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-source.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-source.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-test-design-review.json",
+-    "docs/ni6-bootstrap-diagnostic-r1-freeze-2026-10-07.md",
+-    "docs/ni6-bootstrap-diagnostic-r1-lifecycle-clarification-2026-10-07.md",
+-    ".runtime/ni6-public-preparation-r3/source-manifest.json",
+-    ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+-    ".runtime/ni6-prep01-executor-r3/runner.py",
+-    ".runtime/ni3-native-runtime/public-graph-pins.json",
+-    ".runtime/ni6-public-preparation-r3/build-readback.json",
+-    "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+-    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json",
+-    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+-    "docs/evidence/NI6/public-preparation-r3-bounded-failure-code.json",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/README.md",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/execution-plan.proposed.json",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-delta.diff",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-source.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-source.md",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-manifest.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-pre-admission-failure.json",
+-    "docs/ni6-bootstrap-diagnostic-r2-budget-fix-2026-10-07.md"
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/diagnostic.mjs",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/execution-plan.proposed.json",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/README.md",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/source-delta.diff",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/source-manifest.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-source.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-source.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-source-review.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-source-review.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-test-design-review.json",
++    "docs/ni6-entry-public-gates-freeze-2026-10-07.md",
++    "docs/evidence/NI6/entry-start-minimal-fix.md",
++    "docs/evidence/NI6/entry-start-minimal-fix.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r2-actual-return.json"
+   ],
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r2/README.md
++++ .runtime/ni6-public-preparation-bootstrap-diagnostic-r3/README.md
+@@ -1,25 +1,19 @@
+-# Separate NI6 bootstrap diagnostic r2 — SOURCE_ONLY_NOT_RUN
++# NI6 entry public gates r3 — SOURCE_ONLY_NOT_RUN
+ 
+-This new capsule uses the actually built preparation-r3 package directly. Every predecessor, marker, ledger and synthetic namespace is preserved. It has no runtime GO. The r3 projection establishes only `PREP01_ORIGINAL_BOOTSTRAP_FAILED`; the failing plugin/call and its original cause remain unknown. Explicit raw `entry.fiber.await()` is a supported lifecycle correction, not an established explanation of that failure.
++This fresh source capsule uses the same immutable actually built preparation-r3 package and original eleven-plugin bootstrap as sealed diagnostic-r2. Actual r2 first failed ENTRY_START/REJECTION; the public source trace found no concrete static discrepancy. No application correction or runtime GO is supplied. All predecessor bytes and consumed attempts remain intact.
+ 
+-The diagnostic retains the original eleven public plugin invocations, order and options, original quiet Context logger and synthetic launch snapshot before activation. Only the fresh namespace paths change. One `127.0.0.1:0` listener excludes3080; no request is dispatched, no setup is confirmed, no domain/task/data operation occurs, and no provider, model, worker, tool, agent or session is activated. The original LocalCredentialProvider may create the fresh private credential file. The installed entry may perform its ordinary in-memory SQLite capability probe. Auth, profile, key, lock, DB and raw stream contents remain private and are never inspected by this diagnostic/driver.
++Immediately before original LOADER_CREATE, six gates call original exports: validateInstalledConfig(config), splitNormalWorkerSelection on that returned worker/memory choice, probeHost(ctx), prepareInstalledMemory with its returned binder discarded, original HostConnectionService identity, and operator/profile presence. HOST_GATE checks all26 literal boolean keys plus supported; the first missing/false key yields only its predeclared uppercase/dot-to-underscore phase. No report/config/binder/profile/peer/error/code/stack/property is serialized. The same ten-field <=512-byte result remains the complete diagnostic projection. No binder invocation, gate override, capability injection, setup confirmation or dispatched request occurs. Passing these root-context gates does not prove entry-context counterparts passed; a remaining ENTRY_START rejection leaves its cause unestablished.
+ 
+-Original `dsh-atomic-write.withFileLock` has a stale-lock branch that reads a holder record and probes its PID. The selected new owned auth path has no predecessor lock; ordinary selected startup creates/releases its own lock. This capsule adds no lock-record or unrelated-PID inspection/probe and makes no claim that the original library lacks that branch.
++The additional public host capability probe opens/queries/closes original in-memory SQLite. The memory gate validates the original pinned source/export/lock and discards its binder. Ordinary entry probes remain if reached. Original fresh LocalCredentialProvider may create its private synthetic credential file; original atomic-write has a stale-lock holder-record/PID branch, which the fresh path does not select. The diagnostic/driver never inspect credential/key/lock/profile/DB/raw-stream contents or unrelated PIDs. One original127.0.0.1:0 listener excludes3080. Model/provider/tool/session/agent/task/setup/HTTP work remains zero.
+ 
+-The one entry is removed at most once with original `Loader.remove(entryId)`, joined through the saved raw `fiber.await()` and `Loader.await()`, and independently checked absent/terminal. A work failure can use the same once-only removal in the shared cleanup window. The first work phase/category survives later cleanup failures. Original root `dispose()` and terminal observation are preserved. The pinned root implementation restarts its UID0 fiber; if it remains active, `rootClosed=false` and `FAILED_HOLD` are honest and required. No wrapping host, private unload, state mutation or closure alias is added. Natural counters cover actual ready/removal boundaries and retained history, not continuous root-unload coverage. Registry/provider/tool inventories are read only while those original services exist.
++Original first-failure retention, entry readiness, once-only Loader removal with saved raw Fiber.await and Loader.await, ready/removal zeroNative boundaries and strict rootClosed assertion remain unchanged. Public root dispose restarts UID0; an active root means rootClosed=false/FAILED_HOLD. Retained natural counters do not establish continuous root-unload or post-root registry proof.
+ 
+-Proposed root command, from `/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball`:
++Root-only proposed command from the repository root:
+ 
+ ```text
+-/opt/homebrew/bin/python3 -I .runtime/ni6-public-preparation-bootstrap-diagnostic-r2/run-once.py .runtime/root-ni6-bootstrap-diagnostic-r2-execution-plan.json
++/opt/homebrew/bin/python3 -I .runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py .runtime/root-ni6-bootstrap-diagnostic-r3-execution-plan.json
+ ```
+ 
+-Root must exclusively materialize an owned600 true plan from `execution-plan.proposed.json`, replacing only its three GO booleans and pins after complete root/independent readbacks and supported exact action approval. Pins must be the closed union of manifest owned/input rows, this manifest itself and the four actual new independent reports. No future hash is invented. Running the false proposal is forbidden and would consume its fresh invocation marker before refusing GO.
++The proposed plan has all three GO booleans false and pins{}. Root must review final affected source/code and independent ISTQB reports, exclusively materialize its owned600 actual plan with the closed460-pin union, and obtain the exact supported action approval. False-plan invocation would consume the fresh marker. The unchanged executor runs only two original Node commands: --check with5s total and diagnostic with35s total. Allocation remains20+5+35+25+5=90s, primary85; Node work/cleanup/final remain24/5/30s. Original admission/environment/source/binary/topology/graph/ownership/once/capture/EOF/group/denial/deadline/actual-return guards are conserved by literal runner name retarget only.
+ 
+-Exactly two prospective commands run sequentially once: canonical Node `--check diagnostic.mjs`, then direct Node `diagnostic.mjs`. First failure stops. Maximum interpreter starts3 include the Python driver; no Node test worker. Shared active limit90s includes setup20, syntax5, diagnostic35, final readback25 and conservative terminal reserve5; primary absolute end85 and conservative charge ceiling90; sublimits are inside those totals. Node work24, cleanup5 and final absolute30 are inside the diagnostic command's30s work allowance. Both synchronous source/hash/setup/readback/publication and async lifecycle work charge the same deadlines; guards surround reads/writes and the driver observes only its own group. These are fail-closed bounded allocations, not a claim of instantaneous cancellation or interruptible OS filesystem calls.
+-
+-Private stdout/stderr are byte-only, capped at128KiB each/256KiB aggregate. Exact stored-length reads use at most stored+1 bytes and fd/path identity; output prefix hashes, overflow, EOF, exit and owned-group absence are checked separately. The at-most512-byte result is read at most513 bytes after size/type/mode/identity validation. Catch handlers never serialize error text/stack/properties. Only the exact ten-field diagnostic and finite executor metadata/source are public. Pre-existing destinations receive zero writes. Catchable stop flags latch; cleanup signals only the fresh owned group and any denial/unknown stops all further signalling. Driver success requires its actual successful return, not a persisted PASS file.
+-
+-The sealed manifest will own7 source/report files plus itself, pin432 finite immutable input files (the exact418 inherited records plus14 successor records) and the complete original host graph27577 files/479383316 bytes/12 links separately, plus6 selected physical alias/peer links. The14 additions are the r1 seven owned records, its manifest, its four final independent reports, safe pre-admission failure proof and r2 budget freeze. Their hashes are newly read; inherited418 records and graph authority are retained from the completed r1 seal/reviews rather than re-audited. The built product is65 regular files:64 descriptor entries plus the descriptor. `37` explicit public source/readback/report names are proposed for evidence copies; four report names are future prerequisites, not observed reviews. All syntax/diagnostic results remain NOT_RUN. All87 accepted0/HOLD, final CODE permanently BLOCKED_UNCHANGED, prior NI6 FAILED_HOLD and LIVE02 blocked remain unchanged.
+-
+-The r1 consumed FAILED_HOLD marker and original60s allocation remain untouched. r2 changes only fresh capsule/root-plan/evidence names and the outer allocation20+5+35+25+5=90. The diagnostic has exactly its two name substitutions; its root-restart limitation and all application semantics are conserved. Stored timing scalars remain preterminal; actual supported driver return and request-to-return interval require separate root observations. Four new narrow affected reviews remain prerequisites; completed r1 reports supply unchanged source/graph authority.
++All432 inherited inputs are conserved exactly; sixteen selected new public records make448 inputs. Seven owned records plus self and four future review records produce460 future pins, with no overlap. Sixteen evidence copies cover only new selected source/reports/freeze/diagnosis/actual-proof; inherited graph/source authority remains in committed predecessor evidence. Metadata is excluded from source-delta.diff to avoid recursive hashes. No new syntax/import/build/test/runtime action occurred during authoring. All87 accepted0/HOLD, protected final CODE permanently BLOCKED_UNCHANGED, twice-denied cloud request and locked-Mac UI pause persist.

@@ -1,0 +1,202 @@
+{
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-independent-source-review/v1",
+  "date": "2026-10-07",
+  "recordedAt": "2026-10-07T20:57:41.756850+00:00",
+  "reviewer": "/root/bootstrap_diagnostic_r1_code_review",
+  "revision": "bootstrap-diagnostic-r3",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "decision": "NARROW_SOURCE_REVIEW_COMPLETE_NO_NEW_SOURCE_GATE_BLOCKER",
+  "sourceGateBlockers": [],
+  "scope": "Affected public gates and metadata only; unchanged r2 authority inherited.",
+  "reviewedFinalArtifactHashes": [
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/diagnostic.mjs",
+      "bytes": 21851,
+      "sha256": "5bf34826d39eb6b9c91053ef80d9f4f919b2544363e50f01128d7aea9318a9d2"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py",
+      "bytes": 31440,
+      "sha256": "98d5467c106d48ed7b49eda3930cf8546375c04cc2e560c340dfb5848fb55d79"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/execution-plan.proposed.json",
+      "bytes": 6236,
+      "sha256": "b8c19fd06bd59f4da76142c312029a279f597f637224637d5755b101465260a9"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/README.md",
+      "bytes": 3917,
+      "sha256": "b79fbf0f8a2f29cd746d74036b47877049f0729ec34fc06377caf38381ac5b1c"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/source-delta.diff",
+      "bytes": 27151,
+      "sha256": "1f3506687f7c9a3dea959159cd5e2a2347f605521f5e501e33375686ed4d8939"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r3/source-manifest.json",
+      "bytes": 114280,
+      "sha256": "4c007561db47ac319dc47c7b94947fc68e836a0b9f1cc2c549d17a41b04b4ccf"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-source.md",
+      "bytes": 2792,
+      "sha256": "e5788bb802a638e6a01f5a25d4b4f3e8d77768410d7a65deadcc94ad03dba6be"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-source.json",
+      "bytes": 7670,
+      "sha256": "7363e1eea9c5d3df8af662e76b0d910ff73b0fb743917cb7382bc90742796161"
+    }
+  ],
+  "freeze": {
+    "path": "docs/ni6-entry-public-gates-freeze-2026-10-07.md",
+    "bytes": 3742,
+    "sha256": "545a0ecd048cd204a6d57106da353c92443956991ef763dcbeda755ee0f3b451"
+  },
+  "publicStartupSourceHashes": [
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/installed-config.mjs",
+      "bytes": 4122,
+      "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-selection.mjs",
+      "bytes": 6689,
+      "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/host-probe.mjs",
+      "bytes": 6739,
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory.mjs",
+      "bytes": 3538,
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/installed-plugin.mjs",
+      "bytes": 10275,
+      "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+    }
+  ],
+  "inheritedReviewAndDiagnosisAuthorities": [
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r2/source-manifest.json",
+      "bytes": 109098,
+      "sha256": "8816e58b853ac328df5012462b61534da596eb93e0e7aa82a04288b379b16cb7"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.md",
+      "bytes": 4414,
+      "sha256": "b928085cafec1a5f9d51ff6ee17afc15f2b602ef3e386e18949e0faf72b024e0"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-independent-source-review.json",
+      "bytes": 8919,
+      "sha256": "dad55613ebf76fe76b60598899490aac446bf527855d987c93e69bc5ee86b2c2"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r2-actual-return.json",
+      "bytes": 3650,
+      "sha256": "9a683039c9eba50c59a9beb295bcb644b29a1954e8256d805b15e9c70a16236a"
+    },
+    {
+      "path": "docs/evidence/NI6/entry-start-minimal-fix.md",
+      "bytes": 5591,
+      "sha256": "9ee25b21c541c823e6bb30d5c0f076ec1369c7314f20ee1c292a62e6f7d9202f"
+    },
+    {
+      "path": "docs/evidence/NI6/entry-start-minimal-fix.json",
+      "bytes": 5407,
+      "sha256": "1fd2f45d234628ad704a04e0efd1be7140a1fd7dcb512f1df0aeb95221053a51"
+    }
+  ],
+  "completeAuthorMdAndJsonRead": true,
+  "fourFileLiteralDeltaExact": true,
+  "diagnosticOnlyNamesFiniteDeclarationsAndSixGates": true,
+  "runnerOnlyThreeNameSubstitutions": true,
+  "gateProjection": {
+    "publicGates": [
+      "CONFIG_GATE",
+      "NORMAL_SELECTION_GATE",
+      "HOST_GATE",
+      "MEMORY_GATE",
+      "CONNECTION_GATE",
+      "PEER_PROFILE_GATE"
+    ],
+    "hostKeysMatchFrozen26": true,
+    "firstMissingOrFalseKeyBeforeSupportedAssertion": true,
+    "finiteHostFailurePhases": 26,
+    "matchingTotalPhases": 62,
+    "unchangedDiagnosticFields": 10,
+    "byteCap": 512,
+    "errorsObjectsPrivatePropertiesSerialized": false,
+    "memoryBinderInvoked": false,
+    "additionalDeclaredEffects": [
+      "original in-memory SQLite capability probe",
+      "original memory-source/export/lock validation"
+    ]
+  },
+  "conservation": {
+    "inheritedRowsExactByPath": 432,
+    "newInputHashesVerified": 16,
+    "inputFiles": 448,
+    "inputBytes": 17268519,
+    "ownedFilesVerified": 7,
+    "manifestSelfPins": 1,
+    "futureActualReportPins": 4,
+    "disjointFuturePinUnion": 460,
+    "sourceCopies": 16,
+    "originalAncestorBuiltPackageBuildReturnBinaryTopologyAndFullGraphAuthorityConserved": true,
+    "inheritedFilesRehashed": false,
+    "fullGraphReaudited": false,
+    "applicationSourceChanged": false,
+    "budgetsSeconds": {
+      "bookkeepingInsideEachCommand": 1,
+      "diagnosticCleanupInsideTotal": 4,
+      "diagnosticTotal": 35,
+      "nodeCleanupInsideDiagnostic": 5,
+      "nodeFinalAbsoluteEnd": 30,
+      "nodeResultReserveInsideFinal": 0.5,
+      "nodeWorkInsideDiagnostic": 24,
+      "postReadbackMaximum": 25,
+      "primaryAbsoluteEnd": 85,
+      "setupPreflight": 20,
+      "syntaxCleanupInsideTotal": 1,
+      "syntaxTotal": 5,
+      "terminalConservativeReserve": 5
+    },
+    "proposalAllThreeGOFalsePinsEmpty": true
+  },
+  "retainedQualifications": [
+    "Passing root-context gates does not prove entry-context counterparts; underlying and earlier r3 causes remain NOT_ESTABLISHED.",
+    "First phase/category survives later cleanup failures; zeroNative records covered ready/removal boundaries and retained natural history, without continuous root-unload or post-root registry proof.",
+    "Strict original root terminal assertion remains; active UID0 restart means rootClosed=false/FAILED_HOLD.",
+    "Child schema result, command exits/captures/groups, aggregate executor record and actual supported driver return remain distinct; stored timing is preterminal."
+  ],
+  "reviewerHelperCorrections": "Preliminary mode600-for-public-reports and appended-row-order assumptions were corrected to required regular/no-write permissions and exact path-map equality; no candidate change.",
+  "syntaxStatus": "NOT_RUN",
+  "diagnosticStatus": "NOT_RUN",
+  "actualR3DiagnosticResult": null,
+  "candidateParseCompileImportRuntime": false,
+  "privateContentRead": false,
+  "sourceOrGitMutation": false,
+  "runtimeGOIssued": false,
+  "rootExecutionApprovalIssued": false,
+  "remainingGates": "Root final affected readback, actual closed plan, exact supported approval and once-only execution.",
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "protectedInvestigationPerformed": false,
+  "LIVE02": "UNCHANGED_NOT_RUN",
+  "reservedUILockedAndCancelledTaskUnchanged": true,
+  "markdownCompanion": {
+    "path": "docs/evidence/NI6/bootstrap-diagnostic-r3-independent-source-review.md",
+    "bytes": 3298,
+    "sha256": "52f038003ed6d84b3f18a06aaa75d33730ced8b149080c461b239db9b1d08dba"
+  },
+  "reportSelfHashPolicy": "Final JSON hash sealed externally, avoiding recursive self-hash."
+}

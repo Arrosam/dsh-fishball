@@ -1,0 +1,19 @@
+# NI6 entry public gates r3 — SOURCE_ONLY_NOT_RUN
+
+This fresh source capsule uses the same immutable actually built preparation-r3 package and original eleven-plugin bootstrap as sealed diagnostic-r2. Actual r2 first failed ENTRY_START/REJECTION; the public source trace found no concrete static discrepancy. No application correction or runtime GO is supplied. All predecessor bytes and consumed attempts remain intact.
+
+Immediately before original LOADER_CREATE, six gates call original exports: validateInstalledConfig(config), splitNormalWorkerSelection on that returned worker/memory choice, probeHost(ctx), prepareInstalledMemory with its returned binder discarded, original HostConnectionService identity, and operator/profile presence. HOST_GATE checks all26 literal boolean keys plus supported; the first missing/false key yields only its predeclared uppercase/dot-to-underscore phase. No report/config/binder/profile/peer/error/code/stack/property is serialized. The same ten-field <=512-byte result remains the complete diagnostic projection. No binder invocation, gate override, capability injection, setup confirmation or dispatched request occurs. Passing these root-context gates does not prove entry-context counterparts passed; a remaining ENTRY_START rejection leaves its cause unestablished.
+
+The additional public host capability probe opens/queries/closes original in-memory SQLite. The memory gate validates the original pinned source/export/lock and discards its binder. Ordinary entry probes remain if reached. Original fresh LocalCredentialProvider may create its private synthetic credential file; original atomic-write has a stale-lock holder-record/PID branch, which the fresh path does not select. The diagnostic/driver never inspect credential/key/lock/profile/DB/raw-stream contents or unrelated PIDs. One original127.0.0.1:0 listener excludes3080. Model/provider/tool/session/agent/task/setup/HTTP work remains zero.
+
+Original first-failure retention, entry readiness, once-only Loader removal with saved raw Fiber.await and Loader.await, ready/removal zeroNative boundaries and strict rootClosed assertion remain unchanged. Public root dispose restarts UID0; an active root means rootClosed=false/FAILED_HOLD. Retained natural counters do not establish continuous root-unload or post-root registry proof.
+
+Root-only proposed command from the repository root:
+
+```text
+/opt/homebrew/bin/python3 -I .runtime/ni6-public-preparation-bootstrap-diagnostic-r3/run-once.py .runtime/root-ni6-bootstrap-diagnostic-r3-execution-plan.json
+```
+
+The proposed plan has all three GO booleans false and pins{}. Root must review final affected source/code and independent ISTQB reports, exclusively materialize its owned600 actual plan with the closed460-pin union, and obtain the exact supported action approval. False-plan invocation would consume the fresh marker. The unchanged executor runs only two original Node commands: --check with5s total and diagnostic with35s total. Allocation remains20+5+35+25+5=90s, primary85; Node work/cleanup/final remain24/5/30s. Original admission/environment/source/binary/topology/graph/ownership/once/capture/EOF/group/denial/deadline/actual-return guards are conserved by literal runner name retarget only.
+
+All432 inherited inputs are conserved exactly; sixteen selected new public records make448 inputs. Seven owned records plus self and four future review records produce460 future pins, with no overlap. Sixteen evidence copies cover only new selected source/reports/freeze/diagnosis/actual-proof; inherited graph/source authority remains in committed predecessor evidence. Metadata is excluded from source-delta.diff to avoid recursive hashes. No new syntax/import/build/test/runtime action occurred during authoring. All87 accepted0/HOLD, protected final CODE permanently BLOCKED_UNCHANGED, twice-denied cloud request and locked-Mac UI pause persist.
