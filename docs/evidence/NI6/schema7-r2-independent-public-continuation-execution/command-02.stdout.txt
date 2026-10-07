@@ -1,0 +1,184 @@
+TAP version 13
+# (node:92847) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: NI6 independent public continuation MIG-02
+ok 1 - NI6 independent public continuation MIG-02
+  ---
+  duration_ms: 80.860208
+  type: 'test'
+  ...
+# {"id":"MIG-02","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/runs/MIG-02-wACqBX","observations":{"namespaceOnlyPreserved":true,"taskCount":0,"memoryRevision":1,"originalSixWarmReplayCaptured":true,"exactHistoricalRepresentationPreserved":true,"originalSixDuplicateCalls":1,"tokenizerCalls":0,"newCommitCallbacks":0,"privateRegistryCounts":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation MIG-03
+ok 2 - NI6 independent public continuation MIG-03
+  ---
+  duration_ms: 24.303584
+  type: 'test'
+  ...
+# {"id":"MIG-03","status":"PASS","runDirectory":"/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/runs/MIG-03-dwq778","observations":{"freshSeven":true,"statusDoesNotAllocatePublicTaskOrMemory":true,"tokenizerCalls":0,"newCommitCallbacks":0,"privateRegistryCounts":"SOURCE_ONLY"}}
+# Subtest: NI6 independent public continuation PREP-01
+not ok 3 - NI6 independent public continuation PREP-01
+  ---
+  duration_ms: 151.539208
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-continuation-r2.test.mjs:16:9'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    3 !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 3
+  operator: 'strictEqual'
+  stack: |-
+    file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs:13:10
+    async withLease (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs:59:26)
+    async runSelectedLeaf (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/selected-leaf.mjs:52:10)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-continuation-r2.test.mjs:19:22)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+    async file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-continuation-r2.test.mjs:16:3
+  ...
+# Subtest: NI6 independent public continuation PREP-02
+ok 4 - NI6 independent public continuation PREP-02 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.0675
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-03
+ok 5 - NI6 independent public continuation PREP-03 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.284334
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-04
+ok 6 - NI6 independent public continuation PREP-04 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.142375
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-05
+ok 7 - NI6 independent public continuation PREP-05 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.036084
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-06
+ok 8 - NI6 independent public continuation PREP-06 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.03175
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-07
+ok 9 - NI6 independent public continuation PREP-07 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.205625
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-08
+ok 10 - NI6 independent public continuation PREP-08 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.046417
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-09
+ok 11 - NI6 independent public continuation PREP-09 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.029333
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-10
+ok 12 - NI6 independent public continuation PREP-10 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.030041
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-11
+ok 13 - NI6 independent public continuation PREP-11 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.026625
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-12
+ok 14 - NI6 independent public continuation PREP-12 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.024458
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation PREP-13
+ok 15 - NI6 independent public continuation PREP-13 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.023834
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation REQ-01
+ok 16 - NI6 independent public continuation REQ-01 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.023708
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation REQ-02
+ok 17 - NI6 independent public continuation REQ-02 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.024791
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation REQ-03
+ok 18 - NI6 independent public continuation REQ-03 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.0245
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation REQ-04
+ok 19 - NI6 independent public continuation REQ-04 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.023583
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-01
+ok 20 - NI6 independent public continuation SEC-01 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.023417
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-02
+ok 21 - NI6 independent public continuation SEC-02 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.029916
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-03
+ok 22 - NI6 independent public continuation SEC-03 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.029167
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-04
+ok 23 - NI6 independent public continuation SEC-04 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.039667
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-05
+ok 24 - NI6 independent public continuation SEC-05 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.024333
+  type: 'test'
+  ...
+# Subtest: NI6 independent public continuation SEC-06
+ok 25 - NI6 independent public continuation SEC-06 # SKIP STOPPED_AFTER_FIRST_FAILURE
+  ---
+  duration_ms: 0.026291
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 2
+# fail 1
+# cancelled 0
+# skipped 22
+# todo 0
+# duration_ms 377.1475

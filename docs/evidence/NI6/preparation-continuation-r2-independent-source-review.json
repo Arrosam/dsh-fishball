@@ -1,0 +1,1854 @@
+{
+  "contractVersion": "df.ni6-preparation-continuation-r2-independent-source-review/v1",
+  "date": "2026-10-07",
+  "reviewer": "/root/ni3_fixture_source_safety_review",
+  "language": "English",
+  "requestedReasoning": "max",
+  "repositoryAuditModelRequirement": "gpt-6.1-sol",
+  "reviewType": "INDEPENDENT_AFFECTED_ORDINARY_CONTINUATION_CODE_SOURCE",
+  "conclusion": "NO_BLOCKING_AFFECTED_SOURCE_FINDING_EXACT_R2_PINS_MATCH_NOT_EXECUTION_GO",
+  "subjectManifest": {
+    "path": ".runtime/ni6-preparation-independent-continuation-r2/source-manifest.json",
+    "bytes": 52726,
+    "sha256": "74ed025c33df6eab4bbf19709c33ae8440ee8ce8657d2538060df846a438b199"
+  },
+  "subjectNewPins": [
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/continuation-plan.json",
+      "bytes": 179935,
+      "sha256": "b2d27affb781bd74926ef48b5698ee5bd4ddf1ca119cf7935859128f56ba719d",
+      "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/continuation-plan.md",
+      "bytes": 10337,
+      "sha256": "db7084235abf3becb903d97521695a6c7a8020fca648de2566617da6a0a6e7f8",
+      "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/required-dispatcher.diff",
+      "bytes": 4329,
+      "sha256": "4069a1ed2d643ee96c26944ec5eba6b1e3ba62e516d4bf957d3b7e0fe7d35675",
+      "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/selected-leaf.mjs",
+      "bytes": 2386,
+      "sha256": "54884d05f744b119dca51508e23725652ecb01b92defceb07052d0f07e2983c2",
+      "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW"
+    }
+  ],
+  "activeInstructionPins": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+      "role": "CURRENT_ROOT_AUTHORIZED_INSTRUCTION_AMENDMENT"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb",
+      "role": "CURRENT_OWNER_AUTHORIZED_POLICY_AMENDMENT_NO_FIXTURE_EFFECT_EXPANSION"
+    }
+  ],
+  "policyScope": "Current owner-authorized AGENTS/model/service amendment is pinned as instruction provenance. No model, service, profile, native, provider, browser, listener or network effect is added to this delegated deterministic source-only lane.",
+  "historicalPolicy": {
+    "path": "AGENTS.md",
+    "oldSha256": "dea33c79f404cbab39acfc96b70b5e01962b9214cfd44f5cb6524764b1e45fc4",
+    "oldBytes": 7668,
+    "newSha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+    "newBytes": 8292,
+    "oldPolicyRestored": false,
+    "all78OriginalCurrentBytesClaimedUnchanged": false
+  },
+  "priorFindingDisposition": {
+    "id": "B01",
+    "priorReview": "docs/evidence/NI6/preparation-MIG02-r1-independent-source-review.md",
+    "priorReviewSha256": "4d50b090e581bcdf3eba678ef6b9daceacbc455649e08921c52ff36178956f44",
+    "disposition": "RESOLVED_FOR_EXACT_NEW_R2_SOURCE_FREEZE_ONLY",
+    "evidence": "Actual r2 manifest pins current f7 AGENTS and fb5 owner amendment; all95 input and31 owned bytes match. Original77 immutable root inputs and all92 other r1 pins retain old definitions and actual bytes.",
+    "historicalR1BlockerRecordAltered": false,
+    "historicalOldCapsulesMadeExecutionReady": false,
+    "restoreRepinOrWeakeningPerformedByReviewer": false,
+    "qualification": "Old capsule manifests still contain historical dea AGENTS expectations and would refuse if their dispatchers were invoked. New fixed dispatcher uses only the new active manifest; old manifests are immutable byte evidence, not recursive execution authority. Root wrapper/execution freeze/new bounded GO remain separate."
+  },
+  "verification": {
+    "method": "READ_ONLY_PYTHON_STDLIB_METADATA_HASH_BYTE_COMPARE_LEXICAL_MAP_AND_TEXT_DIFF_NO_TARGET_EXECUTION",
+    "manifestSha256": "74ed025c33df6eab4bbf19709c33ae8440ee8ce8657d2538060df846a438b199",
+    "inputCount": 95,
+    "ownedCount": 31,
+    "matchedPinCount": 126,
+    "oldOriginal77DefinitionsEqualRootFreeze": true,
+    "oldR1ImmutableOther92DefinitionsAndBytesPreserved": true,
+    "activeAgentsAndOwnerAmendmentMatch": true,
+    "copiedModuleCount": 27,
+    "copiedModuleByteIdentity": true,
+    "literalExactlyMatchesTextDiff": true,
+    "dispatcherSha256": "54884d05f744b119dca51508e23725652ecb01b92defceb07052d0f07e2983c2",
+    "literalSha256": "4069a1ed2d643ee96c26944ec5eba6b1e3ba62e516d4bf957d3b7e0fe7d35675",
+    "selectedIdsExactlyOriginalSuffixAfterMig01": true,
+    "selectedIds": [
+      "MIG-02",
+      "MIG-03",
+      "PREP-01",
+      "PREP-02",
+      "PREP-03",
+      "PREP-04",
+      "PREP-05",
+      "PREP-06",
+      "PREP-07",
+      "PREP-08",
+      "PREP-09",
+      "PREP-10",
+      "PREP-11",
+      "PREP-12",
+      "PREP-13",
+      "REQ-01",
+      "REQ-02",
+      "REQ-03",
+      "REQ-04",
+      "SEC-01",
+      "SEC-02",
+      "SEC-03",
+      "SEC-04",
+      "SEC-05",
+      "SEC-06"
+    ],
+    "mig01AbsentPhysicalAndMap": true,
+    "newScratchPresent": false,
+    "errors": [],
+    "records": [
+      {
+        "path": ".runtime/ni6-preparation-independent/fixture-plan.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 139277,
+        "sha256": "031e3e00f1c8bd859ff2730e6010eddae9228a79f76118fe8802c3ff8dfddd2a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/fixture-plan.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 16847,
+        "sha256": "ada96858ab9b38d946f0638271fc014f5d9097d96872232bc6520c6dfd89b539",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/mig-01.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 3465,
+        "sha256": "e01e8a1b0d9ca5cf20cc751512799bd1f5e27b242550b9f97f88a26628868c9d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/mig-02.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1629,
+        "sha256": "9510f099bbdc95b485c6082778cf7ad6c1dbb7da88b6578bed77c78d7c557206",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/mig-03.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1086,
+        "sha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-01.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2726,
+        "sha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-02.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2799,
+        "sha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-03.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1797,
+        "sha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-04.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1510,
+        "sha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-05.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1299,
+        "sha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-06.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1108,
+        "sha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-07.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1046,
+        "sha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-08.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1953,
+        "sha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-09.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1854,
+        "sha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-10.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1660,
+        "sha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-11.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1838,
+        "sha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-12.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1792,
+        "sha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/prep-13.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2452,
+        "sha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/req-01.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2469,
+        "sha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/req-02.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2177,
+        "sha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/req-03.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1204,
+        "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/req-04.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1145,
+        "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/sec-01.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 134,
+        "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/sec-02.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 163,
+        "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/sec-03.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 165,
+        "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/sec-04.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 132,
+        "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/sec-05.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2331,
+        "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/leaves/sec-06.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1435,
+        "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/secret-case.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 3623,
+        "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/selected-leaf.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 2439,
+        "sha256": "1bbe9f2a2d26a9fcf44d8779d8ac9b5b25145dd2d654e1ee92975e506a609b51",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/source-manifest.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 28039,
+        "sha256": "7c09ddea671916956ea14891a0881c034f2eb6ac6747ba5b3f3fc77775eb96cd",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent/support.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 11708,
+        "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/core-refinements.d.ts.txt",
+        "role": "preserved_root_original78_input",
+        "bytes": 8035,
+        "sha256": "5d5384b66d5cc5ec8682cd79a77bf7e32fd77af762f583d1054ade03e0f0aa5d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/escaped-secret-refinement-r2.txt",
+        "role": "preserved_root_original78_input",
+        "bytes": 1971,
+        "sha256": "17e320858df777b09bb555749ce29b9893cbe2371dd058e81e8e84d10061fd41",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/literal-refinements.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 10989,
+        "sha256": "c2398d136b1e408e518a31705f08eedb78b9cee0382f44f7b4afbe7f48c94b95",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/proposed-operation-bindings.txt",
+        "role": "preserved_root_original78_input",
+        "bytes": 8878,
+        "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.d.ts.txt",
+        "role": "preserved_root_original78_input",
+        "bytes": 6295,
+        "sha256": "71c9d4f5fac225031f42b308a2a25a97b59bee92207bc980df8c650b68383668",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 4326,
+        "sha256": "a1da8b4d80d8a1c9f692af0b5b08e0d28571def55dc61199c3f1b49c07b63f99",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+        "role": "preserved_root_original78_input",
+        "bytes": 45312,
+        "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/source-manifest.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 21461,
+        "sha256": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/context.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 24196,
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 21567,
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 31812,
+        "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 5323,
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 239793,
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/context.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 330375,
+        "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/root-bounded-execution-v2.py",
+        "role": "preserved_root_original78_input",
+        "bytes": 5857,
+        "sha256": "dbd9d030a315e9ed68fe56c8dd9d7f6d76ccc109329a05c1db551437e63f13cc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/root-ni6-public-preparation-execution-plan.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 15016,
+        "sha256": "8e34eb57eb7740467cbb66cea52fe231c826c924b0cb9aeb128f194cb4150523",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/root-ni6-public-preparation.test.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 1135,
+        "sha256": "5245a3308e23003bda2e651958dce59edd75902f76a05e0d6c7b91b5b2ecf7bc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "role": "preserved_root_original78_input",
+        "bytes": 84640,
+        "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "AGENTS.md",
+        "role": "CURRENT_ROOT_AUTHORIZED_INSTRUCTION_AMENDMENT",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design-amendment-01.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 16407,
+        "sha256": "3e5d5b4421fdc00575ecae81214cd9edf753e70722d00e0e02979e4b52959e4e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design-amendment-01.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 12547,
+        "sha256": "62eb8b12db1a866b679238ecd512f6316c3cff2e9789a5e3286b746e8f9ed79d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 39078,
+        "sha256": "c78c1fdc27be32aac1d5e99cc727cdc3151b11023fedf5c4e739d20a285577d4",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 28130,
+        "sha256": "291dcf436aef2ae8df6d0f472d515da2fc9c8db35289f357a442a83f567f47c6",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-author-f06-escaped-secret-r2-source-manifest.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 40495,
+        "sha256": "48973af274fab3c82ef4edce1a0129ece321b6ffc2daa46319b3e0e48cd931d0",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-independent-f06-escaped-secret-amendment.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 22676,
+        "sha256": "9035559beb297e663120427911d7d13da6fa0e9e5e728332763a1284923a569e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-independent-f06-escaped-secret-amendment.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 13474,
+        "sha256": "e1618a04ec9aac8904bd379545a1d394ea3de6f8ec21ec369011e048669315dc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-independent-source-review-fixes-r1.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 203026,
+        "sha256": "9000dd96b0e3c674e824b212fc10ef4a8b32117267e8cb4b5e7fb8bd344b412e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-independent-source-review-fixes-r1.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 37035,
+        "sha256": "41691ac2b12f5cffd7c4ca2b3f4012dd95bae18f4c2c0f62875eb96af9690366",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-independent-source-review.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 108175,
+        "sha256": "f3c3bf9f9c8f3c6e0636a2d84b58232d7a61b023ee195337f83a3e1c7bfd4bec",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-core-independent-source-review.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 47338,
+        "sha256": "e5e400fc24242b3ce62256fadceeb8442587c7b54f7193ac8e203ae88f86bd83",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-independent-design.json",
+        "role": "preserved_root_original78_input",
+        "bytes": 110282,
+        "sha256": "706113919029e0812b96950d737f26ea1c055927a352f8f14f488b0ee5395611",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-independent-design.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 44965,
+        "sha256": "9a01d8d71fe97def605bff63a4c2da3556bdbff61adf7376ee6741636dc8c5ec",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "role": "preserved_root_original78_input",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "src/context.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 24196,
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "src/fishball-memory-core.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "src/ledger.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 21567,
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "src/memory.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 31812,
+        "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "src/runtime-security.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 5323,
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "src/runtime-store.mjs",
+        "role": "preserved_root_original78_input",
+        "bytes": 239793,
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-01.stdout.txt",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-01.stderr.txt",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-02.stdout.txt",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 8596,
+        "sha256": "fdebb2b8c85d9778c8af0646d899a8a9a47ee2324c47e68ad1241b9d846769d2",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-02.stderr.txt",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-results.json",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 1924,
+        "sha256": "62f8fae6dd54ebc25367a368c20e09f4e7495a711170616f4b1d00ee4d6a0aac",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-before-verification.json",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 128,
+        "sha256": "a85f45cf43c0e9747429d5f10a0145883c51577b8de4948a07722f1a818cc5b5",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-after-verification.json",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 201,
+        "sha256": "4c14362dc4c14124ebe3447db948fa277420b44615376215023679f17abd21b0",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-execution-freeze.json",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 15626,
+        "sha256": "7221c3e4296112140aa65e983a541cf69e97bf7dcdb205655a46b1882730a6f6",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-runner.py.txt",
+        "role": "preserved_first_execution_evidence",
+        "bytes": 5857,
+        "sha256": "dbd9d030a315e9ed68fe56c8dd9d7f6d76ccc109329a05c1db551437e63f13cc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/leaves/mig-02.mjs",
+        "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW",
+        "bytes": 3516,
+        "sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/required-leaf.diff",
+        "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW",
+        "bytes": 3008,
+        "sha256": "8812904092415d12ba114ab223738630ff73b06bfe5f765cac3d196fe6ff689a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/review.json",
+        "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW",
+        "bytes": 45391,
+        "sha256": "3f3d3b53da92475f830347492a5a6b25fe6165f9404e136d39f6974653cf610e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/review.md",
+        "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW",
+        "bytes": 5311,
+        "sha256": "8b6b9da468ccc9051fd5800fb2ae6031b85894a2be3d90c1fdd115912a3da5fa",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/selected-leaf.mjs",
+        "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW",
+        "bytes": 1242,
+        "sha256": "8d769c0ea4784bc8bccd3e5e1f7b5ad52e0cb9a9ef8f0296670e9a59e791d335",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/support.mjs",
+        "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW",
+        "bytes": 1002,
+        "sha256": "5aa23dacc52192cf3901b1449f0a2c8aaaa77eee75005ce688a05fb3948762c1",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-mig02-r1/source-manifest.json",
+        "role": "PRESERVED_R1_HISTORICAL_MANIFEST_HASH_ONLY",
+        "bytes": 36498,
+        "sha256": "8cb53b8b147251521e00deb79eff7d6f252a081a585b2c53170c508f211bf6d7",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-07-ollama.md",
+        "role": "CURRENT_OWNER_AUTHORIZED_POLICY_AMENDMENT_NO_FIXTURE_EFFECT_EXPANSION",
+        "bytes": 2185,
+        "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/continuation-plan.json",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 179935,
+        "sha256": "b2d27affb781bd74926ef48b5698ee5bd4ddf1ca119cf7935859128f56ba719d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/continuation-plan.md",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 10337,
+        "sha256": "db7084235abf3becb903d97521695a6c7a8020fca648de2566617da6a0a6e7f8",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 3516,
+        "sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-03.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1086,
+        "sha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2726,
+        "sha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-02.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2799,
+        "sha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-03.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1797,
+        "sha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-04.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1510,
+        "sha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-05.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1299,
+        "sha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-06.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1108,
+        "sha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-07.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1046,
+        "sha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-08.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1953,
+        "sha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-09.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1854,
+        "sha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-10.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1660,
+        "sha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-11.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1838,
+        "sha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-12.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1792,
+        "sha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-13.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2452,
+        "sha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-01.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2469,
+        "sha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-02.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2177,
+        "sha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-03.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1204,
+        "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-04.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1145,
+        "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-01.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 134,
+        "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-02.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 163,
+        "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-03.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 165,
+        "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-04.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 132,
+        "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-05.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2331,
+        "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-06.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 1435,
+        "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/required-dispatcher.diff",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 4329,
+        "sha256": "4069a1ed2d643ee96c26944ec5eba6b1e3ba62e516d4bf957d3b7e0fe7d35675",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 3623,
+        "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/selected-leaf.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 2386,
+        "sha256": "54884d05f744b119dca51508e23725652ecb01b92defceb07052d0f07e2983c2",
+        "matchesPinnedSizeAndDigest": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+        "role": "NEW_OWNED_CONTINUATION_SOURCE_OR_REVIEW",
+        "bytes": 11708,
+        "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+        "matchesPinnedSizeAndDigest": true
+      }
+    ],
+    "copiedModules": [
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+        "origin": ".runtime/ni6-preparation-independent/support.mjs",
+        "bytes": 11708,
+        "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+        "origin": ".runtime/ni6-preparation-independent/secret-case.mjs",
+        "bytes": 3623,
+        "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent-mig02-r1/leaves/mig-02.mjs",
+        "bytes": 3516,
+        "sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/mig-03.mjs",
+        "bytes": 1086,
+        "sha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-01.mjs",
+        "bytes": 2726,
+        "sha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-02.mjs",
+        "bytes": 2799,
+        "sha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-03.mjs",
+        "bytes": 1797,
+        "sha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-04.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-04.mjs",
+        "bytes": 1510,
+        "sha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-05.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-05.mjs",
+        "bytes": 1299,
+        "sha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-06.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-06.mjs",
+        "bytes": 1108,
+        "sha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-07.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-07.mjs",
+        "bytes": 1046,
+        "sha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-08.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-08.mjs",
+        "bytes": 1953,
+        "sha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-09.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-09.mjs",
+        "bytes": 1854,
+        "sha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-10.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-10.mjs",
+        "bytes": 1660,
+        "sha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-11.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-11.mjs",
+        "bytes": 1838,
+        "sha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-12.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-12.mjs",
+        "bytes": 1792,
+        "sha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-13.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-13.mjs",
+        "bytes": 2452,
+        "sha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-01.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-01.mjs",
+        "bytes": 2469,
+        "sha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-02.mjs",
+        "bytes": 2177,
+        "sha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-03.mjs",
+        "bytes": 1204,
+        "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-04.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-04.mjs",
+        "bytes": 1145,
+        "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-01.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-01.mjs",
+        "bytes": 134,
+        "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-02.mjs",
+        "bytes": 163,
+        "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-03.mjs",
+        "bytes": 165,
+        "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-04.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-04.mjs",
+        "bytes": 132,
+        "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-05.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-05.mjs",
+        "bytes": 2331,
+        "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-06.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-06.mjs",
+        "bytes": 1435,
+        "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+        "byteIdentical": true
+      }
+    ]
+  },
+  "literalGuardReview": {
+    "completeDispatcherRead": true,
+    "textDiffExactlyMatchesRequiredDispatcherLiteral": true,
+    "literalSha256": "4069a1ed2d643ee96c26944ec5eba6b1e3ba62e516d4bf957d3b7e0fe7d35675",
+    "closedMapLines": "6-32",
+    "ownIdAdmissionLine": 37,
+    "optionsShapeLine": 38,
+    "externalHashFormatLine": 39,
+    "externalWholeManifestDigestLine": 42,
+    "everyInputAndOwnedSizeDigestLines": "44-47",
+    "fixedSelectedLeafImportLine": 51,
+    "runInvocationLine": 52,
+    "exactExternallyReviewedManifestStillRequired": true,
+    "everyInputAndOwnedStillChecked": true,
+    "noRoleFilterOrIgnoredPolicyDrift": true,
+    "removedOldPathFallback": "All126 current manifest records have exact reviewed absolutePath; readFileSync(pin.absolutePath) removes the old fallback without dropping size/hash validation.",
+    "dynamicImport": "LEAVES[id] from own-key admitted immutable25 map only; no caller/raw URL or historical dispatcher import.",
+    "leafIdsExportDoesNotAuthorizeOrderOrRepeat": "Root finite wrapper must enforce the reviewed exact order and one invocation per id. Dispatcher itself neither auto-registers tests nor enforces one-shot count.",
+    "noEagerTargetImportConstructorScratchOrRunCallAdded": true,
+    "noOracleOrProductSourceChangeInThisGeneration": true
+  },
+  "copyAndImportReview": {
+    "copiedModuleCount": 27,
+    "byteIdenticalCopiedModules": [
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+        "origin": ".runtime/ni6-preparation-independent/support.mjs",
+        "bytes": 11708,
+        "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+        "origin": ".runtime/ni6-preparation-independent/secret-case.mjs",
+        "bytes": 3623,
+        "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent-mig02-r1/leaves/mig-02.mjs",
+        "bytes": 3516,
+        "sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/mig-03.mjs",
+        "bytes": 1086,
+        "sha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-01.mjs",
+        "bytes": 2726,
+        "sha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-02.mjs",
+        "bytes": 2799,
+        "sha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-03.mjs",
+        "bytes": 1797,
+        "sha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-04.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-04.mjs",
+        "bytes": 1510,
+        "sha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-05.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-05.mjs",
+        "bytes": 1299,
+        "sha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-06.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-06.mjs",
+        "bytes": 1108,
+        "sha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-07.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-07.mjs",
+        "bytes": 1046,
+        "sha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-08.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-08.mjs",
+        "bytes": 1953,
+        "sha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-09.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-09.mjs",
+        "bytes": 1854,
+        "sha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-10.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-10.mjs",
+        "bytes": 1660,
+        "sha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-11.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-11.mjs",
+        "bytes": 1838,
+        "sha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-12.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-12.mjs",
+        "bytes": 1792,
+        "sha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-13.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/prep-13.mjs",
+        "bytes": 2452,
+        "sha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-01.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-01.mjs",
+        "bytes": 2469,
+        "sha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-02.mjs",
+        "bytes": 2177,
+        "sha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-03.mjs",
+        "bytes": 1204,
+        "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-04.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/req-04.mjs",
+        "bytes": 1145,
+        "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-01.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-01.mjs",
+        "bytes": 134,
+        "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-02.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-02.mjs",
+        "bytes": 163,
+        "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-03.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-03.mjs",
+        "bytes": 165,
+        "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-04.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-04.mjs",
+        "bytes": 132,
+        "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-05.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-05.mjs",
+        "bytes": 2331,
+        "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+        "byteIdentical": true
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-06.mjs",
+        "origin": ".runtime/ni6-preparation-independent/leaves/sec-06.mjs",
+        "bytes": 1435,
+        "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+        "byteIdentical": true
+      }
+    ],
+    "copied": "Original support + original secret helper + original stopped24 leaves + exact reviewed corrected MIG02.",
+    "correctedMig02Sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+    "unchangedLeafBodiesSemanticallyRereviewed": false,
+    "fixedDepthCoreTargets": "Copied support keeps unchanged relative import text at equivalent .runtime depth; original and candidate store/context/memory imports resolve to the same pinned ni6-schema7-core paths, preserving constructor/source provenance.",
+    "importMetadataVerification": {
+      "method": "READ_ONLY_IMPORT_METADATA_AND_LITERAL_RELATIVE_PATH_RESOLUTION_NO_JS_PARSE_OR_IMPORT",
+      "moduleEntries": 28,
+      "relativeEdgesChecked": 32,
+      "builtinEdges": 8,
+      "coreTargets": [
+        ".runtime/ni6-schema7-core/original/context.mjs",
+        ".runtime/ni6-schema7-core/original/memory.mjs",
+        ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+        ".runtime/ni6-schema7-core/src/context.mjs",
+        ".runtime/ni6-schema7-core/src/memory.mjs",
+        ".runtime/ni6-schema7-core/src/runtime-store.mjs"
+      ],
+      "fixedMapDynamicImportOnly": true,
+      "errors": []
+    },
+    "scopedImportEntries": [
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+        "imports": [
+          {
+            "specifier": "../support.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+            "exists": true
+          }
+        ],
+        "dynamicImport": null,
+        "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+        "imports": [
+          {
+            "specifier": "./support.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+            "exists": true
+          }
+        ],
+        "dynamicImport": null,
+        "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/selected-leaf.mjs",
+        "imports": [
+          {
+            "specifier": "node:assert/strict",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "node:crypto",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "node:fs",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          }
+        ],
+        "dynamicImport": "LEAVES[id] only inside runSelectedLeaf after all pins verified",
+        "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+        "imports": [
+          {
+            "specifier": "node:assert/strict",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "node:crypto",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "node:fs",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "node:url",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "node:path",
+            "kind": "builtin",
+            "resolved": null,
+            "exists": null
+          },
+          {
+            "specifier": "../ni6-schema7-core/original/runtime-store.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+            "exists": true
+          },
+          {
+            "specifier": "../ni6-schema7-core/original/context.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+            "exists": true
+          },
+          {
+            "specifier": "../ni6-schema7-core/original/memory.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+            "exists": true
+          },
+          {
+            "specifier": "../ni6-schema7-core/src/runtime-store.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+            "exists": true
+          },
+          {
+            "specifier": "../ni6-schema7-core/src/context.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+            "exists": true
+          },
+          {
+            "specifier": "../ni6-schema7-core/src/memory.mjs",
+            "kind": "relative",
+            "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+            "exists": true
+          }
+        ],
+        "dynamicImport": null,
+        "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+      }
+    ],
+    "coreSourcePins": [
+      {
+        "path": ".runtime/ni6-schema7-core/original/context.mjs",
+        "bytes": 24196,
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+        "bytes": 21567,
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+        "bytes": 31812,
+        "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+        "bytes": 5323,
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+        "bytes": 239793,
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+        "role": "preserved_root_original78_input"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+        "bytes": 330375,
+        "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+        "role": "preserved_root_original78_input"
+      }
+    ],
+    "currentRuntimeStoreSha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+    "newOwnerIntentCandidateReadOrIntegrated": false,
+    "noFakeCollectorPrivateBrandFacadeNativeOriginOrReceiptConstructedByDelta": true,
+    "wholeOriginalHostPublicGraphReverified": false
+  },
+  "effectReview": {
+    "newDispatcherAtModuleLoad": "Node builtin imports, frozen literal map and function definitions; filesystem pin reads and leaf import/run occur only inside explicitly invoked selection.",
+    "selectedInvocationPreflight": "Read local manifest and every126 reviewed input/owned file as bytes; verify full digest/size before selected module import.",
+    "copiedHelperLocationEffect": "import.meta.url now belongs to continuation capsule, so withLease creates fresh continuation runs/<ID>-<mkdtemp>/ledger.sqlite. Public constructor/helper bodies and their core import targets are byte-identical.",
+    "oldFailedOrPriorDbOpenedByReviewer": false,
+    "newScratchAbsentAtReview": true,
+    "constructorsCanWriteMigrateRepairOrBackUp": true,
+    "physicalReadOnlyRollbackDecompressionGuaranteeClaimed": false,
+    "prospectiveAggregateMetadata": {
+      "method": "METADATA_ARITHMETIC_ONLY_NOT_RUNTIME_OR_UNCHANGED_ORACLE_REDESIGN",
+      "leafOrderMatchesManifest": true,
+      "metadataSums": {
+        "constructors": 56,
+        "directPreparations": 123,
+        "closes": 56,
+        "expectedCallbacks": 38
+      },
+      "metadataUpperBounds": {
+        "selectedLeafCount": 25,
+        "freshDirectoriesUpperBound": 25,
+        "freshDatabasePathsUpperBound": 25,
+        "constructorAttemptsUpperBound": 56,
+        "ownedPublicStoreCloseUpperBound": 56,
+        "directPrepareExecutionContextCallsUpperBound": 123,
+        "newCommitCallbacksOnExpectedCompletion": 38,
+        "originalSixMIG02ExtraWarmDuplicatesUpperBound": 1,
+        "parallelLeaves": 1,
+        "parallelPreparations": "Only unchanged PREP04 has two same-store pending promises; both are awaited",
+        "tokenizerPublicWriterMutations": "Only unchanged PREP06/07 each make one genuine public writer in first supplied callback",
+        "callerInputCallbackMutation": "Only unchanged REQ04; detached input oracle unchanged",
+        "nativeModelProviderToolProfileBrowserListenerNetworkGitEffects": 0,
+        "directLedgerDatabaseSyncSQLRevisionCipherReceiptExperiments": 0
+      },
+      "countsAreRuntimeObservations": false
+    },
+    "aggregateNumbersAreObservedRuntimeOutcomes": false,
+    "metadataPerLeafBoundsRecomputedFromAllOracleBodies": false,
+    "ordinaryCallbacksAndConcurrency": "Unchanged PREP04 holds two same-store pending preparations and awaits both. Unchanged PREP06/07 permit one genuine public writer in tokenizer; unchanged REQ04 retains caller-input mutation case. These are carried-forward source-plan dispositions, not new callback observations.",
+    "mig02OriginalWarmDuplicateUpperBound": 1,
+    "mig02DirectPreparations": 0,
+    "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+    "noDirectSQLCryptoReceiptOrBlockedExperimentAdded": true,
+    "noModelProviderToolProfileBrowserListenerNetworkGitEffectAdded": true
+  },
+  "findings": [],
+  "nonblockingQualifications": [
+    {
+      "id": "Q01",
+      "severity": "LOW",
+      "scope": "MIG02 API count terminology carried forward",
+      "finding": "candidatePublicGetMemoryReads=3 remains a direct leaf-call count. Each of the two candidate MemoryAdapter.state calls also invokes getMemory through #read. Three is not a global/transitive bound.",
+      "requiredFollowup": "Root retain direct-call labeling and account for adapter/constructor/internal operations in its future effect budget."
+    },
+    {
+      "id": "Q02",
+      "severity": "INFORMATIONAL",
+      "scope": "Execution ownership",
+      "finding": "All source/copy/pin checks are read-only. The finite Node wrapper, actual one-shot order/failure stop, parsing/import/fixture outcomes and new execution freeze are not supplied or proven by this report.",
+      "requiredFollowup": "Root read literal/report, create and review its explicit finite25 wrapper, freeze current exact pins, then issue separate bounded GO."
+    }
+  ],
+  "continuationReview": {
+    "selectedIds": [
+      "MIG-02",
+      "MIG-03",
+      "PREP-01",
+      "PREP-02",
+      "PREP-03",
+      "PREP-04",
+      "PREP-05",
+      "PREP-06",
+      "PREP-07",
+      "PREP-08",
+      "PREP-09",
+      "PREP-10",
+      "PREP-11",
+      "PREP-12",
+      "PREP-13",
+      "REQ-01",
+      "REQ-02",
+      "REQ-03",
+      "REQ-04",
+      "SEC-01",
+      "SEC-02",
+      "SEC-03",
+      "SEC-04",
+      "SEC-05",
+      "SEC-06"
+    ],
+    "selectedOrderExactlyOldFrozenOrderMinusPassedMig01": true,
+    "correctedMig02First": true,
+    "mig01PhysicallyAbsent": true,
+    "mig01SelectionAbsent": true,
+    "all25RouteThroughSingleNewDispatcher": true,
+    "historicalDispatchersInvokedByNewCode": false,
+    "historicalOriginalManifest": {
+      "path": ".runtime/ni6-preparation-independent/source-manifest.json",
+      "sha256": "7c09ddea671916956ea14891a0881c034f2eb6ac6747ba5b3f3fc77775eb96cd"
+    },
+    "historicalR1Manifest": {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/source-manifest.json",
+      "sha256": "8cb53b8b147251521e00deb79eff7d6f252a081a585b2c53170c508f211bf6d7"
+    },
+    "historicalFirstExecution": "Root-reported MIG01 PASS/MIG02 FAIL/24 stopped; all9 immutable execution-evidence pins unchanged, no raw transcript content reread.",
+    "rootFiniteWrapperCreatedOrReviewedByThisAgent": false,
+    "requiredRootBehavior": "25 exact literal IDs once each in reviewed order, corrected MIG02 first, concurrency1, stop on first unexpected failure; retain failure and scratch evidence, subsequent IDs stopped without acceptance, no auto-discovery/retry/reroute/repin/normalization/oracle weakening.",
+    "suggestedCommandsAsMetadataOnly": [
+      [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        "<NEW root-owned finite25 wrapper>"
+      ],
+      [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        "<NEW root-owned finite25 wrapper>"
+      ]
+    ],
+    "commandCap": 16,
+    "proposedCommandCount": 2,
+    "argvCap": 12,
+    "proposedMaximumArgvLength": 5,
+    "sourceReportOrActivePolicyPinConstitutesExecutionGO": false
+  },
+  "independenceBoundary": {
+    "reviewerIndependentOfAuthor": true,
+    "affectedContinuationDispatcherLiteralAndMetadataRead": true,
+    "unchangedFixtureBodiesOnlyHashedComparedForByteIdentity": true,
+    "noNewFixturesOrOraclesAuthored": true,
+    "independentTestDesignClaimed": false,
+    "ordinaryAffectedReviewDoesNotReplaceBlockedFinalCode": true,
+    "unsupportedHistoricalNativeInverseColdSourceCollectorAutomaticPatternDispositionsChanged": false
+  },
+  "reviewActions": {
+    "readOnlyTextMetadataHashAndByteCompare": true,
+    "metadataJsonParsingOnly": true,
+    "JavascriptSourceParsing": 0,
+    "NodeExecution": 0,
+    "moduleImports": 0,
+    "tests": 0,
+    "builds": 0,
+    "fixturesRun": 0,
+    "fixturesAuthored": 0,
+    "DBOperations": 0,
+    "storeConstructors": 0,
+    "migrations": 0,
+    "models": 0,
+    "providers": 0,
+    "native": 0,
+    "profiles": 0,
+    "browsers": 0,
+    "listeners": 0,
+    "network": 0,
+    "Git": 0,
+    "sourceEdits": 0,
+    "existingArtifactsEdited": 0,
+    "newReviewEvidenceFiles": 2,
+    "privateSQLCryptoBlockedExperimentAccess": false
+  },
+  "outcome": "SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED_NOT_RUN",
+  "criteria": {
+    "total": 87,
+    "accepted": 0,
+    "state": "HOLD"
+  },
+  "holds": [
+    "all87",
+    "blocked final CODE",
+    "corrected MIG02 and remaining24 functional execution",
+    "actual root finite wrapper and execution freeze/GO",
+    "all41 design groups full acceptance",
+    "eight F06 full obligations",
+    "unsupported native/inverse/cold/sourcecollector/automatic-pattern historical prerequisites",
+    "UI/native/model-quality acceptance",
+    "whole original/public graph verification"
+  ],
+  "priorIndependentReviewPins": [
+    {
+      "path": "docs/evidence/NI3/native-runtime-fixture-corrections-source-review.md",
+      "sha256": "9990c609ef58c5b790a8d468b7c4177803882f1515117f9540bb1709d6cc0eb3"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-fixture-corrections-source-review.json",
+      "sha256": "b92a0aafb0879ca77aea85edafff221ca5b03651185542fb02c0e7fc1ab7082e"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-independent-P01-source-review.md",
+      "sha256": "c3dc160d64f614b70a3247b5cc67da64e6c27123e9d1e83b14b33f46417c7d85"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-independent-P01-source-review.json",
+      "sha256": "6be90babc605a161a16ffc2c125adcc464f19f7e26ceb24c422d7520a90cd44c"
+    },
+    {
+      "path": "docs/evidence/NI4-5/normal-results-lifetime-independent-source-review.md",
+      "sha256": "0ea086f6a032f6e1077d4984aec7c7cfd3c012677a10881c8e8154ead99b75a9"
+    },
+    {
+      "path": "docs/evidence/NI4-5/normal-results-lifetime-independent-source-review.json",
+      "sha256": "663a3306a4bfd50548ff656e380a58bff59c7ebf0ae78a72d4cd22da673e8579"
+    },
+    {
+      "path": "docs/evidence/NI6/preparation-MIG02-r1-independent-source-review.md",
+      "sha256": "4d50b090e581bcdf3eba678ef6b9daceacbc455649e08921c52ff36178956f44"
+    },
+    {
+      "path": "docs/evidence/NI6/preparation-MIG02-r1-independent-source-review.json",
+      "sha256": "71839f4d561e951c5d74c454427a90bcdb6f6b3e633625a3c110d0be62bc92ba"
+    }
+  ]
+}

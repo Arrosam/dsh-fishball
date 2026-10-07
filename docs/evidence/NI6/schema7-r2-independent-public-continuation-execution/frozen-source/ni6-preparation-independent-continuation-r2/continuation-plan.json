@@ -1,0 +1,3309 @@
+{
+  "contractVersion": "NI6-public-preparation-continuation-r2-source-v1",
+  "date": "2026-10-07",
+  "author": "/root/ni6_independent_design",
+  "parent": "/root",
+  "status": "SOURCE_SEALED_NOT_PARSED_NOT_IMPORTED_NOT_RUN_HOLD",
+  "scope": "Coherent fresh continuation freeze for reviewed MIG02 and original stopped24 only; instruction-pin amendment and module-location/dispatcher delta only",
+  "policyDelta": {
+    "path": "AGENTS.md",
+    "before": {
+      "path": "AGENTS.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/AGENTS.md",
+      "bytes": 7668,
+      "sha256": "dea33c79f404cbab39acfc96b70b5e01962b9214cfd44f5cb6524764b1e45fc4",
+      "role": "preserved_root_original78_input"
+    },
+    "after": {
+      "path": "AGENTS.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+      "role": "CURRENT_ROOT_AUTHORIZED_INSTRUCTION_AMENDMENT"
+    },
+    "authorizedAmendment": {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb",
+      "role": "CURRENT_OWNER_AUTHORIZED_POLICY_AMENDMENT_NO_FIXTURE_EFFECT_EXPANSION"
+    },
+    "disposition": "LEGITIMATE_OWNER_AUTHORIZED_INSTRUCTION_DRIFT_ONLY",
+    "historicalRootInputs": 78,
+    "unchangedHistoricalRootInputsNow": 77,
+    "knownAuthorizedInstructionAmendmentsNow": 1,
+    "unchangedR1ExecutionEvidenceInputs": 9,
+    "unchangedR1OwnedFiles": 6,
+    "unchangedOtherR1Pins": 92,
+    "oldPolicyRequirement": "Historical first-execution/old capsule input pin remains recorded; current AGENTS is not restored or claimed byte-identical",
+    "scopeLimit": "Owner-authorized Ollama/model/service paragraph does not authorize any model, network, profile, browser or service effect in these deterministic public preparation fixtures"
+  },
+  "historicalManifestPins": {
+    "original": {
+      "path": ".runtime/ni6-preparation-independent/source-manifest.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/source-manifest.json",
+      "bytes": 28039,
+      "sha256": "7c09ddea671916956ea14891a0881c034f2eb6ac6747ba5b3f3fc77775eb96cd",
+      "role": "HISTORICAL_ORIGINAL_MANIFEST"
+    },
+    "r1": {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/source-manifest.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/source-manifest.json",
+      "bytes": 36498,
+      "sha256": "8cb53b8b147251521e00deb79eff7d6f252a081a585b2c53170c508f211bf6d7",
+      "role": "HISTORICAL_R1_MANIFEST"
+    },
+    "behavior": "Both historical manifest files are hash checked as immutable bytes; neither historical dispatcher nor obsolete nested AGENTS expectation is invoked"
+  },
+  "rootFirstExecution": {
+    "evidenceDirectory": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution",
+    "syntaxCommandExit": 0,
+    "functionalCommandExit": 1,
+    "pass": 1,
+    "fail": 1,
+    "stoppedLeaves": 24,
+    "passedLeaf": "MIG-01",
+    "failedLeaf": "MIG-02",
+    "remainingLeaves": [
+      "MIG-03",
+      "PREP-01",
+      "PREP-02",
+      "PREP-03",
+      "PREP-04",
+      "PREP-05",
+      "PREP-06",
+      "PREP-07",
+      "PREP-08",
+      "PREP-09",
+      "PREP-10",
+      "PREP-11",
+      "PREP-12",
+      "PREP-13",
+      "REQ-01",
+      "REQ-02",
+      "REQ-03",
+      "REQ-04",
+      "SEC-01",
+      "SEC-02",
+      "SEC-03",
+      "SEC-04",
+      "SEC-05",
+      "SEC-06"
+    ],
+    "frozenInputs": 78,
+    "rootBeforeErrors": [],
+    "rootAfterAllInputsUnchanged": true,
+    "scopeLimit": "Execution evidence only; full original graph was not verified and no wholeCODE/native/UI acceptance follows.",
+    "source": "command-results.json, command02 stdout and before/after verification; parent-reported outcome matches raw evidence."
+  },
+  "oldArtifacts": {
+    "capsuleManifest": ".runtime/ni6-preparation-independent/source-manifest.json",
+    "capsuleManifestSha256": "7c09ddea671916956ea14891a0881c034f2eb6ac6747ba5b3f3fc77775eb96cd",
+    "failedLeafSha256": "9510f099bbdc95b485c6082778cf7ad6c1dbb7da88b6578bed77c78d7c557206",
+    "oldWrapper": ".runtime/root-ni6-public-preparation.test.mjs",
+    "oldWrapperSha256": "5245a3308e23003bda2e651958dce59edd75902f76a05e0d6c7b91b5b2ecf7bc",
+    "preserved": "All78 original frozen inputs and raw first-run evidence hash-pinned unchanged; original26, manifest, wrapper and failed logs are untouched."
+  },
+  "oracleDelta": {
+    "newChanges": 0,
+    "MIG02": "Reviewed r1 full genuine original6 warm replay comparison retained byte-identically; exactly one extra original6 duplicate compared with original pre-correction",
+    "stopped24": "All public inputs/assertions/expected codes/bounds preserved byte-identically",
+    "MIG01": "Prior PASS preserved; module absent from this capsule and impossible to select through closed dispatcher"
+  },
+  "constructor": {
+    "databasePath": "Absolute new selected-leaf runs/<ID>-<mkdtemp>/ledger.sqlite only",
+    "encryptionKey": "Fresh Buffer.alloc(32,0x6a) for each actual constructor; wholly synthetic",
+    "principals": "Actual constructor registers fresh plain opaque handles for synthetic owner/workspace; genuine task-bound A coordinator issuer/B owner caller only in PREP08",
+    "preparationPrincipals": "Actual constructor registers fresh empty capability with genuine ownerHandle and exact namespace; no fabricated private proof/receipt/origin/brand carrier",
+    "normalLimits": {
+      "queueCapacity": 32,
+      "maxActive": 2,
+      "maxAttempts": 3,
+      "maxTotalAttempts": 12,
+      "maxTasks": 1000,
+      "maxActionsPerTask": 16,
+      "maxEventsPerTask": 128,
+      "maxMetadataBytes": 8192,
+      "maxDataBytes": 65536,
+      "maxRecordsPerTask": 128,
+      "maxCommands": 4096,
+      "maxRuntimeMs": 3600000,
+      "maxUsageUnits": 1000000,
+      "maxCostEstimateMicros": 1000000,
+      "maxControlCommands": 128
+    },
+    "selectedDifferences": {
+      "PREP09": "Explicit metadata1024 then4096 actual constructors",
+      "PREP12": "Explicit recordLimit3 then4 actual constructors"
+    },
+    "clock": 1710000000000,
+    "forbiddenSecrets": "[] normally; genuine reopened original store config receives the short synthetic configured secret in SEC01..04",
+    "nativeObservers": "Not supplied",
+    "fixtureModeFaultsMigrationFaultAuditHostPermission": "Not supplied; no native/provider/tool/profile capability or fault seam",
+    "assembler": "Genuine ContextAssembler with actual store/capability/issuer binding, no queryHost or fake assembler",
+    "memory": "Genuine MemoryAdapter with actual handle/namespace/capability/assembler",
+    "tokenizer": "Supplied deterministic UTF8 byte count, observed calls only; one genuine public writer during first token in PREP06/07, caller input mutation in REQ04",
+    "observer": "Actual onPreparedCommit supplied synchronous callback counts genuine new deliveries only; throws after capturing genuine delivery in PREP05"
+  },
+  "coreAndPublicSourcePins": [
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+      "bytes": 28297,
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+      "bytes": 21799,
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+      "bytes": 36680,
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "bytes": 31990,
+      "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "bytes": 6033,
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "bytes": 330375,
+      "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+      "role": "preserved_root_original78_input"
+    }
+  ],
+  "moduleProvenance": [
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+      "bytes": 11708,
+      "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+      "originPath": ".runtime/ni6-preparation-independent/support.mjs",
+      "originSha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+      "delta": "BYTE_IDENTICAL_ORIGINAL_HELPER_NEW_CAPSULE_PATH",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+      "bytes": 3623,
+      "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+      "originPath": ".runtime/ni6-preparation-independent/secret-case.mjs",
+      "originSha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+      "delta": "BYTE_IDENTICAL_ORIGINAL_HELPER_NEW_CAPSULE_PATH",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+      "bytes": 3516,
+      "sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+      "originPath": ".runtime/ni6-preparation-independent-mig02-r1/leaves/mig-02.mjs",
+      "originSha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+      "delta": "BYTE_IDENTICAL_REVIEWED_MIG02_CORRECTION",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-03.mjs",
+      "bytes": 1086,
+      "sha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/mig-03.mjs",
+      "originSha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs",
+      "bytes": 2726,
+      "sha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-01.mjs",
+      "originSha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-02.mjs",
+      "bytes": 2799,
+      "sha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-02.mjs",
+      "originSha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-03.mjs",
+      "bytes": 1797,
+      "sha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-03.mjs",
+      "originSha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-04.mjs",
+      "bytes": 1510,
+      "sha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-04.mjs",
+      "originSha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-05.mjs",
+      "bytes": 1299,
+      "sha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-05.mjs",
+      "originSha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-06.mjs",
+      "bytes": 1108,
+      "sha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-06.mjs",
+      "originSha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-07.mjs",
+      "bytes": 1046,
+      "sha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-07.mjs",
+      "originSha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-08.mjs",
+      "bytes": 1953,
+      "sha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-08.mjs",
+      "originSha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-09.mjs",
+      "bytes": 1854,
+      "sha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-09.mjs",
+      "originSha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-10.mjs",
+      "bytes": 1660,
+      "sha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-10.mjs",
+      "originSha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-11.mjs",
+      "bytes": 1838,
+      "sha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-11.mjs",
+      "originSha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-12.mjs",
+      "bytes": 1792,
+      "sha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-12.mjs",
+      "originSha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-13.mjs",
+      "bytes": 2452,
+      "sha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/prep-13.mjs",
+      "originSha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-01.mjs",
+      "bytes": 2469,
+      "sha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/req-01.mjs",
+      "originSha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-02.mjs",
+      "bytes": 2177,
+      "sha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/req-02.mjs",
+      "originSha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-03.mjs",
+      "bytes": 1204,
+      "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/req-03.mjs",
+      "originSha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-04.mjs",
+      "bytes": 1145,
+      "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/req-04.mjs",
+      "originSha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-01.mjs",
+      "bytes": 134,
+      "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/sec-01.mjs",
+      "originSha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-02.mjs",
+      "bytes": 163,
+      "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/sec-02.mjs",
+      "originSha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-03.mjs",
+      "bytes": 165,
+      "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/sec-03.mjs",
+      "originSha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-04.mjs",
+      "bytes": 132,
+      "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/sec-04.mjs",
+      "originSha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-05.mjs",
+      "bytes": 2331,
+      "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/sec-05.mjs",
+      "originSha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-06.mjs",
+      "bytes": 1435,
+      "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+      "originPath": ".runtime/ni6-preparation-independent/leaves/sec-06.mjs",
+      "originSha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+      "delta": "BYTE_IDENTICAL_STOPPED_ORIGINAL_LEAF",
+      "byteIdentical": true
+    }
+  ],
+  "imports": [
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-03.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-02.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-03.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-04.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-05.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-06.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-07.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-08.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-09.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-10.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-11.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-12.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-13.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-01.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-02.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-03.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-04.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-01.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-02.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-03.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-04.mjs",
+      "imports": [
+        {
+          "specifier": "../secret-case.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-05.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-06.mjs",
+      "imports": [
+        {
+          "specifier": "../support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/secret-case.mjs",
+      "imports": [
+        {
+          "specifier": "./support.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/selected-leaf.mjs",
+      "imports": [
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        }
+      ],
+      "dynamicImport": "LEAVES[id] only inside runSelectedLeaf after all pins verified",
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-continuation-r2/support.mjs",
+      "imports": [
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "node:url",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "exists": null
+        },
+        {
+          "specifier": "../ni6-schema7-core/original/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/original/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/original/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/src/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/src/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+          "exists": true
+        },
+        {
+          "specifier": "../ni6-schema7-core/src/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+          "exists": true
+        }
+      ],
+      "dynamicImport": null,
+      "inspection": "LEXICAL_SOURCE_ONLY_NOT_PARSED_NOT_IMPORTED"
+    }
+  ],
+  "leafEffects": [
+    {
+      "id": "MIG-02",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-02.mjs",
+      "purpose": "Namespace-only genuine six memory and public replay survive migration; status creates no task",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 0,
+      "newCommitCallbacksOnExpectedCompletion": 0,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/mig-02.mjs",
+      "oracleOrigin": "Exact reviewed r1 correction 568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb; no new oracle changes",
+      "precisePublicEffects": {
+        "directoryCreations": "One new sibling runs/MIG-02-<mkdtemp> directory per explicit root invocation; parent directory may be mkdir-created.",
+        "scratchRoot": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-continuation-r2/runs",
+        "databases": 1,
+        "originalFirstRememberCalls": 1,
+        "additionalOriginalDuplicateRememberCalls": 1,
+        "candidateHistoricalRememberCalls": 1,
+        "originalStateReads": 2,
+        "candidateStateReads": 2,
+        "candidatePublicGetMemoryReads": 3,
+        "originalPublicListTasksReads": 1,
+        "candidatePublicListTasksReads": 2,
+        "candidatePreparedContextStatusReads": 1,
+        "ownedPublicStoreCloses": 2,
+        "mutationProducers": "Exactly the first original public remember supplies one preference; both duplicates must preserve state/identity. Candidate constructor performs genuine6->7 public migration/backup.",
+        "physicalIOQualification": "Actual constructors may create/recover/write scratch DB/journal/backup according to original public contract; no physical read-only-open or raw-byte rollback promise.",
+        "tokenizerCalls": 0,
+        "newObserverCallbacks": 0,
+        "tokenizerCallbackMutation": 0,
+        "concurrency": 0,
+        "directLedgerDatabaseSyncSQLRevisionCipherReceiptExperiments": 0,
+        "native": 0,
+        "models": 0,
+        "providers": 0,
+        "tools": 0,
+        "profiles": 0,
+        "browsers": 0,
+        "listeners": 0,
+        "network": 0,
+        "Git": 0,
+        "cleanup": "Close own stores; retain only new sibling scratch; no deletion or overwrite of original failure evidence."
+      }
+    },
+    {
+      "id": "MIG-03",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/mig-03.mjs",
+      "purpose": "Fresh seven status leaves public task/memory empty; first public scoped mutation",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 1,
+      "directPrepareExecutionContextCallsUpperBound": 0,
+      "newCommitCallbacksOnExpectedCompletion": 0,
+      "ownedPublicStoreCloseUpperBound": 1,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/mig-03.mjs"
+    },
+    {
+      "id": "PREP-01",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-01.mjs",
+      "purpose": "Authentic new preparation: fifteen-field envelope, actual source winners, one callback, two records, no memory allocation",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 1,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-01.mjs"
+    },
+    {
+      "id": "PREP-02",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-02.mjs",
+      "purpose": "Exact historical replay after task/authority/source and absent-live-tombstone drift; genuine reopen",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 8,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-02.mjs"
+    },
+    {
+      "id": "PREP-03",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-03.mjs",
+      "purpose": "All-eligible/explicit checked set, duplicate sourceRefs, legitimate unselected-summary semantic drift",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 2,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-03.mjs"
+    },
+    {
+      "id": "PREP-04",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-04.mjs",
+      "purpose": "Two genuine same-store pending calls; one atomic graph/task/semantic commit and one observer",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 2,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-04.mjs"
+    },
+    {
+      "id": "PREP-05",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-05.mjs",
+      "purpose": "Public new observer throws after commit; uncertainty preserves durable graph and replay adds no callback",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 2,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-05.mjs"
+    },
+    {
+      "id": "PREP-06",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-06.mjs",
+      "purpose": "Supplied tokenizer makes one genuine owner source write; stale preparation refuses",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 1,
+      "newCommitCallbacksOnExpectedCompletion": 0,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-06.mjs"
+    },
+    {
+      "id": "PREP-07",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-07.mjs",
+      "purpose": "Supplied tokenizer makes one genuine memory write; stale memory refuses preparation",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 1,
+      "newCommitCallbacksOnExpectedCompletion": 0,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-07.mjs"
+    },
+    {
+      "id": "PREP-08",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-08.mjs",
+      "purpose": "Genuine task-bound issuer/caller and namespace authorization; admitted task-A preparation",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 3,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "taskRefs": [
+        "ni6-independent-task-a",
+        "ni6-independent-task-b"
+      ],
+      "principals": "Genuine registered owner, task-A coordinator issuer, task-B owner caller; no private brand construction",
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-08.mjs"
+    },
+    {
+      "id": "PREP-09",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-09.mjs",
+      "purpose": "Selected metadata1024 refuses before tokenizer; explicitly selected4096 accepts without auto-growth",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 2,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "selectedMetadataBytes": [
+        1024,
+        4096
+      ],
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-09.mjs"
+    },
+    {
+      "id": "PREP-10",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-10.mjs",
+      "purpose": "Actual stale/current ordinary summaries; original tokenizer budget drops current background but preserves full checked rows",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 1,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-10.mjs"
+    },
+    {
+      "id": "PREP-11",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-11.mjs",
+      "purpose": "Actual original-memory quote-heavy candidate drops only at final envelope expansion; current summary remains retained",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 1,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "quoteHeavyOriginalMemoryTextBytes": 20010,
+      "acceptedInnerPolicy": {
+        "bytes": 65536,
+        "tokens": 65536
+      },
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-11.mjs"
+    },
+    {
+      "id": "PREP-12",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-12.mjs",
+      "purpose": "Public record quota3 refuses whole two-record preparation; quota4 exact fit, full quota replay",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 4,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "selectedRecordLimits": [
+        3,
+        4
+      ],
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-12.mjs"
+    },
+    {
+      "id": "PREP-13",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/prep-13.mjs",
+      "purpose": "Independent currentness axes: progress-only task change, memory change, winning-source change and tombstone",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 3,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/prep-13.mjs"
+    },
+    {
+      "id": "REQ-01",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-01.mjs",
+      "purpose": "Complete identity, omission/present-empty optionals, ordered duplicate refs and finite float digest",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 14,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/req-01.mjs"
+    },
+    {
+      "id": "REQ-02",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-02.mjs",
+      "purpose": "Ten accepted independent request faces and nineteen closed-domain rejections",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 29,
+      "newCommitCallbacksOnExpectedCompletion": 10,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/req-02.mjs"
+    },
+    {
+      "id": "REQ-03",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-03.mjs",
+      "purpose": "Actual whole finite request65535/65536 accept and replay;65537 rejects early",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 5,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/req-03.mjs"
+    },
+    {
+      "id": "REQ-04",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/req-04.mjs",
+      "purpose": "Caller mutates ordinary input during supplied tokenizer; genuine detached request and replay stay original",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 2,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/req-04.mjs"
+    },
+    {
+      "id": "SEC-01",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-01.mjs",
+      "purpose": "Actual quote secret historical/fresh refusal and accepted nonmatching quote via adapter/reopened store",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 7,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/sec-01.mjs"
+    },
+    {
+      "id": "SEC-02",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-02.mjs",
+      "purpose": "Actual backslash secret historical/fresh refusal and accepted nonmatching backslash via adapter/reopened store",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 7,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/sec-02.mjs"
+    },
+    {
+      "id": "SEC-03",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-03.mjs",
+      "purpose": "Actual LF secret historical/fresh refusal; nonmatching LF and literal backslash+n stay distinct",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 9,
+      "newCommitCallbacksOnExpectedCompletion": 3,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/sec-03.mjs"
+    },
+    {
+      "id": "SEC-04",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-04.mjs",
+      "purpose": "ASCII secret plus unrelated accepted control and independent reopened store policy",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 3,
+      "directPrepareExecutionContextCallsUpperBound": 7,
+      "newCommitCallbacksOnExpectedCompletion": 2,
+      "ownedPublicStoreCloseUpperBound": 3,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/sec-04.mjs"
+    },
+    {
+      "id": "SEC-05",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-05.mjs",
+      "purpose": "Genuine encoded-only historical/fresh rejection retained; structural/size errors precede secret check",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 7,
+      "newCommitCallbacksOnExpectedCompletion": 1,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/sec-05.mjs"
+    },
+    {
+      "id": "SEC-06",
+      "module": ".runtime/ni6-preparation-independent-continuation-r2/leaves/sec-06.mjs",
+      "purpose": "Genuine fresh supplemental automatic-pattern rejection; historical automatic-pattern equivalence remains held",
+      "authoring": "AUTHORED_APPLICABLE_SOURCE_ONLY",
+      "execution": "NOT_RUN_IN_CONTINUATION",
+      "acceptance": "HOLD",
+      "constructorAttemptsUpperBound": 2,
+      "directPrepareExecutionContextCallsUpperBound": 5,
+      "newCommitCallbacksOnExpectedCompletion": 0,
+      "ownedPublicStoreCloseUpperBound": 2,
+      "databaseCount": 1,
+      "scratchPolicy": "Fresh continuation capsule runs/<ID>-<mkdtemp>/ledger.sqlite only; retain own scratch and schema-6 backup, close own stores",
+      "nativeObservers": 0,
+      "nativeCollectorFakes": 0,
+      "privateStoreMetrics": "SOURCE_ONLY_NOT_INSTRUMENTED",
+      "modelProviderToolProfileBrowserNetworkGitEffects": 0,
+      "historicalModule": ".runtime/ni6-preparation-independent/leaves/sec-06.mjs"
+    }
+  ],
+  "aggregateBounds": {
+    "selectedLeafCount": 25,
+    "freshDirectoriesUpperBound": 25,
+    "freshDatabasePathsUpperBound": 25,
+    "constructorAttemptsUpperBound": 56,
+    "ownedPublicStoreCloseUpperBound": 56,
+    "directPrepareExecutionContextCallsUpperBound": 123,
+    "newCommitCallbacksOnExpectedCompletion": 38,
+    "originalSixMIG02ExtraWarmDuplicatesUpperBound": 1,
+    "parallelLeaves": 1,
+    "parallelPreparations": "Only unchanged PREP04 has two same-store pending promises; both are awaited",
+    "tokenizerPublicWriterMutations": "Only unchanged PREP06/07 each make one genuine public writer in first supplied callback",
+    "callerInputCallbackMutation": "Only unchanged REQ04; detached input oracle unchanged",
+    "nativeModelProviderToolProfileBrowserListenerNetworkGitEffects": 0,
+    "directLedgerDatabaseSyncSQLRevisionCipherReceiptExperiments": 0
+  },
+  "effectDelta": {
+    "versusOriginal26": "Passed MIG01 excluded; reviewed r1 MIG02 adds one original6 warm duplicate; other24 unchanged",
+    "versusReviewedR1PlusStopped24": "No additional API/store/prepare/tokenizer/observer/model/network effects; one coherent capsule root replaces two historical dispatchers",
+    "importEffects": "New dispatcher imports builtins and defines functions/map only. Leaves/support define functions/constants; no tests/DB/directory at import. Candidate sources import only through selected module after every new pin passes",
+    "invocationEffects": "Exactly one selected genuine public fixture in fresh continuation scratch; original writable constructors/migration may allocate/repair/write DB/journal/backup. No physical no-write/rollback/bounded-decompress promise",
+    "cleanup": "Close only own genuine stores; retain new scratch and backups; no prior failed/successful DBs opened or overwritten",
+    "instructionScope": "Policy amendment is an instruction-file pin change, not real inference/network authority for this lane"
+  },
+  "futureEffects": {
+    "import": "Selected entry: builtin declarations only. Leaves/support define functions/constants; no task registration/constructor/DB/directory at import. Candidate source imports only after pin checks and root invocation.",
+    "invocation": "One root-selected leaf, fresh owned scratch only, actual public constructors and approved ordinary writers/prepare/check/close/reopen. Actual runtime internals may write/allocate/repair as their public constructor contract allows; no false read-only physical-open promise.",
+    "filesystem": "Only mkdir/mkdtemp runs/<ID>-... and actual constructor scratch DB/journal/schema-6 backup; retain own scratch, no deletion, overwrite of shared DB or native/profile/listener/network/Git changes.",
+    "storePrivateMetrics": "SOURCE_ONLY; never instrument/override store, assembler or branded source descriptors",
+    "failure": "Stop at first unexpected assertion/error; await both bounded PREP04 promises, close owned stores, retain own scratch; no retry/reroute or weakening"
+  },
+  "inputs": [
+    {
+      "path": ".runtime/ni6-preparation-independent/fixture-plan.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/fixture-plan.json",
+      "bytes": 139277,
+      "sha256": "031e3e00f1c8bd859ff2730e6010eddae9228a79f76118fe8802c3ff8dfddd2a",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/fixture-plan.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/fixture-plan.md",
+      "bytes": 16847,
+      "sha256": "ada96858ab9b38d946f0638271fc014f5d9097d96872232bc6520c6dfd89b539",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/mig-01.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/mig-01.mjs",
+      "bytes": 3465,
+      "sha256": "e01e8a1b0d9ca5cf20cc751512799bd1f5e27b242550b9f97f88a26628868c9d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/mig-02.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/mig-02.mjs",
+      "bytes": 1629,
+      "sha256": "9510f099bbdc95b485c6082778cf7ad6c1dbb7da88b6578bed77c78d7c557206",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/mig-03.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/mig-03.mjs",
+      "bytes": 1086,
+      "sha256": "e02de503a4abe0bfd879ec46c517f1fab4a6940e8cd83afb285687bdb1d3b24d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-01.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-01.mjs",
+      "bytes": 2726,
+      "sha256": "8f440c4113b2342431fed2cc6d2bc4262dbad866395d9e868e201e90e239eefb",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-02.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-02.mjs",
+      "bytes": 2799,
+      "sha256": "6634dfe52a6bea5c0a0d6027a460fe8c040f5b3575f74894acdfcaea48cb9318",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-03.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-03.mjs",
+      "bytes": 1797,
+      "sha256": "5332eb400c8e7206383ff9f43109660b44e2fea12d185e4d19b5c92897ce6fb0",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-04.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-04.mjs",
+      "bytes": 1510,
+      "sha256": "ee19643d8b707a56edd9aae615142d3f668756b8df099f8103d35e8eb49049c8",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-05.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-05.mjs",
+      "bytes": 1299,
+      "sha256": "7ad3b3dd858501afaadf27064749b8a115425b07f50c588d02b4611379599c78",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-06.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-06.mjs",
+      "bytes": 1108,
+      "sha256": "1f6d61f3f76023712bed7ae24a0cd63d166a2fe6971c4a2e2d97243fec16bf71",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-07.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-07.mjs",
+      "bytes": 1046,
+      "sha256": "3813db1ba7c5f9808f30a200f1b41502d79b56a69e72ad9e0aa575dd857feb4a",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-08.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-08.mjs",
+      "bytes": 1953,
+      "sha256": "460964cee99bad5b2062fa319d980d8233059bf3a7a4842618cc503b3541f3d4",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-09.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-09.mjs",
+      "bytes": 1854,
+      "sha256": "46079f4b3a30451244ef4c76b345ff23a0f5403297989ace2d9ec238c450fe87",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-10.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-10.mjs",
+      "bytes": 1660,
+      "sha256": "1748d0cb2e2ffdd588de6ce58a8c4397e3de07c49840f1d3d7fc399906e677f1",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-11.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-11.mjs",
+      "bytes": 1838,
+      "sha256": "5fddcdc4d6bebac5214b42907f6841453fc28202a4bfa0e7f8862c8a36e8b1d5",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-12.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-12.mjs",
+      "bytes": 1792,
+      "sha256": "64b5dc4d221f8ab17ce4797a3cc86096f35ea472628270781787d489cbf0384e",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/prep-13.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/prep-13.mjs",
+      "bytes": 2452,
+      "sha256": "dd1e64146e58101aa56fb97f41cb1eadc199277ebf5e04005f9591989da4ac0a",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/req-01.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/req-01.mjs",
+      "bytes": 2469,
+      "sha256": "26e393b784a030c5511d7e9a10e7e2b1c7c64f02eb29a689ca8c286817d50aee",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/req-02.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/req-02.mjs",
+      "bytes": 2177,
+      "sha256": "2b7acbb1264a47a1bc4f9983207d66b961bfbf4b751fed462cdc7c4aaed9b145",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/req-03.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/req-03.mjs",
+      "bytes": 1204,
+      "sha256": "b827ba86fe17da26b65484d6660b545a8ae8b82623b28ddd4d6178afde25b21d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/req-04.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/req-04.mjs",
+      "bytes": 1145,
+      "sha256": "13d8d534ba648e8d6c9e26629092a43f8beae87197a1204885249f4b25237247",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/sec-01.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/sec-01.mjs",
+      "bytes": 134,
+      "sha256": "c60bdf86a56dcb227ae17f7f90a95cf93d1ea8a46d34362d4b751f94ba86ce1a",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/sec-02.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/sec-02.mjs",
+      "bytes": 163,
+      "sha256": "0f880e0ec74a9435ad4ad51d93b235a862d3fd16f69273a78c662af8ef5f6103",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/sec-03.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/sec-03.mjs",
+      "bytes": 165,
+      "sha256": "2fc550f92a6815b5f07c8e7bf7803b0f9c775e3a117bef4a5ae5d26128705f1d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/sec-04.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/sec-04.mjs",
+      "bytes": 132,
+      "sha256": "6939fa2bc7e31af400c3381235d23675c04c148588ec4df7f524a59eab7de0b1",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/sec-05.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/sec-05.mjs",
+      "bytes": 2331,
+      "sha256": "3b9b2ffcfaa1dc519d463e1dd145b71b6f6ce4789a0550e5c9ce228ba43bf8cc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/leaves/sec-06.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/leaves/sec-06.mjs",
+      "bytes": 1435,
+      "sha256": "719eca7867fe04297879e456beca3c49c0e813b6e1d22e2dec3ac811cacf331b",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/secret-case.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/secret-case.mjs",
+      "bytes": 3623,
+      "sha256": "227cabaf5927e27662a7e7ca9df5bbbf238bdfccf8c0e0dc8097e4c47fe95291",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/selected-leaf.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/selected-leaf.mjs",
+      "bytes": 2439,
+      "sha256": "1bbe9f2a2d26a9fcf44d8779d8ac9b5b25145dd2d654e1ee92975e506a609b51",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/source-manifest.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/source-manifest.json",
+      "bytes": 28039,
+      "sha256": "7c09ddea671916956ea14891a0881c034f2eb6ac6747ba5b3f3fc77775eb96cd",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent/support.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent/support.mjs",
+      "bytes": 11708,
+      "sha256": "239de9035ac5c6543471702b1f2fcc5efb45da3406c0a978361bffc77fe453e8",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/core-refinements.d.ts.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/core-refinements.d.ts.txt",
+      "bytes": 8035,
+      "sha256": "5d5384b66d5cc5ec8682cd79a77bf7e32fd77af762f583d1054ade03e0f0aa5d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/escaped-secret-refinement-r2.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/escaped-secret-refinement-r2.txt",
+      "bytes": 1971,
+      "sha256": "17e320858df777b09bb555749ce29b9893cbe2371dd058e81e8e84d10061fd41",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/literal-refinements.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/literal-refinements.md",
+      "bytes": 10989,
+      "sha256": "c2398d136b1e408e518a31705f08eedb78b9cee0382f44f7b4afbe7f48c94b95",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/proposed-operation-bindings.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/proposed-operation-bindings.txt",
+      "bytes": 8878,
+      "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.d.ts.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/review-refinements-r1.d.ts.txt",
+      "bytes": 6295,
+      "sha256": "71c9d4f5fac225031f42b308a2a25a97b59bee92207bc980df8c650b68383668",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/review-refinements-r1.md",
+      "bytes": 4326,
+      "sha256": "a1da8b4d80d8a1c9f692af0b5b08e0d28571def55dc61199c3f1b49c07b63f99",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+      "bytes": 45312,
+      "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/source-manifest.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/contracts/source-manifest.json",
+      "bytes": 21461,
+      "sha256": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+      "bytes": 28297,
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+      "bytes": 21799,
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+      "bytes": 36680,
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "bytes": 31990,
+      "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "bytes": 6033,
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "bytes": 330375,
+      "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/root-bounded-execution-v2.py",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-bounded-execution-v2.py",
+      "bytes": 5857,
+      "sha256": "dbd9d030a315e9ed68fe56c8dd9d7f6d76ccc109329a05c1db551437e63f13cc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/root-ni6-public-preparation-execution-plan.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-preparation-execution-plan.json",
+      "bytes": 15016,
+      "sha256": "8e34eb57eb7740467cbb66cea52fe231c826c924b0cb9aeb128f194cb4150523",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": ".runtime/root-ni6-public-preparation.test.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/root-ni6-public-preparation.test.mjs",
+      "bytes": 1135,
+      "sha256": "5245a3308e23003bda2e651958dce59edd75902f76a05e0d6c7b91b5b2ecf7bc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "absolutePath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "bytes": 84640,
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "AGENTS.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+      "role": "CURRENT_ROOT_AUTHORIZED_INSTRUCTION_AMENDMENT"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design-amendment-01.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI3/native-runtime-execution-recovery-independent-design-amendment-01.json",
+      "bytes": 16407,
+      "sha256": "3e5d5b4421fdc00575ecae81214cd9edf753e70722d00e0e02979e4b52959e4e",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design-amendment-01.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI3/native-runtime-execution-recovery-independent-design-amendment-01.md",
+      "bytes": 12547,
+      "sha256": "62eb8b12db1a866b679238ecd512f6316c3cff2e9789a5e3286b746e8f9ed79d",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI3/native-runtime-execution-recovery-independent-design.json",
+      "bytes": 39078,
+      "sha256": "c78c1fdc27be32aac1d5e99cc727cdc3151b11023fedf5c4e739d20a285577d4",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI3/native-runtime-execution-recovery-independent-design.md",
+      "bytes": 28130,
+      "sha256": "291dcf436aef2ae8df6d0f472d515da2fc9c8db35289f357a442a83f567f47c6",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-f06-escaped-secret-r2-source-manifest.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-author-f06-escaped-secret-r2-source-manifest.json",
+      "bytes": 40495,
+      "sha256": "48973af274fab3c82ef4edce1a0129ece321b6ffc2daa46319b3e0e48cd931d0",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-f06-escaped-secret-amendment.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-f06-escaped-secret-amendment.json",
+      "bytes": 22676,
+      "sha256": "9035559beb297e663120427911d7d13da6fa0e9e5e728332763a1284923a569e",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-f06-escaped-secret-amendment.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-f06-escaped-secret-amendment.md",
+      "bytes": 13474,
+      "sha256": "e1618a04ec9aac8904bd379545a1d394ea3de6f8ec21ec369011e048669315dc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review-fixes-r1.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-source-review-fixes-r1.json",
+      "bytes": 203026,
+      "sha256": "9000dd96b0e3c674e824b212fc10ef4a8b32117267e8cb4b5e7fb8bd344b412e",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review-fixes-r1.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-source-review-fixes-r1.md",
+      "bytes": 37035,
+      "sha256": "41691ac2b12f5cffd7c4ca2b3f4012dd95bae18f4c2c0f62875eb96af9690366",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-source-review.json",
+      "bytes": 108175,
+      "sha256": "f3c3bf9f9c8f3c6e0636a2d84b58232d7a61b023ee195337f83a3e1c7bfd4bec",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-source-review.md",
+      "bytes": 47338,
+      "sha256": "e5e400fc24242b3ce62256fadceeb8442587c7b54f7193ac8e203ae88f86bd83",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-independent-design.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-independent-design.json",
+      "bytes": 110282,
+      "sha256": "706113919029e0812b96950d737f26ea1c055927a352f8f14f488b0ee5395611",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-independent-design.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-independent-design.md",
+      "bytes": 44965,
+      "sha256": "9a01d8d71fe97def605bff63a4c2da3556bdbff61adf7376ee6741636dc8c5ec",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/owner-amendment-2026-10-04.md",
+      "bytes": 5304,
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "src/context.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "src/fishball-memory-core.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "src/ledger.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "src/memory.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "src/runtime-security.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/src/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "role": "preserved_root_original78_input"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-01.stdout.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-01.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-01.stderr.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-01.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-02.stdout.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-02.stdout.txt",
+      "bytes": 8596,
+      "sha256": "fdebb2b8c85d9778c8af0646d899a8a9a47ee2324c47e68ad1241b9d846769d2",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-02.stderr.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-02.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-results.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/command-results.json",
+      "bytes": 1924,
+      "sha256": "62f8fae6dd54ebc25367a368c20e09f4e7495a711170616f4b1d00ee4d6a0aac",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-before-verification.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-before-verification.json",
+      "bytes": 128,
+      "sha256": "a85f45cf43c0e9747429d5f10a0145883c51577b8de4948a07722f1a818cc5b5",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-after-verification.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-after-verification.json",
+      "bytes": 201,
+      "sha256": "4c14362dc4c14124ebe3447db948fa277420b44615376215023679f17abd21b0",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-execution-freeze.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-execution-freeze.json",
+      "bytes": 15626,
+      "sha256": "7221c3e4296112140aa65e983a541cf69e97bf7dcdb205655a46b1882730a6f6",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-runner.py.txt",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-r2-independent-public-preparation-execution/root-runner.py.txt",
+      "bytes": 5857,
+      "sha256": "dbd9d030a315e9ed68fe56c8dd9d7f6d76ccc109329a05c1db551437e63f13cc",
+      "role": "preserved_first_execution_evidence"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/leaves/mig-02.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/leaves/mig-02.mjs",
+      "bytes": 3516,
+      "sha256": "568de55b4423f302e82d85affd77e49b2372b27d85e40bbbdceee8e52c3db9cb",
+      "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/required-leaf.diff",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/required-leaf.diff",
+      "bytes": 3008,
+      "sha256": "8812904092415d12ba114ab223738630ff73b06bfe5f765cac3d196fe6ff689a",
+      "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/review.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/review.json",
+      "bytes": 45391,
+      "sha256": "3f3d3b53da92475f830347492a5a6b25fe6165f9404e136d39f6974653cf610e",
+      "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/review.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/review.md",
+      "bytes": 5311,
+      "sha256": "8b6b9da468ccc9051fd5800fb2ae6031b85894a2be3d90c1fdd115912a3da5fa",
+      "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/selected-leaf.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/selected-leaf.mjs",
+      "bytes": 1242,
+      "sha256": "8d769c0ea4784bc8bccd3e5e1f7b5ad52e0cb9a9ef8f0296670e9a59e791d335",
+      "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/support.mjs",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/support.mjs",
+      "bytes": 1002,
+      "sha256": "5aa23dacc52192cf3901b1449f0a2c8aaaa77eee75005ce688a05fb3948762c1",
+      "role": "PRESERVED_R1_SOURCE_CORRECTION_OR_REVIEW"
+    },
+    {
+      "path": ".runtime/ni6-preparation-independent-mig02-r1/source-manifest.json",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-preparation-independent-mig02-r1/source-manifest.json",
+      "bytes": 36498,
+      "sha256": "8cb53b8b147251521e00deb79eff7d6f252a081a585b2c53170c508f211bf6d7",
+      "role": "PRESERVED_R1_HISTORICAL_MANIFEST_HASH_ONLY"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "absolutePath": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb",
+      "role": "CURRENT_OWNER_AUTHORIZED_POLICY_AMENDMENT_NO_FIXTURE_EFFECT_EXPANSION"
+    }
+  ],
+  "rootContinuationPlan": {
+    "entry": ".runtime/ni6-preparation-independent-continuation-r2/selected-leaf.mjs",
+    "export": "runSelectedLeaf(id,{expectedManifestSha256})",
+    "orderedIds": [
+      "MIG-02",
+      "MIG-03",
+      "PREP-01",
+      "PREP-02",
+      "PREP-03",
+      "PREP-04",
+      "PREP-05",
+      "PREP-06",
+      "PREP-07",
+      "PREP-08",
+      "PREP-09",
+      "PREP-10",
+      "PREP-11",
+      "PREP-12",
+      "PREP-13",
+      "REQ-01",
+      "REQ-02",
+      "REQ-03",
+      "REQ-04",
+      "SEC-01",
+      "SEC-02",
+      "SEC-03",
+      "SEC-04",
+      "SEC-05",
+      "SEC-06"
+    ],
+    "MIG01Selection": "ABSENT_NO_RERUN",
+    "wrapper": "Root may author/review a NEW finite25 Node-test registration wrapper with explicit exact ids, concurrency1, stop-after-first-failure; no auto-discovery and no old dispatcher invocation",
+    "manifest": "This new capsule source-manifest.json outer SHA must be supplied exactly by root; do not relax or repin drift",
+    "commandsUpperBound": 2,
+    "authorizedCommandCap": 16,
+    "maximumArgvLength": 5,
+    "authorizedArgvLengthCap": 12,
+    "suggestedArgvShapes": [
+      [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        "<NEW root-owned finite25 wrapper>"
+      ],
+      [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        "<NEW root-owned finite25 wrapper>"
+      ]
+    ],
+    "failure": "Stop on first unexpected failure, preserve new and original evidence, do not normalize/weaken/retry/reroute; later IDs remain stopped and never pass by skip"
+  },
+  "unchangedIndependentDesignDispositions": {
+    "case41Mapping": [
+      {
+        "id": "A01",
+        "sealedOriginalCase": {
+          "id": "A01",
+          "technique": "equivalence/authority",
+          "trigger": "Actual registered same-store capability positive; unregistered/cloned/foreign scope or store, nonempty/Proxy capability and wrong handle role negatives. Named assertPreparationSourceBinding variants: duck store, cloned/foreign store, forged cap, wrong handle/namespace and own/subclass override; returned scope substituted as proof.",
+          "oracle": "Only actual constructor-bound preparation/native principal plus current admitted scope authorizes the narrow operation. Public hash/principal/source fields issue no capability; reject before writes/native.",
+          "fixtureIds": [
+            "FX-P7",
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-08"
+        ],
+        "independentDisposition": "Actual admitted positive plus genuine task/namespace denials. Unregistered/cloned/Proxy/private-brand/duck-store/descriptor-override carrier cases are outside this lease; no generic authority or currentness follows from returned scope.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "A02",
+        "sealedOriginalCase": {
+          "id": "A02",
+          "technique": "closed schema/boundary",
+          "trigger": "Detach request before awaits; vary omitted/present-empty optional fields, recordRefs order/duplicates, original finite Float32 vectors/numerics and invalid extra/accessor/symbol/Proxy/secret/unsafe shapes.",
+          "oracle": "Exact request digest preserves valid original meaning. Narrow finite preparation encoding never widens general store integer authority canonicalization. Invalid shapes refuse; no universal getter-trap-zero promise.",
+          "fixtureIds": [
+            "FX-P7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "REQ-01",
+          "REQ-02",
+          "REQ-03",
+          "REQ-04",
+          "SEC-01",
+          "SEC-02",
+          "SEC-03",
+          "SEC-04",
+          "SEC-05"
+        ],
+        "independentDisposition": "Original finite identity and accessible closed request boundaries. Accessor/symbol/Proxy and broader input-policy cases remain un-authored; no universal getter-trap-zero claim.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P01",
+        "sealedOriginalCase": {
+          "id": "P01",
+          "technique": "state/authentic source",
+          "trigger": "Actual goal/constraints/current_instruction plus original queried host_snapshot/clarification and summaries through the original assembler branch.",
+          "oracle": "Persisted original15 envelope/result/provenance stay exact. Full sourceObservation comes from actual examined branch, not retained inference. Snapshot/clarification do not become owner instructions.",
+          "fixtureIds": [
+            "FX-P7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-01",
+          "PREP-03",
+          "PREP-10",
+          "PREP-11"
+        ],
+        "independentDisposition": "Actual owner goal/constraints and ordinary summary branches through genuine assembler/delivery. Original current_instruction producer, queried host_snapshot and clarification lifecycle are not authored here.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P02",
+        "sealedOriginalCase": {
+          "id": "P02",
+          "technique": "equivalence/selection",
+          "trigger": "Omitted recordRefs versus selected subset; original summary with ordered duplicate sourceRefs; new unselected summary through public writer.",
+          "oracle": "all_eligible and explicit_records use exact examined sorted recordRef/digest checked set; original summary sourceRefs duplicates preserved. Explicit unselected source may still drift by original global semantic increment.",
+          "fixtureIds": [
+            "FX-P7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-03",
+          "REQ-01"
+        ],
+        "independentDisposition": "Actual all_eligible/explicit_records checked rows, ordered duplicate material sourceRefs and unselected global semantic change. Authenticated missing-source/inverse cases held.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P03",
+        "sealedOriginalCase": {
+          "id": "P03",
+          "technique": "boundary/compaction",
+          "trigger": "Stale, retained and tokenizer-budget-dropped summaries; later force retained background to drop during original final memory envelope compaction.",
+          "oracle": "Complete examined rows survive; stale remains excluded_stale_summary, later drop becomes dropped_for_budget. Final counts/order/provenance match envelope and observation; protected winners exact, memory fact refs separately distinct.",
+          "fixtureIds": [
+            "FX-P7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-10",
+          "PREP-11"
+        ],
+        "independentDisposition": "Actual stale, retained and original tokenizer-budget-dropped summary dispositions plus final-envelope memory drop. Final memory pass protects entire original context.text; late dropping an original summary through this path is not manufactured. Full runtime/collector acceptance held.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P04",
+        "sealedOriginalCase": {
+          "id": "P04",
+          "technique": "historical replay/order",
+          "trigger": "Repeat complete original request after legitimate task/auth/source drift and absent->live->tombstone memory; reopen fresh composition.",
+          "oracle": "Read-before-tokenizer/assembly/current memory retrieval/source/queryHost/CAS/native/origin. Original receipt/check despite oldCAS;0new origin/permit/write. Associated historical graph authentication allowed; constructor open/recovery counted separately.",
+          "fixtureIds": [
+            "FX-P7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-02",
+          "PREP-12",
+          "SEC-01",
+          "SEC-02",
+          "SEC-03",
+          "SEC-04",
+          "SEC-05"
+        ],
+        "independentDisposition": "Actual historic receipt despite legitimate old CAS/auth/source, absent/live/tombstone memory and reopen; zero supplied tokenizer/new observer delta. Inaccessible private lookup/read metrics, queryHost/native/origin/sourcecollector/runtime claims are source-only or held.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P05",
+        "sealedOriginalCase": {
+          "id": "P05",
+          "technique": "race/atomicity",
+          "trigger": "Two actual calls early-miss same immutable request and rendezvous before original locked commit; then changed request same command.",
+          "oracle": "One atomic context/check/binding/registry/command/receipt and one task/semantic increment. Late duplicate historical0origin; changed valid same-command request conflicts without replacement/reassembly.",
+          "fixtureIds": [
+            "FX-P7",
+            "FX-SLOT"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-04",
+          "REQ-01"
+        ],
+        "independentDisposition": "Actual two pending same-store method calls, one graph/task/semantic update and callback; changed complete same-command request conflicts. Cross-process commit rendezvous/cold/runtime contention not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P06",
+        "sealedOriginalCase": {
+          "id": "P06",
+          "technique": "recovery/observation",
+          "trigger": "Genuine new/current preparation commit then invocation/source loss or observer/final-response loss before origin publication.",
+          "oracle": "Dedicated new-only observer only from actual new/current return. Durable graph survives postcommit uncertainty; exact repeat historical cannot mint replacement origin. Generic fanout cannot mint origin.",
+          "fixtureIds": [
+            "FX-P7",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-05"
+        ],
+        "independentDisposition": "Genuine public observer uncertainty after durable commit and exact replay without replacement observer. Invocation/source/native origin publication and physical process cuts require actual runtime and stay un-authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P07",
+        "sealedOriginalCase": {
+          "id": "P07",
+          "technique": "decision/currentness",
+          "trigger": "Individually change semantic/winning identity/checkedset/memory-state/committed task or auth through supported public operations; approved missing-associated-edge validation seam.",
+          "oracle": "Three booleans and unique sorted closed six codes reflect axes. True absent revision0 creates no memory; tombstone never absence. Legitimate removed source => drift; missing command/context/check/registry => STORAGE_INVALID. Unsupported removal/DB negatives held.",
+          "fixtureIds": [
+            "FX-P7",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Legitimate source-removal lifecycle and authentic encrypted-DB missing-edge construction unavailable; those exact cells HOLD."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-13",
+          "PREP-02",
+          "PREP-03"
+        ],
+        "independentDisposition": "Actual public five reachable reason codes, independent booleans and absent/live/tombstone meanings. SOURCE_UNAVAILABLE/source-removal, missing protected associated edge, orphan/count/digest inverse negatives have no approved authentic public construction seam.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "P08",
+        "sealedOriginalCase": {
+          "id": "P08",
+          "technique": "joint boundary/capacity",
+          "trigger": "Selected metadata1024/4096, domain256..100000000; complete-wrapper/check/context/data/aggregate-count/wire N-1/N/N+1 where reachable, six currentness codes.",
+          "oracle": "Actual signed-wrapper minBindingBytes and whole success/read envelope jointly fit selected limits before any commit.49152check/4096metadata/65536wire caps do not promise Cartesian max fit; overflow wholly refuses, no truncation/default change/ID escape.",
+          "fixtureIds": [
+            "FX-P7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "PREP-09",
+          "PREP-12",
+          "REQ-02",
+          "REQ-03",
+          "PREP-11"
+        ],
+        "independentDisposition": "Selected1024/4096 status, actual two-record quota rollback/exact fit, whole request65536 boundary and actual final-envelope count fit. Exact signed-wrapper/check/wire thresholds, all-six-code wire worst case, total native quotas and Cartesian maxima remain held.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N01",
+        "sealedOriginalCase": {
+          "id": "N01",
+          "technique": "state/full inverse",
+          "trigger": "Actual full config/normal plan -> charged create -> idle original public create -> baseline flush/read -> explicit turn -> capture -> actual finish.",
+          "oracle": "Exactly6 native kinds plus separate mandatory registries and exact-kind encrypted records; every marked action/claim/command/input/history/config/identity/capture/finish association checked both ways before recovery. Original wire unchanged.",
+          "fixtureIds": [
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N02",
+        "sealedOriginalCase": {
+          "id": "N02",
+          "technique": "equivalence/no adoption",
+          "trigger": "Public genuine6/generic/advanced/legacy contexts/actions/artifacts/receipts/native logs and normal-looking caller JSON/ref.",
+          "oracle": "No new7 normal check/origin/result/finish/resume authority, backfill or shape adoption. Already-known ineligibility refuses before own history/native effects; generic original functionality retains its ordinary scope.",
+          "fixtureIds": [
+            "FX-D6",
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N03",
+        "sealedOriginalCase": {
+          "id": "N03",
+          "technique": "role/phase",
+          "trigger": "Actual review capture+reviewer submission; repair output capture then fixed child-target/version+1 artifact acknowledgement.",
+          "oracle": "Review artifact fields null. Repair second immutable repair_artifact capture same nativekind links first output/fixed target; uncertain capture/write phases distinct. No seventhkind/new fanout tag.",
+          "fixtureIds": [
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N04",
+        "sealedOriginalCase": {
+          "id": "N04",
+          "technique": "role/obligation",
+          "trigger": "Real producer/review/repair finish with obligations met/unmet; request audit/repair continuation.",
+          "oracle": "Release requires actual applicable reviewer/fixed-artifact completion. Actual writer-held receipt stays held; otherwise genuine refusal keeps holds. Unknown acknowledged marker never invented; audit/repair never resume.",
+          "fixtureIds": [
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N05",
+        "sealedOriginalCase": {
+          "id": "N05",
+          "technique": "paired stable/live gates",
+          "trigger": "Restart changes live nonce with same actual stable source/backend; separately change cwd/backend/module/provider/preset/fiber/invocation or source bytes.",
+          "oracle": "Stable equality is compatibility alongside every live original guard, not authority. Never compare restarted random nonce as durable source; historical history.sourceRef distinct from stable intent sourceRef.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N06",
+        "sealedOriginalCase": {
+          "id": "N06",
+          "technique": "digest/full config",
+          "trigger": "Vary full15 limits, role/continuation/model/preset/tools/permission/backend, planned task/auth CAS or complete normalized normal binding.",
+          "oracle": "Complete actual config sealed; no orphan config on plan. Original H(scope+plannedCAS+fullspec) binds grant; normal bindings mutually exclusive. Current context digest, whole resume input digest and command/Q digests stay distinct.",
+          "fixtureIds": [
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "N07",
+        "sealedOriginalCase": {
+          "id": "N07",
+          "technique": "bypass/sticky normal",
+          "trigger": "Generic plan/claim/dispatch/begin/capture/settle on marked normal facts; unmatched-marker validation via approved inert seam.",
+          "oracle": "Generic cannot create/adopt/downgrade normal provenance. Original begin/assert input and one-use consume unchanged; signed core facts derive normal branch. Unsupported authentic marker-deletion DB cells HOLD.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Each public normal bypass and safe inert validation seam must freeze; unsupported authentic missing-marker DB negatives HOLD."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F01",
+        "sealedOriginalCase": {
+          "id": "F01",
+          "technique": "read-first/warm+cold",
+          "trigger": "Real acknowledged finish repeated warm then full close/exit/reopen without maps/handles/permits using oldQ/CAS and later legitimate task/auth/source changes.",
+          "oracle": "Current owner read -> historical lookup before currentCAS/maps/native/source/backend; exact private {receipt,finishRef}, unchanged receipt wire.0stop/claim/provider/stream/history/fanout/origin/write/task/auth; denial not absence.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F02",
+        "sealedOriginalCase": {
+          "id": "F02",
+          "technique": "idempotency/equivalence",
+          "trigger": "Same command vary each five otherrefs/twoCAS individually; fresh command same finishedclaim; actual other-operation collision.",
+          "oracle": "Well-formed permitted same-command change => IDEMPOTENCY_CONFLICT under earlier permission/validation precedence. Different finish command => WORKER_FINISH_UNAVAILABLE. Equal generic receipt no adoption; invalid graph never null.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F03",
+        "sealedOriginalCase": {
+          "id": "F03",
+          "technique": "uncertainty/actual failure",
+          "trigger": "Actual own stop fails/undrained or succeeds then transaction fails; reopen without handle; genuine held acknowledgement if reachable.",
+          "oracle": "Physical stop without atomic acknowledgement keeps capture plus original charged holds/unknown. Cold absence cannot stop/settle/release/retry. Held exact replay only if actual writer produces it; finish writer actual-only.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F04",
+        "sealedOriginalCase": {
+          "id": "F04",
+          "technique": "authority/post-read race",
+          "trigger": "Owner read denial or captured invocation/unload loss after authentic lookup before response.",
+          "oracle": "Denial not absence; final guard refuses delivery without erasing committed historical graph. Never borrow latest invocation or substitute current native availability for read authority;0reconciliation effect.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F05",
+        "sealedOriginalCase": {
+          "id": "F05",
+          "technique": "process cuts/inverse",
+          "trigger": "CUT01..08 plus actual concurrent exact acknowledged reads in already-open processes.",
+          "oracle": "Precommit no acknowledgement+holds; committed complete graph/keyed receipt+effectless exact replay. No partial command/finish/registry success or second stop while first pending. All CF01..21 retained.",
+          "fixtureIds": [
+            "FX-COLD",
+            "FX-SLOT",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Original CUT04 in-transaction seam and authentic inverse-negative construction require separate lease."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R01",
+        "sealedOriginalCase": {
+          "id": "R01",
+          "technique": "eligibility/current preparation",
+          "trigger": "Released producer full origin/capture/finish with no successor and fresh new/current preparation; compare held/unresolved/pre7/generic/audit/repair/history-replayed context.",
+          "oracle": "Only original producer lineage eligible. Status/finish read does not mint current origin/permit/capture authority; explicit new preparation.0automatic boot/status resume.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R02",
+        "sealedOriginalCase": {
+          "id": "R02",
+          "technique": "complete history/lineage",
+          "trigger": "Fresh own original stat/read(maxEvents+1), detached public Session.create and actual messageProjections; supported public negative header/event/message fixtures.",
+          "oracle": "Exact complete header/events/surface/messages/current persisted usage and signed lineage; nativeID/cwd/seed/preset. Balanced no extra tool/title/compaction/foreign input/unknownevent, exact contiguous prefix, not capped slice or caller echo.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R03",
+        "sealedOriginalCase": {
+          "id": "R03",
+          "technique": "original projection/inbox",
+          "trigger": "Actual registered SessionProjectionRegistry.restore with complete events/header/offset0/inherited0 before claim and actual unpublished setup.",
+          "oracle": "snapshot.values.inbox present with empty queues; public interruptedTurnClosers empty. Current original projection required; no private reducer/nonexported import/detached seeded-agent native substitute.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R04",
+        "sealedOriginalCase": {
+          "id": "R04",
+          "technique": "history/joint boundary",
+          "trigger": "History events1..96/messages3..17/bytes256..49152 domains; actual prefixN vs selectedN-1/N+1 where possible, capture19 messages, physical1MiB, collectorread129 detects>128.",
+          "oracle": "Complete prefix/request/context/config/preview/wire jointly fit. max8 ceiling is not eight-success promise; growing protected context can refuse earlier. Naturally unreachable8 positive held, no fabricated history or enlargedbound.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Actual high-ordinal/messages/events/bytes positives must be naturally source-owned reachable; unreachable positives HOLD."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R05",
+        "sealedOriginalCase": {
+          "id": "R05",
+          "technique": "owner consent/grant race",
+          "trigger": "Full history/context/config/model/permission/15limits/spent/remaining display; change currentness/history/policy across await then owner accept and distinct future-expiry grant.",
+          "oracle": "Exact synchronous private readResumeInput authentic complete pair; recheck pair/currentness/wholewire both sides of await before token/grant. Drift/overflow0token/grant/claim; plan consent not grant.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R06",
+        "sealedOriginalCase": {
+          "id": "R06",
+          "technique": "serialized successor/quota race",
+          "trigger": "Two actual processes same predecessor or last slot/quota; preparation/plan refusal before charge.",
+          "oracle": "One normal_resume_claim/successor and charged reservation through original transaction before public resume. Loser/refused plan0attempt/native stream; not volatile-only admission.",
+          "fixtureIds": [
+            "FX-SLOT"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R07",
+        "sealedOriginalCase": {
+          "id": "R07",
+          "technique": "writable prefix race/honest recovery",
+          "trigger": "After readonly preflight actual prefix/backend/lease/abort changes at original public resume write-open/setup; closers/repair/suffix appears.",
+          "oracle": "Only public ctx.agents.resume original options. Unpublished prefix/inbox/source recheck refuses changed state. Charged failure accountable unknown/held with possible native repair/allocation; no filesystemCAS/maxRead/rollback/forceunlock/fallbackcreate/retry.",
+          "fixtureIds": [
+            "FX-COLD",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R08",
+        "sealedOriginalCase": {
+          "id": "R08",
+          "technique": "sameID/new incarnation",
+          "trigger": "Full exit then originalID resume with newclaim/gen/execution/actual Agent/Session/Handle; idle publication then explicit begin/consume/send and duplicate/unsolicited wakes.",
+          "oracle": "Idle0streams; one actual full-prefix request1stream/contextonce; duplicate/title/compaction/tool/unsolicited0. No old ticket/permit restore or successor create origin.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R09",
+        "sealedOriginalCase": {
+          "id": "R09",
+          "technique": "stale incarnation/ownership",
+          "trigger": "Oldframe/resultcallback/cursor/disposer/permit arrives after new actualagent/currentInitiator publishes.",
+          "oracle": "Old actions cannot capture/stop/charge/borrow newclaim/gen/execution/current original objects. Old artifact/receipt/history/spent facts unchanged.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R10",
+        "sealedOriginalCase": {
+          "id": "R10",
+          "technique": "late gates/races",
+          "trigger": "At frozen await/outer preparedCall/lazy inner first-next legitimately revoke/cancel/policy-change/source-unload/owner-abort, including between request construction and next.",
+          "oracle": "Exact captured carrier/invocation/source/model/provider/tools/permission/CAS/fullrequest gates outer+inner. No provider emission after denied boundary; create predicate unchanged, resume fullprefix+contextonce. Unknown holds retained. Permission uses trusted exact eight-field owner/workspace/task/action/digest/taskVersion/authEpoch/spec record; original six minimal keys before claim and two additions only after actual binding, not caller full JSON.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "R11",
+        "sealedOriginalCase": {
+          "id": "R11",
+          "technique": "actual durable resumed capture",
+          "trigger": "Actual synthetic resumed assistant output/current usage/cursor, flushtrue/fresh ownread/recheck, new version1 artifact/capture.",
+          "oracle": "Usage is current actual turn not accumulatedprefix/providerlabel. Capture joins resume_claim->resume->originalorigin/intent and completehistory; old artifact/ciphertext/receipt unchanged. Falseflush/read/source failure refuses capture, holds stay.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "B01",
+        "sealedOriginalCase": {
+          "id": "B01",
+          "technique": "aggregate/ordinal",
+          "trigger": "Mix producer/review/repair/continuation attemptGroups; explicit continuation1/8,total2/32; every naturally reached ordinal1..8 and one beyond ceiling.",
+          "oracle": "Shared per-task total counts every charged attempt across groups/roles/ordinal/release. No reset/newgroup/Mathmax inference. Actual spent/remaining eachstep; unreachable high positive separatelyheld, domain/refusal stillrequired.",
+          "fixtureIds": [
+            "FX-N7"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "B02",
+        "sealedOriginalCase": {
+          "id": "B02",
+          "technique": "whole-store/lastquota",
+          "trigger": "TaskA spends/releases actual runtime/usage/cost then taskB claims last aggregatequota/active slot; retain actually charged unknownhold.",
+          "oracle": "Attempt total keeps original per-task scope; runtime/usage/cost and active reservations original whole-store scope. Released/spent retained; exact source-zero accounting provenance required, unknown never0.",
+          "fixtureIds": [
+            "FX-D6",
+            "FX-N7",
+            "FX-SLOT"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "B03",
+        "sealedOriginalCase": {
+          "id": "B03",
+          "technique": "restart/policy downshift",
+          "trigger": "Reopen spent/released/unknown work; legitimate accepted resource/model policy replacement/downshift or changed explicit role/continuation total.",
+          "oracle": "Spent/held totals survive, no remaining regeneration. Display15, writer7, ceilings8; insufficient choice refuses without expanding/overwriting/enabling/resetting.",
+          "fixtureIds": [
+            "FX-N7",
+            "FX-COLD"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "M01",
+        "sealedOriginalCase": {
+          "id": "M01",
+          "technique": "genuine6->7/preservation",
+          "trigger": "Pinned public6 donor -> separately leased original7 migration, exact recoverablebackup and oldpublicfacts; original6 then opens7.",
+          "oracle": "Authenticate6, exclusive safety/recheck/fsyncbackup before additive7. Preserve key/crypto2/ciphertext/AAD/metadata/actions/specs/grants/receipts/history/holds, no backfill/adoption. Old6 SCHEMA_FUTURE beforewrite/recovery; raw version rewrite invalid donor.",
+          "fixtureIds": [
+            "FX-D6"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Exact opaque cipher/AAD byte oracle needs approved original observation; public receipt equality alone insufficient."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "MIG-01"
+        ],
+        "independentDisposition": "Actual six donor, public facts/receipts, original six prepared context not adopted, public-readable recoverable six backup and original six SCHEMA_FUTURE. No opaque cipher/AAD/receipt experiment or native legacy adoption oracle; those exact preservation/current-native gates stay held.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "M02",
+        "sealedOriginalCase": {
+          "id": "M02",
+          "technique": "empty/namespace scope",
+          "trigger": "Empty7 boot/status; namespace-only6 migration; first legitimate newscoped mutation.",
+          "oracle": "Both new mandatory signed zero registries for all migrated scopes incl namespaceonly. Newscope zero registry atomic firstmutation, never boot/status scope/memory/record allocation or autoreseal/adoption.",
+          "fixtureIds": [
+            "FX-D6"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "PARTIALLY_AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "MIG-02",
+          "MIG-03"
+        ],
+        "independentDisposition": "Actual namespace-only six migration and fresh seven boot/status/first scoped mutation, no public memory/task allocation. Private zero-registry signatures/counts cannot be observed through these public fixtures; their source obligation remains.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "M03",
+        "sealedOriginalCase": {
+          "id": "M03",
+          "technique": "fullgraphs before recovery",
+          "trigger": "Genuine7 unknownwork reopen; safe pure typed negative forward/inverse/orphan/duplicate/count/digest/scope graph inputs.",
+          "oracle": "Bothgraphs+existing6 authority validated before recovery; unknown holds/charges retained0native/provider. Inconsistent associated facts STORAGE_INVALID, not null/drift/backfill. No arbitrary external writer/wholeDBrollback immunity.",
+          "fixtureIds": [
+            "FX-COLD",
+            "FX-FAIL"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Authentic encrypted-DB orphan/missing-edge cells require supported typed construction; otherwise HOLD."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "U01",
+        "sealedOriginalCase": {
+          "id": "U01",
+          "technique": "physical installed lifecycle",
+          "trigger": "Final packed originalCLI/auth/Loader separate syntheticprofile: create/finish/fullquit/restart/readoldfinish/explicit sameID continuation.",
+          "oracle": "Observable nativehistory/result/newclaim0auto/1explicit with actual source and retainedcharges. Installedclosure/affectedretest recorded; fixtures not physicalacceptance.",
+          "fixtureIds": [
+            "FX-PACK"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Final source/literal/import/effects closure and separate executable lease absent."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "U02",
+        "sealedOriginalCase": {
+          "id": "U02",
+          "technique": "client/full consent propagation",
+          "trigger": "Final client fullhistory+15limits consent, disabled/limited/loading/uncertain states, result/audit/repair ack and source/profile/service missing.",
+          "oracle": "Truthful complete bounded display/explicitaccept preserve refs/unchangedreceipts; no false ready/release/resume from status/history/shape. Supportedbrowser/modelquality separatelyheld, noQAfixture reuse. Original truthful query workerObservation writes remain permitted/count separately; query does not start collection, authorization, settlement or execution.",
+          "fixtureIds": [
+            "FX-PACK"
+          ],
+          "status": "PLANNED_NOT_RUN",
+          "blocker": "Separate final client/browser/profile lease and access; all87HOLD."
+        },
+        "currentAuthoring": "NOT_AUTHORED_HOLD",
+        "applicableLeaves": [],
+        "independentDisposition": "Needs actual genuine native/original-session/source-owned history/current-live collector/aggregate or host/DOM/cold capability, or an explicitly approved authentic typed negative seam. No constructed positive provenance, proxy/facade/private carrier, SQL/revision/cipher/receipt experiment or original finalCODE reroute is authorized.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      }
+    ],
+    "f06EightMapping": [
+      {
+        "id": "F06-O01",
+        "sealedOriginalObligation": {
+          "id": "F06-O01",
+          "title": "Interior quotation mark",
+          "technique": "equivalence/recovery",
+          "trigger": "Distinctive synthetic S with an interior quotation mark. Genuine preparation with terms:[S] and no matching configured secret; recreate genuine adapter with supported knownSecrets:[S]. Compare exact historical replay and fresh command.",
+          "oracle": "Projected SOURCE rejects raw S with SECRET_REJECTED before historical lookup in both paths, despite the escaped JSON quote. No tokenizer/queryHost/new-only observer or current memory/source assembly. Existing stored receipt/check/context are preserved.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Root application/executable/public preparation fixture GO pending; no fabricated historical receipt or private lookup counter.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "SEC-01"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O02",
+        "sealedOriginalObligation": {
+          "id": "F06-O02",
+          "title": "Interior backslash",
+          "technique": "equivalence/recovery",
+          "trigger": "The same public lifecycle with S containing an actual interior backslash code point, distinct from source spelling or serialized doubled backslash.",
+          "oracle": "Raw term.includes(S) recognizes the exact value before replay. It neither decodes encoded JSON nor normalizes/reforges the original request. Fresh/replay policy agree for configured S.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Use actual strings via ordinary supported API only under later GO; no fixture authored.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "SEC-02"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O03",
+        "sealedOriginalObligation": {
+          "id": "F06-O03",
+          "title": "Actual newline",
+          "technique": "equivalence/recovery",
+          "trigger": "The same public lifecycle with S containing U+000A. Compare a term with actual LF to the different two-character backslash+n sequence as a nonmatching control when the encoded policy also does not match S.",
+          "oracle": "Actual newline raw match rejects before lookup. Distinct raw values stay distinct; no escape-equivalence normalization or digest change. No secret value in diagnostics; only stable error code.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Genuine original preparation required; all control variants must stay within existing well-formed/NUL/byte bounds.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "SEC-03"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O04",
+        "sealedOriginalObligation": {
+          "id": "F06-O04",
+          "title": "ASCII and unmatched controls",
+          "technique": "equivalence/state",
+          "trigger": "Matching ordinary ASCII S, an unrelated nonmatching valid term, empty admitted terms and empty configured secrets, with actual complete historical request where appropriate.",
+          "oracle": "Earlier encoded matching still rejects; new raw match adds only supported configured-secret rejection. Nonmatching admitted exact replay retains its original receipt/digest and zero new observer/origin/commit effects.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Empty knownSecrets cannot prove secret detection. Genuine callbacks measure only their own effects; current private read-call counters remain unavailable.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "SEC-04",
+          "PREP-01",
+          "PREP-02"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O05",
+        "sealedOriginalObligation": {
+          "id": "F06-O05",
+          "title": "Encoded-only rejection retained",
+          "technique": "equivalence/precedence",
+          "trigger": "A valid configured synthetic secret that appears in existing encoded request material but in no raw term; compare a valid request with a structurally invalid or oversized counterpart.",
+          "oracle": "Existing encoded.includes(secret) remains an OR branch, so its old rejection is never weakened. Existing structural/numeric/text/size failures still precede the secret check; stable codes and closed shape remain.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Pure parser negatives prove only parser admission; real public replay must use genuine stored preparation, not a caller receipt.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "SEC-05"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O06",
+        "sealedOriginalObligation": {
+          "id": "F06-O06",
+          "title": "Unchanged joint bounds and closed shape",
+          "technique": "boundary/schema",
+          "trigger": "One variable at a time: terms0/32/33, raw term UTF8 bytes8191/8192/8193, whole encoded request65535/65536/65537 where jointly valid, extra/accessor/symbol/Proxy/optional-undefined, refs64/65, vectors32x128 domain and safe finite Float32 numbers.",
+          "oracle": "Same before/projected shape and bound predicates apply before the added raw scan. No wider request/term/vector/ref/numeric domain, bigger cap, default change, truncation or getter-trap-zero promise.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Source confirms equality; executable parser/actual public boundary points need root GO. No giant Cartesian matrix or unreachable joint-positive claim.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "REQ-02",
+          "REQ-03",
+          "SEC-05"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O07",
+        "sealedOriginalObligation": {
+          "id": "F06-O07",
+          "title": "Accepted digest and detached request",
+          "technique": "equivalence/interface",
+          "trigger": "Supported nonmatching quote/backslash/newline-containing request terms, omitted versus present-empty optionals, ordered/duplicate recordRefs and finite original vector values.",
+          "oracle": "For accepted input the exact unchanged finiteRequestCanonical/structuredClone/preparationDigest preserve complete value and request identity. Raw scan does not rewrite, sort, decode, conflate or mutate fields; admitted meaning remains original.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Only parser/digest behavior can be observed in a pure fixture; no authority or authentic graph provenance follows from a digest.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "REQ-01",
+          "REQ-04",
+          "SEC-01",
+          "SEC-02",
+          "SEC-03"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      },
+      {
+        "id": "F06-O08",
+        "sealedOriginalObligation": {
+          "id": "F06-O08",
+          "title": "Actual early caller and independent policies",
+          "technique": "state/order",
+          "trigger": "Genuine constructor validates/copies the adapter secret list; protected prepareExecutionContext invokes preparationRequest(input,this.#secrets) at memory285 before captured historical lookup. Distinct independent store policy remains.",
+          "oracle": "If projected parser is applied exactly, matching configured raw terms throw before historical/status lookup, awaits, tokenizer, source/current-memory retrieval or new-only observer. Store policy remains independent; original task admission/limits/currentness/receipt flow unchanged.",
+          "fixtureScope": "Actual original public preparation/capability/ContextAssembler/MemoryAdapter, plus existing pure request parser for syntax only.",
+          "feasibilityLimit": "Static call order is verified. Root separately decides application and bounded public preparation tests. Private read/graph counters have no approved seam; no descriptor replacements or instrumentation.",
+          "execution": "NOT_RUN",
+          "acceptance": "HOLD",
+          "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED"
+        },
+        "currentAuthoring": "AUTHORED_APPLICABLE_NOT_RUN_HOLD",
+        "applicableLeaves": [
+          "SEC-01",
+          "SEC-02",
+          "SEC-03",
+          "SEC-04",
+          "SEC-05"
+        ],
+        "limits": "Runtime observations are supplied tokenizer/new observer and genuine public receipts/state only. Private read/lookup counts and generic origin/native authority remain source-only/HOLD. O06 prohibited carrier shapes are not authored.",
+        "execution": "NOT_RUN",
+        "acceptance": "HOLD"
+      }
+    ],
+    "additionalIndependentPolicyObligation": {
+      "id": "AUTO-POLICY-01",
+      "technique": "equivalence/state/recovery",
+      "literalEvidence": "contextText34 supplemental automatic patterns vs normal-contracts30 knownSecrets-only finite parser; MemoryAdapter285 historical return precedes fresh #assemble257/raw contextText",
+      "authoredApplicableLeaf": "SEC-06 fresh original contextText rejection and genuine finite historical lookup miss only",
+      "historicalEqualityAuthoring": "NOT_AUTHORED_HOLD",
+      "neededPrerequisites": "Explicit literal automatic-pattern historical policy and a supported genuinely admitted historical matching request under a relevant original producer lifecycle; no fabricated protected history or weakened policy",
+      "claimLimit": "F06 one-line source claim is configured encoded/raw known-secret comparison only; no unsupported automatic secret-policy equivalence pass"
+    },
+    "unsupportedPrerequisites": [
+      "Actual Runtime7 collector and original current-live host/source guards remain unimplemented/HOLD; no native collector fake or synthetic positive provenance substitutes.",
+      "Original public AgentRegistry.resume same session ID/new claim, writable original SessionStore limits, cold original-session/currentness/physical host/DOM and full native inverse graph need genuine runtime/oracles; un-authored.",
+      "Authenticated orphan/missing command/check/registry/receipt binding, SQL revision/cipher/receipt corruption/stripping/legacy/quarantine or finalCODE experiments are excluded; require separately approved authentic typed seams if meaningful.",
+      "Opaque original ciphertext/AAD bytes and whole original schema6 protected preservation cannot be proved by public receipt equality; no raw DB/cipher/receipt oracle authored.",
+      "Store-read/historical lookup/native-origin metrics are inaccessible through approved public APIs; zero tokenizer/new-observer delta is measured only for the actual supplied callbacks.",
+      "Cross-process races, crash cut/recovery holds and whole native aggregate quota/continuations1..8/no-reset lineage require genuine native lifecycle and remain NOT_AUTHORED/HOLD.",
+      "Automatic-pattern historical equality, exact inaccessible signed-wrapper/wire worst cases, legitimate source-removal/missing-edge negative and prohibited private/proxy/facade carriers remain held."
+    ],
+    "scope": "Original sealed41/eight design preserved; no new historical automatic-pattern/native/inverse/cold/crypto or blocked CODE authoring"
+  },
+  "executionCountersThisLane": {
+    "NodeVersionOrParser": 0,
+    "moduleImports": 0,
+    "syntaxChecks": 0,
+    "tests": 0,
+    "fixtures": 0,
+    "storeConstructors": 0,
+    "DBs": 0,
+    "migrations": 0,
+    "preparations": 0,
+    "suppliedTokenizerCalls": 0,
+    "newObserverCallbacks": 0,
+    "native": 0,
+    "models": 0,
+    "providers": 0,
+    "tools": 0,
+    "profiles": 0,
+    "browsers": 0,
+    "listeners": 0,
+    "network": 0,
+    "Git": 0
+  },
+  "sourceOnlyVerification": {
+    "method": "Python stdlib byte copy/hash/JSON/text/diff and lexical import resolution only",
+    "priorPins": "77 original non-policy inputs +9 execution inputs +6 r1-owned files unchanged; historical policy pin records authorized drift only",
+    "sameOracleAssertions": true,
+    "newOwnerIntentCandidate": "NOT_READ_NOT_INTEGRATED; current seven r2 candidate files and actual original6 remain required exact immutable pins",
+    "NodeParseImportTest": "NOT_RUN",
+    "newScratch": "ABSENT_AT_SEAL"
+  },
+  "all87": "HOLD",
+  "finalCODE": "HOLD",
+  "rootBoundedGO": "REQUIRED_SEPARATELY_AFTER_LITERAL_IMPORT_EFFECT_PIN_REVIEW"
+}

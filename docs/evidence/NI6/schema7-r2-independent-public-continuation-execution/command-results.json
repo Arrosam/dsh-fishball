@@ -1,0 +1,56 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/root-ni6-public-continuation-r2.test.mjs"
+      ],
+      "durationSeconds": 0.063726,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T07:22:40.806197+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T07:22:40.742470+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-continuation-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-continuation-execution/command-01.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/root-ni6-public-continuation-r2.test.mjs"
+      ],
+      "durationSeconds": 0.462313,
+      "exitCode": 1,
+      "finishedAt": "2026-10-07T07:22:41.268917+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T07:22:40.806613+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-continuation-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 7053,
+        "path": "docs/evidence/NI6/schema7-r2-independent-public-continuation-execution/command-02.stdout.txt",
+        "sha256": "da6f87c8db1de910fc86341975dd4efa6e9f87ad04338159ba0690ef76efe995"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": true
+}
