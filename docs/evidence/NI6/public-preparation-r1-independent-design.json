@@ -1,0 +1,1227 @@
+{
+  "contractVersion": "df.ni6-public-preparation-independent-design/v1",
+  "title": "NI6-PREP01 independent current-core public preparation design",
+  "date": "2026-10-07",
+  "status": "INDEPENDENT_PUBLIC_CONTRACT_DESIGN_SEALED_NOT_RUN",
+  "reviewer": {
+    "task": "/root/ni5_r3_affected_review",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "lane": "independent ISTQB design"
+  },
+  "implementationAuthor": "/root/ni6_request_validation_rootcause",
+  "scope": {
+    "wave": "NI6-PREP01",
+    "fixture": ".runtime/ni6-public-preparation-r1 (implementation not read)",
+    "rootOwnsExecution": true,
+    "noExecutionAuthorizationFromDesign": true,
+    "sourceAdoption": false,
+    "originalBootstrapInventoryFinalNames": "EXACT_PUBLIC_INVENTORY_11_DECLARED_NOT_RUN; actual module/source/profile/fiber activation remains pre-GO and runtime evidence."
+  },
+  "independence": {
+    "newAuthorImplementationRead": false,
+    "newAuthorFixtureAssertionsRead": false,
+    "rawTestOraclesRead": false,
+    "applicationCodeParsedImportedExecuted": false,
+    "gitUsed": false,
+    "privateDataRead": false,
+    "blockedCodeInvestigationTouched": false,
+    "publicContractsAndSelectedOriginalSourceOnly": true,
+    "authorProposedBudgetNotUsedAsOracle": "18+1+1 independently derived from documented operations and subsequently agreed with root",
+    "chronology": "Authored independently while implementation proceeds; no claim of pre-implementation chronology. No new author implementation or assertion ingestion.",
+    "publicBootstrapInventoryReceived": true
+  },
+  "sourceBasis": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "bytes": 5304,
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+    },
+    {
+      "path": "docs/next-native-wave-2026-10-07.md",
+      "bytes": 6662,
+      "sha256": "840aaa086d41b9a2e6579ca4d86f0247305a413631ab7da48bb9ca703c28ba44"
+    },
+    {
+      "path": "docs/onboarding-contract.md",
+      "bytes": 8087,
+      "sha256": "f61ea745b6ae9080f9d9f12bdbbcf27ff5235d5278fcfce41827e40af7aa6fcd"
+    },
+    {
+      "path": "docs/runtime-api.md",
+      "bytes": 23123,
+      "sha256": "f6263a663dc2fff31f871a157a987b321abc1736e2d56f5c2642988b66e704ab"
+    },
+    {
+      "path": "docs/onboarding-native-carrier-addendum.md",
+      "bytes": 3514,
+      "sha256": "843ec553298859c91c6e191a5043afd3548c550b72fe7312e942a4e841e96132"
+    },
+    {
+      "path": "docs/normal-entry-integration-plan.md",
+      "bytes": 13532,
+      "sha256": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0"
+    },
+    {
+      "path": "docs/tickets/BUB001.md",
+      "bytes": 5071,
+      "sha256": "a83391a353c74b832f668251f3cc15f376adaa457afcb4c2d96176e1d29872e6"
+    },
+    {
+      "path": "docs/tickets/BUB003.md",
+      "bytes": 5005,
+      "sha256": "05d35e1c51cfb79ebdccf9b37dc3b5ef4b726ea1119ff17a3b707a150bc5ec73"
+    },
+    {
+      "path": "docs/tickets/BUB006.md",
+      "bytes": 5105,
+      "sha256": "affa8641b9a80efce152cbcc9e6cfad4114e255aaac04617d6f935bc52878f94"
+    },
+    {
+      "path": "docs/tickets/BUB007B.md",
+      "bytes": 5211,
+      "sha256": "3265a66d375f1566792fb595da81e8b501ab5265b8f49cd076de9ea2096ef39d"
+    },
+    {
+      "path": "docs/tickets/BUB008.md",
+      "bytes": 4808,
+      "sha256": "f83349faa315d51e260e8fb61dc27c3e953791bec4b185b9789bce55b936b82a"
+    },
+    {
+      "path": "docs/tickets/BUB012.md",
+      "bytes": 4621,
+      "sha256": "93e00fa5795a40c3561ce1c50d4ed07b4e784b7fa4d1f54fa8fa58cdc6d1bac7"
+    },
+    {
+      "path": ".runtime/ni6-installed-continuation-public-contract/public-callables.d.ts.txt",
+      "bytes": 16576,
+      "sha256": "7641c24bc0c7f2734404b7572b9ba5813a96d3d0ccb760dc80b829603e9d913b"
+    },
+    {
+      "path": ".runtime/ni6-installed-continuation-public-contract/public-interface-manifest.json",
+      "bytes": 3721,
+      "sha256": "37eb43db1dd90173281ca0c9a65148255b096e6e395cd034b2df8202ce1688e6"
+    },
+    {
+      "path": ".runtime/ni6-runtime-composition-r4/contracts/schema7-contracts.d.ts.txt",
+      "bytes": 45312,
+      "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210"
+    },
+    {
+      "path": ".runtime/ni6-runtime-composition-r4/contracts/review-refinements-r1.d.ts.txt",
+      "bytes": 6295,
+      "sha256": "71c9d4f5fac225031f42b308a2a25a97b59bee92207bc980df8c650b68383668"
+    },
+    {
+      "path": ".runtime/ni6-runtime-composition-r4/contracts/integration-entry-cuts.md",
+      "bytes": 5548,
+      "sha256": "e013f964240b8bcbb106613bf6ace39086743aaced6069436ec314a816ae29b2"
+    },
+    {
+      "path": ".runtime/ni6-runtime-composition-r4/descriptor-source-accounting.json",
+      "bytes": 503,
+      "sha256": "f2afb9651b90982cf78a4cf7c380e3e7cc570eda8bbc41a4a07a733685796392"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "bytes": 8628,
+      "sha256": "9227a0126e662bc150fa64b152cd4a380c8b70c7e5160a1ed151c6103422aa77"
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "bytes": 36350,
+      "sha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2"
+    },
+    {
+      "path": "src/installed-plugin.mjs",
+      "bytes": 7194,
+      "sha256": "73f65198c642b3b3c1413c7fbb8ffd0a2a6b56605abbc0a5bfce875a9177ea1d"
+    },
+    {
+      "path": "src/coordinator.mjs",
+      "bytes": 13403,
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "path": "src/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": "src/installed-memory.mjs",
+      "bytes": 3538,
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+      "bytes": 4749,
+      "sha256": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts",
+      "bytes": 8904,
+      "sha256": "1188a67702253930766e6b03670b8f906e87ac11623c9aa69012215552a6f354"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+      "bytes": 8430,
+      "sha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+      "bytes": 3345,
+      "sha256": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts",
+      "bytes": 1773,
+      "sha256": "82c2812f98f18b377d7ffffe1c8576a54fde3b1704d79761b3e58961d430c520"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/index.d.ts",
+      "bytes": 3474,
+      "sha256": "d83649e8d3f48e7e28fe930df033632ae303843d5512ddd1b81a2098d4e33d78"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc.d.ts",
+      "bytes": 11326,
+      "sha256": "3ca86c027408eb2dd6f1aa6efba0778b0f14802d638fc2f66bced8c5e698b0a4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc-host.d.ts",
+      "bytes": 2743,
+      "sha256": "4655fdfdef83f155b6aa8d8240b8ae74972ddcc185e8873efde7b819fc0e7426"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/http-bridge.d.ts",
+      "bytes": 1689,
+      "sha256": "63f5acb2024181fe5365a50c53d89c607409fa39f87e632120f88145ffa211d1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/api-request-trust.d.ts",
+      "bytes": 2413,
+      "sha256": "e1116c29ceec8d18c3761782b3eb1727eb8857728024a68bbdf419a1fb70b1dd"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/browser-auth.d.ts",
+      "bytes": 2481,
+      "sha256": "7cc73519f69965804c5513e8648e60cdae50046c3f7bb5849a49897fc9209d75"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/rpc.d.ts",
+      "bytes": 1075,
+      "sha256": "331380a214754d469400584c5ed79be0800e68cceeef2fb888e356cf447c33af"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+      "bytes": 59411,
+      "sha256": "0fbb93fa2382bb66919767f69c909585c6255486f9536f9232231edaeac8c4e6"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/types/index.d.ts",
+      "bytes": 6473,
+      "sha256": "342d45c37bfa5f17197cc2692057b112b795924d40f3b0d337d8fe156867641d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "bytes": 13284,
+      "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/types/index.d.ts",
+      "bytes": 10414,
+      "sha256": "c99722ae8a63d708dac752ebdba403cd2754a348ee81efaa523d34cb65b4ebf0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "bytes": 20779,
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts",
+      "bytes": 20625,
+      "sha256": "7c03f0f92be4a48cc7960ac02fc040b2088b462ae790eab1427e50bfe5e74b31"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "bytes": 27461,
+      "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "bytes": 22871,
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts",
+      "bytes": 44449,
+      "sha256": "3536b173ec22361dcda85c05281921fc850db49984813b138d05395c4fe4510f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/estimate.js",
+      "bytes": 4200,
+      "sha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "bytes": 158002,
+      "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts",
+      "bytes": 13719,
+      "sha256": "954717f76586dc0e824f74bb51378529cf4963aff4582e3d25a7bc3c8142727d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "bytes": 17395,
+      "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+      "bytes": 7437,
+      "sha256": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "bytes": 24077,
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "bytes": 20021,
+      "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "bytes": 89972,
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "bytes": 8478,
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "bytes": 28207,
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "bytes": 103333,
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+      "bytes": 32699,
+      "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "bytes": 35140,
+      "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js",
+      "bytes": 2991,
+      "sha256": "6aab33b43d6caa4ee483f7d796a17afb400fca02b7a259fb55d486626e6bb7f0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/types/index.d.ts",
+      "bytes": 3782,
+      "sha256": "453cd83423580ca2b9dd5bdc3dbbc4429b97152a9c28d7e5ad527daf4ca1a0e1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.d.ts",
+      "bytes": 17075,
+      "sha256": "f29f3512b31036e12c5adf45f5ea7ef7dac319cf3a110f12ea2ac56de494fe16"
+    }
+  ],
+  "sourceReadQualification": "Contracts/declarations, relevant original public-source sections, and public metadata were read as text. Whole-file hashes do not claim a complete audit of every original implementation. No new author fixture/candidate source or assertions were opened.",
+  "inputs": {
+    "G": "Synthetic NI6 public preparation. Preserve these instructions; do not run native actions.",
+    "goalClass": "One frozen well-formed ASCII synthetic goal <=128 UTF8 bytes; no credentials/constraints/background/memory writes. Concrete fixture value must be frozen before GO; a different value within this class preserves the independent exact-content joins.",
+    "ingress": "Fresh synthetic ASCII taskId/provider/source/eventId <=64bytes; complete source identity frozen; no owner/workspace/role/PeerScope in payload",
+    "commands": "CI,CP,CS are distinct lowercase SHA256 references derived from frozen public synthetic labels/run nonce; no reuse from older fixtures",
+    "taskBinding": "T0 actual intake Task; V0=T0.version; A0=T0.authEpoch=0; V1=V0+1. Freeze Q once after baseline, do not refresh CAS.",
+    "Q": "exact required six fields taskRef,commandRef,expectedTaskVersion,expectedAuthEpoch,terms,now; terms [], original safe now N captured once; optional recordRefs/vectors/limit absent",
+    "Qstale": "only CP replaced by CS; all other Q fields and N unchanged"
+  },
+  "transport": {
+    "H00": "One actual native authenticatedUrl -> original authorizeIndex token exchange, capture only private in-memory cookie, redirect manual/no follow; no request to QA3080",
+    "domainRequestShape": {
+      "type": "client-request",
+      "rpcId": "fresh original correlation ID per transport call",
+      "method": "exact v1/ endpoint",
+      "payload": "closed published domain DTO"
+    },
+    "domainResponseShape": {
+      "type": "server-response",
+      "rpcId": "same original request correlation ID",
+      "result": "exact original {ok:true,value} or {ok:false,error} union"
+    },
+    "jsonOnlySlice": true,
+    "unexpectedAttachmentOrContentType": "HOLD/STOP, no synthetic decoder fallback",
+    "implementationOptions": "Original createWebConnectionRpc backed by actual HTTP fetch, or actual original documented envelope/framing with unchanged correlation validation; no direct invocation of any registered handler",
+    "owner": "Actual original HostConnectionService admission fourth-argument PeerScope; never supplied/serialized by fixture",
+    "noRetry": true,
+    "noRedirectFollow": true
+  },
+  "schedule": [
+    {
+      "ordinal": 1,
+      "channel": "/df-setup",
+      "method": "v1/status",
+      "payload": "{}",
+      "effect": "readonly",
+      "expected": "phase setup_required; executionEnabled false; storage.location equals frozen database target; no DF key/state/database",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 2,
+      "channel": "/df-setup",
+      "method": "v1/prepare",
+      "payload": "{}",
+      "effect": "volatile_setup_preview_only",
+      "expected": "closed original preview and description; future expiry within 60000ms; no persistent DF writes",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 3,
+      "channel": "/df-setup",
+      "method": "v1/confirm",
+      "payload": "{previewRef:P.previewRef,planDigest:P.planDigest,accept:true}",
+      "effect": "one_original_setup_initialization",
+      "expected": "ready only after original child activation; no action/native authority",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 4,
+      "channel": "/df-setup",
+      "method": "v1/status",
+      "payload": "{}",
+      "effect": "readonly",
+      "expected": "ready; executionEnabled false; same storage target",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 5,
+      "channel": "/df-rpc",
+      "method": "v1/list",
+      "payload": "{}",
+      "effect": "readonly",
+      "expected": "empty fresh owner/workspace task list",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 6,
+      "channel": "/df-rpc",
+      "method": "v1/intake",
+      "payload": "I={taskId,provider,source,eventId,commandRef:CI,goal:G}",
+      "effect": "one_new_task_intake",
+      "expected": "deduplicated false; exact Task T0; queued; authEpoch zero; one admitted encrypted goal",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 7,
+      "channel": "/df-rpc",
+      "method": "v1/status",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "S0.task equals T0; one goal and no context; no actions/workers/effect state",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 8,
+      "channel": "/df-rpc",
+      "method": "v1/export",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "metadata-only pre-preparation snapshot E0 joins S0",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 9,
+      "channel": "/df-rpc",
+      "method": "v1/detail",
+      "payload": "{taskRef:T0.taskRef,recordRef:goalRef,expectedTaskVersion:V0,expectedAuthEpoch:A0}",
+      "effect": "readonly",
+      "expected": "closed {task,data}; exact original synthetic goal G; metadata/digest/bytes join S0",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 10,
+      "channel": "/df-rpc",
+      "method": "v1/prepareContext",
+      "payload": "Q={taskRef:T0.taskRef,commandRef:CP,expectedTaskVersion:V0,expectedAuthEpoch:A0,terms:[],now:N}",
+      "effect": "one_new_atomic_preparation_graph",
+      "expected": "closed 14-field PreparedReceipt R; V1=V0+1; auth unchanged; one new context",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 11,
+      "channel": "/df-rpc",
+      "method": "v1/status",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "S1.task equals R.task; prepared context metadata joins R; no other task mutation",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 12,
+      "channel": "/df-rpc",
+      "method": "v1/detail",
+      "payload": "{taskRef:T0.taskRef,recordRef:R.recordRef,expectedTaskVersion:V1,expectedAuthEpoch:A0}",
+      "effect": "readonly",
+      "expected": "exact whole original execution-context envelope, digest/bytes/source/memory/task and original protected text joins",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 13,
+      "channel": "/df-rpc",
+      "method": "v1/export",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "metadata-only E1 joins S1 and detail metadata; no plaintext, auth material or private authority",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 14,
+      "channel": "/df-rpc",
+      "method": "v1/prepareContext",
+      "payload": "exact same frozen Q, including CP,V0,A0,terms,N",
+      "effect": "historical_readonly_acknowledgement",
+      "expected": "R2 deeply equals R; no new context, task transition or native effect; only transport rpcId changes",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 15,
+      "channel": "/df-rpc",
+      "method": "v1/status",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "S2 equals S1 after excluding only public observedAt",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 16,
+      "channel": "/df-rpc",
+      "method": "v1/prepareContext",
+      "payload": "Qstale={...Q,commandRef:CS}, CS distinct from CP and CI; no other change",
+      "effect": "new_command_stale_CAS_refusal",
+      "expected": "logical error exactly {ok:false,error:{code:'STALE_VERSION',message:'STALE_VERSION',details:{}}}; no weakened CAS",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 17,
+      "channel": "/df-rpc",
+      "method": "v1/status",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "S3 equals S1 after excluding only observedAt; no second context or task transition",
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 18,
+      "channel": "/df-rpc",
+      "method": "v1/export",
+      "payload": "{taskRef:T0.taskRef}",
+      "effect": "readonly",
+      "expected": "Efinal equals E1 after excluding only observedAt; no metadata drift, action/grant/claim/execution or plaintext",
+      "status": "NOT_RUN"
+    }
+  ],
+  "preparedReceipt": {
+    "exactTopLevelFieldCount": 14,
+    "exactFields": [
+      "recordRef",
+      "digest",
+      "kind",
+      "byteLength",
+      "cryptoVersion",
+      "sourceRef",
+      "task",
+      "sourceTaskVersion",
+      "sourceAuthEpoch",
+      "memory",
+      "inputCounts",
+      "retainedRefs",
+      "droppedRefs",
+      "verification"
+    ],
+    "refDomain": "lowercase hex64",
+    "kind": "context",
+    "cryptoVersion": 2,
+    "verification": "module_prepared_execution_context_only",
+    "taskDomain": "exact nine-field schema7 Task, taskVersion equals version",
+    "memoryDomain": "exact {namespaceRef:Ref,revision:UInt}; revision 0 true fresh absence; private namespace derivation not extracted",
+    "inputCountsDomain": "exact {bytes:UInt,tokens:UInt}",
+    "sourceTaskVersion": "V0",
+    "sourceAuthEpoch": "A0",
+    "committedTaskVersion": "V1",
+    "retainedRefs": [],
+    "droppedRefs": [],
+    "noClaimGrantExecutionAuthority": true
+  },
+  "oracles": {
+    "stateComparison": "Compare complete public original snapshots/export data after removing only observedAt; retain all task timestamps, immutable fields and array members/order.",
+    "goalDetail": "data.content exactly G; SHA256(UTF8(G)) equals goal metadata digest; UTF8(G).length equals byteLength; owner/task/auth/scoped metadata agree.",
+    "preparedDetail": "Closed {task,data}; original admitted readData metadata plus content. Whole UTF8 content is exact original df.execution-context/v1 envelope, materialKind execution_context, original 15 envelope fields; no generic summary substitution.",
+    "wholeEnvelopeDigest": "R.digest == detail.data.digest == SHA256(exact UTF8 detail.data.content)",
+    "wholeEnvelopeBytes": "R.byteLength == detail.data.byteLength == UTF8(detail.data.content).length",
+    "contentCounts": "R.inputCounts.bytes == envelope.inputCounts.bytes == UTF8(envelope.content).length",
+    "heuristicTokens": "R.inputCounts.tokens == envelope.inputCounts.tokens == ceil(envelope.content.length / 4) + 4; length is original JavaScript UTF16 code units. dsh-fixed-density-text/v1, not actual provider tokens/billing.",
+    "originalProtectedText": "Original ContextAssembler headers/scope JSON/CURRENT GOAL/CURRENT CONSTRAINTS (none recorded)/CURRENT WORK FACTS, double-newline joins. Exact full G and authoritative S0 workFacts; no background/memory material.",
+    "workFactsFieldOrder": [
+      "actions",
+      "workers",
+      "control",
+      "artifacts",
+      "progress",
+      "deliveries",
+      "reviews",
+      "audits",
+      "policy"
+    ],
+    "ledgerSnapshotDigest": "SHA256(JSON.stringify({task:S0.task,workFacts:original ordered full public S0 projection}))",
+    "sourceRef": "Original SHA256(JSON.stringify({sourceScope:actual task refs,sourceTaskVersion:V0,sourceAuthEpoch:A0,sourceRefs:[goalRef],expectedMemory:R.memory}))",
+    "sourceProvenance": "Exactly original goal provenance (recordRef,digest,taskVersion,authEpoch,createdAt) joins D09/S0; sourceRefs [goalRef]. Absent constraints is truthful absent source, not manufactured proof.",
+    "freshMemory": "revision0, provenance[], no backgrounds; no putMemory/remember/queryHost/native/model source.",
+    "publicMetadata": "New context record generationRef null, cryptoVersion2, source/committed task/auth/memory fields join R and envelope; exact existing prepared metadata retained, no arbitrary extra DTO.",
+    "repeat": "R2 deeply equals R in all fields; source/request receipt before new CAS. S2 conserves S1 with only observedAt excluded.",
+    "staleError": {
+      "ok": false,
+      "error": {
+        "code": "STALE_VERSION",
+        "message": "STALE_VERSION",
+        "details": {}
+      }
+    },
+    "zeroEffects": "Original public events/counts, live registries and owner snapshot/export; no patched methods, fake services, fabricated event emits or private instrumentation.",
+    "noPrivateRead": "Public detail is the authorized synthetic data read. Credentials/key/state/database contents are not read, exported, hashed or decoded outside the original product; original internal storage uses remain as declared.",
+    "encryptionQualification": "Observe original encrypted:true preview, ready activation, genuine store and cryptoVersion2/public read path. No new cipher/SQL/receipt-envelope experiment or independent cryptographic acceptance."
+  },
+  "budget": {
+    "httpRequestsExact": 20,
+    "admittedDomainRpcsExact": 18,
+    "authIndexExchangesExact": 1,
+    "postDisposalRouteProbesExact": 1,
+    "readonlyDomainRpcsExact": 12,
+    "volatilePreviewRpcsExact": 1,
+    "mutationShapedDomainRpcsExact": 5,
+    "successfulOwnerIntakesExact": 1,
+    "newPreparedCommitsExact": 1,
+    "historicalPrepareRepeatsExact": 1,
+    "stalePrepareRefusalsExact": 1,
+    "setupInitializationsExact": 1,
+    "postSetupNewLogicalRuntimeMutationsExact": 2,
+    "repeatOrStaleAdditionalContextTaskTransitionMax": 0,
+    "requestBytesMax": 2048,
+    "completeSuccessfulDomainWrapperBytesMax": 65536,
+    "aggregateDomainWrapperBytesMax": 1179648,
+    "responsePolicy": "Bound actual received bytes before decoding; no truncation. The small goal-only slice must fit all frozen original selected bounds; refuse rather than widen.",
+    "listenerBindsExact": 1,
+    "listenerAddress": "127.0.0.1",
+    "configuredPort": 0,
+    "assignedPortMustExclude": [
+      3080
+    ],
+    "listenerClosesExact": 1,
+    "ownedSyntheticRootCount": 1,
+    "newSyntheticHostHomeCount": 1,
+    "newSyntheticProfileCount": 1,
+    "newDatabaseTargetCount": 1,
+    "newDFSetupNamespaceCount": 1,
+    "newMemoryNamespaceCount": 1,
+    "functionalTopLevelNodeRunsExact": 1,
+    "functionalChildProcessStartsMax": 0,
+    "fullDSHCLILaunchesMax": 0,
+    "browserStartsMax": 0,
+    "preparationOriginalBuilderInvocationsMax": 2,
+    "originalPinnedBuilderChildProcessStartsMax": 1,
+    "preparationAndFunctionalProcessStartsMax": 4,
+    "perRootCommandTimeoutMsMax": 60000,
+    "functionalWholeTimeoutMsMax": 60000,
+    "perHttpTimeoutMsMax": 3000,
+    "allBuildAndFunctionalCommandsAggregateMsMax": 180000,
+    "processQualifier": "Root must freeze actual builder command/child inventory before GO. Budget is a hard upper bound, not authorization for a substitute builder. No retry if a build/check/command fails.",
+    "descriptorProductRowsExact": 64,
+    "descriptorComposition": {
+      "sourceFiles": 59,
+      "packageFiles": 1,
+      "lockFiles": 1,
+      "builderFiles": 2,
+      "freshBuiltClientFiles": 1
+    },
+    "packageInventory": "Root/author freeze exact complete new package and fixture file inventories and byte totals before GO; descriptor64 is not a claim that every physical package file is in the descriptor. Original notices/dependencies preserved; no install.",
+    "originalStoreOpenCloseCyclesMax": 2,
+    "privateStorage": "Only original fresh host-auth credential document/locks and original setup stage/key/state/database/sidecars within frozen owned paths. Byte/syscall counts are not fabricated; exact source effect inventory must precede GO.",
+    "publicEventObserversMax": 4,
+    "publicAgentSessionCheckpointCount": 21,
+    "agentRegistryListCallsMax": 21,
+    "sessionStoreListCallsMax": 21,
+    "postActivationPublicDFDiagnosticsReadsMax": 1,
+    "eventObserverNames": [
+      "agent/created",
+      "session/created",
+      "llm/stream",
+      "tools/execute"
+    ],
+    "observerBehavior": "count-only subject/content-free observation; original declared next delegation for waterfall observations; no fabricated callback, output or policy. Zero expected invocations. tools/execute is the original accepted-dispatch boundary; pre-dispatch refusal/attempt negatives remain HOLD.",
+    "nativeAgentSessionCreatesMax": 0,
+    "nativeResumesMax": 0,
+    "workerDispatchesMax": 0,
+    "modelRequestsMax": 0,
+    "providerStreamsMax": 0,
+    "toolInvocationsMax": 0,
+    "grantClaimsExecutionsMax": 0,
+    "captureFinishResumeMax": 0,
+    "catalogPolicyGrantRPCsMax": 0,
+    "externalNetworkRequestsMax": 0,
+    "otherLoopbackEndpointsMax": 0,
+    "rawPrivateStateSQLReadsMax": 0,
+    "durableDeletionReopenRestartMax": 0,
+    "sourceChangesMax": 0,
+    "gitOperationsMax": 0,
+    "originalDirectContextPluginActivationsExact": 11,
+    "originalLoaderInstalledEntriesExact": 1,
+    "originalDFRuntimeChildrenMax": 1,
+    "bootstrapDependency": "Original ToolRuntime.static inject ['systemPrompt']; original SystemPrompt must be active before original Tools. These service activations/registrations are not model/tool executions.",
+    "toolExecutionsMax": 0
+  },
+  "cases": [
+    {
+      "id": "NI6-PREP01-01",
+      "name": "Authentic build and original lifetime",
+      "requests": [],
+      "techniques": [
+        "source provenance",
+        "closed inventory",
+        "lifecycle"
+      ],
+      "expected": [
+        "Authentic r4 64-row product descriptor, not a hand-constructed descriptor or prior bundle",
+        "59 measured source files + package + lock + two unchanged builders + actual freshly built client = 64; actual original host descriptor and lock measured",
+        "Original pinned Context/Loader/services and original installed entry; fresh synthetic profile/database namespace; no fake PeerScope or private handle",
+        "One original WebServer listening at 127.0.0.1 with port=0 and actual assigned port distinct from 3080; no fallback/catchall owner"
+      ],
+      "ac": [
+        "BUB001-01",
+        "BUB001-03",
+        "BUB012-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-02",
+      "name": "Actual owner transport and framing",
+      "requests": [
+        "H00",
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "techniques": [
+        "authenticated carrier",
+        "DTO validation",
+        "request correlation"
+      ],
+      "expected": [
+        "One genuine native launch-token/index exchange; private cookie retained in memory, redirect not followed",
+        "Original Connection owns trusted Host/Origin admission and operator Peer; every domain request goes over actual HTTP to the one owned listener",
+        "Client-request and server-response envelopes preserve exact rpcId correlation; no fabricated wrapper or response DTO",
+        "18 admitted domain RPC attempts, counted before transport; no retry, extra endpoint, captured handler or route lookup"
+      ],
+      "ac": [
+        "BUB006-01",
+        "BUB006-03",
+        "BUB001-01"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-03",
+      "name": "Consent, no-write preview and storage activation",
+      "requests": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "techniques": [
+        "state transition",
+        "before/after metadata",
+        "explicit consent"
+      ],
+      "expected": [
+        "DF setup_required and executionEnabled false before consent",
+        "Only volatile preview prior to confirm; no DF setup directory/key/state/database created",
+        "Native host-auth signing-secret storage is separately allowed in the fresh synthetic host home; it is not a DF setup preview write",
+        "Explicit accept:true, current preview/digest, original one-time setup publication, ready after original child activation",
+        "One original public df.diagnostics() read after activation establishes schemaVersion 7 and original memory capability; no raw store/owner extraction"
+      ],
+      "ac": [
+        "BUB001-01",
+        "BUB003-03",
+        "BUB006-03",
+        "BUB006-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-04",
+      "name": "One owner intake and public baseline joins",
+      "requests": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "techniques": [
+        "valid partition",
+        "source identity",
+        "cross-surface consistency"
+      ],
+      "expected": [
+        "Empty initial task list",
+        "One fresh deduplicated:false queued task; factual positive V0 and A0=0 captured once from actual receipt; taskVersion equals version",
+        "One goal metadata row and original admitted detail of G; no constraints, summary, context or memory mutation",
+        "Full owner/workspace/task tuple agrees across intake/status/detail/export; metadata-only export"
+      ],
+      "ac": [
+        "BUB003-01",
+        "BUB003-05",
+        "BUB007-03",
+        "BUB008-01"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-05",
+      "name": "One complete prepared context and immutable receipt",
+      "requests": [
+        10,
+        11,
+        12,
+        13
+      ],
+      "techniques": [
+        "valid partition",
+        "exact DTO",
+        "source provenance",
+        "independent accounting"
+      ],
+      "expected": [
+        "PreparedReceipt has exactly 14 top-level fields and pinned nested domains",
+        "Task version advances exactly once V0 to V1; task status, identity and authorization epoch remain unchanged",
+        "Receipt, original prepared data and public task metadata join on exact references/digests/source/versions/memory",
+        "Goal-only sourceRefs contains goalRef; empty optional background retainedRefs/droppedRefs; memory revision 0",
+        "Whole-envelope SHA256/UTF8 bytes are distinct from content-only inputCounts.bytes and fixed-density tokens",
+        "Complete original protected text and ledger work-facts projection from S0; no fabricated (none) constraints source or unrelated memory"
+      ],
+      "ac": [
+        "BUB003-02",
+        "BUB007-06",
+        "BUB008-01",
+        "BUB008-02",
+        "BUB008-03",
+        "BUB008-05",
+        "BUB012-04",
+        "BUB012-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-06",
+      "name": "Exact historical preparation acknowledgement",
+      "requests": [
+        14,
+        15
+      ],
+      "techniques": [
+        "idempotence",
+        "metamorphic unchanged state"
+      ],
+      "expected": [
+        "Same CP,V0,A0,terms,N and optional-field absence; fresh transport rpcId only",
+        "Deep equality of full historical receipt with R despite current task now V1",
+        "No added context or visible state/task/auth transition; private new-only observer behavior requires independent source review and is not inferred from an event echo"
+      ],
+      "ac": [
+        "BUB003-02",
+        "BUB007-04",
+        "BUB008-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-07",
+      "name": "Different new command with stale CAS",
+      "requests": [
+        16,
+        17,
+        18
+      ],
+      "techniques": [
+        "invalid stale partition",
+        "CAS",
+        "state conservation"
+      ],
+      "expected": [
+        "Only commandRef changes to new CS, preserving old V0/A0/terms/N",
+        "Public STALE_VERSION refusal with exact safe logical-error DTO",
+        "No refreshed expected version, second preparation attempt, auto-retry, added context or changed task/auth/action state",
+        "Final metadata-only export conserves E1 excluding only observedAt"
+      ],
+      "ac": [
+        "BUB003-02",
+        "BUB006-02",
+        "BUB008-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-08",
+      "name": "Zero native/model/tool/authority effects throughout",
+      "requests": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "techniques": [
+        "effect inventory",
+        "public lifetime observations"
+      ],
+      "expected": [
+        "Exactly zero agent/session creations, resumes and native-worker dispatches; original public creation counters cover transient publication",
+        "Authentic agents.list()/sessions.list() empty at 21 finite checkpoints; no fake registries or snapshot substitution",
+        "No model/catalog/policy/grant/claim/execute/capture/finish/provider-stream/tool RPC or instance effect; original public observational surfaces and closed source request inventory required",
+        "worker.enabled true is constructor selection needed for schema7, not permission for native work; hostPermission remains original default deny",
+        "Zero requests does not fabricate actual billing/usage, native acceptance or role/release evidence; unobservable effect boundary is HOLD"
+      ],
+      "ac": [
+        "BUB006-05",
+        "BUB007-06",
+        "BUB008-04",
+        "BUB012-01",
+        "BUB012-02",
+        "BUB012-03",
+        "BUB012-04"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-09",
+      "name": "Original disposal, truthful route absence and preservation",
+      "requests": [
+        "H19"
+      ],
+      "techniques": [
+        "lifecycle",
+        "negative route boundary",
+        "state preservation"
+      ],
+      "expected": [
+        "Remove original owned installed entry/runtime subtree and await original Loader lifecycle before probe",
+        "Keep parent Connection/WebServer active with no fallback or catchall; one original framed task-status POST returns physical HTTP404 and no logical task success",
+        "HTTP404 is unmatched-route evidence, not operator admission, release or a stopped-socket response; full Web static fallback 405 is a separate composition",
+        "Then original root Context fiber disposal closes the one listener; no new probe/restart/rebind or process kill",
+        "Preserve synthetic database/setup/key metadata and generated namespace; ordinary SQLite sidecar teardown is allowed, byte-identical database/WAL assertions are not required",
+        "No raw SQL/private state read, synthetic terminal witness, durable reopen or cold acceptance"
+      ],
+      "ac": [
+        "BUB001-01",
+        "BUB001-04",
+        "BUB003-01",
+        "BUB003-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    }
+  ],
+  "stopConditions": [
+    "First source/pin/descriptor drift",
+    "Runtime-policy denial; no alternate path",
+    "Missing genuine original service/currentness/auth/profile binding",
+    "Nonmatching DTO/error/correlation/content-type/bytes or undocumented field",
+    "Unobserved effect or missing observer scope",
+    "Unexpected model/tool/native/action call",
+    "Any request/process/listener/write-budget overflow",
+    "Uncertain setup/preparation result: preserve state; no retry/CAS refresh",
+    "Disposal/lifecycle timeout or unexpected route response; no fabricated404 or force kill"
+  ],
+  "executionPrerequisites": [
+    {
+      "id": "PG01",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Freeze author source/literal/import graph, fixture closure, reviewed root execution plan, actual builder/process inventories and authentic final 64-file descriptor after actual build. Design contains no final built pins. Bind exactly 11 direct original ctx.plugin activations plus one original Loader-installed entry and the original activated DF child; match the exact public inventory and freeze actual resolved imports/config/path identities. SystemPrompt precedes ToolRuntime."
+    },
+    {
+      "id": "PG02",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Separate independent affected CODE/source audit and root review must match this immutable independent design; designer later affected review required."
+    },
+    {
+      "id": "PG03",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Exact owned synthetic root/home/profile/database paths and all original loader/module/dependency identities pinned; no personal .env, credentials, QA profile/state/key or unbounded fallback resolver reads. Provide the original declared launchEnvironment snapshot with only synthetic DSH_HOME/XDG_CONFIG_HOME before all 11 activations; no fallback process.env/project-env/user-env layer."
+    },
+    {
+      "id": "PG04",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Freeze all selected memory/context/metadata/data/wire/queue bounds and complete wrapper feasibility within original domains, without increasing source caps or replacing tokenizer/constructor authority."
+    },
+    {
+      "id": "PG05",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Original public zero-effect observers and registry observations really cover the owned genuine context from before installed activation to parent disposal; missing lifetime/stream/tool observation remains HOLD."
+    },
+    {
+      "id": "PG06",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Original WebServer has no fallback/catchall; entry/runtime disposed and Loader.await before exactly one task-route404 probe; root disposal after probe closes listener."
+    },
+    {
+      "id": "PG07",
+      "status": "HOLD_BEFORE_GO",
+      "obligation": "Actual supported root runtime-policy approval and once-only GO. Denial/unknown/pin drift stops, with no alternative or same-plan retry."
+    }
+  ],
+  "remainingHolds": [
+    "Typed raw RuntimeStore.readPreparedContextCheck and preparedContextStatus currentness/brands not selected; no extra RPC invented",
+    "IH03 direct NativeAdapter/WorkerManager instances and real native donors",
+    "Native create/execute/model/tool/grant/capture/finish/release/resume acceptance",
+    "Broad authentication negatives, concurrent intake/consent/CAS, aborts, faults, quotas, migration and boundary/load matrices",
+    "Full OS cold A-exit/fresh-B/reopen/persistence recovery and descriptor lifecycle acceptance",
+    "Mounted/visual/browser/owner UI and real selected-model capacity/usage/quality",
+    "Separate running a58/cb75 QA package/profile/listener/cancelled task",
+    "Permanently blocked final CODE receipt/envelope/cipher/SQL investigation",
+    "All87 criteria accepted0/HOLD; no complete AC/ticket/MVP/release accepted",
+    "Pre-dispatch tool refusal/attempt observation matrix; original tools/execute measures selected accepted tool execution effects only."
+  ],
+  "acceptance": {
+    "all87": {
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    "functional": "NOT_RUN",
+    "designNotFunctionalPass": true,
+    "finalCode": "PERMANENT_HOLD_UNTOUCHED",
+    "browser": "HOLD",
+    "release": "HOLD"
+  },
+  "actualEffects": {
+    "sourceReads": true,
+    "publicMetadataHashing": true,
+    "newEvidenceFiles": 2,
+    "applicationExecutions": 0,
+    "sourceMutations": 0,
+    "profilesListenersDatabasesModelsNetworkGit": 0
+  },
+  "bootstrap": {
+    "basis": "Implementation-free public inventory relayed by root and author; original declarations and relevant source dependency/export sections independently checked. No author fixture implementation/assertions read.",
+    "beforeAnyActivation": {
+      "factory": "original createLaunchEnvironmentSnapshot",
+      "package": "dsh-launch-environment",
+      "providedContextSlot": "launchEnvironment",
+      "layers": [
+        {
+          "source": "process",
+          "values": {
+            "DSH_HOME": "fresh synthetic profile/auth",
+            "XDG_CONFIG_HOME": "same fresh synthetic profile/auth"
+          }
+        }
+      ],
+      "noActualProcessEnvironmentCopied": true,
+      "noProjectOrUserEnvLayer": true,
+      "qualification": "Original launchEnvironmentOf consumes supplied snapshot; fallback process.env is not selected. Snapshot is environment configuration, not operator/task authority."
+    },
+    "directOriginalPluginActivations": [
+      {
+        "ordinal": 1,
+        "package": "cordis-plugin-loader",
+        "export": "default Loader",
+        "config": {
+          "baseUrl": "file URL of fresh candidate package/package.json"
+        },
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+        "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 2,
+        "package": "dsh-session-projection",
+        "export": "default SessionProjectionRegistry",
+        "config": "omitted original config",
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+        "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 3,
+        "package": "dsh-session",
+        "export": "default SessionStore",
+        "config": "omitted original config",
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 4,
+        "package": "dsh-user-approval",
+        "export": "default ApprovalService",
+        "config": {
+          "policy": "never"
+        },
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+        "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 5,
+        "package": "dsh-agent",
+        "export": "default AgentRegistry",
+        "config": "omitted original config",
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 6,
+        "package": "dsh-llm",
+        "export": "default LlmRuntime",
+        "config": "omitted original config",
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 7,
+        "package": "dsh-system-prompt",
+        "export": "default SystemPrompt",
+        "config": {},
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+        "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 8,
+        "package": "dsh-tools",
+        "export": "default ToolRuntime",
+        "config": {
+          "mode": "native",
+          "maxParallelSubCalls": 1
+        },
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+        "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 9,
+        "package": "dsh-credentials-local",
+        "export": "named LocalCredentialProvider",
+        "config": {
+          "path": "fresh owned profile/auth/.credentials.yaml",
+          "dshHome": "same fresh synthetic auth directory",
+          "watch": false,
+          "debounceMs": 100
+        },
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+        "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 10,
+        "package": "dsh-host-webserver",
+        "export": "default WebServer",
+        "config": {
+          "host": "127.0.0.1",
+          "port": 0,
+          "compression": "none"
+        },
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+        "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      },
+      {
+        "ordinal": 11,
+        "package": "dsh-client-connection",
+        "export": "original namespace apply/Config/inject/name",
+        "config": {
+          "trustedHosts": [],
+          "cookieMaxAgeDays": 1,
+          "maxRequestBodyBytes": 65536,
+          "recovery": {}
+        },
+        "sourcePath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d",
+        "status": "PUBLIC_PROSPECTIVE_INVENTORY_NOT_RUN"
+      }
+    ],
+    "subsequentLoaderCreate": {
+      "count": 1,
+      "source": "fresh candidate package/src/installed-plugin.mjs",
+      "config": "root-freeze exact validated setup/memory/worker selection; no raw capability/handle"
+    },
+    "internalRuntimeChild": "One original SetupState confirm creates the original DF runtime child; constructor-owned internal original pending dependency fibers are not miscounted as direct plugin activations.",
+    "notActivated": [
+      "external provider",
+      "AgentLoop",
+      "JSONL session backend plugin",
+      "preset plugin"
+    ],
+    "requiredOrder": [
+      "SessionProjectionRegistry before consumers including ApprovalService",
+      "SystemPrompt before ToolRuntime",
+      "launchEnvironment before every consumer",
+      "parent Connection/WebServer active through one removed-route probe"
+    ],
+    "zeroToolEvidenceQualification": "Original tools/execute count observes accepted dispatch; it does not cover pre-dispatch rejection/attempt negatives, which are not selected and stay HOLD."
+  }
+}
