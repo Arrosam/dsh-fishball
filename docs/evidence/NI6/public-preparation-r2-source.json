@@ -1,0 +1,186 @@
+{
+  "actualAuthorEffects": {
+    "DBNativeModelProviderNetworkRequests": 0,
+    "GitOperations": 0,
+    "NodeImportsParsesTestsBuilds": 0,
+    "profilesListenersServicesBrowsers": 0,
+    "protectedInvestigations": 0,
+    "sourceReadsHashesAndNewSourceWritesOnly": true
+  },
+  "actualClientBuilt": false,
+  "actualNativeDescriptorGenerated": false,
+  "allInputBytesReadAndPinned": true,
+  "applicationSourceChanged": false,
+  "authenticDescriptorExpectedRows": 64,
+  "author": "/root/ni6_request_validation_rootcause",
+  "buildPlan": ".runtime/ni6-public-preparation-r2/build-plan.proposed.json",
+  "contractVersion": "df.ni6-prep01-source-report/v1",
+  "date": "2026-10-07",
+  "effectBounds": ".runtime/ni6-public-preparation-r2/effect-bounds.json",
+  "importInventory": ".runtime/ni6-public-preparation-r2/import-inventory.json",
+  "independentDesign": [
+    "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+    "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+  ],
+  "inputFiles": 230,
+  "nativeDirectInstanceDisposition": {
+    "directNativeFixtureRunnableCells": 0,
+    "holds": [
+      "IH01 original setup/spec/consent binding gaps",
+      "IH02 genuine original donor and cold contracts",
+      "IH03 actual original observer lifecycle/admitted instances",
+      "IH05 original current role/owner fences",
+      "partial source/task/check identity and Q index-count gaps",
+      "typed prepared-context currentness outside this slice",
+      "cold A exit/fresh B not exercised",
+      "browser and mounted UI not exercised",
+      "all87 accepted0/HOLD",
+      "protected final CODE permanently blocked"
+    ],
+    "pendingDirectInstanceCallSelection": {
+      "cancel": 1,
+      "ownerIntentRecords": 4,
+      "preparations": 2,
+      "reads": 40,
+      "total": 47
+    },
+    "priorDirectInstanceMapping": {
+      "complete": 0,
+      "held": 2,
+      "partial": 8
+    },
+    "proposedRootBuiltPublicIntegrationCells": 1,
+    "standaloneFunctionalHostRunnableCellsAtSeal": 0
+  },
+  "newCapsule": ".runtime/ni6-public-preparation-r2",
+  "officialFullTransitiveGraphFiles": 27577,
+  "officialFullTransitiveGraphLinks": 12,
+  "originalPublicPrerequisites": [
+    "actual original builders and authentic64-file descriptor",
+    "canonical original Context/Loader/eleven services and complete host graph",
+    "fresh explicitly synthetic launch snapshot and credential/profile/data paths",
+    "original authenticated Node HTTP owner routes",
+    "actual public df.diagnostics schema7/memory proof",
+    "public baseline, goal and complete context detail/metadata/export joins",
+    "original Loader.remove/saved Fiber.await/Loader.await/public entries absence/root/WebServer cleanup with retained-parent physical404",
+    "supported finite root build driver and action-time loopback GO"
+  ],
+  "ownedFilesExpected": 79,
+  "physicalCapsuleFilesIncludingManifestExpected": 78,
+  "preserved": {
+    "CODE": "permanently blocked unchanged",
+    "all87": "accepted0/HOLD",
+    "priorFixtureR2": ".runtime/ni6-installed-continuation-fixture-slice-r2/source-manifest.json",
+    "priorPassedPublicContinuation": ".runtime/ni6-preparation-independent-continuation-r4/source-manifest.json",
+    "r1BlockingReviews": [
+      "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
+      "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
+      "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
+      "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json"
+    ],
+    "r1SourceManifest": {
+      "all220OwnedInputRecordsMatched": true,
+      "bytes": 63650,
+      "path": ".runtime/ni6-public-preparation-r1/source-manifest.json",
+      "sha256": "a69066641fac0abcf4300135de1c81e3790af774428392798061bfbab741a77d"
+    },
+    "r4Package": "all63 current r4 selected bytes unchanged",
+    "runningQa": "untouched"
+  },
+  "productBuildInputs": 63,
+  "productSourceModules": 59,
+  "proposedPublicIntegrationCells": 1,
+  "prospectiveCounts": {
+    "HTTP": 20,
+    "buildCommands": 4,
+    "diagnosticReads": 1,
+    "domainRPC": 18,
+    "eventCategories": 7,
+    "functionalDiagnosticFieldsUnchanged": 14,
+    "functionalTestCommands": 1,
+    "liveWindows": 44,
+    "maximumDirectInterpreterStarts": 16,
+    "nativeWorkerStarts": 0,
+    "ordinaryNodeTestWorkers": 2,
+    "pureTestCommands": 1,
+    "registryReads": 176,
+    "syntaxCommands": 6
+  },
+  "prospectiveRefinements": [
+    "Root-frozen seven natural categories/44 windows/176 reads and16 direct interpreter starts across two phases with shared180-second active budget; counts remain prospective."
+  ],
+  "pureOracleSuite": {
+    "executed": 0,
+    "flatCells": 31,
+    "hostAuthorityProof": false,
+    "imports": [
+      "node:test",
+      "node:assert/strict",
+      "./public-oracles.mjs"
+    ],
+    "negative": 28,
+    "nested": 0,
+    "oracleBuiltins": [
+      "node:assert/strict",
+      "node:crypto"
+    ],
+    "positive": 3,
+    "scope": "UNIT_ONLY"
+  },
+  "remainingBlockers": [
+    "Fresh fixture and executor independent affected source/test reviews pending.",
+    "Root-reported selected executor-r2 failure-path destination ownership blocker: its evidence handle precedes successful new-directory creation. Preserve sealed executor-r2; separately frozen reviewed successor/selection amendment required, with no build/runtime GO.",
+    "Root must pin the sealed selected executor-r2, its unchanged design/source manifest/additive freeze/fresh reviews and exact true-GO plans after full affected review.",
+    "Authentic original four-command build/output evidence and actual generated hashes absent.",
+    "Supported once-only loopback execution GO and observed genuine lifecycle/HTTP results pending.",
+    "All native/cold/browser/direct-instance/currentness/global acceptance holds unchanged."
+  ],
+  "remediationImplementedSourceOnly": {
+    "F-PREP01-S01": "Original Loader.remove once, saved Fiber.await, Loader.await, public entry absence and closed fiber before retained-parent404.",
+    "F-PREP01-S02": "Separate additive-freeze-selected executor-r2 is source-only sealed; exact source/manifest/design/remediation/review/output pins required by root. Historical rejected executor-r1 is not selected; no execution evidence exists.",
+    "F-PREP01-TD01": "Closed goal10/context15 metadata and whole metadata-plus-content details; status/export independently validated.",
+    "F-PREP01-TD02": "Closed snapshot18, all11 empty work arrays, schema/control/semantic domain, semantic +1/join and full first-transition conservation."
+  },
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
+  ],
+  "requiredRootGoPins": [
+    ".runtime/ni6-prep01-executor-r2/runner.py",
+    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
+    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+  ],
+  "rootFreeze": [
+    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+    "docs/ni6-preparation-r2-delta-2026-10-07.md",
+    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+  ],
+  "rootReviewedBuildGO": false,
+  "rootReviewedExecutionGO": false,
+  "rootRunnerSelectedByFinalAmendmentRequired": false,
+  "selectedExecutor": ".runtime/ni6-prep01-executor-r2/runner.py",
+  "selectedExecutorReviewState": "ROOT_REPORTED_BLOCKER; FINAL_AFFECTED_REVIEWS_PENDING; NO_REMEDIATION_AUTHORIZED_IN_THIS_SEAL",
+  "selectedExecutorSeal": {
+    "bytes": 6318,
+    "path": ".runtime/ni6-prep01-executor-r2/source-manifest.json",
+    "qualification": "Separate future root-GO pin; outside the unchanged230 fixture input union.",
+    "sha256": "f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2",
+    "status": "SOURCE_ONLY_NOT_RUN"
+  },
+  "sourceDelta": ".runtime/ni6-public-preparation-r2/source-delta.diff",
+  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+  "sourceManifestDigestQualification": "Exact final digest supplied by immutable author readback/final message; manifest does not self-pin.",
+  "sourceOnly": true,
+  "standaloneFunctionalHostRunnableCells": 0,
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "testPlan": ".runtime/ni6-public-preparation-r2/test-plan.proposed.json",
+  "wholeHostGraphQualification": "Original graph metadata/source hash frozen; root must verify every original graph file/link before/after actual execution. No full graph was imported or executed by this author."
+}

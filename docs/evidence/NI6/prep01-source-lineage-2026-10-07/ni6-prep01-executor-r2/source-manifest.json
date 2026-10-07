@@ -1,0 +1,174 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "activeAggregateSeconds": 180,
+  "actualCandidateEffects": {
+    "builds": 0,
+    "commands": 0,
+    "executed": 0,
+    "gitOperations": 0,
+    "imported": 0,
+    "listeners": 0,
+    "modelCalls": 0,
+    "networkCalls": 0,
+    "parsed": 0,
+    "phases": 0,
+    "processQueries": 0,
+    "profiles": 0,
+    "signals": 0,
+    "tests": 0
+  },
+  "all87": "HOLD",
+  "bookkeepingCharges": "NONADDITIVE_OBSERVED_PHASE_WORK_PLUS5",
+  "capture": "PER_STREAM_EOF_REQUIRED; RETAINED_PREFIX_HASH_ONLY; MISSING_EOF_UNKNOWN_TRUNCATION",
+  "combinedStreamCapBytes": 2097152,
+  "commandCounts": {
+    "build": 4,
+    "functional": 1,
+    "pure": 1,
+    "syntax": 6
+  },
+  "contractVersion": "df.ni6-prep01-executor-source/v1",
+  "counts": {
+    "inputFiles": 15,
+    "ownedFiles": 3,
+    "physicalFilesIncludingManifest": 4,
+    "sourceRecordsReadBack": 18
+  },
+  "createdAt": "2026-10-07T15:35:22.603688+00:00",
+  "directoryModes": "EACH_NEW_OWNED_COMPONENT0700; NO_AMBIENT_CHMOD",
+  "failureDefault": true,
+  "fileModes": "EXCLUSIVE_REGULAR0600_VERIFIED",
+  "finalization": "NONFINAL_INVOCATION_UNTIL_REQUIRED_RECORDS_AND_DEADLINE_CHECKS; TEST_REQUIRES_FINALIZED_SUCCESSFUL_BUILD_MARKER_LEDGER_RESULT",
+  "inputFiles": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 6430,
+      "path": "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+      "sha256": "63197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb"
+    },
+    {
+      "bytes": 4528,
+      "path": "docs/ni6-preparation-r2-delta-2026-10-07.md",
+      "sha256": "69d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5"
+    },
+    {
+      "bytes": 2079,
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "sha256": "c68c943a72438940f19196d2f12e8d1f862231af9b9496562d93beebdcc66bf2"
+    },
+    {
+      "bytes": 84640,
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+    },
+    {
+      "bytes": 52448,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "sha256": "2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12"
+    },
+    {
+      "bytes": 25578,
+      "path": ".runtime/ni6-prep01-executor-r1/runner.py",
+      "sha256": "78c81f04a75130fc47e110aef29ecc0853821bb55caf3896783a2e2c6967e626"
+    },
+    {
+      "bytes": 1815,
+      "path": ".runtime/ni6-prep01-executor-r1/source-manifest.json",
+      "sha256": "26d777f4064c5b26c2229baa133ca70ff5d9fafd82976a8affd6b97ceeca18e0"
+    },
+    {
+      "bytes": 6149,
+      "path": "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
+      "sha256": "5549cc59491cdf053d98b81b41a63bf01bcd607677463242f2229c3ded00f40c"
+    },
+    {
+      "bytes": 14466,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-source-review.md",
+      "sha256": "84c2527f1aaa67b3f46cb3e3b7cd3e3816101d5f11550874b62e87af1847df3a"
+    },
+    {
+      "bytes": 13960,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-source-review.json",
+      "sha256": "3b5c1a6804feeba01d65ae33fd43c3989578d7f1c66a02e2dd580ab42ced77a5"
+    },
+    {
+      "bytes": 17479,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-test-review.md",
+      "sha256": "32aebbb70964d27fab5150928db3f1657ef83c10cdd7c3f0c076316c48ebe11e"
+    },
+    {
+      "bytes": 51548,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-test-review.json",
+      "sha256": "00b1899aa7baeb21e2e901c3704c5bcd2d1d479d0757aa4a6752c232e6880891"
+    },
+    {
+      "bytes": 14952,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+      "sha256": "72152ce0f59b08f458bda8a1d86e3c3278c87e457bddf1f246b6ac9fb3cf923b"
+    },
+    {
+      "bytes": 37877,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+      "sha256": "f6fbf477c652c2d8e12f406ed8af5129d98a42a59fc4161265c11979a8e14067"
+    }
+  ],
+  "interruption": "SIGTERM_SIGINT_LATCHED; ONE_BOUNDED_OWNED_CLEANUP_PATH",
+  "json": "DUPLICATE_MEMBERS_REJECTED_ALL_LEVELS; SELECTED14_FIELD_DIAGNOSTIC_REQUIRED_EXACTLY_ONCE",
+  "maximumInterpreterStarts": 16,
+  "onceMarkers": [
+    "build-invocation.json",
+    "test-invocation.json"
+  ],
+  "ownedFiles": [
+    {
+      "bytes": 40432,
+      "path": ".runtime/ni6-prep01-executor-r2/runner.py",
+      "sha256": "3505cefb90104ec82133c72c240e7e8912bb47a599295616b767366c6d35624b"
+    },
+    {
+      "bytes": 25578,
+      "path": ".runtime/ni6-prep01-executor-r2/runner.before-r1.py",
+      "sha256": "78c81f04a75130fc47e110aef29ecc0853821bb55caf3896783a2e2c6967e626"
+    },
+    {
+      "bytes": 49992,
+      "path": ".runtime/ni6-prep01-executor-r2/source-delta.diff",
+      "sha256": "29cb4909aef5cab03ef31b36446a1ba59b2015825ba6f3e8ccf79d19482641ae"
+    }
+  ],
+  "perCommandSeconds": 60,
+  "phases": [
+    "build",
+    "test"
+  ],
+  "preservedPredecessorManifest": {
+    "bytes": 1815,
+    "path": ".runtime/ni6-prep01-executor-r1/source-manifest.json",
+    "sha256": "26d777f4064c5b26c2229baa133ca70ff5d9fafd82976a8affd6b97ceeca18e0"
+  },
+  "rawStreams": "PRIVATE0600_ONLY",
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
+  ],
+  "reservedInsideCommandSeconds": {
+    "metadata": 1,
+    "ownedCleanup": 4
+  },
+  "reservedInsideSharedPhaseSeconds": 5,
+  "revision": "r2",
+  "rootReviewedBuildGO": false,
+  "rootReviewedExecutionGO": false,
+  "selectedRunner": ".runtime/ni6-prep01-executor-r2/runner.py",
+  "signalling": "AT_MOST1TERM_THEN_CONDITIONAL1KILL; DENIED_OR_UNKNOWN_STOPS_ALL_SIGNALS",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "streamCapBytes": 1048576,
+  "unknownOSBoundary": "UNCATCHABLE_OR_UNINTERRUPTIBLE_OUTCOME_HOLD_NO_RETRY; ROOT_REQUIRES_SUCCESSFUL_DRIVER_RETURN_BEFORE_TEST_GO; PERSISTED_RECORDS_ALONE_DO_NOT_CERTIFY_THAT_OUTCOME"
+}

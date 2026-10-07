@@ -1,0 +1,95 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "activeAggregateBudgetSecondsBothPhases": 180,
+  "actualOriginalBuildersUnmodified": true,
+  "all87": "HOLD",
+  "authenticDescriptorExpectedFiles": 64,
+  "buildInputs": 63,
+  "byteGateAuthorityQualification": "Byte checks/readback do not prove builder invocation; genuine actual root command evidence is required separately before functional import.",
+  "commandResultShape": "{commands:[{index,argv,exitCode,timedOut,...}]} after actual root executions, never authored success records",
+  "commandResults": "docs/evidence/NI6/public-preparation-r2-build/command-results.json",
+  "commands": [
+    [
+      "/opt/homebrew/bin/python3",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/verify-built-package.py",
+      "--prebuild"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package/scripts/build-client.mjs"
+    ],
+    [
+      "/opt/homebrew/bin/python3",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package/scripts/build-native-source-manifest.py",
+      "--product-root",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package",
+      "--host-root",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+    ],
+    [
+      "/opt/homebrew/bin/python3",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/verify-built-package.py",
+      "--seal-built"
+    ]
+  ],
+  "concurrency": 1,
+  "contractVersion": "df.ni6-prep01-build-proposal/v1",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "environmentMustBeAbsent": [
+    "NODE_OPTIONS",
+    "NODE_PATH",
+    "NODE_TEST_CONTEXT"
+  ],
+  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r2-build",
+  "executionDriver": "New root-owned NI6 executor; exact source/manifest/design/eight affected report pins and separate once-only root GO plans required before either phase. Historical runners remain immutable inputs only.",
+  "independentDesign": [
+    "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+    "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+  ],
+  "maximumDirectInterpreterStartsBothPhases": 16,
+  "noRuntimeProfileListener": true,
+  "peerLinkCreatedByPrebuild": "package/node_modules -> /Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules",
+  "pinMaterialization": "Use exact source manifest owned/input records plus manifest, these proposed plans, independent design and all four final affected reports. Canonical Node/Python included. Before/after verify full original graph. New root plan is separate; immutable proposed GO remains false.",
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
+  ],
+  "requiredRootGoPins": [
+    ".runtime/ni6-prep01-executor-r2/runner.py",
+    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
+    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+  ],
+  "reservedAbsentOutputs": [
+    "package/lib/client.js",
+    "package/native-source-manifest.json",
+    "package/node_modules",
+    "build-attempt.json",
+    "build-readback.json",
+    "private-runtime"
+  ],
+  "rootFreeze": [
+    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+    "docs/ni6-preparation-r2-delta-2026-10-07.md",
+    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+  ],
+  "rootOwnsExecution": true,
+  "rootOwnsGit": true,
+  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r2-build-plan.json",
+  "rootReviewedBuildGO": false,
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-prep01-executor-r2/runner.py",
+  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+  "sourceModules": 59,
+  "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+  "stopAfterFirstNonzeroOrMismatch": true,
+  "timeoutSecondsPerCommand": 60
+}

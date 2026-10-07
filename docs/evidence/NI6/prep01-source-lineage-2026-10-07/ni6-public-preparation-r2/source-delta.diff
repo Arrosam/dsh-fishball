@@ -1,0 +1,1034 @@
+--- .runtime/ni6-public-preparation-r1/README.md
++++ .runtime/ni6-public-preparation-r2/README.md
+@@ -1,25 +1,25 @@
+-# NI6-PREP01 public preparation source capsule
++# NI6-PREP01 public preparation r2 source capsule
+ 
+-Status: **SOURCE_ONLY_NOT_RUN**. This new capsule preserves the original r4 package and every previous fixture/evidence file. Its 63 package build inputs are byte-identical to the reviewed r4 selection: 59 source files plus package metadata, the original host lock and the two original builders. There is no built client, native-source descriptor, peer link, synthetic profile, credential, database or listener at this seal.
++Status: **SOURCE_ONLY_NOT_RUN; BUILD/EXECUTION GO FALSE.** Root selected this exact successor in `docs/ni6-preparation-r2-delta-2026-10-07.md`, under `docs/ni6-preparation-r2-executor-freeze-2026-10-07.md`, with the additive executor-r2 selection in `docs/ni6-executor-r2-remediation-freeze-2026-10-07.md`. R1 and its two blocking review pairs remain immutable, unexecuted evidence. This capsule changes fixture assertions and future plan plumbing; all63 package build inputs, `.gitignore` and `http-rpc.mjs` remain byte-identical to r1. The unchanged package includes59 r4 source modules and its original builders. There is no actual client, authentic native descriptor, peer link, build marker/readback, synthetic runtime/profile/credential/database or listener at the source seal.
+ 
+-This implements one proposed integration cell for the exact NI6-PREP01 criteria in `docs/next-native-wave-2026-10-07.md`. Root must obtain separate affected source and independent ISTQB reviews, build/read back the genuine package, freeze actual generated hashes and request supported execution approval for the finite loopback test. Both proposed plans have GO false. No build, import, syntax check, test or service action was performed in this author lane.
++The original public lifecycle now retains its actual Loader entry ID/fiber, invokes `Loader.remove(entryId)` once, awaits the saved original `Fiber.await()` and `Loader.await()`, checks absence through public `Loader.entries()` and checks fiber closure. The single original authenticated HTTP404 follows while original parent Connection/WebServer remain live. Whole-root disposal follows through its original fiber. There is no second direct disposal of the removed entry or substituted lifecycle.
+ 
+-`verify-built-package.py --prebuild` is a future root-only byte gate and one-run marker. It verifies the sealed inputs and original complete official host graph, then creates only the candidate's project-local `package/node_modules` peer link. Root next runs the two unchanged original builders. `--seal-built` verifies their actual client and the exact 64-file descriptor and writes actual build readback. It supplies no native capability, descriptor replacement or fabricated source reference. Preserve the original build outputs on failure; there is no repeat or fallback.
++The public oracles independently close snapshot18, task9, goal metadata10, prepared-context metadata15, and detail as closed `{task,data}` with exact metadata plus its sole content field. Schema7/active control, safe numeric/reference/byte/crypto/memory domains, unique data references and all11 empty work/fact arrays are required. Goal digest/bytes/version/auth bind the admitted synthetic goal/intake. First preparation advances task and semanticRevision once, joins context.semanticRevision, retains the old goal exactly, and conserves every other public top-level field after excluding only observedAt/task/data/semanticRevision. Agreement between status/export does not admit plaintext or extra fields.
+ 
+-`preflight.mjs` verifies the reviewed root execution plan, canonical runtime, source seal, all owned/input bytes, actual built outputs, fresh review pins, 27,577 official host files and 12 original links before importing the original bootstrap. The additional credential and launch-environment fixture imports are covered by that complete host graph independently of the product's 25-module descriptor. `NODE_OPTIONS`, `NODE_PATH` and `NODE_TEST_CONTEXT` must be absent at command launch. Node's normal one test worker is an ordinary process fact, not native-worker evidence.
++All earlier correct receipt14/envelope15/provenance/protected-text/digest/UTF8/fixed-density-accounting assertions remain. The fresh request has exactly six fields with terms:[] and one frozen now; the exact repeat preserves that whole request/receipt/public snapshot, and only commandRef changes for the old-CAS stale refusal. Repeat/stale comparisons exclude only observedAt. Public data adds one context; no private paired check is counted. GeneratedAt remains an original safe timestamp and is never equated to request.now. Typed currentness remains outside the public RPC slice.
+ 
+-The public bootstrap uses the original Context and eleven original plugin activations: Loader, SessionProjectionRegistry, SessionStore, ApprovalService (`never`), AgentRegistry, LlmRuntime, SystemPrompt, ToolRuntime (`native`, parallel subcalls1), LocalCredentialProvider (`watch:false`), WebServer (`127.0.0.1`, port0), and the original Connection namespace `apply`. Before any activation, the original `createLaunchEnvironmentSnapshot` supplies only new synthetic DSH_HOME/XDG_CONFIG_HOME paths. Every credential, profile, workspace, database and native-storage selection is explicit inside `private-runtime/profile`; no original personal HOME/.env, QA state, browser cookie or provider catalog is consumed. The original installed entry is activated once through Loader; its setup confirmation internally creates the genuine schema7 runtime child. No raw owner, core/store/memory/manager handle or supplied PeerScope leaves that child.
++`fixture-oracles.test.mjs` contains exactly31 flat **UNIT_ONLY** cells: U01 ordinary baseline, U02 frozen baseline, U03 full prepared transition/detail; U04/U05 missing/extra snapshot; U06/U07 schema/control; U08 semantic domain; U09–U19 eleven separately nonempty fact arrays; U20/U21 leaked/missing goal metadata; U22/U23 leaked/missing context metadata; U24/U25 extra goal/context detail field; U26 source-version mismatch; U27/U28 missing/double semantic increment; U29 semantic join mismatch; U30 policy mutation; U31 retained-goal mutation. These are three positive and28 negative synthetic DTO cases with finite expected codes, no nested cells and no original host/product/provider imports, authority instances or lifecycle facsimiles. The sole local dependency is the pure oracle module with built-in assert/crypto. They prove only assertion behavior if root later runs them.
+ 
+-The HTTP sequence is exactly one genuine token-to-cookie GET, eighteen domain requests and one authenticated post-entry-disposal request returning the original no-route HTTP404 with an empty body. The eighteen requests match the sealed independent design: setup status/prepare/confirm/status, then list/intake/status/export/goal detail/prepareContext/status/context detail/export/exact prepare repeat/status/different stale prepare/status/export. One original public metadata-only `df.diagnostics()` read after confirmation establishes schema7 and memory readiness; no raw instance is extracted. There is no extra preparation-status RPC or typed prepared-context check/currentness call. The fixture's own JSON request-body and complete response bounds are 2,048 and65,536 bytes. Connection's `maxRequestBodyBytes` config is the original `/api` config and is not claimed as a `/df-*` prefix server limit.
++The unchanged public bootstrap uses original Context and11 direct plugins, SystemPrompt before Tools, then one original Loader-installed entry and its genuine setup-activated schema7 child. Before activation it supplies the original launch snapshot with only fresh synthetic DSH_HOME/XDG_CONFIG_HOME. Credential watch is false; all profile/workspace/auth/data/session paths are explicit in the new private-runtime namespace. Public original Connection.apply provides genuine BrowserAuth admission and Node HTTP `/df-setup`/`/df-rpc` prefixes. No captured handler, supplied PeerScope, private route, original-method override, QA cookie/key, inherited credential home, model adapter/preset/Loop/persistence driver or raw owner/core/manager instance is supplied.
+ 
+-Assertions come from the public declaration and frozen AC: setup starts `setup_required`, preview describes encrypted owner-only local storage, confirmation is ready with execution disabled, public diagnostic readiness and owner operations succeed, one encrypted synthetic goal is admitted, and the exact fourteen-field preparation receipt joins the task/context metadata and public detail/export. The complete fifteen-field execution envelope joins exact protected text, source/provenance, independent UTF8/fixed-density accounting and ledger/source digests. Ordinary public snapshot.data adds exactly one context row; its paired protected check is outside that projection. Exact repetition preserves the whole receipt and every public snapshot field except the observation timestamp. The selected request uses terms:[]; one new command with otherwise identical input and old CAS must return exactly `STALE_VERSION`; the entire public snapshot remains equal, excluding only `observedAt`. The typed `readPreparedContextCheck` and instruction/memory currentness proof remain outside this public RPC selection.
++HTTP20/domain18 remain: one private token-cookie exchange; setup status/prepare/confirm/status; task list/intake/status/export/goal detail/prepareContext/status/context detail/export/exact repeat/status/different stale prepare/status/export; one post-removal physical404. Fixture limits remain2048-byte JSON request,65536-byte full response,4096-byte cookie and2000ms per attempt. Connection's configured maxRequestBodyBytes is its `/api` configuration, not a claimed original `/df-*` cap. Seven original count-only natural categories start before activation and preserve waterfall next delegation. Forty-four live windows perform176 original registry/inventory reads, plus one public metadata-only df.diagnostics read. Expected native/model/tool/claim/grant/execute effects remain zero; all counts are prospective. Post-root-close counters are historical only.
+ 
+-Seven original natural count-only event observers are attached before activation. They count agent/session creation/disposal, session events, `llm/stream` and `tools/execute`; waterfall observations simply call original `next`. Forty-four live inspections check those counters plus the actual original agent/session/provider registries, tool inventory and absence of the selected native persistence directory. No adapter, preset, Loop, persistence driver, agent/session, model, tool, policy, grant, claim, dispatch, execute or terminal witness is created. Empty final registries alone are not the no-transient oracle.
++Only original setup creates the fresh encrypted durable state. Four storage targets are inspected for type/owner/mode/device/inode before and after original closure, never contents, private DB rows, key/cipher hashes or fake terminal evidence. The namespace is preserved and ignored by Git. Original scoped logger config filters output without method replacement or exporter; finite PREP01 errors replace arbitrary payload/cause/AssertionError dumps. Authentication URL/cookie/header/raw wrappers remain private. The existing14-field functional diagnostic output remains unchanged. Root commits only its strictly allowlisted summaries and pinned public source, keeping raw command streams private.
+ 
+-Entry disposal and original Loader settling occur before the HTTP404 probe while the original Connection/WebServer root is still live. Original root-fiber disposal then awaits original WebServer cleanup. A mismatch stops the selected request sequence and still attempts supported root disposal once; no later test case, alternate transport, replay or replacement service is run. Retained counters after root close are historical only. Private synthetic durable state is preserved, ignored by Git and never read as raw SQL, key, cipher, setup metadata or terminal evidence. Output is finite public refs/digests/counts only.
++Both immutable proposals remain false-GO and select only the separately frozen root NI6 executor. The separately sealed executor is `.runtime/ni6-prep01-executor-r2/runner.py`; root separately pins its source/manifest, unchanged independent design, additive remediation freeze and eight exact affected reports. Its source-only seal supplies no command outcome. The byte verifier is only retargeted, preserving its algorithm. Root runs exactly four original build/gate commands, six syntax commands in frozen order, one31-cell pure command, then one public functional command. Two phase drivers+four build interpreters+six syntax Nodes+two test parents+two ordinary Node workers bound direct interpreter starts at16; native worker starts are0. Root conserves the shared180-second active budget, at most60 seconds per command with owned process cleanup/stream bounds and first-failure stop. Functional preflight/active/cleanup limits remain10/40/5 seconds and Node timeout55 seconds.
+ 
+-The original public `Context.intercept('logger',{level:-1})` config is applied before activation. No console/file exporter is installed or original logging method overridden. Original Cordis's default sink is an in-memory buffer, never inspected/exported by this fixture; scoped plugin messages are filtered through the supported level config. Fixture assertion and boundary catches replace arbitrary errors with finite `PREP01_*` codes, never retain an assertion actual/expected payload or attach an original cause. Authentication URLs/cookies/headers and raw HTTP wrappers remain private temporaries. Root should commit only allowlisted summaries/source evidence, with command streams treated privately if any unexpected host/runtime diagnostic occurs.
++Preflight checks the separate exact root GO, manifest/owned/input bytes, eight reports, executor/source-manifest/design pins, genuine four build-command results, generated64 descriptor/client/readback, original full27577-file/12-link graph, peer binding and fresh namespace before importing bootstrap. Credential/launch-environment dependencies outside the product descriptor remain covered by the separately pinned complete official graph. No rejected historical runner is selected and no generated pin or result is invented.
+ 
+-`effect-bounds.json` and the two inert plans fix prospective one run, concurrency1, at most60 seconds per root command, ten seconds for source preflight, forty seconds for active work, five seconds for cleanup and a55-second Node test timeout. Direct fixture counts are separate from internal original effects: the fixture calls no database/worker constructor, while the fresh original setup path is expected from source to stage one store, activate one store and perform two original in-memory host capability probes. Those are future effects, not author-lane observations. Seven observer categories/44 inspections refine the independent design's initial four/21-list-read count; they preserve its exact request/input/oracle selection and require fresh affected review and root's finite freeze.
++Final source inventory:79 owned records including two external reports;230 input records;78 physical capsule files including its manifest. `source-delta.diff` gives literal differences from r1 for changed/new fixture and report files; manifests are separately byte-pinned to avoid a self-hash cycle. All input/source hashes are author raw-byte readbacks, not JavaScript parsing or application evidence. Root must obtain fresh fixture/executor source and test reviews, genuine build/output evidence and supported finite loopback execution GO.
+ 
+-Standalone functional host runnable cells at this seal: **0**; proposed root-built public integration cells: **1**. The earlier direct-instance fixture remains mapped0complete/8partial/2held, with its original setup/donor/cold/lifecycle prerequisites, partial source/task/check identity and Q index-count gaps, and pending47-call selection unchanged. This capsule does not supply those instances or claim cold A-exit/fresh-B, browser/native-worker or final CODE acceptance. All87 remain accepted0/HOLD; protected final CODE remains permanently blocked.
++Standalone functional host runnable cells at seal0; proposed root-built public cell1; pure cells31 NOT_RUN. Existing direct-instance mapping0complete/8partial/2held, original IH01–03/IH05 setup/donor/cold/lifecycle gaps, partial source/task/check identity and Q index-count gaps, and pending47 calls remain. This capsule proves no cold A-exit/fresh-B, native worker, mounted UI/browser, typed currentness or aggregate acceptance. All87 remain accepted0/HOLD and final CODE remains permanently blocked.
+--- .runtime/ni6-public-preparation-r1/build-plan.proposed.json
++++ .runtime/ni6-public-preparation-r2/build-plan.proposed.json
+@@ -1,34 +1,35 @@
+ {
+   "CODE": "BLOCKED_UNCHANGED",
+   "accepted": 0,
++  "activeAggregateBudgetSecondsBothPhases": 180,
+   "actualOriginalBuildersUnmodified": true,
+   "all87": "HOLD",
+   "authenticDescriptorExpectedFiles": 64,
+   "buildInputs": 63,
+   "byteGateAuthorityQualification": "Byte checks/readback do not prove builder invocation; genuine actual root command evidence is required separately before functional import.",
+   "commandResultShape": "{commands:[{index,argv,exitCode,timedOut,...}]} after actual root executions, never authored success records",
+-  "commandResults": "docs/evidence/NI6/public-preparation-r1-build/command-results.json",
++  "commandResults": "docs/evidence/NI6/public-preparation-r2-build/command-results.json",
+   "commands": [
+     [
+       "/opt/homebrew/bin/python3",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r1/verify-built-package.py",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/verify-built-package.py",
+       "--prebuild"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r1/package/scripts/build-client.mjs"
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package/scripts/build-client.mjs"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r1/package/scripts/build-native-source-manifest.py",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package/scripts/build-native-source-manifest.py",
+       "--product-root",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r1/package",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package",
+       "--host-root",
+       "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r1/verify-built-package.py",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/verify-built-package.py",
+       "--seal-built"
+     ]
+   ],
+@@ -40,20 +41,32 @@
+     "NODE_PATH",
+     "NODE_TEST_CONTEXT"
+   ],
+-  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r1-build",
+-  "executionDriver": "Root must freeze supported once-only sequential 60-second build execution and raw command-results BEFORE build GO. Existing root-bounded-execution-60s.py only permits Node --check/--test and MUST NOT be used for these build commands.",
++  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r2-build",
++  "executionDriver": "New root-owned NI6 executor; exact source/manifest/design/eight affected report pins and separate once-only root GO plans required before either phase. Historical runners remain immutable inputs only.",
+   "independentDesign": [
+     "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+   ],
++  "maximumDirectInterpreterStartsBothPhases": 16,
+   "noRuntimeProfileListener": true,
+   "peerLinkCreatedByPrebuild": "package/node_modules -> /Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules",
+   "pinMaterialization": "Use exact source manifest owned/input records plus manifest, these proposed plans, independent design and all four final affected reports. Canonical Node/Python included. Before/after verify full original graph. New root plan is separate; immutable proposed GO remains false.",
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json"
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++  ],
++  "requiredRootGoPins": [
++    ".runtime/ni6-prep01-executor-r2/runner.py",
++    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+   ],
+   "reservedAbsentOutputs": [
+     "package/lib/client.js",
+@@ -63,12 +76,18 @@
+     "build-readback.json",
+     "private-runtime"
+   ],
++  "rootFreeze": [
++    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
++    "docs/ni6-preparation-r2-delta-2026-10-07.md",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++  ],
+   "rootOwnsExecution": true,
+   "rootOwnsGit": true,
+-  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r1-build-plan.json",
++  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r2-build-plan.json",
+   "rootReviewedBuildGO": false,
+   "runCountAuthorized": 1,
+-  "sourceManifest": ".runtime/ni6-public-preparation-r1/source-manifest.json",
++  "runner": ".runtime/ni6-prep01-executor-r2/runner.py",
++  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+   "sourceModules": 59,
+   "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstNonzeroOrMismatch": true,
+--- .runtime/ni6-public-preparation-r1/effect-bounds.json
++++ .runtime/ni6-public-preparation-r2/effect-bounds.json
+@@ -76,6 +76,7 @@
+     "ContextConstructors": 1,
+     "JSONLPersistenceActivations": 0,
+     "LoaderInstalledEntryActivations": 1,
++    "LoaderRemoveCalls": 1,
+     "directOriginalPluginActivations": 11,
+     "listenerBinds": 1,
+     "listenerCloses": 1,
+@@ -85,20 +86,26 @@
+     "originalLaunchSnapshots": 1,
+     "presetRegistrations": 0,
+     "providerAdapterRegistrations": 0,
++    "publicEntryAbsenceChecks": 1,
++    "savedEntryFiberAwaitCalls": 1,
+     "supportedLoggerIntercepts": 1
+   },
+   "processBounds": {
++    "buildCommandInterpreters": 4,
+     "functionalNodeParentProcesses": 1,
+     "functionalTestCommands": 1,
+     "nativeWorkerProcesses": 0,
+     "newDshCliProcesses": 0,
+-    "ordinaryNodeTestWorkers": 1,
++    "ordinaryNodeTestWorkers": 2,
+     "originalBuilderCommands": 2,
+-    "prospectiveDirectInterpreterStartsExcludingToolShells": 12,
+-    "qualification": "4 build command interpreters +5 syntax Nodes +test Node parent/ordinary worker +1 existing root test Python driver. Root build-driver implementation is a separate pre-GO freeze prerequisite. Independent design initial four-start budget needs affected count review; ordinary test workers confer no native authority.",
++    "prospectiveDirectInterpreterStartsExcludingToolShells": 16,
++    "pureNodeTestParents": 1,
++    "pureUnitTestCommands": 1,
++    "qualification": "2 root Python phase drivers +4 build interpreters +6 syntax Nodes +2 test parents +2 ordinary Node test workers; shared180-second active aggregate is enforced by the separately reviewed root executor. Tool shells excluded; ordinary workers confer no native authority.",
+     "rootByteGateCommands": 2,
+-    "syntaxCheckCommands": 5,
+-    "testDriver": "existing pinned root-bounded-execution-60s.py, one root Python driver"
++    "rootPythonPhaseDrivers": 2,
++    "syntaxCheckCommands": 6,
++    "testDriver": ".runtime/ni6-prep01-executor-r2/runner.py"
+   },
+   "publicObservers": {
+     "categoryCount": 7,
+@@ -216,6 +223,16 @@
+     "typedPreparedCheckCurrentnessCalls": 0,
+     "volatileSetupPreview": 1
+   },
++  "pureOracleSuite": {
++    "authorityInstanceCreations": 0,
++    "flatCells": 31,
++    "hostProductProviderImports": 0,
++    "negativeCells": 28,
++    "nestedCells": 0,
++    "positiveCells": 3,
++    "proof": "Synthetic DTO assertion behavior only; no original lifecycle/runtime/HTTP/native proof.",
++    "scope": "UNIT_ONLY"
++  },
+   "remaining": {
+     "directNativeFixtureRunnableCells": 0,
+     "holds": [
+@@ -246,10 +263,26 @@
+     "standaloneFunctionalHostRunnableCellsAtSeal": 0
+   },
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json"
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++  ],
++  "requiredRootGoPins": [
++    ".runtime/ni6-prep01-executor-r2/runner.py",
++    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++  ],
++  "rootFreeze": [
++    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
++    "docs/ni6-preparation-r2-delta-2026-10-07.md",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+   ],
+   "rootOwnsExecution": true,
+   "rootOwnsGit": true,
+@@ -264,10 +297,11 @@
+     "prepareCallbacksNewOnly": 1,
+     "qualification": "Original public composition inference; no private instrumentation or executed constructor count."
+   },
+-  "sourceManifest": ".runtime/ni6-public-preparation-r1/source-manifest.json",
++  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+   "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstNonzeroOrMismatch": true,
+   "time": {
++    "activeAggregateBudgetSecondsBothPhases": 180,
+     "activeWorkMaximumMs": 40000,
+     "cleanupMaximumMs": 5000,
+     "commandMaximumSeconds": 60,
+--- /dev/null
++++ .runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs
+@@ -0,0 +1,147 @@
++// UNIT_ONLY: synthetic public DTOs exercise assertions, never host authority.
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { sha, snapshot, goalJoin, dataDetail, receipt, preparedJoin, protectedText } from './public-oracles.mjs';
++
++const GOAL = 'Synthetic NI6 oracle-unit goal. Prepare data only.';
++const R = label => sha(`df.ni6-prep01.oracle-unit/v1:${label}`);
++function candidate() {
++  const beforeTask = {ownerRef:R('owner'),workspaceRef:R('workspace'),taskRef:R('task'),status:'queued',
++    version:4,taskVersion:4,authEpoch:0,createdAt:100,updatedAt:200};
++  const goal = {recordRef:R('goal'),digest:sha(GOAL),kind:'goal',sourceRef:R('intake'),taskVersion:4,
++    authEpoch:0,generationRef:null,createdAt:200,byteLength:Buffer.byteLength(GOAL,'utf8'),cryptoVersion:2};
++  const baseline = {schemaVersion:7,observedAt:300,task:{...beforeTask},data:[goal],actions:[],workers:[],
++    policy:{version:1,limits:{maxActive:1},modelPolicy:{version:0,presetRefs:[]}},messages:[],artifacts:[],
++    deliveries:[],progress:[],reviews:[],control:'active',executions:[],audits:[],semanticRevision:4,
++    notificationFacts:[],notifications:[]};
++  const afterTask = {...beforeTask,version:5,taskVersion:5,updatedAt:400};
++  const memory = {namespaceRef:R('memory'),revision:0};
++  const sourceScope = {ownerRef:beforeTask.ownerRef,workspaceRef:beforeTask.workspaceRef,taskRef:beforeTask.taskRef};
++  const text = protectedText(baseline,GOAL);
++  const inputCounts = {bytes:Buffer.byteLength(text,'utf8'),tokens:Math.ceil(text.length / 4) + 4};
++  const workFacts = Object.fromEntries(['actions','workers','control','artifacts','progress','deliveries','reviews','audits','policy']
++    .map(name => [name,baseline[name]]));
++  const body = {contractVersion:'df.execution-context/v1',materialKind:'execution_context',sourceScope,
++    sourceTaskVersion:4,sourceAuthEpoch:0,generatedAt:350,sourceRefs:[goal.recordRef],
++    sourceProvenance:[{recordRef:goal.recordRef,digest:goal.digest,taskVersion:4,authEpoch:0,createdAt:200}],
++    memory:{...memory,provenance:[]},ledgerSnapshotDigest:sha(JSON.stringify({task:baseline.task,workFacts})),
++    content:text,inputCounts,retainedRefs:[],droppedRefs:[],verification:'module_prepared_execution_context_only'};
++  const content = JSON.stringify(body);
++  const sourceRef = sha(JSON.stringify({sourceScope,sourceTaskVersion:4,sourceAuthEpoch:0,
++    sourceRefs:[goal.recordRef],expectedMemory:memory}));
++  const prepared = {recordRef:R('context'),digest:sha(content),kind:'context',byteLength:Buffer.byteLength(content,'utf8'),
++    cryptoVersion:2,sourceRef,task:{...afterTask},sourceTaskVersion:4,sourceAuthEpoch:0,memory,inputCounts,
++    retainedRefs:[],droppedRefs:[],verification:'module_prepared_execution_context_only'};
++  const metadata = {recordRef:prepared.recordRef,digest:prepared.digest,kind:'context',sourceRef,taskVersion:5,
++    authEpoch:0,generationRef:null,createdAt:400,byteLength:prepared.byteLength,cryptoVersion:2,
++    sourceTaskVersion:4,sourceAuthEpoch:0,semanticRevision:5,memoryNamespaceRef:memory.namespaceRef,memoryRevision:0};
++  const current = {...baseline,observedAt:401,task:{...afterTask},data:[{...goal},metadata],semanticRevision:5};
++  const goalDetail = {task:{...beforeTask},data:{...goal,content:GOAL}};
++  const detail = {task:{...afterTask},data:{...metadata,content}};
++  return {beforeTask,baseline,prepared,current,goalDetail,detail,body};
++}
++function frozen(value) {
++  if (value !== null && typeof value === 'object') {
++    for (const child of Object.values(value)) frozen(child);
++    Object.freeze(value);
++  }
++  return value;
++}
++function rejects(run, code) {
++  assert.throws(run, error => error instanceof Error && error.message === code);
++}
++function join(value) { return preparedJoin(value.prepared,value.baseline,value.current,value.detail); }
++
++test('U01 UNIT_ONLY valid ordinary baseline', () => {
++  const value = candidate();
++  assert.doesNotThrow(() => snapshot(value.baseline,value.beforeTask));
++  assert.deepEqual(goalJoin(value.baseline,GOAL),value.baseline.data[0]);
++});
++test('U02 UNIT_ONLY valid frozen baseline', () => {
++  const value = frozen(candidate());
++  assert.doesNotThrow(() => snapshot(value.baseline,value.beforeTask));
++  assert.equal(dataDetail(value.goalDetail,value.beforeTask,goalJoin(value.baseline,GOAL)),GOAL);
++});
++test('U03 UNIT_ONLY valid complete prepared transition and details', () => {
++  const value = candidate();
++  assert.doesNotThrow(() => receipt(value.prepared,value.beforeTask));
++  assert.equal(dataDetail(value.goalDetail,value.beforeTask,goalJoin(value.baseline,GOAL)),GOAL);
++  assert.deepEqual(join(value),value.body);
++});
++test('U04 UNIT_ONLY missing snapshot field', () => {
++  const value = candidate(); delete value.baseline.notifications;
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_DTO_KEYS');
++});
++test('U05 UNIT_ONLY extra snapshot field', () => {
++  const value = candidate(); value.baseline.content = 'synthetic unexpected plaintext';
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_DTO_KEYS');
++});
++test('U06 UNIT_ONLY wrong schema', () => {
++  const value = candidate(); value.baseline.schemaVersion = 6;
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_SNAPSHOT_SCHEMA_CONTROL');
++});
++test('U07 UNIT_ONLY wrong control', () => {
++  const value = candidate(); value.baseline.control = 'paused';
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_SNAPSHOT_SCHEMA_CONTROL');
++});
++test('U08 UNIT_ONLY invalid semantic unsigned integer', () => {
++  const value = candidate(); value.baseline.semanticRevision = -1;
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_INTEGER');
++});
++// Eleven fixed inputs yield eleven flat test cells, without nested tests.
++for (const [id,name] of [['U09','actions'],['U10','workers'],['U11','messages'],['U12','artifacts'],
++  ['U13','deliveries'],['U14','progress'],['U15','reviews'],['U16','executions'],['U17','audits'],
++  ['U18','notificationFacts'],['U19','notifications']]) {
++  test(`${id} UNIT_ONLY nonempty ${name}`, () => {
++    const value = candidate(); value.baseline[name] = [{synthetic:true}];
++    rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_UNEXPECTED_WORK_FACT');
++  });
++}
++test('U20 UNIT_ONLY goal metadata content leak', () => {
++  const value = candidate(); value.baseline.data[0].content = GOAL;
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_DTO_KEYS');
++});
++test('U21 UNIT_ONLY missing goal metadata key', () => {
++  const value = candidate(); delete value.baseline.data[0].createdAt;
++  rejects(() => snapshot(value.baseline,value.beforeTask),'PREP01_DTO_KEYS');
++});
++test('U22 UNIT_ONLY context metadata content leak', () => {
++  const value = candidate(); value.current.data[1].content = 'synthetic leaked context';
++  rejects(() => snapshot(value.current,value.prepared.task),'PREP01_DTO_KEYS');
++});
++test('U23 UNIT_ONLY missing context extension', () => {
++  const value = candidate(); delete value.current.data[1].memoryRevision;
++  rejects(() => snapshot(value.current,value.prepared.task),'PREP01_DTO_KEYS');
++});
++test('U24 UNIT_ONLY extra goal-detail data field', () => {
++  const value = candidate(); value.goalDetail.data.extra = 'synthetic';
++  rejects(() => dataDetail(value.goalDetail,value.beforeTask,value.baseline.data[0]),'PREP01_DTO_KEYS');
++});
++test('U25 UNIT_ONLY extra context-detail data field', () => {
++  const value = candidate(); value.detail.data.extra = 'synthetic';
++  rejects(() => join(value),'PREP01_DTO_KEYS');
++});
++test('U26 UNIT_ONLY context source-task version mismatch', () => {
++  const value = candidate(); value.current.data[1].sourceTaskVersion = 5; value.detail.data.sourceTaskVersion = 5;
++  rejects(() => join(value),'PREP01_PREPARED_METADATA_VERSIONS');
++});
++test('U27 UNIT_ONLY missing semantic increment', () => {
++  const value = candidate(); value.current.semanticRevision = 4;
++  rejects(() => join(value),'PREP01_SEMANTIC_TRANSITION');
++});
++test('U28 UNIT_ONLY double semantic increment', () => {
++  const value = candidate(); value.current.semanticRevision = 6;
++  rejects(() => join(value),'PREP01_SEMANTIC_TRANSITION');
++});
++test('U29 UNIT_ONLY context semantic revision mismatch', () => {
++  const value = candidate(); value.current.data[1].semanticRevision = 6; value.detail.data.semanticRevision = 6;
++  rejects(() => join(value),'PREP01_CONTEXT_SEMANTIC_JOIN');
++});
++test('U30 UNIT_ONLY changed first-transition policy', () => {
++  const value = candidate(); value.current.policy = {...value.baseline.policy,version:2};
++  rejects(() => join(value),'PREP01_POLICY_CHANGED');
++});
++test('U31 UNIT_ONLY changed retained goal metadata', () => {
++  const value = candidate(); value.current.data[0].createdAt++;
++  rejects(() => join(value),'PREP01_SOURCE_RECORD_CHANGED');
++});
+--- .runtime/ni6-public-preparation-r1/import-inventory.json
++++ .runtime/ni6-public-preparation-r2/import-inventory.json
+@@ -14,7 +14,22 @@
+     "selectedModules": 59
+   },
+   "directOfficialBootstrapModuleCount": 13,
++  "newFixtureModuleCount": 6,
+   "newFixtureModules": {
++    "fixture-oracles.test.mjs": [
++      {
++        "line": 2,
++        "literal": "import test from 'node:test';"
++      },
++      {
++        "line": 3,
++        "literal": "import assert from 'node:assert/strict';"
++      },
++      {
++        "line": 4,
++        "literal": "import { sha, snapshot, goalJoin, dataDetail, receipt, preparedJoin, protectedText } from './public-oracles.mjs';"
++      }
++    ],
+     "http-rpc.mjs": [
+       {
+         "line": 2,
+@@ -146,7 +161,7 @@
+       },
+       {
+         "line": 5,
+-        "literal": "import { check, keys, same, ref, uint, sha, task, snapshot, receipt, preparedJoin, protectedText, unchangedSnapshot } from './public-oracles.mjs';"
++        "literal": "import { check, keys, same, ref, uint, sha, task, snapshot, goalJoin, dataDetail, receipt, preparedJoin, protectedText, unchangedSnapshot } from './public-oracles.mjs';"
+       },
+       {
+         "line": 6,
+@@ -170,7 +185,7 @@
+   },
+   "originalPublicApis": [
+     "Context.constructor/intercept/provide/on/effect/plugin/fiber.dispose",
+-    "Loader.create/await/resolve",
++    "Loader.create/await/resolve/remove/entries and retained original Fiber.await",
+     "createLaunchEnvironmentSnapshot",
+     "LocalCredentialProvider public Service.init/lifecycle",
+     "Connection.apply/authenticatedUrl/authorizeIndex/rpc.handle owner admission",
+@@ -179,5 +194,33 @@
+     "public df.diagnostics metadata facade",
+     "Node HTTP original authenticated /df-setup and /df-rpc routes"
+   ],
++  "productBuildInputsUnchanged": 63,
++  "pureTestClosure": {
++    "applicationOrHostModuleImports": 0,
++    "direct": [
++      "node:test",
++      "node:assert/strict",
++      "./public-oracles.mjs"
++    ],
++    "entry": "fixture-oracles.test.mjs",
++    "oracleTransitiveBuiltins": [
++      "node:assert/strict",
++      "node:crypto"
++    ],
++    "scope": "UNIT_ONLY"
++  },
++  "requiredRootGoPins": [
++    ".runtime/ni6-prep01-executor-r2/runner.py",
++    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++  ],
++  "rootFreeze": [
++    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
++    "docs/ni6-preparation-r2-delta-2026-10-07.md",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++  ],
++  "rootRunnerFuturePin": ".runtime/ni6-prep01-executor-r2/runner.py",
+   "status": "LEXICAL_SOURCE_INVENTORY_NOT_PARSED_OR_IMPORTED"
+ }
+--- .runtime/ni6-public-preparation-r1/original-bootstrap.mjs
++++ .runtime/ni6-public-preparation-r2/original-bootstrap.mjs
+@@ -95,8 +95,11 @@
+       async disposeEntry() {
+         check(!disposed && !entryDisposed && entry?.fiber, 'PREP01_DISPOSAL_ORDER');
+         entryDisposed = true;
+-        const fiber = entry.fiber; await bounded(fiber.dispose(), 'PREP01_INSTALLED_ENTRY_DISPOSE');
++        const fiber = entry.fiber;
++        ctx.loader.remove(entryId); // Original stop-and-remove, exactly once.
++        await bounded(fiber.await(), 'PREP01_INSTALLED_ENTRY_DISPOSE');
+         await bounded(ctx.loader.await(), 'PREP01_LOADER_AFTER_DISPOSAL');
++        check(!Array.from(ctx.loader.entries()).some(item => item.id === entryId), 'PREP01_INSTALLED_ENTRY_RETAINED');
+         check(fiber.uid === null && fiber.state === 4, 'PREP01_INSTALLED_ENTRY_CLOSED'); noNative();
+       },
+       async close() {
+--- .runtime/ni6-public-preparation-r1/preflight.mjs
++++ .runtime/ni6-public-preparation-r2/preflight.mjs
+@@ -6,11 +6,11 @@
+ import { check, same, sha } from './public-oracles.mjs';
+ 
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const CAPSULE = resolve(ROOT, '.runtime/ni6-public-preparation-r1');
++const CAPSULE = resolve(ROOT, '.runtime/ni6-public-preparation-r2');
+ const HOST = resolve(ROOT, '.runtime/dsh-web');
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+ const NODE_SHA = '463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de';
+-const PLAN = resolve(ROOT, '.runtime/root-ni6-public-preparation-r1-execution-plan.json');
++const PLAN = resolve(ROOT, '.runtime/root-ni6-public-preparation-r2-execution-plan.json');
+ const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
+ function pathInRoot(name) {
+   check(typeof name === 'string' && !name.startsWith('/') && !name.split('/').some(part => !part || part === '.' || part === '..'), 'PREP01_PIN_PATH');
+@@ -36,10 +36,11 @@
+     check(existsSync(PLAN), 'PREP01_REVIEWED_PLAN_REQUIRED');
+     const plan = readJson(PLAN), manifestPath = resolve(CAPSULE, 'source-manifest.json');
+     check(plan.rootReviewedExecutionGO === true && plan.runCountAuthorized === 1 && plan.all87 === 'HOLD' && plan.CODE === 'BLOCKED_UNCHANGED', 'PREP01_REVIEWED_GO_REQUIRED');
+-    check(plan.pins?.['.runtime/ni6-public-preparation-r1/source-manifest.json'] === sha(readFileSync(manifestPath)), 'PREP01_REVIEWED_SEAL');
++    check(plan.pins?.['.runtime/ni6-public-preparation-r2/source-manifest.json'] === sha(readFileSync(manifestPath)), 'PREP01_REVIEWED_SEAL');
+     check(plan.publicGraphManifest === '.runtime/ni3-native-runtime/public-graph-pins.json', 'PREP01_ORIGINAL_GRAPH_SELECTION');
+     const manifest = readJson(manifestPath);
+     check(manifest.status === 'SOURCE_ONLY_NOT_RUN' && manifest.standaloneFunctionalHostRunnableCells === 0 && manifest.proposedPublicIntegrationCells === 1, 'PREP01_SOURCE_DISPOSITION');
++    check(plan.runner === '.runtime/ni6-prep01-executor-r2/runner.py', 'PREP01_REVIEWED_EXECUTOR_SELECTION');
+     for (const row of [...manifest.ownedFiles,...manifest.inputFiles]) verifyRecord(row);
+     // Include the actual root-pinned generated files and fresh independent reports.
+     for (const [name, digest] of Object.entries(plan.pins)) {
+@@ -48,7 +49,8 @@
+       check(sha(readFileSync(path)) === digest, 'PREP01_EXECUTION_PIN_DRIFT');
+     }
+     for (const name of manifest.requiredAffectedReviews) check(typeof plan.pins[name] === 'string', 'PREP01_AFFECTED_REVIEW_PIN_REQUIRED');
+-    check(plan.buildCommandResults === 'docs/evidence/NI6/public-preparation-r1-build/command-results.json'
++    for (const name of manifest.requiredRootGoPins) check(typeof plan.pins[name] === 'string', 'PREP01_ROOT_GO_PIN_REQUIRED');
++    check(plan.buildCommandResults === 'docs/evidence/NI6/public-preparation-r2-build/command-results.json'
+       && typeof plan.pins[plan.buildCommandResults] === 'string', 'PREP01_ORIGINAL_BUILD_RESULTS_PIN');
+     const buildCommands = readJson(resolve(CAPSULE,'build-plan.proposed.json')).commands;
+     const buildResults = readJson(pathInRoot(plan.buildCommandResults)).commands;
+@@ -71,7 +73,7 @@
+     const product = resolve(CAPSULE,'package'), descriptorPath = resolve(product,'native-source-manifest.json');
+     const built = readJson(resolve(CAPSULE,'build-readback.json'));
+     check(built.contractVersion === 'df.ni6-prep01-build-readback/v1' && built.sourceManifestSha256 === sha(readFileSync(manifestPath)), 'PREP01_BUILD_READBACK_SEAL');
+-    check(plan.pins['.runtime/ni6-public-preparation-r1/build-readback.json'] === sha(readFileSync(resolve(CAPSULE,'build-readback.json'))), 'PREP01_BUILD_READBACK_PIN');
++    check(plan.pins['.runtime/ni6-public-preparation-r2/build-readback.json'] === sha(readFileSync(resolve(CAPSULE,'build-readback.json'))), 'PREP01_BUILD_READBACK_PIN');
+     const descriptor = readJson(descriptorPath);
+     check(sha(readFileSync(descriptorPath)) === built.generated.descriptorSha256 && sha(readFileSync(resolve(product,'lib/client.js'))) === built.generated.clientSha256, 'PREP01_BUILT_OUTPUT_DRIFT');
+     check(descriptor.contractVersion === 'df.native-source/v1' && descriptor.product.name === 'dsh-fishball' && descriptor.product.version === '0.1.0-preview.1', 'PREP01_NATIVE_DESCRIPTOR');
+@@ -93,7 +95,7 @@
+     const link = resolve(product,'node_modules');
+     check(lstatSync(link).isSymbolicLink() && readlinkSync(link) === resolve(HOST,'node_modules') && realpathSync(link) === resolve(HOST,'node_modules'), 'PREP01_PEER_BINDING');
+     check(!existsSync(resolve(CAPSULE,'private-runtime')), 'PREP01_NAMESPACE_ALREADY_USED');
+-    const allowed = new Set(manifest.ownedFiles.filter(row => row.path.startsWith('.runtime/ni6-public-preparation-r1/')).map(row => row.path.slice('.runtime/ni6-public-preparation-r1/'.length)));
++    const allowed = new Set(manifest.ownedFiles.filter(row => row.path.startsWith('.runtime/ni6-public-preparation-r2/')).map(row => row.path.slice('.runtime/ni6-public-preparation-r2/'.length)));
+     for (const path of ['source-manifest.json','build-attempt.json','build-readback.json','package/lib/client.js','package/native-source-manifest.json','package/node_modules']) allowed.add(path);
+     function inventory(directory) {
+       for (const name of readdirSync(directory)) {
+--- .runtime/ni6-public-preparation-r1/public-oracles.mjs
++++ .runtime/ni6-public-preparation-r2/public-oracles.mjs
+@@ -27,14 +27,57 @@
+   check(Array.isArray(value) && value.length <= 64, 'PREP01_REFERENCE_LIST');
+   for (const item of value) ref(item);
+ }
++const SNAPSHOT_FIELDS = ['schemaVersion','observedAt','task','data','actions','workers','policy','messages','artifacts','deliveries','progress','reviews','control','executions','audits','semanticRevision','notificationFacts','notifications'];
++const FACT_COLLECTIONS = ['actions','workers','messages','artifacts','deliveries','progress','reviews','executions','audits','notificationFacts','notifications'];
++const GOAL_FIELDS = ['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion'];
++const CONTEXT_FIELDS = [...GOAL_FIELDS,'sourceTaskVersion','sourceAuthEpoch','semanticRevision','memoryNamespaceRef','memoryRevision'];
++export function dataMetadata(value) {
++  check(value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype, 'PREP01_DTO_SHAPE');
++  const kind = Object.getOwnPropertyDescriptor(value, 'kind')?.value;
++  check(kind === 'goal' || kind === 'context', 'PREP01_DATA_KIND');
++  keys(value, kind === 'goal' ? GOAL_FIELDS : CONTEXT_FIELDS);
++  for (const name of ['recordRef','digest','sourceRef']) ref(value[name]);
++  for (const name of ['taskVersion','authEpoch','createdAt','byteLength']) uint(value[name]);
++  check(value.taskVersion > 0 && value.byteLength > 0 && value.byteLength <= 16384, 'PREP01_DATA_BOUND');
++  check(value.cryptoVersion === 2 && value.generationRef === null, 'PREP01_DATA_CRYPTO_GENERATION');
++  if (kind === 'context') {
++    for (const name of ['sourceTaskVersion','sourceAuthEpoch','semanticRevision','memoryRevision']) uint(value[name]);
++    check(value.sourceTaskVersion > 0, 'PREP01_DATA_SOURCE_VERSION');
++    ref(value.memoryNamespaceRef);
++  }
++}
+ export function snapshot(value, expectedTask) {
+-  check(value && typeof value === 'object' && !Array.isArray(value), 'PREP01_SNAPSHOT');
++  keys(value, SNAPSHOT_FIELDS);
++  check(value.schemaVersion === 7 && value.control === 'active', 'PREP01_SNAPSHOT_SCHEMA_CONTROL');
+   task(value.task); same(value.task, expectedTask, 'PREP01_SNAPSHOT_TASK'); uint(value.observedAt);
++  uint(value.semanticRevision);
+   check(Array.isArray(value.data) && value.data.length <= 128, 'PREP01_DATA_LIST');
+-  // These are the declared public fact collections; no private ledger read.
+-  for (const name of ['actions','workers','messages','artifacts','reviews','deliveries','progress']) {
++  const seen = new Set();
++  for (const row of value.data) {
++    dataMetadata(row);
++    check(!seen.has(row.recordRef), 'PREP01_DUPLICATE_DATA_REFERENCE'); seen.add(row.recordRef);
++  }
++  // All eleven declared collections are public facts; no private ledger read.
++  for (const name of FACT_COLLECTIONS) {
+     check(Array.isArray(value[name]) && value[name].length === 0, 'PREP01_UNEXPECTED_WORK_FACT');
+   }
++}
++export function goalJoin(baseline, content) {
++  snapshot(baseline, baseline.task);
++  check(typeof content === 'string' && Buffer.byteLength(content, 'utf8') <= 128, 'PREP01_GOAL_BOUND');
++  check(baseline.data.length === 1 && baseline.data[0].kind === 'goal', 'PREP01_ONE_PUBLIC_GOAL');
++  const goal = baseline.data[0];
++  check(goal.taskVersion === baseline.task.version && goal.authEpoch === baseline.task.authEpoch, 'PREP01_GOAL_TASK_BINDING');
++  check(goal.digest === sha(content) && goal.byteLength === Buffer.byteLength(content, 'utf8'), 'PREP01_ENCRYPTED_GOAL_METADATA');
++  return goal;
++}
++export function dataDetail(value, expectedTask, metadata) {
++  dataMetadata(metadata);
++  keys(value, ['task','data']); task(value.task); same(value.task, expectedTask, 'PREP01_DETAIL_TASK');
++  keys(value.data, [...(metadata.kind === 'goal' ? GOAL_FIELDS : CONTEXT_FIELDS),'content']);
++  check(typeof value.data.content === 'string', 'PREP01_DETAIL_CONTENT');
++  same(value.data, {...metadata,content:value.data.content}, 'PREP01_DETAIL_METADATA_JOIN');
++  return value.data.content;
+ }
+ export function unchangedSnapshot(before, after) {
+   uint(before.observedAt); uint(after.observedAt);
+@@ -58,7 +101,13 @@
+   refs(value.retainedRefs); refs(value.droppedRefs);
+ }
+ export function preparedJoin(prepared, baseline, current, detail) {
++  snapshot(baseline, baseline.task); receipt(prepared, baseline.task);
+   snapshot(current, prepared.task); same(current.policy, baseline.policy, 'PREP01_POLICY_CHANGED');
++  check(baseline.data.length === 1 && baseline.data[0].kind === 'goal', 'PREP01_ONE_PUBLIC_GOAL');
++  check(baseline.data[0].taskVersion === baseline.task.version && baseline.data[0].authEpoch === baseline.task.authEpoch, 'PREP01_GOAL_TASK_BINDING');
++  check(current.semanticRevision === baseline.semanticRevision + 1, 'PREP01_SEMANTIC_TRANSITION');
++  const conserved = ({observedAt,task,data,semanticRevision,...fields}) => fields;
++  same(conserved(current), conserved(baseline), 'PREP01_FIRST_PREPARATION_PUBLIC_STATE');
+   check(current.data.length === baseline.data.length + 1, 'PREP01_ONE_PUBLIC_CONTEXT_COUNT');
+   for (const item of baseline.data) {
+     const retained = current.data.filter(row => row.recordRef === item.recordRef);
+@@ -68,12 +117,11 @@
+   check(contexts.length === 1, 'PREP01_ONE_PUBLIC_CONTEXT');
+   const meta = contexts[0];
+   for (const name of ['recordRef','digest','kind','byteLength','cryptoVersion','sourceRef']) same(meta[name], prepared[name], 'PREP01_CONTEXT_METADATA_JOIN');
+-  keys(detail, ['task','data']); same(detail.task, prepared.task, 'PREP01_DETAIL_TASK');
+-  check(detail.data && typeof detail.data.content === 'string', 'PREP01_DETAIL_CONTENT');
+-  for (const [name, value] of Object.entries(meta)) same(detail.data[name], value, 'PREP01_DETAIL_METADATA_JOIN');
+-  check(Buffer.byteLength(detail.data.content, 'utf8') === prepared.byteLength && sha(detail.data.content) === prepared.digest, 'PREP01_DETAIL_DIGEST_JOIN');
++  check(meta.semanticRevision === current.semanticRevision, 'PREP01_CONTEXT_SEMANTIC_JOIN');
++  const content = dataDetail(detail, prepared.task, meta);
++  check(Buffer.byteLength(content, 'utf8') === prepared.byteLength && sha(content) === prepared.digest, 'PREP01_DETAIL_DIGEST_JOIN');
+   let body;
+-  try { body = JSON.parse(detail.data.content); } catch { throw new Error('PREP01_CONTEXT_JSON'); }
++  try { body = JSON.parse(content); } catch { throw new Error('PREP01_CONTEXT_JSON'); }
+   keys(body, ['contractVersion','materialKind','sourceScope','sourceTaskVersion','sourceAuthEpoch','generatedAt','sourceRefs','sourceProvenance','memory','ledgerSnapshotDigest','content','inputCounts','retainedRefs','droppedRefs','verification']);
+   check(body.contractVersion === 'df.execution-context/v1' && body.materialKind === 'execution_context' && body.verification === prepared.verification, 'PREP01_CONTEXT_ENVELOPE');
+   same(body.sourceScope, {ownerRef:prepared.task.ownerRef,workspaceRef:prepared.task.workspaceRef,taskRef:prepared.task.taskRef}, 'PREP01_CONTEXT_SCOPE');
+--- .runtime/ni6-public-preparation-r1/public-preparation.test.mjs
++++ .runtime/ni6-public-preparation-r2/public-preparation.test.mjs
+@@ -2,7 +2,7 @@
+ import test from 'node:test';
+ import { existsSync, lstatSync } from 'node:fs';
+ import { performance } from 'node:perf_hooks';
+-import { check, keys, same, ref, uint, sha, task, snapshot, receipt, preparedJoin, protectedText, unchangedSnapshot } from './public-oracles.mjs';
++import { check, keys, same, ref, uint, sha, task, snapshot, goalJoin, dataDetail, receipt, preparedJoin, protectedText, unchangedSnapshot } from './public-oracles.mjs';
+ import { preflight } from './preflight.mjs';
+ 
+ const GOAL = 'Synthetic NI6-PREP01 goal: prepare bounded context without execution.';
+@@ -96,11 +96,10 @@
+     snapshot(baseline, intake.task);
+     const baselineExport = await rpc('/df-rpc', 'export', addressed);
+     snapshot(baselineExport, intake.task); unchangedSnapshot(baseline, baselineExport);
+-    check(baseline.data.length === 1 && baseline.data[0].kind === 'goal' && baseline.data[0].digest === sha(GOAL)
+-      && baseline.data[0].byteLength === Buffer.byteLength(GOAL) && baseline.data[0].cryptoVersion === 2, 'PREP01_ENCRYPTED_GOAL_METADATA');
++    const goal = goalJoin(baseline, GOAL);
+     const goalDetail = await rpc('/df-rpc', 'detail', {taskRef:intake.task.taskRef,recordRef:baseline.data[0].recordRef,
+       expectedTaskVersion:intake.task.version,expectedAuthEpoch:intake.task.authEpoch});
+-    keys(goalDetail, ['task','data']); same(goalDetail.task, intake.task, 'PREP01_GOAL_DETAIL_TASK');
++    same(dataDetail(goalDetail, intake.task, goal), GOAL, 'PREP01_GOAL_DETAIL_CONTENT');
+     same(goalDetail.data, {...baseline.data[0],content:GOAL}, 'PREP01_GOAL_DETAIL_METADATA_AND_CONTENT');
+ 
+     const request = Object.freeze({taskRef:intake.task.taskRef,commandRef:R('prepare'),expectedTaskVersion:intake.task.version,
+--- .runtime/ni6-public-preparation-r1/test-plan.proposed.json
++++ .runtime/ni6-public-preparation-r2/test-plan.proposed.json
+@@ -1,39 +1,51 @@
+ {
+   "CODE": "BLOCKED_UNCHANGED",
+   "accepted": 0,
++  "activeAggregateBudgetSecondsBothPhases": 180,
+   "all87": "HOLD",
+-  "buildCommandResults": "docs/evidence/NI6/public-preparation-r1-build/command-results.json",
++  "buildCommandResults": "docs/evidence/NI6/public-preparation-r2-build/command-results.json",
+   "commands": [
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r1/public-oracles.mjs"
++      ".runtime/ni6-public-preparation-r2/public-oracles.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r1/http-rpc.mjs"
++      ".runtime/ni6-public-preparation-r2/http-rpc.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r1/original-bootstrap.mjs"
++      ".runtime/ni6-public-preparation-r2/original-bootstrap.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r1/preflight.mjs"
++      ".runtime/ni6-public-preparation-r2/preflight.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r1/public-preparation.test.mjs"
++      ".runtime/ni6-public-preparation-r2/public-preparation.test.mjs"
++    ],
++    [
++      "/opt/homebrew/opt/node@22/bin/node",
++      "--check",
++      ".runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--test",
+       "--test-concurrency=1",
+-      ".runtime/ni6-public-preparation-r1/public-preparation.test.mjs"
++      ".runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs"
++    ],
++    [
++      "/opt/homebrew/opt/node@22/bin/node",
++      "--test",
++      "--test-concurrency=1",
++      ".runtime/ni6-public-preparation-r2/public-preparation.test.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -44,40 +56,60 @@
+     "NODE_PATH",
+     "NODE_TEST_CONTEXT"
+   ],
+-  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r1-execution",
++  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r2-execution",
+   "generatedPinsRequired": [
+-    ".runtime/ni6-public-preparation-r1/package/lib/client.js",
+-    ".runtime/ni6-public-preparation-r1/package/native-source-manifest.json",
+-    ".runtime/ni6-public-preparation-r1/build-attempt.json",
+-    ".runtime/ni6-public-preparation-r1/build-readback.json",
+-    "docs/evidence/NI6/public-preparation-r1-build/command-results.json"
++    ".runtime/ni6-public-preparation-r2/package/lib/client.js",
++    ".runtime/ni6-public-preparation-r2/package/native-source-manifest.json",
++    ".runtime/ni6-public-preparation-r2/build-attempt.json",
++    ".runtime/ni6-public-preparation-r2/build-readback.json",
++    "docs/evidence/NI6/public-preparation-r2-build/command-results.json"
+   ],
+   "independentDesign": [
+     "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+   ],
++  "maximumDirectInterpreterStartsBothPhases": 16,
+   "oneFunctionalCell": true,
+   "ordinaryNodeTestWorkerExpected": 1,
++  "ordinaryNodeTestWorkersExpectedBothCommands": 2,
+   "pinMaterialization": "All source manifest owned/input records, exact manifest, original full host graph manifest, root runner, actual generated outputs/build results and all four fresh affected reports. Root adds actual hashes only after genuine build.",
+   "privateOutputHandling": "Only allowlisted stable codes/public references/digests/counts may be committed. Tokenized URLs/cookies/headers/key/credential/database/raw RPC payloads stay private; do not commit unexpected command streams.",
+   "proofBoundary": "Public authenticated preparation joins/idempotence/CAS/disposal only; no native worker, currentness, cold restart, browser or protected CODE acceptance.",
+   "publicGraphManifest": ".runtime/ni3-native-runtime/public-graph-pins.json",
++  "pureUnitScope": "UNIT_ONLY: synthetic DTO oracle acceptance/rejection; zero host authority or functional coverage",
++  "pureUnitTestCells": 31,
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json"
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++  ],
++  "requiredRootGoPins": [
++    ".runtime/ni6-prep01-executor-r2/runner.py",
++    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++  ],
++  "rootFreeze": [
++    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
++    "docs/ni6-preparation-r2-delta-2026-10-07.md",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+   ],
+   "rootOwnsExecution": true,
+   "rootOwnsGit": true,
+-  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r1-execution-plan.json",
++  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r2-execution-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootSupportedExecutionApprovalRequired": true,
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/root-bounded-execution-60s.py",
+-  "runnerSha256": "e57882ad45265fead78c87c98bedd762314297f71cd46e654e18b0074e33532a",
+-  "sourceCopiesSelection": "Finite sealed owned source (includes63 candidate build inputs), source manifest, independent design, public declarations/rules and four affected reports; actual client/descriptor/build readback and source command evidence. Exclude private-runtime, all credential/setup/DB/HTTP bodies and private command streams.",
+-  "sourceManifest": ".runtime/ni6-public-preparation-r1/source-manifest.json",
++  "runner": ".runtime/ni6-prep01-executor-r2/runner.py",
++  "runnerPinRequiredFromRootGO": true,
++  "sourceCopiesSelection": "Finite public selection from79 owned source records plus source manifest, eight fresh affected reports, the exact executor source/manifest/design/remediation freeze and actual generated original client/descriptor/readback/build results, within the selected executor allowed-copy set. All230 source inputs are pinned/read back; copying an input is not implied. Exclude synthetic runtime, credentials/setup/DB/HTTP bodies and private command streams.",
++  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+   "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstNonzeroOrMismatch": true,
+   "timeoutSecondsPerCommand": 60
+--- .runtime/ni6-public-preparation-r1/verify-built-package.py
++++ .runtime/ni6-public-preparation-r2/verify-built-package.py
+@@ -6,10 +6,10 @@
+ import sys
+ 
+ ROOT = Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-CAPSULE = ROOT / '.runtime/ni6-public-preparation-r1'
++CAPSULE = ROOT / '.runtime/ni6-public-preparation-r2'
+ HOST = ROOT / '.runtime/dsh-web'
+ PRODUCT = CAPSULE / 'package'
+-PLAN = ROOT / '.runtime/root-ni6-public-preparation-r1-build-plan.json'
++PLAN = ROOT / '.runtime/root-ni6-public-preparation-r2-build-plan.json'
+ sha = lambda data: hashlib.sha256(data).hexdigest()
+ 
+ def require(condition, code):
+@@ -25,7 +25,7 @@
+     require(plan['rootReviewedBuildGO'] is True and plan['runCountAuthorized'] == 1
+         and plan['all87'] == 'HOLD' and plan['CODE'] == 'BLOCKED_UNCHANGED', 'PREP01_BUILD_GO')
+     manifest_path = CAPSULE / 'source-manifest.json'
+-    require(plan['pins']['.runtime/ni6-public-preparation-r1/source-manifest.json'] == sha(manifest_path.read_bytes()), 'PREP01_BUILD_SEAL')
++    require(plan['pins']['.runtime/ni6-public-preparation-r2/source-manifest.json'] == sha(manifest_path.read_bytes()), 'PREP01_BUILD_SEAL')
+     manifest = read(manifest_path)
+     for key in ('NODE_OPTIONS', 'NODE_PATH', 'NODE_TEST_CONTEXT'):
+         require(key not in os.environ, 'PREP01_BUILD_ENVIRONMENT')
+--- docs/evidence/NI6/public-preparation-r1-source.json
++++ docs/evidence/NI6/public-preparation-r2-source.json
+@@ -13,16 +13,16 @@
+   "applicationSourceChanged": false,
+   "authenticDescriptorExpectedRows": 64,
+   "author": "/root/ni6_request_validation_rootcause",
+-  "buildPlan": ".runtime/ni6-public-preparation-r1/build-plan.proposed.json",
++  "buildPlan": ".runtime/ni6-public-preparation-r2/build-plan.proposed.json",
+   "contractVersion": "df.ni6-prep01-source-report/v1",
+   "date": "2026-10-07",
+-  "effectBounds": ".runtime/ni6-public-preparation-r1/effect-bounds.json",
+-  "importInventory": ".runtime/ni6-public-preparation-r1/import-inventory.json",
++  "effectBounds": ".runtime/ni6-public-preparation-r2/effect-bounds.json",
++  "importInventory": ".runtime/ni6-public-preparation-r2/import-inventory.json",
+   "independentDesign": [
+     "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+   ],
+-  "inputFiles": 143,
++  "inputFiles": 230,
+   "nativeDirectInstanceDisposition": {
+     "directNativeFixtureRunnableCells": 0,
+     "holds": [
+@@ -52,7 +52,7 @@
+     "proposedRootBuiltPublicIntegrationCells": 1,
+     "standaloneFunctionalHostRunnableCellsAtSeal": 0
+   },
+-  "newCapsule": ".runtime/ni6-public-preparation-r1",
++  "newCapsule": ".runtime/ni6-public-preparation-r2",
+   "officialFullTransitiveGraphFiles": 27577,
+   "officialFullTransitiveGraphLinks": 12,
+   "originalPublicPrerequisites": [
+@@ -62,44 +62,125 @@
+     "original authenticated Node HTTP owner routes",
+     "actual public df.diagnostics schema7/memory proof",
+     "public baseline, goal and complete context detail/metadata/export joins",
+-    "original entry/Loader/root/WebServer cleanup with physical404 after entry disposal",
++    "original Loader.remove/saved Fiber.await/Loader.await/public entries absence/root/WebServer cleanup with retained-parent physical404",
+     "supported finite root build driver and action-time loopback GO"
+   ],
+-  "ownedFilesExpected": 77,
++  "ownedFilesExpected": 79,
++  "physicalCapsuleFilesIncludingManifestExpected": 78,
+   "preserved": {
+     "CODE": "permanently blocked unchanged",
+     "all87": "accepted0/HOLD",
+     "priorFixtureR2": ".runtime/ni6-installed-continuation-fixture-slice-r2/source-manifest.json",
+     "priorPassedPublicContinuation": ".runtime/ni6-preparation-independent-continuation-r4/source-manifest.json",
++    "r1BlockingReviews": [
++      "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
++      "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
++      "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
++      "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json"
++    ],
++    "r1SourceManifest": {
++      "all220OwnedInputRecordsMatched": true,
++      "bytes": 63650,
++      "path": ".runtime/ni6-public-preparation-r1/source-manifest.json",
++      "sha256": "a69066641fac0abcf4300135de1c81e3790af774428392798061bfbab741a77d"
++    },
+     "r4Package": "all63 current r4 selected bytes unchanged",
+     "runningQa": "untouched"
+   },
+   "productBuildInputs": 63,
+   "productSourceModules": 59,
+   "proposedPublicIntegrationCells": 1,
++  "prospectiveCounts": {
++    "HTTP": 20,
++    "buildCommands": 4,
++    "diagnosticReads": 1,
++    "domainRPC": 18,
++    "eventCategories": 7,
++    "functionalDiagnosticFieldsUnchanged": 14,
++    "functionalTestCommands": 1,
++    "liveWindows": 44,
++    "maximumDirectInterpreterStarts": 16,
++    "nativeWorkerStarts": 0,
++    "ordinaryNodeTestWorkers": 2,
++    "pureTestCommands": 1,
++    "registryReads": 176,
++    "syntaxCommands": 6
++  },
+   "prospectiveRefinements": [
+-    "seven count-only natural categories and44 live inspections instead of independent design initial four/21 per registry",
+-    "explicit ordinary build byte-gate/syntax/test-parent/test-worker/driver process inventory; initial design four-process maximum requires affected review"
++    "Root-frozen seven natural categories/44 windows/176 reads and16 direct interpreter starts across two phases with shared180-second active budget; counts remain prospective."
+   ],
++  "pureOracleSuite": {
++    "executed": 0,
++    "flatCells": 31,
++    "hostAuthorityProof": false,
++    "imports": [
++      "node:test",
++      "node:assert/strict",
++      "./public-oracles.mjs"
++    ],
++    "negative": 28,
++    "nested": 0,
++    "oracleBuiltins": [
++      "node:assert/strict",
++      "node:crypto"
++    ],
++    "positive": 3,
++    "scope": "UNIT_ONLY"
++  },
+   "remainingBlockers": [
+-    "Fresh independent affected source and test-design reviews pending at seal",
+-    "Authentic actual build/output pins and exact bounded root build executor not yet frozen/executed",
+-    "Fresh supported once-only loopback execution approval not yet obtained",
+-    "All native/cold/browser/direct-instance/currentness/global acceptance holds unchanged"
++    "Fresh fixture and executor independent affected source/test reviews pending.",
++    "Root-reported selected executor-r2 failure-path destination ownership blocker: its evidence handle precedes successful new-directory creation. Preserve sealed executor-r2; separately frozen reviewed successor/selection amendment required, with no build/runtime GO.",
++    "Root must pin the sealed selected executor-r2, its unchanged design/source manifest/additive freeze/fresh reviews and exact true-GO plans after full affected review.",
++    "Authentic original four-command build/output evidence and actual generated hashes absent.",
++    "Supported once-only loopback execution GO and observed genuine lifecycle/HTTP results pending.",
++    "All native/cold/browser/direct-instance/currentness/global acceptance holds unchanged."
+   ],
++  "remediationImplementedSourceOnly": {
++    "F-PREP01-S01": "Original Loader.remove once, saved Fiber.await, Loader.await, public entry absence and closed fiber before retained-parent404.",
++    "F-PREP01-S02": "Separate additive-freeze-selected executor-r2 is source-only sealed; exact source/manifest/design/remediation/review/output pins required by root. Historical rejected executor-r1 is not selected; no execution evidence exists.",
++    "F-PREP01-TD01": "Closed goal10/context15 metadata and whole metadata-plus-content details; status/export independently validated.",
++    "F-PREP01-TD02": "Closed snapshot18, all11 empty work arrays, schema/control/semantic domain, semantic +1/join and full first-transition conservation."
++  },
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json"
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++  ],
++  "requiredRootGoPins": [
++    ".runtime/ni6-prep01-executor-r2/runner.py",
++    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
++    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++  ],
++  "rootFreeze": [
++    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
++    "docs/ni6-preparation-r2-delta-2026-10-07.md",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+   ],
+   "rootReviewedBuildGO": false,
+   "rootReviewedExecutionGO": false,
+-  "sourceManifest": ".runtime/ni6-public-preparation-r1/source-manifest.json",
++  "rootRunnerSelectedByFinalAmendmentRequired": false,
++  "selectedExecutor": ".runtime/ni6-prep01-executor-r2/runner.py",
++  "selectedExecutorReviewState": "ROOT_REPORTED_BLOCKER; FINAL_AFFECTED_REVIEWS_PENDING; NO_REMEDIATION_AUTHORIZED_IN_THIS_SEAL",
++  "selectedExecutorSeal": {
++    "bytes": 6318,
++    "path": ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    "qualification": "Separate future root-GO pin; outside the unchanged230 fixture input union.",
++    "sha256": "f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2",
++    "status": "SOURCE_ONLY_NOT_RUN"
++  },
++  "sourceDelta": ".runtime/ni6-public-preparation-r2/source-delta.diff",
++  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+   "sourceManifestDigestQualification": "Exact final digest supplied by immutable author readback/final message; manifest does not self-pin.",
+   "sourceOnly": true,
+   "standaloneFunctionalHostRunnableCells": 0,
+   "status": "SOURCE_ONLY_NOT_RUN",
+-  "testPlan": ".runtime/ni6-public-preparation-r1/test-plan.proposed.json",
++  "testPlan": ".runtime/ni6-public-preparation-r2/test-plan.proposed.json",
+   "wholeHostGraphQualification": "Original graph metadata/source hash frozen; root must verify every original graph file/link before/after actual execution. No full graph was imported or executed by this author."
+ }
+--- docs/evidence/NI6/public-preparation-r1-source.md
++++ docs/evidence/NI6/public-preparation-r2-source.md
+@@ -1,21 +1,21 @@
+-# NI6-PREP01 isolated public preparation source
++# NI6-PREP01 public preparation r2 SOURCE report
+ 
+-**SOURCE_ONLY_NOT_RUN.** One new proposed authenticated public preparation integration cell is implemented in `.runtime/ni6-public-preparation-r1/`. The77 owned files include63 byte-identical reviewed r4 build inputs (59 source modules), five fixture modules, a root-only byte verifier, inventories/inert plans and this source pair. No shared application source or prior sealed capsule/evidence changed. No client/descriptor was built and no profile/auth/database/listener/import/test was created or run.
++Disposition: **SOURCE_ONLY_NOT_RUN; ROOT BUILD/EXECUTION GO FALSE.** This new capsule implements only the root-selected fixture delta in `docs/ni6-preparation-r2-delta-2026-10-07.md` (4528 bytes, SHA25669d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5), under the prior6430-byte executor/fixture freeze SHA25663197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb. Author `/root/ni6_request_validation_rootcause`, English Sol6.1 max source lane. Root owns execution, supported action approval and Git. The additive executor-r2 selection is frozen in `docs/ni6-executor-r2-remediation-freeze-2026-10-07.md` (6149 bytes, SHA2565549cc59491cdf053d98b81b41a63bf01bcd607677463242f2229c3ded00f40c); that freeze and the new executor are separate future root-GO pins, outside the unchanged230 fixture input union.
+ 
+-The frozen criteria are [NI6-PREP01](../../next-native-wave-2026-10-07.md). The independent [nine-case design](public-preparation-r1-independent-design.md) remains immutable/NOT_RUN. The exact eighteen domain calls and empty-terms/new-command stale partition follow that design; one original auth GET and one post-entry-disposal physical404 make20 total HTTP attempts. Published DTO/assertion provenance is [onboarding](../../onboarding-contract.md), [runtime API](../../runtime-api.md), the original [public callables](../../../.runtime/ni6-installed-continuation-public-contract/public-callables.d.ts.txt), and original schema7 declarations. The preserved [public snapshot diagnosis](preparation-PREP01-public-snapshot-rootcause.md) establishes one visible context row; protected check/currentness is outside this selection.
++The immutable r1 source manifest remains63650 bytes SHA256a69066641fac0abcf4300135de1c81e3790af774428392798061bfbab741a77d; all77 owned/143 input records match. R1 SOURCE review SHA2564de3d680b908901fd269e9e0d8e6ea9d83adeeebf2f6e1c36c2b7f8a696759dc / JSON5b98abb75aa5a8da3e492542dac8ce509414ebf19da1a99016c16d6d2a5cc57a and test-design d1f588eb6cbe287141959f39440c50d0807896f244f76590dd8be70e1fd0f83e / JSONc7cfc2f20e55aed4809bdd55c303007bde4a675cafc12ae440a180883d6b7ab4 remain unchanged blocking evidence. Neither source remediation nor synthetic unit definitions turns those historical NOT_RUN cases into passes.
+ 
+-Original public composition is one Context, its supported logger intercept, the original synthetic launch snapshot before any activation, eleven original services and one Loader-installed entry. SystemPrompt is active before ToolRuntime's required dependency. Every profile/config/credential/database path is explicit under the new private synthetic namespace. The actual original Connection token-cookie exchange and Node HTTP prefix routes supply owner admission; no supplied PeerScope, captured handler, route lookup, private owner/core handle or method/prototype override exists. One documented public metadata-only df.diagnostics read must observe schema7/memory readiness.
++The successor owns79 source records, including this report pair, with78 physical capsule files including its separate manifest. Its230 known input records preserve all inherited143 inputs,77 r1 owned files/r1 manifest/four reviews, both root freezes and the needed original public lifecycle declarations. All63 package inputs,59 product modules, `.gitignore` and `http-rpc.mjs` are unchanged. Exact literal differences are in `source-delta.diff`; manifests remain separately pinned to avoid self-hashing. Final manifest digest comes from the author's immutable readback message, not a self-reference. The original r4 closure and official host graph27577 files/12 links remain provenance, never executed here.
+ 
+-Prospective bounds are20HTTP/18domain, seven original count-only event categories,44 live registry/inventory inspections, one temporary IPv4-loopback bind/close excluding3080, one fresh namespace/intake/new preparation, one exact repeat and one exact STALE_VERSION refusal. This source expands only observer checkpoints/categories relative to the design's initial four/21 counts. The exact ordinary build/gate/syntax/Node parent/one test-worker/driver process inventory is explicit; it is a proposed refinement of the design's initial process budget and needs fresh affected review. Native agent/session/model/provider-stream/tool/policy/grant/claim/dispatch/execute/capture/finish operations remain selected0. No count below is an executed/accepted result.
++F-PREP01-S01 is addressed in source by original public Loader.remove(entryId) once, retaining the actual entry fiber and awaiting Fiber.await then Loader.await, checking public entries() no longer contains that ID and the saved fiber is closed. EntryTree public declarations are tree.d.ts15/19/27, original remove implementation lib/index.js194–198/group70–76; original Fiber.await is declared fiber.d.ts178 and implemented Cordis lib/index.js1399. Parent Connection/WebServer stay live for the same single physical404; original whole-root closure follows. No removed fiber is directly disposed a second time, no private route/handler or fabricated lifecycle is used.
+ 
+-The [effect bounds](../../../.runtime/ni6-public-preparation-r1/effect-bounds.json) separate direct fixture APIs from original transitive setup/store/capability effects. The [import inventory](../../../.runtime/ni6-public-preparation-r1/import-inventory.json) identifies all fixture imports and the pinned existing r4 closure. Credential/launch imports extend beyond the product descriptor and are independently covered by the complete original27,577-file/12-link host graph. The fixture enforces2,048-byte JSON request bodies/65,536-byte complete responses; Connection's maxRequestBodyBytes is its original /api config, not a claimed /df prefix server cap.
++TD01/TD02 source remediation closes snapshot18/task9/goal10/context15/detail metadata-plus-content; independently validates status/export metadata, original domains and unique references; requires schema7/active control and all11 empty work arrays; joins goal/source/committed task/auth/memory and full public detail; enforces semanticRevision +1 and context join; conserves all14 remaining first-transition public top-level fields. Original public projection citations are the frozen runtime API and reviewer-owned prescriptions. Full original receipt14/envelope15/protected-text/provenance/digest/UTF8/fixed-density counts and exact-repeat/stale assertions remain. GeneratedAt is not equated with request.now. No private raw-currentness RPC or paired protected-check row is selected.
+ 
+-The [build proposal](../../../.runtime/ni6-public-preparation-r1/build-plan.proposed.json) has GO false and exactly four root-owned commands: prebuild byte gate/one-run marker/peer binding, unchanged original client builder, unchanged original64-file descriptor builder, final actual byte readback. The existing root test runner accepts only Node --check/--test, so root must freeze a supported sequential60-second build executor before build GO. No alternate builder or success evidence is supplied. Actual root build command results must be pinned separately; a byte readback is no invocation/authority witness.
++The new pure suite has31 flat UNIT_ONLY cells, three positive and28 negative, with finite inputs/codes exactly listed in README and source. Static imports are Node test/assert and the pure oracle module; its only transitive imports are built-in assert/crypto. It exercises ordinary/frozen baseline/full preparation and selected missing/extra/leak/domain/work-array/semantic/source/policy/retained-row refusals. Synthetic DTOs are not native receipts, an original Context/Fiber/Loader, a donor or a host publication. There is no original lifecycle mock or unit claim for original removal/cleanup.
+ 
+-The [test proposal](../../../.runtime/ni6-public-preparation-r1/test-plan.proposed.json) has GO false: exactly five syntax checks followed by one Node --test --test-concurrency=1 command using the existing pinned root runner. Each root command is at most60seconds; source preflight/active work/cleanup are10/40/5seconds and the Node cell is55seconds. Root must materialize a NEW plan with actual built hashes and both final affected review pairs. Preflight verifies all finite owned/input pins, actual outputs, full host graph and exact real build command results before original imports. Any unexpected outcome stops the selected sequence; original owned cleanup still runs once, with no alternate auth/transport, replay or force-kill witness.
++Future plans retain exactly four original build/gate commands, six syntax commands in frozen order, one pure then one genuine public test command, concurrency1/once/first failure STOP. Sixteen maximum interpreter starts count two Python phase drivers/four build interpreters/six syntax Nodes/two test parents/two ordinary workers; native worker starts0. Shared180-second active budget and clipped60-second command limits are root-executor obligations. Functional limits remain10s preflight/40s active/5s cleanup/55s Node test.20HTTP/18domainRPC/44livewindows/176registryreads/seven natural event categories/one df.diagnostics and the existing14-field successful diagnostic remain unchanged and prospective.
+ 
+-Original Context.intercept('logger',{level:-1}) handles scoped logging; no console/file exporter or override is installed. The original default buffer stays in memory and is not read. Fixture errors contain only finite PREP01_* reason codes, with no original cause or AssertionError actual/expected body. Auth URL/cookie/headers/raw wrappers/key/credential/database contents are neither output nor written to evidence. Only synthetic public refs/digests/counts are eligible summary output. Root must treat unexpected command streams privately and commit allowlisted summaries/source evidence.
++F-S02 remains a genuine execution prerequisite: the selected successor `.runtime/ni6-prep01-executor-r2/runner.py` is sealed SOURCE_ONLY_NOT_RUN, and root must separately pin its source/manifest, unchanged executor design, additive freeze/eight affected reports and separate true-GO plans. Its6318-byte source manifest SHA256f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2 has18/18 matched owned/input records; this is author byte evidence, not a command result. Inert proposals stay false-GO; no incompatible historical runner is selected. Preflight requires these finite future pins, actual four original build results, original generated64-file descriptor/client/readback and full original host graph before host imports. The Python verifier algorithm is unchanged and only r2-retargeted. No actual generated output or original command success is authored. Root provides hard owned process/stream/aggregate enforcement and private output handling; failed or unobserved cleanup remains HOLD.
+ 
+-Original entry/runtime removal and Loader settling precede the real404 while Connection/WebServer stay live; original root disposal awaits original listener cleanup. Four setup/database metadata identities/modes are checked without reading/hash-decoding private contents, and durable synthetic state remains preserved. Post-close event counts are historical only. No SQL, cipher, terminal/receipt experiment, fake context/donor/provider/event or native raw-instance proof is introduced.
++Original public composition, synthetic snapshot-before-activation, explicit fresh credential/profile/data paths,11 direct official plugins, original auth transport and public no-effect observers remain unchanged. One future namespace/listener distinct3080 is root-owned. Tokenized URL/cookie/header/credential/key/DB/raw wrappers stay private; code/catches/logger/export surface remains finite. Only storage type/owner/mode/device/inode metadata is inspected by the proposed functional cell. Source author made no Node parsing/import/build/test, runtime/native/DB/model/provider/network/listener/profile/browser/Git or protected investigation action. Author actions were source text/JSON metadata reads, raw-byte hashes and authorized new source writes only.
+ 
+-Standalone functional host runnable cells at source seal:0; proposed root-built public integration cells:1. Earlier direct fixtures retain mapped0complete/8partial/2held, partial source/task/check identity and Q index-count gaps, held actual observer lifecycle, original setup/donor/cold contracts and exact pending47-call selection (40reads/2prepare/4intent-record/1cancel). Fresh affected source/test-design reviews, authentic root build/output/evidence pins, a concrete bounded root build executor and supported finite listener GO remain pending. No implementation/functional/browser/native acceptance is claimed. All87 accepted0/HOLD and the permanently blocked final CODE remain unchanged.
++Root has reported a blocking failure-path destination ownership issue in the selected sealed executor-r2: the evidence handle precedes successful fresh-directory creation. That source remains immutable, no correction is adopted here, and a separately frozen reviewed successor/selection amendment is required before any build. Final executor affected dispositions are pending; this capsule seal and its exact path pins are source evidence only. Fresh fixture reviews, final executor/plan pinning, genuine build/output evidence and supported finite loopback GO/results remain pending. Standalone functional host runnable cells0; proposed public integration1; pure31 NOT_RUN. Direct-instance mapping0complete/8partial/2held and pending47-call selection remain; original IH01–03/IH05 setup/spec/consent/donor/cold/lifecycle prerequisites, source/task/check identity and Q index-count gaps, typed currentness/cold/browser/native-worker/global acceptance remain HOLD. All87 accepted0/HOLD; protected final CODE permanently blocked and untouched. Running QA, r4, r1, old reports and historical runners were preserved.

@@ -1,0 +1,61 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "activeAggregateSeconds": 180,
+  "all87": "HOLD",
+  "commandCounts": {
+    "build": 4,
+    "functional": 1,
+    "pure": 1,
+    "syntax": 6
+  },
+  "contractVersion": "df.ni6-prep01-executor-source/v1",
+  "createdAt": "2026-10-07T14:45:56.501959+00:00",
+  "inputFiles": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 6430,
+      "path": "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+      "sha256": "63197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb"
+    },
+    {
+      "bytes": 4528,
+      "path": "docs/ni6-preparation-r2-delta-2026-10-07.md",
+      "sha256": "69d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5"
+    },
+    {
+      "bytes": 2079,
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "sha256": "c68c943a72438940f19196d2f12e8d1f862231af9b9496562d93beebdcc66bf2"
+    },
+    {
+      "bytes": 84640,
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+    },
+    {
+      "bytes": 52448,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "sha256": "2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12"
+    }
+  ],
+  "maximumInterpreterStarts": 16,
+  "ownedFiles": [
+    {
+      "bytes": 25578,
+      "path": ".runtime/ni6-prep01-executor-r1/runner.py",
+      "sha256": "78c81f04a75130fc47e110aef29ecc0853821bb55caf3896783a2e2c6967e626"
+    }
+  ],
+  "perCommandSeconds": 60,
+  "phases": [
+    "build",
+    "test"
+  ],
+  "rawStreams": "PRIVATE0600_ONLY",
+  "status": "SOURCE_ONLY_NOT_RUN"
+}
