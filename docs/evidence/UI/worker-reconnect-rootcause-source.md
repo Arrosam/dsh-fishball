@@ -1,0 +1,55 @@
+# Worker reconnect root cause — public source only
+
+The frozen a58c522 client can strand its worker card offline on a successful first connection or reconnection. It interprets a public `connected` notification with the still-undefined generation as a disconnect, clears the worker again on the immediately following establishment/reset event, and rereads only setup/tasks. The card then disables the existing read-only worker status control. This matches the reported UI symptom without establishing that the actual connection was lost when that screenshot was taken.
+
+Author: `/root/ui_worker_connection_rootcause`, October7,2026. Scope is public source/text/hash analysis and a new inert proposal. No runtime private file, credential, database, log, profile user data or browser state was inspected. No Git operation, JavaScript parser/import/build/test, listener action, network/model/provider call or browser tool was used. All87 (82 BUB plus5 DF010), CODE, runtime and UI acceptance remain **HOLD**.
+
+## Reported actual blocker and provenance
+
+The browser QA owner is thread `01a11541-bd03-7669-9a89-7baca8daf0bf`; root owns the listener, profile, package adoption, Git and execution. The [running handoff](manual-web-qa-running-handoff-2026-10-07.md) attributes the following observations to that browser lane: authenticated host0.2.1-alpha.1, `df-ni2-empty`, read-only, selected synthetic provider, encrypted storage ready, synthetic task `4da34a6d` queued at version1, no admitted worker/captured artifact/result, and `Host disconnected. Worker decisions are cleared.` with all worker controls disabled. Root reported original CLI PID91027 still listening at exactly127.0.0.1:3080. These are attributed observations, not an independent runtime PASS.
+
+Product archive revision is `a58c522f32dd2be2ec29a697ec32ed295e154614`, version0.1.0-preview.1. Public archive `.runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz` rehashed to `fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0`. Public `.runtime/ni2-install/source-a58c522/src/client-entry.cjs` equals the exact archive member `package/src/client-entry.cjs`,101,214 bytes, SHA256 `e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99`. The archived bundle is101,182 bytes, SHA256 `a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f`. This author read the public archive/source, not the immutable running package or any private runtime files. The running installed-package byte verification remains root evidence.
+
+## Exact original connection ordering
+
+Read original published `@deepseek-ai/dsh-client-connection` and `@deepseek-ai/dsh-api-gateway`, both0.2.1-alpha.1, from `.runtime/dsh-web/node_modules/@deepseek-ai/`. Their consumed original `lib/client.js` bytes also match the corresponding original `.runtime/ni2-install/host/node_modules/` files by SHA256; no host bundle was executed. The runtime host lock is pinned `68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3`. Exact public inputs, line references, byte counts and hashes are in the companion JSON and proposal manifest.
+
+The original declarations in connection `lib/types/client/index.d.ts` state that generation is undefined before readiness/while reconnecting, both state and generation are observable stores, and `connection/reset` announces establishment requiring cache repull. Connection `lib/types/rpc.d.ts` says `rpc.call` returns the endpoint-owned logical result and accepts caller cancellation. There is no readiness inference from the current HTTP listener or an RPC request alone.
+
+The exact successful sequence is:
+
+1. Gateway `lib/client.js:756` registers its sole generation source. At803–805 the event pump parses the opening frame and reports ready. Gateway start is deferred through original loader readiness when present at1615–1617; df does not own that start.
+2. Connection controller `lib/client.js:1094–1099` waits for ready, emits state `connected` **before** calling its `onConnected` sink.
+3. Installed connection wrapper at1454–1458 leaves generation unchanged for `connected`, publishes the state and synchronously notifies state subscribers. During first connect/recovery generation is still undefined.
+4. Installed wrapper `onConnected` at1445–1452 creates/publishes the monotone generation, then calls the Gateway sink.
+5. Gateway sink at1606–1608 emits `connection/reset`. This occurs on first successful connect too.
+
+Loss/retry is a different path: nonconnected state at connection1454–1458 withdraws generation **before** publishing the new state. Controller reconnect/network/backoff behavior is at975–998 and1020–1055. Thus a generation subscriber can see loss while the public state still has its preceding value; consumers must read both original stores. Equivalent states are deduplicated at1111–1114, so a state-only subscriber is not a complete generation-replacement observer.
+
+An earlier provisional parent update reversed successful state/generation order; the full controller and wrapper trace above corrects it. There is no runtime diagnosis of a specific disconnection trigger here.
+
+## Frozen client defect and races
+
+Archive source `src/client-entry.cjs:623–637` creates all three models and subscribes to setup. At628 fresh setup becoming ready refreshes **tasks only**. At629 `refreshSetup` rereads setup and optionally the legacy task route, without a worker-status read. At633 reset calls all three `disconnected` operations, then that incomplete refresh. At635 only the state store is subscribed and only the absent-generation arm is implemented; establishment does not reread worker status. At516 `Refresh worker status` is disabled in worker phase offline.
+
+Consequently, the earlier successful state notification can call `workerModel.disconnected`; the later reset necessarily calls it again. Setup/task recovery can succeed and encrypted storage/task facts can be visible while the worker remains offline. Setup confirmation publishes fresh ready at467 and triggers only the task subscription, so confirmation does not cure the worker omission. Task-list refresh in the panel also cannot restore it. The absence of an admitted worker/result is consistent with the blocked controls and is not an admission/result PASS.
+
+The existing worker model already permits an idle read-only refresh while offline (`refresh`,355). `disconnected`,387, increments its epoch, increments revision, aborts controllers through349 and clears policy/action previews, acceptance and grant. `call`,353, rejects a reply after epoch change or abort; `refresh`,355, suppresses older publication/error/cleanup after revision change. These fences should be retained, including a transport that settles late despite an abort. A new recovery pipeline must also prevent its pending task read from starting a later worker-status read after a different lifecycle/setup boundary or disposal.
+
+Worker task subscriptions at352 invalidate a read when the selected task/version/authEpoch key changes. Task `refresh` at59–70 awaits `select` at72–92; select first clears detail and later publishes the current task. Starting worker status in parallel with this normal selected-task sequence can therefore abort it. The proposal orders task completion before worker status, with a lifecycle freshness check after that await. Concurrent user task switching remains an existing currentness discriminator; a suppressed worker read must remain stale/readable, never grant authority.
+
+A second presentation issue matters for truthful failure: worker status text at514 displays retained `status.phase` unless phase is offline. After a failed refresh,355 sets phase unavailable/stale but retains the previous status, so the original card can still say ready. The proposed card names unavailable/pending/stale state and requires a current original connection plus fresh status for worker decision controls. A successful unary status read while Remote generation is absent remains a read; it cannot manufacture a connection or reenable decisions.
+
+## Existing proposal search and new sealed correction
+
+Narrow public source search found the same omission and offline-button gate in NI3 native composition, NI3 NR-UI03/NR-UI05 real-model refresh/a281, NI4 selection/e9, NI4/5 normal wiring, NI5r3 and NI6r3. The inspected a281 source is `.runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs`, SHA256 `a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2`, with setup/reset/state paths at708/712/714. NI4 selection is `e9b5d17f50b61d0841917667b2f0bf26853e23e503325b89f16aa0fb10ca9e56`; NI6r3 is `9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1`. No approved proposal was bulk-copied or amended, and no native reconciliation feature is claimed to cure this client lifecycle omission.
+
+The new `.runtime/ui-worker-reconnect-proposal/` contains the exact original factory, proposed factory, unified literal, literal before/after, separate public design and source manifest. Proposed factory SHA256 is `863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384`; literal patch is `ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f`. The correction observes both original lifecycle stores, clears stale decisions, coalesces synchronous establishment/reset notifications, rereads worker status after fresh setup and task reads, permits idle status refresh, and displays failed/stale/connection-unconfirmed status honestly. The worker-model/native/parser/storage code is byte-preserved.
+
+The [public design contract](../../../.runtime/ui-worker-reconnect-proposal/public-design-contract.md) defines15 meaningful groups: initial/current connection; setup confirmation; loss/reset/replacement; stale task/worker reads; failed status and sensitive error text; unary success without a generation; busy/disposal; task currentness; setup unavailable/missing route; and zero mutation/replay on recovery. These are authored required outcomes, not independently reviewed or executed tests. Source hash equality and literal reconstruction are source-only checks.
+
+## Reload and remaining gates
+
+No reliable ordinary same-page reload cure follows from source. A new worker initially has needs_refresh and could expose a read if mounted after establishment/reset, but first connection can run the same successful state/undefined-generation/reset sequence and strand it again. That ordering/timing has not been observed for this page. No repetitive reload or fake connection is proposed. The supported browser owner may perform an independently scoped normal diagnostic, but it would not implement or accept the correction.
+
+Root must decide independent source/code and ISTQB design review, concrete bounded tests, exact bundle/package successor freeze, installation and coordinated browser retest before adoption. The old archive, running package, profile/listener and NI3/NI4/NI5/NI6 capsules remain unchanged. No loaded-SPA, socket, source, fixture, DOM, native recovery or model evidence has been promoted to readiness/PASS. All87 and CODE remain **HOLD**.

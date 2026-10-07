@@ -1,0 +1,833 @@
+{
+  "schema": "df-independent-source-review/v1",
+  "reviewId": "ui-worker-reconnect-r0",
+  "date": "2026-10-07",
+  "reviewer": {
+    "lane": "/root/ni5_r3_affected_review",
+    "independentFromAuthor": true,
+    "role": "Independent SOURCE code audit",
+    "language": "English"
+  },
+  "subject": {
+    "capsule": ".runtime/ui-worker-reconnect-proposal/",
+    "manifestSha256": "fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222",
+    "proposedSourceSha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384",
+    "closureSha256": "8e551b04bcc308234e2fbdb0efaf1adfd36d639bef4e162fffda3ec663de8885",
+    "baseline": "Immutable a58 isolated UI source/package, not adoption of later NI3-6 capsules"
+  },
+  "disposition": {
+    "status": "BLOCKED",
+    "openSourceBlockers": [
+      "F-WRC01",
+      "F-WRC02",
+      "F-WRC03"
+    ],
+    "normalEstablishedGenerationRecovery": "SOURCE_SUPPORTED_ONLY",
+    "functionalStatus": "NOT_RUN",
+    "visualStatus": "NOT_RUN",
+    "rootGOIssuedByThisLane": false,
+    "adopted": false,
+    "all87": {
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    "finalCODE": "HOLD_BLOCKED_UNTOUCHED"
+  },
+  "reviewScope": {
+    "completeBeforeAfterLiteralRead": true,
+    "literalEightReplacementsReconstructedEntireSource": true,
+    "fullFactorySemanticReviewClaim": false,
+    "semanticReads": "Complete affected literal, relevant retained worker/task/setup/Panel contracts and actual original public connection/controller/Gateway sources and declarations",
+    "authorPublicContractUse": "Requirements/proposal context only; not an independent PASS oracle",
+    "authorFixtureAssertionsRead": false,
+    "rawTestOracleLogsRead": false,
+    "rootQAAttribution": {
+      "reports": "Storage/task RPC live, worker offline and disabled controls; original listener PID 91027 on 127.0.0.1:3080; synthetic task cancellation-requested at version 2/epoch 1 with no worker/result.",
+      "independentlyQueried": false,
+      "newRuntimeEvidence": false
+    },
+    "protectedOriginalFinalCODEInvestigationTouched": false,
+    "followupAmendmentReviewStarted": false,
+    "futureOllamaMemorySixFixtureAuditStarted": false
+  },
+  "findings": [
+    {
+      "id": "F-WRC01",
+      "status": "OPEN",
+      "severity": "medium",
+      "blocksReconnectSuccessorGO": true,
+      "origin": "Proposed lifecycle invalidates setup; retained Panel/setup-card branch makes the new offline read unreachable.",
+      "title": "Rendered Panel hides readonly worker status during global offline or initially unconfirmed connection",
+      "sourcePath": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+      "sourceLines": [
+        476,
+        491,
+        516,
+        553,
+        633,
+        634,
+        635
+      ],
+      "sourceDerivation": [
+        "apply disconnects setup, worker and task models on loss or missing established generation.",
+        "Setup phase becomes offline; Panel returns only setupCard before workerCard can render.",
+        "The retained setup-card refresh is disabled in offline phase.",
+        "The new enabled worker-status refresh therefore exists only behind an unreachable worker-card branch in this state.",
+        "Normal established-generation setup recovery is source supported; this finding concerns rendered offline recovery and truthful unknown initial state."
+      ],
+      "runtimeObservation": "NOT_RUN",
+      "requiredDisposition": "A separately frozen amendment must expose a genuine readonly status/recovery surface in the actual offline/unconfirmed Panel branches, retain disabled decisions, and distinguish absent/unconfirmed state from observed disconnection. It must not fabricate a generation, start a second connection loop, or turn successful RPC into authority.",
+      "functionalObligations": [
+        "Exercise the actual rendered Panel on initial undefined state, observed loss with ordinary RPC live, and whole-store absence.",
+        "Show the readonly action is reachable and uses only the original cached-status/setup read.",
+        "Show all decisions remain unavailable until genuine complete observables and fresh host reads justify them."
+      ]
+    },
+    {
+      "id": "F-WRC02",
+      "status": "OPEN",
+      "severity": "high",
+      "blocksReconnectSuccessorGO": true,
+      "origin": "Retained byte-identical a58 worker model; no new worker-model mutation literal.",
+      "title": "Disconnect can discard uncertainty for a mutation that could already have been submitted",
+      "sourcePath": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+      "sourceLines": [
+        349,
+        352,
+        353,
+        355,
+        357,
+        358,
+        359,
+        382,
+        387,
+        531,
+        535
+      ],
+      "sourceDerivation": [
+        "run captures a read revision and epoch before an explicitly invoked mutation can call original RPC.",
+        "Disconnect increments epoch and invalidation increments revision, aborting the local controller.",
+        "The mutation catch records uncertainty only if its read still equals current revision.",
+        "The old mutation response/rejection after disconnect cannot set the uncertain marker; invalidation clears previews/grant while retaining worker and execution fields.",
+        "Readonly task/status recovery can make retained ready-worker state fresh without establishing the first execution outcome.",
+        "Execute controls and model execute check ready worker, absent execution and workerExecute uncertainty; they do not require a fresh grant flag or mandatory Query first.",
+        "A later explicit execute request can therefore be offered after the lost response. No automatic retry is introduced. The authoritative backend may reject a duplicate; that does not prove the UI no-repeat-until-established contract."
+      ],
+      "limits": [
+        "Pure ordinary client control/RPC-response analysis; no receipt/envelope/security internals were executed or altered.",
+        "Local AbortSignal is not evidence of original host noncommit.",
+        "The attributed cancelled task with no worker/result does not instantiate this source sequence.",
+        "Related later NI3 execution/reconciliation capsules are distinct, unchanged and not imported by this narrow a58 delta."
+      ],
+      "runtimeObservation": "NOT_RUN",
+      "requiredDisposition": "Retain exact actually submitted pending/uncertain operation identity across reset and stale responses; require original readonly/factual reconciliation before re-enabling that mutation. No status refresh may clear uncertainty, infer rollback, or trigger retry/grant/dispatch. Any forward-port requires separately pinned original before bytes and affected independent review.",
+      "functionalObligations": [
+        "Use public ordinary controller/RPC response boundaries for dispatch-then-reset/lost-response and genuine known-not-submitted branches.",
+        "Show submitted uncertainty survives revision/epoch changes, late responses and readonly cached-status refresh.",
+        "Show one explicit execute cannot be repeated while the first outcome is unknown, and no automatic mutation is emitted.",
+        "Preserve exact selected task/version/auth binding and original authoritative reconciliation."
+      ]
+    },
+    {
+      "id": "F-WRC03",
+      "status": "OPEN",
+      "severity": "medium",
+      "blocksReconnectSuccessorGO": true,
+      "origin": "New connected gate and optional observers do not require the complete original observable capability.",
+      "title": "Snapshot-only state/generation stores can pass readiness without lifecycle subscriptions",
+      "sourcePath": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+      "sourceLines": [
+        543,
+        544,
+        545,
+        626,
+        630,
+        632,
+        670,
+        671
+      ],
+      "originalContractPath": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+      "originalContractLines": [
+        1403,
+        1422
+      ],
+      "sourceDerivation": [
+        "Apply validates rpc/slots/layout, then connected checks only snapshot values.",
+        "State/generation subscriptions are optional.",
+        "Panel falls back to empty subscription functions but can still obtain connected/established snapshots.",
+        "An incomplete store shape with getSnapshot and no subscribe can permit fresh worker decision controls with no lifecycle invalidation observer.",
+        "The actual official original service supplies both methods; no malformed live-host observation is claimed."
+      ],
+      "runtimeObservation": "NOT_RUN",
+      "requiredDisposition": "Require complete original state and generation observable capabilities before readiness. Missing or partial stores must remain truthfully unavailable/read-only, with no synthesized observables, fake generation or mutation of frozen transport interfaces.",
+      "functionalObligations": [
+        "Distinguish complete original service, initial unknown snapshots, whole-store absence and snapshot-only stores.",
+        "Show incomplete dependencies cannot enable decisions even with connected/established snapshot values.",
+        "Keep readonly recovery reachable without treating incomplete observables as authority."
+      ]
+    }
+  ],
+  "positiveSourceContracts": [
+    {
+      "id": "SRC-ORDER",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "The new state/generation observer and queued setup read follow the actual original controller/wrapper/Gateway ordering.",
+      "evidence": [
+        {
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+          "lines": [
+            1094,
+            1100,
+            1377,
+            1386,
+            1395,
+            1401,
+            1450,
+            1452,
+            1454,
+            1458
+          ]
+        },
+        {
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.js",
+          "lines": [
+            1606,
+            1609,
+            1615,
+            1617
+          ]
+        },
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            630,
+            672
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-COALESCE",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "Synchronous establishment and Gateway reset coalesce into one queued readonly setup refresh; active and current connected snapshots are checked before the read.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            654,
+            664,
+            669
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-SEQUENTIAL-READS",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "Fresh idle setup readiness leads to task list/detail refresh before cached worker status; the revision is captured after synchronous setup loading publication.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            637,
+            652
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-STALE-READS",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "Unchanged revision/epoch/abort guards suppress stale readonly results. Later reset and disposal invalidate pending follow-ups.",
+      "limit": "Does not settle mutations or resolve F-WRC02.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            349,
+            359,
+            633,
+            666
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-NO-AUTOMATIC-EFFECTS",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "New lifecycle reads setup status, task list/details and cached workerStatus. It invokes no automatic grant, policy confirmation, context preparation, worker creation, execution, capture or finish.",
+      "limit": "This is text/source analysis, not captured runtime effects.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            637,
+            672
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-GATES",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "The new worker-card decision gate requires actual connected/generation snapshots and enabled fresh nonbusy status. Failed refresh retains stale/unavailable; cached status alone cannot pass the gate.",
+      "limit": "Incomplete observable capability is F-WRC03; in-flight mutation uncertainty is F-WRC02.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            355,
+            508,
+            516,
+            531
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-TASK-AUTH",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "Retained task/version/auth selection invalidation and explicit preview/accept/grant gates remain; terminal, cancellation-requested and recovery-required tasks do not become worker execution tasks merely by refreshing status.",
+      "limit": "No claim that every native/currentness/All87 criterion is proved.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            350,
+            352,
+            361,
+            379,
+            380,
+            509
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SRC-ORIGINAL-AUTHORITY",
+      "status": "SOURCE_SUPPORTED_ONLY",
+      "claim": "No original controller, Gateway, connection loop, generation source or frozen transport interface is replaced or mutated; genuine original store arrow methods can be passed without changing their receiver.",
+      "limit": "Cached status is observation, not native permission or fresh catalog proof.",
+      "evidence": [
+        {
+          "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+          "lines": [
+            624,
+            674
+          ]
+        }
+      ]
+    }
+  ],
+  "authorityAndEffects": {
+    "newAutomaticCalls": "Existing setup status and task list/detail reads, then existing authenticated cached workerStatus read",
+    "newAutomaticMutations": [],
+    "newConnectionLoopOrGenerationSource": false,
+    "fakeGenerationOrNativeAuthority": false,
+    "providerModelCallsByReview": 0,
+    "cachedStatusIsNativePermission": false,
+    "actualBackendAuthorityChanged": false,
+    "fullNativeRecoveryClaim": false
+  },
+  "futureObligations": [
+    "Author must freeze a NEW inert amendment preserving r0 proposal, pins, sources and all existing reviews.",
+    "Root must establish exact literal/source disposition and request a separate affected independent SOURCE review.",
+    "Separate independent ISTQB design and root exact-tree GO precede parsing/import/build/tests.",
+    "Functional cases must cover real original ordering, rendered Panel, unknown initial state, established mount, reset/loss/replacement, overlapping reads and late responses, setup/route/status failure, task/policy/auth changes, submitted uncertainty, disposal and unavailable dependencies.",
+    "Actual UI/visual acceptance belongs to the designated QA lane; this report is not visual or functional acceptance.",
+    "Any adopted/build/install successor must use a new exact source/package/profile; preserve running a58 QA archive/package/profile/listener and older NI3/a281, NI4/e9, NI5r3, NI6r3.",
+    "All 87 remain accepted 0/HOLD and original final CODE remains blocked."
+  ],
+  "activity": {
+    "JavaScriptParsed": false,
+    "JavaScriptImported": false,
+    "JavaScriptExecuted": false,
+    "testsRun": false,
+    "fixturesCreatedOrRun": false,
+    "buildRun": false,
+    "browserUsed": false,
+    "networkUsed": false,
+    "modelInference": false,
+    "nativeRuntimeUsed": false,
+    "databaseUsed": false,
+    "profileTouched": false,
+    "listenerTouched": false,
+    "GitUsed": false,
+    "productOrCapsuleSourceChanged": false,
+    "privatePersonalDataInspected": false,
+    "writes": "New independent Markdown/JSON and temporary source-byte verification metadata only"
+  },
+  "byteVerification": {
+    "manifestPin": {
+      "path": ".runtime/ui-worker-reconnect-proposal/manifest.json",
+      "bytes": 12228,
+      "sha256": "fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222"
+    },
+    "closurePin": {
+      "path": ".runtime/ui-worker-reconnect-proposal/closure.sha256",
+      "bytes": 1234,
+      "sha256": "8e551b04bcc308234e2fbdb0efaf1adfd36d639bef4e162fffda3ec663de8885"
+    },
+    "manifestSidecarPin": {
+      "path": ".runtime/ui-worker-reconnect-proposal/manifest.sha256",
+      "bytes": 118,
+      "sha256": "fdff5a333684fbf47f600aba0430c8c65969e745660118a53cc4463b2e0d449e"
+    },
+    "publicInputPins": [
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+        "declaredRole": "repository instructions"
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+        "declaredRole": "owner scope"
+      },
+      {
+        "path": "docs/development-workflow.md",
+        "bytes": 4700,
+        "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7",
+        "declaredRole": "independent review/acceptance boundary"
+      },
+      {
+        "path": "docs/evidence/UI/manual-web-qa-running-handoff-2026-10-07.md",
+        "bytes": 6678,
+        "sha256": "e0d664f0f6e4f95a504cac467ade58da983987428b499912d11c9cf8f4b0da58",
+        "declaredRole": "attributed public QA/root observations; not an author runtime observation"
+      },
+      {
+        "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+        "bytes": 4114465,
+        "sha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+        "declaredRole": "immutable running candidate public archive"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+        "declaredRole": "archive source package version and emitted bundle export"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/src/client-entry.cjs",
+        "bytes": 101214,
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+        "declaredRole": "exact before source; archive member byte-equal"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/src/installed-plugin.mjs",
+        "bytes": 7194,
+        "sha256": "73f65198c642b3b3c1413c7fbb8ffd0a2a6b56605abbc0a5bfce875a9177ea1d",
+        "declaredRole": "original authenticated cached workerStatus endpoint read"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/src/installed-worker.mjs",
+        "bytes": 33262,
+        "sha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb",
+        "declaredRole": "cached status distinct from catalogue/policy/grant/execute"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+        "declaredRole": "future root-owned emitter effects; not executed"
+      },
+      {
+        "path": ".runtime/ni2-install/host/package-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "declaredRole": "pinned actual host dependency lock"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+        "bytes": 1635,
+        "sha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4",
+        "declaredRole": "official original0.2.1-alpha.1 package provenance"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+        "bytes": 59411,
+        "sha256": "0fbb93fa2382bb66919767f69c909585c6255486f9536f9232231edaeac8c4e6",
+        "declaredRole": "actual original controller/wrapper/RPC public source ordering"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/index.d.ts",
+        "bytes": 6888,
+        "sha256": "5bcacf56ca3c3fb26256a6ee3aff980a399dcf4901d594b034d960ae04bd2f8d",
+        "declaredRole": "original observable lifecycle/reset/handle declarations"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/connection.d.ts",
+        "bytes": 3935,
+        "sha256": "85cc887caeae60ab13bd91f627ce793a42402d8f880c2af0f3f1fc0d256509d0",
+        "declaredRole": "original generation/state/source/controller declarations"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc.d.ts",
+        "bytes": 11326,
+        "sha256": "3ca86c027408eb2dd6f1aa6efba0778b0f14802d638fc2f66bced8c5e698b0a4",
+        "declaredRole": "original endpoint-owned RPC result/cancellation declarations"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/package.json",
+        "bytes": 2241,
+        "sha256": "96a46ea63a1a798cec33a0708b644608bf38212643428bc3c681616fb5fa9616",
+        "declaredRole": "official original0.2.1-alpha.1 Gateway provenance"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.js",
+        "bytes": 82186,
+        "sha256": "e09e26fcd4849cd55683b9cc702dca896efce93a5af3968431c1c8a62147b9cf",
+        "declaredRole": "actual original generation source and reset emitter/loader start ordering"
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+        "bytes": 59411,
+        "sha256": "0fbb93fa2382bb66919767f69c909585c6255486f9536f9232231edaeac8c4e6",
+        "declaredRole": "root fixture host copy matches inspected original public source"
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.js",
+        "bytes": 82186,
+        "sha256": "e09e26fcd4849cd55683b9cc702dca896efce93a5af3968431c1c8a62147b9cf",
+        "declaredRole": "root fixture host copy matches inspected original public source"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/src/client-entry.cjs",
+        "bytes": 116918,
+        "sha256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+        "declaredRole": "related frozen NI3 source omission search only"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/proposals/NR-UI03-client-entry.cjs",
+        "bytes": 116918,
+        "sha256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+        "declaredRole": "related NR-UI03 source omission search only"
+      },
+      {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+        "bytes": 121721,
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "declaredRole": "approved NI3/a281 source omission search only; unchanged"
+      },
+      {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/projected-client-entry.cjs",
+        "bytes": 121721,
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "declaredRole": "NI3/a281 literal projection omission search only"
+      },
+      {
+        "path": ".runtime/ni4-scope-timer-selection-amendment/src/client-entry.cjs",
+        "bytes": 175737,
+        "sha256": "e9b5d17f50b61d0841917667b2f0bf26853e23e503325b89f16aa0fb10ca9e56",
+        "declaredRole": "approved NI4 selection/e9 source omission search only; unchanged"
+      },
+      {
+        "path": ".runtime/ni4-scope-timer-proposal/src/client-entry.cjs",
+        "bytes": 174137,
+        "sha256": "fd8be20df6400200579ecda4fcffca0fa4d793e146ba7a5788c325e40d7a5edc",
+        "declaredRole": "related NI4 timer source omission search only"
+      },
+      {
+        "path": ".runtime/ni4-5-normal-wiring-proposal/src/client-entry.cjs",
+        "bytes": 170175,
+        "sha256": "8789517fd4271eff7e1531b57ee34713de24c8cbc1899938c4e60b53a0b26e74",
+        "declaredRole": "related normal wiring source omission search only"
+      },
+      {
+        "path": ".runtime/ni5-context-admission-refinement-r3/src/client-entry.cjs",
+        "bytes": 170256,
+        "sha256": "a0fe9fec1d3d55e63091068de66176ee14ba6e29f272e754eae5199c6842d2a2",
+        "declaredRole": "related NI5r3 source omission search only"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r3/src/client-entry.cjs",
+        "bytes": 151616,
+        "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1",
+        "declaredRole": "approved NI6r3 source omission search only; unchanged"
+      },
+      {
+        "path": "docs/normal-worker-proposal.md",
+        "bytes": 8985,
+        "sha256": "7756af71dfa9d7edbb791b7915d78c4500557ab54ed1f9348124c3ea5ed5878b",
+        "declaredRole": "existing contract: reconnect/refresh/mount performs no worker decision"
+      }
+    ],
+    "authoredArtifactPins": [
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/before/client-entry.cjs",
+        "bytes": 101214,
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+        "declaredRole": "sealed new inert proposal"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+        "bytes": 103523,
+        "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384",
+        "declaredRole": "sealed new inert proposal"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-client.patch",
+        "bytes": 10651,
+        "sha256": "ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f",
+        "declaredRole": "sealed new inert proposal"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-before-after.json",
+        "bytes": 8425,
+        "sha256": "56f24f0420b35d9cb7a802b27e25548468db5fbc405bc1c7be7b19e1f332eaa3",
+        "declaredRole": "sealed new inert proposal"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/proposal.md",
+        "bytes": 5463,
+        "sha256": "67c8754afff405407f0e30704a23a9e9a1b5785ca07e12f189a123b4108fb7ee",
+        "declaredRole": "sealed new inert proposal"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/public-design-contract.md",
+        "bytes": 9644,
+        "sha256": "d9e015440715563a0c6299a26b58b0d714db51a74c208839fde33b0c532a82f8",
+        "declaredRole": "sealed new inert proposal"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source.md",
+        "bytes": 11146,
+        "sha256": "599314df418dab9640df9a7462fa57ebca28be4be5515db3a3b4a678a5385f4a",
+        "declaredRole": "authored source root-cause report"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source.json",
+        "bytes": 21900,
+        "sha256": "d4c156a47b42c95d72f6be7507842a421b22efc915f432064128207a5856a2dc",
+        "declaredRole": "structured source root-cause report"
+      }
+    ],
+    "closureListedPins": [
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/before/client-entry.cjs",
+        "bytes": 101214,
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-before-after.json",
+        "bytes": 8425,
+        "sha256": "56f24f0420b35d9cb7a802b27e25548468db5fbc405bc1c7be7b19e1f332eaa3"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-client.patch",
+        "bytes": 10651,
+        "sha256": "ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/manifest.json",
+        "bytes": 12228,
+        "sha256": "fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/manifest.sha256",
+        "bytes": 118,
+        "sha256": "fdff5a333684fbf47f600aba0430c8c65969e745660118a53cc4463b2e0d449e"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/proposal.md",
+        "bytes": 5463,
+        "sha256": "67c8754afff405407f0e30704a23a9e9a1b5785ca07e12f189a123b4108fb7ee"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/public-design-contract.md",
+        "bytes": 9644,
+        "sha256": "d9e015440715563a0c6299a26b58b0d714db51a74c208839fde33b0c532a82f8"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+        "bytes": 103523,
+        "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source.json",
+        "bytes": 21900,
+        "sha256": "d4c156a47b42c95d72f6be7507842a421b22efc915f432064128207a5856a2dc"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source.md",
+        "bytes": 11146,
+        "sha256": "599314df418dab9640df9a7462fa57ebca28be4be5515db3a3b4a678a5385f4a"
+      }
+    ],
+    "beforePin": {
+      "path": ".runtime/ui-worker-reconnect-proposal/before/client-entry.cjs",
+      "bytes": 101214,
+      "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+    },
+    "afterPin": {
+      "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+      "bytes": 103523,
+      "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384"
+    },
+    "archiveSourceMemberEquality": {
+      "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+      "onlyReadMember": "package/src/client-entry.cjs",
+      "memberBytes": 101214,
+      "memberSha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+      "sameAsBeforeAndPublicSource": true,
+      "extractedToFilesystem": false
+    },
+    "exactUnifiedDiff": {
+      "path": ".runtime/ui-worker-reconnect-proposal/literal-client.patch",
+      "bytes": 10651,
+      "sha256": "ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f",
+      "exact": true
+    },
+    "uniqueEightLiteralReplacementChecks": [
+      {
+        "index": 0,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 69,
+        "afterBytes": 86,
+        "beforeSha256": "a32f716ba7df6e06b224e77d5c8a915aaa7c33990631fa6863000b46daecdfdd",
+        "afterSha256": "e261e60a60094f8c8986f50e0fcc7707b651fc599b05aa8b20f826905e354d19"
+      },
+      {
+        "index": 1,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 76,
+        "afterBytes": 109,
+        "beforeSha256": "6764a08cd38fdd8dfb6bdb0c659a12396d68ff34c6f464af12816d39ae07969d",
+        "afterSha256": "5a871ca033263e7e26732402cc8e5d5f0053952d0b54e2c8530e33a8fc4d1216"
+      },
+      {
+        "index": 2,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 273,
+        "afterBytes": 565,
+        "beforeSha256": "8dcd45b74a9645e92646ba0f84c4670259b8cf9998bf6ae21cdc9033c35abf4b",
+        "afterSha256": "fa4b67232d6a3f892b02b10fa1661ed09c255bf695fb08ad59b363eadc8856b8"
+      },
+      {
+        "index": 3,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 75,
+        "afterBytes": 51,
+        "beforeSha256": "2f0b26b549844450c9c8442dd17d66c35b5c52d01c9d4b0d7b1ad36624ef79d7",
+        "afterSha256": "39e380703c3f1209126ce62aec5cd648988ed1e586b6179538edbaacd6cac74f"
+      },
+      {
+        "index": 4,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 54,
+        "afterBytes": 66,
+        "beforeSha256": "d690d97b97d4f394783328ef3f53215d70098fc6fdaf52c19afada8c36f09689",
+        "afterSha256": "01f308092644841dfa901cd35d033dcce3605e7e6cd8a12d8f2ad4b0384ca68a"
+      },
+      {
+        "index": 5,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 185,
+        "afterBytes": 702,
+        "beforeSha256": "f4105a9f943dac5c71ea93230894214705263986efc1b2a0ab564a38e9840540",
+        "afterSha256": "cd9dbe382f020a7c1e5f3833cdbd2284b83454a4f899b08cd5688b72d279abe9"
+      },
+      {
+        "index": 6,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 86,
+        "afterBytes": 103,
+        "beforeSha256": "cb4c33f70f2c021366756448b5d69fc25f80f4a6da1409afd53fc75b38e8881b",
+        "afterSha256": "a0ecc38df73b8a29ffea8b851777dd06ed95a9786c061d42c7d7df2cd6adb9a8"
+      },
+      {
+        "index": 7,
+        "uniqueBeforeOccurrences": 1,
+        "declaredOccurrences": 1,
+        "beforeBytes": 1738,
+        "afterBytes": 3183,
+        "beforeSha256": "98893890f1b4a8057344ba2e79e5b133f4056430dd184a5ca8a50052cd539dcc",
+        "afterSha256": "1f06e0fec920b30ea2613375ee2a650ab13f90083f226b675ac591f11cbb1092"
+      }
+    ],
+    "entireProposedByteReconstructionMatches": true,
+    "unchangedCompleteModelAndSetupPrefix": {
+      "throughBeforeLine": 505,
+      "bytes": 72492,
+      "sha256": "6130648f0d3e344c71cef83b0f7b4e3f114774b98a93dcff362a02231158bc79",
+      "same": true
+    },
+    "originalHostClientCopiesByteEqual": true,
+    "preservedIndependentReviewPins": [
+      {
+        "path": "docs/evidence/NI3/ollama-installed-worker-independent-source-review.md",
+        "bytes": 15203,
+        "sha256": "46054937a97e3ed53713864b0ee6033471dd97448c4f87c051005831fd71d4d0"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-installed-worker-independent-source-review.json",
+        "bytes": 99384,
+        "sha256": "b8dcb6f4966b2f15a41b77d53bd0350d6456993ae59af85430f44b498e326221"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-worker-finish-accounting-source-disposition.md",
+        "bytes": 7224,
+        "sha256": "b93ad0f6361a4abd2145479b79425a0497a590f0dfd22f6f0a5cf70826ca3efd"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-worker-finish-accounting-source-disposition.json",
+        "bytes": 10214,
+        "sha256": "63144cfb14e68f6b918220c475e43a91de2a120cf76d7926c627cb43d27b2e4f"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-currentness-r1-independent-source-review.md",
+        "bytes": 11338,
+        "sha256": "300844c803ce6c989cb51141ecbe13609ee0ce74e0094ed41f09a565e1e83e74"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-currentness-r1-independent-source-review.json",
+        "bytes": 111036,
+        "sha256": "156a4d571be930ad180d15a665bda70846a7cccb81bdf1d5b98987521c5a3db8"
+      },
+      {
+        "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.md",
+        "bytes": 13338,
+        "sha256": "25af1bc597b07e6909e78756c08e633b25fda0068282e77f3352439c6b5642bb"
+      },
+      {
+        "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.json",
+        "bytes": 193931,
+        "sha256": "3f8bb7b8a0c98bc3e2865c62ae4c5dffd4ebe15d58a5eb016107c9acf5165c25"
+      }
+    ],
+    "JavaScriptParsedImportedExecuted": false,
+    "testsBuildBrowserNetworkModelNativeDBProfilesListenersGitOccurred": false
+  },
+  "reproducibility": {
+    "command": "python3 - <<'PY'\nfrom pathlib import Path\nimport json,hashlib,difflib,tarfile\np=Path('.runtime/ui-worker-reconnect-proposal')\nsha=lambda b:hashlib.sha256(b).hexdigest()\ndef pin(path):\n path=Path(path);b=path.read_bytes();return {'path':str(path),'bytes':len(b),'sha256':sha(b)}\nmanifest=pin(p/'manifest.json');assert manifest['sha256']=='fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222'\nclosure=pin(p/'closure.sha256');assert closure['sha256']=='8e551b04bcc308234e2fbdb0efaf1adfd36d639bef4e162fffda3ec663de8885'\nm=json.loads((p/'manifest.json').read_bytes());inputs=[];artifacts=[]\nfor key,out in [('publicInputs',inputs),('authoredArtifacts',artifacts)]:\n for x in m[key]:\n  a=pin(x['path']);assert a['bytes']==x['bytes'] and a['sha256']==x['sha256'],x['path'];out.append({**a,'declaredRole':x['role']})\nsidecar=[]\nfor line in (p/'closure.sha256').read_text().splitlines():\n expected,name=line.split('  ',1);a=pin(name);assert a['sha256']==expected,name;sidecar.append(a)\nmanifestSidecar=pin(p/'manifest.sha256');expected,name=(p/'manifest.sha256').read_text().strip().split('  ',1);assert expected==manifest['sha256'] and name==str(p/'manifest.json')\nbefore=pin(p/'before/client-entry.cjs');after=pin(p/'src/client-entry.cjs');assert before['sha256']=='e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99';assert after['sha256']=='863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384'\nsource=Path('.runtime/ni2-install/source-a58c522/src/client-entry.cjs').read_bytes();assert source==(p/'before/client-entry.cjs').read_bytes()\narchive=Path('.runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz')\nwith tarfile.open(archive,'r:gz') as tf:\n member=tf.extractfile('package/src/client-entry.cjs').read();assert member==source\narchiveEquality={'path':str(archive),'onlyReadMember':'package/src/client-entry.cjs','memberBytes':len(member),'memberSha256':sha(member),'sameAsBeforeAndPublicSource':True,'extractedToFilesystem':False}\nfor name in ['@deepseek-ai/dsh-client-connection','@deepseek-ai/dsh-api-gateway']:\n assert (Path('.runtime/dsh-web/node_modules')/name/'lib/client.js').read_bytes()==(Path('.runtime/ni2-install/host/node_modules')/name/'lib/client.js').read_bytes()\na=(p/'before/client-entry.cjs').read_text();b=(p/'src/client-entry.cjs').read_text();delta=''.join(difflib.unified_diff(a.splitlines(keepends=True),b.splitlines(keepends=True),fromfile='a/src/client-entry.cjs',tofile='b/src/client-entry.cjs')).encode();assert delta==(p/'literal-client.patch').read_bytes()\nliteral=json.loads((p/'literal-before-after.json').read_bytes());projected=a;replacements=[]\nfor index,row in enumerate(literal['replacements']):\n count=projected.count(row['before']);assert count==row['occurrences']==1,index\n projected=projected.replace(row['before'],row['after']);replacements.append({'index':index,'uniqueBeforeOccurrences':count,'declaredOccurrences':row['occurrences'],'beforeBytes':len(row['before'].encode()),'afterBytes':len(row['after'].encode()),'beforeSha256':sha(row['before'].encode()),'afterSha256':sha(row['after'].encode())})\nassert projected.encode()==(p/'src/client-entry.cjs').read_bytes()\nassert a[:a.index('  function workerCard(')]==b[:b.index('  function workerCard(')]\nunchangedPrefix={'throughBeforeLine':505,'bytes':len(a[:a.index('  function workerCard(')].encode()),'sha256':sha(a[:a.index('  function workerCard(')].encode()),'same':True}\npreservedNames=['docs/evidence/NI3/ollama-installed-worker-independent-source-review.md','docs/evidence/NI3/ollama-installed-worker-independent-source-review.json','docs/evidence/NI3/ollama-worker-finish-accounting-source-disposition.md','docs/evidence/NI3/ollama-worker-finish-accounting-source-disposition.json','docs/evidence/NI3/ollama-currentness-r1-independent-source-review.md','docs/evidence/NI3/ollama-currentness-r1-independent-source-review.json','docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.md','docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.json']\nexpected=['46054937a97e3ed53713864b0ee6033471dd97448c4f87c051005831fd71d4d0','b8dcb6f4966b2f15a41b77d53bd0350d6456993ae59af85430f44b498e326221','b93ad0f6361a4abd2145479b79425a0497a590f0dfd22f6f0a5cf70826ca3efd','63144cfb14e68f6b918220c475e43a91de2a120cf76d7926c627cb43d27b2e4f','300844c803ce6c989cb51141ecbe13609ee0ce74e0094ed41f09a565e1e83e74','156a4d571be930ad180d15a665bda70846a7cccb81bdf1d5b98987521c5a3db8','25af1bc597b07e6909e78756c08e633b25fda0068282e77f3352439c6b5642bb','3f8bb7b8a0c98bc3e2865c62ae4c5dffd4ebe15d58a5eb016107c9acf5165c25']\npreserved=[pin(x) for x in preservedNames];assert [x['sha256'] for x in preserved]==expected\nresult={'manifestPin':manifest,'closurePin':closure,'manifestSidecarPin':manifestSidecar,'publicInputPins':inputs,'authoredArtifactPins':artifacts,'closureListedPins':sidecar,'beforePin':before,'afterPin':after,'archiveSourceMemberEquality':archiveEquality,'exactUnifiedDiff':{'path':str(p/'literal-client.patch'),'bytes':len(delta),'sha256':sha(delta),'exact':True},'uniqueEightLiteralReplacementChecks':replacements,'entireProposedByteReconstructionMatches':True,'unchangedCompleteModelAndSetupPrefix':unchangedPrefix,'originalHostClientCopiesByteEqual':True,'preservedIndependentReviewPins':preserved,'JavaScriptParsedImportedExecuted':False,'testsBuildBrowserNetworkModelNativeDBProfilesListenersGitOccurred':False}\nPath('/tmp/ui-worker-reconnect-independent-byte-verification.json').write_text(json.dumps(result,indent=2)+'\\n')\nprint(json.dumps({'manifest':manifest,'closure':closure,'before':before,'after':after,'inputCount':len(inputs),'artifactCount':len(artifacts),'closureListedCount':len(sidecar),'exactDiff':result['exactUnifiedDiff'],'uniqueLiteralReplacementCount':len(replacements),'fullProposedReconstruction':'MATCH','archivePublicSourceBeforeEquality':'MATCH','hostClientCopies':'MATCH','unchangedPrefix':unchangedPrefix,'priorOwnEvidence':'8 MATCH','JSExecution':False},indent=2))\nPY",
+    "commandKind": "Python standard-library source byte/hash/literal/archive-member verification only, not a JS test or parser",
+    "workingDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "result": {
+      "publicInputPins": "30 MATCH",
+      "authoredArtifactPins": "8 MATCH",
+      "closureListedPins": "10 MATCH",
+      "manifestAndSidecar": "MATCH",
+      "completeUnifiedDiff": "EXACT",
+      "uniqueLiteralReplacements": "8 MATCH",
+      "entireProposedSourceReconstruction": "MATCH",
+      "archiveOnlyPublicSourceMemberEquality": "MATCH",
+      "originalHostClientCopyEquality": "MATCH",
+      "priorOwnIndependentArtifacts": "8 MATCH"
+    }
+  },
+  "markdownCompanion": {
+    "path": "docs/evidence/UI/worker-reconnect-independent-source-review.md",
+    "bytes": 14000,
+    "sha256": "b4f4aa00e75f4c7897fdb1ed3c2b590bfb18176a46ea3037cf21e4ad36b20176"
+  }
+}

@@ -1,0 +1,217 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs"
+      ],
+      "durationSeconds": 0.063346,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.128980+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T10:12:30.065645+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-01.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs"
+      ],
+      "durationSeconds": 0.064449,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.193856+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T10:12:30.129419+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-02.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs"
+      ],
+      "durationSeconds": 0.064514,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.258842+00:00",
+      "index": 3,
+      "startedAt": "2026-10-07T10:12:30.194335+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-03.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-03.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs"
+      ],
+      "durationSeconds": 0.064844,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.324110+00:00",
+      "index": 4,
+      "startedAt": "2026-10-07T10:12:30.259274+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-04.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-04.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs"
+      ],
+      "durationSeconds": 0.066581,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.391167+00:00",
+      "index": 5,
+      "startedAt": "2026-10-07T10:12:30.324588+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-05.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-05.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs"
+      ],
+      "durationSeconds": 0.065306,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.456995+00:00",
+      "index": 6,
+      "startedAt": "2026-10-07T10:12:30.391702+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-06.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-06.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs"
+      ],
+      "durationSeconds": 0.067342,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.524784+00:00",
+      "index": 7,
+      "startedAt": "2026-10-07T10:12:30.457451+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-07.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-07.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs"
+      ],
+      "durationSeconds": 0.067464,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.592754+00:00",
+      "index": 8,
+      "startedAt": "2026-10-07T10:12:30.525300+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-08.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-08.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs"
+      ],
+      "durationSeconds": 0.196297,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T10:12:30.789512+00:00",
+      "index": 9,
+      "startedAt": "2026-10-07T10:12:30.593226+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-09.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 93630,
+        "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/command-09.stdout.txt",
+        "sha256": "090ce3499b6bbb1e4420274a82ca898274c0a3a3b126e9a20740d1fa066ef503"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": false
+}

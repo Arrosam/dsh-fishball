@@ -1,0 +1,175 @@
+{
+  "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+  "capsule": ".runtime/ui-worker-reconnect-fixture-r3",
+  "change": "exact two original-shaped G1/G2 literals only",
+  "candidate": {
+    "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+    "bytes": 106631,
+    "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+  },
+  "moduleConservation": [
+    {
+      "relativePath": "controller-execute-preparation.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/controller-execute-preparation.mjs",
+        "bytes": 7365,
+        "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+        "bytes": 7365,
+        "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8"
+      },
+      "changed": false
+    },
+    {
+      "relativePath": "run-ep4.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/run-ep4.mjs",
+        "bytes": 1826,
+        "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+        "bytes": 1826,
+        "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb"
+      },
+      "changed": false
+    },
+    {
+      "relativePath": "support/finite-deferred.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/finite-deferred.mjs",
+        "bytes": 1682,
+        "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+        "bytes": 1682,
+        "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d"
+      },
+      "changed": false
+    },
+    {
+      "relativePath": "support/model-only-react.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/model-only-react.mjs",
+        "bytes": 350,
+        "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+        "bytes": 350,
+        "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123"
+      },
+      "changed": false
+    },
+    {
+      "relativePath": "support/public-carrier.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-carrier.mjs",
+        "bytes": 8269,
+        "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+        "bytes": 8269,
+        "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4"
+      },
+      "changed": false
+    },
+    {
+      "relativePath": "support/public-dtos.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-dtos.mjs",
+        "bytes": 13884,
+        "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+        "bytes": 13884,
+        "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481"
+      },
+      "changed": false
+    },
+    {
+      "relativePath": "support/public-model-fixture.mjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-model-fixture.mjs",
+        "bytes": 7309,
+        "sha256": "adb456e1d17841597e2704bf3ac703778696a795c5476135b9631f6354d604e5"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+        "bytes": 7351,
+        "sha256": "55f9132ed3d3a55a6ccf9b7223e6fbfcade7fc3f7831a3622264edce037bf994"
+      },
+      "changed": true
+    },
+    {
+      "relativePath": "candidate/client-entry.cjs",
+      "before": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r2/candidate/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+      },
+      "after": {
+        "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+      },
+      "changed": false
+    }
+  ],
+  "publicTypeInput": {
+    "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/connection.d.ts",
+    "bytes": 3935,
+    "sha256": "85cc887caeae60ab13bd91f627ce793a42402d8f880c2af0f3f1fc0d256509d0",
+    "role": "original Generation and HostInfo DTO declaration; SOURCE only"
+  },
+  "expectedWhole": {
+    "S": 19,
+    "P": 16,
+    "E": 3,
+    "C": 0,
+    "R": 61
+  },
+  "hardCaps": {
+    "perCell": {
+      "S": 5,
+      "P": 4,
+      "E": 1,
+      "C": 0,
+      "R": 32,
+      "workerStatus": 8,
+      "preview": 2,
+      "workerQuery": 2,
+      "task": 16,
+      "other": 4,
+      "ms": 30000
+    },
+    "whole": {
+      "S": 20,
+      "R": 128,
+      "C": 0,
+      "ms": 120000
+    }
+  },
+  "executionActual": {
+    "JSParse": 0,
+    "imports": 0,
+    "tests": 0,
+    "builds": 0,
+    "S": 0,
+    "R": 0,
+    "native": 0,
+    "modelInference": 0,
+    "network": 0,
+    "Git": 0
+  },
+  "historicalConservationCount": 87,
+  "scope": "UNIT_ONLY_PUBLIC_MODEL; no actual Connection/Gateway/native/rendered UI proof",
+  "reviewRequired": "fresh independent affected fixture source review and separate root execution GO",
+  "all87": "accepted0/HOLD",
+  "finalCODE": "HOLD"
+}

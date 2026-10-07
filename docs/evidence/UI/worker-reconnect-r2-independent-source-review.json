@@ -1,0 +1,1501 @@
+{
+  "schema": "df-independent-affected-source-review/v1",
+  "reviewId": "ui-worker-reconnect-r2",
+  "date": "2026-10-07",
+  "reviewer": {
+    "lane": "/root/ni5_r3_affected_review",
+    "role": "Independent affected SOURCE code auditor",
+    "independentFromAuthor": true,
+    "language": "English"
+  },
+  "subject": {
+    "capsule": ".runtime/ui-worker-reconnect-proposal-r2/",
+    "manifestSha256": "9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38",
+    "sourceSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+    "closureSha256": "26f4ea6e627294edf7a4744d36ab38449762f3e47dcd3db7706612aeaec70f89",
+    "exactBefore": "Immutable r1",
+    "productSourceFilesChanged": [
+      "src/client-entry.cjs"
+    ],
+    "exactReplacementCount": 2,
+    "newArchitectureOrOwnerAPI": false,
+    "methodParametersChanged": false
+  },
+  "disposition": {
+    "status": "SOURCE_REMEDIATED_SCOPED_NO_NEW_AFFECTED_BLOCKER",
+    "sourceRemediatedFindings": [
+      "F-WRC-R1-01",
+      "F-WRC-R1-02"
+    ],
+    "newAffectedSourceBlockers": [],
+    "explicitHoldIds": [
+      "H-WRC-R1-US01",
+      "H-WRC-R1-MODEL-SEAM",
+      "H-WRC-R2-EXTERNAL-QUERY",
+      "H-WRC-R1-LIFETIME"
+    ],
+    "functional": "NOT_RUN",
+    "visual": "NOT_RUN",
+    "native": "HOLD",
+    "rootExecutionGOIssuedByThisLane": false,
+    "adopted": false,
+    "all87": {
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    "finalCODE": "BLOCKED_HOLD_UNTOUCHED"
+  },
+  "findings": [
+    {
+      "id": "F-WRC-R1-01",
+      "historicalR1Status": "OPEN_HIGH_IN_UNCHANGED_R1_REPORT",
+      "r2Status": "SOURCE_REMEDIATED",
+      "severityBefore": "high",
+      "newAffectedBlocker": false,
+      "scope": "Entered current mutation validated unknown execution/worker projection and existing lost-reply path for this model lifetime",
+      "literalId": "WRC2-01",
+      "sourcePath": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+      "sourceLines": [
+        350,
+        359,
+        372,
+        373,
+        374,
+        389,
+        413,
+        414,
+        418,
+        543,
+        567
+      ],
+      "facts": [
+        "Operation-specific projection runs and validates before outcome classification.",
+        "Validated execution.state unknown or worker.phase unknown leaves the original mutation token unconfirmed.",
+        "retainSubmitted records first operation name/original taskRef before result publication, refusing to overwrite existing uncertainty.",
+        "Publication appends current uncertain/taskRef after projection fields, so projected uncertain null cannot clear the marker.",
+        "Final token clearing does not clear public uncertainty; global mutation and consent/create/execute/capture/finish gates remain held.",
+        "Validated known outcomes confirm before ordinary task refresh as before.",
+        "Query-ready and readonly observations do not clear an existing unknown.",
+        "No new operation, retry, receipt contract, owner API or durable clearing is added."
+      ],
+      "coveredExactOriginalShapes": [
+        "execution unknown with unknown usage/null committed fields",
+        "created worker phase unknown",
+        "finish reservationHeld true projected to unknown worker"
+      ],
+      "functional": "NOT_RUN",
+      "nativeAcceptanceClaim": false,
+      "remainingLimits": [
+        "US01 throwing dependency",
+        "raw model versus mounted connection gate",
+        "external previously unobserved query unknown",
+        "durable/cold native reconciliation"
+      ],
+      "publicBooleanLimit": "run may still return true for a processed validated unknown reply; this is not effect establishment or host acceptance proof"
+    },
+    {
+      "id": "F-WRC-R1-02",
+      "historicalR1Status": "OPEN_MEDIUM_IN_UNCHANGED_R1_REPORT",
+      "r2Status": "SOURCE_REMEDIATED",
+      "severityBefore": "medium",
+      "newAffectedBlocker": false,
+      "scope": "Shared full/partial worker-card local offline text with measured complete original connection readiness",
+      "literalId": "WRC2-02",
+      "sourcePath": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+      "sourceLines": [
+        545,
+        548,
+        584,
+        587,
+        595
+      ],
+      "facts": [
+        "Local worker offline and connectionReady false says Host connection is unconfirmed.",
+        "Local worker offline and connectionReady true says Worker status requires a current read.",
+        "No observed host disconnection is inferred from local offline alone.",
+        "Full and partial cards share this text; readonly refresh and all decision gates are unchanged.",
+        "connectionReady still requires complete original observable methods, connected state and an actual original generation."
+      ],
+      "functional": "NOT_RUN",
+      "visual": "NOT_RUN"
+    }
+  ],
+  "holds": [
+    {
+      "id": "H-WRC-R1-US01",
+      "status": "HOLD_UNCHANGED",
+      "scope": "Required getSnapshot/subscribe throws",
+      "independentDisposition": "NOT_SOURCE_REMEDIATED; callability alone does not prove exception-safe unavailable presentation, completed joint subscription cleanup or zero worker admission.",
+      "sourceLines": [
+        306,
+        585,
+        586,
+        674,
+        703,
+        711,
+        713,
+        714
+      ],
+      "actualOfficialHostDefectClaimed": false,
+      "futureRequirement": "Separate exact source disposition and genuine public negative functional evidence; do not mark throwing dependency passed."
+    },
+    {
+      "id": "H-WRC-R1-MODEL-SEAM",
+      "status": "HOLD_UNCHANGED",
+      "scope": "Standalone model-only connection-negative US01/US02 claim",
+      "facts": [
+        "createWorkerModel receives rpc/taskModel/options only",
+        "complete observable gate remains mounted Apply/Panel behavior",
+        "raw model phase may change on readonly status refresh"
+      ],
+      "futureRequirement": "Use genuine supported mounted/controller seam or retain model-only assertion HOLD; no connected-flag substitution or private guard patch.",
+      "endUserHiddenDOMBypassClaimed": false,
+      "nativeAuthorityBypassClaimed": false
+    },
+    {
+      "id": "H-WRC-R2-EXTERNAL-QUERY",
+      "status": "HOLD_EXPLICIT",
+      "scope": "Readonly query of previously unobserved external unknown worker",
+      "facts": [
+        "Readonly query has no mutation pending token for r2 classification",
+        "existing first uncertainty is conserved",
+        "no absent original operation provenance or settlement receipt is manufactured"
+      ],
+      "futureRequirement": "Retain broader external/cold native recovery HOLD; original query-ready is not execution absence or a clearing fact."
+    },
+    {
+      "id": "H-WRC-R1-LIFETIME",
+      "status": "HOLD_UNCHANGED",
+      "scope": "Durable/cold-remount/full historical reconciliation, drain, rollback and reservation release",
+      "facts": [
+        "marker is model-local operation name/original taskRef only",
+        "disposal or a new empty model does not establish nonapplication",
+        "no new persistence or clearing API/native termination/release proof"
+      ],
+      "futureRequirement": "Keep actual native restart/receipt/termination/release acceptance separate and HOLD."
+    }
+  ],
+  "unchangedSourceContracts": [
+    {
+      "id": "SRC-ENTERED-RPC",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Local pre-call digest/build/currentness/missing-method failures do not set submitted. Original method entry remains conservative unknown, not wire/host acceptance. Original invoke receiver preserved."
+    },
+    {
+      "id": "SRC-TASK-CURRENTNESS",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Actual nonstale taskRef/version/authEpoch, active/revision/epoch fences and null-detail short circuit remain unchanged."
+    },
+    {
+      "id": "SRC-TOKEN-FIRST-UNKNOWN",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Invalidate captures first entered unconfirmed operation before abort/revision; old finally cannot erase replacement token; selection/reset/disposal conserve first metadata."
+    },
+    {
+      "id": "SRC-READONLY-MONOTONE",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Existing uncertainty is preserved across status/catalog/query/result observations; ready query is not effect establishment."
+    },
+    {
+      "id": "SRC-RECOVERY-ORDER",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Original state -> generation -> Gateway reset, coalesced setup -> task/detail -> cached status recovery and retired follow-up guards remain unchanged."
+    },
+    {
+      "id": "SRC-MOUNTED-GATE",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Only complete callable original observables can enable mounted connection readiness; partial card renders readonly status without decision controls."
+    },
+    {
+      "id": "SRC-TASK-CANCEL-POLICY",
+      "status": "RETAINED_SOURCE_ONLY",
+      "facts": "Independent original task cancellation retains task CAS and no stop/release painting; task-independent policy uncertainty uses null taskRef and holds worker mutation flow."
+    }
+  ],
+  "reviewScope": {
+    "completeTwoBeforeAfterLiteralRead": true,
+    "completeMinimalUnifiedDiffRead": true,
+    "fullCumulativeUnifiedDiffReconstructed": "EXACT_BYTES",
+    "fullFactorySemanticReviewClaim": false,
+    "semanticReads": "The exact two new spans and relevant retained actual run/parser/projection/gate/status/Panel/Apply source; earlier original public source contracts reused only because their pins match.",
+    "authorProposalUse": "Public requirements/scope context only",
+    "authorOracleOrFixtureAssertionsRead": false,
+    "rawTestOracleLogsRead": false,
+    "privatePersonalDataInspected": false,
+    "protectedFinalCODEExperimentTouched": false,
+    "separatePreparationDesignOrFixtureReviewedHere": false,
+    "futureFixtureExecutionStarted": false,
+    "separateOllamaFixtureAuditStarted": false
+  },
+  "activity": {
+    "JavaScriptParsed": false,
+    "JavaScriptImported": false,
+    "JavaScriptExecuted": false,
+    "fixtureCreatedOrExecuted": false,
+    "testsRun": false,
+    "buildOrBundleRun": false,
+    "browserUsed": false,
+    "servicesInvoked": false,
+    "networkUsed": false,
+    "modelInference": false,
+    "nativeRuntimeUsed": false,
+    "databaseUsed": false,
+    "profileTouched": false,
+    "listenerTouched": false,
+    "GitUsed": false,
+    "productOrCapsuleSourceChanged": false,
+    "writes": "New independent MD/JSON and temporary byte verification metadata only"
+  },
+  "authorityAndEffects": {
+    "newAutomaticRPCsAddedByTwoSpans": 0,
+    "newAutomaticWorkerMutations": [],
+    "newGenerationControllerLoopOrSource": false,
+    "enteredCallIsHostAcceptanceProof": false,
+    "processedUnknownTrueReturnIsEffectProof": false,
+    "actualNativeReplayProved": false,
+    "readyQueryIsExecutionAbsenceProof": false,
+    "originalNativeAuthorityChanged": false,
+    "coldRemountOrDisposalIsRollbackProof": false,
+    "fullNativeRecoveryClaim": false,
+    "UIAdoptsOllamaOrLaterNI3To6Cuts": false
+  },
+  "functionalObligations": [
+    "Separately review exact finite fixture/import/effect plan and public interfaces before root execution GO.",
+    "Preserve independent UI36/US24 and separate preparation design bounds; no executed PASS is supplied here.",
+    "Prepare a genuine synthetic ready-worker state before exercising Execute unknown/lost-response conservation; a generic prepareContext mutation does not prove this regression.",
+    "Verify validated execution unknown, created-worker unknown and finish held/unknown conservation and subsequent mutation refusal.",
+    "Verify first original task/name survives readonly query-ready, task switch/reset/owner replacement, old-finally/new-token and disposal.",
+    "Verify known outcomes still record their own scope before ordinary readonly task refresh, without automatic follow-on mutation.",
+    "Verify actual full/partial rendering for initial undefined/incomplete/connecting state and already-current connection requiring worker reread.",
+    "Listener-triggered reset/task selection/disposal during first-unknown publication remains NOT_RUN; verify no restored mutation authority.",
+    "Keep thrown-store, unsupported model-only, external-query and durable/cold/native claims explicit HOLD.",
+    "Any future source/package/profile/service/browser successor must preserve running a58 QA ownership and all frozen capsules/reviews.",
+    "All 87 accepted 0/HOLD and protected final CODE remains blocked."
+  ],
+  "exactAffectedSourceSnippets": {
+    "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+    "sourceSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+    "textOnlyNotJavaScriptParsed": true,
+    "lines": [
+      {
+        "line": 306,
+        "text": "  const observableConnection = connection => ['state', 'generation'].every(key => typeof connection?.[key]?.getSnapshot === 'function' && typeof connection?.[key]?.subscribe === 'function');"
+      },
+      {
+        "line": 344,
+        "text": "  function createWorkerModel(rpc, taskModel, {clock=Date.now,uuid=()=>crypto.randomUUID(),digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text))),byte=>byte.toString(16).padStart(2,'0')).join('')}={}) {"
+      },
+      {
+        "line": 350,
+        "text": "    function retainSubmitted(pending=pendingMutation){if(pending?.submitted&&!pending.confirmed&&!state.uncertain)publish({uncertain:pending.name,uncertainTaskRef:pending.taskRef});}"
+      },
+      {
+        "line": 351,
+        "text": "    function invalidate(){retainSubmitted();revision++;for(const controller of controllers)controller.abort();publish({policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null});}"
+      },
+      {
+        "line": 354,
+        "text": "    const unsubscribe=taskModel.subscribe(()=>{const s=taskModel.getSnapshot(),t=s.detail?.task,key=t?`${t.taskRef}:${t.version}:${t.authEpoch}`:null;if(key!==selectedKey){const prior=selectedKey;selectedKey=key;if(!ownRefresh){invalidate();publish({busy:null,stale:true});}if(t&&state.taskRef&&t.taskRef!==state.taskRef)publish({taskRef:t?.taskRef??null,contextRecordRef:null,action:null,worker:null,execution:null,capture:null,result:null});}});"
+      },
+      {
+        "line": 355,
+        "text": "    async function call(channel,name,payload,pending){const currentEpoch=epoch,controller=new AbortController();controllers.add(controller);try{const invoke=rpc?.call;if(typeof invoke!=='function')throw new Error('CAPABILITY_UNAVAILABLE');if(!active||epoch!==currentEpoch||controller.signal.aborted)throw new Error('CONNECTION_CHANGED');if(pending)pending.submitted=true;const response=await invoke.call(rpc,channel,`v1/${name}`,payload,controller.signal);if(!active||epoch!==currentEpoch||controller.signal.aborted)throw new Error('CONNECTION_CHANGED');const envelope=setupObject(plainRpcReply(response),['ok','value','error'],['ok']);if(envelope.ok===false&&!Object.hasOwn(envelope,'value')){const error=setupObject(envelope.error,['code','message','details'],['code']);throw new Error(workerError(error.code));}if(envelope.ok!==true||!Object.hasOwn(envelope,'value')||Object.hasOwn(envelope,'error'))throw new Error('INVALID_RESPONSE');return envelope.value;}catch(error){throw new Error(workerError(setupFailure(error)));}finally{controllers.delete(controller);}}"
+      },
+      {
+        "line": 357,
+        "text": "    async function refresh(){if(!active||state.busy)return false;invalidate();const read=revision;publish({busy:'status',stale:true,error:null});try{const value=workerStatus(await call('/df-setup','workerStatus',{}));if(read!==revision)return false;publish({status:value,phase:value.phase,stale:false});return true;}catch(error){if(read===revision)publish({phase:'unavailable',error:workerError(setupFailure(error)),stale:true});return false;}finally{if(read===revision)publish({busy:null});}}"
+      },
+      {
+        "line": 359,
+        "text": "      if(!active||state.busy||state.phase==='offline'||mutation&&(state.uncertain||pendingMutation?.submitted&&!pendingMutation.confirmed))return false;"
+      },
+      {
+        "line": 361,
+        "text": "      const read=++revision,currentEpoch=epoch,pending=mutation?{name,taskRef:bound?.taskRef??null,submitted:false,confirmed:false}:null;"
+      },
+      {
+        "line": 362,
+        "text": "      const current=()=>{if(!active||read!==revision||currentEpoch!==epoch)return false;if(!requiresTask)return true;const snapshot=taskModel.getSnapshot(),selected=snapshot.detail?.task;return !snapshot.stale&&selected?.taskRef===bound.taskRef&&selected.version===bound.version&&selected.authEpoch===bound.authEpoch;};"
+      },
+      {
+        "line": 371,
+        "text": "        if(!current()){retainSubmitted(pending);return false;}"
+      },
+      {
+        "line": 372,
+        "text": "        const update=project(value,bound);"
+      },
+      {
+        "line": 373,
+        "text": "        if(pending){const unknown=update.execution?.state==='unknown'||update.worker?.phase==='unknown';pending.confirmed=!unknown;if(unknown)retainSubmitted(pending);}"
+      },
+      {
+        "line": 374,
+        "text": "        publish({...update,stale:false,uncertain:state.uncertain,uncertainTaskRef:state.uncertainTaskRef});"
+      },
+      {
+        "line": 375,
+        "text": "        if(mutation&&requiresTask){ownRefresh=true;try{await taskModel.refresh();}finally{ownRefresh=false;}}"
+      },
+      {
+        "line": 376,
+        "text": "        return true;"
+      },
+      {
+        "line": 389,
+        "text": "        if(pendingMutation===pending)pendingMutation=null;"
+      },
+      {
+        "line": 396,
+        "text": "    const policyFresh=()=>!state.busy&&!state.stale&&!state.uncertain&&expiry(state.policyPreview);"
+      },
+      {
+        "line": 397,
+        "text": "    const actionFresh=()=>!state.busy&&!state.stale&&!state.uncertain&&expiry(state.actionPreview)&&state.actionPreview?.taskVersion===taskModel.getSnapshot().detail?.task.version&&state.actionPreview?.authEpoch===taskModel.getSnapshot().detail?.task.authEpoch;"
+      },
+      {
+        "line": 411,
+        "text": "      canCreate:()=>Boolean(!state.busy&&!state.stale&&state.status?.actionsEnabled&&state.action&&state.grant&&state.grant.actionRef===state.action.actionRef&&state.grant.actionDigest===state.action.actionDigest&&state.grant.authEpoch===taskModel.getSnapshot().detail?.task.authEpoch&&integer(now())&&now()<state.grant.expiresAt&&!state.worker&&!state.uncertain),"
+      },
+      {
+        "line": 413,
+        "text": "      create(){if(!this.canCreate())return Promise.resolve(false);return run('workerCreate',(t,commandRef)=>{if(!state.action)throw new Error('WORKER_MAPPING_MISMATCH');return{...cas(t,commandRef),actionRef:state.action.actionRef,actionDigest:state.action.actionDigest};},(value,t)=>{const row=workerRecord(value,['task','worker']),worker=normalWorker(row.worker);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||worker.actionRef!==state.action.actionRef||worker.actionDigest!==state.action.actionDigest)throw new Error('INVALID_RESPONSE');return{worker,uncertain:null};},{mutation:true,requiresTask:true});},"
+      },
+      {
+        "line": 414,
+        "text": "      execute(){if(state.worker?.phase!=='ready'||state.execution||state.uncertain)return Promise.resolve(false);return run('workerExecute',(t,commandRef)=>({...cas(t,commandRef),...mapping(t),actionDigest:state.worker.actionDigest,contextRecordRef:state.contextRecordRef}),(value,t)=>{const row=workerRecord(value,['task','execution','worker']),execution=workerRecord(row.execution,['executionRef','state','cursor','resultDigest','usage']),usage=workerRecord(execution.usage,['state','units','accounting']);const worker=normalWorker(row.worker);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||['actionRef','actionDigest','claimRef','generationRef','reservationRef','sessionRef'].some(key=>worker[key]!==state.worker[key]))throw new Error('INVALID_RESPONSE');if(!ref(execution.executionRef)||!['committed','unknown'].includes(execution.state)||!['actual','unknown'].includes(usage.state)||execution.state==='committed'&&(!integer(execution.cursor)||!ref(execution.resultDigest)||usage.state!=='actual'||!integer(usage.units)||usage.accounting!=='df-testing-utf8-byte-units/v1')||execution.state==='unknown'&&(execution.cursor!==null||execution.resultDigest!==null||usage.state!=='unknown'||usage.units!==null||usage.accounting!==null))throw new Error('INVALID_RESPONSE');return{worker,execution,uncertain:null};},{mutation:true,requiresTask:true});},"
+      },
+      {
+        "line": 415,
+        "text": "      query:()=>run('workerQuery',t=>mapping(t),(value,t)=>{const row=workerRecord(value,['task','worker']),worker=normalWorker(row.worker),expected=mappedWorker(t);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||['actionRef','actionDigest','claimRef','generationRef','reservationRef','sessionRef'].some(key=>worker[key]!==expected[key]))throw new Error('INVALID_RESPONSE');return{worker};},{requiresTask:true,allowBlocked:true}),"
+      },
+      {
+        "line": 416,
+        "text": "      capture(){if(state.uncertain)return Promise.resolve(false);return run('workerCapture',(t,commandRef)=>{if(state.execution?.state!=='committed')throw new Error('WORKER_RESULT_UNAVAILABLE');return{...cas(t,commandRef),...mapping(t),executionRef:state.execution.executionRef};},value=>{workerRecord(value,['artifactRef','version','recordRef','digest','producerClaimRef','generationRef','producerRef','verification','task']);workerTask(value.task);if(workerTask(value.task).taskRef!==state.worker.taskRef||value.generationRef!==state.worker.generationRef||!ref(value.producerRef)||!ref(value.artifactRef)||value.version!==1||!ref(value.recordRef)||!ref(value.digest)||value.verification!==null||value.producerClaimRef!==state.worker.claimRef)throw new Error('INVALID_RESPONSE');return{capture:value,result:null,uncertain:null};},{mutation:true,requiresTask:true,allowBlocked:true});},"
+      },
+      {
+        "line": 418,
+        "text": "      finish(){if(state.uncertain)return Promise.resolve(false);return run('workerFinish',(t,commandRef)=>{if(!state.capture||!state.execution)throw new Error('WORKER_FINISH_UNAVAILABLE');return{...cas(t,commandRef),...mapping(t),executionRef:state.execution.executionRef};},value=>{workerRecord(value,['task','claimRef','reservationRef','reservationHeld','outcome','terminalEvidenceRef','releaseEvidenceRef']);workerTask(value.task);if(workerTask(value.task).taskRef!==state.worker.taskRef||!ref(value.claimRef)||value.claimRef!==state.worker.claimRef||value.reservationRef!==state.worker.reservationRef||value.terminalEvidenceRef!==null&&!ref(value.terminalEvidenceRef)||value.releaseEvidenceRef!==null&&!ref(value.releaseEvidenceRef)||value.outcome!=='completed'||typeof value.reservationHeld!=='boolean')throw new Error('INVALID_RESPONSE');return{worker:{...state.worker,phase:value.reservationHeld?'unknown':'stopped'},uncertain:null};},{mutation:true,requiresTask:true,allowBlocked:true});},"
+      },
+      {
+        "line": 419,
+        "text": "      disconnected(){if(!active)return;epoch++;invalidate();publish({phase:'offline',busy:null,stale:true,error:null});},dispose(){retainSubmitted();active=false;epoch++;invalidate();unsubscribe();listeners.clear();controllers.clear();}"
+      },
+      {
+        "line": 543,
+        "text": "    const ready=taskCurrent&&status.actionsEnabled&&!state.stale&&!state.uncertain;"
+      },
+      {
+        "line": 545,
+        "text": "    const statusText=state.busy==='status'?'Reading current worker status…':state.phase==='offline'?(connectionReady?'Worker status requires a current read. Worker decisions are cleared.':'Host connection is unconfirmed. Worker decisions are cleared.'):state.phase==='unavailable'?'Worker status is unavailable. Read current host status before another decision.':status?`${status.phase.replaceAll('_',' ')}${status.reasonCode?' · '+status.reasonCode:''}${state.stale?' · stale; refresh required':''}${connectionReady?'':' · host connection unconfirmed; decisions unavailable'}`:'Load the cached worker status before a new decision.';"
+      },
+      {
+        "line": 546,
+        "text": "    const uncertainText=`Unconfirmed ${state.uncertain}${state.uncertainTaskRef?' for task '+state.uncertainTaskRef.slice(0,8):''}. Read current host facts; repeating a mutation is unavailable until its outcome is established.`;"
+      },
+      {
+        "line": 547,
+        "text": "    if(readOnly)return h('div',{style:styles.card,'aria-label':'Normal native worker'},h('h2',null,'Native worker'),"
+      },
+      {
+        "line": 550,
+        "text": "      button('Refresh worker status',()=>model.refresh()),"
+      },
+      {
+        "line": 553,
+        "text": "      h('p',null,'Worker decisions are unavailable until current storage setup and host connection are confirmed.'));"
+      },
+      {
+        "line": 565,
+        "text": "        h('label',{htmlFor:'df-worker-policy-accept'},h('input',{id:'df-worker-policy-accept',type:'checkbox',checked:state.policyAccepted&&model.now()<policy.expiresAt,disabled:!available||!!state.uncertain||model.now()>=policy.expiresAt,onChange:event=>model.setPolicyAccepted(event.target.checked,policy.previewRef,policy.planDigest)}),' I accept this exact worker policy and unencrypted native transcript storage.'),"
+      },
+      {
+        "line": 566,
+        "text": "        button('Confirm worker policy',()=>model.confirmPolicy(policy.previewRef,policy.planDigest),!available||!model.canConfirmPolicy())),"
+      },
+      {
+        "line": 567,
+        "text": "      h('div',{style:styles.row},button('Prepare approved context',()=>model.prepareContext(),!ready),button('Plan worker action',()=>model.plan(),!ready||!state.contextRecordRef),button('Preview worker action',()=>model.previewAction(),!ready||!state.action||!!state.worker)),"
+      },
+      {
+        "line": 571,
+        "text": "        button('Grant this action',()=>model.grant(Date.parse(expires),action.previewRef),!ready||!model.canGrant()||!integer(Date.parse(expires))||Date.parse(expires)<=model.now()),h('p',null,'Granting is a separate decision. Create and execute remain explicit.')),"
+      },
+      {
+        "line": 572,
+        "text": "      h('div',{style:styles.row},button('Create idle worker',()=>model.create(),!ready||!model.canCreate()),button('Execute approved context',()=>model.execute(),!ready||!state.worker||state.worker.phase!=='ready'||!!state.execution||!!state.uncertain),button('Query worker',()=>model.query(),!cleanupCurrent||!state.worker&&!state.action),button('Capture local result',()=>model.capture(),!cleanupCurrent||state.execution?.state!=='committed'||!!state.capture||!!state.uncertain),button('Load captured result',()=>model.loadResult(),!cleanupCurrent||!state.capture),button('Finish owned worker',()=>model.finish(),!cleanupCurrent||!state.capture||!state.execution||state.worker?.phase==='stopped'||!!state.uncertain)),"
+      },
+      {
+        "line": 584,
+        "text": "    const observable = observableConnection(connection);"
+      },
+      {
+        "line": 585,
+        "text": "    const hostState = React.useSyncExternalStore(observable ? connection.state.subscribe : emptySetupSubscribe, observable ? connection.state.getSnapshot : emptySetupSnapshot, observable ? connection.state.getSnapshot : emptySetupSnapshot);"
+      },
+      {
+        "line": 586,
+        "text": "    const hostGeneration = React.useSyncExternalStore(observable ? connection.generation.subscribe : emptySetupSubscribe, observable ? connection.generation.getSnapshot : emptySetupSnapshot, observable ? connection.generation.getSnapshot : emptySetupSnapshot);"
+      },
+      {
+        "line": 587,
+        "text": "    const connectionReady = observable && hostState === 'connected' && !!hostGeneration;"
+      },
+      {
+        "line": 595,
+        "text": "    if (setup && setup.phase !== 'ready' && !(setup.routeMissing && state.phase === 'ready' && !state.stale)) return h('section', { style: styles.panel, 'aria-label': 'dsh-fishball task panel' }, h('h1', null, 'dsh-fishball Preview'), setupCard(setupModel, setup), worker && workerCard(workerModel, worker, state, workerExpiry, setWorkerExpiry, connectionReady, true));"
+      },
+      {
+        "line": 657,
+        "text": "          h('div', { style: styles.card }, h('h2', null, goal || `Task ${task.taskRef.slice(0, 8)}`), h('p', null, `${label(task.status)} · version ${task.version} · approval epoch ${task.authEpoch}`), h('p', null, `Host update ${new Date(task.updatedAt).toLocaleString()}`), h('div', { style: styles.row }, button('Pause new work', () => model.control('pause'), !current || terminal.has(task.status) || state.detail.control === 'paused'), button('Continue', () => model.control('resume'), !current || terminal.has(task.status) || state.detail.control !== 'paused' || ['cancel_requested', 'recovery_required'].includes(task.status)), button('Request cancellation', () => model.control('cancel'), !current || terminal.has(task.status) || task.status === 'cancel_requested')), h('p', { style: { fontSize: '13px' } }, 'Pause stops new admission. Cancellation remains requested until the host confirms work and effects.')),"
+      },
+      {
+        "line": 672,
+        "text": "    const state = ctx.connection.state, generation = ctx.connection.generation, observable = observableConnection(ctx.connection);"
+      },
+      {
+        "line": 674,
+        "text": "    const connected = () => observable && state.getSnapshot() === 'connected' && !!generation.getSnapshot();"
+      },
+      {
+        "line": 703,
+        "text": "      const current = observable ? generation.getSnapshot() : undefined;"
+      },
+      {
+        "line": 704,
+        "text": "      if (!connected()) { observedGeneration = undefined; disconnected(); return; }"
+      },
+      {
+        "line": 708,
+        "text": "    ctx.effect(() => () => { active = false; recoveryRevision++; unsubscribe(); workerModel.dispose(); setupModel.dispose(); model.dispose(); }, 'df.client-model');"
+      },
+      {
+        "line": 711,
+        "text": "    ctx.on('connection/reset', () => { if (!active) return; observedGeneration = observable ? generation.getSnapshot() : undefined; disconnected(); scheduleSetup(); });"
+      },
+      {
+        "line": 713,
+        "text": "      ctx.effect(() => state.subscribe(observeConnection), 'df.connection-state');"
+      },
+      {
+        "line": 714,
+        "text": "      ctx.effect(() => generation.subscribe(observeConnection), 'df.connection-generation');"
+      }
+    ]
+  },
+  "byteVerification": {
+    "manifestPin": {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.json",
+      "bytes": 18949,
+      "sha256": "9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38"
+    },
+    "closurePin": {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/closure.sha256",
+      "bytes": 1398,
+      "sha256": "26f4ea6e627294edf7a4744d36ab38449762f3e47dcd3db7706612aeaec70f89"
+    },
+    "manifestSidecarPin": {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.sha256",
+      "bytes": 121,
+      "sha256": "78c40dd1d792112a8fee2c6f6bfd7253b2ef5d803cbd85893e467989f5626dab"
+    },
+    "publicInputPins": [
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+        "declaredRole": "repository instructions"
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+        "declaredRole": "owner scope"
+      },
+      {
+        "path": "docs/development-workflow.md",
+        "bytes": 4700,
+        "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7",
+        "declaredRole": "independent review/acceptance boundary"
+      },
+      {
+        "path": "docs/evidence/UI/manual-web-qa-running-handoff-2026-10-07.md",
+        "bytes": 6678,
+        "sha256": "e0d664f0f6e4f95a504cac467ade58da983987428b499912d11c9cf8f4b0da58",
+        "declaredRole": "attributed public QA/root observations; not an author runtime observation"
+      },
+      {
+        "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+        "bytes": 4114465,
+        "sha256": "fa3fb398d901a5c3d04d1f6f949878eb190f1d1fb737b16210347963d0afb5c0",
+        "declaredRole": "immutable running candidate public archive"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+        "declaredRole": "archive source package version and emitted bundle export"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/src/client-entry.cjs",
+        "bytes": 101214,
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+        "declaredRole": "exact before source; archive member byte-equal"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/src/installed-plugin.mjs",
+        "bytes": 7194,
+        "sha256": "73f65198c642b3b3c1413c7fbb8ffd0a2a6b56605abbc0a5bfce875a9177ea1d",
+        "declaredRole": "original authenticated cached workerStatus endpoint read"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/src/installed-worker.mjs",
+        "bytes": 33262,
+        "sha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb",
+        "declaredRole": "cached status distinct from catalogue/policy/grant/execute"
+      },
+      {
+        "path": ".runtime/ni2-install/source-a58c522/scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+        "declaredRole": "future root-owned emitter effects; not executed"
+      },
+      {
+        "path": ".runtime/ni2-install/host/package-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
+        "declaredRole": "pinned actual host dependency lock"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+        "bytes": 1635,
+        "sha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4",
+        "declaredRole": "official original0.2.1-alpha.1 package provenance"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+        "bytes": 59411,
+        "sha256": "0fbb93fa2382bb66919767f69c909585c6255486f9536f9232231edaeac8c4e6",
+        "declaredRole": "actual original controller/wrapper/RPC public source ordering"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/index.d.ts",
+        "bytes": 6888,
+        "sha256": "5bcacf56ca3c3fb26256a6ee3aff980a399dcf4901d594b034d960ae04bd2f8d",
+        "declaredRole": "original observable lifecycle/reset/handle declarations"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/connection.d.ts",
+        "bytes": 3935,
+        "sha256": "85cc887caeae60ab13bd91f627ce793a42402d8f880c2af0f3f1fc0d256509d0",
+        "declaredRole": "original generation/state/source/controller declarations"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc.d.ts",
+        "bytes": 11326,
+        "sha256": "3ca86c027408eb2dd6f1aa6efba0778b0f14802d638fc2f66bced8c5e698b0a4",
+        "declaredRole": "original endpoint-owned RPC result/cancellation declarations"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/package.json",
+        "bytes": 2241,
+        "sha256": "96a46ea63a1a798cec33a0708b644608bf38212643428bc3c681616fb5fa9616",
+        "declaredRole": "official original0.2.1-alpha.1 Gateway provenance"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.js",
+        "bytes": 82186,
+        "sha256": "e09e26fcd4849cd55683b9cc702dca896efce93a5af3968431c1c8a62147b9cf",
+        "declaredRole": "actual original generation source and reset emitter/loader start ordering"
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+        "bytes": 59411,
+        "sha256": "0fbb93fa2382bb66919767f69c909585c6255486f9536f9232231edaeac8c4e6",
+        "declaredRole": "root fixture host copy matches inspected original public source"
+      },
+      {
+        "path": ".runtime/ni2-install/host/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.js",
+        "bytes": 82186,
+        "sha256": "e09e26fcd4849cd55683b9cc702dca896efce93a5af3968431c1c8a62147b9cf",
+        "declaredRole": "root fixture host copy matches inspected original public source"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/src/client-entry.cjs",
+        "bytes": 116918,
+        "sha256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+        "declaredRole": "related frozen NI3 source omission search only"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/proposals/NR-UI03-client-entry.cjs",
+        "bytes": 116918,
+        "sha256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+        "declaredRole": "related NR-UI03 source omission search only"
+      },
+      {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+        "bytes": 121721,
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "declaredRole": "approved NI3/a281 source omission search only; unchanged"
+      },
+      {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/projected-client-entry.cjs",
+        "bytes": 121721,
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "declaredRole": "NI3/a281 literal projection omission search only"
+      },
+      {
+        "path": ".runtime/ni4-scope-timer-selection-amendment/src/client-entry.cjs",
+        "bytes": 175737,
+        "sha256": "e9b5d17f50b61d0841917667b2f0bf26853e23e503325b89f16aa0fb10ca9e56",
+        "declaredRole": "approved NI4 selection/e9 source omission search only; unchanged"
+      },
+      {
+        "path": ".runtime/ni4-scope-timer-proposal/src/client-entry.cjs",
+        "bytes": 174137,
+        "sha256": "fd8be20df6400200579ecda4fcffca0fa4d793e146ba7a5788c325e40d7a5edc",
+        "declaredRole": "related NI4 timer source omission search only"
+      },
+      {
+        "path": ".runtime/ni4-5-normal-wiring-proposal/src/client-entry.cjs",
+        "bytes": 170175,
+        "sha256": "8789517fd4271eff7e1531b57ee34713de24c8cbc1899938c4e60b53a0b26e74",
+        "declaredRole": "related normal wiring source omission search only"
+      },
+      {
+        "path": ".runtime/ni5-context-admission-refinement-r3/src/client-entry.cjs",
+        "bytes": 170256,
+        "sha256": "a0fe9fec1d3d55e63091068de66176ee14ba6e29f272e754eae5199c6842d2a2",
+        "declaredRole": "related NI5r3 source omission search only"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r3/src/client-entry.cjs",
+        "bytes": 151616,
+        "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1",
+        "declaredRole": "approved NI6r3 source omission search only; unchanged"
+      },
+      {
+        "path": "docs/normal-worker-proposal.md",
+        "bytes": 8985,
+        "sha256": "7756af71dfa9d7edbb791b7915d78c4500557ab54ed1f9348124c3ea5ed5878b",
+        "declaredRole": "existing contract: reconnect/refresh/mount performs no worker decision"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/src/client-entry.cjs",
+        "bytes": 103523,
+        "sha256": "863e2ccbbf9ca5e6c3bdcb1925fd17c617eb1a48e709a5020ea0341f5362d384",
+        "declaredRole": "exact frozen r0 before source"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/manifest.json",
+        "bytes": 12228,
+        "sha256": "fe46bd5e215b3b41e8c480f49d2a1b4a3feaec31ac2dcec7bce6b3c58be72222",
+        "declaredRole": "unchanged r0 manifest"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/manifest.sha256",
+        "bytes": 118,
+        "sha256": "fdff5a333684fbf47f600aba0430c8c65969e745660118a53cc4463b2e0d449e",
+        "declaredRole": "unchanged r0 manifest sidecar"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/closure.sha256",
+        "bytes": 1234,
+        "sha256": "8e551b04bcc308234e2fbdb0efaf1adfd36d639bef4e162fffda3ec663de8885",
+        "declaredRole": "unchanged r0 closure"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-before-after.json",
+        "bytes": 8425,
+        "sha256": "56f24f0420b35d9cb7a802b27e25548468db5fbc405bc1c7be7b19e1f332eaa3",
+        "declaredRole": "unchanged original-a58-to-r0 literal chain"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/literal-client.patch",
+        "bytes": 10651,
+        "sha256": "ab9076ee103957ddf3fb65a9a0f550d58103fbeba741e2af8bee98bb38ba112f",
+        "declaredRole": "unchanged original-a58-to-r0 complete patch"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal/public-design-contract.md",
+        "bytes": 9644,
+        "sha256": "d9e015440715563a0c6299a26b58b0d714db51a74c208839fde33b0c532a82f8",
+        "declaredRole": "preserved r0 authored public contract; not an independent oracle"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source.md",
+        "bytes": 11146,
+        "sha256": "599314df418dab9640df9a7462fa57ebca28be4be5515db3a3b4a678a5385f4a",
+        "declaredRole": "preserved original authored SOURCE diagnosis"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source.json",
+        "bytes": 21900,
+        "sha256": "d4c156a47b42c95d72f6be7507842a421b22efc915f432064128207a5856a2dc",
+        "declaredRole": "preserved original authored SOURCE evidence"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-source-review.md",
+        "bytes": 14000,
+        "sha256": "b4f4aa00e75f4c7897fdb1ed3c2b590bfb18176a46ea3037cf21e4ad36b20176",
+        "declaredRole": "sealed independent r0 SOURCE findings F-WRC01 through F-WRC03"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-source-review.json",
+        "bytes": 43007,
+        "sha256": "8134cc260ae24e7d69d1464afb6f202f1ef72f45799899081e3ddaa8841f8a7d",
+        "declaredRole": "sealed independent r0 SOURCE evidence"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/proposals/NR-UI03.patch",
+        "bytes": 10608,
+        "sha256": "aa260ca9b71a81ed9f5c44c1a5ac599ce585d049731b86b8053afa34353821f8",
+        "declaredRole": "narrow reviewed audit-only currentness/uncertainty precedent; no literal or whole-client reuse"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/proposals/NR-UI02.patch",
+        "bytes": 10208,
+        "sha256": "fbbf17cc1e6dca3171fff65c7d28aedb6a2f9254bf1527a8f4d1dc3fca297501",
+        "declaredRole": "narrow reviewed audit-query currentness precedent; no literal or whole-client reuse"
+      },
+      {
+        "path": "src/client-entry.cjs",
+        "bytes": 101214,
+        "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+        "declaredRole": "public shared source integrity pin; never written in this lane"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/src/client-entry.cjs",
+        "bytes": 106403,
+        "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6",
+        "declaredRole": "exact immutable r1 before"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/manifest.json",
+        "bytes": 18205,
+        "sha256": "aef427be1175ba278922e3af1c13cee27f46c7dfb921560cf683cfc0222e119e",
+        "declaredRole": "immutable r1 manifest"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/manifest.sha256",
+        "bytes": 121,
+        "sha256": "2f8fdaa85684e74987de8516fd3c6f67d8aec539e5ebcdc6bf922f45d7504d50",
+        "declaredRole": "immutable r1 sidecar"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/closure.sha256",
+        "bytes": 1398,
+        "sha256": "ea2c3bae06b9dd5ed0b77a905796ea7fbce20dc7501dcb60da21a18f7f412832",
+        "declaredRole": "immutable r1 closure"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-client.patch",
+        "bytes": 45188,
+        "sha256": "a4d279d875334bf9e36d8b616fdb5ff19cf13360d4c0617b9eb9226ab0cd6c20",
+        "declaredRole": "immutable full r0-to-r1 delta"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-original-a58.patch",
+        "bytes": 48014,
+        "sha256": "fe7d6b5db1126e1eb334948273d6dd29c48bab6d30512732909328ffb06b5d55",
+        "declaredRole": "immutable cumulative a58-to-r1 delta"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/literal-before-after.json",
+        "bytes": 24719,
+        "sha256": "5ee4b48c6c0e8300b1e92774af83a64a5cd218fea96c8650aa06b1b42250b080",
+        "declaredRole": "immutable r1 ordered literal record"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r1/public-design-contract.md",
+        "bytes": 6154,
+        "sha256": "d5b61ad30951407e5ea112cd524f8a8b19cccb63fab7499dc78da581c7bc66d3",
+        "declaredRole": "preserved authored r1 contract and throwing dependency HOLD"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source-r1.md",
+        "bytes": 6414,
+        "sha256": "538c3851bd64ca06f177b593a556437425647786186ace6d939cc7d46082f4be",
+        "declaredRole": "preserved r1 authored source diagnosis"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source-r1.json",
+        "bytes": 24148,
+        "sha256": "819fe9bd7263a6d0801ea0bee34bbb40204d9879a929d3b1211f163c775a0e7b",
+        "declaredRole": "preserved r1 authored source evidence"
+      }
+    ],
+    "authoredArtifactPins": [
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/before/client-entry.cjs",
+        "bytes": 106403,
+        "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6",
+        "declaredRole": null
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+        "declaredRole": null
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-client.patch",
+        "bytes": 2631,
+        "sha256": "6cc149dae3579e68bc80087717523283a7123fbb1b8e835858591244b1812b09",
+        "declaredRole": null
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-original-a58.patch",
+        "bytes": 48242,
+        "sha256": "fa640b2f0ec2383c7d0d64b25fd4d944cc91ad369892a5fe65ecd32c205cde45",
+        "declaredRole": null
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-before-after.json",
+        "bytes": 1762,
+        "sha256": "f0406d5d611de1bf5f915df30a6b398f068f7fe94376e90b301d885d9195bd11",
+        "declaredRole": null
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/proposal.md",
+        "bytes": 4474,
+        "sha256": "1d86db887e5fc68b26188487ad79741c3356551fb90255938bb3adeed1eb2c98",
+        "declaredRole": null
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/public-design-contract.md",
+        "bytes": 2388,
+        "sha256": "f04413b200a59110bd5dae822d98adf34b40bf6dd7d15acd44deed3221f9ee96",
+        "declaredRole": null
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source-r2.md",
+        "bytes": 3220,
+        "sha256": "6cb6f212b8f9ff0d52bf545a4129a8df0543b2a6e5d19b09b7e4835615434959",
+        "declaredRole": null
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source-r2.json",
+        "bytes": 20016,
+        "sha256": "b5fcd767c06e266232556e71925bf2baaba79df4845da8470a09872d4e5f278d",
+        "declaredRole": null
+      }
+    ],
+    "closureListedPins": [
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/before/client-entry.cjs",
+        "bytes": 106403,
+        "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+        "bytes": 106631,
+        "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-client.patch",
+        "bytes": 2631,
+        "sha256": "6cc149dae3579e68bc80087717523283a7123fbb1b8e835858591244b1812b09"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-original-a58.patch",
+        "bytes": 48242,
+        "sha256": "fa640b2f0ec2383c7d0d64b25fd4d944cc91ad369892a5fe65ecd32c205cde45"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-before-after.json",
+        "bytes": 1762,
+        "sha256": "f0406d5d611de1bf5f915df30a6b398f068f7fe94376e90b301d885d9195bd11"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/proposal.md",
+        "bytes": 4474,
+        "sha256": "1d86db887e5fc68b26188487ad79741c3356551fb90255938bb3adeed1eb2c98"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/public-design-contract.md",
+        "bytes": 2388,
+        "sha256": "f04413b200a59110bd5dae822d98adf34b40bf6dd7d15acd44deed3221f9ee96"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source-r2.md",
+        "bytes": 3220,
+        "sha256": "6cb6f212b8f9ff0d52bf545a4129a8df0543b2a6e5d19b09b7e4835615434959"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-rootcause-source-r2.json",
+        "bytes": 20016,
+        "sha256": "b5fcd767c06e266232556e71925bf2baaba79df4845da8470a09872d4e5f278d"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.json",
+        "bytes": 18949,
+        "sha256": "9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38"
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.sha256",
+        "bytes": 121,
+        "sha256": "78c40dd1d792112a8fee2c6f6bfd7253b2ef5d803cbd85893e467989f5626dab"
+      }
+    ],
+    "originalA58Pin": {
+      "path": ".runtime/ni2-install/source-a58c522/src/client-entry.cjs",
+      "bytes": 101214,
+      "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+    },
+    "beforeR1Pin": {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/before/client-entry.cjs",
+      "bytes": 106403,
+      "sha256": "25a8cedf173d2cc054ae82961c0212525efb71b4be2e4e8672fc2349804d25b6"
+    },
+    "afterR2Pin": {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+      "bytes": 106631,
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    "exactDiffs": [
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-client.patch",
+        "bytes": 2631,
+        "sha256": "6cc149dae3579e68bc80087717523283a7123fbb1b8e835858591244b1812b09",
+        "exact": true
+      },
+      {
+        "path": ".runtime/ui-worker-reconnect-proposal-r2/literal-original-a58.patch",
+        "bytes": 48242,
+        "sha256": "fa640b2f0ec2383c7d0d64b25fd4d944cc91ad369892a5fe65ecd32c205cde45",
+        "exact": true
+      }
+    ],
+    "uniqueR0LiteralChecks": [
+      {
+        "index": 0,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 69,
+        "afterBytes": 86,
+        "beforeSha256": "a32f716ba7df6e06b224e77d5c8a915aaa7c33990631fa6863000b46daecdfdd",
+        "afterSha256": "e261e60a60094f8c8986f50e0fcc7707b651fc599b05aa8b20f826905e354d19"
+      },
+      {
+        "index": 1,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 76,
+        "afterBytes": 109,
+        "beforeSha256": "6764a08cd38fdd8dfb6bdb0c659a12396d68ff34c6f464af12816d39ae07969d",
+        "afterSha256": "5a871ca033263e7e26732402cc8e5d5f0053952d0b54e2c8530e33a8fc4d1216"
+      },
+      {
+        "index": 2,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 273,
+        "afterBytes": 565,
+        "beforeSha256": "8dcd45b74a9645e92646ba0f84c4670259b8cf9998bf6ae21cdc9033c35abf4b",
+        "afterSha256": "fa4b67232d6a3f892b02b10fa1661ed09c255bf695fb08ad59b363eadc8856b8"
+      },
+      {
+        "index": 3,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 75,
+        "afterBytes": 51,
+        "beforeSha256": "2f0b26b549844450c9c8442dd17d66c35b5c52d01c9d4b0d7b1ad36624ef79d7",
+        "afterSha256": "39e380703c3f1209126ce62aec5cd648988ed1e586b6179538edbaacd6cac74f"
+      },
+      {
+        "index": 4,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 54,
+        "afterBytes": 66,
+        "beforeSha256": "d690d97b97d4f394783328ef3f53215d70098fc6fdaf52c19afada8c36f09689",
+        "afterSha256": "01f308092644841dfa901cd35d033dcce3605e7e6cd8a12d8f2ad4b0384ca68a"
+      },
+      {
+        "index": 5,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 185,
+        "afterBytes": 702,
+        "beforeSha256": "f4105a9f943dac5c71ea93230894214705263986efc1b2a0ab564a38e9840540",
+        "afterSha256": "cd9dbe382f020a7c1e5f3833cdbd2284b83454a4f899b08cd5688b72d279abe9"
+      },
+      {
+        "index": 6,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 86,
+        "afterBytes": 103,
+        "beforeSha256": "cb4c33f70f2c021366756448b5d69fc25f80f4a6da1409afd53fc75b38e8881b",
+        "afterSha256": "a0ecc38df73b8a29ffea8b851777dd06ed95a9786c061d42c7d7df2cd6adb9a8"
+      },
+      {
+        "index": 7,
+        "id": null,
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 1738,
+        "afterBytes": 3183,
+        "beforeSha256": "98893890f1b4a8057344ba2e79e5b133f4056430dd184a5ca8a50052cd539dcc",
+        "afterSha256": "1f06e0fec920b30ea2613375ee2a650ab13f90083f226b675ac591f11cbb1092"
+      }
+    ],
+    "uniqueR1LiteralChecks": [
+      {
+        "index": 0,
+        "id": "WRC1-C01",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 46,
+        "afterBytes": 237,
+        "beforeSha256": "8e7af7f72b994c986ee6f6266517c281c54b3df2a28e84c6360e93f9f6e68940",
+        "afterSha256": "9e52f2c97640d29b762c256f9ccaca137f8bd9d5497cb2360f81c0a1c2e10709"
+      },
+      {
+        "index": 1,
+        "id": "WRC1-B01",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 70,
+        "afterBytes": 91,
+        "beforeSha256": "5754d5bf67d4e513c9f52dab0e43c0a06e1b72e19197013da45eab9d91583cec",
+        "afterSha256": "fee9f4539614d961814b616b960df6c1166e2043ba139078f7d51e8c8a5592da"
+      },
+      {
+        "index": 2,
+        "id": "WRC1-B02",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 170,
+        "afterBytes": 192,
+        "beforeSha256": "2cddd19276972c49c4c21c5746ebb2798a286f195bd03f66469e93b8b695fb2c",
+        "afterSha256": "e25c109f84517c591282eef80c66c361b225dfe59118fe021968100409a01c39"
+      },
+      {
+        "index": 3,
+        "id": "WRC1-B03",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 196,
+        "afterBytes": 397,
+        "beforeSha256": "aa4615e917ce0c25435d9f19a0ba56593ca8aed7e9663e3c1f159ce3349ce816",
+        "afterSha256": "09234d10239f9a83cd8f3061c2bc1aa807966e4d3d31b2c91caba29b6fbf8a80"
+      },
+      {
+        "index": 4,
+        "id": "WRC1-B04",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 826,
+        "afterBytes": 1068,
+        "beforeSha256": "48b8424420acc0deee332e5e71e906b81b1f749465eebcc2e34a1d1034b5cee1",
+        "afterSha256": "8ac26a2267b544478eb539263c2a7be07da85b343ff6c950d0084e4ecb587ab2"
+      },
+      {
+        "index": 5,
+        "id": "WRC1-B05",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 1434,
+        "afterBytes": 2510,
+        "beforeSha256": "b6d6530c1ad655796bcfcaead045f2838baad3b5b35791106755d3748fc19f29",
+        "afterSha256": "038ac0f4c13be90cd288646e4284ff16767ada9b64f7d5a6e18c26e6ed63aa0b"
+      },
+      {
+        "index": 6,
+        "id": "WRC1-B06",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 82,
+        "afterBytes": 100,
+        "beforeSha256": "7f5afb3f8c67ee47b65d1e407c0058a15b45d30548d1fbc5dcb1b141574f9665",
+        "afterSha256": "7d642c0414f6cd93b8224d495676bff052a0edf2a82d418fbeedbdd49702d6d5"
+      },
+      {
+        "index": 7,
+        "id": "WRC1-B07",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 80,
+        "afterBytes": 98,
+        "beforeSha256": "602d98025191d6af6e25532e7403871b47ccf22dc0b90a1699f7729588356ef8",
+        "afterSha256": "fae45239df793f43153e6f02620151137440118ae1c7e333f57a99bed9aa2cdb"
+      },
+      {
+        "index": 8,
+        "id": "WRC1-B08",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 52,
+        "afterBytes": 36,
+        "beforeSha256": "41f5b055af259d323712193e7b8f19ff44dcb18e6b6733e0dc11188acb8eebc6",
+        "afterSha256": "cfd0bd475ca5700dfcc7cba6d25226329e5ec9f6c85eea3c91fb96e020ef6102"
+      },
+      {
+        "index": 9,
+        "id": "WRC1-B09",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 131,
+        "afterBytes": 113,
+        "beforeSha256": "b885bf8061713e628806267b06dadeaed03dcaf52dc356270c306c76ac47eab2",
+        "afterSha256": "2c78334d09267015d916338b19ce03a04804f86b290422d99718cd01c66dee59"
+      },
+      {
+        "index": 10,
+        "id": "WRC1-B10",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 121,
+        "afterBytes": 57,
+        "beforeSha256": "6e83d5da898e6d0944f34bc9b3a05f5e5ab1f8e3c6844b321dbffad7b69131ab",
+        "afterSha256": "c26d75429812a6b96ead9032993045af7dbd48207fb7922ea467ec9c42b60af7"
+      },
+      {
+        "index": 11,
+        "id": "WRC1-B11",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 83,
+        "afterBytes": 65,
+        "beforeSha256": "a7ba8563aba1b07c489735caf821e1281b636aae359f239d0c95db84e38fd690",
+        "afterSha256": "a7c6a4ed8706552411b15b9355c3381aec0c5aeb78a6581ee3852c4bbf397a6f"
+      },
+      {
+        "index": 12,
+        "id": "WRC1-B12",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 81,
+        "afterBytes": 64,
+        "beforeSha256": "44d9f412c53f4535f2ae2dd0086e0d1c6ae491d04d9434b223466baeb54186ba",
+        "afterSha256": "a73d13638f94db0dbb743ef5540fbf0436426972afa8cb724b47ab56cf91400c"
+      },
+      {
+        "index": 13,
+        "id": "WRC1-B13",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 98,
+        "afterBytes": 116,
+        "beforeSha256": "84c9086b81bc48a7939827d2db0bbcfd8e0997f8b90e01dae0b3df802d523f6e",
+        "afterSha256": "f16f69ede1a828f7d674fad5b30ac64853f5ca1c88e842585de703ffc7e49b93"
+      },
+      {
+        "index": 14,
+        "id": "WRC1-A01",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 87,
+        "afterBytes": 103,
+        "beforeSha256": "623555f2184c101faba059215643628db56e17fe90f4b45cc5a005a1e94eb598",
+        "afterSha256": "32a4af8621db8fb971a38f3a50fa2382b9a8dfc6643db0a0fb15df19af8e7e14"
+      },
+      {
+        "index": 15,
+        "id": "WRC1-B14",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 66,
+        "afterBytes": 84,
+        "beforeSha256": "ef44651a09b519ea94e763485895a410c843a578b98d5bc601e2967ec7a84808",
+        "afterSha256": "b1e1d6bc5643ccaa3943d7a30583e53fd341f28f8285f5f1c3236558aa4c44fa"
+      },
+      {
+        "index": 16,
+        "id": "WRC1-A02",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 105,
+        "afterBytes": 1597,
+        "beforeSha256": "8ba213a8e6160de978be886d2e4a48fd37311c2ebcaf8daf1c3c24e14ca5dee9",
+        "afterSha256": "156ab614051ff77ba2cb9366852c6085b0347a295c6e24d38e200bc6b3b87e8d"
+      },
+      {
+        "index": 17,
+        "id": "WRC1-A03",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 560,
+        "afterBytes": 56,
+        "beforeSha256": "c7b86fcc22302ce573cb524405b279e36357c332baa1dd77d8f02d3f59696e5d",
+        "afterSha256": "d37225aed8b578dcf66c5c0584acfab0147d1cc9431b5ac1b775bf23df8d3555"
+      },
+      {
+        "index": 18,
+        "id": "WRC1-B15",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 53,
+        "afterBytes": 70,
+        "beforeSha256": "df7c3a5fc030cf7165487a7e6ea749e658f114bf646d8de5b840206b8c8afd0d",
+        "afterSha256": "7c193d509586bad1188bfcdb67986f36bd0ed335a04bdc2a3254bbef9f409bd0"
+      },
+      {
+        "index": 19,
+        "id": "WRC1-C02",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 121,
+        "afterBytes": 133,
+        "beforeSha256": "d9d1ce719375f24b8993d37798ea3a4b875e426b3f6a9aecd54dce4d9cdf4abd",
+        "afterSha256": "ae7ea8e6a3d74c253f294bfbf5a1bdbc0cc1506cf191c7d7110e30e6d5fdc06e"
+      },
+      {
+        "index": 20,
+        "id": "WRC1-B16",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 53,
+        "afterBytes": 47,
+        "beforeSha256": "2e8464d3c14f754d210cb6d2e9118d448d007d1b86896d5a44f31abecfdf9174",
+        "afterSha256": "c5037955f3f99147ff36a0c20de66b390447fa33e4081b1d3f94cbd41f5e1466"
+      },
+      {
+        "index": 21,
+        "id": "WRC1-C03",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 86,
+        "afterBytes": 80,
+        "beforeSha256": "c6ea7ecb1be8da7a0e2f9563050ff82226bb7583f3783686fd73ff543410838d",
+        "afterSha256": "30da7aa33bd1f3d4454bb474971da8e02c6dab39fee26463908cca20c266122c"
+      },
+      {
+        "index": 22,
+        "id": "WRC1-C04",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 166,
+        "afterBytes": 174,
+        "beforeSha256": "eed63bf01790d6e6004000b3cf20f00995448562945aa302c3cd84aae7cb5c30",
+        "afterSha256": "d895192f1831a10d467cce2ca2a7d61997e514bb0493ec3d77e051c65f11ae07"
+      },
+      {
+        "index": 23,
+        "id": "WRC1-B17",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 107,
+        "afterBytes": 91,
+        "beforeSha256": "6469076606c3bc3fe1267d3159e227cb7173967f1dea05d5b8aabbf8f4ed782a",
+        "afterSha256": "58f70e76d3b76ddd1953ea554593ccba84f6d4e7ff0baa36ecab7afd7708f21d"
+      },
+      {
+        "index": 24,
+        "id": "WRC1-B18",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 107,
+        "afterBytes": 91,
+        "beforeSha256": "4408ec9933c423e128708cc0e14a4f33bd28b50308f00f2460bae1d14eecc99a",
+        "afterSha256": "d887fd539cc96caf638847b44dc9d3c9832f17c2403db7efe421e3526fc555be"
+      },
+      {
+        "index": 25,
+        "id": "WRC1-B19",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 120,
+        "afterBytes": 105,
+        "beforeSha256": "cdfff6083d5327f9a502da6eb1aceef9d2d21fcee0f6bc8c81873037d500e7d0",
+        "afterSha256": "e236cad68273313f390dcbfcfa7997cbe51f4220ec6a0f67ce2f66998d086ce5"
+      },
+      {
+        "index": 26,
+        "id": "WRC1-B20",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 170,
+        "afterBytes": 55,
+        "beforeSha256": "f4b5db6d59a61566f1c6334a50e77c6062a6a842640bf3fe78fa33cbf8fd4b81",
+        "afterSha256": "8896dcd988697ab36e9004b658f2f1536510c1b1bf31622beaa647e89e66920b"
+      },
+      {
+        "index": 27,
+        "id": "WRC1-C05",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 517,
+        "afterBytes": 648,
+        "beforeSha256": "ef707826a881f50966056113fdf8feb4ff5f5316153afcbee8e9ea990c0eb24d",
+        "afterSha256": "de201b22128ade17d513fc919ce91234f4d15094ea81858d2c9b4721ea426ee4"
+      },
+      {
+        "index": 28,
+        "id": "WRC1-A04",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 266,
+        "afterBytes": 370,
+        "beforeSha256": "7d3821cbbfc6eea1afe50fb0ebeb2c0ff1d049b60f0db3aeacc13f1611d7a679",
+        "afterSha256": "33472bf7b315d6bb0652a454eda5b4b1772abcb7372a388ba0bf308eda8d2997"
+      },
+      {
+        "index": 29,
+        "id": "WRC1-C06",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 80,
+        "afterBytes": 131,
+        "beforeSha256": "67df6bbe5c9fd3a157de32aaceeec9235bce1d77857a0fb32461fd5917feaa1a",
+        "afterSha256": "21671282456313a35d57aaf29ab5a83c1cf82117fba045dfeec7485ba3837ede"
+      },
+      {
+        "index": 30,
+        "id": "WRC1-C07",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 101,
+        "afterBytes": 109,
+        "beforeSha256": "2a8b01eb6bda6af1dc385bb9c5baf71c34c2814d7466789cf0a9471cd2b9b6a7",
+        "afterSha256": "ef4c7033a7c291c3de3e19167d82adc30f50fe9f69a7c99c3ec421d48922250d"
+      },
+      {
+        "index": 31,
+        "id": "WRC1-C08",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 51,
+        "afterBytes": 73,
+        "beforeSha256": "c5d55ad4543a1ebe7e26775d7704b5398aeb312ecc881c8a66dae1c9f46162d7",
+        "afterSha256": "8bb754fe39a9cbe710c988b39a490270927124ed841cb51d010e5c255f17afcc"
+      },
+      {
+        "index": 32,
+        "id": "WRC1-C09",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 368,
+        "afterBytes": 373,
+        "beforeSha256": "98344eab220d72983912c3a86dca0df2db3c085537089af23035aad6f694957a",
+        "afterSha256": "bdde0f840c5534fb07d045330ad6fafca301a3753da961d9eeaca646138d6525"
+      }
+    ],
+    "uniqueR2LiteralChecks": [
+      {
+        "index": 0,
+        "id": "WRC2-01",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 86,
+        "afterBytes": 212,
+        "beforeSha256": "0ed41755b7cc454ef9eaa500eead94fd9f6c743c82d826e76de508c66e1e999e",
+        "afterSha256": "48433a603238fe422d545619e9a5290ce5aa1f17519a51efa042cb04240b66dd"
+      },
+      {
+        "index": 1,
+        "id": "WRC2-02",
+        "uniqueBeforeOccurrences": 1,
+        "beforeBytes": 75,
+        "afterBytes": 177,
+        "beforeSha256": "075ed7ed23d4f9a1c49ebd27bab5a870e40790bad11a4b1b008b253e12604b00",
+        "afterSha256": "e1900dce42b7c7a0d262123529e76099c28786fadcd3f891ec0b7308a01e4bd4"
+      }
+    ],
+    "fullR1ToR2ReconstructionMatches": true,
+    "fullA58ToR0ToR1ToR2ReconstructionMatches": true,
+    "inverseExactTwoLiteralReconstructionOfR1Matches": true,
+    "onlyCandidateProductSourceFile": "src/client-entry.cjs",
+    "capsulePublicFiles": [
+      ".runtime/ui-worker-reconnect-proposal-r2/before/client-entry.cjs",
+      ".runtime/ui-worker-reconnect-proposal-r2/closure.sha256",
+      ".runtime/ui-worker-reconnect-proposal-r2/literal-before-after.json",
+      ".runtime/ui-worker-reconnect-proposal-r2/literal-client.patch",
+      ".runtime/ui-worker-reconnect-proposal-r2/literal-original-a58.patch",
+      ".runtime/ui-worker-reconnect-proposal-r2/manifest.json",
+      ".runtime/ui-worker-reconnect-proposal-r2/manifest.sha256",
+      ".runtime/ui-worker-reconnect-proposal-r2/proposal.md",
+      ".runtime/ui-worker-reconnect-proposal-r2/public-design-contract.md",
+      ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs"
+    ],
+    "archivePublicSourceMember": {
+      "path": ".runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz",
+      "onlyReadMember": "package/src/client-entry.cjs",
+      "memberBytes": 101214,
+      "memberSha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+      "sameAsOriginalAndSharedSource": true,
+      "extractedToFilesystem": false
+    },
+    "originalHostClientCopiesByteEqual": true,
+    "preservedIndependentReviewPins": [
+      {
+        "path": "docs/evidence/NI3/ollama-installed-worker-independent-source-review.md",
+        "bytes": 15203,
+        "sha256": "46054937a97e3ed53713864b0ee6033471dd97448c4f87c051005831fd71d4d0"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-installed-worker-independent-source-review.json",
+        "bytes": 99384,
+        "sha256": "b8dcb6f4966b2f15a41b77d53bd0350d6456993ae59af85430f44b498e326221"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-worker-finish-accounting-source-disposition.md",
+        "bytes": 7224,
+        "sha256": "b93ad0f6361a4abd2145479b79425a0497a590f0dfd22f6f0a5cf70826ca3efd"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-worker-finish-accounting-source-disposition.json",
+        "bytes": 10214,
+        "sha256": "63144cfb14e68f6b918220c475e43a91de2a120cf76d7926c627cb43d27b2e4f"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-currentness-r1-independent-source-review.md",
+        "bytes": 11338,
+        "sha256": "300844c803ce6c989cb51141ecbe13609ee0ce74e0094ed41f09a565e1e83e74"
+      },
+      {
+        "path": "docs/evidence/NI3/ollama-currentness-r1-independent-source-review.json",
+        "bytes": 111036,
+        "sha256": "156a4d571be930ad180d15a665bda70846a7cccb81bdf1d5b98987521c5a3db8"
+      },
+      {
+        "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.md",
+        "bytes": 13338,
+        "sha256": "25af1bc597b07e6909e78756c08e633b25fda0068282e77f3352439c6b5642bb"
+      },
+      {
+        "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.json",
+        "bytes": 193931,
+        "sha256": "3f8bb7b8a0c98bc3e2865c62ae4c5dffd4ebe15d58a5eb016107c9acf5165c25"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-source-review.md",
+        "bytes": 14000,
+        "sha256": "b4f4aa00e75f4c7897fdb1ed3c2b590bfb18176a46ea3037cf21e4ad36b20176"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-source-review.json",
+        "bytes": 43007,
+        "sha256": "8134cc260ae24e7d69d1464afb6f202f1ef72f45799899081e3ddaa8841f8a7d"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-r1-independent-source-review.md",
+        "bytes": 17595,
+        "sha256": "f148c15ffecebac57c03d7899eebfc78c9fc940190b4ef788e82341815883f32"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-r1-independent-source-review.json",
+        "bytes": 80727,
+        "sha256": "08dd1b37bccb36739471a8c4fb80f1625b5779906c822b0547181f82cbf17916"
+      }
+    ],
+    "independentDesignPins": [
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-design.md",
+        "bytes": 31322,
+        "sha256": "18c8a4a440c7600b9a1b0f012b72400cdf36c5c8f0d6f5d89c272a3a06826e77"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-design.json",
+        "bytes": 30379,
+        "sha256": "0737516431109e3875dfb7becc385242f87be522b1643d6b691dab44c99d2d3d"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-submission-design.md",
+        "bytes": 18429,
+        "sha256": "375b7e5f4c03657e8e8989aa4f573d9acc849554528dd15685183387584c6e98"
+      },
+      {
+        "path": "docs/evidence/UI/worker-reconnect-independent-submission-design.json",
+        "bytes": 17998,
+        "sha256": "0975bbcabe8698797c2a708f2e15612957507d99c004fe77deee5dec8c5377ce"
+      }
+    ],
+    "JavaScriptParsedImportedExecuted": false,
+    "testsBuildBrowserNetworkModelNativeDBProfilesListenersGitOccurred": false
+  },
+  "reproducibility": {
+    "workingDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "command": "python3 - <<'PY'\nfrom pathlib import Path\nimport json,hashlib,difflib,tarfile\nsha=lambda b:hashlib.sha256(b).hexdigest()\ndef pin(path):\n path=Path(path);b=path.read_bytes();return {'path':str(path),'bytes':len(b),'sha256':sha(b)}\np=Path('.runtime/ui-worker-reconnect-proposal-r2')\nmanifest=pin(p/'manifest.json');closure=pin(p/'closure.sha256')\nassert manifest['sha256']=='9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38'\nassert closure['sha256']=='26f4ea6e627294edf7a4744d36ab38449762f3e47dcd3db7706612aeaec70f89'\nm=json.loads((p/'manifest.json').read_bytes());inputs=[];artifacts=[]\nfor key,out in [('publicInputs',inputs),('authoredArtifacts',artifacts)]:\n for x in m[key]:\n  a=pin(x['path']);assert a['bytes']==x['bytes'] and a['sha256']==x['sha256'],x['path'];out.append({**a,'declaredRole':x.get('role')})\nassert len(inputs)==54 and len(artifacts)==9\nsidecars=[]\nfor line in (p/'closure.sha256').read_text().splitlines():\n expected,name=line.split('  ',1);a=pin(name);assert a['sha256']==expected,name;sidecars.append(a)\nmanifestSidecar=pin(p/'manifest.sha256')\nexpected,name=(p/'manifest.sha256').read_text().strip().split('  ',1)\nassert expected==manifest['sha256'] and name==str(p/'manifest.json')\na58path=Path('.runtime/ni2-install/source-a58c522/src/client-entry.cjs')\noriginal=a58path.read_text()\nr0path=Path('.runtime/ui-worker-reconnect-proposal/src/client-entry.cjs');r0=r0path.read_text()\nr1path=Path('.runtime/ui-worker-reconnect-proposal-r1/src/client-entry.cjs');r1=r1path.read_text()\nbefore=(p/'before/client-entry.cjs').read_text();after=(p/'src/client-entry.cjs').read_text()\nassert before.encode()==r1path.read_bytes()\nassert sha(after.encode())=='4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82'\ndef reconstruct(source,rows):\n out=source;checks=[]\n for index,row in enumerate(rows):\n  count=out.count(row['before']);assert count==1,(index,count)\n  if 'occurrences' in row:assert row['occurrences']==1\n  out=out.replace(row['before'],row['after'])\n  checks.append({'index':index,'id':row.get('id'),'uniqueBeforeOccurrences':count,'beforeBytes':len(row['before'].encode()),'afterBytes':len(row['after'].encode()),'beforeSha256':sha(row['before'].encode()),'afterSha256':sha(row['after'].encode())})\n return out,checks\nr0literal=json.loads(Path('.runtime/ui-worker-reconnect-proposal/literal-before-after.json').read_bytes())\nprojectedR0,r0checks=reconstruct(original,r0literal['replacements']);assert projectedR0.encode()==r0path.read_bytes()\nr1literal=json.loads(Path('.runtime/ui-worker-reconnect-proposal-r1/literal-before-after.json').read_bytes())\nprojectedR1,r1checks=reconstruct(projectedR0,r1literal['literals']);assert projectedR1.encode()==r1path.read_bytes()\nliteral=json.loads((p/'literal-before-after.json').read_bytes())\nprojectedR2,r2checks=reconstruct(before,literal['literals']);assert projectedR2.encode()==(p/'src/client-entry.cjs').read_bytes()\nassert len(r2checks)==m['literalCount']==2\ncumulative,cumulativeChecks=reconstruct(projectedR1,literal['literals']);assert cumulative.encode()==(p/'src/client-entry.cjs').read_bytes()\ninverse=after\nfor row in reversed(literal['literals']):\n assert inverse.count(row['after'])==1\n inverse=inverse.replace(row['after'],row['before'])\nassert inverse.encode()==r1path.read_bytes()\ndiffs=[]\nfor path,old,fromLabel in [(p/'literal-client.patch',before,'frozen-r1/src/client-entry.cjs'),(p/'literal-original-a58.patch',original,'archive-a58c522/src/client-entry.cjs')]:\n delta=''.join(difflib.unified_diff(old.splitlines(keepends=True),after.splitlines(keepends=True),fromfile=fromLabel,tofile='proposed-r2/src/client-entry.cjs')).encode()\n assert delta==path.read_bytes(),str(path)\n diffs.append({**pin(path),'exact':True})\narchive=Path('.runtime/ni2-install/artifact/dsh-fishball-0.1.0-preview.1.tgz')\nwith tarfile.open(archive,'r:gz') as tf:\n member=tf.extractfile('package/src/client-entry.cjs').read();assert member==original.encode()\nassert original.encode()==Path('src/client-entry.cjs').read_bytes()\nfor name in ['@deepseek-ai/dsh-client-connection','@deepseek-ai/dsh-api-gateway']:\n assert (Path('.runtime/dsh-web/node_modules')/name/'lib/client.js').read_bytes()==(Path('.runtime/ni2-install/host/node_modules')/name/'lib/client.js').read_bytes()\nprior=json.loads(Path('docs/evidence/UI/worker-reconnect-r1-independent-source-review.json').read_bytes())\npriorPins=prior['byteVerification']['preservedIndependentReviewPins']+[prior['markdownCompanion'],{'path':'docs/evidence/UI/worker-reconnect-r1-independent-source-review.json','bytes':80727,'sha256':'08dd1b37bccb36739471a8c4fb80f1625b5779906c822b0547181f82cbf17916'}]\npreserved=[]\nfor x in priorPins:\n a=pin(x['path']);assert a['bytes']==x['bytes'] and a['sha256']==x['sha256'],x['path'];preserved.append(a)\ndesigns=[]\nfor x in prior['byteVerification']['independentDesignPins']:\n a=pin(x['path']);assert a['bytes']==x['bytes'] and a['sha256']==x['sha256'],x['path'];designs.append(a)\ncapsuleFiles=[str(x) for x in sorted(p.rglob('*')) if x.is_file()]\nassert [x for x in capsuleFiles if x.endswith('.cjs')]==[str(p/'before/client-entry.cjs'),str(p/'src/client-entry.cjs')]\nrecord={'manifestPin':manifest,'closurePin':closure,'manifestSidecarPin':manifestSidecar,'publicInputPins':inputs,'authoredArtifactPins':artifacts,'closureListedPins':sidecars,'originalA58Pin':pin(a58path),'beforeR1Pin':pin(p/'before/client-entry.cjs'),'afterR2Pin':pin(p/'src/client-entry.cjs'),'exactDiffs':diffs,'uniqueR0LiteralChecks':r0checks,'uniqueR1LiteralChecks':r1checks,'uniqueR2LiteralChecks':r2checks,'fullR1ToR2ReconstructionMatches':True,'fullA58ToR0ToR1ToR2ReconstructionMatches':True,'inverseExactTwoLiteralReconstructionOfR1Matches':True,'onlyCandidateProductSourceFile':'src/client-entry.cjs','capsulePublicFiles':capsuleFiles,'archivePublicSourceMember':{'path':str(archive),'onlyReadMember':'package/src/client-entry.cjs','memberBytes':len(member),'memberSha256':sha(member),'sameAsOriginalAndSharedSource':True,'extractedToFilesystem':False},'originalHostClientCopiesByteEqual':True,'preservedIndependentReviewPins':preserved,'independentDesignPins':designs,'JavaScriptParsedImportedExecuted':False,'testsBuildBrowserNetworkModelNativeDBProfilesListenersGitOccurred':False}\nPath('/tmp/ui-worker-reconnect-r2-independent-byte-verification.json').write_text(json.dumps(record,indent=2)+'\\n')\nprint(json.dumps({'manifest':manifest,'closure':closure,'before':record['beforeR1Pin'],'after':record['afterR2Pin'],'publicInputCount':len(inputs),'authoredArtifactCount':len(artifacts),'closureListedCount':len(sidecars),'r0LiteralCount':len(r0checks),'r1LiteralCount':len(r1checks),'r2LiteralCount':len(r2checks),'exactDiffs':diffs,'fullR1ToR2':'MATCH','fullA58ToR0ToR1ToR2':'MATCH','inverseOnlyTwoLiterals':'MATCH','archivePublicSourceOnlyMember':'MATCH','originalHostCopies':'MATCH','preservedIndependentReviews':len(preserved),'preservedDesignFiles':len(designs),'JSExecution':False},indent=2))\nPY",
+    "kind": "Python standard-library byte/hash/metadata/literal/archive-public-member checks only",
+    "result": {
+      "publicInputPins": "54 MATCH",
+      "authoredArtifactPins": "9 MATCH",
+      "closureEntries": "11 MATCH",
+      "r0LiteralCount": 8,
+      "r1LiteralCount": 33,
+      "r2LiteralCount": 2,
+      "exactForwardAndInverseTwoLiteralChange": "MATCH",
+      "entireMinimalDiff": "EXACT",
+      "entireCumulativeA58Diff": "EXACT",
+      "entireA58ToR0ToR1ToR2Chain": "MATCH",
+      "archivePublicSourceOnlyMember": "MATCH",
+      "originalHostCopies": "MATCH",
+      "priorIndependentArtifacts": "12 MATCH",
+      "priorIndependentDesignFiles": "4 MATCH"
+    }
+  },
+  "markdownCompanion": {
+    "path": "docs/evidence/UI/worker-reconnect-r2-independent-source-review.md",
+    "bytes": 11282,
+    "sha256": "fc8cb2dd3f4d22e80f285e56943e06a6ffe086418b69faeaaca28201ac819199"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "buildAndCheck": "PASS",
+  "bundleBytes": 106599,
+  "bundleSha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8",
+  "nativeModelNetworkProfileListenerEffects": 0,
+  "originalBuilderUnchanged": true,
+  "sourceSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+}

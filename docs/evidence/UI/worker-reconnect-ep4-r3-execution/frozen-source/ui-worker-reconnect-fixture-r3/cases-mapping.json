@@ -1,0 +1,857 @@
+{
+  "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+  "totalFamilies": 64,
+  "authoredEP": 4,
+  "othersHeldNotAuthored": 60,
+  "originalConnectionPublicHeld": [
+    "WC02",
+    "WC07",
+    "WC14",
+    "WC30",
+    "WC31"
+  ],
+  "cases": [
+    {
+      "id": "WC01",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "No live/recovered decision or usable old preview/grant/invented worker; honest bootstrap/unavailable state",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Empty-list apply/complete labelled stores; structural Panel initially unconfirmed; <=3 baseline reads.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Synthetic success is not live-stream proof",
+      "entry": null
+    },
+    {
+      "id": "WC02",
+      "independentClass": "ORIGINAL_CONNECTION_PUBLIC",
+      "independentEffects": "<=4 source attempts, <=2B, M=0",
+      "independentExpected": "ready -> connected/no-generation -> current generation -> Gateway reset when composed; worker recovery cannot accept connected alone",
+      "fixtureGroup": "original-connection",
+      "prospectiveStimulus": "Actual original installConnection source/ready state+generation ordering. Actual Gateway reset only if its original complete public composition is approved; no fabricated reset owner.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "Complete unchanged original public service graph/import disposition required; no UNIT_ONLY context/store substitute. EP4 priority closure only; No presumed directly importable private controller constructor/export",
+      "entry": null
+    },
+    {
+      "id": "WC03",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Joint readiness fails; cached host/generation/read data cannot restore decisions",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Labelled stable UNIT_ONLY inconsistent state/generation representatives, no original-host claim.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Inconsistent synthetic representative is UNIT_ONLY, no official native witness",
+      "entry": null
+    },
+    {
+      "id": "WC04",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Initial reconciliation recovers readonly fresh view without requiring reset; no render/request loop",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Already-established stable stores, empty list apply reads3; no future reset required.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Must use actual stable store or labelled stable DTO store",
+      "entry": null
+    },
+    {
+      "id": "WC05",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Truthful connection/setup distinction; worker authority unavailable; no automatic unlock/migration/mutation",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Original setup refresh returns valid nonready phase; partial readonly card reachable, task/worker mutation controls absent.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Exact exported setup surface must be pinned",
+      "entry": null
+    },
+    {
+      "id": "WC06",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Fresh readonly worker reconciliation without waiting generation change; old errors/decisions not current authority",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Original setupModel.refresh() successive valid unavailable/ready results; empty list follow-up. No setup confirmation under M0.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Unverified setup notification signature",
+      "entry": null
+    },
+    {
+      "id": "WC07",
+      "independentClass": "ORIGINAL_CONNECTION_PUBLIC",
+      "independentEffects": "<=4 attempts, <=2B total, M=0",
+      "independentExpected": "Incremental source attached before ready; reset on first and replacement generation; UI subscribes to sole original loop",
+      "fixtureGroup": "original-connection",
+      "prospectiveStimulus": "Actual original Gateway apply plus actual Connection/Context/required services, decoded public rpc.open $events ready stream; exact graph incomplete => HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "Complete unchanged original public service graph/import disposition required; no UNIT_ONLY context/store substitute. EP4 priority closure only; Synthetic stream/host is UNIT_ONLY, not authenticated Web proof",
+      "entry": null
+    },
+    {
+      "id": "WC08",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Invalidate decisions/preview/grant immediately; late read cannot reverse loss",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Genuine public loss ordering or labelled controller loss; old read barrier, no candidate private patches.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Use actual public loss ordering, no private field patch",
+      "entry": null
+    },
+    {
+      "id": "WC09",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Truthful recovery; old decisions clear before fresh response; no recreation/replay",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Complete public stores/declared connecting transition; empty-list apply or direct public worker lifetime.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No existing live-listener intervention in this lane",
+      "entry": null
+    },
+    {
+      "id": "WC10",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Truthful unavailable/offline; stale actions off; finite reread without reload/bypass; HTTP200 does not mean recovered",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Offline partial structural Panel, bounded worker.refresh; unary success cannot authorize worker decisions.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Actual offline stimulus separately coordinated; local fixture only here",
+      "entry": null
+    },
+    {
+      "id": "WC11",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=4 attempts, <=2B, M=0",
+      "independentExpected": "Old decisions invalidate; abort/settle before replacement; G2 and fresh data required; no task/native replay",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Actual original connection.reconnect on scoped fixture service, <=4 source attempts. Existing listener untouched.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Existing real listener/profile not touched by this design",
+      "entry": null
+    },
+    {
+      "id": "WC12",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=27 readonly requests, M=0",
+      "independentExpected": "Coalesced <=2B or finite <=9B/27 requests; no self-sustaining refetch/render, overlapping authority or task duplicate",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Exactly8 input events; empty list only; <=27 readonly calls, no input-independent polling or loop.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Counters distinguish source notifications and explicit user reads",
+      "entry": null
+    },
+    {
+      "id": "WC13",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Identity change invalidates G1 despite same home/labels; fresh G2 facts required",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Stable synthetic same-host different generation identities and deferred original readonly result; no host label currentness.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Host facts are not currentness token",
+      "entry": null
+    },
+    {
+      "id": "WC14",
+      "independentClass": "ORIGINAL_CONNECTION_PUBLIC",
+      "independentEffects": "<=4 attempts, <=2B, M=0",
+      "independentExpected": "Stable snapshots, deduplicated state, one ready/generation; no infinite consumer refetch",
+      "fixtureGroup": "original-connection",
+      "prospectiveStimulus": "Actual original store stable snapshots/deduplicated reports, three reads; no generated object per getSnapshot.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "Complete unchanged original public service graph/import disposition required; no UNIT_ONLY context/store substitute. EP4 priority closure only; No synthetic native-currentness claim from state source",
+      "entry": null
+    },
+    {
+      "id": "WC15",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "No restored ready/preview/grant/controls; truthful lost/failed state retained",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Public worker.refresh deferred reply then disconnected; old AbortSignal and public snapshot fences.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public deferred readonly response only",
+      "entry": null
+    },
+    {
+      "id": "WC16",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Old source/model/preset catalogue not G2 decision input; fresh catalogue/status needed",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Public catalog deferred result; source generation loss/replace declared lifetime, no mutations.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Catalogue success alone no native authority",
+      "entry": null
+    },
+    {
+      "id": "WC17",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Stale preview/consent decision ignored/cleared; no auto-confirm/grant",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Public previewPolicy deferred result then loss; valid original policy DTO only, zero confirmation.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No manufactured valid preview receipt",
+      "entry": null
+    },
+    {
+      "id": "WC18",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "No transfer/preaccepted consent/usable grant; fresh preview and explicit future consent",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Public previewPolicy with original same-host replacement; stale acceptance stays false.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Distinct replacement race from loss-only WC17",
+      "entry": null
+    },
+    {
+      "id": "WC19",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "G2 result remains visible; old response cannot overwrite/clear/resurrect decisions",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Two finite public deferred reads/owners; newer status remains after older reply.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public request/generation ordering must be observed",
+      "entry": null
+    },
+    {
+      "id": "WC20",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Old facts cannot enable future decision; newest facts/cancel/revoke/deny respected; connection alone insufficient",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Original public task refresh/select or conforming UNIT_ONLY task store. Original unavailable permission/source-change seams remain HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Missing public fact-change surface remains HOLD",
+      "entry": null
+    },
+    {
+      "id": "WC21",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Expired decision unusable; observed original time/expiry, no authority resurrection",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Declared original clock constructor input and valid readonly policy expiry; no public grant without mutation => grant subpartition HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No exposed honest time/expiry boundary -> HOLD; no private/global clock patch",
+      "entry": null
+    },
+    {
+      "id": "WC22",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Needs_policy until explicit original owner consent; readonly info available, no accepted default/confirm/grant/create/execute",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Valid needs_policy status plus public previewPolicy, unaccepted checkbox/confirmation gate; no confirm.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Actual policy-confirm mutation outside readonly scope",
+      "entry": null
+    },
+    {
+      "id": "WC23",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Accurate nonconnection cause, not generic disconnected/ready; stale decisions off; readonly rereadable",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Original allowed unavailable/needs_policy/setup_required DTO fields/reason codes only.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Only valid declared readonly DTO phases, no guessed schema",
+      "entry": null
+    },
+    {
+      "id": "WC24",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Truthful safe failure/retry, connection state not forged from RPC outcome, no raw token/secret or stale grant",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Public declared failure/rejection/malformed readonly DTO then explicit refresh; allowlisted errors, no raw canary display.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Actual transport errors are not necessarily physical disconnect",
+      "entry": null
+    },
+    {
+      "id": "WC25",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=4 attempts, <=2B, M=0",
+      "independentExpected": "Unresolved work not ready; warning not hard loss; post-abort late ready ignored; exact-T winner recorded; finite cleanup",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Public signal cancellation/deferred read; original configured W/T timing through actual installConnection. Hung-read presentation timeout absent => that subpartition HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Unverified readonly timeout/cancel seam or unproved quiescence -> HOLD",
+      "entry": null
+    },
+    {
+      "id": "WC26",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Newest recovered phase/source/task/permission reflected; no auto consent/plan/grant/create/execute",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Two empty-list chains<=6, fresh status after real/synthetic labelled lifecycle; no source/policy authority inferred.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Local recovered UI is not native execution proof",
+      "entry": null
+    },
+    {
+      "id": "WC27",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Other panels may show data; no live worker badge/old decision from HTTP success",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Worker.refresh success with absent generation and partial Panel; separate successful readonly task facts remain observations.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Direct reported split; no assumed host cache authority",
+      "entry": null
+    },
+    {
+      "id": "WC28",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Same record/version/auth, no intake/control/revise/duplicate/worker/result/action; global readonly UI may recover, cancelled-task actions remain disabled for true reason",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Synthetic copy of reported cancel_requested V2/auth1 fact only; no real task source read/mutation. Actual record preservation left to Web handoff.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No fresh task or native action to manufacture proof",
+      "entry": null
+    },
+    {
+      "id": "WC29",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B, M=0",
+      "independentExpected": "Exact cleanup/unsubscribe once; no late publication/decision/request from retired owner",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Original worker/setup/task dispose plus original Cordis Fiber disposal/effects; structural React never proves actual component hook lifetime.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Exact model lifetime signature unverified; do not invent dispose()",
+      "entry": null
+    },
+    {
+      "id": "WC30",
+      "independentClass": "ORIGINAL_CONNECTION_PUBLIC",
+      "independentEffects": "<=4 attempts, <=2B, M=0",
+      "independentExpected": "State/generation withdrawn, source abort stops delivery and settles, no late reset/model publish or overlapping replacement",
+      "fixtureGroup": "original-connection",
+      "prospectiveStimulus": "Actual original loop.stop/source disposer and Gateway Fiber.dispose await; true public abort/settle evidence or HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "Complete unchanged original public service graph/import disposition required; no UNIT_ONLY context/store substitute. EP4 priority closure only; Timeout/no public quiescence evidence remains HOLD",
+      "entry": null
+    },
+    {
+      "id": "WC31",
+      "independentClass": "ORIGINAL_CONNECTION_PUBLIC",
+      "independentEffects": "<=4 attempts, <=2B, M=0",
+      "independentExpected": "Contained exception and original owner checks; no connected generation/reset after withdrawal or retired listener leak",
+      "fixtureGroup": "original-connection",
+      "prospectiveStimulus": "Actual original subscription callback throw/unsubscribe/owner stop; original exception isolation, no private counter.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "Complete unchanged original public service graph/import disposition required; no UNIT_ONLY context/store substitute. EP4 priority closure only; Observe callbacks/stores only, no private counter",
+      "entry": null
+    },
+    {
+      "id": "WC32",
+      "independentClass": "UI_CONTROLLER_READONLY",
+      "independentEffects": "<=2B total one per owner, M=0",
+      "independentExpected": "Owner/runtime identity prevents contamination; fresh B readonly facts needed",
+      "fixtureGroup": "controller-readonly",
+      "prospectiveStimulus": "Original scoped owner A disposed, owner B starts; pending A read; each stable instance owns independent public snapshots. New owner unknown recovery remains HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Unsupported public replacement/remount surface remains HOLD",
+      "entry": null
+    },
+    {
+      "id": "WC33",
+      "independentClass": "ACTUAL_WEB_VISUAL_HOLD",
+      "independentEffects": "<=2B, M=0, <=120000ms",
+      "independentExpected": "Correct connection indicator/new readonly phase; preserved cancelled V2/auth1/no worker/result/actions; actual Gateway/store/read provenance plus visual observations",
+      "fixtureGroup": "actual-web-hold",
+      "prospectiveStimulus": "Actual Web/browser only, root exact successor asset/service/profile/listener handoff and available Mac required; no SOURCE fixture substitutes.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Served asset/runtime/browser GO pending; screenshot/DTO alone no actual Web/native proof",
+      "entry": null
+    },
+    {
+      "id": "WC34",
+      "independentClass": "ACTUAL_WEB_VISUAL_HOLD",
+      "independentEffects": "<=2B, M=0, <=120000ms",
+      "independentExpected": "Visible states match genuine stores, no stale decision flash/auto action; no listener/profile/token/reload/disabled-control intervention",
+      "fixtureGroup": "actual-web-hold",
+      "prospectiveStimulus": "Actual Web/browser only; bounded naturally observed/explicitly approved public loss stimulus, no listener kill/reload/profile reset.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No approved reachable loss stimulus -> HOLD, not manufactured disconnect",
+      "entry": null
+    },
+    {
+      "id": "WC35",
+      "independentClass": "ACTUAL_WEB_VISUAL_HOLD",
+      "independentEffects": "<=2B, M=0, <=120000ms",
+      "independentExpected": "Readable/focusable reason and unaccepted explicit consent/disallowed actions in existing approved viewport; no auto mutation",
+      "fixtureGroup": "actual-web-hold",
+      "prospectiveStimulus": "Actual Web/browser naturally present nonready phase/consent; no policy/task mutation to manufacture it.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Absent phase -> HOLD, no policy/task mutation to create it; native consent/execution separate",
+      "entry": null
+    },
+    {
+      "id": "WC36",
+      "independentClass": "ACTUAL_WEB_VISUAL_HOLD",
+      "independentEffects": "<=2B, M=0, <=120000ms",
+      "independentExpected": "Fresh readonly view/no duplicate task-worker entries/retired flash, same cancelled record and stable controls/reasons",
+      "fixtureGroup": "actual-web-hold",
+      "prospectiveStimulus": "Actual normal UI navigation once, no reload; cannot prove exact subscription/native cleanup from screenshot.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Visual navigation alone no exact unsubscribe/native-stop proof",
+      "entry": null
+    },
+    {
+      "id": "US01",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=0,C=0,R<=3",
+      "independentExpected": "Fail closed, truthful unavailable surface, no caller flag/token substitute",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Missing/noncallable store methods UNIT_ONLY with full apply/structural Panel. Throwing required read/subscribe unsupported in r2 => explicit HOLD, never ready/PASS.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Required public model observation surface absent",
+      "entry": null
+    },
+    {
+      "id": "US02",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=0,C=0,R<=3",
+      "independentExpected": "No submission; readonly surface may remain without authority; no auto policy/native action",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Apply/Panel joint original readiness gates and original stale task DTO; direct worker constructor has no connection parameter, do not invent one.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No mock state as actual native-currentness proof",
+      "entry": null
+    },
+    {
+      "id": "US03",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "totalS<=1,C=0,R<=3",
+      "independentExpected": "Rejected requests NOT_SUBMITTED/S0; fresh explicit valid request <=1, no automatic retry",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Original clock/uuid/digest public options, three finite pre-entry representatives plus one fresh public prepareContext; no private digest/build patch.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Unsupported public digest/build rejection seam, no private helper override",
+      "entry": null
+    },
+    {
+      "id": "US04",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=0,C=0,R<=3",
+      "independentExpected": "Recheck before carrier, no late queued mutation",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Declared finite digest Promise and public task/currentness loss before carrier; no hidden future dispatch.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public deferred preparation seam unverified",
+      "entry": null
+    },
+    {
+      "id": "US05",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "SUBMITTED_UNKNOWN, no resend/new command/success claim",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "One public prepareContext or policy-confirm synthetic accepted request; generic uncertainty only, no retained-ready Execute claim.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Synthetic acceptance not actual Host/native effect",
+      "entry": null
+    },
+    {
+      "id": "US06",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "No repeat submit or correlation replacement; unknown action disabled",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Exactly3 repeated public model inputs, same original unknown retained, no transport repeat.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Synthetic model calls only, no actual disabled-control probe",
+      "entry": null
+    },
+    {
+      "id": "US07",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Unknown retained; counter/authority not reset; no stale current-action publication or auto grant/resend",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "One generic entered mutation plus declared public disconnected/reset stimulus; actual Apply/Gateway wiring separate.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No private reset/currentness patch",
+      "entry": null
+    },
+    {
+      "id": "US08",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Original unknown preserved; labels/id do not authorize replay",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Two scoped public/synthetic store owners; genuine native owner correlation replacement absent => broader subpartition HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public owner-replacement seam unverified",
+      "entry": null
+    },
+    {
+      "id": "US09",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "A unknown retained; no recreation/resubmit/settled inference from B",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Conforming public UNIT_ONLY task store switches A/B/A, unknown metadata preserved. Exact Execute coverage belongs to EP02.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Task identities/source facts must be declared public DTOs",
+      "entry": null
+    },
+    {
+      "id": "US10",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Partial readonly surface available, unknown action truthful/disabled, no HTTP clearing uncertainty",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "One unknown + idle readonly status while generation absent; partial structural card only, no native claim.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Synthetic HTTP success not live/native proof",
+      "entry": null
+    },
+    {
+      "id": "US11",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "No retired publication/resend/auto follow-on; disposal not no-effect proof; new owner does not infer settled from empty state",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Original public dispose retains final snapshot; empty fresh model is no effect-absence proof. Cross-owner/durable unknown hydration absent => remount subpartition HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public lifetime/unknown-fact surface unavailable",
+      "entry": null
+    },
+    {
+      "id": "US12",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Prior unknown/correlation not overwritten; replacement worker operation blocked",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Generic unknown operation then another explicit public worker mutation attempted; marker cannot be overwritten.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Independent task cancellation covered separately",
+      "entry": null
+    },
+    {
+      "id": "US13",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=0 or1,C=0,R<=3",
+      "independentExpected": "S0 only with proven no submission; S1 postaccept unknown absent exact declared nonapplication fact; error text/okfalse alone insufficient",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Public constructor failure before carrier vs failure after accepted carrier, separate counted representatives; error text alone not no-submission proof.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No guessed semantic meaning for unknown error code",
+      "entry": null
+    },
+    {
+      "id": "US14",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Record only operation fact; no automatic next policy/grant/create/execute",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Single public original operation known DTO under current task, record only UNIT_ONLY fact and no auto next action.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Unit receipt no native proof",
+      "entry": null
+    },
+    {
+      "id": "US15",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Only sufficiently validated historical fact may reconcile; current decisions remain stale until fresh prerequisites; otherwise unknown/HOLD",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Late declared receipt after invalidation may not be adopted; no historical outcome reconciliation API => retain unknown/HOLD, no fake proof DTO.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public receipt correlation/validation may be absent",
+      "entry": null
+    },
+    {
+      "id": "US16",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "No reconciliation/replay from oktrue alone; unknown retained",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Original public-schema task/correlation mismatch in synthetic result, no private receipt/envelope/tamper/security investigation.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Public DTO mismatches only, no protected receipt/envelope/tamper investigation",
+      "entry": null
+    },
+    {
+      "id": "US17",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Readonly success cannot settle uncertainty or grant usable action/no-effect proof",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Readonly ready cannot clear generic unknown, metadata remains original; no extra authority from status.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No model-ready or HTTP200 native proof",
+      "entry": null
+    },
+    {
+      "id": "US18",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "No execution/capture/stop/settlement or unrelated operation reconciliation; at most supported exact existence fact",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Ready-only exact workerQuery after genuine public preparation cannot fit S1 without hydration => this exact worker mapping subpartition maps to EP01/04; ordinary US budget unchanged/HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No richer query DTO invented",
+      "entry": null
+    },
+    {
+      "id": "US19",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=1,totalSimulatedMutationShapes=2,actualEffects=0",
+      "independentExpected": "One task-control request remains possible without worker resend; cancel_requested not stop/rollback/release proof",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Original createModel initial list/status2 and control(cancel) post-refresh list/status2 need >=R4 versus sealed R<=3; exact original-model subpartition HOLD pending additive budget, no counter reset/exclusion.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No actual task mutation/native cancel in this unit",
+      "entry": null
+    },
+    {
+      "id": "US20",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "Reconcile only scope actually proven; missing execution/nonmatching query insufficient; no replay",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Original workerQuery has task+worker only; required missing execution/effect reconciliation fields => HOLD, never invent richer result.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Original public query lacking required fields -> HOLD, not fabricated success",
+      "entry": null
+    },
+    {
+      "id": "US21",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=3",
+      "independentExpected": "No automatic next step/inherited consent; only distinct fresh explicit decision after all current prerequisites",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Current known generic operation fact vs stale task/policy/expiry, no second mutation; broader historical-native proof absent => HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Historical outcome not current native authority",
+      "entry": null
+    },
+    {
+      "id": "US22",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S=1,C=0,R<=9,actualEffects=0",
+      "independentExpected": "No resend/overwrite/unbounded loop; mutation count survives logical reset",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Exactly8 reset/refresh/action inputs, generic one mutation retained and <=9 reads, no unbounded recovery loop.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; No actual quota/native task claim from simulated count",
+      "entry": null
+    },
+    {
+      "id": "US23",
+      "independentClass": "UI_MUTATION_SYNTHETIC",
+      "independentEffects": "S<=1,C=0,R<=3",
+      "independentExpected": "Truthful disabled unknown action, normal readonly reread and independent task cancel discoverable, no accepted policy default",
+      "fixtureGroup": "controller-submission",
+      "prospectiveStimulus": "Structural exported Panel/readonly partial tree only; actual focus/DOM/visual behavior remains Web HOLD. Exact readyworker flow covered separately EP cells.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Actual browser/Cua visual proof absent",
+      "entry": null
+    },
+    {
+      "id": "US24",
+      "independentClass": "CONSERVATION_NATIVE_HOLD",
+      "independentEffects": "No additional simulated or actual requests",
+      "independentExpected": "Explicit synthetic counts only, actual native effects0, no mock token/execution/acceptance/CODE closure; missing methods failclosed/HOLD",
+      "fixtureGroup": "conservation-hold",
+      "prospectiveStimulus": "Evidence conservation only; actual native/paid/model/network0, no additional requests, all unsupported original-public surfaces HOLD.",
+      "status": "HOLD_NOT_AUTHORED_IN_EP4_CAPSULE",
+      "hold": "EP4 priority closure only; Actual native/Cua unknown-submission requires separate approved genuine operation/proof",
+      "entry": null
+    },
+    {
+      "id": "EP01",
+      "independentClass": "PUBLIC_FLOW_SYNTHETIC",
+      "independentEffects": {
+        "perCellSMax": 5,
+        "RMax": 32,
+        "CMax": 0,
+        "actualEffects": 0
+      },
+      "independentExpected": "S5/P4/E1/C0, no renewed prep/command/replay/follow-on; original execute unknown/correlation retained, readonlyG2 may recover without old authority; ready query not execution/input/capture/stop proof",
+      "fixtureGroup": "controller-execute-preparation",
+      "priorMap": [
+        "WC08",
+        "WC11",
+        "WC13",
+        "US05",
+        "US07",
+        "US08",
+        "US17",
+        "US18"
+      ],
+      "inventory": {
+        "S": 5,
+        "P": 4,
+        "E": 1,
+        "C": 0,
+        "R": 16,
+        "taskReads": 12,
+        "workerStatusReads": 2,
+        "previewReads": 1,
+        "queryReads": 1,
+        "steps": [
+          "execute once; public synthetic carrier entry held/lost",
+          "Complete labelled original-store loss/reset stimulus plus declared workerModel.disconnected(); no invented constructor connection argument",
+          "Reject/release lost original execute Promise once after invalidation; record original aborted signal",
+          "G2 readonly taskModel.refresh list/status2, worker.refresh1, worker.query1 ready-only",
+          "Exactly3 further execute() inputs: zero new carrier entries, original uncertainty/correlation retained"
+        ],
+        "barriers": [
+          "one accepted execute reply Promise",
+          "finite complete labelled state/generation transition; original service/Gateway integration separately mapped"
+        ]
+      },
+      "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+      "hold": "Independent fixture review and root execution GO outstanding; native/browser/actual-host proof remains HOLD",
+      "entry": "controller-execute-preparation.mjs",
+      "proofClass": "UNIT_ONLY_PUBLIC_MODEL"
+    },
+    {
+      "id": "EP02",
+      "independentClass": "PUBLIC_FLOW_SYNTHETIC",
+      "independentEffects": {
+        "perCellSMax": 5,
+        "RMax": 32,
+        "CMax": 0,
+        "actualEffects": 0
+      },
+      "independentExpected": "S5/P4/E1/C0 across A-B-A; A unknown retained/no overwrite fromB, no renewed preparation/regrant/create/execute/command or inferred settlement from reads; no stale decision publication",
+      "fixtureGroup": "controller-execute-preparation",
+      "priorMap": [
+        "WC20",
+        "US05",
+        "US09",
+        "US12",
+        "US17"
+      ],
+      "inventory": {
+        "S": 5,
+        "P": 4,
+        "E": 1,
+        "C": 0,
+        "R": 16,
+        "taskReads": 12,
+        "workerStatusReads": 3,
+        "previewReads": 1,
+        "queryReads": 0,
+        "steps": [
+          "execute once; accepted reply held/lost",
+          "taskModel.select(B): one status data:[]; worker.refresh1",
+          "taskModel.select(A): one status data:[]; worker.refresh1",
+          "Three repeated execute inputs at finite B/return-A points, no new entries or command regeneration",
+          "Settle/reject original lost reply once; observe original A uncertainty never overwritten by B or ready reads"
+        ],
+        "barriers": [
+          "one accepted execute reply Promise",
+          "only original public taskModel.select changes selection/detail; no setter"
+        ]
+      },
+      "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+      "hold": "Independent fixture review and root execution GO outstanding; native/browser/actual-host proof remains HOLD",
+      "entry": "controller-execute-preparation.mjs",
+      "proofClass": "UNIT_ONLY_PUBLIC_MODEL"
+    },
+    {
+      "id": "EP03",
+      "independentClass": "PUBLIC_FLOW_SYNTHETIC",
+      "independentEffects": {
+        "perCellSMax": 5,
+        "RMax": 32,
+        "CMax": 0,
+        "actualEffects": 0
+      },
+      "independentExpected": "E0/S4/P4/C0, no late RPC/null dereference enqueue/old captured dispatch; factual NOT_SUBMITTED execute only, preserve prior four preparation counts/facts, failclosed safe public refusal and no old decisions published; recheck actual declared lifecycle/task/source prerequisites, no direct model generation injection",
+      "fixtureGroup": "controller-execute-preparation",
+      "priorMap": [
+        "WC20",
+        "US03",
+        "US04"
+      ],
+      "inventory": {
+        "S": 4,
+        "P": 4,
+        "E": 0,
+        "C": 0,
+        "R": 13,
+        "taskReads": 11,
+        "workerStatusReads": 1,
+        "previewReads": 1,
+        "queryReads": 0,
+        "steps": [
+          "execute() once; declared public constructor digest holds only this fifth attempted mutation preparation before rpc.call",
+          "taskModel.select(A) immediately publishes detail:null/stale:true and enters one held readonly status",
+          "Release digest once while status still held: execute no carrier entry, safe public refusal, no phantom execute uncertainty",
+          "Exactly2 further execute inputs while detail still invalid: no carrier entries",
+          "Release held status once with original task data:[]; record read and safe final public model cleanup"
+        ],
+        "barriers": [
+          "one public digest Promise at original constructor option",
+          "one original select status Promise, released after digest",
+          "Only null-detail representative selected; stale-version second representative not scheduled/budgeted"
+        ]
+      },
+      "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+      "hold": "Independent fixture review and root execution GO outstanding; native/browser/actual-host proof remains HOLD",
+      "entry": "controller-execute-preparation.mjs",
+      "proofClass": "UNIT_ONLY_PUBLIC_MODEL"
+    },
+    {
+      "id": "EP04",
+      "independentClass": "PUBLIC_FLOW_SYNTHETIC",
+      "independentEffects": {
+        "perCellSMax": 5,
+        "RMax": 32,
+        "CMax": 0,
+        "actualEffects": 0
+      },
+      "independentExpected": "S5/P4/E1/C0, current schema-valid ack not settled external effect; public uncertain/execution remain unresolved, no fabricated committed cursor/result/usage/capture/nonapplication; ready reads cannot clear unknown and context/plan attempts make0newsubmissions or context/action/correlation replacement",
+      "fixtureGroup": "controller-execute-preparation",
+      "priorMap": [
+        "US12",
+        "US14",
+        "US17",
+        "US18",
+        "US21"
+      ],
+      "inventory": {
+        "S": 5,
+        "P": 4,
+        "E": 1,
+        "C": 0,
+        "R": 16,
+        "taskReads": 12,
+        "workerStatusReads": 2,
+        "previewReads": 1,
+        "queryReads": 1,
+        "steps": [
+          "execute once: exact current original DTO execution.state unknown, null cursor/resultDigest, unknown null usage; normal worker remains ready",
+          "Original execute own taskModel.refresh list/status2 counted",
+          "worker.refresh1 returns ready; worker.query1 returns task+ready worker only",
+          "Exactly one prepareContext and one plan attempt: no new mutation entry or replacement of retained unknown execution/correlation",
+          "Ack Boolean, if true, is UNIT_ONLY acknowledgement; no committed output/usage/native proof"
+        ],
+        "barriers": [
+          "current exact unknown execution reply; no private/native receipt hook"
+        ]
+      },
+      "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+      "hold": "Independent fixture review and root execution GO outstanding; native/browser/actual-host proof remains HOLD",
+      "entry": "controller-execute-preparation.mjs",
+      "proofClass": "UNIT_ONLY_PUBLIC_MODEL"
+    }
+  ],
+  "successor": "r3 generation-only DTO correction; same64 independent families and4 EP cells; no full family acceptance"
+}

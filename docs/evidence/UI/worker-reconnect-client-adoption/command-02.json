@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/opt/homebrew/opt/node@22/bin/node",
+    "scripts/build-client.mjs",
+    "--check"
+  ],
+  "exitCode": 0,
+  "startedAt": "2026-10-07T10:14:53.570716+00:00",
+  "stderrBytes": 0,
+  "stdoutBytes": 0,
+  "timeoutSeconds": 10
+}

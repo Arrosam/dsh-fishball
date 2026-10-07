@@ -303,6 +303,7 @@ module.exports = function clientFactory(require) {
   const setupMissingRoutes = new Set(['transport failure for /df-setup/v1/status: HTTP 404', 'transport failure for /df-setup/v1/status: HTTP 405']);
   const emptySetupSnapshot = () => null;
   const emptySetupSubscribe = () => () => {};
+  const observableConnection = connection => ['state', 'generation'].every(key => typeof connection?.[key]?.getSnapshot === 'function' && typeof connection?.[key]?.subscribe === 'function');
   function setupObject(value, keys, required = keys) {
     if (!value || typeof value !== 'object' || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new Error('INVALID_RESPONSE');
     const fields = Object.getOwnPropertyDescriptors(value), names = Reflect.ownKeys(fields);
@@ -341,28 +342,59 @@ module.exports = function clientFactory(require) {
     if(!['taskRef','actionRef','actionDigest','claimRef','reservationRef','generationRef'].every(key=>ref(row[key]))||row.sessionRef!==null&&!ref(row.sessionRef)||!['created','ready','running','unknown','cancel_requested','stopped','not_created'].includes(row.phase))throw new Error('INVALID_RESPONSE');return freeze(row);
   }
   function createWorkerModel(rpc, taskModel, {clock=Date.now,uuid=()=>crypto.randomUUID(),digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text))),byte=>byte.toString(16).padStart(2,'0')).join('')}={}) {
-    let active=true,epoch=0,revision=0,lastNow=null,ownRefresh=false;
-    let state=freeze({phase:'needs_refresh',status:null,catalog:null,policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null,confirmedPolicy:null,uncertain:null,action:null,worker:null,execution:null,capture:null,result:null,contextRecordRef:null,taskRef:null,busy:null,stale:true,error:null});
+    let active=true,epoch=0,revision=0,lastNow=null,ownRefresh=false,pendingMutation=null;
+    let state=freeze({phase:'needs_refresh',status:null,catalog:null,policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null,confirmedPolicy:null,uncertain:null,uncertainTaskRef:null,action:null,worker:null,execution:null,capture:null,result:null,contextRecordRef:null,taskRef:null,busy:null,stale:true,error:null});
     const listeners=new Set(),controllers=new Set();
     function publish(update){if(!active)return;state=freeze({...state,...update});for(const listener of [...listeners])listener();}
     const now=()=>{let at;try{at=clock();}catch{return NaN;}if(!integer(at)||lastNow!==null&&at<lastNow)return NaN;lastNow=at;return at;};
-    function invalidate(){revision++;for(const controller of controllers)controller.abort();publish({policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null});}
+    function retainSubmitted(pending=pendingMutation){if(pending?.submitted&&!pending.confirmed&&!state.uncertain)publish({uncertain:pending.name,uncertainTaskRef:pending.taskRef});}
+    function invalidate(){retainSubmitted();revision++;for(const controller of controllers)controller.abort();publish({policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null});}
     function task(allowBlocked=false){const snapshot=taskModel.getSnapshot();if(snapshot.stale||!snapshot.detail?.task||!allowBlocked&&(terminal.has(snapshot.detail.task.status)||['cancel_requested','recovery_required'].includes(snapshot.detail.task.status)))throw new Error('STALE_VERSION');return safeTask(snapshot.detail.task);}
     let selectedKey=null;
     const unsubscribe=taskModel.subscribe(()=>{const s=taskModel.getSnapshot(),t=s.detail?.task,key=t?`${t.taskRef}:${t.version}:${t.authEpoch}`:null;if(key!==selectedKey){const prior=selectedKey;selectedKey=key;if(!ownRefresh){invalidate();publish({busy:null,stale:true});}if(t&&state.taskRef&&t.taskRef!==state.taskRef)publish({taskRef:t?.taskRef??null,contextRecordRef:null,action:null,worker:null,execution:null,capture:null,result:null});}});
-    async function call(channel,name,payload){const currentEpoch=epoch,controller=new AbortController();controllers.add(controller);try{const response=await rpc.call(channel,`v1/${name}`,payload,controller.signal);if(!active||epoch!==currentEpoch||controller.signal.aborted)throw new Error('CONNECTION_CHANGED');const envelope=setupObject(plainRpcReply(response),['ok','value','error'],['ok']);if(envelope.ok===false&&!Object.hasOwn(envelope,'value')){const error=setupObject(envelope.error,['code','message','details'],['code']);throw new Error(workerError(error.code));}if(envelope.ok!==true||!Object.hasOwn(envelope,'value')||Object.hasOwn(envelope,'error'))throw new Error('INVALID_RESPONSE');return envelope.value;}catch(error){throw new Error(workerError(setupFailure(error)));}finally{controllers.delete(controller);}}
+    async function call(channel,name,payload,pending){const currentEpoch=epoch,controller=new AbortController();controllers.add(controller);try{const invoke=rpc?.call;if(typeof invoke!=='function')throw new Error('CAPABILITY_UNAVAILABLE');if(!active||epoch!==currentEpoch||controller.signal.aborted)throw new Error('CONNECTION_CHANGED');if(pending)pending.submitted=true;const response=await invoke.call(rpc,channel,`v1/${name}`,payload,controller.signal);if(!active||epoch!==currentEpoch||controller.signal.aborted)throw new Error('CONNECTION_CHANGED');const envelope=setupObject(plainRpcReply(response),['ok','value','error'],['ok']);if(envelope.ok===false&&!Object.hasOwn(envelope,'value')){const error=setupObject(envelope.error,['code','message','details'],['code']);throw new Error(workerError(error.code));}if(envelope.ok!==true||!Object.hasOwn(envelope,'value')||Object.hasOwn(envelope,'error'))throw new Error('INVALID_RESPONSE');return envelope.value;}catch(error){throw new Error(workerError(setupFailure(error)));}finally{controllers.delete(controller);}}
     async function cached(){const value=workerStatus(await call('/df-setup','workerStatus',{}));publish({status:value,phase:value.phase,stale:false});return value;}
     async function refresh(){if(!active||state.busy)return false;invalidate();const read=revision;publish({busy:'status',stale:true,error:null});try{const value=workerStatus(await call('/df-setup','workerStatus',{}));if(read!==revision)return false;publish({status:value,phase:value.phase,stale:false});return true;}catch(error){if(read===revision)publish({phase:'unavailable',error:workerError(setupFailure(error)),stale:true});return false;}finally{if(read===revision)publish({busy:null});}}
     async function run(name,build,project,{mutation=false,requiresTask=false,allowBlocked=false}={}){
-      if(!active||state.busy||state.phase==='offline')return false;let bound=null;try{bound=requiresTask?task(allowBlocked):null;}catch(error){publish({error:workerError(setupFailure(error))});return false;}const read=++revision,currentEpoch=epoch;publish({busy:name,error:null,policyAccepted:false,actionAccepted:false});
-      try{let commandRef;if(mutation){commandRef=await digest(uuid());if(!ref(commandRef))throw new Error('INVALID_COMMAND');}if(!active||read!==revision||currentEpoch!==epoch)throw new Error('CONNECTION_CHANGED');const payload=build(bound,commandRef);const value=await call('/df-rpc',name,payload);if(read!==revision||currentEpoch!==epoch)return false;const update=project(value,bound);publish({...update,stale:false});if(mutation&&requiresTask){ownRefresh=true;try{await taskModel.refresh();}finally{ownRefresh=false;}}return true;
-      }catch(error){if(active&&read===revision){publish({error:workerError(setupFailure(error)),stale:true,policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null,uncertain:mutation?name:state.uncertain});if(mutation){ownRefresh=true;try{await taskModel.refresh();}finally{ownRefresh=false;}try{await cached();}catch{publish({phase:'unavailable',stale:true});}}}return false;}finally{if(active&&read===revision)publish({busy:null});}
+      if(!active||state.busy||state.phase==='offline'||mutation&&(state.uncertain||pendingMutation?.submitted&&!pendingMutation.confirmed))return false;
+      let bound=null;try{bound=requiresTask?task(allowBlocked):null;}catch(error){publish({error:workerError(setupFailure(error))});return false;}
+      const read=++revision,currentEpoch=epoch,pending=mutation?{name,taskRef:bound?.taskRef??null,submitted:false,confirmed:false}:null;
+      const current=()=>{if(!active||read!==revision||currentEpoch!==epoch)return false;if(!requiresTask)return true;const snapshot=taskModel.getSnapshot(),selected=snapshot.detail?.task;return !snapshot.stale&&selected?.taskRef===bound.taskRef&&selected.version===bound.version&&selected.authEpoch===bound.authEpoch;};
+      if(pending)pendingMutation=pending;
+      publish({busy:name,error:null,policyAccepted:false,actionAccepted:false});
+      try{
+        let commandRef;if(mutation){commandRef=await digest(uuid());if(!ref(commandRef))throw new Error('INVALID_COMMAND');}
+        if(!current())throw new Error('CONNECTION_CHANGED');
+        const payload=build(bound,commandRef);
+        if(!current())throw new Error('CONNECTION_CHANGED');
+        const value=await call('/df-rpc',name,payload,pending);
+        if(!current()){retainSubmitted(pending);return false;}
+        const update=project(value,bound);
+        if(pending){const unknown=update.execution?.state==='unknown'||update.worker?.phase==='unknown';pending.confirmed=!unknown;if(unknown)retainSubmitted(pending);}
+        publish({...update,stale:false,uncertain:state.uncertain,uncertainTaskRef:state.uncertainTaskRef});
+        if(mutation&&requiresTask){ownRefresh=true;try{await taskModel.refresh();}finally{ownRefresh=false;}}
+        return true;
+      }catch(error){
+        retainSubmitted(pending);
+        if(active&&read===revision){
+          publish({error:workerError(setupFailure(error)),stale:true,policyPreview:null,policyAccepted:false,actionPreview:null,actionAccepted:false,grant:null});
+          if(pending?.submitted&&!pending.confirmed){
+            ownRefresh=true;try{await taskModel.refresh();}finally{ownRefresh=false;}
+            if(!active||read!==revision||currentEpoch!==epoch)return false;
+            try{await cached();}catch{if(active&&read===revision)publish({phase:'unavailable',stale:true});}
+          }
+        }
+        return false;
+      }finally{
+        if(pendingMutation===pending)pendingMutation=null;
+        if(active&&read===revision)publish({busy:null});
+      }
     }
     const cas=(t,commandRef)=>({taskRef:t.taskRef,commandRef,expectedTaskVersion:t.version,expectedAuthEpoch:t.authEpoch});
     const expiry=preview=>preview&&integer(now())&&now()>=preview.preparedAt&&now()<preview.expiresAt;
     function policyDescription(value){const row=workerRecord(value,['selection','effectiveReasoningEffort','environment','persistence','bounds','limits','charges','accounting','pricing','grantTtlMs','systemPrompt']);workerSelection(row.selection);if(row.effectiveReasoningEffort!==null&&!boundedText(row.effectiveReasoningEffort,128))throw new Error('INVALID_RESPONSE');workerStatus({enabled:true,phase:'needs_policy',reasonCode:null,configurationRef:null,policyVersion:null,selection:row.selection,environment:row.environment,persistence:row.persistence,bounds:row.bounds,accounting:row.accounting,pricing:row.pricing,actionsEnabled:false});workerRecord(row.limits,['queueCapacity','maxActive','maxAttempts','maxTotalAttempts','maxRuntimeMs','maxUsageUnits','maxCostEstimateMicros']);workerRecord(row.charges,['runtimeMs','usageUnits','costState','costEstimateMicros','costProvenanceRef']);if(!Object.values(row.limits).every(integer)||row.limits.maxActive!==1||row.limits.maxAttempts!==1||row.limits.maxTotalAttempts!==1||!integer(row.charges.runtimeMs)||!integer(row.charges.usageUnits)||!['estimated','unknown'].includes(row.charges.costState)||row.charges.costState==='estimated'&&(!integer(row.charges.costEstimateMicros)||!ref(row.charges.costProvenanceRef))||row.charges.costState==='unknown'&&(row.charges.costEstimateMicros!==null||row.charges.costProvenanceRef!==null)||!integer(row.grantTtlMs)||row.grantTtlMs<1||row.grantTtlMs>60000||row.systemPrompt!=='You are a dsh-fishball worker. Use only the approved task context supplied in this turn. Tools and external actions are unavailable.')throw new Error('INVALID_RESPONSE');return freeze(row);}
-    const policyFresh=()=>!state.busy&&!state.stale&&expiry(state.policyPreview);
-    const actionFresh=()=>!state.busy&&!state.stale&&expiry(state.actionPreview)&&state.actionPreview?.taskVersion===taskModel.getSnapshot().detail?.task.version&&state.actionPreview?.authEpoch===taskModel.getSnapshot().detail?.task.authEpoch;
+    const policyFresh=()=>!state.busy&&!state.stale&&!state.uncertain&&expiry(state.policyPreview);
+    const actionFresh=()=>!state.busy&&!state.stale&&!state.uncertain&&expiry(state.actionPreview)&&state.actionPreview?.taskVersion===taskModel.getSnapshot().detail?.task.version&&state.actionPreview?.authEpoch===taskModel.getSnapshot().detail?.task.authEpoch;
     function mappedWorker(t){if(state.worker?.taskRef===t.taskRef)return state.worker;const rows=taskModel.getSnapshot().detail?.workers;if(!state.action||!Array.isArray(rows))throw new Error('WORKER_SESSION_UNAVAILABLE');const matching=rows.filter(row=>row.actionRef===state.action.actionRef&&row.actionDigest===state.action.actionDigest);if(matching.length!==1)throw new Error('WORKER_SESSION_UNAVAILABLE');const row=matching[0];return normalWorker({taskRef:t.taskRef,...Object.fromEntries(['actionRef','actionDigest','claimRef','reservationRef','generationRef'].map(key=>[key,row[key]])),sessionRef:row.sessionRef??null,phase:['intent','submitted'].includes(row.phase)?'unknown':row.phase});}
     function mapping(t){const w=mappedWorker(t);return{taskRef:t.taskRef,actionRef:w.actionRef,claimRef:w.claimRef,generationRef:w.generationRef};}
     return Object.freeze({getSnapshot:()=>state,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},now,refresh,
@@ -376,15 +408,15 @@ module.exports = function clientFactory(require) {
       previewAction(){const preparedAt=now();return run('workerPreview',t=>{if(!state.action)throw new Error('WORKER_MAPPING_MISMATCH');return{taskRef:t.taskRef,actionRef:state.action.actionRef,actionDigest:state.action.actionDigest,recordRef:state.contextRecordRef,expectedTaskVersion:t.version,expectedAuthEpoch:t.authEpoch};},(value,t)=>{const row=workerRecord(value,['previewRef','taskRef','actionRef','actionDigest','taskVersion','authEpoch','expiresAt','description']),d=workerRecord(row.description,['kind','role','targetLabel','data','model','toolNames','environment','limits','evidenceRef']);workerRecord(d.data,['recordRef','digest','kind','content']);workerRecord(d.model,['provider','model','reasoning','preset']);workerRecord(d.environment,['label','cwd','environmentRef']);workerRecord(d.limits,['units','attemptIndex','charges']);setupObject(d.limits.charges,['runtimeMs','usageUnits','costEstimateMicros','costState','costProvenanceRef'],['runtimeMs','usageUnits']);if(!ref(row.previewRef)||row.taskRef!==t.taskRef||row.actionRef!==state.action.actionRef||row.actionDigest!==state.action.actionDigest||row.taskVersion!==t.version||row.authEpoch!==t.authEpoch||!integer(row.expiresAt)||row.expiresAt<=now()||row.expiresAt>now()+60000||d.kind!=='write'||d.role!=='worker'||!boundedText(d.targetLabel,4096)||!ref(d.data.recordRef)||d.data.recordRef!==state.contextRecordRef||!ref(d.data.digest)||d.data.kind!=='context'||!boundedText(d.data.content)||!Object.values(d.model).every(v=>boundedText(v,4096))||!Array.isArray(d.toolNames)||d.toolNames.length!==0||!boundedText(d.environment.label,4096)||!setupLocation(d.environment.cwd)||!ref(d.environment.environmentRef)||d.limits.units!==1||d.limits.attemptIndex!==1||!ref(d.evidenceRef))throw new Error('INVALID_RESPONSE');return{actionPreview:{...row,preparedAt},actionAccepted:false};},{requiresTask:true});},
       setActionAccepted(value,previewRef=state.actionPreview?.previewRef){const accepted=value===true&&actionFresh()&&previewRef===state.actionPreview.previewRef;publish({actionAccepted:accepted});return accepted;},
       canGrant:()=>Boolean(actionFresh()&&state.actionAccepted),
-      canCreate:()=>Boolean(!state.busy&&!state.stale&&state.status?.actionsEnabled&&state.action&&state.grant&&state.grant.actionRef===state.action.actionRef&&state.grant.actionDigest===state.action.actionDigest&&state.grant.authEpoch===taskModel.getSnapshot().detail?.task.authEpoch&&integer(now())&&now()<state.grant.expiresAt&&!state.worker&&state.uncertain!=='workerCreate'),
+      canCreate:()=>Boolean(!state.busy&&!state.stale&&state.status?.actionsEnabled&&state.action&&state.grant&&state.grant.actionRef===state.action.actionRef&&state.grant.actionDigest===state.action.actionDigest&&state.grant.authEpoch===taskModel.getSnapshot().detail?.task.authEpoch&&integer(now())&&now()<state.grant.expiresAt&&!state.worker&&!state.uncertain),
       grant(expiresAt,previewRef=state.actionPreview?.previewRef){if(!actionFresh()||!state.actionAccepted||previewRef!==state.actionPreview.previewRef||!integer(expiresAt)||expiresAt<=now()||!state.status||expiresAt>now()+(state.confirmedPolicy?.grantTtlMs??60000))return Promise.resolve(false);const prior=state.actionPreview;publish({actionPreview:null,actionAccepted:false});return run('workerGrant',(t,commandRef)=>({...cas(t,commandRef),actionRef:prior.actionRef,actionDigest:prior.actionDigest,expiresAt,previewRef:prior.previewRef,accept:true}),(value,t)=>{workerRecord(value,['task','taskVersion','authEpoch','actionRef','actionDigest','expiresAt']);const received=workerTask(value.task);if(value.actionDigest!==prior.actionDigest||value.actionRef!==prior.actionRef||value.taskVersion!==t.version||value.authEpoch!==t.authEpoch+1||value.expiresAt!==expiresAt||received.taskRef!==t.taskRef||received.version!==t.version||received.authEpoch!==value.authEpoch)throw new Error('INVALID_RESPONSE');return{grant:value,uncertain:null};},{mutation:true,requiresTask:true});},
       create(){if(!this.canCreate())return Promise.resolve(false);return run('workerCreate',(t,commandRef)=>{if(!state.action)throw new Error('WORKER_MAPPING_MISMATCH');return{...cas(t,commandRef),actionRef:state.action.actionRef,actionDigest:state.action.actionDigest};},(value,t)=>{const row=workerRecord(value,['task','worker']),worker=normalWorker(row.worker);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||worker.actionRef!==state.action.actionRef||worker.actionDigest!==state.action.actionDigest)throw new Error('INVALID_RESPONSE');return{worker,uncertain:null};},{mutation:true,requiresTask:true});},
-      execute(){if(state.worker?.phase!=='ready'||state.execution||state.uncertain==='workerExecute')return Promise.resolve(false);return run('workerExecute',(t,commandRef)=>({...cas(t,commandRef),...mapping(t),actionDigest:state.worker.actionDigest,contextRecordRef:state.contextRecordRef}),(value,t)=>{const row=workerRecord(value,['task','execution','worker']),execution=workerRecord(row.execution,['executionRef','state','cursor','resultDigest','usage']),usage=workerRecord(execution.usage,['state','units','accounting']);const worker=normalWorker(row.worker);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||['actionRef','actionDigest','claimRef','generationRef','reservationRef','sessionRef'].some(key=>worker[key]!==state.worker[key]))throw new Error('INVALID_RESPONSE');if(!ref(execution.executionRef)||!['committed','unknown'].includes(execution.state)||!['actual','unknown'].includes(usage.state)||execution.state==='committed'&&(!integer(execution.cursor)||!ref(execution.resultDigest)||usage.state!=='actual'||!integer(usage.units)||usage.accounting!=='df-testing-utf8-byte-units/v1')||execution.state==='unknown'&&(execution.cursor!==null||execution.resultDigest!==null||usage.state!=='unknown'||usage.units!==null||usage.accounting!==null))throw new Error('INVALID_RESPONSE');return{worker,execution,uncertain:null};},{mutation:true,requiresTask:true});},
-      query:()=>run('workerQuery',t=>mapping(t),(value,t)=>{const row=workerRecord(value,['task','worker']),worker=normalWorker(row.worker),expected=mappedWorker(t);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||['actionRef','actionDigest','claimRef','generationRef','reservationRef','sessionRef'].some(key=>worker[key]!==expected[key]))throw new Error('INVALID_RESPONSE');return{worker,uncertain:state.uncertain==='workerCreate'?null:state.uncertain};},{requiresTask:true,allowBlocked:true}),
-      capture(){if(state.uncertain==='workerCapture')return Promise.resolve(false);return run('workerCapture',(t,commandRef)=>{if(state.execution?.state!=='committed')throw new Error('WORKER_RESULT_UNAVAILABLE');return{...cas(t,commandRef),...mapping(t),executionRef:state.execution.executionRef};},value=>{workerRecord(value,['artifactRef','version','recordRef','digest','producerClaimRef','generationRef','producerRef','verification','task']);workerTask(value.task);if(workerTask(value.task).taskRef!==state.worker.taskRef||value.generationRef!==state.worker.generationRef||!ref(value.producerRef)||!ref(value.artifactRef)||value.version!==1||!ref(value.recordRef)||!ref(value.digest)||value.verification!==null||value.producerClaimRef!==state.worker.claimRef)throw new Error('INVALID_RESPONSE');return{capture:value,result:null,uncertain:null};},{mutation:true,requiresTask:true,allowBlocked:true});},
+      execute(){if(state.worker?.phase!=='ready'||state.execution||state.uncertain)return Promise.resolve(false);return run('workerExecute',(t,commandRef)=>({...cas(t,commandRef),...mapping(t),actionDigest:state.worker.actionDigest,contextRecordRef:state.contextRecordRef}),(value,t)=>{const row=workerRecord(value,['task','execution','worker']),execution=workerRecord(row.execution,['executionRef','state','cursor','resultDigest','usage']),usage=workerRecord(execution.usage,['state','units','accounting']);const worker=normalWorker(row.worker);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||['actionRef','actionDigest','claimRef','generationRef','reservationRef','sessionRef'].some(key=>worker[key]!==state.worker[key]))throw new Error('INVALID_RESPONSE');if(!ref(execution.executionRef)||!['committed','unknown'].includes(execution.state)||!['actual','unknown'].includes(usage.state)||execution.state==='committed'&&(!integer(execution.cursor)||!ref(execution.resultDigest)||usage.state!=='actual'||!integer(usage.units)||usage.accounting!=='df-testing-utf8-byte-units/v1')||execution.state==='unknown'&&(execution.cursor!==null||execution.resultDigest!==null||usage.state!=='unknown'||usage.units!==null||usage.accounting!==null))throw new Error('INVALID_RESPONSE');return{worker,execution,uncertain:null};},{mutation:true,requiresTask:true});},
+      query:()=>run('workerQuery',t=>mapping(t),(value,t)=>{const row=workerRecord(value,['task','worker']),worker=normalWorker(row.worker),expected=mappedWorker(t);if(workerTask(row.task).taskRef!==t.taskRef||worker.taskRef!==t.taskRef||['actionRef','actionDigest','claimRef','generationRef','reservationRef','sessionRef'].some(key=>worker[key]!==expected[key]))throw new Error('INVALID_RESPONSE');return{worker};},{requiresTask:true,allowBlocked:true}),
+      capture(){if(state.uncertain)return Promise.resolve(false);return run('workerCapture',(t,commandRef)=>{if(state.execution?.state!=='committed')throw new Error('WORKER_RESULT_UNAVAILABLE');return{...cas(t,commandRef),...mapping(t),executionRef:state.execution.executionRef};},value=>{workerRecord(value,['artifactRef','version','recordRef','digest','producerClaimRef','generationRef','producerRef','verification','task']);workerTask(value.task);if(workerTask(value.task).taskRef!==state.worker.taskRef||value.generationRef!==state.worker.generationRef||!ref(value.producerRef)||!ref(value.artifactRef)||value.version!==1||!ref(value.recordRef)||!ref(value.digest)||value.verification!==null||value.producerClaimRef!==state.worker.claimRef)throw new Error('INVALID_RESPONSE');return{capture:value,result:null,uncertain:null};},{mutation:true,requiresTask:true,allowBlocked:true});},
       loadResult:()=>run('workerResult',t=>{if(!state.capture)throw new Error('WORKER_RESULT_UNAVAILABLE');return{taskRef:t.taskRef,artifactRef:state.capture.artifactRef,version:state.capture.version,expectedTaskVersion:t.version,expectedAuthEpoch:t.authEpoch};},value=>{const row=workerRecord(value,['artifactRef','version','recordRef','digest','source','content','verification','delivery']);workerRecord(row.source,['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','executionRef','inputDigest','cursor','resultDigest']);if(row.artifactRef!==state.capture.artifactRef||row.version!==1||row.recordRef!==state.capture.recordRef||row.digest!==state.capture.digest||!Object.entries(row.source).every(([key,item])=>key==='cursor'?integer(item):ref(item))||!boundedText(row.content,state.status?.bounds.resultBytes??16384)||row.source.taskRef!==state.worker.taskRef||['actionRef','actionDigest','claimRef','generationRef','sessionRef'].some(key=>row.source[key]!==state.worker[key])||row.source.executionRef!==state.execution.executionRef||row.source.cursor!==state.execution.cursor||row.source.resultDigest!==state.execution.resultDigest||row.verification!=='not-reviewed'||row.delivery!=='not-requested')throw new Error('INVALID_RESPONSE');return{result:row};},{requiresTask:true,allowBlocked:true}),
-      finish(){if(state.uncertain==='workerFinish')return Promise.resolve(false);return run('workerFinish',(t,commandRef)=>{if(!state.capture||!state.execution)throw new Error('WORKER_FINISH_UNAVAILABLE');return{...cas(t,commandRef),...mapping(t),executionRef:state.execution.executionRef};},value=>{workerRecord(value,['task','claimRef','reservationRef','reservationHeld','outcome','terminalEvidenceRef','releaseEvidenceRef']);workerTask(value.task);if(workerTask(value.task).taskRef!==state.worker.taskRef||!ref(value.claimRef)||value.claimRef!==state.worker.claimRef||value.reservationRef!==state.worker.reservationRef||value.terminalEvidenceRef!==null&&!ref(value.terminalEvidenceRef)||value.releaseEvidenceRef!==null&&!ref(value.releaseEvidenceRef)||value.outcome!=='completed'||typeof value.reservationHeld!=='boolean')throw new Error('INVALID_RESPONSE');return{worker:{...state.worker,phase:value.reservationHeld?'unknown':'stopped'},uncertain:null};},{mutation:true,requiresTask:true,allowBlocked:true});},
-      disconnected(){if(!active)return;epoch++;invalidate();publish({phase:'offline',busy:null,stale:true,error:null});},dispose(){active=false;epoch++;invalidate();unsubscribe();listeners.clear();controllers.clear();}
+      finish(){if(state.uncertain)return Promise.resolve(false);return run('workerFinish',(t,commandRef)=>{if(!state.capture||!state.execution)throw new Error('WORKER_FINISH_UNAVAILABLE');return{...cas(t,commandRef),...mapping(t),executionRef:state.execution.executionRef};},value=>{workerRecord(value,['task','claimRef','reservationRef','reservationHeld','outcome','terminalEvidenceRef','releaseEvidenceRef']);workerTask(value.task);if(workerTask(value.task).taskRef!==state.worker.taskRef||!ref(value.claimRef)||value.claimRef!==state.worker.claimRef||value.reservationRef!==state.worker.reservationRef||value.terminalEvidenceRef!==null&&!ref(value.terminalEvidenceRef)||value.releaseEvidenceRef!==null&&!ref(value.releaseEvidenceRef)||value.outcome!=='completed'||typeof value.reservationHeld!=='boolean')throw new Error('INVALID_RESPONSE');return{worker:{...state.worker,phase:value.reservationHeld?'unknown':'stopped'},uncertain:null};},{mutation:true,requiresTask:true,allowBlocked:true});},
+      disconnected(){if(!active)return;epoch++;invalidate();publish({phase:'offline',busy:null,stale:true,error:null});},dispose(){retainSubmitted();active=false;epoch++;invalidate();unsubscribe();listeners.clear();controllers.clear();}
     });
   }
 
@@ -503,17 +535,26 @@ module.exports = function clientFactory(require) {
     row: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' },
   };
   function Icon({ size = 20 }) { return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true }, h('circle', { cx: 8, cy: 8, r: 5, stroke: 'currentColor', strokeWidth: 1.6 }), h('circle', { cx: 17, cy: 16, r: 4, stroke: 'currentColor', strokeWidth: 1.6 }), h('circle', { cx: 6, cy: 19, r: 2, fill: 'currentColor' })); }
-  function workerCard(model, state, taskState, expires, setExpires) {
+  function workerCard(model, state, taskState, expires, setExpires, connectionReady, readOnly=false) {
     const status=state.status,policy=state.policyPreview,action=state.actionPreview,task=taskState.detail?.task;
-    const available=!!status?.enabled&&state.phase!=='offline'&&!state.busy;
+    const available=!!connectionReady&&!!status?.enabled&&!state.stale&&state.phase!=='offline'&&!state.busy;
     const taskCurrent=available&&!taskState.stale&&!!task&&!terminal.has(task.status)&&!['cancel_requested','recovery_required'].includes(task.status);
     const cleanupCurrent=available&&!taskState.stale&&!!task;
-    const ready=taskCurrent&&status.actionsEnabled&&!state.stale;
+    const ready=taskCurrent&&status.actionsEnabled&&!state.stale&&!state.uncertain;
     const button=(text,callback,disabled=false)=>h('button',{type:'button',style:styles.button,disabled:disabled||!!state.busy,onClick:callback},text);
-    return h('div',{style:styles.card,'aria-label':'Normal native worker'},h('h2',null,'Native worker'),
-      h('p',{role:'status','aria-live':'polite'},state.phase==='offline'?'Host disconnected. Worker decisions are cleared.':status?`${status.phase.replaceAll('_',' ')}${status.reasonCode?' · '+status.reasonCode:''}`:'Load the cached worker status before a new decision.'),
+    const statusText=state.busy==='status'?'Reading current worker status…':state.phase==='offline'?(connectionReady?'Worker status requires a current read. Worker decisions are cleared.':'Host connection is unconfirmed. Worker decisions are cleared.'):state.phase==='unavailable'?'Worker status is unavailable. Read current host status before another decision.':status?`${status.phase.replaceAll('_',' ')}${status.reasonCode?' · '+status.reasonCode:''}${state.stale?' · stale; refresh required':''}${connectionReady?'':' · host connection unconfirmed; decisions unavailable'}`:'Load the cached worker status before a new decision.';
+    const uncertainText=`Unconfirmed ${state.uncertain}${state.uncertainTaskRef?' for task '+state.uncertainTaskRef.slice(0,8):''}. Read current host facts; repeating a mutation is unavailable until its outcome is established.`;
+    if(readOnly)return h('div',{style:styles.card,'aria-label':'Normal native worker'},h('h2',null,'Native worker'),
+      h('p',{role:'status','aria-live':'polite'},statusText),
       state.error&&h('p',{role:'alert'},errorLabels[state.error]||'This worker result is unconfirmed. Read current host state before another decision.'),
-      h('div',{style:styles.row},button('Refresh worker status',()=>model.refresh(),state.phase==='offline'),button('Load current worker catalogue',()=>model.catalog(),!available)),
+      button('Refresh worker status',()=>model.refresh()),
+      status?.enabled&&h('p',null,`Cached selection: ${status.selection.provider} / ${status.selection.model}. Preset: ${status.selection.agentPreset}.`),
+      state.uncertain&&h('p',{role:'status'},uncertainText),
+      h('p',null,'Worker decisions are unavailable until current storage setup and host connection are confirmed.'));
+    return h('div',{style:styles.card,'aria-label':'Normal native worker'},h('h2',null,'Native worker'),
+      h('p',{role:'status','aria-live':'polite'},statusText),
+      state.error&&h('p',{role:'alert'},errorLabels[state.error]||'This worker result is unconfirmed. Read current host state before another decision.'),
+      h('div',{style:styles.row},button('Refresh worker status',()=>model.refresh()),button('Load current worker catalogue',()=>model.catalog(),!available)),
       status?.enabled&&h(React.Fragment,null,h('p',null,`Selected: ${status.selection.provider} / ${status.selection.model}. Preset: ${status.selection.agentPreset}. Requested reasoning: ${status.selection.reasoningEffort??'native default'}.`),
         h('p',null,`Native transcript directory: ${status.persistence.directory}. Unencrypted; ${status.persistence.compression} compression; retention managed by the owner.`),
         h('p',null,`Request limit: ${status.bounds.requestBytes} bytes. Captured result limit: ${status.bounds.resultBytes} bytes. Output cap: ${status.selection.maxOutputTokens}. These are separate from native storage retention.`),
@@ -521,25 +562,29 @@ module.exports = function clientFactory(require) {
         state.catalog&&h('p',null,`Effective reasoning: ${state.confirmedPolicy?.effectiveReasoningEffort??status.selection.reasoningEffort??state.catalog.models.find(row=>row.provider===status.selection.provider&&row.id===status.selection.model)?.defaultEffort??'unavailable'}. Available selected-provider models: ${state.catalog.models.map(row=>row.name).join(', ')}.`),
         button('Preview worker policy',()=>model.previewPolicy(status.policyVersion),!available||!integer(status.policyVersion)||status.policyVersion<1)),
       policy&&h('div',null,h('h3',null,'Exact worker policy plan'),h('pre',{style:{whiteSpace:'pre-wrap',font:'inherit'}},JSON.stringify(policy.description,null,2)),h('p',null,`Preview expires ${new Date(policy.expiresAt).toLocaleString()}. This does not grant or create a worker.`),
-        h('label',{htmlFor:'df-worker-policy-accept'},h('input',{id:'df-worker-policy-accept',type:'checkbox',checked:state.policyAccepted&&model.now()<policy.expiresAt,disabled:!!state.busy||model.now()>=policy.expiresAt,onChange:event=>model.setPolicyAccepted(event.target.checked,policy.previewRef,policy.planDigest)}),' I accept this exact worker policy and unencrypted native transcript storage.'),
-        button('Confirm worker policy',()=>model.confirmPolicy(policy.previewRef,policy.planDigest),!model.canConfirmPolicy())),
+        h('label',{htmlFor:'df-worker-policy-accept'},h('input',{id:'df-worker-policy-accept',type:'checkbox',checked:state.policyAccepted&&model.now()<policy.expiresAt,disabled:!available||!!state.uncertain||model.now()>=policy.expiresAt,onChange:event=>model.setPolicyAccepted(event.target.checked,policy.previewRef,policy.planDigest)}),' I accept this exact worker policy and unencrypted native transcript storage.'),
+        button('Confirm worker policy',()=>model.confirmPolicy(policy.previewRef,policy.planDigest),!available||!model.canConfirmPolicy())),
       h('div',{style:styles.row},button('Prepare approved context',()=>model.prepareContext(),!ready),button('Plan worker action',()=>model.plan(),!ready||!state.contextRecordRef),button('Preview worker action',()=>model.previewAction(),!ready||!state.action||!!state.worker)),
       action&&h('div',null,h('h3',null,'Exact worker action'),h('p',null,action.description.targetLabel),h('p',null,`Model: ${action.description.model.provider} / ${action.description.model.model}; reasoning: ${action.description.model.reasoning}; preset: ${action.description.model.preset}. Tools: none.`),h('pre',{style:{whiteSpace:'pre-wrap',font:'inherit'}},action.description.data.content),h('p',null,`Preview expires ${new Date(action.expiresAt).toLocaleString()}.`),
-        h('label',{htmlFor:'df-worker-action-accept'},h('input',{id:'df-worker-action-accept',type:'checkbox',checked:state.actionAccepted&&model.now()<action.expiresAt,disabled:!!state.busy||model.now()>=action.expiresAt,onChange:event=>model.setActionAccepted(event.target.checked,action.previewRef)}),' I accept this exact action and complete approved context.'),
-        h('label',{htmlFor:'df-worker-grant-expiry'},'Grant expires at (your local time)'),h('input',{id:'df-worker-grant-expiry',type:'datetime-local',value:expires,onChange:event=>setExpires(event.target.value),disabled:!!state.busy}),
-        button('Grant this action',()=>model.grant(Date.parse(expires),action.previewRef),!model.canGrant()||!integer(Date.parse(expires))||Date.parse(expires)<=model.now()),h('p',null,'Granting is a separate decision. Create and execute remain explicit.')),
-      h('div',{style:styles.row},button('Create idle worker',()=>model.create(),!ready||!model.canCreate()),button('Execute approved context',()=>model.execute(),!ready||!state.worker||state.worker.phase!=='ready'||!!state.execution||state.uncertain==='workerExecute'),button('Query worker',()=>model.query(),!cleanupCurrent||!state.worker&&!state.action),button('Capture local result',()=>model.capture(),!cleanupCurrent||state.execution?.state!=='committed'||!!state.capture||state.uncertain==='workerCapture'),button('Load captured result',()=>model.loadResult(),!cleanupCurrent||!state.capture),button('Finish owned worker',()=>model.finish(),!cleanupCurrent||!state.capture||!state.execution||state.worker?.phase==='stopped'||state.uncertain==='workerFinish')),
+        h('label',{htmlFor:'df-worker-action-accept'},h('input',{id:'df-worker-action-accept',type:'checkbox',checked:state.actionAccepted&&model.now()<action.expiresAt,disabled:!ready||model.now()>=action.expiresAt,onChange:event=>model.setActionAccepted(event.target.checked,action.previewRef)}),' I accept this exact action and complete approved context.'),
+        h('label',{htmlFor:'df-worker-grant-expiry'},'Grant expires at (your local time)'),h('input',{id:'df-worker-grant-expiry',type:'datetime-local',value:expires,onChange:event=>setExpires(event.target.value),disabled:!ready}),
+        button('Grant this action',()=>model.grant(Date.parse(expires),action.previewRef),!ready||!model.canGrant()||!integer(Date.parse(expires))||Date.parse(expires)<=model.now()),h('p',null,'Granting is a separate decision. Create and execute remain explicit.')),
+      h('div',{style:styles.row},button('Create idle worker',()=>model.create(),!ready||!model.canCreate()),button('Execute approved context',()=>model.execute(),!ready||!state.worker||state.worker.phase!=='ready'||!!state.execution||!!state.uncertain),button('Query worker',()=>model.query(),!cleanupCurrent||!state.worker&&!state.action),button('Capture local result',()=>model.capture(),!cleanupCurrent||state.execution?.state!=='committed'||!!state.capture||!!state.uncertain),button('Load captured result',()=>model.loadResult(),!cleanupCurrent||!state.capture),button('Finish owned worker',()=>model.finish(),!cleanupCurrent||!state.capture||!state.execution||state.worker?.phase==='stopped'||!!state.uncertain)),
       state.worker&&h('p',null,`Owned worker: ${state.worker.phase}. Generation ${state.worker.generationRef}.`),
       state.execution&&h('p',null,state.execution.state==='committed'?`Native output committed. Actual synthetic usage: ${state.execution.usage.units} ${state.execution.usage.accounting}. Capture and review remain separate.`:'Execution outcome is unknown. Query current host facts; do not repeat execution.'),
       state.result&&h('div',null,h('h3',null,'Captured local result — not reviewed'),h('pre',{style:{whiteSpace:'pre-wrap',font:'inherit'}},state.result.content),h('p',null,`Artifact ${state.result.artifactRef}; digest ${state.result.digest}. Delivery not requested.`)),
-      state.uncertain&&h('p',{role:'status'},`Unconfirmed ${state.uncertain}. Read current host facts; repeating a mutation is unavailable until its outcome is established.`),
+      state.uncertain&&h('p',{role:'status'},uncertainText),
       state.busy&&h('p',{role:'status'},`Worker operation pending: ${state.busy}. Lost responses require read-only reconciliation.`));
   }
 
-  function Panel({ model, setupModel, workerModel }) {
+  function Panel({ model, setupModel, workerModel, connection }) {
     const state = React.useSyncExternalStore(model.subscribe, model.getSnapshot, model.getSnapshot);
     const worker = React.useSyncExternalStore(workerModel?.subscribe || emptySetupSubscribe, workerModel?.getSnapshot || emptySetupSnapshot, workerModel?.getSnapshot || emptySetupSnapshot);
     const setup = React.useSyncExternalStore(setupModel?.subscribe || emptySetupSubscribe, setupModel?.getSnapshot || emptySetupSnapshot, setupModel?.getSnapshot || emptySetupSnapshot);
+    const observable = observableConnection(connection);
+    const hostState = React.useSyncExternalStore(observable ? connection.state.subscribe : emptySetupSubscribe, observable ? connection.state.getSnapshot : emptySetupSnapshot, observable ? connection.state.getSnapshot : emptySetupSnapshot);
+    const hostGeneration = React.useSyncExternalStore(observable ? connection.generation.subscribe : emptySetupSubscribe, observable ? connection.generation.getSnapshot : emptySetupSnapshot, observable ? connection.generation.getSnapshot : emptySetupSnapshot);
+    const connectionReady = observable && hostState === 'connected' && !!hostGeneration;
     const [draft, setDraft] = React.useState('');
     const [approvalExpiry, setApprovalExpiry] = React.useState('');
     const [workerExpiry, setWorkerExpiry] = React.useState('');
@@ -547,7 +592,7 @@ module.exports = function clientFactory(require) {
     const [answers, setAnswers] = React.useState({});
     const [, setClockTick] = React.useState(0);
     React.useEffect(() => { const timer = setInterval(() => setClockTick(value => value + 1), 1000); return () => clearInterval(timer); }, [model]);
-    if (setup && setup.phase !== 'ready' && !(setup.routeMissing && state.phase === 'ready' && !state.stale)) return h('section', { style: styles.panel, 'aria-label': 'dsh-fishball task panel' }, h('h1', null, 'dsh-fishball Preview'), setupCard(setupModel, setup));
+    if (setup && setup.phase !== 'ready' && !(setup.routeMissing && state.phase === 'ready' && !state.stale)) return h('section', { style: styles.panel, 'aria-label': 'dsh-fishball task panel' }, h('h1', null, 'dsh-fishball Preview'), setupCard(setupModel, setup), worker && workerCard(workerModel, worker, state, workerExpiry, setWorkerExpiry, connectionReady, true));
     const task = state.detail?.task, current = task && !state.stale && !state.busy;
     const button = (text, action, disabled, extra = {}) => h('button', { type: 'button', onClick: action, disabled, style: styles.button, ...extra }, text);
     const goal = state.records.filter(record => record.kind === 'goal').at(-1)?.content;
@@ -601,7 +646,7 @@ module.exports = function clientFactory(require) {
     };
     return h('section', { style: styles.panel, 'aria-label': 'dsh-fishball task panel' },
       setup && !setup.routeMissing && setupCard(setupModel, setup),
-      worker && workerCard(workerModel, worker, state, workerExpiry, setWorkerExpiry),
+      worker && workerCard(workerModel, worker, state, workerExpiry, setWorkerExpiry, connectionReady),
       h('div', { style: { ...styles.row, justifyContent: 'space-between' } }, h('h1', null, 'dsh-fishball ', h('small', { style: { fontSize: '12px', fontWeight: 400 } }, 'Preview')), button('Refresh', () => model.refresh(), state.busy, { 'aria-label': 'Refresh tasks from the host' })),
       h('p', { role: 'status', 'aria-live': 'polite' }, state.phase === 'loading' ? 'Loading current tasks…' : state.phase === 'offline' ? 'Host disconnected. Controls are unavailable until a current snapshot is loaded.' : state.updatedAt === null ? 'No current snapshot' : `Snapshot refreshed ${new Date(state.updatedAt).toLocaleString()}${state.stale ? ' · stale' : ''}`),
       state.error && h('div', { role: 'alert', style: styles.card }, errorLabels[state.error] || 'The result is not confirmed. Refresh the host state before trying another action.'),
@@ -624,16 +669,51 @@ module.exports = function clientFactory(require) {
     const model = createModel(ctx.connection.rpc, { navigateSession: typeof ctx.uiWorkspace?.openSession === 'function' ? id => ctx.uiWorkspace.openSession(id) : undefined });
     const setupModel = createSetupModel(ctx.connection.rpc);
     const workerModel = createWorkerModel(ctx.connection.rpc, model);
-    let ready = false;
-    const unsubscribe = setupModel.subscribe(() => { const phase = setupModel.getSnapshot().phase, current = phase === 'ready'; if (phase === 'loading' || phase === 'offline' || (!current && ready)) model.disconnected(); if (current && !ready) void model.refresh(); ready = current; });
-    async function refreshSetup() { await setupModel.refresh(); if (setupModel.getSnapshot().routeMissing) await model.refresh(); }
-    ctx.effect(() => () => { unsubscribe(); workerModel.dispose(); setupModel.dispose(); model.dispose(); }, 'df.client-model');
-    ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'df', inject: () => ({ model, setupModel, workerModel }) }, Panel));
+    const state = ctx.connection.state, generation = ctx.connection.generation, observable = observableConnection(ctx.connection);
+    let active = true, ready = false, recoveryRevision = 0, queued = false, observedGeneration;
+    const connected = () => observable && state.getSnapshot() === 'connected' && !!generation.getSnapshot();
+    function disconnected() {
+      recoveryRevision++; ready = false;
+      workerModel.disconnected(); setupModel.disconnected(); model.disconnected();
+    }
+    async function refreshReady(read) {
+      await model.refresh();
+      if (!active || read !== recoveryRevision || !connected() || !ready) return;
+      await workerModel.refresh();
+    }
+    const unsubscribe = setupModel.subscribe(() => {
+      const snapshot = setupModel.getSnapshot(), phase = snapshot.phase;
+      const current = phase === 'ready' && !snapshot.stale && !snapshot.busy;
+      if (phase === 'loading' || phase === 'offline' || (!current && ready)) { recoveryRevision++; model.disconnected(); }
+      const load = current && !ready; ready = current;
+      if (load && connected()) void refreshReady(recoveryRevision);
+    });
+    async function refreshSetup() {
+      const pending = setupModel.refresh(), read = recoveryRevision;
+      await pending;
+      if (active && read === recoveryRevision && connected() && setupModel.getSnapshot().routeMissing) await model.refresh();
+    }
+    function scheduleSetup() {
+      if (!active || queued) return;
+      queued = true;
+      queueMicrotask(() => { queued = false; if (active && connected()) void refreshSetup(); });
+    }
+    function observeConnection() {
+      if (!active) return;
+      const current = observable ? generation.getSnapshot() : undefined;
+      if (!connected()) { observedGeneration = undefined; disconnected(); return; }
+      if (current === observedGeneration) return;
+      observedGeneration = current; disconnected(); scheduleSetup();
+    }
+    ctx.effect(() => () => { active = false; recoveryRevision++; unsubscribe(); workerModel.dispose(); setupModel.dispose(); model.dispose(); }, 'df.client-model');
+    ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'df', inject: () => ({ model, setupModel, workerModel, connection: ctx.connection }) }, Panel));
     ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'df', order: 70, label: 'dsh-fishball' }, Icon));
-    ctx.on('connection/reset', () => { workerModel.disconnected(); setupModel.disconnected(); model.disconnected(); void refreshSetup(); });
-    const state = ctx.connection.state;
-    if (state?.subscribe) ctx.effect(() => state.subscribe(() => { if (!ctx.connection.generation?.getSnapshot()) { workerModel.disconnected(); setupModel.disconnected(); model.disconnected(); } }), 'df.connection-state');
-    void refreshSetup();
+    ctx.on('connection/reset', () => { if (!active) return; observedGeneration = observable ? generation.getSnapshot() : undefined; disconnected(); scheduleSetup(); });
+    if (observable) {
+      ctx.effect(() => state.subscribe(observeConnection), 'df.connection-state');
+      ctx.effect(() => generation.subscribe(observeConnection), 'df.connection-generation');
+    }
+    observeConnection();
   }
   return { inject: ['connection', 'slots', 'layout', 'uiWorkspace'], apply, createModel, createSetupModel, createWorkerModel, Panel, Icon };
 };

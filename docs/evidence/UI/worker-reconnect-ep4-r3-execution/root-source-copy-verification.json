@@ -1,0 +1,70 @@
+{
+  "allCopyHashesMatched": true,
+  "allInputsMatchedImmediatelyBeforeAndAfterActualTest": true,
+  "allOtherFrozenInputsStillMatched": true,
+  "copiedSources": [
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+      "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+      "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+      "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+      "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+      "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+      "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+      "sha256": "55f9132ed3d3a55a6ccf9b7223e6fbfcade7fc3f7831a3622264edce037bf994"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/generation-only.patch",
+      "sha256": "545963f2f20de251f17cdc6f4ed1c587bd3e04b09b3fb0b895364ae229dac3c2"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/correction-literals.json",
+      "sha256": "f98ea3b74e71de92cf2503fa201cfbdf8ddbb4e954b538de9a1caf081ba52651"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/fixture-inventory.json",
+      "sha256": "c6dc10727eb7efdcec826d48a55e39119e697e0f1b126145d64a4fc845633d6e"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/cases-mapping.json",
+      "sha256": "55403cc6a1f476af62cc6820676d301b782907ddd5b1d409fb3718e5a4aa732e"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-ep4-r3-execution/frozen-source/ui-worker-reconnect-fixture-r3/manifest.json",
+      "sha256": "4ddba4463b30e7fc7cda9989a56bd3c1a7e2bf8fc79efefd157bb6974152e64d"
+    }
+  ],
+  "initialPostAdoptionMetadataCheckStoppedOnExpectedOldSourceDifference": true,
+  "oldPlanHistoricalDoNotRerun": true,
+  "oldSourcePreservedAt": "docs/evidence/UI/worker-reconnect-client-adoption/client-entry.before.cjs.txt",
+  "rootRunnerMatched": true,
+  "subsequentRootAuthorizedSourceAdoption": [
+    {
+      "currentSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+      "frozenSha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+      "path": "src/client-entry.cjs"
+    }
+  ]
+}

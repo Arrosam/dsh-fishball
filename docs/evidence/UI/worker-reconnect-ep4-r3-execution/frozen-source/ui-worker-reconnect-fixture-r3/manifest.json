@@ -1,0 +1,381 @@
+{
+  "schema": 1,
+  "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+  "classification": "UNIT_ONLY_PUBLIC_MODEL",
+  "candidate": {
+    "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+    "bytes": 106631,
+    "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+  },
+  "files": [
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/README.md",
+      "bytes": 2520,
+      "sha256": "4380ab4b83b1dabd18bf208f0db50a3eabf43eae74e0c804460fc604bc68154b"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+      "bytes": 106631,
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/cases-mapping.json",
+      "bytes": 47033,
+      "sha256": "55403cc6a1f476af62cc6820676d301b782907ddd5b1d409fb3718e5a4aa732e"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+      "bytes": 7365,
+      "sha256": "bebcbcfa6392b1f8e986d493adbfd8de203786bb93104b2f2b082c836aa4d6f8"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/correction-literals.json",
+      "bytes": 1133,
+      "sha256": "f98ea3b74e71de92cf2503fa201cfbdf8ddbb4e954b538de9a1caf081ba52651"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/fixture-inventory.json",
+      "bytes": 12018,
+      "sha256": "c6dc10727eb7efdcec826d48a55e39119e697e0f1b126145d64a4fc845633d6e"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/generation-only.patch",
+      "bytes": 1048,
+      "sha256": "545963f2f20de251f17cdc6f4ed1c587bd3e04b09b3fb0b895364ae229dac3c2"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/historical-conservation.json",
+      "bytes": 17200,
+      "sha256": "49c6692dc2b71b6fa5dff470caf272641fc4d3a9648c997408c461724a68e60c"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/module-conservation.json",
+      "bytes": 4458,
+      "sha256": "a1daf16c93ab03e98004febab745f01f04a30d713b01c670f490de4fdddbe7be"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+      "bytes": 1826,
+      "sha256": "fdc81da9bcef8ff0214c4ebea49a567e6b3dc64b55cee5c2116230b8124319cb"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+      "bytes": 1682,
+      "sha256": "5ace531e96fe22cbb3c4b3af4ed67734ad67b64b4a02712f85376dce05ecfd4d"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+      "bytes": 350,
+      "sha256": "d6bef052545c9e7c97367ce1d82bf2e8b99ed639f14b6ab38a7c60073a098123"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+      "bytes": 8269,
+      "sha256": "d12d871f623f0556c1fbe70d09af7dcc2db51a782cc11204dbd36ada51ce0af4"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+      "bytes": 13884,
+      "sha256": "44606e50648404689c74b6f1a5567de7edb2573af0eb6ab92802a98af889b481"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+      "bytes": 7351,
+      "sha256": "55f9132ed3d3a55a6ccf9b7223e6fbfcade7fc3f7831a3622264edce037bf994"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-execute-fixture-source-r3.md",
+      "bytes": 2520,
+      "sha256": "4380ab4b83b1dabd18bf208f0db50a3eabf43eae74e0c804460fc604bc68154b"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-execute-fixture-source-r3.json",
+      "bytes": 5854,
+      "sha256": "64b03a7d487a4395b77f2be5c8604c09b97c513a0ab63c9fd958addd37f5daf6"
+    }
+  ],
+  "predecessorPins": [
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/manifest.json",
+      "bytes": 13679,
+      "sha256": "dc93312e388aaa4022e7c08ee82d4c804cff663f7ecf0b63572999fc5d4b056f"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-fixture-r2/closure.sha256",
+      "bytes": 2197,
+      "sha256": "9b09306b6f3914183d820e690220d5f4afcd5c65d5098c1d3e95a1e030e87407"
+    }
+  ],
+  "independentDesignInputs": [
+    {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/src/client-entry.cjs",
+      "role": "prospective exact candidate; no import",
+      "bytes": 106631,
+      "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/manifest.json",
+      "role": "sealed candidate manifest",
+      "bytes": 18949,
+      "sha256": "9179a62b2c454f630846466223025cc0096cb3c9deceb9edc11b1739c6079a38"
+    },
+    {
+      "path": ".runtime/ui-worker-reconnect-proposal-r2/closure.sha256",
+      "role": "sealed candidate closure",
+      "bytes": 1398,
+      "sha256": "26f4ea6e627294edf7a4744d36ab38449762f3e47dcd3db7706612aeaec70f89"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-independent-design.md",
+      "role": "independent immutable UI36",
+      "bytes": 31322,
+      "sha256": "18c8a4a440c7600b9a1b0f012b72400cdf36c5c8f0d6f5d89c272a3a06826e77"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-independent-design.json",
+      "role": "independent immutable UI36",
+      "bytes": 30379,
+      "sha256": "0737516431109e3875dfb7becc385242f87be522b1643d6b691dab44c99d2d3d"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-independent-submission-design.md",
+      "role": "independent immutable submission24",
+      "bytes": 18429,
+      "sha256": "375b7e5f4c03657e8e8989aa4f573d9acc849554528dd15685183387584c6e98"
+    },
+    {
+      "path": "docs/evidence/UI/worker-reconnect-independent-submission-design.json",
+      "role": "independent immutable submission24",
+      "bytes": 17998,
+      "sha256": "0975bbcabe8698797c2a708f2e15612957507d99c004fe77deee5dec8c5377ce"
+    },
+    {
+      "path": "docs/evidence/UI/worker-execute-independent-preparation-design.md",
+      "role": "independent sealed exact four public preparation cells",
+      "bytes": 19325,
+      "sha256": "e900706e0ae6eeaa6627c5808899ba4b7ad39d665952382852d4666188098492"
+    },
+    {
+      "path": "docs/evidence/UI/worker-execute-independent-preparation-design.json",
+      "role": "independent sealed exact four public preparation cells",
+      "bytes": 15120,
+      "sha256": "7f2b4821da82dd74edab1788aaa613873a4a20476796117b27a4004bca2c88de"
+    },
+    {
+      "path": ".runtime/ui-worker-public-contract-original/public-signatures-r1.md",
+      "role": "root corrected original callable factory/action/options/DTO public declarations",
+      "bytes": 8719,
+      "sha256": "979899b4cd7170f95d4e95c9360fc4020f99673df9615d65ec52710c2e38f920"
+    },
+    {
+      "path": ".runtime/ni2-install/source-a58c522/src/client-entry.cjs",
+      "role": "original a58 factory/actions/options/schema source, not expected-results oracle",
+      "bytes": 101214,
+      "sha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/client.js",
+      "role": "full original browser registration/factory/installConnection callable, not extracted controller",
+      "bytes": 59411,
+      "sha256": "0fbb93fa2382bb66919767f69c909585c6255486f9536f9232231edaeac8c4e6"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.js",
+      "role": "full original Gateway apply/service/event source/reset/disposal callable",
+      "bytes": 82186,
+      "sha256": "e09e26fcd4849cd55683b9cc702dca896efce93a5af3968431c1c8a62147b9cf"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/index.d.ts",
+      "role": "complete ConnectionInstallOptions, stores, generation-source/owner lifecycle",
+      "bytes": 6888,
+      "sha256": "5bcacf56ca3c3fb26256a6ee3aff980a399dcf4901d594b034d960ae04bd2f8d"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/connection.d.ts",
+      "role": "original public source/ready/abort signature",
+      "bytes": 3935,
+      "sha256": "85cc887caeae60ab13bd91f627ce793a42402d8f880c2af0f3f1fc0d256509d0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/recovery-config.d.ts",
+      "role": "original public warn/deadline/backoff inputs",
+      "bytes": 1493,
+      "sha256": "0e91993aea2e115b72c35fc1f8c64d02782aad3e492c27c261732d205e710a8f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc.d.ts",
+      "role": "original public logical RpcCarrier.call/open decoded values",
+      "bytes": 11326,
+      "sha256": "3ca86c027408eb2dd6f1aa6efba0778b0f14802d638fc2f66bced8c5e698b0a4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/lib/types/client/index.d.ts",
+      "role": "original Gateway apply/Remote/host declarations",
+      "bytes": 3864,
+      "sha256": "a926162bfc5ad2561cb2f0ea31a82a0367dae26d54b4d3420fa2a158aef959bd"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/lib/types/client/remote-events.d.ts",
+      "role": "original owned forwarded event stream declaration",
+      "bytes": 2270,
+      "sha256": "71856f695b974d7dbf647693c84a7a27f873aca7818c071c56ec29398cf50a04"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-modules/lib/client.js",
+      "role": "full original module system; registration/materialization, no new loader implementation",
+      "bytes": 40638,
+      "sha256": "9b607a6f28ae9e0d62bde54c78eb933fef1598c3ea707d81012d94b457b51938"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-modules/lib/types/client/index.d.ts",
+      "role": "original bootstrap/module-system entrypoints",
+      "bytes": 2381,
+      "sha256": "51a570b665ea903993c90dbe59bfbd858f8e709216bfa2076acc8dd28155a415"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-modules/lib/types/client/manifest.d.ts",
+      "role": "public registrationTarget/staticModules/loadBundle constructor injection",
+      "bytes": 15870,
+      "sha256": "d416fc7327b3cdca52c530b0b4f51aba65f5aa5d025582f31acc1711e8b06752"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-modules/lib/types/client/system.d.ts",
+      "role": "original ClientModuleSystem public construction/materialization",
+      "bytes": 4876,
+      "sha256": "6b1be655dde3ea0375015b2b6b37ecbc82d5736ff9eaf9209f41454f29483d36"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "role": "actual Cordis Context/Service/Fiber, transitive import cosmokit only",
+      "bytes": 60361,
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+      "role": "original public Context constructor and scoping",
+      "bytes": 4749,
+      "sha256": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts",
+      "role": "original public plugin/Fiber ownership",
+      "bytes": 8904,
+      "sha256": "1188a67702253930766e6b03670b8f906e87ac11623c9aa69012215552a6f354"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+      "role": "original effect, await and dispose lifetime",
+      "bytes": 8430,
+      "sha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cosmokit/lib/index.js",
+      "role": "actual Cordis transitive utility module; no static/dynamic imports",
+      "bytes": 17160,
+      "sha256": "ba44c0871656e4c7cac2c3c8a2ff644e0d2eb9d6bda7f6355866d686d513268e"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+      "role": "original export/version metadata",
+      "bytes": 1635,
+      "sha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-api-gateway/package.json",
+      "role": "original export/version metadata",
+      "bytes": 2241,
+      "sha256": "96a46ea63a1a798cec33a0708b644608bf38212643428bc3c681616fb5fa9616"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-modules/package.json",
+      "role": "original module-system export/version metadata",
+      "bytes": 1584,
+      "sha256": "cdadeab1a6b0bcb628368b98ecf9b1344d399eafa84b4ecfbd9a894665eb3a01"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "role": "original Cordis export/version metadata",
+      "bytes": 1274,
+      "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cosmokit/package.json",
+      "role": "original transitive export/version metadata",
+      "bytes": 747,
+      "sha256": "a1a35adca3eb1f6a79c358a47d14b3dc56a5112b08fdb1172fe15ed2cc73bb57"
+    },
+    {
+      "path": "AGENTS.md",
+      "role": "workflow/scope/current owner invariants",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    }
+  ],
+  "publicTypeInput": {
+    "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/connection.d.ts",
+    "bytes": 3935,
+    "sha256": "85cc887caeae60ab13bd91f627ce793a42402d8f880c2af0f3f1fc0d256509d0",
+    "role": "original Generation and HostInfo DTO declaration; SOURCE only"
+  },
+  "changedModules": 1,
+  "orderedLiteralChanges": 2,
+  "unchangedESM": 6,
+  "candidateFactoryUnchanged": true,
+  "expectedWhole": {
+    "S": 19,
+    "P": 16,
+    "E": 3,
+    "C": 0,
+    "R": 61
+  },
+  "hardCaps": {
+    "perCell": {
+      "S": 5,
+      "P": 4,
+      "E": 1,
+      "C": 0,
+      "R": 32,
+      "workerStatus": 8,
+      "preview": 2,
+      "workerQuery": 2,
+      "task": 16,
+      "other": 4,
+      "ms": 30000
+    },
+    "whole": {
+      "S": 20,
+      "R": 128,
+      "C": 0,
+      "ms": 120000
+    }
+  },
+  "executionActual": {
+    "JSParse": 0,
+    "imports": 0,
+    "tests": 0,
+    "builds": 0,
+    "S": 0,
+    "R": 0,
+    "native": 0,
+    "modelInference": 0,
+    "network": 0,
+    "Git": 0
+  },
+  "historicalConservationCount": 87,
+  "families": 64,
+  "EPCells": 4,
+  "fullFamiliesAccepted": 0,
+  "rootEntryProposal": "node --test --test-concurrency=1 --test-reporter=tap .runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs; honest one file/four internal cells; requires separate root fixture-review/import/effect disposition",
+  "syntaxCheckSourcesProposal": [
+    ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs"
+  ],
+  "selfHash": "manifest.sha256; closure excludes only itself"
+}

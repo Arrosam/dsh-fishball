@@ -1,0 +1,359 @@
+{
+  "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+  "publicFactory": "Complete unchanged r2 CommonJS clientFactory is loaded by createRequire and called with callable modelOnlyRequire; only react resolves. No {React} argument or private helper patch.",
+  "candidatePin": {
+    "path": ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs",
+    "bytes": 106631,
+    "sha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82"
+  },
+  "publicConstructorOptions": [
+    "clock:()=>1000",
+    "uuid:()=>UNIT_ONLY/<case>/command/<monotone n>",
+    "digest(text):Promise<sha256>"
+  ],
+  "DTOOrigin": "support/public-dtos.mjs copies literalDTOs unchanged from sealed prospective plan bb342de9; synthetic task version/auth changes are endpoint-owned fixture state, not model hydration or a real ledger claim.",
+  "acceptedRoutes": [
+    {
+      "channel": "/df-rpc",
+      "method": "v1/list",
+      "requestKeys": [],
+      "counter": "R/task",
+      "response": "current UNIT_ONLY taskA plus taskB"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/status",
+      "requestKeys": [
+        "taskRef"
+      ],
+      "counter": "R/task",
+      "response": "current full task plus data:[],actions:[],workers:[],control:active; after create worker list contains exact ready worker"
+    },
+    {
+      "channel": "/df-setup",
+      "method": "v1/workerStatus",
+      "requestKeys": [],
+      "counter": "R/workerStatus",
+      "response": "literal closed ready/source_zero/actionsEnabled status"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/prepareContext",
+      "requestKeys": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "terms",
+        "now"
+      ],
+      "counter": "P/S",
+      "response": "literal context row; task V1/auth0 -> V2/auth0"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/workerPlan",
+      "requestKeys": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "contextRecordRef"
+      ],
+      "counter": "P/S",
+      "response": "literal action/digest V2/auth0"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/workerPreview",
+      "requestKeys": [
+        "taskRef",
+        "actionRef",
+        "actionDigest",
+        "recordRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch"
+      ],
+      "counter": "R/preview",
+      "response": "literal preview description/expiry30000"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/workerGrant",
+      "requestKeys": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "actionRef",
+        "actionDigest",
+        "expiresAt",
+        "previewRef",
+        "accept"
+      ],
+      "counter": "P/S",
+      "response": "literal task V2/auth1 plus exact grant expiry20000"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/workerCreate",
+      "requestKeys": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "actionRef",
+        "actionDigest"
+      ],
+      "counter": "P/S",
+      "response": "literal closed eight-field ready worker"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/workerExecute",
+      "requestKeys": [
+        "taskRef",
+        "commandRef",
+        "expectedTaskVersion",
+        "expectedAuthEpoch",
+        "actionRef",
+        "claimRef",
+        "generationRef",
+        "actionDigest",
+        "contextRecordRef"
+      ],
+      "counter": "E/S",
+      "response": "EP01/02 finite rejected lost reply; EP04 literal schema-valid unknown execution; EP03 carrier entry forbidden"
+    },
+    {
+      "channel": "/df-rpc",
+      "method": "v1/workerQuery",
+      "requestKeys": [
+        "taskRef",
+        "actionRef",
+        "claimRef",
+        "generationRef"
+      ],
+      "counter": "R/workerQuery",
+      "response": "literal task+worker only; no execution absence proof"
+    }
+  ],
+  "counting": "All carrier entries from fresh construction through cleanup. Count BEFORE validation/release. No warm-up exclusion, counter reset, retry or hidden preparation. Any unexpected route fails; task control attempts counted C and forbidden.",
+  "expectedBase": {
+    "S": 4,
+    "P": 4,
+    "E": 0,
+    "C": 0,
+    "R": 12,
+    "workerStatus": 1,
+    "preview": 1,
+    "workerQuery": 0,
+    "task": 10,
+    "other": 0
+  },
+  "expectedCells": {
+    "EP01": {
+      "S": 5,
+      "P": 4,
+      "E": 1,
+      "C": 0,
+      "R": 16,
+      "task": 12,
+      "workerStatus": 2,
+      "preview": 1,
+      "workerQuery": 1,
+      "repeatExecuteInputs": 3,
+      "schedule": "Entered execute; public generation loss + worker/task disconnected; reject lost reply after invalidation; G2, task refresh, worker refresh, ready-only query."
+    },
+    "EP02": {
+      "S": 5,
+      "P": 4,
+      "E": 1,
+      "C": 0,
+      "R": 16,
+      "task": 12,
+      "workerStatus": 3,
+      "preview": 1,
+      "workerQuery": 0,
+      "repeatExecuteInputs": 3,
+      "schedule": "Entered execute; select B and status BEFORE lost reply settles; worker status B; select A and status; worker status A. One repeated execute B plus two A."
+    },
+    "EP03": {
+      "S": 4,
+      "P": 4,
+      "E": 0,
+      "C": 0,
+      "R": 13,
+      "task": 11,
+      "workerStatus": 1,
+      "preview": 1,
+      "workerQuery": 0,
+      "repeatExecuteInputs": 2,
+      "schedule": "Fifth declared digest callback waits; select A synchronously detail:null/stale:true; status held; release digest; execute refuses before carrier; two invalid task attempts; release exact status once."
+    },
+    "EP04": {
+      "S": 5,
+      "P": 4,
+      "E": 1,
+      "C": 0,
+      "R": 16,
+      "task": 12,
+      "workerStatus": 2,
+      "preview": 1,
+      "workerQuery": 1,
+      "prepareContextAttemptsAfterUnknown": 1,
+      "planAttemptsAfterUnknown": 1,
+      "schedule": "Current schema-valid unknown execute ack; counted internal task refresh; ready worker status/query; refuse one context and one plan action without transport."
+    }
+  },
+  "expectedWhole": {
+    "S": 19,
+    "P": 16,
+    "E": 3,
+    "C": 0,
+    "R": 61
+  },
+  "hardCaps": {
+    "perCell": {
+      "S": 5,
+      "P": 4,
+      "E": 1,
+      "C": 0,
+      "R": 32,
+      "workerStatus": 8,
+      "preview": 2,
+      "workerQuery": 2,
+      "task": 16,
+      "other": 4,
+      "ms": 30000
+    },
+    "whole": {
+      "S": 20,
+      "R": 128,
+      "C": 0,
+      "ms": 120000
+    }
+  },
+  "deferredInventory": [
+    {
+      "barrier": "executeEntered",
+      "cases": "EP01/02/04",
+      "publicObservation": "original rpc.call enters exact execute route, original taskRef/commandRef and original AbortSignal",
+      "release": "resolve once at entry; EP03 unused barrier closed once during cleanup"
+    },
+    {
+      "barrier": "executeReply",
+      "cases": "EP01/02/04",
+      "publicObservation": "entered original execute waits endpoint reply; ignores signal abort only at finite synthetic transport boundary",
+      "release": "EP01/02 reject once after public invalidation; EP04 resolve exact unknown envelope once; EP03 unused closed once"
+    },
+    {
+      "barrier": "executeDigestEntered/executeDigestReply",
+      "cases": "EP03 only",
+      "publicObservation": "fifth real call to declared digest option, reached after four public preparation mutations",
+      "release": "entered resolves once; reply resolves once after selected detail:null with status held; other cases unused close once"
+    },
+    {
+      "barrier": "statusEntered/statusReply",
+      "cases": "EP03 only",
+      "publicObservation": "genuine taskModel.select(A) readonly status call after synchronous stale/null publication",
+      "release": "entered resolves once; reply resolves exact current UNIT_ONLY DTO once after two invalid execute inputs"
+    }
+  ],
+  "cleanup": [
+    "unsubscribe fixture observations",
+    "public workerModel.dispose then taskModel.dispose",
+    "close every unreleased finite barrier once",
+    "all tracked original public promises settle within1500ms",
+    "assert zero additional carrier entries, stable disposed worker snapshot and no late observation notifications",
+    "require every barrier release count exactly1"
+  ],
+  "failureEvidence": "First failed case includes monotone counters, safe carrier metadata, public snapshot trace and barrier release inventory; root wrapper stops before any subsequent case.",
+  "imports": {
+    "run-ep4.mjs": [
+      "node:assert/strict",
+      "./controller-execute-preparation.mjs"
+    ],
+    "controller-execute-preparation.mjs": [
+      "node:assert/strict",
+      "./support/public-dtos.mjs",
+      "./support/public-model-fixture.mjs"
+    ],
+    "support/public-model-fixture.mjs": [
+      "node:assert/strict",
+      "node:crypto",
+      "node:fs read only exact named candidate source",
+      "node:module",
+      "./public-dtos.mjs",
+      "./model-only-react.mjs",
+      "./public-carrier.mjs",
+      "./finite-deferred.mjs",
+      "../candidate/client-entry.cjs through declared createRequire"
+    ],
+    "support/public-carrier.mjs": [
+      "node:assert/strict",
+      "./public-dtos.mjs",
+      "./finite-deferred.mjs"
+    ],
+    "support/finite-deferred.mjs": [
+      "node:assert/strict"
+    ],
+    "candidate/client-entry.cjs": [
+      "only callable require(react) -> MODEL_ONLY face; no render/hook/DOM"
+    ]
+  },
+  "futureImportEffects": [
+    "node builtins and source SHA read",
+    "CJS export/factory only; full unchanged candidate models instantiated through public constructors",
+    "finite synthetic calls/DTO projection, timers <=30s/cell and120s whole, AbortControllers, explicit cleanup",
+    "run-ep4 has deliberate top-level finite entry execution; other fixture modules only export functions"
+  ],
+  "forbiddenAndHeld": [
+    "no real Connection/Gateway/Cordis import or original-service proof",
+    "no real React renderer/SSR/DOM/browser",
+    "no private receipt/token/native handle/hydration/private monkey patch",
+    "no backend task/ledger/profile/storage/listener/network/model/cloud/Git action",
+    "no standalone external unknown worker/cold restart outcome reconciliation claim",
+    "thrown required observations remain source boundary HOLD",
+    "all87 accepted0 and blocked final CODE unchanged"
+  ],
+  "executionActual": {
+    "JSParse": 0,
+    "imports": 0,
+    "tests": 0,
+    "builds": 0,
+    "S": 0,
+    "R": 0,
+    "native": 0,
+    "modelInference": 0,
+    "network": 0,
+    "Git": 0
+  },
+  "generationDTOCorrection": {
+    "originalPublicContract": "ConnectionGeneration={id:number,host:ConnectionHostInfo}, ConnectionHostInfo={home:string}",
+    "G1": {
+      "id": 1,
+      "host": {
+        "home": "/tmp/UNIT_ONLY/df-ui-worker-r2"
+      }
+    },
+    "G2": {
+      "id": 2,
+      "host": {
+        "home": "/tmp/UNIT_ONLY/df-ui-worker-r2"
+      }
+    },
+    "semantics": "stable complete UNIT_ONLY DTO store driver + explicit public model.disconnected; still no model connection parameter/subscription/Apply/original-service proof"
+  },
+  "plannedRootEntryNotRun": "node --test --test-concurrency=1 --test-reporter=tap .runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs; honest one file/four internal cells; requires separate root fixture-review/import/effect disposition",
+  "plannedRootSyntaxChecksNotRun": [
+    ".runtime/ui-worker-reconnect-fixture-r3/controller-execute-preparation.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/run-ep4.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/finite-deferred.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/model-only-react.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/public-carrier.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/public-dtos.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+    ".runtime/ui-worker-reconnect-fixture-r3/candidate/client-entry.cjs"
+  ]
+}

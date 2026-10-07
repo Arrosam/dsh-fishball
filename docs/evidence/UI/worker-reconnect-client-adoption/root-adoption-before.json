@@ -1,0 +1,11 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "builderSha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702",
+  "bundleBeforeSha256": "a2e37ae3cace27558dbaaae97b928a1b2b5f91f6ed9660348540d4623006a16f",
+  "createdAt": "2026-10-07T10:14:37.337062+00:00",
+  "reviewedCandidateSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+  "rootOwner": "/root",
+  "scope": "Exact reviewed R2 client source adoption after EP4 and readonly Apply unit passes. Original emitter only; old package/profile/listener/auth remain untouched.",
+  "sourceBeforeSha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99"
+}

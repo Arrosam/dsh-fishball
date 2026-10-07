@@ -1,0 +1,408 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "createdAt": "2026-10-07T10:17:11.865879+00:00",
+  "executions": [
+    {
+      "CODE": "BLOCKED_UNCHANGED",
+      "all87": "HOLD",
+      "commands": 9,
+      "executionDirectory": "docs/evidence/UI/worker-reconnect-ep4-r3-execution",
+      "inputCount": 135,
+      "rawBytes": 93630,
+      "rawSha256": "090ce3499b6bbb1e4420274a82ca898274c0a3a3b126e9a20740d1fa066ef503",
+      "results": [
+        {
+          "actualHostProof": false,
+          "caseId": "EP01",
+          "classification": "UNIT_ONLY_PUBLIC_MODEL",
+          "cleanup": {
+            "allBarriersReleasedOnce": true,
+            "disposedSnapshotStable": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "C": 0,
+            "E": 1,
+            "P": 4,
+            "R": 16,
+            "S": 5,
+            "other": 0,
+            "preview": 1,
+            "task": 12,
+            "unexpected": 0,
+            "workerQuery": 1,
+            "workerStatus": 2
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_CASE_PASSED"
+        },
+        {
+          "actualHostProof": false,
+          "caseId": "EP02",
+          "classification": "UNIT_ONLY_PUBLIC_MODEL",
+          "cleanup": {
+            "allBarriersReleasedOnce": true,
+            "disposedSnapshotStable": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "C": 0,
+            "E": 1,
+            "P": 4,
+            "R": 16,
+            "S": 5,
+            "other": 0,
+            "preview": 1,
+            "task": 12,
+            "unexpected": 0,
+            "workerQuery": 0,
+            "workerStatus": 3
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_CASE_PASSED"
+        },
+        {
+          "actualHostProof": false,
+          "caseId": "EP03",
+          "classification": "UNIT_ONLY_PUBLIC_MODEL",
+          "cleanup": {
+            "allBarriersReleasedOnce": true,
+            "disposedSnapshotStable": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "C": 0,
+            "E": 0,
+            "P": 4,
+            "R": 13,
+            "S": 4,
+            "other": 0,
+            "preview": 1,
+            "task": 11,
+            "unexpected": 0,
+            "workerQuery": 0,
+            "workerStatus": 1
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_CASE_PASSED"
+        },
+        {
+          "actualHostProof": false,
+          "caseId": "EP04",
+          "classification": "UNIT_ONLY_PUBLIC_MODEL",
+          "cleanup": {
+            "allBarriersReleasedOnce": true,
+            "disposedSnapshotStable": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "C": 0,
+            "E": 1,
+            "P": 4,
+            "R": 16,
+            "S": 5,
+            "other": 0,
+            "preview": 1,
+            "task": 12,
+            "unexpected": 0,
+            "workerQuery": 1,
+            "workerStatus": 2
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_CASE_PASSED"
+        },
+        {
+          "C": 0,
+          "R": 61,
+          "S": 19,
+          "actualHostProof": false,
+          "cases": 4,
+          "classification": "UNIT_ONLY_PUBLIC_MODEL",
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "EP4_UNIT_PASSED"
+        }
+      ],
+      "subsequentAuthorizedAdoption": [
+        {
+          "currentSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+          "frozenSha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+          "path": "src/client-entry.cjs"
+        }
+      ]
+    },
+    {
+      "CODE": "BLOCKED_UNCHANGED",
+      "all87": "HOLD",
+      "commands": 4,
+      "executionDirectory": "docs/evidence/UI/worker-reconnect-apply-r2-execution",
+      "inputCount": 101,
+      "rawBytes": 56232,
+      "rawSha256": "a9b523d123a239c37876ad22aed53d6e69e09d31b9851d0b436d9a912d4fa553",
+      "results": [
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "AP01",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 3,
+            "resetInputs": 1,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC04",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 3,
+            "resetInputs": 0,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC06",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 4,
+            "resetInputs": 0,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC08",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 4,
+            "resetInputs": 0,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC11",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 6,
+            "resetInputs": 1,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC12",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 6,
+            "resetInputs": 8,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC13",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 6,
+            "resetInputs": 1,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC15",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 3,
+            "resetInputs": 0,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC22",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 6,
+            "resetInputs": 1,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC24",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 4,
+            "resetInputs": 0,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "caseId": "WC29",
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "cleanup": {
+            "originalApplyDisposersOnce": true,
+            "stableDisposedSnapshot": true,
+            "zeroNewEntries": true
+          },
+          "counts": {
+            "M": 0,
+            "R": 3,
+            "resetInputs": 1,
+            "unexpected": 0
+          },
+          "modelInference": 0,
+          "nativeEffects": 0,
+          "network": 0,
+          "result": "UNIT_SUBPARTITION_PASSED"
+        },
+        {
+          "M": 0,
+          "R": 48,
+          "actualOriginalServiceProof": false,
+          "actualRenderedUIProof": false,
+          "cells": 11,
+          "classification": "UNIT_ONLY_UNCHANGED_APPLY_MODEL",
+          "fullFamiliesAccepted": 0,
+          "result": "APPLY_UNIT_SUBPARTITIONS_PASSED"
+        }
+      ],
+      "subsequentAuthorizedAdoption": [
+        {
+          "currentSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+          "frozenSha256": "e11b85e7a861af290b389e4c5b0d9046874f013bdc9c3523cba08f9c393aaa99",
+          "path": "src/client-entry.cjs"
+        }
+      ]
+    }
+  ],
+  "generatedBundleSha256": "9ba97b8397153dc29f87f1bcd6018cce856decdd485517399ea255cbf90792d8",
+  "oldA58ServiceReplaced": false,
+  "reviewedClientSha256": "4ba377f9973eddd6d1aebe66e014370f9f8ff7b1392b95528a51790040fd9e82",
+  "rootOwner": "/root"
+}

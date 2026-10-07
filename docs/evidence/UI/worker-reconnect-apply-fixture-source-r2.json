@@ -1,0 +1,83 @@
+{
+  "status": "SOURCE_AUTHORED_NOT_PARSED_IMPORTED_OR_RUN",
+  "capsule": ".runtime/ui-worker-reconnect-apply-fixture-r2",
+  "cells": 11,
+  "expectedR": 48,
+  "M": 0,
+  "executionActual": {
+    "parse": 0,
+    "imports": 0,
+    "tests": 0,
+    "build": 0,
+    "R": 0,
+    "M": 0,
+    "native": 0,
+    "network": 0,
+    "modelInference": 0,
+    "Git": 0
+  },
+  "unchangedIndependentFamilies": 64,
+  "fullFamiliesAccepted": 0,
+  "originalService5Held": true,
+  "inputPins": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/connection.d.ts",
+      "bytes": 3935,
+      "sha256": "85cc887caeae60ab13bd91f627ce793a42402d8f880c2af0f3f1fc0d256509d0",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/client/index.d.ts",
+      "bytes": 6888,
+      "sha256": "5bcacf56ca3c3fb26256a6ee3aff980a399dcf4901d594b034d960ae04bd2f8d",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/src/events.ts",
+      "bytes": 14917,
+      "sha256": "9aff93dcfcad98aebb692c19c36d3bf034a96f9085bc66900a997cda3f79e6fe",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/src/fiber.ts",
+      "bytes": 24960,
+      "sha256": "b7661d6c19be76cef6b97d88719a8112c0f8b5abe65bd9e7d5947773fd4b96d4",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "bytes": 60361,
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-renderer/lib/types/client/registry.d.ts",
+      "bytes": 12111,
+      "sha256": "8a3219d347eda4aca463d6baca99768b4f07da1b546479cd0bfcbb9a306e563a",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-renderer/lib/client.js",
+      "bytes": 75955,
+      "sha256": "ff99042d53a034cadad511ace442acfb3fa92f0ce86581de8611244e7664fb78",
+      "role": "public SOURCE/type semantics only; not imported"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-slots/lib/types/index.d.ts",
+      "bytes": 51503,
+      "sha256": "3eb9c5ecf65cfb65aee820e65f27ad1c80ca96dfbaa7122abd96aa5ea344be6a",
+      "role": "public SOURCE/type semantics only; not imported"
+    }
+  ],
+  "historicalConservationCount": 74,
+  "verification": "Python stdlib text/hash/json/diff only; no JS parsing/import/function execution; fresh independent fixture review remains required",
+  "hold": [
+    "all full64 independent family acceptance and all87 overall acceptance",
+    "original Connection/Gateway five WC02/07/14/30/31 full public graph/oracle",
+    "actual React/Panel/DOM/SSR/accessibility/visual/native/browser recovery",
+    "valid existing preview/grant/unknown cold recovery richer subpartitions not seeded",
+    "thrown getSnapshot/subscribe/store-read required dependency boundary",
+    "task actualQA record4da34a6d cancellation_requestedV2 remains untouched, no intake/taskcontrol/model/native effect",
+    "protected final CODE review and denied cloud command remain blocked; no retry/circumvention"
+  ]
+}

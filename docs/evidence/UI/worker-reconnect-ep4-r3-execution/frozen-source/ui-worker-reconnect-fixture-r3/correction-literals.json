@@ -1,0 +1,26 @@
+{
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "beforeModule": {
+    "path": ".runtime/ui-worker-reconnect-fixture-r2/support/public-model-fixture.mjs",
+    "bytes": 7309,
+    "sha256": "adb456e1d17841597e2704bf3ac703778696a795c5476135b9631f6354d604e5"
+  },
+  "afterModule": {
+    "path": ".runtime/ui-worker-reconnect-fixture-r3/support/public-model-fixture.mjs",
+    "bytes": 7351,
+    "sha256": "55f9132ed3d3a55a6ccf9b7223e6fbfcade7fc3f7831a3622264edce037bf994"
+  },
+  "orderedChanges": [
+    {
+      "before": "Object.freeze({id:1,fixtureHost:'UNIT_ONLY-identical-host'})",
+      "after": "Object.freeze({id:1,host:Object.freeze({home:'/tmp/UNIT_ONLY/df-ui-worker-r2'})})"
+    },
+    {
+      "before": "Object.freeze({id:2,fixtureHost:'UNIT_ONLY-identical-host'})",
+      "after": "Object.freeze({id:2,host:Object.freeze({home:'/tmp/UNIT_ONLY/df-ui-worker-r2'})})"
+    }
+  ],
+  "exactOccurrenceCount": 1,
+  "onlyChangedModule": "support/public-model-fixture.mjs",
+  "meaning": "original DTO-faithful labelled store driver only; no connection constructor parameter, service replacement, action/count/oracle change or actual-host claim"
+}
