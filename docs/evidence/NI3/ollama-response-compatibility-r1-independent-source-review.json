@@ -1,0 +1,644 @@
+{
+  "schema": "df.ollama-response-compatibility-independent-source-review/v1",
+  "ticket": "NR-OLLAMA-RESP01",
+  "reviewer": {
+    "agent": "/root/ni3_fixture_source_safety_review",
+    "language": "English",
+    "lane": "independent ordinary affected SOURCE",
+    "independentOfAuthor": true
+  },
+  "reviewDate": "2026-10-07",
+  "disposition": "NO_AFFECTED_SOURCE_BLOCKER_IN_DECLARED_PARSED_JSON_SCOPE",
+  "sourceOnly": true,
+  "blockers": [],
+  "rootGo": false,
+  "adoption": false,
+  "subjectManifest": {
+    "bytes": 6182,
+    "matches": true,
+    "path": ".runtime/ollama-response-compatibility-r1/source-manifest.json",
+    "scope": "external_manifest",
+    "sha256": "1ba593dc9cc28457c336b453175d835b3edd6f8a7dcbaf47ed66e5a1436a22e6"
+  },
+  "markdown": {
+    "path": "docs/evidence/NI3/ollama-response-compatibility-r1-independent-source-review.md",
+    "bytes": 9395,
+    "sha256": "b1b5ff741ee983a06406b67769c8fbcada70df2f4cbe127e3fe40c91fb825a46"
+  },
+  "verification": {
+    "JavaScriptNotParsedOrExecuted": true,
+    "acceptanceSectionExact": true,
+    "cellsMatchPlan": true,
+    "drift": [],
+    "forwardExact": true,
+    "helperImportsEmpty": true,
+    "historicalBeforeAfterPinsIdentical": true,
+    "imports": {
+      "ollama-provider.mjs": [
+        "node:crypto",
+        "node:fs",
+        "node:util",
+        "./ollama-response-envelope.mjs",
+        "../dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "../dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "../dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+      ],
+      "ollama-response-envelope.mjs": [],
+      "response-envelope.test.mjs": [
+        "node:test",
+        "node:assert/strict",
+        "./ollama-response-envelope.mjs"
+      ]
+    },
+    "inventoryCount": 13,
+    "inventoryExact": true,
+    "inverseExact": true,
+    "literalChecks": [
+      {
+        "afterOccurrencesInSuccessor": 1,
+        "beforeOccurrencesInOriginal": 1,
+        "id": "L01"
+      },
+      {
+        "afterOccurrencesInSuccessor": 1,
+        "beforeOccurrencesInOriginal": 1,
+        "id": "L02"
+      }
+    ],
+    "nodeNotExecuted": true,
+    "oldProviderImports": [
+      "node:crypto",
+      "node:fs",
+      "node:util",
+      "../dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "../dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "../dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js"
+    ],
+    "patchAddedLines": 4,
+    "patchRemovedLines": 2,
+    "pinChecks": [
+      {
+        "bytes": 6182,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/source-manifest.json",
+        "scope": "external_manifest",
+        "sha256": "1ba593dc9cc28457c336b453175d835b3edd6f8a7dcbaf47ed66e5a1436a22e6"
+      },
+      {
+        "bytes": 1842,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/README.md",
+        "scope": "capsule_inventory",
+        "sha256": "21913f30a52f1f298449c6295d124ee981fffccbcb9e7ebe06a4a660a9aba0a6"
+      },
+      {
+        "bytes": 2592,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/acceptance-criteria.md",
+        "scope": "capsule_inventory",
+        "sha256": "6e5c658cdf01b08e8b32e9e86b3bb19b6b4e2dd274c56be53114317319e1198b"
+      },
+      {
+        "bytes": 2190,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/correction-literals.json",
+        "scope": "capsule_inventory",
+        "sha256": "2bd23d6a83ff8bff7cd52946bcac9e9894af62a39c50d7296166dc84fca21138"
+      },
+      {
+        "bytes": 6972,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/import-closure.json",
+        "scope": "capsule_inventory",
+        "sha256": "da2a1c6aaea5676a80223b073ae96cf33d23e07e565659a0101e833b3215c7c8"
+      },
+      {
+        "bytes": 16944,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.before.txt",
+        "scope": "capsule_inventory",
+        "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+      },
+      {
+        "bytes": 16997,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.mjs",
+        "scope": "capsule_inventory",
+        "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+      },
+      {
+        "bytes": 1330,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.patch",
+        "scope": "capsule_inventory",
+        "sha256": "496a366bbd50ac458877ac60401494697b184df95a58640c846d0fd7d6202208"
+      },
+      {
+        "bytes": 2596,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/ollama-response-envelope.mjs",
+        "scope": "capsule_inventory",
+        "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+      },
+      {
+        "bytes": 9314,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/response-envelope.test.mjs",
+        "scope": "capsule_inventory",
+        "sha256": "49a58edef962a57e7102b8ca948a88dfb4f0c47088dc36b2d90981508afd840c"
+      },
+      {
+        "bytes": 7793,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/root-plan.json",
+        "scope": "capsule_inventory",
+        "sha256": "828b5077c212079070369b37371e490bde9e103027b3c7247ed8aea9d05fb528"
+      },
+      {
+        "bytes": 4034,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/source-pins.json",
+        "scope": "capsule_inventory",
+        "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+      },
+      {
+        "bytes": 4974,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/source-preservation.json",
+        "scope": "capsule_inventory",
+        "sha256": "b8898775a4e8347656b6c8e0378b85f641516f9eef71be22b300e7849a07381e"
+      },
+      {
+        "bytes": 16944,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+        "scope": "subject_cross_reference",
+        "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+      },
+      {
+        "bytes": 16997,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.mjs",
+        "scope": "subject_cross_reference",
+        "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+      },
+      {
+        "bytes": 2596,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/ollama-response-envelope.mjs",
+        "scope": "subject_cross_reference",
+        "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+      },
+      {
+        "bytes": 9314,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/response-envelope.test.mjs",
+        "scope": "subject_cross_reference",
+        "sha256": "49a58edef962a57e7102b8ca948a88dfb4f0c47088dc36b2d90981508afd840c"
+      },
+      {
+        "bytes": 6662,
+        "matches": true,
+        "path": "docs/next-native-wave-2026-10-07.md",
+        "scope": "acceptance",
+        "sha256": "840aaa086d41b9a2e6579ca4d86f0247305a413631ab7da48bb9ca703c28ba44"
+      },
+      {
+        "bytes": 2592,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/acceptance-criteria.md",
+        "scope": "acceptance",
+        "sha256": "6e5c658cdf01b08e8b32e9e86b3bb19b6b4e2dd274c56be53114317319e1198b"
+      },
+      {
+        "bytes": 16944,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+        "scope": "preserved_history_hash_only",
+        "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+      },
+      {
+        "bytes": 4034,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-integration-currentness-r1/source-pins.json",
+        "scope": "preserved_history_hash_only",
+        "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+      },
+      {
+        "bytes": 12241,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-binding.mjs",
+        "scope": "preserved_history_hash_only",
+        "sha256": "b3a81cc87b92f8a088846a4cfdcaf7736873fe086793cdce72e66938e1a80104"
+      },
+      {
+        "bytes": 8950,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-functional-fixtures-r1/entry.mjs",
+        "scope": "preserved_history_hash_only",
+        "sha256": "557279d39ba82ae21b1bdcd97851066505d0fe183a7df122bc3a85fa77bde3bd"
+      },
+      {
+        "bytes": 6984,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-functional-fixtures-r1/native-fixture.mjs",
+        "scope": "preserved_history_hash_only",
+        "sha256": "ecb37bcf793a486fd14e3fff2b6d1761521f488dc137151b4a6f680e274061c6"
+      },
+      {
+        "bytes": 53971,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-functional-fixtures-r1/source-import-closure.json",
+        "scope": "preserved_history_hash_only",
+        "sha256": "e8f0eaaf532d027a29fd01f2ba0d36d0023d621a8ec9496cb3c2342d3360c64d"
+      },
+      {
+        "bytes": 1335,
+        "matches": true,
+        "path": "docs/evidence/NI3/ollama-six-slot-r1-live-execution/root-run-record.json",
+        "scope": "preserved_history_hash_only",
+        "sha256": "9d4aaf2873de0833b596a54c8a3a2a603f422e82db9b3c625ca61d39e89c8db6"
+      },
+      {
+        "bytes": 820,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-functional-fixtures-r1/private-observations/observation-006.json",
+        "scope": "preserved_history_hash_only",
+        "sha256": "f2c5f70decdd8dca35b6cfdc49f205d15bcd1b74b5955286c23a3d41adfb8c06"
+      },
+      {
+        "bytes": 16944,
+        "matches": true,
+        "path": "docs/evidence/NI3/ollama-six-slot-r1-syntax-execution/frozen-source/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+        "scope": "preserved_history_hash_only",
+        "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+      },
+      {
+        "bytes": 103333,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "scope": "direct_original_public_dependency",
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+      },
+      {
+        "bytes": 2082,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+        "scope": "direct_original_public_dependency",
+        "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc"
+      },
+      {
+        "bytes": 28207,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "scope": "direct_original_public_dependency",
+        "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+      },
+      {
+        "bytes": 1985,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+        "scope": "direct_original_public_dependency",
+        "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9"
+      },
+      {
+        "bytes": 60361,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "scope": "direct_original_public_dependency",
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+      },
+      {
+        "bytes": 1274,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+        "scope": "direct_original_public_dependency",
+        "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27"
+      },
+      {
+        "bytes": 4034,
+        "matches": true,
+        "path": ".runtime/ollama-response-compatibility-r1/source-pins.json",
+        "scope": "constructor_readonly_input_hash_only",
+        "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+      },
+      {
+        "bytes": 1519,
+        "matches": true,
+        "path": ".runtime/ollama-approved-model-readonly-approved-2026-10-07/observations.json",
+        "scope": "constructor_readonly_input_hash_only",
+        "sha256": "af919838e7a75f60294b8e9b2d9b935d80c9ad5e12f9054538b8bdb0ab28ced4"
+      },
+      {
+        "bytes": 586,
+        "matches": true,
+        "path": ".runtime/ollama-approved-model-readonly-approved-2026-10-07/show-thinking-metadata.json",
+        "scope": "constructor_readonly_input_hash_only",
+        "sha256": "6ec816365f61a59be4c3b4be726d9524a4e910e13580f56006814f1104dcc958"
+      },
+      {
+        "bytes": 53971,
+        "matches": true,
+        "path": ".runtime/ollama-dsh-functional-fixtures-r1/source-import-closure.json",
+        "scope": "historical_import_inventory_hash_only",
+        "sha256": "e8f0eaaf532d027a29fd01f2ba0d36d0023d621a8ec9496cb3c2342d3360c64d"
+      },
+      {
+        "bytes": 84640,
+        "matches": true,
+        "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "scope": "execution_input_hash_only",
+        "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+      },
+      {
+        "bytes": 388886,
+        "matches": true,
+        "path": ".runtime/dsh-web/package-lock.json",
+        "scope": "execution_input_hash_only",
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      {
+        "bytes": 60361,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "scope": "copied_public_pins",
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+      },
+      {
+        "bytes": 1274,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+        "scope": "copied_public_pins",
+        "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27"
+      },
+      {
+        "bytes": 24077,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+        "scope": "copied_public_pins",
+        "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+      },
+      {
+        "bytes": 1086,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+        "scope": "copied_public_pins",
+        "sha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683"
+      },
+      {
+        "bytes": 103333,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "scope": "copied_public_pins",
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+      },
+      {
+        "bytes": 2082,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+        "scope": "copied_public_pins",
+        "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc"
+      },
+      {
+        "bytes": 28207,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "scope": "copied_public_pins",
+        "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+      },
+      {
+        "bytes": 1985,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+        "scope": "copied_public_pins",
+        "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9"
+      },
+      {
+        "bytes": 89972,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "scope": "copied_public_pins",
+        "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+      },
+      {
+        "bytes": 1553,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+        "scope": "copied_public_pins",
+        "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c"
+      },
+      {
+        "bytes": 12151,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+        "scope": "copied_public_pins",
+        "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca"
+      },
+      {
+        "bytes": 883,
+        "matches": true,
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+        "scope": "copied_public_pins",
+        "sha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c"
+      }
+    ],
+    "pinComparisons": 52,
+    "providerImportDeclarationExact": true,
+    "testCells": [
+      "RC01",
+      "RC02",
+      "RC03",
+      "RC04",
+      "RC05",
+      "RC06",
+      "RC07",
+      "RC08",
+      "RC09",
+      "RC10",
+      "RC11",
+      "RC12",
+      "RC13",
+      "RC14",
+      "RC15",
+      "RC16",
+      "RC17",
+      "RC18",
+      "RC19",
+      "RC20",
+      "RC21",
+      "RC22",
+      "RC23",
+      "RC24",
+      "RC25",
+      "RC26",
+      "RC27",
+      "RC28",
+      "RC29",
+      "RC30",
+      "RC31",
+      "RC32",
+      "RC33",
+      "RC34",
+      "RC35",
+      "RC36"
+    ],
+    "testImportDeclarationExact": true,
+    "unifiedPatchExact": true,
+    "uniquePinPaths": 39
+  },
+  "additionalObservedInputs": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+    },
+    {
+      "path": "docs/development-workflow.md",
+      "bytes": 4700,
+      "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-response-compatibility-r1-source.md",
+      "bytes": 5381,
+      "sha256": "6a5574dea5f50e3874240c22d1b8f6955692ed4ba2cb0f649f5aad7b23dc53c2"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-response-compatibility-r1-source.json",
+      "bytes": 3244,
+      "sha256": "254af1c2656069a094c79c7a4ac80cd7d08f8351cae8a0c77ccfc55e918d18df"
+    }
+  ],
+  "authorMarkdownPinMatches": true,
+  "inputBoundary": {
+    "id": "BND-01",
+    "scope": "bounded synchronous JSON.parse(raw) result without reviver; no intervening await before classification",
+    "helperIsArbitraryObjectSanitizer": false,
+    "helperInvokesOrdinaryPropertyReads": true,
+    "descriptorAccessorProxyRejectionClaim": false,
+    "arbitraryDirectObjectInvocation": "OUTSIDE_REVIEWED_CONTRACT; may invoke getters/proxy traps",
+    "authorInputs": "JSON-round-tripped synthetic DTOs",
+    "ownProtoKey": "JSON data; does not supply a replacement prototype or authority",
+    "prototypePollutionResilience": "NOT_PROVEN_OR_CLAIMED"
+  },
+  "acceptedResponseModels": [
+    "deepseek-v4.1-flash:cloud",
+    "deepseek-v4.1-flash"
+  ],
+  "unchangedRequestedRoute": {
+    "provider": "df-approved-ollama",
+    "model": "deepseek-v4.1-flash:cloud",
+    "endpoint": "http://127.0.0.1:11434/api/chat"
+  },
+  "diagnosticFields": [
+    "schema",
+    "accepted",
+    "responseShape",
+    "errorField",
+    "completion",
+    "responseModel",
+    "messageShape",
+    "assistantRole",
+    "refusal"
+  ],
+  "diagnosticValueBoundary": "fixed enum/constant strings and one boolean; no upstream arbitrary values",
+  "unchangedSourceSurfaces": [
+    "request and options",
+    "original loop/agent/admission",
+    "captured currentness and every canonical emission",
+    "HTTP/JSON/body/timeout/abort",
+    "tools/content/thinking/byte bounds",
+    "usage/cache/token bounds",
+    "finish/empty response",
+    "result binding",
+    "retry/call/concurrency gates",
+    "cleanup and unknown hold"
+  ],
+  "sourceTestAssertionsBoundary": "author assertions reviewed as source subjects; separate independent ISTQB design required",
+  "plannedOfflineMaximumBudget": {
+    "syntaxChecks": 3,
+    "nodeTestInvocations": 1,
+    "testFiles": 1,
+    "internalCells": 36,
+    "pureHelperCalls": 36,
+    "providerImports": 0,
+    "originalSDKImports": 0,
+    "adapterOrContextConstructors": 0,
+    "fetchSubmissions": 0,
+    "HTTPRequests": 0,
+    "modelInferences": 0,
+    "modelOrEndpointChanges": 0,
+    "retries": 0,
+    "listenerOrProfileChanges": 0,
+    "privateFileReads": 0,
+    "attemptMarkerOrLedgerWrites": 0,
+    "historicalHoldReleases": 0,
+    "nativeActions": 0
+  },
+  "actualAuditActions": {
+    "JavaScriptParse": 0,
+    "JavaScriptImports": 0,
+    "NodeInvocations": 0,
+    "tests": 0,
+    "builds": 0,
+    "providerOrModelOrNetwork": 0,
+    "DBNativeProfileBrowserListenerService": 0,
+    "Git": 0,
+    "sourceOrCapsuleEdits": 0,
+    "reportWrites": 2,
+    "metadataHashDiff": "Python standard library only"
+  },
+  "historical": {
+    "R01": {
+      "attempted": 1,
+      "httpStatus": 200,
+      "state": "local_failure",
+      "failureCode": "OLLAMA_INVALID_RESPONSE",
+      "remoteOutcome": "unknown",
+      "billing": "unknown",
+      "uncertainHold": true,
+      "failedPredicate": "UNDETERMINED"
+    },
+    "R02toR06": "expired",
+    "replay": 0,
+    "holdRelease": 0,
+    "allowanceReset": 0,
+    "privateObservation": "declared sanitized observation hash only; not decoded/displayed",
+    "oldNinePins": "matched; before/after declared rows identical"
+  },
+  "officialPrimarySourceVerification": "URLs read as frozen author/AC metadata; no network fetch in this review; acceptance anchored to exact frozen two-name AC",
+  "runtimeImportGraph": {
+    "providerDirectEdges": 7,
+    "providerBuiltins": 3,
+    "providerRelativeEdges": 4,
+    "helperImports": 0,
+    "pureFileModules": 2,
+    "pureEdges": 3,
+    "pureBuiltins": 2,
+    "pureRelativeEdges": 1,
+    "providerSDKImportsInOfflinePlan": 0,
+    "transitiveOriginalInventory": "hash-verified historical reference only",
+    "wholeHostPhysicalGraph": "NOT_REVERIFIED"
+  },
+  "affectedMustTest": [
+    {
+      "scope": "3 syntax checks plus one 36-cell pure command",
+      "state": "NOT_RUN; ROOT_GO_REQUIRED"
+    },
+    {
+      "scope": "full provider/native exact currentness/admission/downstream refusals, real response identity and usage/finish/hold",
+      "state": "SEPARATE_FROZEN_SCOPE_NOT_RUN"
+    }
+  ],
+  "holds": {
+    "all87": "accepted0/HOLD",
+    "finalCODE": "PERMANENT_BLOCKED_UNCHANGED; investigation not accessed",
+    "modelCompletion": "UNPROVEN",
+    "historicalCause": "UNDETERMINED",
+    "nativeAcceptance": "NOT_SUPPLIED"
+  }
+}

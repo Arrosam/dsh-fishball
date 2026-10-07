@@ -1,0 +1,226 @@
+TAP version 13
+# Subtest: RC01: exact request spelling accepted
+ok 1 - RC01: exact request spelling accepted
+  ---
+  duration_ms: 1.780208
+  type: 'test'
+  ...
+# Subtest: RC02: pinned cloud base spelling accepted
+ok 2 - RC02: pinned cloud base spelling accepted
+  ---
+  duration_ms: 0.120666
+  type: 'test'
+  ...
+# Subtest: RC03: base spelling supplies no completion
+ok 3 - RC03: base spelling supplies no completion
+  ---
+  duration_ms: 0.154875
+  type: 'test'
+  ...
+# Subtest: RC04: base spelling still requires assistant role
+ok 4 - RC04: base spelling still requires assistant role
+  ---
+  duration_ms: 0.062
+  type: 'test'
+  ...
+# Subtest: RC05: present null error remains refused for base spelling
+ok 5 - RC05: present null error remains refused for base spelling
+  ---
+  duration_ms: 0.133291
+  type: 'test'
+  ...
+# Subtest: RC06: unrelated model refused
+ok 6 - RC06: unrelated model refused
+  ---
+  duration_ms: 0.057
+  type: 'test'
+  ...
+# Subtest: RC07: another tag is not an alias
+ok 7 - RC07: another tag is not an alias
+  ---
+  duration_ms: 0.113709
+  type: 'test'
+  ...
+# Subtest: RC08: near prefix is not an alias
+ok 8 - RC08: near prefix is not an alias
+  ---
+  duration_ms: 0.0485
+  type: 'test'
+  ...
+# Subtest: RC09: model comparison preserves exact case
+ok 9 - RC09: model comparison preserves exact case
+  ---
+  duration_ms: 0.396667
+  type: 'test'
+  ...
+# Subtest: RC10: missing model refused
+ok 10 - RC10: missing model refused
+  ---
+  duration_ms: 0.340917
+  type: 'test'
+  ...
+# Subtest: RC11: numeric model refused
+ok 11 - RC11: numeric model refused
+  ---
+  duration_ms: 0.116625
+  type: 'test'
+  ...
+# Subtest: RC12: null model refused
+ok 12 - RC12: null model refused
+  ---
+  duration_ms: 0.040625
+  type: 'test'
+  ...
+# Subtest: RC13: incomplete exact model response refused
+ok 13 - RC13: incomplete exact model response refused
+  ---
+  duration_ms: 0.03675
+  type: 'test'
+  ...
+# Subtest: RC14: missing done refused
+ok 14 - RC14: missing done refused
+  ---
+  duration_ms: 0.038333
+  type: 'test'
+  ...
+# Subtest: RC15: string true is not completion
+ok 15 - RC15: string true is not completion
+  ---
+  duration_ms: 0.031041
+  type: 'test'
+  ...
+# Subtest: RC16: numeric truthiness is not completion
+ok 16 - RC16: numeric truthiness is not completion
+  ---
+  duration_ms: 0.031875
+  type: 'test'
+  ...
+# Subtest: RC17: upstream error string remains refused
+ok 17 - RC17: upstream error string remains refused
+  ---
+  duration_ms: 0.032041
+  type: 'test'
+  ...
+# Subtest: RC18: empty error field remains refused
+ok 18 - RC18: empty error field remains refused
+  ---
+  duration_ms: 0.029792
+  type: 'test'
+  ...
+# Subtest: RC19: false error field remains refused
+ok 19 - RC19: false error field remains refused
+  ---
+  duration_ms: 0.030792
+  type: 'test'
+  ...
+# Subtest: RC20: null response refused
+ok 20 - RC20: null response refused
+  ---
+  duration_ms: 0.134583
+  type: 'test'
+  ...
+# Subtest: RC21: array response refused
+ok 21 - RC21: array response refused
+  ---
+  duration_ms: 0.034
+  type: 'test'
+  ...
+# Subtest: RC22: string response refused
+ok 22 - RC22: string response refused
+  ---
+  duration_ms: 0.029875
+  type: 'test'
+  ...
+# Subtest: RC23: boolean response refused
+ok 23 - RC23: boolean response refused
+  ---
+  duration_ms: 0.02975
+  type: 'test'
+  ...
+# Subtest: RC24: number response refused
+ok 24 - RC24: number response refused
+  ---
+  duration_ms: 0.029875
+  type: 'test'
+  ...
+# Subtest: RC25: missing message refused
+ok 25 - RC25: missing message refused
+  ---
+  duration_ms: 0.033667
+  type: 'test'
+  ...
+# Subtest: RC26: null message refused
+ok 26 - RC26: null message refused
+  ---
+  duration_ms: 0.122584
+  type: 'test'
+  ...
+# Subtest: RC27: array message refused
+ok 27 - RC27: array message refused
+  ---
+  duration_ms: 0.040375
+  type: 'test'
+  ...
+# Subtest: RC28: string message refused
+ok 28 - RC28: string message refused
+  ---
+  duration_ms: 0.034541
+  type: 'test'
+  ...
+# Subtest: RC29: missing role refused
+ok 29 - RC29: missing role refused
+  ---
+  duration_ms: 0.040875
+  type: 'test'
+  ...
+# Subtest: RC30: null role refused
+ok 30 - RC30: null role refused
+  ---
+  duration_ms: 0.035209
+  type: 'test'
+  ...
+# Subtest: RC31: boolean role refused
+ok 31 - RC31: boolean role refused
+  ---
+  duration_ms: 0.032791
+  type: 'test'
+  ...
+# Subtest: RC32: another role refused
+ok 32 - RC32: another role refused
+  ---
+  duration_ms: 0.029833
+  type: 'test'
+  ...
+# Subtest: RC33: original first-refusal order preserved
+ok 33 - RC33: original first-refusal order preserved
+  ---
+  duration_ms: 0.034083
+  type: 'test'
+  ...
+# Subtest: RC34: arbitrary upstream values never become diagnostics
+ok 34 - RC34: arbitrary upstream values never become diagnostics
+  ---
+  duration_ms: 0.038375
+  type: 'test'
+  ...
+# Subtest: RC35: classification does not mutate input and its result is frozen
+ok 35 - RC35: classification does not mutate input and its result is frozen
+  ---
+  duration_ms: 0.322542
+  type: 'test'
+  ...
+# Subtest: RC36: envelope acceptance provides no downstream or authority facts
+ok 36 - RC36: envelope acceptance provides no downstream or authority facts
+  ---
+  duration_ms: 0.064416
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 116.298834

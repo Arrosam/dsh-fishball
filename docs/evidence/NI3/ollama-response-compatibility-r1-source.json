@@ -1,0 +1,94 @@
+{
+  "schema": "df.ollama-response-source-evidence/v1",
+  "ticket": "NR-OLLAMA-RESP01",
+  "sourceOnly": true,
+  "status": "Independent code and ISTQB reviews PENDING; root offline execution/adoption HOLD",
+  "capsuleManifest": {
+    "path": ".runtime/ollama-response-compatibility-r1/source-manifest.json",
+    "bytes": 6182,
+    "sha256": "1ba593dc9cc28457c336b453175d835b3edd6f8a7dcbaf47ed66e5a1436a22e6"
+  },
+  "markdown": {
+    "path": "docs/evidence/NI3/ollama-response-compatibility-r1-source.md",
+    "bytes": 5381,
+    "sha256": "6a5574dea5f50e3874240c22d1b8f6955692ed4ba2cb0f649f5aad7b23dc53c2"
+  },
+  "baseProvider": {
+    "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+    "bytes": 16944,
+    "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+  },
+  "successorProvider": {
+    "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.mjs",
+    "bytes": 16997,
+    "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+  },
+  "helper": {
+    "path": ".runtime/ollama-response-compatibility-r1/ollama-response-envelope.mjs",
+    "bytes": 2596,
+    "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+  },
+  "testEntry": {
+    "path": ".runtime/ollama-response-compatibility-r1/response-envelope.test.mjs",
+    "bytes": 9314,
+    "sha256": "49a58edef962a57e7102b8ca948a88dfb4f0c47088dc36b2d90981508afd840c"
+  },
+  "literals": {
+    "path": ".runtime/ollama-response-compatibility-r1/correction-literals.json",
+    "bytes": 2190,
+    "sha256": "2bd23d6a83ff8bff7cd52946bcac9e9894af62a39c50d7296166dc84fca21138"
+  },
+  "offlineBudget": {
+    "syntaxChecks": 3,
+    "nodeTestInvocations": 1,
+    "testFiles": 1,
+    "internalCells": 36,
+    "pureHelperCalls": 36,
+    "providerImports": 0,
+    "originalSDKImports": 0,
+    "adapterOrContextConstructors": 0,
+    "fetchSubmissions": 0,
+    "HTTPRequests": 0,
+    "modelInferences": 0,
+    "modelOrEndpointChanges": 0,
+    "retries": 0,
+    "listenerOrProfileChanges": 0,
+    "privateFileReads": 0,
+    "attemptMarkerOrLedgerWrites": 0,
+    "historicalHoldReleases": 0,
+    "nativeActions": 0
+  },
+  "preservation": {
+    "path": ".runtime/ollama-response-compatibility-r1/source-preservation.json",
+    "bytes": 4974,
+    "sha256": "b8898775a4e8347656b6c8e0378b85f641516f9eef71be22b300e7849a07381e"
+  },
+  "originalR01Cause": "UNDETERMINED",
+  "historicalRemoteOutcome": "unknown",
+  "historicalBilling": "unknown",
+  "oldUncertainHoldPreserved": true,
+  "oldPositionsR02toR06": "expired",
+  "acceptedResponseNames": [
+    "deepseek-v4.1-flash:cloud",
+    "deepseek-v4.1-flash"
+  ],
+  "unchangedRequestedRoute": {
+    "provider": "df-approved-ollama",
+    "model": "deepseek-v4.1-flash:cloud",
+    "endpoint": "http://127.0.0.1:11434/api/chat"
+  },
+  "originalSDKInitializationAndFullProviderStream": "NOT RUN/HOLD",
+  "liveCall": "NOT PART OF THIS UNIT",
+  "all87": "HOLD",
+  "CODE": "BLOCKED_UNCHANGED",
+  "authorExecution": {
+    "javaScriptParse": 0,
+    "JavaScriptImport": 0,
+    "tests": 0,
+    "builds": 0,
+    "modelRequests": 0,
+    "providerOrServiceActions": 0,
+    "Git": 0
+  },
+  "independentReviews": "Separate identities required; not performed by author."
+}

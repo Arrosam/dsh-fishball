@@ -1,0 +1,160 @@
+{
+  "schema": "df.ollama-response-source-manifest/v1",
+  "sourceOnly": true,
+  "status": "AUTHOR_SOURCE_SEALED; independent code/ISTQB reviews pending; root execution/adoption HOLD",
+  "ticket": "NR-OLLAMA-RESP01",
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "baseProvider": {
+    "path": ".runtime/ollama-dsh-integration-currentness-r1/ollama-provider.mjs",
+    "bytes": 16944,
+    "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+  },
+  "successorProvider": {
+    "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.mjs",
+    "bytes": 16997,
+    "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+  },
+  "helper": {
+    "path": ".runtime/ollama-response-compatibility-r1/ollama-response-envelope.mjs",
+    "bytes": 2596,
+    "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+  },
+  "testEntry": {
+    "path": ".runtime/ollama-response-compatibility-r1/response-envelope.test.mjs",
+    "bytes": 9314,
+    "sha256": "49a58edef962a57e7102b8ca948a88dfb4f0c47088dc36b2d90981508afd840c"
+  },
+  "selectedAcceptance": {
+    "source": {
+      "path": "docs/next-native-wave-2026-10-07.md",
+      "bytes": 6662,
+      "sha256": "840aaa086d41b9a2e6579ca4d86f0247305a413631ab7da48bb9ca703c28ba44"
+    },
+    "frozenSection": {
+      "path": ".runtime/ollama-response-compatibility-r1/acceptance-criteria.md",
+      "bytes": 2592,
+      "sha256": "6e5c658cdf01b08e8b32e9e86b3bb19b6b4e2dd274c56be53114317319e1198b"
+    }
+  },
+  "acceptedResponseNames": [
+    "deepseek-v4.1-flash:cloud",
+    "deepseek-v4.1-flash"
+  ],
+  "unchangedRequest": {
+    "provider": "df-approved-ollama",
+    "model": "deepseek-v4.1-flash:cloud",
+    "endpoint": "http://127.0.0.1:11434/api/chat"
+  },
+  "literalCount": 2,
+  "inverseRestoresOriginalBytes": true,
+  "files": [
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/README.md",
+      "bytes": 1842,
+      "sha256": "21913f30a52f1f298449c6295d124ee981fffccbcb9e7ebe06a4a660a9aba0a6"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/acceptance-criteria.md",
+      "bytes": 2592,
+      "sha256": "6e5c658cdf01b08e8b32e9e86b3bb19b6b4e2dd274c56be53114317319e1198b"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/correction-literals.json",
+      "bytes": 2190,
+      "sha256": "2bd23d6a83ff8bff7cd52946bcac9e9894af62a39c50d7296166dc84fca21138"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/import-closure.json",
+      "bytes": 6972,
+      "sha256": "da2a1c6aaea5676a80223b073ae96cf33d23e07e565659a0101e833b3215c7c8"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.before.txt",
+      "bytes": 16944,
+      "sha256": "daf4e9e6a1ee312279281780ef8a616b07baf84b94db05816aa41b87f406117c"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.mjs",
+      "bytes": 16997,
+      "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/ollama-provider.patch",
+      "bytes": 1330,
+      "sha256": "496a366bbd50ac458877ac60401494697b184df95a58640c846d0fd7d6202208"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/ollama-response-envelope.mjs",
+      "bytes": 2596,
+      "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/response-envelope.test.mjs",
+      "bytes": 9314,
+      "sha256": "49a58edef962a57e7102b8ca948a88dfb4f0c47088dc36b2d90981508afd840c"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/root-plan.json",
+      "bytes": 7793,
+      "sha256": "828b5077c212079070369b37371e490bde9e103027b3c7247ed8aea9d05fb528"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/source-pins.json",
+      "bytes": 4034,
+      "sha256": "5f09269b30f04554743c7c27e80058add9052739a013992d970c7a079f08f5f2"
+    },
+    {
+      "path": ".runtime/ollama-response-compatibility-r1/source-preservation.json",
+      "bytes": 4974,
+      "sha256": "b8898775a4e8347656b6c8e0378b85f641516f9eef71be22b300e7849a07381e"
+    }
+  ],
+  "inventoryCountExcludingThisManifest": 12,
+  "manifestSelfHash": "Bound by the external source-evidence JSON; excluded from own inventory to avoid a cyclic digest.",
+  "officialPublicSourceBasis": [
+    {
+      "url": "https://raw.githubusercontent.com/ollama/ollama/v0.40.0/server/routes.go",
+      "sourceLines": "2748-2756",
+      "fact": "Explicit-cloud ChatHandler forwards modelRef.Base."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ollama/ollama/v0.40.0/server/cloud_proxy.go",
+      "sourceLines": "153-160,210-224,448-470",
+      "fact": "Proxy sends the marshalled request and forwards the upstream response bytes without restoring the local cloud tag."
+    },
+    {
+      "url": "https://docs.ollama.com/api/chat",
+      "fact": "Response model identifies the generating model; exact local-tag echo is not required by this documented field."
+    },
+    {
+      "url": "https://docs.ollama.com/cloud",
+      "fact": "App/CLI cloud spelling and cloud API model spelling differ."
+    }
+  ],
+  "execution": {
+    "javaScriptParse": 0,
+    "JavaScriptImport": 0,
+    "tests": 0,
+    "builds": 0,
+    "modelRequests": 0,
+    "providerOrServiceActions": 0,
+    "Git": 0
+  },
+  "historicalCause": "Undetermined: observation-006 does not identify the failed original header predicate or preserve the response shape.",
+  "historicalPreservation": {
+    "path": ".runtime/ollama-response-compatibility-r1/source-preservation.json",
+    "bytes": 4974,
+    "sha256": "b8898775a4e8347656b6c8e0378b85f641516f9eef71be22b300e7849a07381e"
+  },
+  "plannedCommands": {
+    "path": ".runtime/ollama-response-compatibility-r1/root-plan.json",
+    "bytes": 7793,
+    "sha256": "828b5077c212079070369b37371e490bde9e103027b3c7247ed8aea9d05fb528"
+  },
+  "importClosure": {
+    "path": ".runtime/ollama-response-compatibility-r1/import-closure.json",
+    "bytes": 6972,
+    "sha256": "da2a1c6aaea5676a80223b073ae96cf33d23e07e565659a0101e833b3215c7c8"
+  }
+}
