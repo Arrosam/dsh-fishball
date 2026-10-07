@@ -1,0 +1,36 @@
+TAP version 13
+# (node:82794) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: BP01 genuine selected byte review publishes once; lost outward ack remains uncertain and query never resends
+not ok 1 - BP01 genuine selected byte review publishes once; lost outward ack remains uncertain and query never resends
+  ---
+  duration_ms: 2446.8635
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni5-selected-byte-review-proposal/test/selected-byte-native-positive.test.mjs:104:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    readLocalResult: {"code":"SERVICE_DISPOSED","message":"SERVICE_DISPOSED","details":{}}
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    Object.call (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni5-selected-byte-review-proposal/test/selected-byte-native-positive.test.mjs:46:84)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni5-selected-byte-review-proposal/test/selected-byte-native-positive.test.mjs:168:20)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2704.049291

@@ -1,0 +1,171 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-selected-byte-review-proposal/src/client-entry.cjs"
+      ],
+      "durationSeconds": 0.067701,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:01:25.493138+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T06:01:25.425438+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-01.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-selected-byte-review-proposal/src/testing-provider.mjs"
+      ],
+      "durationSeconds": 0.063841,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:01:25.557483+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T06:01:25.493643+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-02.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-selected-byte-review-proposal/src/installed-worker-facts.mjs"
+      ],
+      "durationSeconds": 0.066224,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:01:25.624153+00:00",
+      "index": 3,
+      "startedAt": "2026-10-07T06:01:25.557935+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-03.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-03.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-selected-byte-review-proposal/src/installed-worker.mjs"
+      ],
+      "durationSeconds": 0.065207,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:01:25.689795+00:00",
+      "index": 4,
+      "startedAt": "2026-10-07T06:01:25.624597+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-04.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-04.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-selected-byte-review-proposal/src/installed-audit-native-source.mjs"
+      ],
+      "durationSeconds": 0.066005,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:01:25.756190+00:00",
+      "index": 5,
+      "startedAt": "2026-10-07T06:01:25.690196+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-05.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-05.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-selected-byte-review-proposal/src/installed-synthetic-byte-review.mjs"
+      ],
+      "durationSeconds": 0.066964,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T06:01:25.823638+00:00",
+      "index": 6,
+      "startedAt": "2026-10-07T06:01:25.756682+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-06.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-06.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/ni5-selected-byte-review-proposal/test/selected-byte-native-positive.test.mjs"
+      ],
+      "durationSeconds": 2.785083,
+      "exitCode": 1,
+      "finishedAt": "2026-10-07T06:01:28.609142+00:00",
+      "index": 7,
+      "startedAt": "2026-10-07T06:01:25.824072+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-07.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1633,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-execution/command-07.stdout.txt",
+        "sha256": "ddb83bcc5e7d502aaa3e34b09dd9832763b35d2a8f02d01311ba9e01612cb0d1"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": true
+}

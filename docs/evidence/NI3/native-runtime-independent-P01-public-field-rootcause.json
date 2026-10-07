@@ -1,0 +1,283 @@
+{
+  "contractVersion": "df.ni3-independent-runtime-p01-public-field-source-review/v1",
+  "status": "UNAPPLIED_SOURCE_ONLY_NOT_RUN_ROOT_LITERAL_REVIEW_REQUIRED",
+  "owner": "/root/ni3_independent_istqb",
+  "rootExecutionOwner": "/root",
+  "applicationAuthorized": false,
+  "applicationPerformed": false,
+  "executionAuthorized": false,
+  "executionPerformed": false,
+  "projectedSourceDelta": {
+    "path": ".runtime/ni3-native-runtime-independent/proposals/P01-optional-public-fields/projected-source-delta.json",
+    "sha256": "86a36941e5ee5db902f8ddc70a8ba95c80793b1349e68dd032cbd32b65227945",
+    "bytes": 24701
+  },
+  "literalPatch": {
+    "path": ".runtime/ni3-native-runtime-independent/proposals/P01-optional-public-fields/native-entry-public-fields.patch",
+    "sha256": "a911967b87c627b7560926f5a3c646cdf781c25a62d86bd3d5630b9bbab5c1c5",
+    "bytes": 4178
+  },
+  "beforeEntry": {
+    "path": ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs",
+    "sha256": "86160441437d9d708621ca5ab19bd582fc25c6329f08193e4db875d986132bec",
+    "bytes": 20649
+  },
+  "projectedAfterEntry": {
+    "path": ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs",
+    "sha256": "b5ab53385ac4e3bc1020f999312000a530e6cdda30a580b70d3e8d97c7f3aa56",
+    "bytes": 21894,
+    "projected": true,
+    "applicationPerformed": false
+  },
+  "unchangedHelper": {
+    "path": ".runtime/ni3-native-runtime-independent/test/native-host-fixture.mjs",
+    "sha256": "1524af956132b80ef8eefe6595e8d1336de8893fbebdfd3ae809d1c2b49e0f92",
+    "bytes": 26778
+  },
+  "actualReviewedSourcePins": {
+    ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs": {
+      "path": ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs",
+      "sha256": "86160441437d9d708621ca5ab19bd582fc25c6329f08193e4db875d986132bec",
+      "bytes": 20649
+    },
+    ".runtime/ni3-native-runtime-independent/test/native-host-fixture.mjs": {
+      "path": ".runtime/ni3-native-runtime-independent/test/native-host-fixture.mjs",
+      "sha256": "1524af956132b80ef8eefe6595e8d1336de8893fbebdfd3ae809d1c2b49e0f92",
+      "bytes": 26778
+    },
+    ".runtime/ni3-native-runtime-independent/test/client-wire-fixture.mjs": {
+      "path": ".runtime/ni3-native-runtime-independent/test/client-wire-fixture.mjs",
+      "sha256": "cfcfbf582216f63eee04da4b5c6b7363adf1ea4c43b567e14e5503c38a77956f",
+      "bytes": 10100
+    },
+    ".runtime/ni3-native-runtime/src/runtime-store.mjs": {
+      "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    ".runtime/ni3-native-runtime/src/installed-audit.mjs": {
+      "path": ".runtime/ni3-native-runtime/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703
+    },
+    ".runtime/ni3-native-runtime/src/runtime-plugin.mjs": {
+      "path": ".runtime/ni3-native-runtime/src/runtime-plugin.mjs",
+      "sha256": "16d2ba6d3bbc4c1c566dd3625a875966e537fe13fe7f198541975754270274ab",
+      "bytes": 54931
+    },
+    "docs/normal-runtime-audit-contract.md": {
+      "path": "docs/normal-runtime-audit-contract.md",
+      "sha256": "9e806aaf1c224581d43ae54fffe6775e18d58400c20fcc42814b844859a1c012",
+      "bytes": 34346
+    },
+    "docs/normal-worker-contract.md": {
+      "path": "docs/normal-worker-contract.md",
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "bytes": 51095
+    }
+  },
+  "findings": [
+    {
+      "id": "P01-S01",
+      "source": {
+        "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793
+      },
+      "lines": [
+        583,
+        612,
+        1288,
+        1299
+      ],
+      "scope": "Original public plan/snapshot output form only",
+      "fact": "Unclaimed action claimRef is absent; public projection spreads only existing metadata."
+    },
+    {
+      "id": "P01-S02",
+      "source": {
+        "path": ".runtime/ni3-native-runtime-independent/test/native-runtime-independent.test.mjs",
+        "sha256": "86160441437d9d708621ca5ab19bd582fc25c6329f08193e4db875d986132bec",
+        "bytes": 20649
+      },
+      "lines": [
+        41,
+        45,
+        132,
+        138
+      ],
+      "fact": "Own count includes absent undefined; strictnull and plan.generationRef fallback contradict actual public forms."
+    },
+    {
+      "id": "P01-S03",
+      "source": {
+        "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793
+      },
+      "lines": [
+        609,
+        613
+      ],
+      "fact": "Plan receipt has no generationRef; unchanged public receipt returns action/digest/taskVersion/authEpoch."
+    },
+    {
+      "id": "P01-S04",
+      "source": {
+        "path": ".runtime/ni3-native-runtime/src/installed-audit.mjs",
+        "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "bytes": 52703
+      },
+      "lines": [
+        344,
+        357
+      ],
+      "fact": "Fresh generation/session are in actual public planned action.spec.executor, independently of the returned plan receipt."
+    },
+    {
+      "id": "P01-S05",
+      "source": {
+        "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793
+      },
+      "lines": [
+        633,
+        651
+      ],
+      "scope": "Existing public revoke receipt output only",
+      "fact": "Original revoke supplies exact actionRef/reservationHeld Boolean, false for still-unclaimed planned reviewer."
+    },
+    {
+      "id": "P01-S06",
+      "source": {
+        "path": "docs/normal-worker-contract.md",
+        "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+        "bytes": 51095
+      },
+      "lines": [
+        83,
+        159,
+        165
+      ],
+      "fact": "Owned id is df-generation and sessionRef is plain UTF8 SHA256 of that id; original public registry gets observe absence."
+    },
+    {
+      "id": "P01-S07",
+      "source": {
+        "path": "docs/normal-runtime-audit-contract.md",
+        "sha256": "9e806aaf1c224581d43ae54fffe6775e18d58400c20fcc42814b844859a1c012",
+        "bytes": 34346
+      },
+      "lines": [
+        76,
+        130,
+        131
+      ],
+      "fact": "Fresh review/create generation/session; refusal conserves claim/resource facts. Numeric private observation gap remains held."
+    }
+  ],
+  "effectImportInventory": {
+    "path": ".runtime/ni3-native-runtime-independent/proposals/P01-optional-public-fields/import-effects-inventory.json",
+    "sha256": "13a6b6c250561625174463f79512872be75d79a606578f5531687117b0a27f4a",
+    "bytes": 5121
+  },
+  "rootCauseMarkdown": {
+    "path": "docs/evidence/NI3/native-runtime-independent-P01-public-field-rootcause.md",
+    "sha256": "433a74f52d25d68c79a4ba1b83eff8155b47c25ef2fa7008484e00b7457f17dd",
+    "bytes": 4694
+  },
+  "priorActualRootRun": {
+    "pass": 2,
+    "fail": 1,
+    "skip": 14,
+    "D01UnsupportedSkip": 1,
+    "stoppedAuthoredSkips": 13,
+    "exitCode": 1,
+    "firstFailure": "P01 own claims helper43;2!==1; later assertions unrun",
+    "P01Diagnostic": {
+      "rpc": 40,
+      "requests": 1,
+      "textEffects": 1
+    },
+    "pins": {
+      "command-01.stdout.txt": {
+        "path": "docs/evidence/NI3/native-runtime-independent-NL01-execution/command-01.stdout.txt",
+        "sha256": "500708d36316ad7cebbc3c1d796cf9eb23cbc0006d5fb1db903bc62e5bbe0f76",
+        "bytes": 6702
+      },
+      "command-01.stderr.txt": {
+        "path": "docs/evidence/NI3/native-runtime-independent-NL01-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command-results.json": {
+        "path": "docs/evidence/NI3/native-runtime-independent-NL01-execution/command-results.json",
+        "sha256": "1326f5332936190f7ba9f5325453e5152e772187f43e9f56c840f885ce90ac2c",
+        "bytes": 1086
+      },
+      "root-before-verification.json": {
+        "path": "docs/evidence/NI3/native-runtime-independent-NL01-execution/root-before-verification.json",
+        "sha256": "6a6f4783f1e4a3bd3b25fef0cd59d1c4f7c00f020bee598e3b17d4d48bc7ee43",
+        "bytes": 128
+      },
+      "root-after-verification.json": {
+        "path": "docs/evidence/NI3/native-runtime-independent-NL01-execution/root-after-verification.json",
+        "sha256": "285a6e0caab2288f647d9161271d8813f678db94cf66b9bea39b698aa97a6ee3",
+        "bytes": 207
+      },
+      "root-execution-freeze.json": {
+        "path": "docs/evidence/NI3/native-runtime-independent-NL01-execution/root-execution-freeze.json",
+        "sha256": "dc43cb4e2c7ec63bfb7111e226f0068486b0631f4c42619488880d4f2da15b47",
+        "bytes": 20038
+      }
+    }
+  },
+  "rootCurrentNamedInputVerification": {
+    "count": 128,
+    "allHashesMatch": true,
+    "projectionFileCarriesComplete128Pins": true
+  },
+  "fullGraph": {
+    "files": 27577,
+    "links": 12,
+    "rootBeforeAfterVerifiedUnchanged": true,
+    "authorNewImports": 0
+  },
+  "NodeRealPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+  "authorNodeInvocations": 0,
+  "caseLeafNames": [
+    "NRI-L01 genuine producer and original unknown review",
+    "NRI-L02 genuine unknown review repair and fresh unknown review",
+    "NRI-P01 original owner revoke before review dispatch",
+    "NRI-S01 original RPC abort before first lazy provider effect",
+    "NRI-S02 original RPC abort after first genuine deterministic delta",
+    "NRI-D01 original shared opaque directory token across three runtime roles",
+    "NRI-D02 original source refuses unexpected preclaim leaf",
+    "NRI-D03 original source refuses replaced owned allocation inode",
+    "NRI-T01 public facts resolver refuses foreign empty directory token",
+    "NRI-C01 disabled audit card remains visible with usable worker and no artifact",
+    "NRI-C02 lost execute and disconnect retain uncertainty through exact readonly query",
+    "NRI-C03 query refuses changed valid generation without replacing original mapping",
+    "NRI-C04 task change refuses late original query mapping",
+    "NRI-C05 pending dispatch disconnect captures unknown outcome before abort",
+    "NRI-C06 exactly one fresh matching worker permits readonly unknown-dispatch query",
+    "NRI-C07 zero fresh matching workers refuses query without RPC or cleared uncertainty",
+    "NRI-C08 two fresh matching workers refuses arbitrary candidate selection"
+  ],
+  "caseCount": 17,
+  "D01": "NOT_AUTHORED unchanged",
+  "closureChanges": "Projected entry hash only after root application; imports/public modules/packages/binary unchanged. Proposed public observations/counts declared in inventory; no active metadata overwritten.",
+  "readBoundary": {
+    "incidentalBroadSourceSearch": "Disclosed/discarded adjacent private SQL/receipt metadata text; none invoked or used as oracle. Exact public projection/method/contracts thereafter.",
+    "authorNativeFixturesOrOraclesRead": false,
+    "blockedInvestigationRepeated": false
+  },
+  "acceptance": {
+    "all87": "HOLD",
+    "CODE": "HOLD",
+    "nativeInstalled": "HOLD",
+    "numericPrivateResourceObservation": "HOLD"
+  },
+  "rootNextStep": "Read exact literal and effect/affected count inventory; disposition before application. Preserve old source/results/history; root separately freezes and executes any bounded affected/remainder validation with independent attribution."
+}

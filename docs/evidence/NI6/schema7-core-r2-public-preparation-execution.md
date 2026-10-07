@@ -1,0 +1,9 @@
+# Schema7 r2 public preparation execution
+
+Root reviewed the exact one-line F06 escaped-secret refinement, its independent source amendment and the complete bounded public fixture closure before authorizing one execution. Historical8ae78/879a/r1 source and earlier review findings remain preserved. Current normal-contracts is `98e68b56…`; the source28-file digest is `72927f81…`.
+
+Seven syntax checks passed. Three separate test commands passed3 migration/preparation cases,5 issuer/caller/history/adapter boundary cases and3 escaped-secret cases:11PASS/0FAIL/0SKIP. The commands took0.467508s,0.723751s and0.856976s. All44 root inputs remained unchanged, with zero stderr. No native worker, provider, listener, browser or external inference was invoked.
+
+The cases use genuine original stores, constructor-bound preparation capabilities, MemoryAdapter and ContextAssembler. They cover original6-to7 backup/history preservation and old-reader refusal, generic pending recovery, fake-brand rejection without invocation, scoped issuer/caller refusal, read-first exact historical preparation despite source drift, independent secret sets, and raw quote/backslash/newline secret refusal both warm and after actual close/reopen. A refused replay preserves the original receipt and does not call the new tokenizer or observer; a permitted historical replay returns the original association.
+
+The [raw results](schema7-core-r2-public-preparation-execution/command-results.json), [freeze](schema7-core-r2-public-preparation-execution/root-execution-freeze.json), complete frozen source and before/after verification are retained. These are author public-interface cases; the independent41-group design and newly authored independent feasible preparation fixtures remain separate. Native origin/currentness, cold resume and saved owner-command restoration are not established here. All87, finalCODE, actual UI and model-quality acceptance remain HOLD.
