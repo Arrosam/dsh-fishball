@@ -1,0 +1,199 @@
+{
+  "schema": "df.ollama-live02-root-plan/v1",
+  "sourceOnly": true,
+  "go": false,
+  "applicationExecution": false,
+  "AC": {
+    "path": "docs/ollama-corrected-one-call-wave-2026-10-07.md",
+    "bytes": 5947,
+    "sha256": "c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78"
+  },
+  "requiredReviews": [
+    "independent affected code on final exact source",
+    "separate independent ISTQB design plus exact fixture review"
+  ],
+  "preExecution": [
+    "root read all sources/closure/effects; verify exact current source pins and original complete host inventory; verify Node and canonical normal peers",
+    "root freeze review hashes, actual source-freeze hash and this plan hash in NEW root-execution-go.json; standard action-time approval required; rejection stops, no alternate route",
+    "assert preflight-attempt.json/private-run/private-process-output absent; no old positions/QA touched"
+  ],
+  "prospectiveSyntaxCommands": [
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/admission.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/entry.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/http-fixture.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/installed-entry.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/installed-owned-stream.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/installed-source.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/installed-worker-facts.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/installed-worker.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/ollama-binding.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/ollama-provider.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/ollama-response-envelope.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/runtime-plugin.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/safe-facts.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    },
+    {
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "--check",
+        ".runtime/ollama-corrected-one-call-r1/stable-error-code.mjs"
+      ],
+      "imports": false,
+      "sourceWrites": 0
+    }
+  ],
+  "prospectivePrivateRunnerSyntax": {
+    "method": "root-only Python ast.parse of run-private.py text; no import/execution/pycache",
+    "applicationEffects": 0
+  },
+  "prospectiveOneCommand": {
+    "argv": [
+      "python3",
+      "-I",
+      ".runtime/ollama-corrected-one-call-r1/run-private.py"
+    ],
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "shell": false,
+    "stdout": "closed runner record only",
+    "stderr": "never child streams; private capped files only",
+    "applicationChildren": 1,
+    "newOwnedNodeProcessGroup": 1,
+    "outerObservationCutoffMs": 165000,
+    "hardChildExitPromise": false,
+    "ifChildStillAlive": "BLOCKED/HOLD; explicit owned group/PID cleanup disposition before any success claim; no replay",
+    "childEnvironmentKeysOnly": [
+      "DSH_HOME",
+      "XDG_CONFIG_HOME"
+    ]
+  },
+  "rootGOFalseTemplate": "root-execution-go.TEMPLATE.json",
+  "rootGOActualAbsent": "root-execution-go.json",
+  "sourceFreeze": "source-freeze.json",
+  "preservationBeforeAfter": "source-preservation.json plus root-owned original full host/current old-pin conservation",
+  "expectedNormalCounts": {
+    "controlHTTP": 35,
+    "dfRPC": 30,
+    "metadataHTTP": 3,
+    "modelPOST": 1,
+    "newTasks": 1,
+    "newExecute": 1,
+    "capture": 1,
+    "resultRead": 1,
+    "finish": 1,
+    "historicalAttemptsBefore": 1,
+    "historicalAggregateMaximum": 2
+  },
+  "noRuntimeOutcomeOrAcceptance": "browser/cold typed-currentness/native-all87/CODE HOLD"
+}

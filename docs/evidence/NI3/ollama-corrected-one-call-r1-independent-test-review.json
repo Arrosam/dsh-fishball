@@ -1,0 +1,645 @@
+{
+  "schema": "df.ollama-corrected-one-call-independent-test-review/v1",
+  "wave": "NR-OLLAMA-LIVE02",
+  "revision": "r1",
+  "sealedAtUTC": "2026-10-07T15:37:24.778809+00:00",
+  "reviewer": {
+    "agent": "/root/ni5_lifetime_independent_design",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "language": "English",
+    "role": "Independent ISTQB affected SOURCE review"
+  },
+  "disposition": "BLOCKED_SOURCE_ACCEPTANCE_AND_RUNTIME_GO",
+  "runtimeGO": false,
+  "summary": {
+    "blockingFindings": 6,
+    "families": 16,
+    "SOURCE_ADEQUATE_SCOPED": 3,
+    "PARTIAL": 12,
+    "BLOCKED_WRONG_ORACLE": 1,
+    "functionalComplete": 0,
+    "functionalNotRun": 16,
+    "heldPartitions": 8,
+    "additionalStandaloneRunnableCells": 0
+  },
+  "designReference": {
+    "MD": {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.md",
+      "bytes": 29459,
+      "sha256": "e1412ca7f0933e41f344bfb2ce9c6bf93f9cbbd47598f900bb800a935a9d3efd"
+    },
+    "JSON": {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.json",
+      "bytes": 60381,
+      "sha256": "6629e12349772cc8218bf6369337c307c3c2a1c4e2efad5dcdf23f39f2626538"
+    },
+    "changed": false,
+    "heldFamilies": [
+      "H01",
+      "H02",
+      "H03",
+      "H04",
+      "H05",
+      "H06",
+      "H07",
+      "H08"
+    ]
+  },
+  "independence": {
+    "designSealedBeforeAuthorAssertionsRead": true,
+    "behaviorOracles": "Frozen root/owner AC and original public interfaces; independent sealed design",
+    "authorAssertionsUsedAsBehaviorOracle": false,
+    "sourceRemediesProspectiveNotInspectedFixes": true
+  },
+  "reviewPins": [
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-manifest.json",
+      "bytes": 8314,
+      "sha256": "d7c871cd791d9db7d63da207f3aacd3d3f3f693b27c28a993b1b36efeeca57a7"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-freeze.json",
+      "bytes": 50382,
+      "sha256": "b6aeca803dd22c5f075b9fba013769930263c268c14ed824212885eb5487cba0"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-source.md",
+      "bytes": 6049,
+      "sha256": "64dddaa623a6e69f5ad8ffba7c03011a2b1f2af236933a2ff9b5eb83941dc5cb"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.md",
+      "bytes": 29459,
+      "sha256": "e1412ca7f0933e41f344bfb2ce9c6bf93f9cbbd47598f900bb800a935a9d3efd"
+    },
+    {
+      "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-design.json",
+      "bytes": 60381,
+      "sha256": "6629e12349772cc8218bf6369337c307c3c2a1c4e2efad5dcdf23f39f2626538"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/ollama-corrected-one-call-wave-2026-10-07.md",
+      "bytes": 5947,
+      "sha256": "c00192b717d9a8c0979e8924a680f7cbb483601cca9d7d41c0805f03840c4b78"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+    },
+    {
+      "path": "docs/contracts/ollama-binding-audit-v2.md",
+      "bytes": 1899,
+      "sha256": "ac7ddc73a4bc8f87f18f0b089059d76d1a95a965f9b7d6dae0949baf5314893a"
+    },
+    {
+      "path": "docs/contracts/ollama-response-envelope-v1.md",
+      "bytes": 2692,
+      "sha256": "dd4ea5f652797e46db8197141bc4f9686307158457bc6452d143eefd708f9993"
+    },
+    {
+      "path": "src/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": "src/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01"
+    },
+    {
+      "path": "src/worker.mjs",
+      "bytes": 36626,
+      "sha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "bytes": 37074,
+      "sha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "bytes": 72994,
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/index.d.ts",
+      "bytes": 8419,
+      "sha256": "405eed914b242e16a07c8343004e134669b8948b26d1067e300fb222baf10b96"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/admission.mjs",
+      "bytes": 2130,
+      "sha256": "8f4b58034629c9c6cf46ff9b211b808de4bf3f1f8febd7ecde1e294771f2e040"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/correction-literals.json",
+      "bytes": 8004,
+      "sha256": "b98e212a288bb3c5db298c222874f65e4b888e58b2365dadc8db0a6472056e46"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/effect-plan.json",
+      "bytes": 5730,
+      "sha256": "121f79b90f56558cecce63a0353118e63e60b63698b37a6955250b41ab7471e2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/entry.mjs",
+      "bytes": 15930,
+      "sha256": "c562aaf59a91e7f473ba3466745e5a21c3a9e94d58ff6427e60aae03637be0ea"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/http-fixture.mjs",
+      "bytes": 9017,
+      "sha256": "7ddfd23b2239533a50bb9c54daf6529358d91e2619f70056b410124eccee55c1"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-entry.mjs",
+      "bytes": 7366,
+      "sha256": "985f586a4ad5631a86c2e2ececbe0b4b84689887a7a19176b2ca1c2f3e4e88fb"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-owned-stream.mjs",
+      "bytes": 1692,
+      "sha256": "0e3e2cf31a205d7af1d563df2180fde79cdffe338a5fd8100c5f78db7432a36f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-source.mjs",
+      "bytes": 268,
+      "sha256": "7800e3da9ad3b2869f4cbb504e52c1d82fc406bf3157f207a70addb91765777f"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-worker-facts.mjs",
+      "bytes": 21101,
+      "sha256": "49f6c2bc72fed6f5ba6a254986b285d4eff7386299b2e91cf965fb152467f2a2"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/installed-worker.mjs",
+      "bytes": 35177,
+      "sha256": "fa02b816912efb04f9dab77dbc8d0ff8a59b5d1a661a3f8503b77d02c790895b"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/ollama-binding.mjs",
+      "bytes": 12475,
+      "sha256": "ef0b68fb54489f8731bb2733caf61c6fb4db82dc3611fd336def840de8984410"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/ollama-provider.mjs",
+      "bytes": 16997,
+      "sha256": "90083313a87145f8c497e798d9d57fff8ed38fc6f21276f9584be518f3573cc1"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/ollama-response-envelope.mjs",
+      "bytes": 2596,
+      "sha256": "835a5d907195476009c4ebee31c3a9b8947d87c7df6196e6fbdaeec2a6362bab"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs",
+      "bytes": 15976,
+      "sha256": "330b6467bb0a2fad89a27c9b5bd51461bcb3b905692032059336ae80014ca1bb"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/public-input-pins.json",
+      "bytes": 43327,
+      "sha256": "78f95cb086d06fed2d6ff498552aa2f94eca2756cf9bf0b9c0bbc5a45541cf86"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/root-plan.json",
+      "bytes": 5945,
+      "sha256": "7ef283896e1db7fc56a32ea78d29379a5aa64f4755e237839b2d3523960eecfa"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/rpc-sequence.json",
+      "bytes": 8380,
+      "sha256": "275835cad3372bf62f7beccaf233b8cc724a224ca6e0db89a2f57506630ef82d"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/run-private.py",
+      "bytes": 7935,
+      "sha256": "09e98db695fded6686f5f7d734a7364426c0419584de49a6d9fddbeb46dc494e"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/runtime-plugin.mjs",
+      "bytes": 37737,
+      "sha256": "765835e5d5129bef4d66bf559b007cf1b72197eddfddafab71e796f2786d615b"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/safe-facts.mjs",
+      "bytes": 5289,
+      "sha256": "b8b27ccdce17188e7d838116ffbf7ac0845e5b18d3b4327be74fd223c3a979b3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-import-closure.json",
+      "bytes": 33974,
+      "sha256": "bfe5f1618d08ea8cf829333d445b6a2c318e56fd57e23264137288f0d4250737"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/source-preservation.json",
+      "bytes": 34159,
+      "sha256": "473ac773ee0f55524e76b24be5b690f00076141962e79fc591dfb737693bbab3"
+    },
+    {
+      "path": ".runtime/ollama-corrected-one-call-r1/stable-error-code.mjs",
+      "bytes": 1813,
+      "sha256": "4278acdce0b33917175267f77de2a86ad3dcf75a7ff339c0f8951a99569d01eb"
+    }
+  ],
+  "findings": [
+    {
+      "id": "TD-LIVE02-01",
+      "severity": "BLOCKER",
+      "kind": "WRONG_POSITIVE_ORACLE",
+      "families": [
+        "L06"
+      ],
+      "source": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs:125",
+      "actual": "P13 requires retainedRefs to contain the protected goal recordRef.",
+      "expected": "Original context puts the full goal in protected text/sourceProvenance; memory envelope sourceRefs carries that ref. Fresh goal-only retainedRefs/droppedRefs are empty. Complete scope/task/CAS/record/source/memory/count/ledger joins are required.",
+      "originalSource": [
+        "src/context.mjs:191-197",
+        "src/context.mjs:258-279",
+        "src/memory.mjs:267-295"
+      ],
+      "impact": "Healthy original preparation is rejected before P14/P23; source-confirmed counterexample, not executed.",
+      "remedy": "Replace wrong predicate with complete original public context oracle; do not merely remove it or alter the original producer."
+    },
+    {
+      "id": "TD-LIVE02-02",
+      "severity": "BLOCKER",
+      "kind": "ARTIFACT_CORRELATION_ORACLE_GAP",
+      "families": [
+        "L11"
+      ],
+      "source": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs:180-191",
+      "actual": "Capture checks ref format/version1; P26 artifact metadata and P27 artifactRef/version/recordRef/digest are not independently joined. Visible content/source/cursor checks are present; full native wrapper digest correlation is absent.",
+      "expected": "Same actual capture/status/read artifact tuple and full df.native-result/v1 wrapper hash, plus all actual source/content/cursor joins.",
+      "originalSource": [
+        "src/worker.mjs:254-270",
+        ".runtime/ollama-corrected-one-call-r1/installed-worker.mjs:228-229"
+      ],
+      "impact": "Partial fixture oracle can pass without independently asserting the full L11 correlation; unchanged internal original guards do not close this independent assertion gap.",
+      "remedy": "Use existing public receipts/status/read; exact original producer field order for any wrapper reconstruction; unsupported links NOT_OBSERVED/HOLD, no new RPC or private reader."
+    },
+    {
+      "id": "TD-LIVE02-03",
+      "severity": "BLOCKER",
+      "kind": "FINISH_FINAL_LEDGER_ORACLE_GAP",
+      "families": [
+        "L13",
+        "L14"
+      ],
+      "source": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs:192-201",
+      "actual": "Finish checks completed/heldfalse/ref syntax; final status checks unchanged charges/actual usage/stopped generation. Actual finished.task/claimRef/reservationRef and corresponding exposed final action/claim/reservation/evidence tuple are not independently correlated.",
+      "expected": "Genuine finish receipt joins selected task/created claim/reservation and actual final ledger fields which exist; stopped/idle/ref syntax/disposal are not release authority.",
+      "originalSource": [
+        "src/worker.mjs:288-313",
+        ".runtime/ollama-corrected-one-call-r1/installed-worker.mjs:30-32,230"
+      ],
+      "impact": "Required L13/L14 complete receipt/ledger correlation is partial; this does not establish an original product settlement defect.",
+      "remedy": "Join actual exposed tuples and retain missing links/holds; no invented finish usage/billing/execution getter or task-complete claim."
+    },
+    {
+      "id": "TD-LIVE02-04",
+      "severity": "BLOCKER",
+      "kind": "PRE_POSITION_REMAINING_TIME_GATE_GAP",
+      "families": [
+        "L09",
+        "L15"
+      ],
+      "source": ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs:153-161",
+      "actual": "Abort/currentness are checked but not selected85s remaining work/latest50s execute entry before exclusive S01 consumption/P23. Global135s work timer exists.",
+      "expected": "Selected75s carrier+10s conditional tail fit remaining135s work, with separate15s cleanup; insufficient time stops before position consumption.",
+      "impact": "A late still-unaborted source path can spend its sole position with insufficient selected window, risking deadline/unknown after transport; no race executed.",
+      "remedy": "Root prospectively adopted explicit85s monotonic gate in separate successor; no TTL/clock/grant extension, retry or replay.",
+      "distinction": "85s is independent design recommendation/root prospective adoption, not a retroactive literal in the frozen original AC."
+    },
+    {
+      "id": "TD-LIVE02-05",
+      "severity": "BLOCKER",
+      "kind": "GOAL_VERDICT_CLASSIFICATION_GAP",
+      "families": [
+        "L12"
+      ],
+      "source": [
+        ".runtime/ollama-corrected-one-call-r1/one-call-scenario.mjs:207-211",
+        ".runtime/ollama-corrected-one-call-r1/entry.mjs:223-226,251-253",
+        ".runtime/ollama-corrected-one-call-r1/run-private.py:146-157"
+      ],
+      "actual": "Full bounded marker boolean can truthfully be false while completedOriginalSequence/observed outcome still yields Node0 and PRIVATE_CHILD_COMPLETED/0. Wrapper has no goal verdict.",
+      "expected": "Separate actual goal PASS/FAIL/NOT_OBSERVED; markerfalse is goal failure, valid original owned finish remains separate.",
+      "impact": "Process/lifecycle code0 can falsely be promoted to exact-goal pass. The recorded boolean itself does not lie.",
+      "remedy": "Explicit goal-failure disposition from full result; no repair/retry/second inference or authority from HTTP200/envelope acceptance."
+    },
+    {
+      "id": "TD-LIVE02-06",
+      "severity": "BLOCKER",
+      "kind": "OWNED_GROUP_PRIVATE_DRAIN_ORACLE_GAP",
+      "families": [
+        "L15",
+        "L16"
+      ],
+      "source": ".runtime/ollama-corrected-one-call-r1/run-private.py:108-174",
+      "actual": "One selected new-session child and at most one child-PID TERM; completion checks child.poll/pipes without actual group identity/absence. Post-spawn exception requests TERM and returns without bounded drain. Closed stream record lacks explicit EOF/completeness/prefix distinction.",
+      "expected": "Bounded actual owned-group identity/absence and stream EOF/prefix facts; bounded post-exception drain; alive/unobserved/unknown group or native/cloud drain stays HOLD.",
+      "impact": "Child0+pipeEOF does not prove groupempty; unexpected descendant closing pipes is unobserved. Source counterexample only, no child/fault execution and no claim selected composition spawned descendants.",
+      "remedy": "Separate successor preserves one child/at most one PID TERM/no force/no terminating group signal and adds only selected bounded ownership/absence/EOF/prefix/drain observations."
+    }
+  ],
+  "coverage": [
+    {
+      "id": "L01",
+      "AC": "AC1/9",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Exact six literal/copy provenance verified; loaded canonical peer/service graph pending root gate.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L02",
+      "AC": "AC2/3",
+      "sourceCoverage": "SOURCE_ADEQUATE_SCOPED",
+      "reason": "Original boot prepare/profile/snapshot/explicit credential/public ownership matches selected source; no runtime proof.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L03",
+      "AC": "AC5/6",
+      "sourceCoverage": "SOURCE_ADEQUATE_SCOPED",
+      "reason": "Three exact metadata slots/version/show/thinkfalse and no fallback; NOT_RUN.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L04",
+      "AC": "AC3/5/8",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Five genuine HTTP auth/status/location/cookie predicates; no-store/no-referrer headers not asserted; handler-effect ordering source only.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L05",
+      "AC": "AC6/7",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Genuine explicit setup/policy needs_policy/ready checks; full selection/description tuple only partially asserted.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L06",
+      "AC": "AC4/7",
+      "sourceCoverage": "BLOCKED_WRONG_ORACLE",
+      "reason": "TD01 protected-goal retainedRefs contradiction and incomplete public context joins.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L07",
+      "AC": "AC6/7",
+      "sourceCoverage": "PARTIAL",
+      "reason": "One plan/preview/explicit grant/current CAS; full spec/context/target/model/environment/policy/expiry joins partial.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L08",
+      "AC": "AC3/4/7",
+      "sourceCoverage": "PARTIAL",
+      "reason": "One genuine original create/agent lookup/ready query; full task/action/reservation/session/context tuple partial.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L09",
+      "AC": "AC1/5/6",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Position exclusive before execute/audit0/original source cap; TD04 and negative second-issue proof held.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L10",
+      "AC": "AC4/5/7",
+      "sourceCoverage": "SOURCE_ADEQUATE_SCOPED",
+      "reason": "One execute requires committed/actual usage and original session/cursor/digest/audit joins before continuation; no actual execution.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L11",
+      "AC": "AC7",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Actual content/source/cursor joins present; TD02 artifact/full-wrapper tuple gap.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L12",
+      "AC": "AC4/8",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Full actual bounded marker boolean; TD05 separate goal failure absent.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L13",
+      "AC": "AC7/8",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Conditional original finish/stopped checks; TD03 complete receipt/final tuple absent.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L14",
+      "AC": "AC6/7/8",
+      "sourceCoverage": "PARTIAL",
+      "reason": "API usage arithmetic/audit/persistence/final counts and estimated charges; TD03 plus11-vs2 read-budget deviation.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L15",
+      "AC": "AC6/8/9",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Original latched public disposers/global timers; TD04/TD06; native/cloud release unknown where unproved.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    },
+    {
+      "id": "L16",
+      "AC": "AC6/8/9",
+      "sourceCoverage": "PARTIAL",
+      "reason": "Finite source/output/private child plan; physical envelope difference/TD06/wholegraph pending.",
+      "functionalDisposition": "NOT_RUN",
+      "functionalComplete": false
+    }
+  ],
+  "contextOracle": {
+    "publicSlots": [
+      "P10",
+      "P11",
+      "P12",
+      "P13"
+    ],
+    "extraRPC": 0,
+    "extraModelRequests": 0,
+    "actualTaskScopeCAS": "Actual intake/task/owner/workspace/version/authEpoch; original context receipt advancement/current metadata",
+    "goal": "Single actual full127-byte fresh goal; kind/ref/digest/bytes/factual version/auth/time tuple",
+    "record": "Context receipt/P12 metadata/P13 detail recordRef/kind/full digest/byteLength/crypto2/null generation where exposed",
+    "body": "Original contract/material/verification/sourceScope/sourceCAS/generatedAt",
+    "source": "Exact [goalRef] and actual sourceProvenance tuple/full protected goal",
+    "retainedRefs": [],
+    "droppedRefs": [],
+    "partition": "Fresh goal-only/no optional background/no memory mutation",
+    "memory": "Actual namespace/revision receipt/detail/body joins; pristine no-receipt revision0/provenance[]; original currentness, no fabricated factory/handle",
+    "counts": "Complete well-formed content UTF8 bytes/token/request bounds and receipt/body counts; no truncation",
+    "sourceRefLedger": "Original disclosed projections with exact producer serialization where available; no digest(public reordered DTO) invented equivalence",
+    "missingLinks": "Explicit NOT_OBSERVED/HOLD"
+  },
+  "finiteSourceEffects": {
+    "authHTTPMax": 5,
+    "controlHTTPMax": 35,
+    "DFRPCMax": 30,
+    "mutationMax": 10,
+    "readonlyPreviewMax": 20,
+    "metadataHTTPMax": 3,
+    "modelPOSTMax": 1,
+    "selectedDirectHTTPMax": 39,
+    "newIntegratedPosition": 1,
+    "taskActionWorkerSessionExecuteMaxEach": 1,
+    "captureResultReadFinishMaxEach": 1,
+    "fixturePermitIssue": 0,
+    "originalIssuedFenceSourceMax": 1,
+    "issuedGetter": false,
+    "retryPollFallbackReplenishment": 0,
+    "runtimeCountsObserved": false
+  },
+  "timeSource": {
+    "workMs": 135000,
+    "cleanupMs": 15000,
+    "nodeLocalExpirationMs": 150000,
+    "bootMs": 30000,
+    "ordinaryHTTPMs": 5000,
+    "executeHTTPMs": 75000,
+    "providerMs": 60000,
+    "runnerSoftStopMs": 160000,
+    "runnerObservationCutoffMs": 165000,
+    "hardChildGroupDeathPromised": false,
+    "minimumRemainingWorkGateInR1": false,
+    "rootProspectiveGateMs": 85000
+  },
+  "sourceDeviations": [
+    {
+      "id": "D01",
+      "designProposedAuditReads": 2,
+      "healthySourceAuditReads": 11,
+      "locations": [
+        "entry209",
+        "scenario78",
+        "scenario99",
+        "scenario148",
+        "scenario152",
+        "scenario169",
+        "scenario202",
+        "scenario210",
+        "entry226",
+        "entry246/closedStatus",
+        "entry251/closedStatus"
+      ],
+      "extraModelEffects": 0,
+      "prospectiveRootAdoption": "Declare actual healthy11 in separate successor; immutable design unchanged"
+    },
+    {
+      "id": "D02",
+      "r1": {
+        "filesMax": 32,
+        "directoriesMax": 20,
+        "aggregateBytesMax": 33554432,
+        "depthMax": null,
+        "singleFileBytesMax": null,
+        "metadataObservationOnly": true,
+        "prewriteInterceptor": false,
+        "privateStreamsMaxEach": 65536
+      },
+      "designProposal": {
+        "filesMax": 32,
+        "directoriesMax": 32,
+        "depthMax": 8,
+        "singleFileBytesMax": 4194304,
+        "aggregateBytesMax": 16777216,
+        "privateStreamsMaxEach": 1048576
+      },
+      "prospectiveRootSuccessor": {
+        "filesMax": 32,
+        "directoriesMax": 20,
+        "depthMax": 8,
+        "singleFileBytesMax": 4194304,
+        "aggregateBytesMax": 16777216,
+        "privateStreamsMaxEach": 65536
+      },
+      "physicalWriteEventsProven": false,
+      "successorInspectedOrExecuted": false
+    }
+  ],
+  "verification": {
+    "method": "Lexical source/byte hashes/evidence JSON processing only",
+    "capsuleFilesMatched": 34,
+    "manifestMembersMatched": 33,
+    "freezeMembersMatched": 251,
+    "originalPreservationMembersMatched": 174,
+    "copyTargetsVerified": 11,
+    "oneOccurrenceLiteralDeltasVerified": 6,
+    "literalIds": [
+      "B01",
+      "B02",
+      "B03",
+      "B04",
+      "E01",
+      "W01"
+    ],
+    "MjsBodiesLexicallyReviewed": 15,
+    "designInputPinsMatched": 28,
+    "nodeByteHashMatched": true,
+    "nodeVersionExecuted": false,
+    "applicationJSParseImportEvaluationTestBuild": 0,
+    "runnerSyntaxParse": 0,
+    "runtimeNativeModelHTTPProfileDatabaseListenerBrowserServiceGit": 0,
+    "faultProbes": 0,
+    "writesOnlyNewPair": true,
+    "oldSourceDesignEvidenceChanges": 0
+  },
+  "notRunRootGates": [
+    "Corrected successor freeze and both exact affected reviews",
+    "15 MJS syntax and Python runner syntax",
+    "Current whole-host graph/canonical peer/service identities/action-time source conservation",
+    "Exact root finite plan/true fresh GO/supported action-time approval",
+    "One genuine boot/auth/metadata/30RPC/native/model execution",
+    "Actual owned group/stream/original cleanup and honest held outcome"
+  ],
+  "history": {
+    "R01Attempts": 1,
+    "R01Remote": "unknown",
+    "R01Billing": "unknown",
+    "R01UncertainHold": "retained",
+    "R01Cause": "undetermined",
+    "rawPrivateHistoricalRead": false,
+    "historicalEvidenceChanged": false,
+    "newSeparateRealmLocalStart": 0,
+    "selectedHistoricalPlusNewMax": 2,
+    "globalQuotaClaim": false,
+    "all87Accepted": 0,
+    "all87Disposition": "HOLD",
+    "finalCODE": "PERMANENTLY_EXCLUDED_BLOCKED"
+  },
+  "companionMD": {
+    "path": "docs/evidence/NI3/ollama-corrected-one-call-r1-independent-test-review.md",
+    "bytes": 16156,
+    "sha256": "bd7c40808b3fa0d8b66c59832eda92ee74d3ba746247a009a01afc51c7673380"
+  }
+}

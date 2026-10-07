@@ -1,0 +1,9 @@
+# Approved exact-model binding audit surface
+
+Implementation-free source companion for NR-OLLAMA-LIVE02. This declaration identifies existing metadata exposure; it supplies no diagnostic, permit, currentness, native authority or execution result. The earlier response-envelope contract remains unchanged.
+
+`getApprovedOllamaBinding(originalContext).audit(): JSONValue` delegates to the corrected provider's copied audit snapshot. Its top-level fields are exactly `attempted`, `active`, `uncertainHold`, `billing`, and `calls`. Billing is `unknown`; the booleans and count describe this provider realm only. The binding exposes no issued-permit count getter.
+
+Each call initially contains `call`, `requestBytes`, `bodyDigest`, `state`, `remoteOutcome`, and `billing`. Original observation points may add `httpStatus`, `responseEnvelope`, `resultDigest`, `outputBytes`, `thinkingBytes`, `tokenUsage`, or `failureCode`. These optional fields must not be fabricated when their observation point was not reached. In particular, the finite diagnostic is at `audit().calls[i].responseEnvelope`, assigned only after the bounded body reached `JSON.parse` and the reviewed inspector. Its complete nine-field domains are declared in [the response-envelope contract](ollama-response-envelope-v1.md). Missing diagnostics mean NOT_OBSERVED.
+
+The provider's original state, downstream content/tool/thinking/finish/usage checks, captured-currentness checks, ledger operations and holds retain their own meaning. `responseEnvelope.accepted` alone does not imply committed native execution, valid usage, result capture, grant, termination, billing, settlement or reservation release. Neither this audit nor its copied fields gives permission to repair, retry or replay the historical unknown outcome. Raw response values, errors, text and authentication material are excluded from this companion and public evidence.
