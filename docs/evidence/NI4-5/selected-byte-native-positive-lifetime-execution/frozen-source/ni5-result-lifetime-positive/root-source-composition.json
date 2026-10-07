@@ -1,0 +1,12 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "closureSha256": "9d18e80946c2593b4c8f202b2f04292a2a749a9dd6c8ba65c5d876b11c027fcb",
+  "contractVersion": "df.root-source-composition/v1",
+  "exactReviewedOneModuleCopied": true,
+  "executionGO": false,
+  "inputCaptureMetadataSourceClosureCorrect": true,
+  "oldCapsulesUntouched": true,
+  "sourceOnly": true,
+  "unchangedFixtureCopied": true
+}

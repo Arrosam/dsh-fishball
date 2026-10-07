@@ -1,0 +1,56 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni5-result-lifetime-positive/src/installed-results.mjs"
+      ],
+      "durationSeconds": 0.069688,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T07:00:21.334345+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T07:00:21.264659+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-lifetime-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-lifetime-execution/command-01.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/ni5-result-lifetime-positive/test/selected-byte-native-positive.test.mjs"
+      ],
+      "durationSeconds": 7.291337,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T07:00:28.626149+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T07:00:21.334815+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-lifetime-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 583,
+        "path": "docs/evidence/NI4-5/selected-byte-native-positive-lifetime-execution/command-02.stdout.txt",
+        "sha256": "430c686e10df3d2fb5f59dc69722aabebfaa63054ce5b7f5df9e54c37a78bcec"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": false
+}

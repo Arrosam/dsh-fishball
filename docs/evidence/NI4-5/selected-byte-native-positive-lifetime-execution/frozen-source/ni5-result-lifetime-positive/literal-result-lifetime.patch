@@ -1,0 +1,33 @@
+--- before/src/installed-results.mjs
++++ src/installed-results.mjs
+@@ -1,7 +1,14 @@
+ import { types } from 'node:util';
++import { pathToFileURL } from 'node:url';
++import { resolveHostSource } from './host-probe.mjs';
+ import { exact, canonical, canonicalDigest, hash, ref, integer, normalizedSpec } from './runtime-security.mjs';
+ import { contextText } from './context.mjs';
+ import { normalizeNotificationPolicy } from './notifications.mjs';
++
++// Cordis returns a fresh scoped proxy for each Service lookup. Its public
++// original symbol is used only for identity; all operations stay scoped.
++const { symbols } = await import(pathToFileURL(resolveHostSource('@deepseek-ai/cordis')).href);
++const originalService = value => value?.[symbols.original] ?? value;
+ 
+ export class InstalledResultsError extends Error {
+   constructor(code) { super(code); this.name = 'InstalledResultsError'; this.code = code; }
+@@ -174,10 +181,14 @@
+     exact(installation, ['ctx', ...METHODS]); if (!installation.ctx || METHODS.some(n => typeof installation[n] !== 'function')) fail('RESULT_CAPABILITY_UNAVAILABLE');
+     if (installed) fail('RESULT_ALREADY_INSTALLED'); installed = true;
+     const api = { ...installation }, ctx = api.ctx, connection = ctx.connection, peer = connection?.operator;
++    // Capture the genuine enclosing installation owner, never an agent,
++    // worker/audit invocation or stream phase whose lifetime ends at finish.
++    const ownerFiber = ctx.fiber, ownerUid = ownerFiber?.uid, service = originalService(connection);
++    if (!ownerFiber || ownerUid === null || ownerUid === undefined) fail('RESULT_CAPABILITY_UNAVAILABLE');
+     if (!peer || !ctx.profileContext || ctx.profileContext.dir !== profile.dir || ctx.profileContext.name !== profile.name) fail('RESULT_CAPABILITY_UNAVAILABLE');
+     let active = true, disposed = false; const plans = new Map(), permits = new Map();
+     const live = () => {
+-      let admitted = false; try { admitted = active && api.isAlive() === true && ctx.connection === connection && connection.operator === peer && ctx.profileContext.dir === profile.dir && ctx.profileContext.name === profile.name; } catch {}
++      let admitted = false; try { admitted = active && api.isAlive() === true && ctx.fiber === ownerFiber && ownerFiber.state === 2 && ownerFiber.uid === ownerUid && originalService(ctx.connection) === service && connection.operator === peer && ctx.profileContext.dir === profile.dir && ctx.profileContext.name === profile.name; } catch {}
+       if (!admitted) { active = false; permits.clear(); } return admitted;
+     };
+     const check = () => { if (!selection.enabled) fail('RESULTS_DISABLED'); if (!live()) fail('SERVICE_DISPOSED'); };
