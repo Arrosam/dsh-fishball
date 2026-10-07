@@ -1,0 +1,125 @@
+{
+  "id": "NR-UI04",
+  "status": "LITERAL_SOURCE_PROPOSAL_NOT_APPLIED_NOT_RUN",
+  "baseClientSHA256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+  "proposedClientSHA256": "b23be8f04f30dcb7436599531644cbfcd160f9ce21f32e039f82cdc227c5e332",
+  "patchSHA256": "95daaca443f4630c256c43c19cc7229f059490c14fa7b2cbf6a48d5c40fa4746",
+  "publicSource": {
+    "path": "src/runtime-store.mjs",
+    "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+    "methods": {
+      "snapshot": "1287-1326: owner/workspace/task-scoped actions, workers, executions; action metadata includes generationRef/executionRef",
+      "prepareAuditInput": "2306-2347: returned prepared-input recordRef/digest/auditRef/bindingDigest/materialDigest/purpose; does not return semanticRevision or artifactDigest",
+      "beginAuditExecution": "2454-2476: required execution record keys",
+      "assertExecutionCurrent": "2478-2500: optional admittedAt, dispatch_intent; admitted flag return-only",
+      "captureAuditResult": "2539-2565: optional resultRef, no execution state captured",
+      "submitAuditResult": "2602-2624: optional reportRef",
+      "settleAction": "865-884: optional outcomeEvidenceRef and nullable terminalEvidenceRef; unknown/completed/failed/cancelled state",
+      "dispatchAction": "738-751: actual current worker identity and nullable terminalEvidenceRef"
+    }
+  },
+  "snapshotRows": {
+    "required": [
+      "kind",
+      "executionRef",
+      "taskRef",
+      "actionRef",
+      "actionDigest",
+      "claimRef",
+      "generationRef",
+      "sessionRef",
+      "inputRecordRef",
+      "inputDigest",
+      "dataDigest",
+      "auditRef",
+      "bindingDigest",
+      "materialDigest",
+      "purpose",
+      "semanticRevision",
+      "commandRef",
+      "state",
+      "createdAt"
+    ],
+    "optional": {
+      "admittedAt": "safe nonnegative integer >= createdAt; required when state is dispatch_intent; public assertExecutionCurrent stores it",
+      "resultRef": "64 lowercase hexadecimal; if present equals executionRef; public captureAuditResult stores it",
+      "reportRef": "64 lowercase hexadecimal; requires resultRef; public submitAuditResult stores it",
+      "outcomeEvidenceRef": "64 lowercase hexadecimal; public settleAction stores it",
+      "terminalEvidenceRef": "null or 64 lowercase hexadecimal; public settleAction copies actual worker terminalEvidenceRef; public initial worker allows null"
+    },
+    "closed": true,
+    "returnOnlyRejected": [
+      "deduplicated",
+      "admitted"
+    ],
+    "unrelatedExecutionKind": "ignored; only audit_input rows for exact retained claim are candidates",
+    "limit": 128,
+    "states": [
+      "intent_committed",
+      "dispatch_intent",
+      "unknown",
+      "completed",
+      "failed",
+      "cancelled"
+    ]
+  },
+  "binding": {
+    "preconditions": [
+      "active and no audit request busy",
+      "uncertain exactly executeAudit, execution still null",
+      "fresh current selected taskModel detail, same task version and auth epoch",
+      "retained action, prepared input and worker mapping valid",
+      "one current workers row for retained claim, exact six identity refs; optional worker taskRef if present must match selected task",
+      "one current actions row for retained actionRef/actionDigest, same claim/generation and literal stored executionRef",
+      "one audit_input execution row for retained claim; no ambiguity, malformed/foreign row refused"
+    ],
+    "equals": [
+      "taskRef",
+      "actionRef",
+      "actionDigest",
+      "claimRef",
+      "generationRef",
+      "sessionRef",
+      "inputRecordRef=prepared.recordRef",
+      "inputDigest=prepared.digest",
+      "auditRef=prepared.auditRef",
+      "bindingDigest=prepared.bindingDigest",
+      "materialDigest=prepared.materialDigest",
+      "purpose=prepared.purpose",
+      "executionRef=current action metadata.executionRef"
+    ],
+    "typedOnly": [
+      "dataDigest is historical artifact digest, not compared to inputDigest",
+      "semanticRevision is historical integer, not assumed equal current semantic revision",
+      "commandRef is actual public stored request ref; no request identity manufactured or retry generated"
+    ],
+    "publication": "copy exact stored record only; keep stale, uncertainty, status, worker and collection unchanged; preview=null, accepted=false. No async response and no RPC."
+  },
+  "recoverySequence": [
+    "Refresh authoritative current task facts using existing task model",
+    "Explicit Recover execution reference button reads snapshot only, retaining stale and execute uncertainty",
+    "Explicit Refresh audit status recovers existing mutation gate; retains execute uncertainty",
+    "Explicit original collectAuditResult uses actual executionRef and existing current task CAS; only real result response may update collection/outcome",
+    "Original finish remains separately gated on actual collection, original host checks, and actual owner mapping"
+  ],
+  "authorityLimits": [
+    "observed execution state/resultRef/reportRef is not a collection or finish receipt",
+    "no native manager/agent/session/provider invocation",
+    "no fabricate execution/result/terminal refs",
+    "no executeAudit retry or resend",
+    "no receipt/envelope internals inspected or modified",
+    "no GO for source application or execution"
+  ],
+  "importsEffects": {
+    "addedImports": [],
+    "existingImport": "self-contained CJS factory public require(react)",
+    "newEffects": [
+      "taskModel.getSnapshot read",
+      "structuredClone/freeze existing copy helper",
+      "local model publication and listener notification",
+      "React button rendering and click calling local helper"
+    ],
+    "rpcEffectsAdded": [],
+    "nodeOrNativeExecutionPerformed": false
+  }
+}

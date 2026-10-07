@@ -1,0 +1,55 @@
+{
+  "id": "NR-UI05",
+  "status": "NEW_LITERAL_SOURCE_PROPOSAL_NOT_APPLIED_NOT_RUN",
+  "beforeClientSHA256": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+  "projectedClientSHA256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+  "patchSHA256": "d8990e358032417c0b0153b55493f9e134215a8685c09837768965b2066fea17",
+  "sourceEvidence": {
+    "actualClientSource": "proposed/client-entry.cjs pinned0909",
+    "publicModelMethods": {
+      "createModel.refresh": "lines55-70: loading/stale publication, validated list, chooses current selected if present, ready publication, awaits real select",
+      "createModel.select": "lines72-92: same selected taskRef publishes exact detail:null/stale:true, then original verified status/detail replies publish fresh detail",
+      "createAuditModel.subscribe": "line545: ownRefresh skips clear only; original separate before-taskRef mismatch clears requirement/input/action/worker/execution/collection/uncertain on transient missing task",
+      "createAuditModel.run": "line550: success or unknown mutation then ownRefresh=true around actual taskModel.refresh; busy held until finally",
+      "apply": "lines700-714: constructs actual createModel and actual createAuditModel on same instance; reset invokes audit disconnected and task disconnected",
+      "createModel.disconnected": "line276: offline/stale, epoch/read invalidation and aborts retained controllers"
+    }
+  },
+  "smallestCorrection": "One subscription early return before existing key change/drop logic; no other source changes",
+  "predicate": {
+    "ownRefresh": true,
+    "previousSelectedKey": "nonnull taskRef64:version:authEpoch",
+    "detail": "exactly null, not absent or task with missing fields",
+    "taskModel.stale": true,
+    "taskModel.phase": "exactly ready, matching actual refresh->select transient",
+    "taskModel.selected": "exactly previous key taskRef64"
+  },
+  "preservedDuringPredicate": [
+    "previous selected key",
+    "requirement",
+    "input",
+    "action",
+    "worker",
+    "execution",
+    "collection",
+    "uncertain",
+    "existing audit stale bit",
+    "preview/accepted as already cleared by original mutator/admission"
+  ],
+  "boundary": [
+    "Only owned refresh same selected task transient preserves existing facts; no authority bit created",
+    "Actual taskModel stale plus original audit busy gates block mutation/query/recovery during transient",
+    "Foreign selection/no selected task, missing/undefined detail, offline/loading/error or non-owned refresh fall through existing logic",
+    "Fresh actual task details still process original task/version/auth key logic",
+    "External auth/version changes outside own refresh keep original revision fencing and stale gates",
+    "Current worker/action/execution identity verification remains unchanged; retained old incarnation cannot be adopted as a new one by recovery",
+    "Uncertainty preserved only within narrow predicate; outside it original missing-detail reset behavior remains and is not claimed to reconcile outcome",
+    "No retry, new RPC, native callback/receipt/authority change, cleanup or finish proof"
+  ],
+  "imports": [],
+  "newRpcCalls": [],
+  "effects": [
+    "Avoids local subscriber key reset/publication only for exact predicate; existing model reads/listeners remain"
+  ],
+  "independence": "Root relayed max source finding; original source independently read. ni3_independent_istqb confirmed key-null/drop source mechanism by message but does not own max finding. No independent author fixture/oracle read; sealed design untouched."
+}

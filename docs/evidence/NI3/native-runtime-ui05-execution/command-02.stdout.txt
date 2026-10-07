@@ -1,0 +1,99 @@
+TAP version 13
+# Subtest: ER01 lost execute response recovers only the exact original public execution reference without sends or authority
+ok 1 - ER01 lost execute response recovers only the exact original public execution reference without sends or authority
+  ---
+  duration_ms: 12.973583
+  type: 'test'
+  ...
+# Subtest: ER02 disconnect during execute keeps uncertainty and ignores late response before exact recovery
+ok 2 - ER02 disconnect during execute keeps uncertainty and ignores late response before exact recovery
+  ---
+  duration_ms: 4.072959
+  type: 'test'
+  ...
+# Subtest: ER03 post-loss disconnect and explicit status refresh preserve execute uncertainty and prohibit replay
+ok 3 - ER03 post-loss disconnect and explicit status refresh preserve execute uncertainty and prohibit replay
+  ---
+  duration_ms: 1.139041
+  type: 'test'
+  ...
+# Subtest: ER04 missing duplicate or oversized public candidate arrays refuse reference recovery
+ok 4 - ER04 missing duplicate or oversized public candidate arrays refuse reference recovery
+  ---
+  duration_ms: 8.530209
+  type: 'test'
+  ...
+# Subtest: ER05 every exact execution and current worker or action identity binding discriminates foreign records
+ok 5 - ER05 every exact execution and current worker or action identity binding discriminates foreign records
+  ---
+  duration_ms: 9.717959
+  type: 'test'
+  ...
+# Subtest: ER06 execution snapshots require all nineteen keys and reject extra return flags and invalid field domains
+ok 6 - ER06 execution snapshots require all nineteen keys and reject extra return flags and invalid field domains
+  ---
+  duration_ms: 19.894625
+  type: 'test'
+  ...
+# Subtest: ER07 the five actual optional fields admit documented forms and reject inconsistent or malformed forms
+ok 7 - ER07 the five actual optional fields admit documented forms and reject inconsistent or malformed forms
+  ---
+  duration_ms: 12.849791
+  type: 'test'
+  ...
+# Subtest: ER08 stale selected task malformed retained wire inputs busy or disposed clients refuse recovery
+not ok 8 - ER08 stale selected task malformed retained wire inputs busy or disposed clients refuse recovery
+  ---
+  duration_ms: 2.703
+  type: 'test'
+  location: '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs:201:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    fixture (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs:79:10)
+    async TestContext.<anonymous> (file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs:207:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: ER09 task switching drops retained bindings and old delayed execution cannot paint the new task
+ok 9 - ER09 task switching drops retained bindings and old delayed execution cannot paint the new task
+  ---
+  duration_ms: 5.419042
+  type: 'test'
+  ...
+# Subtest: ER10 actual Panel recovery control stays separate from stale mutation gates and original collection authority
+ok 10 - ER10 actual Panel recovery control stays separate from stale mutation gates and original collection authority
+  ---
+  duration_ms: 12.318542
+  type: 'test'
+  ...
+# Subtest: ER11 recovery does not retry create or execute and cannot replace a retained execution on later conflicting facts
+ok 11 - ER11 recovery does not retry create or execute and cannot replace a retained execution on later conflicting facts
+  ---
+  duration_ms: 0.6985
+  type: 'test'
+  ...
+# Subtest: ER12 historical artifact digest semantic revision and stored command remain literal without guessed current comparisons
+ok 12 - ER12 historical artifact digest semantic revision and stored command remain literal without guessed current comparisons
+  ---
+  duration_ms: 0.798625
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 11
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 201.102875

@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: RM01 baseline actual pair loses first configure requirement during its own refresh
+ok 1 - RM01 baseline actual pair loses first configure requirement during its own refresh
+  ---
+  duration_ms: 12.148125
+  type: 'test'
+  ...
+# Subtest: RM02 projected actual pair preserves successful mutation facts through genuine owned refreshes
+ok 2 - RM02 projected actual pair preserves successful mutation facts through genuine owned refreshes
+  ---
+  duration_ms: 5.180042
+  type: 'test'
+  ...
+# Subtest: RM03 lost execute survives actual same-task null-detail refresh without RPC or retry authority
+ok 3 - RM03 lost execute survives actual same-task null-detail refresh without RPC or retry authority
+  ---
+  duration_ms: 7.368875
+  type: 'test'
+  ...
+# Subtest: RM04 lost dispatch survives real refresh and permits only exact readonly query
+ok 4 - RM04 lost dispatch survives real refresh and permits only exact readonly query
+  ---
+  duration_ms: 1.976375
+  type: 'test'
+  ...
+# Subtest: RM05 owned refresh refuses retention for foreign-B
+ok 5 - RM05 owned refresh refuses retention for foreign-B
+  ---
+  duration_ms: 2.059416
+  type: 'test'
+  ...
+# Subtest: RM05 owned refresh refuses retention for empty-list
+ok 6 - RM05 owned refresh refuses retention for empty-list
+  ---
+  duration_ms: 2.900708
+  type: 'test'
+  ...
+# Subtest: RM06 actual reset aborts transient read and rejects late responses without retained authority
+ok 7 - RM06 actual reset aborts transient read and rejects late responses without retained authority
+  ---
+  duration_ms: 2.907125
+  type: 'test'
+  ...
+# Subtest: RM07 external same-task refresh does not gain generalized retention
+ok 8 - RM07 external same-task refresh does not gain generalized retention
+  ---
+  duration_ms: 2.353292
+  type: 'test'
+  ...
+# Subtest: RM07 external same-task select does not gain generalized retention
+ok 9 - RM07 external same-task select does not gain generalized retention
+  ---
+  duration_ms: 3.135458
+  type: 'test'
+  ...
+# Subtest: RM08 external version drift fences delayed execute before own refresh
+ok 10 - RM08 external version drift fences delayed execute before own refresh
+  ---
+  duration_ms: 3.330958
+  type: 'test'
+  ...
+# Subtest: RM08 external authEpoch drift fences delayed execute before own refresh
+ok 11 - RM08 external authEpoch drift fences delayed execute before own refresh
+  ---
+  duration_ms: 3.320125
+  type: 'test'
+  ...
+# Subtest: RM09 fresh changed actionRef never replaces retained unknown mapping
+ok 12 - RM09 fresh changed actionRef never replaces retained unknown mapping
+  ---
+  duration_ms: 2.235417
+  type: 'test'
+  ...
+# Subtest: RM09 fresh changed actionDigest never replaces retained unknown mapping
+ok 13 - RM09 fresh changed actionDigest never replaces retained unknown mapping
+  ---
+  duration_ms: 1.418584
+  type: 'test'
+  ...
+# Subtest: RM09 fresh changed claimRef never replaces retained unknown mapping
+ok 14 - RM09 fresh changed claimRef never replaces retained unknown mapping
+  ---
+  duration_ms: 1.972958
+  type: 'test'
+  ...
+# Subtest: RM09 fresh changed reservationRef never replaces retained unknown mapping
+ok 15 - RM09 fresh changed reservationRef never replaces retained unknown mapping
+  ---
+  duration_ms: 1.685458
+  type: 'test'
+  ...
+# Subtest: RM09 fresh changed generationRef never replaces retained unknown mapping
+ok 16 - RM09 fresh changed generationRef never replaces retained unknown mapping
+  ---
+  duration_ms: 1.560042
+  type: 'test'
+  ...
+# Subtest: RM09 fresh changed sessionRef never replaces retained unknown mapping
+ok 17 - RM09 fresh changed sessionRef never replaces retained unknown mapping
+  ---
+  duration_ms: 1.421875
+  type: 'test'
+  ...
+# Subtest: RM10 actual read fencing for list-error
+ok 18 - RM10 actual read fencing for list-error
+  ---
+  duration_ms: 2.776334
+  type: 'test'
+  ...
+# Subtest: RM10 actual read fencing for status-error
+ok 19 - RM10 actual read fencing for status-error
+  ---
+  duration_ms: 1.468333
+  type: 'test'
+  ...
+# Subtest: RM10 actual read fencing for foreign-select-race
+ok 20 - RM10 actual read fencing for foreign-select-race
+  ---
+  duration_ms: 3.073375
+  type: 'test'
+  ...
+# Subtest: RM11 real-model recovery retains unknown and finish sends only after separate collection wire reply
+ok 21 - RM11 real-model recovery retains unknown and finish sends only after separate collection wire reply
+  ---
+  duration_ms: 3.170125
+  type: 'test'
+  ...
+# Subtest: RM12 actual null-detail publication discriminator for owned-configure
+ok 22 - RM12 actual null-detail publication discriminator for owned-configure
+  ---
+  duration_ms: 3.311916
+  type: 'test'
+  ...
+# Subtest: RM12 actual null-detail publication discriminator for external-select
+ok 23 - RM12 actual null-detail publication discriminator for external-select
+  ---
+  duration_ms: 2.047375
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 183.647125

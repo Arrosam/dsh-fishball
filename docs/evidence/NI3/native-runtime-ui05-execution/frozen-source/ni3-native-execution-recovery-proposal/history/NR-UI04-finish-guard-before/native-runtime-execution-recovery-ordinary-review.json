@@ -1,0 +1,121 @@
+{
+  "contractVersion": "df.nr-ui04-ordinary-source-review/v1",
+  "reviewType": "independent ordinary source/interface/test-coverage review",
+  "reviewer": "Luna exception, explicitly owner-authorized for unaffected ordinary review",
+  "status": "REVIEWED_SOURCE_ONLY_WITH_INTERFACE_GAP",
+  "acceptance": {
+    "all87AC": "HOLD",
+    "nativePass": false,
+    "istqbReview": false,
+    "blockedCodeGapClosed": false,
+    "mvpAccepted": false,
+    "publicationAuthorized": false
+  },
+  "currentPins": {
+    "capsule": ".runtime/ni3-native-execution-recovery-proposal/",
+    "client": {
+      "path": "proposed/client-entry.cjs",
+      "sha256": "436c5c6732bafe658cc851962dfcad2220d0cbf270908c2eaabd4efe128cdc98"
+    },
+    "fixture": {
+      "path": "test/native-runtime-execution-recovery-client.test.mjs",
+      "sha256": "613c509f461987d11db8a5a1fe42c217f6233d0e8516856c0adf774f132c5ad1"
+    },
+    "sourceClosure": {
+      "path": "source-closure.json",
+      "sha256": "7bf897c95f05d5c0237b803c3341aa3c53fdac94176b48924ebf5dadfed783ae"
+    },
+    "fixtureStatus": {
+      "path": "authored-fixture-status.json",
+      "sha256": "b501f4e651649fe56f116de523ec517596544d7ac5759915af24805bcbed5b25"
+    },
+    "originalPublicRuntimeStore": {
+      "path": ".runtime/ni3-native-runtime/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "scope": "public snapshot, beginAuditExecution, assertExecutionCurrent, capture/report, settleAction only"
+    },
+    "publicTaskModelClient": {
+      "path": ".runtime/ni3-native-runtime/src/client-entry.cjs",
+      "sha256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+      "scope": "public selected-detail snapshot and methods-only fixture contract"
+    }
+  },
+  "historicalBeforeTerminalCorrection": {
+    "directory": ".runtime/ni3-native-execution-recovery-proposal/history/NR-UI04-ordinary-terminal-before/",
+    "clientSha256": "b23be8f04f30dcb7436599531644cbfcd160f9ce21f32e039f82cdc227c5e332",
+    "fixtureSha256": "40befeac957af94f422854e0dee1c8e562370ead2f84116f7466d10a32b551dd",
+    "closureSha256": "eec5fe4d9e35658f79cb60eccb223f4305c16e8d68fba89ab9f128abcff0ba1d",
+    "finding": "prior allowlist accepted unsupported cancelled and omitted publicly reachable terminated; final pinned source corrects both"
+  },
+  "reviewedBehavior": {
+    "candidateRecovery": "synchronous read-only projection from current public task snapshot; no RPC, refresh, minted refs, execution replay, collection, or finish side effect",
+    "bindings": [
+      "unique current task and exact version/authEpoch",
+      "unique current worker and exact action, digest, claim, reservation, generation, and session",
+      "unique action row and actual action metadata executionRef",
+      "unique audit_input execution row for claim",
+      "exact task/action/digest/claim/generation/session/input/audit/binding/material/purpose/executionRef map"
+    ],
+    "closedSchema": {
+      "requiredFields": 19,
+      "optionalFields": ["admittedAt", "resultRef", "reportRef", "outcomeEvidenceRef", "terminalEvidenceRef"],
+      "historicalDataDigestAndSemanticRevision": "preserved literally, no guessed current-value comparisons"
+    },
+    "executionStates": ["intent_committed", "dispatch_intent", "unknown", "completed", "failed", "terminated"],
+    "stateRules": [
+      "dispatch_intent requires admittedAt",
+      "completed/failed/terminated require outcomeEvidenceRef and terminalEvidenceRef",
+      "unknown accommodates absent/nullable terminal evidence as public writer persists it",
+      "cancelled excluded because no public audit-execution writer emits it"
+    ],
+    "uncertainty": "stale and execute uncertainty remain unchanged through recovery; no replay path is introduced"
+  },
+  "fixtures": {
+    "groups": 12,
+    "status": "NOT_RUN",
+    "kind": "actual client factory/public methods with explicit finite React, RPC, and public task-model wire doubles",
+    "coverage": [
+      "lost execute response",
+      "disconnect during execute and ignored late reply",
+      "post-loss disconnect/status refresh and no retry",
+      "missing/duplicate/oversized arrays",
+      "foreign current and historical identity bindings",
+      "closed 19-field map and invalid domains",
+      "five optional fields and reachable terminal-state combinations",
+      "stale/task drift/busy/disposed refusal",
+      "task switching and late result fencing",
+      "Panel recovery versus collection/finish controls",
+      "no create/execute resend or second adoption",
+      "historical digest/semanticRevision/command preservation"
+    ],
+    "limits": [
+      "not native DSH observation",
+      "not database/service/browser/network execution",
+      "not independent ISTQB test-design review",
+      "fixture proves only authored wire behavior if later run"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UI04-ORD-01",
+      "severity": "interface gap",
+      "status": "open and reported to root/runtime author",
+      "location": "proposed/client-entry.cjs:600; Panel finish button at :611",
+      "observation": "Panel disables Finish while collection is absent, but public model finish() has no state.collection guard. Immediately after recovery, stale blocks run(); after the public read-only audit-status refresh clears stale, direct invocation while collection remains null can enter run('auditFinish') and send an RPC.",
+      "fixtureGap": "ER10 checks the disabled Panel button and that recovery itself emits no finish RPC, but does not directly call finish() after recovery plus audit-status refresh.",
+      "boundary": "Does not establish that host accepts the RPC or that recovery grants host authority; host remains authoritative. No source edit was made."
+    }
+  ],
+  "reviewMethod": {
+    "sourceOnly": true,
+    "executionPerformed": false,
+    "commands": ["source reads", "rg line searches", "SHA-256 pin checks"],
+    "prohibitedOperationsNotPerformed": ["Node/import/test/build", "DB/service/native model", "iterator execution", "browser/listener/network", "Git", "product source edit", "protected receipt/envelope or rev999 inspection"]
+  },
+  "scopeBounds": {
+    "protectedS3ReceiptEnvelopeInvestigation": "excluded; no reroute or private internals inspection",
+    "blockedFinalCodeReviewGap": "not closed",
+    "all87AC": "HOLD",
+    "mvpOrPublication": "not accepted/authorized"
+  }
+}

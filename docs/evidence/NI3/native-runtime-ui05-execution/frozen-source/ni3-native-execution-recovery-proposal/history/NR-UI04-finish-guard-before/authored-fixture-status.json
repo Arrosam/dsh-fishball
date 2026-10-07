@@ -1,0 +1,88 @@
+{
+  "status": "ROOT_APPROVED_SOURCE_AUTHORED_NOT_RUN",
+  "groups": [
+    {
+      "id": "ER01",
+      "name": "ER01 lost execute response recovers only the exact original public execution reference without sends or authority",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER02",
+      "name": "ER02 disconnect during execute keeps uncertainty and ignores late response before exact recovery",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER03",
+      "name": "ER03 post-loss disconnect and explicit status refresh preserve execute uncertainty and prohibit replay",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER04",
+      "name": "ER04 missing duplicate or oversized public candidate arrays refuse reference recovery",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER05",
+      "name": "ER05 every exact execution and current worker or action identity binding discriminates foreign records",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER06",
+      "name": "ER06 execution snapshots require all nineteen keys and reject extra return flags and invalid field domains",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER07",
+      "name": "ER07 the five actual optional fields admit documented forms and reject inconsistent or malformed forms",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER08",
+      "name": "ER08 stale selected task malformed retained wire inputs busy or disposed clients refuse recovery",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER09",
+      "name": "ER09 task switching drops retained bindings and old delayed execution cannot paint the new task",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER10",
+      "name": "ER10 actual Panel recovery control stays separate from stale mutation gates and original collection authority",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER11",
+      "name": "ER11 recovery does not retry create or execute and cannot replace a retained execution on later conflicting facts",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER12",
+      "name": "ER12 historical artifact digest semantic revision and stored command remain literal without guessed current comparisons",
+      "status": "NOT_RUN"
+    }
+  ],
+  "source": "test/native-runtime-execution-recovery-client.test.mjs",
+  "sha256": "613c509f461987d11db8a5a1fe42c217f6233d0e8516856c0adf774f132c5ad1",
+  "fixtures": "actual approved client factory and public client methods/Panel; explicit React/RPC/task snapshot doubles only; state created by public workflow; no private state injection",
+  "scopeLimits": [
+    "wire behavior only; no original native proof",
+    "no DB/profile/filesystem fixture/native manager/services/session/provider/network/listener",
+    "no fake collection or finish fact"
+  ],
+  "imports": [
+    "node:test",
+    "node:assert/strict",
+    "node:module",
+    "node:crypto",
+    "../proposed/client-entry.cjs"
+  ],
+  "effects": [
+    "future Node module reads of pinned test and CJS",
+    "in-memory finite wire model/RPC logs and hash labels",
+    "public factory listeners, AbortController and deferred promises",
+    "React wire element tree",
+    "Node test process and assertions only"
+  ],
+  "ordinaryReviewAmendment": "ER07 adds genuine terminated with original evidence refs; terminal missing/null evidence and unsupported cancelled refuse; all NOT_RUN"
+}

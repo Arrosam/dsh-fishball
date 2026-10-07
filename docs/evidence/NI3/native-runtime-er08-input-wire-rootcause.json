@@ -1,0 +1,285 @@
+{
+  "contractVersion": "df.ni3-er08-input-wire-source-review/v1",
+  "status": "UNAPPLIED_SOURCE_ONLY_NOT_RUN_ROOT_LITERAL_REVIEW_REQUIRED",
+  "owner": "/root/ni3_independent_istqb",
+  "rootExecutionOwner": "/root",
+  "sourceReviewScope": "ER08 explicit wire fixture and actual public client/HTTP serialization contract only; no native author first-pass fixtures/oracles/history chains opened.",
+  "applicationAuthorized": false,
+  "applicationPerformed": false,
+  "executionAuthorized": false,
+  "executionPerformed": false,
+  "actualSourcePins": {
+    ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs": {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs",
+      "sha256": "be73e92cf993f9bb2d0c99b77764d825aff5bc5dd908188b1e65e3293a75ad1a",
+      "bytes": 24247
+    },
+    ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs": {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+      "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+      "bytes": 121721
+    },
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js": {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d",
+      "bytes": 35140
+    }
+  },
+  "beforeFixture": {
+    "path": ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs",
+    "sha256": "be73e92cf993f9bb2d0c99b77764d825aff5bc5dd908188b1e65e3293a75ad1a",
+    "bytes": 24247
+  },
+  "projectedAfterFixture": {
+    "path": ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs",
+    "sha256": "c4ce6833edec141cec835884432e0ec505c32dc6d69fc0fd5723c427aa5ce9c6",
+    "bytes": 24668,
+    "projected": true,
+    "applicationPerformed": false
+  },
+  "literalPatch": {
+    "path": ".runtime/ni3-runtime-er08-input-wire-proposal/literal-er08-fixture.patch",
+    "sha256": "bd4ce2e7db0f88f499c773d0cc50f38046c5519947bf3a32c721ed7d5708e017",
+    "bytes": 4029
+  },
+  "effectImportInventory": {
+    "path": ".runtime/ni3-runtime-er08-input-wire-proposal/import-effects-inventory.json",
+    "sha256": "af163d9d4dc36a4ed3c0bd3eeadb7424483d59dcb450d0fd32653c67e723543c",
+    "bytes": 3271
+  },
+  "rootCauseMarkdown": {
+    "path": "docs/evidence/NI3/native-runtime-er08-input-wire-rootcause.md",
+    "sha256": "8be4ae44f994d23693fb54712d28a93e590f12590cc3553c08247c16ab1091b3",
+    "bytes": 3100
+  },
+  "projectionMethod": "Four exact source substitutions in memory + unified diff; actual fixture and client not edited; no Node parser/import/runtime used.",
+  "findings": [
+    {
+      "id": "ER08-S01",
+      "source": {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs",
+        "sha256": "be73e92cf993f9bb2d0c99b77764d825aff5bc5dd908188b1e65e3293a75ad1a",
+        "bytes": 24247
+      },
+      "lines": [
+        29,
+        30,
+        49,
+        79,
+        206,
+        207
+      ],
+      "finding": "The first malformed inputChange vector writes an own enumerable bindingDigest:undefined into the returned prepareAuditInput object. The fixture requires prepare()==true before reaching unchangedRecovery."
+    },
+    {
+      "id": "ER08-S02",
+      "source": {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "bytes": 121721
+      },
+      "lines": [
+        281,
+        297,
+        549,
+        550
+      ],
+      "finding": "plainRpcReply recursively inspects all own data-property values and rejects undefined as INVALID_RESPONSE before copy/project. Audit run then returns false and records stale/uncertain prepareAuditInput. This precise internal error/state is source-derived; the first raw TAP captures only false!==true at fixture79/207."
+    },
+    {
+      "id": "ER08-S03",
+      "source": {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "bytes": 121721
+      },
+      "lines": [
+        28,
+        29,
+        588
+      ],
+      "finding": "copy is freeze(structuredClone), not a JSON sanitizer and not the undefined rejection point. Prepare project checks recordRef, digest and purpose only; missing/invalid binding or material reference is not independently rejected there."
+    },
+    {
+      "id": "ER08-S04",
+      "source": {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d",
+        "bytes": 35140
+      },
+      "lines": [
+        694,
+        697,
+        723,
+        738
+      ],
+      "finding": "Original public HTTP host transport delegates actual handler result to fullResponse and uses Response.json for ordinary JSON replies. Own undefined object fields have no JSON representation and serialize as omitted; an explicit finite wire double should represent missing keys by actual omission."
+    },
+    {
+      "id": "ER08-S05",
+      "source": {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "bytes": 121721
+      },
+      "lines": [
+        564,
+        568,
+        595,
+        596
+      ],
+      "finding": "Recovery requires the already retained input to have valid recordRef/digest/auditRef/bindingDigest/materialDigest and returns false without RPC on missing or invalid fields. Successful omitted-key prepare remains a source-reachable public reply; the proposed fixture keeps the missing binding axis in the retained input rather than inventing private model state."
+    },
+    {
+      "id": "ER08-S06",
+      "source": {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs",
+        "sha256": "be73e92cf993f9bb2d0c99b77764d825aff5bc5dd908188b1e65e3293a75ad1a",
+        "bytes": 24247
+      },
+      "lines": [
+        54,
+        64,
+        96,
+        106,
+        206,
+        208
+      ],
+      "finding": "The stored execution is explicit synthetic public task-detail wire, not a native receipt. Its missing key must also be omitted to keep that malformed JSON vector finite. unchangedRecovery already asserts false, zero added calls/refreshes and byte-equivalent model state on refusal; these assertions remain exact."
+    }
+  ],
+  "firstActualUI05Run": {
+    "attribution": "Root-only command02 first run; exact stdout/stderr/freeze metadata only",
+    "ERLeafPass": 11,
+    "ERLeafFail": 1,
+    "ERLeafSkip": 0,
+    "failure": "ER08 fixture79 prepare returnedfalse, ER08 line207 first non-JSON undefined vector; exact internal error not in raw TAP",
+    "pins": {
+      "command-02.stdout.txt": {
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-02.stdout.txt",
+        "sha256": "2a3860f8f26971cc57d08a19a9a2950558b5a0084909b8644d6540d5e401ad1a",
+        "bytes": 4417
+      },
+      "command-02.stderr.txt": {
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command-results.json": {
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-results.json",
+        "sha256": "c8e867d73ff8b121d8672b37c63429d3f958f0af4709f5e4f6dfab9eb2196d99",
+        "bytes": 1946
+      },
+      "root-before-verification.json": {
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/root-before-verification.json",
+        "sha256": "498ee0dc360559c6c939a94bd9d6ca7a49868a1b61d7a56cb8db0cc1c9a303a3",
+        "bytes": 129
+      },
+      "root-after-verification.json": {
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/root-after-verification.json",
+        "sha256": "7f60f927fa34b789f07ed7d328262057b89630fde86e92685ae260379bb116c9",
+        "bytes": 202
+      },
+      "root-execution-freeze.json": {
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/root-execution-freeze.json",
+        "sha256": "7b0e1ade91967e3ed9c7daca023a13448b48af2bad9f3c7db8d1abfe2557f2df",
+        "bytes": 25755
+      }
+    }
+  },
+  "proposedOutcomes": {
+    "undefinedDirectObjectReply": "Earlier prepare refusal by plainRpcReply (source-derived, retained-state scenario unreachable)",
+    "bindingDigestOmitted": "prepare true; missing key retained via public client call; execute loss preserves uncertainty; recover false without sends/refreshes or model-state change",
+    "materialDigestInvalidFiniteString": "prepare true; malformed finite key retained; recover false without sends/refreshes or model-state change",
+    "actualClientPatchRequired": false
+  },
+  "assertionAndCountInventory": {
+    "domain": "Only explicit finite React/RPC/task-model wire doubles with actual client factory; no native classes/claim/provider/DB/profile/DOM/network/listener effects.",
+    "clientSourceChanged": false,
+    "validatorChanged": false,
+    "privateModelStateInjection": false,
+    "wireNegativeAxes": [
+      "bindingDigest genuinely omitted in prepare reply and synthetic public execution row",
+      "materialDigest finite invalid string retained"
+    ],
+    "originalUndefinedAxisDisposition": "Original raw failure retained as an unreachable retained-state setup assumption; actual earlier client refusal is source-derived INVALID_RESPONSE, not a recovery bypass. No assertion weakening to allow false setup in retained-state scenarios.",
+    "caseLeafCount": 12,
+    "caseLeafNamesUnchanged": true,
+    "ER08FiniteFixtureInstances": 11,
+    "ER08ExplicitExecuteCalls": 10,
+    "ER08SourceDerivedAuditRpcCalls": 87,
+    "ER08SourceDerivedTaskRefreshCalls": 65,
+    "ER08RecoveryExtraRpcOrRefreshCalls": 0,
+    "ER08CountDerivation": "11 fixtures each issue auditStatus/configure/prepare/plan/preview/grant/dispatch (77 RPC;55 task refreshes),9 executeInitially plus1explicitbusy execute (10 RPC+10refreshes);noLoss0execute. Counts describe complete projected ER08 source, not first failed observed run.",
+    "newFixtureInstances": 0,
+    "newNativeOrNetworkEffects": 0,
+    "newTimersOrTurns": 0,
+    "addedLocalWireOperations": "Conditional delete of bindingDigest from the local explicit input wire and local explicit stored execution wire, plus two Object.hasOwn assertions for actual absence.",
+    "assertionsPreserved": [
+      "normal prepare returns true",
+      "execute loss remains false/uncertain executeAudit",
+      "unchangedRecovery expects false on these two axes",
+      "zero added RPC/task refreshes",
+      "full state remains unchanged on refusal",
+      "all existing12leaf names and other source scenarios"
+    ],
+    "originalIndependent17NativeSourceChanges": false,
+    "originalIndependent17OracleAdoption": false,
+    "importsUnchanged": [
+      "import test from 'node:test';",
+      "import assert from 'node:assert/strict';",
+      "import { createRequire } from 'node:module';",
+      "import { createHash } from 'node:crypto';"
+    ],
+    "literalNodeBuiltins": [
+      "node:test",
+      "node:assert/strict",
+      "node:module",
+      "node:crypto"
+    ],
+    "actualRuntimeImportIfFutureRootGO": {
+      "method": "createRequire(import.meta.url), actual require ../proposed/client-entry.cjs then explicit React require wire",
+      "target": {
+        "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+        "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+        "bytes": 121721
+      }
+    },
+    "applicationPerformed": false,
+    "executionPerformed": false,
+    "proposedCommandOnly": {
+      "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs"
+      ],
+      "authorization": "NONE; root literal review/disposition, actual source application/fresh freeze and separate bounded root GO required."
+    }
+  },
+  "testLeafNames": [
+    "ER01 lost execute response recovers only the exact original public execution reference without sends or authority",
+    "ER02 disconnect during execute keeps uncertainty and ignores late response before exact recovery",
+    "ER03 post-loss disconnect and explicit status refresh preserve execute uncertainty and prohibit replay",
+    "ER04 missing duplicate or oversized public candidate arrays refuse reference recovery",
+    "ER05 every exact execution and current worker or action identity binding discriminates foreign records",
+    "ER06 execution snapshots require all nineteen keys and reject extra return flags and invalid field domains",
+    "ER07 the five actual optional fields admit documented forms and reject inconsistent or malformed forms",
+    "ER08 stale selected task malformed retained wire inputs busy or disposed clients refuse recovery",
+    "ER09 task switching drops retained bindings and old delayed execution cannot paint the new task",
+    "ER10 actual Panel recovery control stays separate from stale mutation gates and original collection authority",
+    "ER11 recovery does not retry create or execute and cannot replace a retained execution on later conflicting facts",
+    "ER12 historical artifact digest semantic revision and stored command remain literal without guessed current comparisons"
+  ],
+  "originalImportsByteIdentical": true,
+  "originalNativeIndependentFrozenSource": "Unchanged; no author native fixture/oracle used for this separate wire-cause review.",
+  "acceptance": {
+    "all87": "HOLD",
+    "CODE": "HOLD",
+    "nativeInstalled": "HOLD",
+    "realBrowser": "HOLD"
+  },
+  "rootNextStep": "Review exact literal and source-derived outcomes. Do not apply or execute without root disposition; preserve original be73/a281 and raw first run first."
+}

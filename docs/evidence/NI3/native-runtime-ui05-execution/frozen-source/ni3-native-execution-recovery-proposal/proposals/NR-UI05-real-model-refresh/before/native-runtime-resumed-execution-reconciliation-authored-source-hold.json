@@ -1,0 +1,111 @@
+{
+  "status": "ROOT_APPROVED_SOURCE_FROZEN_PENDING_REVIEW_AND_SEPARATE_GO_NOT_RUN",
+  "capsule": ".runtime/ni3-native-execution-recovery-proposal",
+  "sourceClosureSHA256": "2f0776d20db26a4fecb2e1d37816c110b5e94a7284db7d09c32b8bc275496f4b",
+  "clientPatchSHA256": "815cdec544f0ee229a65e2b6f4158bad8ba82471f2715d068fccafcd16b33113",
+  "combinedPatchSHA256": "e75f98d2afbf1c2b65ff0f7d3c0fc24034e9772ff641466f2b18db6efa94ae74",
+  "beforeClientSHA256": "cd703f820c1d2a02d5d4586922d39c25291843ec9f025c13b526c6acd87f14c0",
+  "approvedTargetSHA256": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+  "testSHA256": "be73e92cf993f9bb2d0c99b77764d825aff5bc5dd908188b1e65e3293a75ad1a",
+  "fixtureGroupCount": 12,
+  "groups": [
+    {
+      "id": "ER01",
+      "name": "ER01 lost execute response recovers only the exact original public execution reference without sends or authority",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER02",
+      "name": "ER02 disconnect during execute keeps uncertainty and ignores late response before exact recovery",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER03",
+      "name": "ER03 post-loss disconnect and explicit status refresh preserve execute uncertainty and prohibit replay",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER04",
+      "name": "ER04 missing duplicate or oversized public candidate arrays refuse reference recovery",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER05",
+      "name": "ER05 every exact execution and current worker or action identity binding discriminates foreign records",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER06",
+      "name": "ER06 execution snapshots require all nineteen keys and reject extra return flags and invalid field domains",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER07",
+      "name": "ER07 the five actual optional fields admit documented forms and reject inconsistent or malformed forms",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER08",
+      "name": "ER08 stale selected task malformed retained wire inputs busy or disposed clients refuse recovery",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER09",
+      "name": "ER09 task switching drops retained bindings and old delayed execution cannot paint the new task",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER10",
+      "name": "ER10 actual Panel recovery control stays separate from stale mutation gates and original collection authority",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER11",
+      "name": "ER11 recovery does not retry create or execute and cannot replace a retained execution on later conflicting facts",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ER12",
+      "name": "ER12 historical artifact digest semantic revision and stored command remain literal without guessed current comparisons",
+      "status": "NOT_RUN"
+    }
+  ],
+  "node": {
+    "binary": "/opt/homebrew/opt/node@22/bin/node",
+    "resolvedBinary": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "expectedVersion": "v22.22.2",
+    "versionProvenance": "prior root/runtime pinned binary evidence; no new version invocation"
+  },
+  "futureCommandNotAuthorized": "/opt/homebrew/opt/node@22/bin/node --test --test-concurrency=1 .runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs",
+  "addedProductImports": [],
+  "addedRecoveryRpcCalls": [],
+  "protectedInternalsInspected": false,
+  "executionPerformed": false,
+  "remainingBlockers": [
+    "Luna affected final source re-review",
+    "independent ISTQB affected design review",
+    "root exact command GO"
+  ],
+  "effects": [
+    "future Node module reads of pinned test and CJS",
+    "in-memory finite wire model/RPC logs and hash labels",
+    "public factory listeners, AbortController and deferred promises",
+    "React wire element tree",
+    "Node test process and assertions only"
+  ],
+  "history": "Original proposal/report/contract/plan/closure preserved in history/NR-UI04-approved-proposal; rejected first draft preserved separately; frozen runtime never written",
+  "ordinaryTerminalAmendmentSHA256": "1e4bb3334166703572164bba7f153a78898ee74bb03f7342ff38dfd57246eda9",
+  "ordinaryTerminalBeforeClosureSHA256": "eec5fe4d9e35658f79cb60eccb223f4305c16e8d68fba89ab9f128abcff0ba1d",
+  "publicWriterInvariant": "completed/failed/terminated require non-null actual stored terminalEvidenceRef and outcomeEvidenceRef; unknown allows absent or nullable terminalEvidenceRef as source stores it. Cancelled is not a public audit execution transition.",
+  "originalNativeObservation": "No original audit execution records observed; root reported separate original bootstrap failure before any model stream. This fixture is wire-only and supplies no native PASS.",
+  "finishAdmissionAmendmentSHA256": "361cb85cad8abf35cf8f37be0b89c9eb3aa858882e36097c53882d09a27a5696",
+  "finishAdmissionBeforeClosureSHA256": "7bf897c95f05d5c0237b803c3341aa3c53fdac94176b48924ebf5dadfed783ae",
+  "publicFinishAdmission": {
+    "sourceApproval": "Root approved literal88e6 exactly one guard before original run",
+    "guard": "!state.execution || !state.collection => Promise.resolve(false)",
+    "meaning": "Recovered reference alone never sends public model auditFinish. Only separately received collection reply permits existing original request. Host authority remains original; unknown reply/error does not supply finish/release facts.",
+    "changesToHostOrUncertainty": false,
+    "sourceBeforeClosure": "7bf897c95f05d5c0237b803c3341aa3c53fdac94176b48924ebf5dadfed783ae"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "all87": "HOLD",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-real-model-refresh.test.mjs"
+      ],
+      "durationSeconds": 0.267375,
+      "exitCode": 0,
+      "finishedAt": "2026-10-07T05:24:48.597326+00:00",
+      "index": 1,
+      "startedAt": "2026-10-07T05:24:48.329955+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-01.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 4970,
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-01.stdout.txt",
+        "sha256": "8fc6d0e802619c44d2766159a38d895d0092ce892bd8877b8be1d4a76317ec3f"
+      },
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        ".runtime/ni3-native-execution-recovery-proposal/test/native-runtime-execution-recovery-client.test.mjs"
+      ],
+      "durationSeconds": 0.283099,
+      "exitCode": 1,
+      "finishedAt": "2026-10-07T05:24:48.880782+00:00",
+      "index": 2,
+      "startedAt": "2026-10-07T05:24:48.597686+00:00",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-02.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 4417,
+        "path": "docs/evidence/NI3/native-runtime-ui05-execution/command-02.stdout.txt",
+        "sha256": "2a3860f8f26971cc57d08a19a9a2950558b5a0084909b8644d6540d5e401ad1a"
+      },
+      "timedOut": false
+    }
+  ],
+  "executionEvidenceOnly": true,
+  "remainingCommandsNotRun": [],
+  "stoppedAfterFirstNonzeroCommand": true
+}

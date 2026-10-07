@@ -1,0 +1,55 @@
+--- a/proposed/client-entry.cjs
++++ b/proposed/client-entry.cjs
+@@ -597,7 +597,7 @@
+       canQuery(){try{return Boolean(active&&!state.busy&&queryWorker(task()));}catch{return false;}},
+       query(){let requested;return run('auditQuery',t=>{requested=queryWorker(t);return{taskRef:t.taskRef,...Object.fromEntries(['actionRef','claimRef','generationRef'].map(k=>[k,requested[k]]))};},(value,t)=>{const worker=checkedWorker(value,t);if(['taskRef','actionRef','actionDigest','claimRef','reservationRef','generationRef','sessionRef'].some(k=>worker[k]!==requested[k]))throw Error('INVALID_RESPONSE');return{worker};},false);},
+       collect(){return run('collectAuditResult',(t,c)=>{const{actionDigest,...m}=execution(t);return{...cas(t,c),...m};},value=>({collection:value,uncertain:value.state==='unknown'?'collectAuditResult':null}));},
+-      finish(){return run('auditFinish',(t,c)=>{const{actionDigest,...m}=execution(t);return{...cas(t,c),...m};},value=>{if(value.claimRef!==state.worker.claimRef||typeof value.reservationHeld!=='boolean'||value.outcome!=='completed')throw Error('INVALID_RESPONSE');return{worker:{...state.worker,phase:value.reservationHeld?'unknown':'stopped'},uncertain:null};});},
++      finish(){if(!state.execution||!state.collection)return Promise.resolve(false);return run('auditFinish',(t,c)=>{const{actionDigest,...m}=execution(t);return{...cas(t,c),...m};},value=>{if(value.claimRef!==state.worker.claimRef||typeof value.reservationHeld!=='boolean'||value.outcome!=='completed')throw Error('INVALID_RESPONSE');return{worker:{...state.worker,phase:value.reservationHeld?'unknown':'stopped'},uncertain:null};});},
+       disconnected(){const uncertain=['dispatchAudit','executeAudit'].includes(state.busy)?state.busy:state.uncertain;epoch++;clear();for(const c of controllers)c.abort();publish({busy:null,status:null,uncertain});},dispose(){active=false;unsubscribe();for(const c of controllers)c.abort();listeners.clear();},
+     });
+   }
+--- a/test/native-runtime-execution-recovery-client.test.mjs
++++ b/test/native-runtime-execution-recovery-client.test.mjs
+@@ -64,6 +64,7 @@
+     }
+     if (name === 'v1/auditQuery') return ok(worker);
+     if (name === 'v1/collectAuditResult') return ok({ state: 'unknown', executionRef: payload.executionRef, reason: 'wire result still unconfirmed' });
++    if (name === 'v1/auditFinish') return { ok: false, error: { code: 'AUDIT_UNKNOWN' } };
+     throw Error('unexpected wire endpoint: ' + name);
+   } };
+   const options = { clock: () => 1000, uuid: () => 'command-' + (++serial), digest: async value => R(value) };
+@@ -240,9 +241,17 @@
+   const before = f.calls.length; assert.equal(button(f, 'Recover execution reference').props.onClick(), true); assert.equal(f.calls.length, before);
+   assert.equal(f.audit.getSnapshot().collection, null); assert.equal(button(f, 'Collect original result').props.disabled, true);
+   assert.equal(button(f, 'Finish owned role session').props.disabled, true);
++  assert.equal(await f.audit.finish(), false, 'direct finish refuses immediately after read-only recovery');
++  assert.equal(sent(f, 'v1/auditFinish').length, 0);
++  assert.equal(f.calls.length, before, 'refusal preserves stale/unknown without RPC or task refresh');
++  assert.equal(f.audit.getSnapshot().stale, true); assert.equal(f.audit.getSnapshot().uncertain, 'executeAudit');
+   assert.equal(await f.audit.refresh(), true); assert.equal(f.audit.getSnapshot().uncertain, 'executeAudit');
+   assert.equal(button(f, 'Collect original result').props.disabled, false);
+   assert.equal(button(f, 'Finish owned role session').props.disabled, true);
++  const refreshedCalls = f.calls.length;
++  assert.equal(await f.audit.finish(), false, 'direct finish refuses after status refresh while collection is null');
++  assert.equal(f.calls.length, refreshedCalls); assert.equal(sent(f, 'v1/auditFinish').length, 0);
++  assert.equal(f.audit.getSnapshot().collection, null); assert.equal(f.audit.getSnapshot().uncertain, 'executeAudit');
+   assert.equal(await button(f, 'Collect original result').props.onClick(), true);
+   const request = sent(f, 'v1/collectAuditResult')[0], task = f.taskModel.getSnapshot().detail.task;
+   assert.equal(request.payload.executionRef, row.executionRef); assert.equal(request.payload.claimRef, row.claimRef);
+@@ -250,6 +259,15 @@
+   assert.equal(request.payload.expectedTaskVersion, task.version); assert.equal(request.payload.expectedAuthEpoch, task.authEpoch);
+   assert.equal(f.audit.getSnapshot().collection.state, 'unknown'); assert.equal(f.audit.getSnapshot().uncertain, 'collectAuditResult');
+   assert.equal(sent(f, 'v1/auditFinish').length, 0, 'wire observation is never an original finish fact');
++  // A separately received collection reply permits only the original request.
++  // The explicit host wire error supplies no successful finish/release fact.
++  assert.equal(await f.audit.finish(), false);
++  assert.equal(sent(f, 'v1/auditFinish').length, 1);
++  const finish = sent(f, 'v1/auditFinish')[0];
++  assert.equal(finish.payload.executionRef, row.executionRef); assert.equal(finish.payload.claimRef, row.claimRef);
++  assert.equal(finish.payload.generationRef, row.generationRef); assert.equal(finish.payload.taskRef, task.taskRef);
++  assert.equal(f.audit.getSnapshot().worker.phase, 'ready');
++  assert.equal(f.audit.getSnapshot().error, 'AUDIT_UNKNOWN'); assert.equal(f.audit.getSnapshot().stale, true);
+ });
+ 
+ test('ER11 recovery does not retry create or execute and cannot replace a retained execution on later conflicting facts', async t => {
