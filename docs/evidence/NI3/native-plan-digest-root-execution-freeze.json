@@ -1,0 +1,142 @@
+{
+  "formatVersion": "df.ni3.plan-digest-root-execution-freeze/v1",
+  "sourceHold": {
+    "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.json",
+    "sha256": "160a52efb95a6b67950b5e1a39b8a78eef9de8fa85f4ae968ffa5628684464d2"
+  },
+  "checkedRows": [
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.md",
+      "sha256": "023b61c925ac0c02772ee16c8e9291e321af49c8fde32d4e972931118eb3a987",
+      "bytes": 6277
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "bytes": 52497
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest.test.mjs",
+      "sha256": "4121d3eac932b3dc42d33735cf7189cd9ec4a593f67260d81093c28290a731e6",
+      "bytes": 13618
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    }
+  ],
+  "runtime": {
+    "path": "/opt/homebrew/bin/node",
+    "resolvedPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "versionAttribution": "existing verified Node22.22.2; no new version invocation"
+  },
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "approvedCommandOnce": "/opt/homebrew/bin/node --test --test-name-pattern='^PD01 actual core scoped plan digest reaches normal audit plan$' .runtime/ni3-native-plan-digest-amendment/test/native-plan-digest.test.mjs",
+  "allowedEffects": [
+    "One synthetic temporary core6 SQLite store",
+    "Public policy/intake/advanced producer plan/grant/claim/artifact/context/audit configure/input prepare",
+    "One original public audit plan and scoped public snapshot reads",
+    "Owned synthetic directory validation; close/dispose/cleanup while leaving setup hold unreleased"
+  ],
+  "scope": {
+    "status": "Root explicitly approved SOURCE-ONLY genuine advanced producer setup before measured audit plan",
+    "reason": "Original public artifact association requires a real existing claim; zero-total-claim fixture cannot match the actual unchanged snapshot/module producer gate",
+    "priorZeroTotalClaimProposalPreserved": true,
+    "setup": {
+      "producerPlans": 1,
+      "producerGrants": 1,
+      "producerClaims": 1,
+      "associatedArtifacts": 1,
+      "configureAudit": 1,
+      "prepareAuditInput": 1,
+      "permission": "explicit mock restricted to exact synthetic owner/workspace/task/producer action/generation/worker role/executor none",
+      "reservation": "held; no settlement or release"
+    },
+    "measuredAudit": {
+      "plans": 1,
+      "grants": 0,
+      "claims": 0,
+      "preview": 0,
+      "compose": 0,
+      "nativeRequest": 0,
+      "provider": 0,
+      "tool": 0
+    },
+    "totalProposed": {
+      "plans": 2,
+      "advancedSyntheticGrants": 1,
+      "advancedSyntheticClaims": 1,
+      "settlements": 0,
+      "releases": 0,
+      "nativeSessionsOrModelStreams": 0,
+      "children": 0
+    }
+  },
+  "stopRule": "first failure or denial: retain full output, no correction/rerun/alternate command",
+  "ordinaryReview": "parallel Luna scope review pending; not final CODE replacement",
+  "independentISTQB": "separate source-only design pending; T author execution not acceptance",
+  "nativeModelToolNetworkBrowserCODEGit": false,
+  "acceptedCount": 0
+}

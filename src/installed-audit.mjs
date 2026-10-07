@@ -75,8 +75,10 @@ export function createInstalledAudit(value) {
     for (const selected of [choice.review, choice.repair].filter(Boolean)) if (selected.charges.runtimeMs > worker.policy.maxRuntimeMs || selected.charges.usageUnits > worker.policy.maxUsageUnits || selected.charges.usageUnits < worker.bounds.requestBytes + selected.selection.maxOutputTokens) fail('CONFIG_INVALID');
   }
   function installedAuditInstaller(api) {
-    exact(api, API);
+    exact(api, [...API, 'nativeToolGuard'], API);
     for (const key of API.filter(k => k !== 'ctx')) if (typeof api[key] !== 'function') fail('AUDIT_UNAVAILABLE');
+    const nativeToolGuard = Object.getOwnPropertyDescriptor(api, 'nativeToolGuard')?.value;
+    if (Object.hasOwn(api, 'nativeToolGuard') && (typeof nativeToolGuard !== 'function' || types.isProxy(nativeToolGuard) || types.isAsyncFunction(nativeToolGuard) || types.isGeneratorFunction(nativeToolGuard))) fail('AUDIT_UNAVAILABLE');
     if (!api.ctx || typeof api.ctx !== 'object' || types.isProxy(api.ctx)) fail('AUDIT_UNAVAILABLE');
     const ctx = api.ctx;
     let active = true, disposed = false, native, composing = false, lastNow = null;
@@ -285,10 +287,38 @@ export function createInstalledAudit(value) {
         validateResult(agent, result) { const a = agents.get(agent); if (!a?.execution || !a.guard) fail('AUDIT_COLLECTION_UNAVAILABLE'); return withInstalledWorkerInvocation(ctx, a.guard, () => { check(); if (result.executionRef !== a.execution.executionRef || result.claimRef !== a.binding.claimRef || result.generationRef !== a.binding.generationRef || typeof result.content !== 'string' || hash(result.content) !== result.digest || Buffer.byteLength(result.content) > choice.resultByteLimit) fail('AUDIT_RECEIPT_INVALID'); api.assertNativeRequestCurrent({ taskRef: a.execution.taskRef, claimRef: a.execution.claimRef, generationRef: a.execution.generationRef, actionDigest: a.execution.actionDigest, executionRef: a.execution.executionRef }); return true; }); },
       };
       try {
-        native = api.composeNativeAudit({ worker: Object.freeze({ environments, permission: record => hostPermission(record), toolGuard: () => false, resolveSession: undefined }), nativeHooks: Object.freeze(nativeHooks) });
+        native = api.composeNativeAudit({ worker: Object.freeze({ environments, permission: record => hostPermission(record), toolGuard: hostToolGuard, resolveSession: undefined }), nativeHooks: Object.freeze(nativeHooks) });
         exact(native, ['dispatch', 'executeApprovedInput', 'query', 'sessionLink', 'collectAuditResult', 'finishExecution', 'dispose']); for (const v of Object.values(native)) if (typeof v !== 'function') fail('AUDIT_UNAVAILABLE');
         cached = statusValue(null); return native;
       } catch (error) { composing = false; cached = statusValue('worker_unavailable'); throw error; }
+    }
+    let toolGuardRunning = false, toolGuardReentered = false;
+    function toolCurrent(record) {
+      enabled();
+      exact(record, ['agent', 'taskRef', 'generationRef', 'claimRef', 'toolsDigest', 'permissionPolicyDigest', 'schemas'], ['agent', 'taskRef', 'generationRef', 'toolsDigest', 'permissionPolicyDigest', 'schemas']);
+      for (const key of ['taskRef', 'generationRef', 'claimRef', 'toolsDigest', 'permissionPolicyDigest']) ref(record[key]);
+      if (!Object.isFrozen(record) || !record.agent || typeof record.agent !== 'object' || types.isProxy(record.agent)) fail('AUDIT_BINDING_MISMATCH');
+      canonical(record.schemas);
+      if (!Array.isArray(record.schemas) || record.schemas.length !== 0 || !Object.isFrozen(record.schemas)) fail('AUDIT_BINDING_MISMATCH');
+      const agent = agents.get(record.agent), row = agent?.row, slot = row?.slot, binding = agent?.binding;
+      if (!row || !slot || slot.ended || slot.finishInput || slots.get(`${row.taskRef}:${row.spec.actionRef}`) !== slot || slot.row !== row || plans.get(`${row.taskRef}:${row.spec.actionRef}`) !== row) fail('AUDIT_BINDING_MISMATCH');
+      if (!['review', 'repair'].includes(row.spec.role) || row.spec.kind !== row.spec.role || row.spec.executor.mode !== 'create' || row.spec.executionInput.purpose !== `audit_${row.spec.role}`) fail('AUDIT_BINDING_MISMATCH');
+      if (record.taskRef !== row.taskRef || record.generationRef !== row.spec.executor.generationRef || slot.generationRef !== record.generationRef || record.toolsDigest !== row.spec.executor.toolsDigest || record.permissionPolicyDigest !== row.spec.executor.permissionPolicyDigest) fail('AUDIT_BINDING_MISMATCH');
+      if (binding.taskRef !== row.taskRef || binding.actionRef !== row.spec.actionRef || binding.actionDigest !== row.actionDigest || binding.generationRef !== record.generationRef || binding.sessionRef !== row.spec.executor.sessionRef || !SAME(binding.spec, row.spec) || binding.claimRef !== record.claimRef || slot.claimRef !== null && slot.claimRef !== record.claimRef) fail('AUDIT_BINDING_MISMATCH');
+      const current = planCurrent(row.taskRef, row.spec.actionRef, row.actionDigest);
+      if (current.row !== row || !row.grant || row.grant.authEpoch !== current.snap.task.authEpoch || row.grant.expiresAt <= now()) fail('AUDIT_BINDING_MISMATCH');
+      check(); return row;
+    }
+    function hostToolGuard(record) {
+      if (toolGuardRunning) { toolGuardReentered = true; return false; }
+      if (!nativeToolGuard) return false;
+      toolGuardRunning = true; toolGuardReentered = false;
+      try {
+        const row = toolCurrent(record);
+        if (nativeToolGuard(record) !== true || toolGuardReentered) return false;
+        return toolCurrent(record) === row && !toolGuardReentered;
+      } catch { return false; }
+      finally { toolGuardRunning = false; }
     }
     function hostPermission(record) {
       try {
@@ -320,7 +350,9 @@ export function createInstalledAudit(value) {
         if (!existing && plans.size >= choice.maxTotalAttempts) fail('AUDIT_COLLECT_CAPACITY');
         const { auditRef, inputRecordRef, purpose, ...core } = v;
         check(); const receipt = immutable(api.planOwnerAction({ ...core, spec }));
-        if (receipt.actionDigest !== canonicalDigest(spec)) fail('AUDIT_RECEIPT_INVALID');
+        ref(receipt.actionDigest);
+        const planned = snapshot(v.taskRef).actions.find(item => item.actionRef === actionRef);
+        if (receipt.actionRef !== actionRef || !planned || planned.actionDigest !== receipt.actionDigest || !SAME(planned.spec, spec)) fail('AUDIT_RECEIPT_INVALID');
         if (existing) { if (!SAME(existing.spec, spec) || !SAME(existing.input, p)) fail('IDEMPOTENCY_CONFLICT'); }
         else plans.set(`${v.taskRef}:${actionRef}`, { taskRef: v.taskRef, spec: immutable(spec), actionDigest: receipt.actionDigest, input: p, facts: f.value, policy: f.policy, grant: null, slot: null }); return receipt;
       },

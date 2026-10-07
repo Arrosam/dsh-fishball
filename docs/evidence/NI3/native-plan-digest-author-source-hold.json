@@ -1,0 +1,702 @@
+{
+  "formatVersion": "df.ni3.native-plan-digest-author-source-hold/v1",
+  "status": "AUTHOR_SOURCE_COMPLETE_PD01_NOT_RUN_AWAIT_SEPARATE_EXECUTABLE_GO",
+  "document": {
+    "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.md",
+    "sha256": "023b61c925ac0c02772ee16c8e9291e321af49c8fde32d4e972931118eb3a987",
+    "bytes": 6277
+  },
+  "original": {
+    "path": ".runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs",
+    "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+    "bytes": 52497
+  },
+  "candidate": {
+    "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+    "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+    "bytes": 52703
+  },
+  "test": {
+    "path": ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest.test.mjs",
+    "sha256": "4121d3eac932b3dc42d33735cf7189cd9ec4a593f67260d81093c28290a731e6",
+    "bytes": 13618
+  },
+  "literalApprovedSourceDiff": "--- .runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs\n+++ .runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs\n@@ -350,7 +350,9 @@\n         if (!existing && plans.size >= choice.maxTotalAttempts) fail('AUDIT_COLLECT_CAPACITY');\n         const { auditRef, inputRecordRef, purpose, ...core } = v;\n         check(); const receipt = immutable(api.planOwnerAction({ ...core, spec }));\n-        if (receipt.actionDigest !== canonicalDigest(spec)) fail('AUDIT_RECEIPT_INVALID');\n+        ref(receipt.actionDigest);\n+        const planned = snapshot(v.taskRef).actions.find(item => item.actionRef === actionRef);\n+        if (receipt.actionRef !== actionRef || !planned || planned.actionDigest !== receipt.actionDigest || !SAME(planned.spec, spec)) fail('AUDIT_RECEIPT_INVALID');\n         if (existing) { if (!SAME(existing.spec, spec) || !SAME(existing.input, p)) fail('IDEMPOTENCY_CONFLICT'); }\n         else plans.set(`${v.taskRef}:${actionRef}`, { taskRef: v.taskRef, spec: immutable(spec), actionDigest: receipt.actionDigest, input: p, facts: f.value, policy: f.policy, grant: null, slot: null }); return receipt;\n       },\n",
+  "literalSourceApproval": "Root approved proposalMD1cc96de8/JSON24471a4d; source bytes match the exact proposed066f55 hash",
+  "fixtureScopeRefinement": {
+    "status": "Root explicitly approved SOURCE-ONLY genuine advanced producer setup before measured audit plan",
+    "reason": "Original public artifact association requires a real existing claim; zero-total-claim fixture cannot match the actual unchanged snapshot/module producer gate",
+    "priorZeroTotalClaimProposalPreserved": true,
+    "setup": {
+      "producerPlans": 1,
+      "producerGrants": 1,
+      "producerClaims": 1,
+      "associatedArtifacts": 1,
+      "configureAudit": 1,
+      "prepareAuditInput": 1,
+      "permission": "explicit mock restricted to exact synthetic owner/workspace/task/producer action/generation/worker role/executor none",
+      "reservation": "held; no settlement or release"
+    },
+    "measuredAudit": {
+      "plans": 1,
+      "grants": 0,
+      "claims": 0,
+      "preview": 0,
+      "compose": 0,
+      "nativeRequest": 0,
+      "provider": 0,
+      "tool": 0
+    },
+    "totalProposed": {
+      "plans": 2,
+      "advancedSyntheticGrants": 1,
+      "advancedSyntheticClaims": 1,
+      "settlements": 0,
+      "releases": 0,
+      "nativeSessionsOrModelStreams": 0,
+      "children": 0
+    }
+  },
+  "fullCopiedSourceClosure": [
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/config.mjs",
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "bytes": 2918
+      },
+      "imports": [
+        {
+          "specifier": "node:path",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/installed-audit.mjs",
+        "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+        "bytes": 52497
+      },
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./config.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+            "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+            "bytes": 2918
+          }
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+            "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+            "bytes": 5323
+          }
+        },
+        {
+          "specifier": "./installed-worker-config.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+            "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+            "bytes": 5018
+          }
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+            "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+            "bytes": 24196
+          }
+        },
+        {
+          "specifier": "./installed-invocation.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+            "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+            "bytes": 2341
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": false
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/installed-invocation.mjs",
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "bytes": 2341
+      },
+      "imports": [
+        {
+          "specifier": "node:async_hooks",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./config.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+            "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+            "bytes": 2918
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/installed-worker-config.mjs",
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "bytes": 5018
+      },
+      "imports": [
+        {
+          "specifier": "node:path",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./config.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+            "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+            "bytes": 2918
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+        "bytes": 21450
+      },
+      "imports": [
+        {
+          "specifier": "node:sqlite",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin"
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "origin": {
+        "path": ".runtime/ni3-native-tools-amendment/src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+            "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+            "bytes": 21450
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "origin": {
+        "path": "docs/evidence/NI4/core6-author-execution/final/src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196
+      },
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111,
+      "origin": {
+        "path": "docs/evidence/NI4/core6-author-execution/final/src/foundation.mjs",
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+        "bytes": 22111
+      },
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+            "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+            "bytes": 21567
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567,
+      "origin": {
+        "path": "docs/evidence/NI4/core6-author-execution/final/src/ledger.mjs",
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "bytes": 21567
+      },
+      "imports": [
+        {
+          "specifier": "node:sqlite",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin"
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "origin": {
+        "path": "docs/evidence/NI4/core6-author-execution/final/src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323
+      },
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+            "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+            "bytes": 21567
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "origin": {
+        "path": "docs/evidence/NI4/core6-author-execution/final/src/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793
+      },
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin"
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+            "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+            "bytes": 21567
+          }
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+            "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+            "bytes": 5323
+          }
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "local",
+          "resolvedPin": {
+            "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+            "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+            "bytes": 24196
+          }
+        }
+      ],
+      "byteIdenticalToOrigin": true
+    }
+  ],
+  "testDirectImports": [
+    "node:test",
+    "node:assert/strict",
+    "node:crypto",
+    "node:fs",
+    "node:os",
+    "node:path",
+    "../src/installed-audit.mjs",
+    "../core6/runtime-store.mjs"
+  ],
+  "nodeBuiltins": [
+    "node:assert/strict",
+    "node:async_hooks",
+    "node:crypto",
+    "node:fs",
+    "node:os",
+    "node:path",
+    "node:sqlite",
+    "node:test",
+    "node:util"
+  ],
+  "baselineRawCopyNotImported": true,
+  "command": "/opt/homebrew/bin/node --test --test-name-pattern='^PD01 actual core scoped plan digest reaches normal audit plan$' .runtime/ni3-native-plan-digest-amendment/test/native-plan-digest.test.mjs",
+  "proposedRuntime": "Existing Node22.22.2, not invoked by this authoring unit",
+  "newSingleGroup": "PD01 actual core scoped plan digest reaches normal audit plan",
+  "oracle": "Independent sorted-key node:crypto SHA256 scoped planning digest over actual public snapshot planning metadata and full actualspec; no product canonical/digest helper import",
+  "actualPublicSourceCallbacks": [
+    "snapshotOwner -> original RuntimeStore6.snapshot(owner,input) literal returned shape",
+    "planOwnerAction -> original RuntimeStore6.planAction(owner,input) literal returned shape/digest",
+    "currentPolicy/readOwnerData/readAuditInput -> original scoped public APIs"
+  ],
+  "typedDoubles": [
+    "role/config/native source and source-zero model accounting facts",
+    "protected-context current-lifetime source labels",
+    "producer session/execution/cursor/capture labels over actual core artifact/claim data"
+  ],
+  "effectsProposed": [
+    "One synthetic temporary core6 SQLite store",
+    "Public policy/intake/advanced producer plan/grant/claim/artifact/context/audit configure/input prepare",
+    "One original public audit plan and scoped public snapshot reads",
+    "Owned synthetic directory validation; close/dispose/cleanup while leaving setup hold unreleased"
+  ],
+  "executionCounters": {
+    "productImports": 0,
+    "nodeVersionSyntaxTestCommands": 0,
+    "databaseInstances": 0,
+    "childProcesses": 0,
+    "nativeNetworkProviderModelToolAccountBrowserGitActions": 0,
+    "runtimePolicyDenials": 0
+  },
+  "unchangedHistoricalProposal": [
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-amendment-proposal.md",
+      "sha256": "1cc96de8a786a553f20d006fe8f36c87c80ba6bf0d70d7880a2300793e7eddb1",
+      "bytes": 7817
+    },
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-amendment-proposal.json",
+      "sha256": "24471a4da5d7f8e8312b8a66f0e5dada49a99f8a3bcce15135fd65266b8b3cfa",
+      "bytes": 25363
+    }
+  ],
+  "unchangedPriorAuthorProductHistory": [
+    {
+      "path": ".runtime/ni3-native-tools-amendment/test/native-tool-amendment.test.mjs",
+      "sha256": "0546e78cf62b337b75d5330e9bb328db1642fc06c2d62271b49bbaa96b18cb54",
+      "bytes": 21109
+    },
+    {
+      "path": "docs/evidence/NI3/native-tool-source-api-amendment.md",
+      "sha256": "a3248cc1715f96e1ff9b8e86a79e7caa96ee8f19607f52ce8dfd32971534d8ce",
+      "bytes": 7191
+    },
+    {
+      "path": "docs/evidence/NI3/native-tool-source-api-amendment.json",
+      "sha256": "aa58cd0f58aab788b9265f91dd61e18d0e94a6d88a5fce2e6a04164838ba15de",
+      "bytes": 72321
+    },
+    {
+      "path": "docs/evidence/NI3/native-tool-amendment-author-execution.md",
+      "sha256": "eb666190c96a59a489329e86ec401d794871421daca718caaf0c3a784b00b779",
+      "bytes": 3687
+    },
+    {
+      "path": "docs/evidence/NI3/native-tool-amendment-author-execution.json",
+      "sha256": "82c75c90fc2210f4aea29a3d4998c52b59bd95c58741aea1160e1fedc727b476",
+      "bytes": 11213
+    },
+    {
+      "path": "docs/evidence/NI3/native-tool-amendment-author-execution/first.tap",
+      "sha256": "8fe9d611dbd9db739621fd4ef6259f8e38feff8b499add40c823e87de3d04c24",
+      "bytes": 1691
+    },
+    {
+      "path": "src/installed-audit.mjs",
+      "sha256": "80ed193a8f4dc6f395ff8372b4a8045ccd834d63c84ef386c3e6988ef5a3930d",
+      "bytes": 49288
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-addendum.md",
+      "sha256": "b267612922b39aa6b11ab47c1f3d4d04e41862bb925e023872741826d21656a9",
+      "bytes": 43622
+    },
+    {
+      "path": "docs/normal-runtime-audit-contract.md",
+      "sha256": "9e806aaf1c224581d43ae54fffe6775e18d58400c20fcc42814b844859a1c012",
+      "bytes": 34346
+    }
+  ],
+  "independentFixture": "Owned by separate design actor; not read for author oracle, not copied or edited by this unit",
+  "retainedOriginalFamilies": [
+    "N3-01",
+    "N3-02",
+    "N3-03",
+    "N3-04",
+    "N3-05",
+    "N3-06",
+    "N3-07",
+    "N3-08",
+    "N3-09",
+    "N3-10",
+    "N3-11",
+    "N3-12",
+    "N3-13",
+    "N3-14",
+    "N3-15",
+    "N3-16",
+    "N3-17",
+    "N3-18",
+    "N3-19",
+    "N3-20"
+  ],
+  "retainedAdditiveFamilies": [
+    "N3A-01",
+    "N3A-02",
+    "N3A-03",
+    "N3A-04",
+    "N3A-05",
+    "N3A-06",
+    "N3A-07",
+    "N3A-08",
+    "N3A-09",
+    "N3A-10",
+    "N3A-11",
+    "N3A-12",
+    "N3A-13",
+    "N3A-14",
+    "N3A-15",
+    "N3A-16",
+    "N3A-17",
+    "N3A-18",
+    "N3A-19",
+    "N3A-20"
+  ],
+  "retainedCriterionIds": [
+    "BUB001-01",
+    "BUB001-02",
+    "BUB001-03",
+    "BUB001-04",
+    "BUB001-05",
+    "BUB002-01",
+    "BUB002-02",
+    "BUB002-03",
+    "BUB002-04",
+    "BUB002-05",
+    "BUB003-01",
+    "BUB003-02",
+    "BUB003-03",
+    "BUB003-04",
+    "BUB003-05",
+    "BUB004-01",
+    "BUB004-02",
+    "BUB004-03",
+    "BUB004-04",
+    "BUB004-05",
+    "BUB005-01",
+    "BUB005-02",
+    "BUB005-03",
+    "BUB005-04",
+    "BUB005-05",
+    "BUB006-01",
+    "BUB006-02",
+    "BUB006-03",
+    "BUB006-04",
+    "BUB006-05",
+    "BUB007-01",
+    "BUB007-02",
+    "BUB007-03",
+    "BUB007-04",
+    "BUB007-05",
+    "BUB007-06",
+    "BUB008-01",
+    "BUB008-02",
+    "BUB008-03",
+    "BUB008-04",
+    "BUB008-05",
+    "BUB009-01",
+    "BUB009-02",
+    "BUB009-03",
+    "BUB009-04",
+    "BUB009-05",
+    "BUB010-01",
+    "BUB010-02",
+    "BUB010-03",
+    "BUB010-04",
+    "BUB010-05",
+    "BUB011-01",
+    "BUB011-02",
+    "BUB011-03",
+    "BUB011-04",
+    "BUB011-05",
+    "BUB012-01",
+    "BUB012-02",
+    "BUB012-03",
+    "BUB012-04",
+    "BUB012-05",
+    "BUB013-01",
+    "BUB013-02",
+    "BUB013-03",
+    "BUB013-04",
+    "BUB013-05",
+    "BUB014-01",
+    "BUB014-02",
+    "BUB014-03",
+    "BUB014-04",
+    "BUB014-05",
+    "BUB015-01",
+    "BUB015-02",
+    "BUB015-03",
+    "BUB015-04",
+    "BUB015-05",
+    "BUB016-01",
+    "BUB016-02",
+    "BUB016-03",
+    "BUB016-04",
+    "BUB016-05",
+    "BUB016-06",
+    "DF010-C01",
+    "DF010-C02",
+    "DF010-C03",
+    "DF010-C04",
+    "DF010-C05"
+  ],
+  "acceptedCriteria": [],
+  "remainingGates": [
+    "Root reads exact source/test/full copied closure/effects before separate executable GO",
+    "Any future denied action/failure stops with first output and narrow remediation request; no fallback",
+    "Actual normal/native/installed source and usage",
+    "Independent CODE platform hold",
+    "Supported browser/accessibility/useful model quality/all87/full MVP/publication remain HOLD"
+  ]
+}

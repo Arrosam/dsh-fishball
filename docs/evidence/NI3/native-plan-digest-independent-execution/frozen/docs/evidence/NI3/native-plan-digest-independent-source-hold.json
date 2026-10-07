@@ -1,0 +1,899 @@
+{
+  "formatVersion": "df.ni3.native-plan-digest-independent-source-hold/v1",
+  "status": "SOURCE_AUTHORSHIP_COMPLETE_ELEVEN_PDI_CASES_NOT_RUN_AWAIT_ROOT_LITERAL_REVIEW_AND_EXECUTABLE_GO",
+  "date": "2026-10-07",
+  "repository": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "ownedWrites": [
+    ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest-independent.test.mjs",
+    "docs/evidence/NI3/native-plan-digest-independent-source-hold.md",
+    "docs/evidence/NI3/native-plan-digest-independent-source-hold.json"
+  ],
+  "document": {
+    "path": "docs/evidence/NI3/native-plan-digest-independent-source-hold.md",
+    "sha256": "835a094f72b4e527769cc93b415e8984561d7f142bbe8506956d4bb13eaa9cc9",
+    "bytes": 11151
+  },
+  "fixture": {
+    "path": ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest-independent.test.mjs",
+    "sha256": "583101cc958c0c25e097c6556a49e4069c3b42e596b383b06d78c7cdc777f860",
+    "bytes": 26290,
+    "topLevelNodes": 11,
+    "nestedNodes": 0,
+    "expectedSkips": 0,
+    "sourceOnly": true,
+    "directImports": [
+      "node:test",
+      "node:assert/strict",
+      "node:fs",
+      "node:path",
+      "../src/installed-audit.mjs",
+      "../src/runtime-security.mjs",
+      "../core6/runtime-store.mjs"
+    ],
+    "noAuthorTestImport": true,
+    "historicalNTAExecutableRead": false,
+    "globals": [
+      "Buffer",
+      "structuredClone",
+      "TextEncoder",
+      "globalThis.crypto.subtle"
+    ],
+    "expectedDigest": {
+      "encoding": "Independent recursively sorted object-key JSON; array order retained",
+      "primitive": "Global WebCrypto SHA-256",
+      "computations": 5,
+      "phase": "PDI-01 after measured operation and final genuine snapshot",
+      "productCanonicalOrDigestHelperUsedForExpectedAssertion": false,
+      "newDirectImport": false
+    },
+    "setupDigest": {
+      "function": "Original public src/runtime-security canonicalDigest",
+      "purpose": "Ordinary context ledgerSnapshotDigest only",
+      "usedAsExpectedDigestOracle": false
+    }
+  },
+  "sourceOnlyAuthorization": {
+    "rootApprovedSealedCases": [
+      "PDI-01",
+      "PDI-02",
+      "PDI-03",
+      "PDI-04",
+      "PDI-05",
+      "PDI-06",
+      "PDI-07",
+      "PDI-08",
+      "PDI-09",
+      "PDI-10",
+      "PDI-11"
+    ],
+    "producerRefinement": "Genuine original advanced synthetic plan/grant/claim/artifact before measurement; held reservation",
+    "PDI_B01": "Root explicitly retains missing direct numeric reservation projection as scoped T debt, not acceptance",
+    "executableGO": false,
+    "fixtureImported": false,
+    "nodeInvoked": false,
+    "syntaxCheck": false,
+    "databaseAction": false,
+    "serviceListenerNativeProviderModelToolNetworkBrowserGit": false
+  },
+  "sealedDesign": [
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-independent-design.md",
+      "sha256": "223c65bc778137751aa57d4ddb6fe9ed260a09f90b04b231307e756b2452e437",
+      "bytes": 18622,
+      "unchanged": true
+    },
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-independent-design.json",
+      "sha256": "87b9b15568a45e3f74c1bd444dd8af132a5c941b763fa1a9014ee646b2824a64",
+      "bytes": 87256,
+      "unchanged": true
+    }
+  ],
+  "constructor": {
+    "databasePath": "join(freshOwnedLeaf,'synthetic.sqlite')",
+    "encryptionKey": "Buffer.alloc(32,37), synthetic",
+    "fixedClock": 1800000000000,
+    "auditExecutionBounds": {
+      "inputByteLimit": 16384,
+      "resultByteLimit": 1024
+    },
+    "principalRecords": [
+      {
+        "handle": "Fresh frozen opaque owner object",
+        "role": "owner",
+        "scope": {
+          "ownerId": "pdi.pdi-NN.owner",
+          "workspaceId": "pdi.pdi-NN.workspace"
+        }
+      },
+      {
+        "handle": "Fresh frozen opaque host object",
+        "role": "host",
+        "scope": {
+          "ownerId": "pdi.pdi-NN.owner",
+          "workspaceId": "pdi.pdi-NN.workspace"
+        }
+      },
+      {
+        "handle": "Fresh frozen opaque worker object",
+        "role": "worker",
+        "scope": {
+          "ownerId": "pdi.pdi-NN.owner",
+          "workspaceId": "pdi.pdi-NN.workspace"
+        },
+        "taskRef": "reference(pdi.pdi-NN.task)",
+        "generationRef": "reference(pdi.pdi-NN.producer-generation)"
+      }
+    ],
+    "fixtureModeFaultsPrivateMapPrototypeSQLInjection": false,
+    "mockPermission": {
+      "returnsTrueOnlyFor": [
+        "record.ownerRef = exact fixture ownerRef",
+        "record.workspaceRef = exact fixture workspaceRef",
+        "record.taskRef = exact fixture taskRef",
+        "record.actionRef = exact producer actionRef",
+        "record.spec.actionRef = exact producer actionRef",
+        "record.spec.role = worker",
+        "record.spec.executor.generationRef = exact producer generationRef",
+        "record.spec.executor.mode = none"
+      ],
+      "omissionOrMismatch": false,
+      "nativeOrNormalAuthorityClaim": false,
+      "invocationCount": "Source controlled; recorded and each observed record checked; no unspecified internal count asserted"
+    }
+  },
+  "publicCallClosure": [
+    {
+      "method": "getPolicy",
+      "principal": "owner",
+      "use": "Current initial resource policy for expectedVersion; measured currentPolicy callback"
+    },
+    {
+      "method": "policy",
+      "principal": "owner",
+      "use": "One explicit synthetic owner resource/model policy"
+    },
+    {
+      "method": "intake",
+      "principal": "owner",
+      "use": "One raw synthetic task/provider/source/event"
+    },
+    {
+      "method": "task",
+      "principal": "owner",
+      "use": "Original current setup CAS; protected-context current task; pre-plan metadata"
+    },
+    {
+      "method": "planAction",
+      "principal": "owner",
+      "use": "One producer setup plan; one measured audit plan per permitted leaf"
+    },
+    {
+      "method": "grantAction",
+      "principal": "owner",
+      "use": "One exact synthetic producer setup grant"
+    },
+    {
+      "method": "claimAction",
+      "principal": "owner",
+      "use": "One advanced synthetic producer setup claim only"
+    },
+    {
+      "method": "writeArtifact",
+      "principal": "worker",
+      "use": "One artifact with literal real producerClaimRef/generationRef"
+    },
+    {
+      "method": "readData",
+      "principal": "owner",
+      "use": "Setup and measured original scoped artifact/context reads"
+    },
+    {
+      "method": "putData",
+      "principal": "owner",
+      "use": "One public context body over real original artifact/scope/metadata"
+    },
+    {
+      "method": "configureAudit",
+      "principal": "owner",
+      "use": "One genuine artifact/context material requirement"
+    },
+    {
+      "method": "prepareAuditInput",
+      "principal": "owner",
+      "use": "One actual audit_review input association"
+    },
+    {
+      "method": "readAuditInput",
+      "principal": "host",
+      "use": "Bound actual original historical input read"
+    },
+    {
+      "method": "snapshot",
+      "principal": "owner",
+      "use": "Original setup/callback/final scoped metadata snapshots"
+    },
+    {
+      "method": "close",
+      "principal": "store",
+      "use": "Fixture cleanup after final genuine observations"
+    }
+  ],
+  "installer": {
+    "requiredFields": [
+      "ctx",
+      "snapshotOwner",
+      "readOwnerData",
+      "currentPolicy",
+      "planOwnerAction",
+      "prepareOwnerPreview",
+      "grantOwnerPreview",
+      "readProtectedContextFacts",
+      "readCapturedProducerFacts",
+      "readAuditActionFacts",
+      "readAuditInput",
+      "configureOwnerAudit",
+      "prepareOwnerAuditInput",
+      "assertNativeRequestCurrent",
+      "composeNativeAudit",
+      "subscribeRuntimeReceipts",
+      "isAlive"
+    ],
+    "requiredCallbacks": 16,
+    "requiredFieldsIncludingCtx": 17,
+    "originalPublicBindings": [
+      "snapshotOwner",
+      "readOwnerData",
+      "currentPolicy",
+      "planOwnerAction",
+      "readAuditInput",
+      "configureOwnerAudit",
+      "prepareOwnerAuditInput"
+    ],
+    "typedDoubles": [
+      "Protected context configuration/source labels over original public context metadata",
+      "Captured producer source/session/cursor labels over genuine claim/artifact associations",
+      "Role/config/environment/model/accounting/pricing/cost facts",
+      "In-memory subscription/disposer",
+      "Original public-operation currentness guard"
+    ],
+    "failIfReached": [
+      "prepareOwnerPreview",
+      "grantOwnerPreview",
+      "assertNativeRequestCurrent",
+      "composeNativeAudit"
+    ],
+    "nativeToolGuard": "Omitted; no false/currentness denial overridden"
+  },
+  "cases": [
+    {
+      "id": "PDI-01",
+      "code": null,
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "Literal genuine result/current exact action/fullspec"
+    },
+    {
+      "id": "PDI-02",
+      "code": "AUDIT_RECEIPT_INVALID",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "Missing exact action with same-content valid foreign-ref decoy"
+    },
+    {
+      "id": "PDI-03",
+      "code": "AUDIT_RECEIPT_INVALID",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "Exact action/different valid digest only"
+    },
+    {
+      "id": "PDI-04",
+      "code": "AUDIT_RECEIPT_INVALID",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "Exact action/different fullspec only; runtimeMs plus one"
+    },
+    {
+      "id": "PDI-05",
+      "code": "AUDIT_RECEIPT_INVALID",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "Plan return different valid actionRef only"
+    },
+    {
+      "id": "PDI-06",
+      "code": "INVALID_INPUT",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 0,
+      "distinction": "Plan return omits actionDigest"
+    },
+    {
+      "id": "PDI-07",
+      "code": "SCOPE_DENIED",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "New snapshot projection foreign ownerRef only"
+    },
+    {
+      "id": "PDI-08",
+      "code": "SCOPE_DENIED",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "New snapshot projection foreign taskRef only"
+    },
+    {
+      "id": "PDI-09",
+      "code": "REQUEST_ABORTED",
+      "measuredPlans": 0,
+      "addedSnapshotCallbacks": 0,
+      "distinction": "Permanent currentness denial after measured facts before plan"
+    },
+    {
+      "id": "PDI-10",
+      "code": "REQUEST_ABORTED",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 0,
+      "distinction": "Permanent currentness denial after original commit before new read"
+    },
+    {
+      "id": "PDI-11",
+      "code": "REQUEST_ABORTED",
+      "measuredPlans": 1,
+      "addedSnapshotCallbacks": 1,
+      "distinction": "Permanent currentness denial inside genuine new snapshot callback"
+    }
+  ],
+  "sourcePins": [
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "imports": [
+        "node:path",
+        "node:util"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703,
+      "imports": [
+        "node:util",
+        "./config.mjs",
+        "./runtime-security.mjs",
+        "./installed-worker-config.mjs",
+        "./context.mjs",
+        "./installed-invocation.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "imports": [
+        "node:async_hooks",
+        "./config.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "imports": [
+        "node:path",
+        "node:fs",
+        "node:util",
+        "./config.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "imports": [
+        "node:util",
+        "node:crypto",
+        "./ledger.mjs",
+        "./runtime-security.mjs",
+        "./context.mjs"
+      ]
+    }
+  ],
+  "allTwelveSourcePinsRehashedMatch": true,
+  "reachableLocalDefinitions": [
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "imports": [
+        "node:path",
+        "node:util"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703,
+      "imports": [
+        "node:util",
+        "./config.mjs",
+        "./runtime-security.mjs",
+        "./installed-worker-config.mjs",
+        "./context.mjs",
+        "./installed-invocation.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "imports": [
+        "node:async_hooks",
+        "./config.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "imports": [
+        "node:path",
+        "node:fs",
+        "node:util",
+        "./config.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "imports": [
+        "node:util",
+        "node:crypto",
+        "./ledger.mjs",
+        "./runtime-security.mjs",
+        "./context.mjs"
+      ]
+    }
+  ],
+  "reachableLocalDefinitionCount": 11,
+  "reachableLocalDefinitionDigest": "d89d591d8ce3106ded55215a515205ae77c8e8110ebd519413c8698ed405e236",
+  "pinnedButNotImported": [
+    ".runtime/ni3-native-plan-digest-amendment/core6/foundation.mjs",
+    ".runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs"
+  ],
+  "nodeBuiltins": [
+    "node:assert/strict",
+    "node:async_hooks",
+    "node:crypto",
+    "node:fs",
+    "node:os",
+    "node:path",
+    "node:sqlite",
+    "node:test",
+    "node:util"
+  ],
+  "distinctLedgers": {
+    "installerSource5": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+    "actualCore6": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+    "substituted": false
+  },
+  "importsStaticOnly": true,
+  "dynamicPackageHostChildNetworkImports": false,
+  "proposedSingleCommandEffects": {
+    "syntheticStores": 11,
+    "freshOwnedLeafDirectories": 11,
+    "ownerWorkspaceTaskSetups": 11,
+    "policies": 11,
+    "intakes": 11,
+    "producerPlans": 11,
+    "producerGrants": 11,
+    "advancedSyntheticProducerClaims": 11,
+    "associatedArtifacts": 11,
+    "publicContexts": 11,
+    "auditConfigurations": 11,
+    "auditPreparations": 11,
+    "measuredOperationAttempts": 11,
+    "measuredAuditPlans": 10,
+    "totalPlans": 21,
+    "directScopedSnapshots": 33,
+    "initialModuleSnapshotCallbacks": 11,
+    "addedSnapshotCallbacks": 8,
+    "totalExplicitScopedSnapshots": 52,
+    "explicitTaskReads": 87,
+    "explicitOwnerDataReads": 44,
+    "explicitPolicyReads": 21,
+    "explicitAuditInputReads": 11,
+    "originalInternalReads": "Bounded original implementation; explicit counts exclude internal reads done by original public methods",
+    "expectedDigestSHA256Computations": 5,
+    "auditGrant": 0,
+    "auditClaim": 0,
+    "preview": 0,
+    "compose": 0,
+    "nativeRequest": 0,
+    "nativeSessions": 0,
+    "provider": 0,
+    "model": 0,
+    "tool": 0,
+    "settlement": 0,
+    "release": 0,
+    "control": 0,
+    "revoke": 0,
+    "recovery": 0,
+    "fixtureSpawnedChildren": 0,
+    "network": 0,
+    "nodeRunnerWorkers": 1,
+    "reservation": "Producer claim remains held; no direct numeric reservation projection or claim-settlement proof",
+    "cleanup": "Dispose original contribution/subscriber; close original store; remove only fresh synthetic leaf after final original snapshots; root may remain empty"
+  },
+  "command": {
+    "text": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-plan-digest-amendment/test/native-plan-digest-independent.test.mjs",
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "proposedRuns": 1,
+    "run": false
+  },
+  "node": {
+    "path": "/opt/homebrew/bin/node",
+    "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+    "bytes": 84640,
+    "resolvedPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+    "runtimeVersionHeld": "22.22.2",
+    "invokedThisLease": false
+  },
+  "sourceReadDisclosures": [
+    {
+      "boundary": "Already-frozen proposal focusedTestProposal oracle metadata printed in initial batch",
+      "authorExecutableRead": false,
+      "discarded": true,
+      "usedAsExpectedOracle": false,
+      "rootDisposition": "Accepted disclosed scope history; no new execution scope/acceptance"
+    },
+    {
+      "boundary": "Adjacent ordinary constructor/putData/policy/artifact/auditInput/helper starts printed",
+      "ranges": [
+        "core6/runtime-store1-104",
+        "core6/runtime-store427-463",
+        "core6/runtime-store556-610",
+        "core6/runtime-store1043-1071",
+        "core6/runtime-store2275-2292",
+        "core6/runtime-store2337-2345",
+        "src/installed-audit151-210",
+        "src/installed-audit173-206"
+      ],
+      "discarded": true,
+      "usedAsExpectedOracle": false,
+      "investigatedOrReconstructed": false,
+      "executed": false,
+      "rootNotified": true
+    },
+    {
+      "boundary": "Public snapshot projection1288-1328",
+      "use": "Previously sealed public semantic anchor, deliberately used only as public snapshot contract"
+    }
+  ],
+  "protectedInvestigation": {
+    "receiptEnvelope": false,
+    "rows": false,
+    "ciphertext": false,
+    "header": false,
+    "blockedReceiptRevisionExperiment": false,
+    "tamperLegacyQuarantineRecovery": false
+  },
+  "blockers": [
+    {
+      "id": "PDI-B01",
+      "status": "Root-retained scoped T debt",
+      "reason": "No allowed public numeric reservation amount projection; preserve real claim/action/no-release observations"
+    },
+    {
+      "id": "PDI-B02",
+      "status": "Executable hold",
+      "reason": "Root literal fixture/closure/effects/Node/command review and separate GO still required"
+    }
+  ],
+  "failurePolicy": {
+    "preflightExactTestSourceClosureInputsNodePins": true,
+    "stopPinMismatch": true,
+    "stopRuntimePolicyDenialWithoutAlternate": true,
+    "retainFullFirstStdoutStderrExit": true,
+    "retainBeforeAfterPins": true,
+    "noCorrectionOrRerunBeforeRootNewNarrowLease": true,
+    "doNotReadAuthorPD01OrRetargetOldNTA": true
+  },
+  "retainedOriginalFamilies": [
+    "N3-01",
+    "N3-02",
+    "N3-03",
+    "N3-04",
+    "N3-05",
+    "N3-06",
+    "N3-07",
+    "N3-08",
+    "N3-09",
+    "N3-10",
+    "N3-11",
+    "N3-12",
+    "N3-13",
+    "N3-14",
+    "N3-15",
+    "N3-16",
+    "N3-17",
+    "N3-18",
+    "N3-19",
+    "N3-20"
+  ],
+  "retainedAdditiveFamilies": [
+    "N3A-01",
+    "N3A-02",
+    "N3A-03",
+    "N3A-04",
+    "N3A-05",
+    "N3A-06",
+    "N3A-07",
+    "N3A-08",
+    "N3A-09",
+    "N3A-10",
+    "N3A-11",
+    "N3A-12",
+    "N3A-13",
+    "N3A-14",
+    "N3A-15",
+    "N3A-16",
+    "N3A-17",
+    "N3A-18",
+    "N3A-19",
+    "N3A-20"
+  ],
+  "retainedCriterionIds": [
+    "BUB001-01",
+    "BUB001-02",
+    "BUB001-03",
+    "BUB001-04",
+    "BUB001-05",
+    "BUB002-01",
+    "BUB002-02",
+    "BUB002-03",
+    "BUB002-04",
+    "BUB002-05",
+    "BUB003-01",
+    "BUB003-02",
+    "BUB003-03",
+    "BUB003-04",
+    "BUB003-05",
+    "BUB004-01",
+    "BUB004-02",
+    "BUB004-03",
+    "BUB004-04",
+    "BUB004-05",
+    "BUB005-01",
+    "BUB005-02",
+    "BUB005-03",
+    "BUB005-04",
+    "BUB005-05",
+    "BUB006-01",
+    "BUB006-02",
+    "BUB006-03",
+    "BUB006-04",
+    "BUB006-05",
+    "BUB007-01",
+    "BUB007-02",
+    "BUB007-03",
+    "BUB007-04",
+    "BUB007-05",
+    "BUB007-06",
+    "BUB008-01",
+    "BUB008-02",
+    "BUB008-03",
+    "BUB008-04",
+    "BUB008-05",
+    "BUB009-01",
+    "BUB009-02",
+    "BUB009-03",
+    "BUB009-04",
+    "BUB009-05",
+    "BUB010-01",
+    "BUB010-02",
+    "BUB010-03",
+    "BUB010-04",
+    "BUB010-05",
+    "BUB011-01",
+    "BUB011-02",
+    "BUB011-03",
+    "BUB011-04",
+    "BUB011-05",
+    "BUB012-01",
+    "BUB012-02",
+    "BUB012-03",
+    "BUB012-04",
+    "BUB012-05",
+    "BUB013-01",
+    "BUB013-02",
+    "BUB013-03",
+    "BUB013-04",
+    "BUB013-05",
+    "BUB014-01",
+    "BUB014-02",
+    "BUB014-03",
+    "BUB014-04",
+    "BUB014-05",
+    "BUB015-01",
+    "BUB015-02",
+    "BUB015-03",
+    "BUB015-04",
+    "BUB015-05",
+    "BUB016-01",
+    "BUB016-02",
+    "BUB016-03",
+    "BUB016-04",
+    "BUB016-05",
+    "BUB016-06",
+    "DF010-C01",
+    "DF010-C02",
+    "DF010-C03",
+    "DF010-C04",
+    "DF010-C05"
+  ],
+  "priorIndividualCriterionMappingSource": {
+    "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+    "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+    "bytes": 165459
+  },
+  "acceptedCriteria": [],
+  "remainingHolds": [
+    "Actual original manager/current-source native composition and permissions",
+    "Original minimal-native to full-core source-held mapping",
+    "Original persisted usage/pricing provenance",
+    "Cold/native audit schema7 prerequisite",
+    "Independent CODE platform blocked gap; no review retry/replacement or verdict",
+    "Supported browser/accessibility",
+    "Useful model quality and native behavior",
+    "All87/full MVP/publication unaccepted"
+  ],
+  "authoringActions": {
+    "fixtureFilesWritten": 1,
+    "evidenceDocsWritten": 2,
+    "sourceImports": 0,
+    "nodeCommands": 0,
+    "syntaxChecks": 0,
+    "tests": 0,
+    "databaseActions": 0,
+    "createdFixtureDirectories": 0,
+    "nativeProviderModelToolNetworkBrowserGit": 0
+  },
+  "rootOwnsIntegrationAndGit": true
+}

@@ -1,0 +1,74 @@
+{
+  "formatVersion": 1,
+  "status": "independent-static-ordinary-quality-review-complete",
+  "verdict": "one-focused-coverage-gap; no-source-defect-observed",
+  "pins": {
+    "proposalMarkdown": {
+      "path": "docs/evidence/NI3/native-plan-digest-amendment-proposal.md",
+      "sha256": "1cc96de8a786a553f20d006fe8f36c87c80ba6bf0d70d7880a2300793e7eddb1"
+    },
+    "proposalJson": {
+      "path": "docs/evidence/NI3/native-plan-digest-amendment-proposal.json",
+      "sha256": "24471a4da5d7f8e8312b8a66f0e5dada49a99f8a3bcce15135fd65266b8b3cfa"
+    },
+    "holdMarkdown": {
+      "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.md",
+      "sha256": "023b61c925ac0c02772ee16c8e9291e321af49c8fde32d4e972931118eb3a987"
+    },
+    "holdJson": {
+      "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.json",
+      "sha256": "160a52efb95a6b67950b5e1a39b8a78eef9de8fa85f4ae968ffa5628684464d2"
+    },
+    "candidate": {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "reviewedLines": ["92-98", "344-361"]
+    },
+    "test": {
+      "path": ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest.test.mjs",
+      "sha256": "4121d3eac932b3dc42d33735cf7189cd9ec4a593f67260d81093c28290a731e6",
+      "reviewedLines": "1-130"
+    }
+  },
+  "findings": [
+    {
+      "id": "PD-OQ-01",
+      "kind": "focused-coverage-gap",
+      "location": ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest.test.mjs:78-125",
+      "relatedSource": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs:351-357",
+      "statement": "The proposed flow commits the original public planAction before reading the scoped snapshot. The proposal requires snapshot refusal or mismatch to preserve the committed action while refusing local admission. The single positive test does not simulate a failed snapshot or missing/mismatched action, digest, or spec after planAction commits.",
+      "classification": "Coverage gap only; source visibly fails the comparison before inserting a private plan. No runtime failure was observed.",
+      "runtimeFailureObserved": false
+    }
+  ],
+  "reviewedApiConclusions": {
+    "originalPlanResultForwarding": "The fixture callback returns the literal public store plan result; the module returns a deep-equal result with the same public field shape.",
+    "scopedSnapshot": "Candidate helper preserves the existing snapshotOwner path and checks owner/workspace/task scope.",
+    "actionAssociation": "Requires derived actionRef, original returned digest, scoped snapshot digest, and full normalized spec to agree.",
+    "digest": "Retains original scoped digest; does not recompute spec-only digest or assume current snapshot task version is the planning version.",
+    "independentOracle": "Sorted-key SHA-256 over actual snapshot planning metadata and full spec; also shown unequal to spec-only digest.",
+    "advancedSetup": "One synthetic producer plan/grant/claim and associated artifact/context/input prepare the valid producer-backed audit input.",
+    "heldReservation": "Worker snapshot remains unchanged, producer claim remains present, release evidence remains null.",
+    "measuredAuditEffects": "One audit plan; zero audit grants, audit claims, preview, native compose/request, provider, and tool effect counters.",
+    "cleanup": "t.after disposes module, closes synthetic store, and removes temp directory; test asserts one subscription and unsubscription.",
+    "runStatus": "Author hold marks PD01 NOT_RUN; assertions were not executed in this review."
+  },
+  "scope": {
+    "amendmentAndHoldDocuments": 4,
+    "candidateFiles": 1,
+    "candidateSlices": 2,
+    "testFiles": 1,
+    "testReadInFull": true,
+    "coreOrLedgerBodyOpened": false,
+    "receiptEnvelopeRowCipherHeaderTamperLegacyQuarantineRecoveryInvestigated": false,
+    "nodeImportSyntaxTestDbNativeProviderModelToolNetworkGit": false,
+    "sourceEdit": false,
+    "overread": false
+  },
+  "separateBlockedFinalCodeGap": "remains-blocked-unchanged",
+  "acceptance": {
+    "all87": "unaccepted",
+    "ticketMvp": "not-assessed",
+    "nativeBrowser": "not-assessed"
+  }
+}

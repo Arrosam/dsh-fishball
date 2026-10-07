@@ -1,0 +1,13 @@
+--- .runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs
++++ .runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs
+@@ -350,7 +350,9 @@
+         if (!existing && plans.size >= choice.maxTotalAttempts) fail('AUDIT_COLLECT_CAPACITY');
+         const { auditRef, inputRecordRef, purpose, ...core } = v;
+         check(); const receipt = immutable(api.planOwnerAction({ ...core, spec }));
+-        if (receipt.actionDigest !== canonicalDigest(spec)) fail('AUDIT_RECEIPT_INVALID');
++        ref(receipt.actionDigest);
++        const planned = snapshot(v.taskRef).actions.find(item => item.actionRef === actionRef);
++        if (receipt.actionRef !== actionRef || !planned || planned.actionDigest !== receipt.actionDigest || !SAME(planned.spec, spec)) fail('AUDIT_RECEIPT_INVALID');
+         if (existing) { if (!SAME(existing.spec, spec) || !SAME(existing.input, p)) fail('IDEMPOTENCY_CONFLICT'); }
+         else plans.set(`${v.taskRef}:${actionRef}`, { taskRef: v.taskRef, spec: immutable(spec), actionDigest: receipt.actionDigest, input: p, facts: f.value, policy: f.policy, grant: null, slot: null }); return receipt;
+       },

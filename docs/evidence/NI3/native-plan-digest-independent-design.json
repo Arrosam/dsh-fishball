@@ -1,0 +1,1860 @@
+{
+  "formatVersion": 1,
+  "status": "SOURCE_FROZEN_INDEPENDENT_ISTQB_DESIGN_ONLY",
+  "date": "2026-10-05",
+  "lane": "ordinary source-only independent ISTQB design; no CODE verdict/retry/replacement",
+  "repository": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "ownedPaths": [
+    "docs/evidence/NI3/native-plan-digest-independent-design.md",
+    "docs/evidence/NI3/native-plan-digest-independent-design.json"
+  ],
+  "ownedPathsInitiallyAbsent": true,
+  "markdownArtifact": {
+    "path": "docs/evidence/NI3/native-plan-digest-independent-design.md",
+    "sha256": "223c65bc778137751aa57d4ddb6fe9ed260a09f90b04b231307e756b2452e437",
+    "bytes": 18622
+  },
+  "authorization": "Root source-only finite design lease; no fixture-authoring or executable GO",
+  "authorOracleBoundary": {
+    "authorPD01TestOpened": false,
+    "authorOracleFieldsConsumed": false,
+    "priorExecutedNTAFixtureOpenedForThisOracle": false,
+    "matchingTypedDoublesNotOriginalSourceProof": true
+  },
+  "sourceReadBoundaryNotes": {
+    "incidentalContent": [
+      "private #action575–581 from overly broad initial public-plan print range",
+      "private authorization line148 from filtered source symbol search",
+      "finish-only418–427 adjacent to operation wrapper"
+    ],
+    "investigationOrOracleReliance": false,
+    "executedOrReconstructed": false,
+    "firstOverreadReportedToParent": true,
+    "allowedSemanticAnchors": [
+      "RuntimeStore public planAction583–610",
+      "RuntimeStore scoped snapshot1288–1328 and public task projection24–26",
+      "installer check/sync/snapshot88–97",
+      "installer planAuditAction344–357",
+      "installer public operation wrapper429–432",
+      "public ref6 and canonical validation",
+      "original invocation guard23–29",
+      "public constructor input declarations only"
+    ]
+  },
+  "inputPins": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "dea33c79f404cbab39acfc96b70b5e01962b9214cfd44f5cb6524764b1e45fc4",
+      "bytes": 7668
+    },
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-amendment-proposal.md",
+      "sha256": "1cc96de8a786a553f20d006fe8f36c87c80ba6bf0d70d7880a2300793e7eddb1",
+      "bytes": 7817
+    },
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-amendment-proposal.json",
+      "sha256": "24471a4da5d7f8e8312b8a66f0e5dada49a99f8a3bcce15135fd65266b8b3cfa",
+      "bytes": 25363
+    },
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.md",
+      "sha256": "023b61c925ac0c02772ee16c8e9291e321af49c8fde32d4e972931118eb3a987",
+      "bytes": 6277
+    },
+    {
+      "path": "docs/evidence/NI3/native-plan-digest-author-source-hold.json",
+      "sha256": "160a52efb95a6b67950b5e1a39b8a78eef9de8fa85f4ae968ffa5628684464d2",
+      "bytes": 23054
+    },
+    {
+      "path": "docs/evidence/NI3/test-design.md",
+      "sha256": "f3e4f79e761310ed98f568bf14843c01448fcba4b22cabfa543acfa7a94d354f",
+      "bytes": 26335
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-design.md",
+      "sha256": "eb80e14127bd2f59e2eee4820889fd45000432acf6cd3bdb3d6b481b9e2f730d",
+      "bytes": 48106
+    },
+    {
+      "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+      "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+      "bytes": 165459
+    },
+    {
+      "path": "docs/acceptance-traceability.md",
+      "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64",
+      "bytes": 37983
+    },
+    {
+      "path": "docs/reference/approved-ticket-review.zh.txt",
+      "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+      "bytes": 45578
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs",
+      "sha256": "24dd8048135fc61f79a719288dbc00ea93f61a6a6dcbaffdb0a49db648764f1f",
+      "bytes": 52497
+    },
+    {
+      "path": "/opt/homebrew/bin/node",
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+      "bytes": 84640
+    }
+  ],
+  "copiedInventory": [
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+      "bytes": 2918,
+      "imports": [
+        "node:path",
+        "node:util"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+      "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52703,
+      "imports": [
+        "node:util",
+        "./config.mjs",
+        "./runtime-security.mjs",
+        "./installed-worker-config.mjs",
+        "./context.mjs",
+        "./installed-invocation.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+      "bytes": 2341,
+      "imports": [
+        "node:async_hooks",
+        "./config.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+      "bytes": 5018,
+      "imports": [
+        "node:path",
+        "node:fs",
+        "node:util",
+        "./config.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+      "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+      "bytes": 21450,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196,
+      "imports": [
+        "node:util",
+        "node:crypto"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154",
+      "bytes": 22111,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "bytes": 21567,
+      "imports": [
+        "node:sqlite",
+        "node:fs",
+        "node:fs",
+        "node:path",
+        "node:os"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "bytes": 5323,
+      "imports": [
+        "node:crypto",
+        "node:util",
+        "./ledger.mjs"
+      ]
+    },
+    {
+      "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "imports": [
+        "node:util",
+        "node:crypto",
+        "./ledger.mjs",
+        "./runtime-security.mjs",
+        "./context.mjs"
+      ]
+    }
+  ],
+  "copiedInventoryCount": 12,
+  "copiedInventoryDigest": "365cae717465db897c52dacf767eb39e92530e075e31a5e90ab14e4896ce1780",
+  "inventoryDigestEncoding": "UTF8 sorted(path) row array; each row path/sha256/bytes/imports; Python json.dumps ensure_ascii=False sort_keys=True separators=(comma,colon)",
+  "candidate": {
+    "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+    "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+    "bytes": 52703,
+    "literalDiffMatchesAuthorApprovedDiff": true,
+    "literalDiff": "--- .runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs\n+++ .runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs\n@@ -350,7 +350,9 @@\n         if (!existing && plans.size >= choice.maxTotalAttempts) fail('AUDIT_COLLECT_CAPACITY');\n         const { auditRef, inputRecordRef, purpose, ...core } = v;\n         check(); const receipt = immutable(api.planOwnerAction({ ...core, spec }));\n-        if (receipt.actionDigest !== canonicalDigest(spec)) fail('AUDIT_RECEIPT_INVALID');\n+        ref(receipt.actionDigest);\n+        const planned = snapshot(v.taskRef).actions.find(item => item.actionRef === actionRef);\n+        if (receipt.actionRef !== actionRef || !planned || planned.actionDigest !== receipt.actionDigest || !SAME(planned.spec, spec)) fail('AUDIT_RECEIPT_INVALID');\n         if (existing) { if (!SAME(existing.spec, spec) || !SAME(existing.input, p)) fail('IDEMPOTENCY_CONFLICT'); }\n         else plans.set(`${v.taskRef}:${actionRef}`, { taskRef: v.taskRef, spec: immutable(spec), actionDigest: receipt.actionDigest, input: p, facts: f.value, policy: f.policy, grant: null, slot: null }); return receipt;\n       },\n",
+    "APIAmendmentsAddedByThisCorrection": 0,
+    "originalRequiredCallbacks": 17,
+    "optionalPrivateCallback": "nativeToolGuard remains distinct optional18 omission/false denial; not called by this planning fixture",
+    "originalContributionFields": 6
+  },
+  "semanticOracle": {
+    "publicResultFields": [
+      "actionRef",
+      "actionDigest",
+      "taskVersion",
+      "authEpoch"
+    ],
+    "originalDigestFields": [
+      "ownerRef",
+      "workspaceRef",
+      "taskRef",
+      "taskVersion",
+      "authEpoch",
+      "spec"
+    ],
+    "digestState": "actual pre-plan original scope/CAS metadata and captured module normalized spec",
+    "wrongSpecOnlyDigestRejectedAsOracle": true,
+    "originalDigestRetainedUnchanged": true,
+    "admissionPredicates": [
+      "receipt.actionDigest is a valid ref",
+      "snapshot existing scope/carrier checks pass",
+      "receipt.actionRef equals module-derived actionRef",
+      "exact scoped snapshot action exists",
+      "current actionDigest equals original receipt actionDigest",
+      "canonical full current spec equals full derived normalized spec"
+    ],
+    "postPlanCurrentTaskVersionEqualityRequired": false,
+    "privateMapInspectionOrInjection": false,
+    "noTransactionAtomicityClaim": true,
+    "noRetryRollbackOrOptimisticAdmission": true,
+    "currentnessGuard": "Original operation wrapper/carrier; controlled permanently false guard throws own-code REQUEST_ABORTED; no denial reset, private token or actual native permission claim"
+  },
+  "futureFixture": {
+    "path": ".runtime/ni3-native-plan-digest-amendment/test/native-plan-digest-independent.test.mjs",
+    "initiallyAbsent": true,
+    "authored": false,
+    "testNodes": 11,
+    "groups": 11,
+    "nestedTestNodes": 0,
+    "expectedSkips": 0,
+    "fixtureRoot": ".runtime/ni3-native-plan-digest-amendment/test/independent-fixtures/",
+    "fixtureRootCreatedByThisDesign": false,
+    "freshStorePerLeaf": true,
+    "directImports": [
+      "node:test",
+      "node:assert/strict",
+      "node:fs",
+      "node:path",
+      "../src/installed-audit.mjs",
+      "../src/runtime-security.mjs",
+      "../core6/runtime-store.mjs"
+    ],
+    "reachableLocalDefinitions": [
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/config.mjs",
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8",
+        "bytes": 2918,
+        "imports": [
+          "node:path",
+          "node:util"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196,
+        "imports": [
+          "node:util",
+          "node:crypto"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-audit.mjs",
+        "sha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+        "bytes": 52703,
+        "imports": [
+          "node:util",
+          "./config.mjs",
+          "./runtime-security.mjs",
+          "./installed-worker-config.mjs",
+          "./context.mjs",
+          "./installed-invocation.mjs"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-invocation.mjs",
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "bytes": 2341,
+        "imports": [
+          "node:async_hooks",
+          "./config.mjs"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/installed-worker-config.mjs",
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13",
+        "bytes": 5018,
+        "imports": [
+          "node:path",
+          "node:fs",
+          "node:util",
+          "./config.mjs"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/ledger.mjs",
+        "sha256": "f629b14679a210e319775466a90f9afcadad75462f8a401b7939e93653da0e44",
+        "bytes": 21450,
+        "imports": [
+          "node:sqlite",
+          "node:fs",
+          "node:fs",
+          "node:path",
+          "node:os"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/src/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323,
+        "imports": [
+          "node:crypto",
+          "node:util",
+          "./ledger.mjs"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/core6/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "bytes": 24196,
+        "imports": [
+          "node:util",
+          "node:crypto"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/core6/ledger.mjs",
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "bytes": 21567,
+        "imports": [
+          "node:sqlite",
+          "node:fs",
+          "node:fs",
+          "node:path",
+          "node:os"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "bytes": 5323,
+        "imports": [
+          "node:crypto",
+          "node:util",
+          "./ledger.mjs"
+        ]
+      },
+      {
+        "path": ".runtime/ni3-native-plan-digest-amendment/core6/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "bytes": 239793,
+        "imports": [
+          "node:util",
+          "node:crypto",
+          "./ledger.mjs",
+          "./runtime-security.mjs",
+          "./context.mjs"
+        ]
+      }
+    ],
+    "reachableLocalDefinitionCount": 11,
+    "reachableLocalDefinitionDigest": "d89d591d8ce3106ded55215a515205ae77c8e8110ebd519413c8698ed405e236",
+    "pinnedInventoryOnlyNotImported": [
+      ".runtime/ni3-native-plan-digest-amendment/core6/foundation.mjs",
+      ".runtime/ni3-native-plan-digest-amendment/original/installed-audit.mjs"
+    ],
+    "nodeBuiltins": [
+      "node:assert/strict",
+      "node:async_hooks",
+      "node:crypto",
+      "node:fs",
+      "node:os",
+      "node:path",
+      "node:sqlite",
+      "node:test",
+      "node:util"
+    ],
+    "packageHostDynamicOrChildImports": false,
+    "command": "/opt/homebrew/bin/node --test --test-concurrency=1 .runtime/ni3-native-plan-digest-amendment/test/native-plan-digest-independent.test.mjs",
+    "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "commandRun": false,
+    "node": {
+      "path": "/opt/homebrew/bin/node",
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+      "bytes": 84640,
+      "resolvedPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "runtimeVersionHeld": "22.22.2",
+      "invokedThisLease": false
+    },
+    "clock": "fixed finite original core clock; no Date.now patch/time-boundary test",
+    "cleanup": "close original store; dispose original installed contribution and typed subscriber; remove only separately owned new synthetic directories after final genuine observations, preserving setup claim unsettled before close; cleanup is not settlement/full native quit proof"
+  },
+  "allowedFutureSetup": {
+    "perLeaf": {
+      "freshSyntheticRuntimeStore6": 1,
+      "syntheticOwnerWorkspaceTask": 1,
+      "producerPlans": 1,
+      "producerGrants": 1,
+      "advancedSyntheticProducerClaims": 1,
+      "associatedArtifacts": 1,
+      "publicContextConfiguration": 1,
+      "configureAudit": 1,
+      "prepareAuditInput": 1,
+      "measuredPlanOperationAttempts": 1
+    },
+    "opaquePrincipals": "public constructor-bound fresh handles only; literal principal records/public inputs require later root source review; no private map/prototype injection",
+    "sourceCallbacks": [
+      "snapshotOwner -> original RuntimeStore.snapshot(owner,{taskRef})",
+      "planOwnerAction -> original RuntimeStore.planAction(owner,input)",
+      "currentPolicy -> original RuntimeStore.getPolicy(owner)",
+      "readOwnerData -> original scoped public readData",
+      "readAuditInput -> original scoped public readAuditInput"
+    ],
+    "typedOnly": [
+      "protected-context/captured-producer role/source/config/cost provenance labels over original genuine data/artifact associations",
+      "in-memory runtime subscriber and disposer",
+      "single operation currentness guard and counters"
+    ],
+    "mockPermission": "advanced synthetic setup only; exact original fixture owner/workspace/task/producer action/generation/worker role/executor none; omission/mismatch false; no normal/native/source evidence",
+    "nativeToolGuard": "omitted/false; not overridden or called",
+    "nativeFollowOnStubs": "preview/grant/request/composer counters throw if reached",
+    "faultProjection": "detached plain canonical callback value only; arm after actual commit; never mutate original store or rewrite positive return/snapshot",
+    "settlementReleaseRevokeCancelRecovery": false
+  },
+  "cases": [
+    {
+      "id": "PDI-01",
+      "title": "Genuine schema6 scoped digest is retained",
+      "partition": "actual public plan/snapshot association",
+      "hook": "No alteration: literal original RuntimeStore.planAction and snapshot results. Capture the input spec and one genuine pre-plan snapshot in the planning callback.",
+      "expected": "Resolve with the unchanged original four-field plan result.",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "Original returned actionRef equals captured normalizedSpec.actionRef.",
+        "actionDigest equals canonicalDigest({ownerRef,workspaceRef,taskRef,taskVersion:prePlan.task.version,authEpoch:prePlan.task.authEpoch,spec:capturedSpec}); it differs from canonicalDigest(capturedSpec).",
+        "Genuine post-plan snapshot contains exactly the newly requested audit action with matching original actionDigest/full spec/plannedTaskVersion/plannedAuthEpoch.",
+        "The genuine current snapshot task version is not required to equal planning version/receipt taskVersion; compare action planned metadata to the pre-plan state.",
+        "Changing just ownerRef/workspaceRef/taskRef in an independent digest calculation changes the expected digest; these calculations do not create foreign plans.",
+        "Result object keys/values remain the original public return; no field rewriting, spec digest fallback, grant or claim."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-02",
+      "title": "Missing exact action rejects a same-content decoy",
+      "partition": "post-plan action identity lookup",
+      "hook": "Only the new post-plan callback returns a detached genuine snapshot projection without the expected action. Add a decoy carrying the original digest/full spec but a different valid actionRef. Actual store remains untouched.",
+      "expected": "AUDIT_RECEIPT_INVALID",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "The expected derived actionRef is absent even though a decoy has the correct digest/spec.",
+        "Direct genuine owner snapshot after refusal retains the real committed action; do not persist the decoy."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-03",
+      "title": "Wrong current action digest rejects matching identity",
+      "partition": "post-plan digest equality",
+      "hook": "Only the exact expected action in the new snapshot projection gets a different valid lowercase 64-hex actionDigest. Retain its actionRef/full spec and original returned receipt.",
+      "expected": "AUDIT_RECEIPT_INVALID",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "Both digests are valid refs; the equality gate alone must refuse.",
+        "Genuine store action and original returned digest remain unchanged."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-04",
+      "title": "Wrong full current spec rejects matching ref and digest",
+      "partition": "full normalized spec association",
+      "hook": "Only the expected action in the new snapshot projection gets a one-unit runtimeMs change within valid bounds. Retain its valid actionRef and matching original actionDigest and all other spec fields.",
+      "expected": "AUDIT_RECEIPT_INVALID",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "The altered spec remains plain, canonical and structurally valid; matching top-level ref/digest cannot admit a different full spec.",
+        "Original stored normalized spec remains unchanged."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-05",
+      "title": "Wrong returned action ref cannot borrow the committed action",
+      "partition": "original plan return identity",
+      "hook": "Call original planAction exactly once and retain its original result for proof; return a detached copy with only actionRef changed to a different valid ref. New snapshot is the literal genuine snapshot.",
+      "expected": "AUDIT_RECEIPT_INVALID",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "Correct current action/digest/spec cannot override the wrong receipt.actionRef.",
+        "Original core result/stored action stay exact; malformed projection is not treated as a new plan."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-06",
+      "title": "Missing returned digest refuses before the added read",
+      "partition": "returned ref validation",
+      "hook": "Call original planAction once; retain its original result; return a detached copy lacking actionDigest. Keep other original result fields.",
+      "expected": "INVALID_INPUT",
+      "postPlanCallbackReads": 0,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "Original ref(undefined) refusal propagates; do not reclassify it as an association mismatch or synthesize a digest.",
+        "The added snapshot callback has not run.",
+        "The actual committed action remains present after the malformed return."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-07",
+      "title": "Foreign owner projection refuses after the original commit",
+      "partition": "post-plan owner scope",
+      "hook": "Only new post-plan snapshot projection changes task.ownerRef to a different valid ref; workspace/task/action/digest/spec remain genuine.",
+      "expected": "SCOPE_DENIED",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "Existing snapshot helper applies owner scope before action association.",
+        "A direct genuine scoped owner read still finds only the original correct task/action.",
+        "This callback fault is scope seam evidence, not a real foreign-owner authorization exercise."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-08",
+      "title": "Foreign task projection refuses after the original commit",
+      "partition": "post-plan task scope",
+      "hook": "Only new post-plan snapshot projection changes task.taskRef to a different valid ref; owner/workspace/action/digest/spec remain genuine.",
+      "expected": "SCOPE_DENIED",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "Existing helper matches the requested taskRef; correct action fields cannot excuse another task.",
+        "All actual scoped reads and plan inputs still name the original task.",
+        "Workspace checking remains the original held helper contract; this small set adds no separate workspace-fault leaf."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-09",
+      "title": "Currentness fails before any original audit plan",
+      "partition": "synchronous pre-commit carrier check",
+      "hook": "After producer setup and while measured readAuditActionFacts returns its otherwise valid typed facts, permanently mark this operation guard not-current. guard.assertCurrent subsequently throws a plain own-code REQUEST_ABORTED error.",
+      "expected": "REQUEST_ABORTED",
+      "postPlanCallbackReads": 0,
+      "actualAuditPlans": 0,
+      "oracle": [
+        "sync postcallback check refuses before planOwnerAction; its measured call count is zero.",
+        "Genuine final snapshot contains only the unchanged producer action, no audit action.",
+        "Same carrier denial remains sticky; never restore currentness or replay."
+      ],
+      "preservation": {
+        "actualAuditPlans": 0,
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-10",
+      "title": "Currentness fails after core commit before the added read",
+      "partition": "synchronous post-plan pre-read carrier check",
+      "hook": "Inside planOwnerAction, call genuine core plan once and record its unaltered result, then permanently invalidate the operation guard before returning that valid original result.",
+      "expected": "REQUEST_ABORTED",
+      "postPlanCallbackReads": 0,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "New snapshot sync precheck refuses before snapshotOwner is invoked.",
+        "Original core action remains committed despite no successful module result.",
+        "No new command, retry, revoke, settlement, rollback or native route follows."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    },
+    {
+      "id": "PDI-11",
+      "title": "Currentness fails after the added original snapshot read",
+      "partition": "synchronous snapshot postcallback carrier check",
+      "hook": "Only after the new callback has obtained the genuine original snapshot, permanently invalidate the guard and return the otherwise genuine plain snapshot.",
+      "expected": "REQUEST_ABORTED",
+      "postPlanCallbackReads": 1,
+      "actualAuditPlans": 1,
+      "oracle": [
+        "sync canonical/postcallback check refuses before action lookup/private plan admission.",
+        "Correct owner/task/action/digest/full spec cannot override real currentness denial.",
+        "Direct genuine final snapshot preserves the committed action and producer setup."
+      ],
+      "preservation": {
+        "actualAuditPlans": 1,
+        "actualAuditGrants": 0,
+        "actualAuditClaims": 0,
+        "actualCorePlanResultUnchanged": true,
+        "finalGenuineAction": "exact actionRef/original actionDigest/full normalized spec from captured original plan result/input",
+        "producerAction": "same scoped pre/post action digest/spec/state/attempts and same original associated artifact producer metadata",
+        "setupReservation": "genuine setup claim retained; zero settle/release/control/revoke/recovery operations; numeric durable reservation projection is not exposed by the permitted snapshot contract",
+        "noRetryRollbackOrFollowOn": true
+      }
+    }
+  ],
+  "proposedSingleCommandEffects": {
+    "freshSyntheticSQLiteStores": 11,
+    "producerPlans": 11,
+    "producerGrants": 11,
+    "advancedSyntheticProducerClaims": 11,
+    "associatedArtifacts": 11,
+    "publicContextConfiguration": 11,
+    "configureAudit": 11,
+    "prepareAuditInput": 11,
+    "measuredPlanOperationAttempts": 11,
+    "actualMeasuredAuditPlans": 10,
+    "totalOriginalPlans": 21,
+    "addedSnapshotCallbackInvocations": 8,
+    "maxScopedPublicSnapshotReadsPerLeaf": 12,
+    "maxScopedPublicSnapshotReads": 132,
+    "actualAuditGrants": 0,
+    "actualAuditClaims": 0,
+    "actualPreview": 0,
+    "nativeComposer": 0,
+    "nativeRequest": 0,
+    "provider": 0,
+    "modelStreams": 0,
+    "tool": 0,
+    "nativeSession": 0,
+    "profileListenerHTTPNetworkBrowser": 0,
+    "settlement": 0,
+    "release": 0,
+    "control": 0,
+    "revoke": 0,
+    "recovery": 0,
+    "childProcesses": 0,
+    "Git": 0,
+    "noExtraCommandRetry": true
+  },
+  "blockers": [
+    {
+      "id": "PDI-B01",
+      "status": "EXPLICIT_OBSERVABILITY_GAP",
+      "fact": "Permitted public RuntimeStore.snapshot exposes no numeric held-reservation projection.",
+      "availableConservativeOracle": "Genuine advanced setup claim retained; unchanged producer action/spec/digest/state/attempts and artifact metadata; zero settle/release/control/revoke/recovery operations.",
+      "notClaimed": "Direct reservation quantity/row assertion or normal/native release correctness.",
+      "rootDispositionRequired": "Retain this gap explicitly, or separately freeze an ordinary public allowed projection before claiming direct numeric preservation; no private SQL/export/cipher investigation introduced."
+    },
+    {
+      "id": "PDI-B02",
+      "status": "NO_FIXTURE_SOURCE_OR_EXECUTABLE_LEASE",
+      "fact": "Only two design docs are authorized.",
+      "rootDispositionRequired": "Read full independent design and scope boundary note; separately lease literal fixture authorship; then separately review full literal fixture/setup/principals/11-source closure/Node/effects/command before bounded execution."
+    }
+  ],
+  "futureFailurePolicy": {
+    "preflightExactTestSourceClosureInputsNodePins": true,
+    "stopPinMismatch": true,
+    "stopRuntimePolicyDenialWithoutAlternate": true,
+    "retainFullFirstStdoutStderrExit": true,
+    "retainBeforeAfterPins": true,
+    "noCorrectionOrRerunBeforeRootNewNarrowLease": true,
+    "doNotReadAuthorPD01OrRetargetOldNTA": true
+  },
+  "retainedOriginalFamilies": [
+    "N3-01",
+    "N3-02",
+    "N3-03",
+    "N3-04",
+    "N3-05",
+    "N3-06",
+    "N3-07",
+    "N3-08",
+    "N3-09",
+    "N3-10",
+    "N3-11",
+    "N3-12",
+    "N3-13",
+    "N3-14",
+    "N3-15",
+    "N3-16",
+    "N3-17",
+    "N3-18",
+    "N3-19",
+    "N3-20"
+  ],
+  "retainedAdditiveFamilies": [
+    "N3A-01",
+    "N3A-02",
+    "N3A-03",
+    "N3A-04",
+    "N3A-05",
+    "N3A-06",
+    "N3A-07",
+    "N3A-08",
+    "N3A-09",
+    "N3A-10",
+    "N3A-11",
+    "N3A-12",
+    "N3A-13",
+    "N3A-14",
+    "N3A-15",
+    "N3A-16",
+    "N3A-17",
+    "N3A-18",
+    "N3A-19",
+    "N3A-20"
+  ],
+  "retainedCriterionIds": [
+    "BUB001-01",
+    "BUB001-02",
+    "BUB001-03",
+    "BUB001-04",
+    "BUB001-05",
+    "BUB002-01",
+    "BUB002-02",
+    "BUB002-03",
+    "BUB002-04",
+    "BUB002-05",
+    "BUB003-01",
+    "BUB003-02",
+    "BUB003-03",
+    "BUB003-04",
+    "BUB003-05",
+    "BUB004-01",
+    "BUB004-02",
+    "BUB004-03",
+    "BUB004-04",
+    "BUB004-05",
+    "BUB005-01",
+    "BUB005-02",
+    "BUB005-03",
+    "BUB005-04",
+    "BUB005-05",
+    "BUB006-01",
+    "BUB006-02",
+    "BUB006-03",
+    "BUB006-04",
+    "BUB006-05",
+    "BUB007-01",
+    "BUB007-02",
+    "BUB007-03",
+    "BUB007-04",
+    "BUB007-05",
+    "BUB007-06",
+    "BUB008-01",
+    "BUB008-02",
+    "BUB008-03",
+    "BUB008-04",
+    "BUB008-05",
+    "BUB009-01",
+    "BUB009-02",
+    "BUB009-03",
+    "BUB009-04",
+    "BUB009-05",
+    "BUB010-01",
+    "BUB010-02",
+    "BUB010-03",
+    "BUB010-04",
+    "BUB010-05",
+    "BUB011-01",
+    "BUB011-02",
+    "BUB011-03",
+    "BUB011-04",
+    "BUB011-05",
+    "BUB012-01",
+    "BUB012-02",
+    "BUB012-03",
+    "BUB012-04",
+    "BUB012-05",
+    "BUB013-01",
+    "BUB013-02",
+    "BUB013-03",
+    "BUB013-04",
+    "BUB013-05",
+    "BUB014-01",
+    "BUB014-02",
+    "BUB014-03",
+    "BUB014-04",
+    "BUB014-05",
+    "BUB015-01",
+    "BUB015-02",
+    "BUB015-03",
+    "BUB015-04",
+    "BUB015-05",
+    "BUB016-01",
+    "BUB016-02",
+    "BUB016-03",
+    "BUB016-04",
+    "BUB016-05",
+    "BUB016-06",
+    "DF010-C01",
+    "DF010-C02",
+    "DF010-C03",
+    "DF010-C04",
+    "DF010-C05"
+  ],
+  "retainedCounts": {
+    "originalFamilies": 20,
+    "additiveFamilies": 20,
+    "BUB": 82,
+    "DF010": 5,
+    "criteria": 87,
+    "removed": 0,
+    "accepted": 0
+  },
+  "priorIndividualCriterionMappingSource": {
+    "path": "docs/evidence/NI3/normal-audit-api-independent-checks.json",
+    "sha256": "0cd394fc0384758bf0f71c01be060ea45bbf6e3dc21aa7f7ce38ec55ba013707",
+    "bytes": 165459
+  },
+  "criterionMapInheritance": [
+    {
+      "id": "BUB001-01",
+      "sourceRef": "docs/acceptance-traceability.md:17",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "cb584ebc0e7f429afe732183a456ffcf6102b4bd640527e3aeb21ed005a200ea",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB001-02",
+      "sourceRef": "docs/acceptance-traceability.md:18",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "5264d364f99427eceb6c5546f66f62a0051a2012c4fa11b05642d73ca9fd50da",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB001-03",
+      "sourceRef": "docs/acceptance-traceability.md:19",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "c502998f683786becad647d0d588f8b36dcff02e4087b50342a004172f97a4b4",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB001-04",
+      "sourceRef": "docs/acceptance-traceability.md:20",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "7ff25d4bb3c9aeea6e5dd4ef2ded27d604e7ddc66a4ba1240e1bb1263da7f170",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB001-05",
+      "sourceRef": "docs/acceptance-traceability.md:21",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "f5ac9cd0a07a0a6ff9d474225536a48d0857faa4d0cbb884d64b8c92e31c75b6",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB002-01",
+      "sourceRef": "docs/acceptance-traceability.md:22",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "ecc45c1eb5a5c6d53892054c786d643ee4c8fde7c0707e8d70af6a124a40a1fb",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB002-02",
+      "sourceRef": "docs/acceptance-traceability.md:23",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "d64bf8a640355daffbe5de735ef4a879475018c44af65ccef2e678ec2fc5e86a",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB002-03",
+      "sourceRef": "docs/acceptance-traceability.md:24",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "107754e6571dc3b29ed4ffb016608236d51bba853ba7e0207fcafa03ca200dec",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB002-04",
+      "sourceRef": "docs/acceptance-traceability.md:25",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "dde3eb9f30057c8cb736d9e9173b3929f0035ef8de7babaed6dbcb8c89b215c3",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB002-05",
+      "sourceRef": "docs/acceptance-traceability.md:26",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "4b476e13719e721882e7c6df62804aa326474252992259e53588627e3a108a98",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB003-01",
+      "sourceRef": "docs/acceptance-traceability.md:27",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "7a75df17f329d890db9351eb1eb03b4247636aedac47d56cc2452f5380115665",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB003-02",
+      "sourceRef": "docs/acceptance-traceability.md:28",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "811a4c18eb7b581b25a70ef516b26ad9e51705a790e5bc9c6132d0cf276ca103",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB003-03",
+      "sourceRef": "docs/acceptance-traceability.md:29",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "6081fe121571651effb3499b8b91d0a00a21fec6d70c43ce123e43489cfe8de1",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB003-04",
+      "sourceRef": "docs/acceptance-traceability.md:30",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "d7648e5f79d6251c09622cdb7571df0032267bfe5c1531f5672bbb197caba2d1",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB003-05",
+      "sourceRef": "docs/acceptance-traceability.md:31",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "60392ac5227845d2359cf2d83bd3a39ce0b485c857b99ecb69114f24b26a4d11",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB004-01",
+      "sourceRef": "docs/acceptance-traceability.md:32",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "3b2153cd9c3bc12f37f0eeaae53a409c9d255acfe05466e38d4f4db6d64db523",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB004-02",
+      "sourceRef": "docs/acceptance-traceability.md:33",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "07eefc4304c386da1b2dd2d77ee362f1d74235728c0b9afc3a258891f8239a8e",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB004-03",
+      "sourceRef": "docs/acceptance-traceability.md:34",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "121ed3b97009aa8aec289cd8b300309f4c582c651d5a7a2336824e5997ef43c5",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB004-04",
+      "sourceRef": "docs/acceptance-traceability.md:35",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "e48c2edaa3f877f3e443d1f5ff9f5355aba20cb16fd25e4d4b74c4cd73885b8e",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB004-05",
+      "sourceRef": "docs/acceptance-traceability.md:36",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "be61e05f124f01362417d874405bdfa60d205a1a0b0761592813d5d801b660c2",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB005-01",
+      "sourceRef": "docs/acceptance-traceability.md:37",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "ea9ebf767c08657a38fbc2627270e50ee3d256bcfca5c5b7db31b9dbb72642bb",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB005-02",
+      "sourceRef": "docs/acceptance-traceability.md:38",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "411e7970e304e7e8770a09a17f7a3515a4ff4a38b5969a064d4d62e8b5cd42fc",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB005-03",
+      "sourceRef": "docs/acceptance-traceability.md:39",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "81cc4404180dd94e81ee3c751dfe30f4126ec81ce4f58c4d151527b041d5f81d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB005-04",
+      "sourceRef": "docs/acceptance-traceability.md:40",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "f70099bff65abbd25c171dd4f028e05ea0bdc2079b5e7ff85e2c1b6ad17ab25b",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB005-05",
+      "sourceRef": "docs/acceptance-traceability.md:41",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "b46fb7553d8c4421bc22c4ce555836a5a3fe115a4b643bad7a42e9d782520b61",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB006-01",
+      "sourceRef": "docs/acceptance-traceability.md:42",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "e80d160c5b395ab4d48b84784c0961f0984b03e837535fd62409eb9fa8584bce",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB006-02",
+      "sourceRef": "docs/acceptance-traceability.md:43",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "215704768c2b565be72b181a614a7dcabace424968cb71b6bfcaebb71690dc1f",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB006-03",
+      "sourceRef": "docs/acceptance-traceability.md:44",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "bb2be6bd5413152560fc0b68a3912bfcd8b0bbc2ae0269f0d0aa8eb0f74db56d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB006-04",
+      "sourceRef": "docs/acceptance-traceability.md:45",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "9e898aeb00cdb547034de1c3ad5e04052af0527756a85864f9e88188301f9c3c",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB006-05",
+      "sourceRef": "docs/acceptance-traceability.md:46",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "2b75a8fcc917824c601b588d6775f94ba56d9cbcf1a62b354ff790353592a760",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB007-01",
+      "sourceRef": "docs/acceptance-traceability.md:47",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "0065dd22b073bcbc3c55da74e9601ce4d571e301e2b5c9cd847a7231d9158b36",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB007-02",
+      "sourceRef": "docs/acceptance-traceability.md:48",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "2f0b471d30e9aace6d6dabe9e4beb5e4fe81c30a04edbc6bfd451c73da4c08bc",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB007-03",
+      "sourceRef": "docs/acceptance-traceability.md:49",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "6ba05c4c767824b0f8b78210557aa4d0df0db60dd2515e6ba8454da731ba157d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB007-04",
+      "sourceRef": "docs/acceptance-traceability.md:50",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "93323dcc75a016e467fdde21f7e79637743a20bce2eec765d58cd709160e89d7",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB007-05",
+      "sourceRef": "docs/acceptance-traceability.md:51",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "9d48e6bf42cd3a6300b2a529ee168d49b727012fc9cbd75c2650530c6a25eeca",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB007-06",
+      "sourceRef": "docs/acceptance-traceability.md:52",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "4b870ef4b902d7b79bd740c800add8ad426895b3c1ec8c1bf4ea0944d24b5842",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB008-01",
+      "sourceRef": "docs/acceptance-traceability.md:53",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "12d916b60ac81b2fbae08602f99e116da9cef7cd740e91431492953d5c50418d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB008-02",
+      "sourceRef": "docs/acceptance-traceability.md:54",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "2347368cfa71bcc19d495cd16807ef708aac574b69de9c1a0f5caa9ef3e41a5a",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB008-03",
+      "sourceRef": "docs/acceptance-traceability.md:55",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "60b903bdfe742919c5b105af26a3bed978928ade4d0f434cde130036a6f8db1a",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB008-04",
+      "sourceRef": "docs/acceptance-traceability.md:56",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "059e40e236cd4af90e91d09640ea918a3103cf7273eefedd3b561dabd92719eb",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB008-05",
+      "sourceRef": "docs/acceptance-traceability.md:57",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "89318655931eb8cc7f957ba8f1aae185ab0a3eab63836ce5f9bc0ae5d4f284db",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB009-01",
+      "sourceRef": "docs/acceptance-traceability.md:58",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "a6f4cf15fd87051e56877aeca73c803fee08727497c041fe3acb686d10458225",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB009-02",
+      "sourceRef": "docs/acceptance-traceability.md:59",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "996cab56d9dd60418eddc80c42bef2c72d0f15d74af0005eb2107dcef53eb423",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB009-03",
+      "sourceRef": "docs/acceptance-traceability.md:60",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "d08c917e2c6501fe033e40fa4dadd007b6d999f10b52ab709f1a6f6c0a519b0c",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB009-04",
+      "sourceRef": "docs/acceptance-traceability.md:61",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "d0c862460764269db07c617779d18f1fc28b3c50bde0877c5f84077fae20dd46",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB009-05",
+      "sourceRef": "docs/acceptance-traceability.md:62",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "992c04046549330fa8e8c79c196f689f8fcc2ba0075355b8611828e990f0e6d5",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB010-01",
+      "sourceRef": "docs/acceptance-traceability.md:63",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "e021d4ab177792e0c3bf0a6e9f69f47d86aea027bbf57ce2831b16b5baccaf69",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB010-02",
+      "sourceRef": "docs/acceptance-traceability.md:64",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "5372dfe51fdffe7150c65decaea58df98686bdf33894dd116b9e6867aa374172",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB010-03",
+      "sourceRef": "docs/acceptance-traceability.md:65",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "d7bfe7a0193c0e7c8f2288c83870fef3a779cbb7ba43eb33ef8ea09f667da02d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB010-04",
+      "sourceRef": "docs/acceptance-traceability.md:66",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "4945de71e7a1410891d73cc51de51e7f06b6b884cd70b719c98d6561fe811282",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB010-05",
+      "sourceRef": "docs/acceptance-traceability.md:67",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "6e1d14d5b893fb1a85d4ba298ac893956d4629e487820f1316a5f9d093514e19",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB011-01",
+      "sourceRef": "docs/acceptance-traceability.md:68",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "899aee0e20486de472e6d281e7ef1d4c88966db5a7516fde32a79243c0055686",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB011-02",
+      "sourceRef": "docs/acceptance-traceability.md:69",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "c33a0192576e00395c181b2e4334d7296183df4318f50ea902e0b3e5e8bf6f90",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB011-03",
+      "sourceRef": "docs/acceptance-traceability.md:70",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "b17e185869c712de2b4f0c6e36aca1aa7209be0f9eb99316ff785fce5b67c212",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB011-04",
+      "sourceRef": "docs/acceptance-traceability.md:71",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "e73732fe2510361261b7d7f35963ddf03b892c02676c4f96fcdb8bafd7162777",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB011-05",
+      "sourceRef": "docs/acceptance-traceability.md:72",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "9bc0958211a898b3d3dba60bb651e2682cde59262263686f4d35b0cea1c26199",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB012-01",
+      "sourceRef": "docs/acceptance-traceability.md:73",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "592cd995d63f61fe89cd14923dd9962a545448ad4d7d51e8204223acf118bf32",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB012-02",
+      "sourceRef": "docs/acceptance-traceability.md:74",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "79c88a1c114eab45238145b6c4b8c634e5d3393cd49cc071257c245703427be1",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB012-03",
+      "sourceRef": "docs/acceptance-traceability.md:75",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "1f424017e9ed472cbd029eb72a9f9f983e30fb25d0fdf00bc82d9fa4fc7a053c",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB012-04",
+      "sourceRef": "docs/acceptance-traceability.md:76",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "eb83c0aaa0512c7f5ed72a1dbd252791370d4527bb7472ffb1e4bcfb68f10c9f",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB012-05",
+      "sourceRef": "docs/acceptance-traceability.md:77",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "232966b9a7df05d8a0c320d8a549f6174cb0074cbccf01ad0d07027bc1d9fda8",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB013-01",
+      "sourceRef": "docs/acceptance-traceability.md:78",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "c02b7ab21be75ca32e4d20589eb4c8aae4cad1968b74d259f0460c714cb1dfa9",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB013-02",
+      "sourceRef": "docs/acceptance-traceability.md:79",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "02a9c3b419b9d92e0b26c7fbe1c1f55647241b5b7ecd0948d6de985571dfbdd4",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB013-03",
+      "sourceRef": "docs/acceptance-traceability.md:80",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "5353a31e2d9ad3a9cc3fb47e824a346680b975056e85f2d5c7c2c1401118c224",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB013-04",
+      "sourceRef": "docs/acceptance-traceability.md:81",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "ecc07090fe4a2d7390f1913f20bad5e843188c96cf8e448f5ac92655e8e2a200",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB013-05",
+      "sourceRef": "docs/acceptance-traceability.md:82",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "878858f2ae9f57abfbc8ee4a1b634949188b29f7b450e89a61b88c6615b35834",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB014-01",
+      "sourceRef": "docs/acceptance-traceability.md:83",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "48d19198004f6d76825eecd5993ff6217dee2ecabc1423a373ef7ad99fc68680",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB014-02",
+      "sourceRef": "docs/acceptance-traceability.md:84",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "ea55e5d81b44a5399d665c60b268bdc9a0d33453977960d864cab05e46b4ead5",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB014-03",
+      "sourceRef": "docs/acceptance-traceability.md:85",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "599278b9efc63d8cf3d611d9f79159956edf6788b37e56687b590b5c6cd68a1f",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB014-04",
+      "sourceRef": "docs/acceptance-traceability.md:86",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "15df88bd3ef9efdf759f3fb038d856b1ba00cd5995c9a0222260e6bf23c39c69",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB014-05",
+      "sourceRef": "docs/acceptance-traceability.md:87",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "8cd19de0ff81bed4f41bc4c75242c73b4065e69eb7e729e33c30c74e68cfd70f",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB015-01",
+      "sourceRef": "docs/acceptance-traceability.md:88",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "b824bf47a2504b6144fb7af2c6d1ae11b60d4d2fbb4bd4248f4dbea45f4550ab",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB015-02",
+      "sourceRef": "docs/acceptance-traceability.md:89",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "7681e87465c71f167dbb9cd8ea13df108534ef63b1092cf6acca81ce29ee428b",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB015-03",
+      "sourceRef": "docs/acceptance-traceability.md:90",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "38738e5a628b7bc33c52bc4c24a4ac9995eb4488d8c4e111c61df61f7ea75a86",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB015-04",
+      "sourceRef": "docs/acceptance-traceability.md:91",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "f7481c0442633fdf01d72cdf1ac02a80d42f0256b115daa2c2ba9089f604367a",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB015-05",
+      "sourceRef": "docs/acceptance-traceability.md:92",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "b97c983035aac327bad54e9e65c81bea4d5ad445c2142eb04119925203940b5d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB016-01",
+      "sourceRef": "docs/acceptance-traceability.md:93",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "ad6bf420d92cb5ac3bd97906397c2d8f43c18783a5790c95805275caaf25d9f1",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB016-02",
+      "sourceRef": "docs/acceptance-traceability.md:94",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "c28fb309d2510da1e2a6ab7d6519352a1c3c1ed62558f3459ef2eb037718e571",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB016-03",
+      "sourceRef": "docs/acceptance-traceability.md:95",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "97b7b8f1d2a99af572437d16f64a4b8f012cad07cc37ed9da2c208d5f2b4cdf7",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB016-04",
+      "sourceRef": "docs/acceptance-traceability.md:96",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "f0975b8a2202c79b4aa0c3f55c3f8e48e5c4e39b72165ef4f51c39d84caf9142",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB016-05",
+      "sourceRef": "docs/acceptance-traceability.md:97",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "6d9304eb10d694d88e48b1c611acacdc8933b2b4c5605e9a174eb1574e090c0d",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "BUB016-06",
+      "sourceRef": "docs/acceptance-traceability.md:98",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "873e6fec2329a6a42202674f1077cfb5cbeb1e8b351ff26d3554d043f76a6c92",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "DF010-C01",
+      "sourceRef": "docs/acceptance-traceability.md:99",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "2c0503002d0c04ff629b14600b5623c040c84166619a7d68c92adaa25168fdc3",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "DF010-C02",
+      "sourceRef": "docs/acceptance-traceability.md:100",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "7b3d3989c65d98d6827305454945937bf4fe2b801307ef04fa73a17ebf3d5247",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "DF010-C03",
+      "sourceRef": "docs/acceptance-traceability.md:101",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "50654c7d7d605a37c95a2979e67e093cc5d490778c9bed7cd89ef3669a985dc8",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "DF010-C04",
+      "sourceRef": "docs/acceptance-traceability.md:102",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "3e75a5d0929be2613fefc65b2af650f242af70026ef6043cfb90376fd31d0463",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    },
+    {
+      "id": "DF010-C05",
+      "sourceRef": "docs/acceptance-traceability.md:103",
+      "priorMappingSource": "docs/evidence/NI3/normal-audit-api-independent-checks.json#/retainedCriteria/individuallyMapped",
+      "priorEntrySHA256": "1f77df2bd95b01e00ae154698f7fa9795c6c8f2f6b16eaa3f9aca516f0a202e9",
+      "allPriorFieldsAndDispositionInheritedUnchanged": true,
+      "thisDesignExecution": "NOT_RUN",
+      "thisDesignAcceptance": "HOLD; zero acceptance",
+      "ordinaryAssociationDoesNotCloseResidual": true
+    }
+  ],
+  "remainingHolds": [
+    "Actual original manager/current-source native composition and permissions",
+    "Original minimal-native to full-core source-held mapping",
+    "Original persisted usage/pricing provenance",
+    "Cold/native audit schema7 prerequisite",
+    "Independent CODE platform blocked gap; no review retry/replacement or verdict",
+    "Supported browser/accessibility",
+    "Useful model quality and native behavior",
+    "All87/full MVP/publication unaccepted"
+  ],
+  "thisLeaseCounters": {
+    "fixtureFilesAuthored": 0,
+    "productSourceEdits": 0,
+    "imports": 0,
+    "NodeInvocations": 0,
+    "syntaxChecks": 0,
+    "tests": 0,
+    "databaseConstructorsCreationInspection": 0,
+    "nativeHostProfileListener": 0,
+    "providerModelToolAccountCredentialNetworkBrowser": 0,
+    "Git": 0,
+    "docsWritten": 2
+  },
+  "staticDocumentationChecks": {
+    "onlyTwoOwnedPathsWritten": true,
+    "inputPinsMatchedAtFreeze": true,
+    "copiedDefinitionPinsMatched": 12,
+    "literalDiffMatched": true,
+    "independentCaseIdsUnique": 11,
+    "individualRetainedIds": 87,
+    "priorMappingEntryHashesBound": 87,
+    "originalFamiliesRetained": 20,
+    "additiveFamiliesRetained": 20,
+    "acceptedCriteria": 0,
+    "proposedFixtureStillAbsent": true,
+    "noAuthorOracleConsumed": true,
+    "noExecutionVerdict": true
+  },
+  "leaseRelease": "Source-only independent design read/write lease is released on reporting these two exact frozen artifacts; all later work requires a separate root lease."
+}
