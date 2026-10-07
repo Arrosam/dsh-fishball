@@ -1,0 +1,309 @@
+{
+  "schema": "NI6_BOOTSTRAP_DIAGNOSTIC_AFFECTED_INDEPENDENT_TEST_DESIGN_REVIEW_R5",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "sourceAuthor": "/root/entry_start_minimal_fix",
+  "status": "NARROW_AFFECTED_SOURCE_ONLY_REVIEW_COMPLETE_NOT_RUN",
+  "decision": "NO_AFFECTED_SOURCE_ONLY_TEST_DESIGN_BLOCKER_WITH_INHERITED_QUALIFICATIONS",
+  "reviewBlockers": [],
+  "scope": "Only the fresh Connection Loader composition and affected readiness/ownership/effect oracles; sealed r4 derivative and existing 32-family authority reused.",
+  "freeze": {
+    "path": "docs/ni6-connection-dependency-fix-freeze-2026-10-07.md",
+    "bytes": 3040,
+    "sha256": "97249dda303476b6d51931c9ade59f2b6efaef38aff33dd7f7bcdf18abbc85f3"
+  },
+  "coreReviewedSourceSeals": [
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/README.md",
+      "bytes": 3587,
+      "sha256": "41db1d9e9d0b0195fdc924f3aaf531fa6be1e553618f835ec689f7623b82f083"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/diagnostic.mjs",
+      "bytes": 23577,
+      "sha256": "a4ff1ba859b15509660ce88e3c4088ff1aa0747cf74fe3ac18c75be6130b486a"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/execution-plan.proposed.json",
+      "bytes": 6694,
+      "sha256": "d8f995e5b56f612557f247c81c6209f2e7c24ff5117e66fe37cca5d4675df4ea"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+      "bytes": 31440,
+      "sha256": "66111ac925361ae4a13c19e02f2293a3e289ab16b8618a9776aaf6a6c820fd40"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-delta.diff",
+      "bytes": 18105,
+      "sha256": "66e0e0e1f856f6bac5e1449e1f071bd4927ab0d2a9cd9d0f491d84e66afe3ffd"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-source.json",
+      "bytes": 12033,
+      "sha256": "58482acba59ea3e90bba4a9e15eac48f916c6d196b29fc3480eca0182bd862d4"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-source.md",
+      "bytes": 2716,
+      "sha256": "d2a8b92ff6c9063ec47ad7a177771df2333b55e7111c2c74bc8c855556828b1f"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+      "bytes": 141346,
+      "sha256": "ccdfd09e495aad6d9e13fd27976d32ba17e9ed78864eef9e6235cdbcaf101b72"
+    }
+  ],
+  "inheritedR4TestDesignAuthority": [
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r4-independent-test-design-review.md",
+      "bytes": 4506,
+      "sha256": "bca5dbc506af2f7dda80885db9aeaf896ab133ad375706d2f90834244a1bce83"
+    },
+    {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r4-independent-test-design-review.json",
+      "bytes": 13846,
+      "sha256": "b862059d3b07b5d2285f5ae07a40c922d069781853b181fd46711b748b1ef019"
+    }
+  ],
+  "publicSourceSupport": {
+    "actualPins": [
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "bytes": 35140,
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc-host.d.ts",
+        "bytes": 2743,
+        "sha256": "4655fdfdef83f155b6aa8d8240b8ae74972ddcc185e8873efde7b819fc0e7426"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+        "bytes": 24077,
+        "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "bytes": 60361,
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+      }
+    ],
+    "nativeFixturePrecedent": {
+      "path": "test/installed-worker-setup.test.mjs",
+      "bytes": 8655,
+      "sha256": "83b5e9aa11359892e5a42c990f5b70872ede70da91015bdfad7fb9e3bdebd6cc"
+    },
+    "findings": [
+      "Original Connection exports inject=[credentials]; rpc captures this.ctx and its registration effect resolves owner.webServer.",
+      "Cordis creates an owner shadow and resolves dependencies against the originating Connection fiber.",
+      "Loader internal/plugin merges entry.options.inject into the existing fiber.inject map; Inject.resolve adds webServer without replacing credentials.",
+      "Published rpc-host.d.ts marks register private; diagnostic uses the public Loader route and introduces no direct call.",
+      "Existing installed-worker-setup native fixture at line 22 creates original Connection with inject=[webServer] and awaits its resolved raw fiber.",
+      "Installed product already declares webServer; r5 changes fixture composition only."
+    ]
+  },
+  "actualR4Context": {
+    "proof": {
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r4-actual-return.json",
+      "bytes": 3503,
+      "sha256": "66033a01f12983791e742a3b1b15c7a22b88d045b4c185b2eac8bf61d74e60f8"
+    },
+    "evidenceOwner": "Root; no runtime performed by this reviewer.",
+    "diagnostic": {
+      "CODE": "BLOCKED_UNCHANGED",
+      "all87": "HOLD",
+      "category": "REJECTION",
+      "completedPlugins": 11,
+      "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+      "entryRemoved": false,
+      "phase": "ENTRY_APPLY_RPC_REGISTRATION",
+      "result": "FAILED_HOLD",
+      "rootClosed": false,
+      "zeroNative": true
+    },
+    "syntaxExit": 0,
+    "diagnosticExit": 1,
+    "driverExit": 1,
+    "bothCommandStreamsComplete": true,
+    "allOwnedGroupsAbsentObserved": true,
+    "signalAttempts": 0,
+    "underlyingStartupException": "NOT_ESTABLISHED",
+    "timingQualification": "Supported-call clock records21:35:59\u219221:36:08 while executor-local records21:32:01\u219221:32:13. Preserve both; no common wall clock, enclosing process interval or precise final execution duration is proved. Preterminal executor scalars remain separate.",
+    "commonWallClockOrInvocationIntervalProved": false,
+    "exactFinalMonotonicDriverDurationProved": false,
+    "projectionRepresentation": "The public evidence diagnostic file is formatted separately from the compact child result; their byte sizes must not be conflated."
+  },
+  "selectedCorrection": {
+    "classification": "SOURCE_SUPPORTED_FIXTURE_DEPENDENCY_OMISSION_HYPOTHESIS_PENDING_CORRECTED_RUN",
+    "runtimeConfirmationPending": true,
+    "phase": "PLUGIN_CONNECTION",
+    "officialModule": "file:///Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+    "extraInject": [
+      "webServer"
+    ],
+    "configuration": {
+      "trustedHosts": [],
+      "cookieMaxAgeDays": 1,
+      "maxRequestBodyBytes": 65536,
+      "recovery": {}
+    },
+    "readinessSequence": [
+      "Loader.create",
+      "Loader.await",
+      "Loader.resolve local connectionId",
+      "Require entry and raw fiber",
+      "Save raw fiber",
+      "fiber.await",
+      "Require state===2 and uid!==null",
+      "Increment completedPlugins once"
+    ],
+    "originalCredentialsModuleClassApplyAuthConserved": true,
+    "productSourceOrConditionChanged": false,
+    "privateRegisterCalled": false,
+    "replacementServiceOrIdentity": false,
+    "connectionOwnership": "Separate local Connection ID and saved raw fiber; product entry retains its distinct entryId/fiber and once-only Loader removal."
+  },
+  "completedInertChecks": {
+    "diagnosticExactSelectedDelta": true,
+    "runnerThreeNamespaceNamesOnly": true,
+    "fourSectionLiteralDeltaEquality": true,
+    "sevenOwnedActualByteHashesVerified": true,
+    "manifestActualByteHashVerified": true,
+    "inheritedInputRowsExactMetadata": 462,
+    "predecessorOwnedRowsExactMetadata": 72,
+    "newInputRowsDeclaredBySealedAuthority": 80,
+    "inputRows": 542,
+    "inputBytes": 19782394,
+    "ownedRows": 7,
+    "futureClosedPinUnion": 554,
+    "sourceCopies": 14,
+    "packageReuse": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r4/package",
+    "newPackageCopiesOrBuilds": 0,
+    "newDescriptorEdits": 0,
+    "sevenTopologyRowsExactMetadata": true,
+    "sixPublicGatesAnd26HostKeysConserved": true,
+    "78PhasesAnd16StagesConserved": true,
+    "budgetsAndClosedResultContractConserved": true,
+    "originalNodePythonBuildGraphProvenanceMetadataConserved": true,
+    "fullHostGraphOr65FilePackageReauditPerformed": false,
+    "inputRehashScope": "Affected owned sources, manifest, freeze, public proof, native precedent and public source support; inherited package/graph byte authority reused."
+  },
+  "declaredAffectedDirectEffects": {
+    "qualification": "Prospective maxima, not observed runtime counters or transitive-effect totals.",
+    "ContextPluginCallsMaximum": 10,
+    "originalHostPluginInvocationsMaximum": 11,
+    "ConnectionLoaderEntriesMaximum": 1,
+    "LoaderCreateAwaitResolveMaxima": [
+      2,
+      3,
+      2
+    ],
+    "ConnectionRawFiberWaitMaximum": 1,
+    "existingProductEntryFiberWaitMaximum": 2,
+    "unchangedTransitiveEffects": "Original fresh credential-file write/lock and declared in-memory SQLite/memory-validation effects remain.",
+    "newSetupTaskWorkerModelProviderToolSessionAgentOrDispatchedHttpWork": false
+  },
+  "affectedExistingTestOracles": {
+    "families": [
+      "D02",
+      "D15",
+      "D16",
+      "D20",
+      "D32"
+    ],
+    "positive": "Corrected natural run passes original Connection readiness, product raw await and entry-state checks, then original entry removal and inventory assertions.",
+    "confirmingProjection": "Reaching ROOT_CLEANUP after unchanged prior assertions with completedPlugins=11, entryRemoved=true and zeroNative=true supports the selected fixture correction; it does not establish an underlying exception payload.",
+    "strictRootQualification": "If original root disposal restarts and remains active, rootClosed=false and FAILED_HOLD remain mandatory despite startup/removal success.",
+    "earlierFailure": "Any earlier first failure or timeout remains authoritative and leaves corrected-startup confirmation incomplete.",
+    "negativeBoundaryFailureDesigns": "Existing designs retained prospectively. No new family, fault, signal or candidate run selected."
+  },
+  "inheritedGuardQualifications": {
+    "budgetsSeconds": {
+      "bookkeepingInsideEachCommand": 1,
+      "diagnosticCleanupInsideTotal": 4,
+      "diagnosticTotal": 35,
+      "nodeCleanupInsideDiagnostic": 5,
+      "nodeFinalAbsoluteEnd": 30,
+      "nodeResultReserveInsideFinal": 0.5,
+      "nodeWorkInsideDiagnostic": 24,
+      "postReadbackMaximum": 25,
+      "primaryAbsoluteEnd": 85,
+      "setupPreflight": 20,
+      "syntaxCleanupInsideTotal": 1,
+      "syntaxTotal": 5,
+      "terminalConservativeReserve": 5
+    },
+    "outerMaximumActiveSeconds": 90,
+    "closedResult": {
+      "fields": 10,
+      "phaseValues": 78,
+      "stageValues": 16,
+      "maximumCompactBytesIncludingNewline": 512,
+      "executorBoundedReadBytes": 513,
+      "inheritedClosedCompactMaximumSizingBytesIncludingNewline": 274
+    },
+    "onceOwnershipClosure": "Fresh consumed marker, fd/path inode ownership, caps, source-copy/pin/graph guards, EOF and owned process-group gates conserved.",
+    "stageAndTimeout": "Winning raw await settlement captures the finite own scalar before catch/cleanup. Timeout first retains ENTRY_START/DEADLINE; later finally does not prove a pre-cleanup cause.",
+    "stageMeaning": "Last marked apply statement/block entered; pre-apply NOT_REACHED and root-context checks do not establish a particular underlying error/callee/cause.",
+    "zeroNative": "Latest covered inventory boundary with retained natural first-failure history; no continuous final-event or post-root registry proof.",
+    "childVersusDriver": "A schema-valid child projection does not override nonzero command/driver or other executor failure.",
+    "timing": "Preterminal scalars do not prove final driver duration/return. Preserve supported tool return separately, and retain incompatible clock records without claiming a common enclosing interval.",
+    "buildProvenance": "Reuses the observational r4 derivative. Original successful preparation-r3 build authority remains separate; no derivative build or acceptance is claimed."
+  },
+  "runtimeSelection": {
+    "canonicalDriverInvocation": "/opt/homebrew/bin/python3 -I .runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py .runtime/root-ni6-bootstrap-diagnostic-r5-execution-plan.json",
+    "commands": [
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/diagnostic.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/diagnostic.mjs"
+      ]
+    ],
+    "D01": "NOT_RUN",
+    "D02": "NOT_RUN",
+    "noNewFaultCases": true,
+    "proposalGoFlagsFalse": true,
+    "proposalPinsEmpty": true,
+    "rootOwnsPlanApprovalAndOnceOnlyRun": true
+  },
+  "reviewActions": {
+    "performed": [
+      "Complete affected source/narrative/proposal/delta reads",
+      "Inert JSON metadata reads",
+      "Hashing",
+      "Text and metadata comparisons",
+      "Report-only writes"
+    ],
+    "candidateParsedCompiledImportedOrExecuted": false,
+    "runtimeOrFaultProbe": false,
+    "privateDataRead": false,
+    "modelNetworkProviderBrowserWork": false,
+    "CODEReceiptWork": false,
+    "candidateSourceModified": false,
+    "GitAction": false
+  },
+  "acceptance": {
+    "accepted": 0,
+    "all87": "HOLD",
+    "CODE": "BLOCKED_UNCHANGED_PERMANENT",
+    "lockedUI": "PAUSED",
+    "cloudThirdSubmissionSelected": false
+  },
+  "remainingRootOwnedGates": [
+    "Final report/source readback and actual closed plan",
+    "Supported approval and one fresh corrected run",
+    "Actual returns and post-run closure/pin/ownership evidence",
+    "Corrected-startup interpretation with strict root HOLD retained"
+  ],
+  "companionMarkdownSeal": {
+    "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+    "bytes": 4132,
+    "sha256": "dc0aef6c28949a32a7f1057eda69c4bd2f74cac75482ff237a2103458d188be5"
+  },
+  "sealConvention": "Final Markdown/JSON pair hashes supplied externally after complete readback; no recursive self digest."
+}

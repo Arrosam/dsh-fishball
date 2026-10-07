@@ -1,0 +1,103 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "acceptance": "HOLD",
+  "actualDriverExitCode": 1,
+  "actualPlanSha256": "3da6cf3c2f576101a8dab110246c9f5ec03545308b42a7d67a16953a3c93ae35",
+  "afterUtc": "2026-10-07 21:58:14 UTC",
+  "all87": "HOLD",
+  "allOwnedGroupsAbsentObserved": true,
+  "argv": [
+    "/opt/homebrew/bin/python3",
+    "-I",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+    ".runtime/root-ni6-bootstrap-diagnostic-r5-execution-plan.json"
+  ],
+  "beforeAfterClosedPins": 554,
+  "beforeUtc": "2026-10-07 21:57:54 UTC",
+  "bothCommandStreamsComplete": true,
+  "chunks": [
+    {
+      "chunk_id": "2f41f2",
+      "exit_code": null,
+      "outputCharacters": 0,
+      "session_id": 83121,
+      "wall_time_seconds": 1.001600538
+    },
+    {
+      "chunk_id": "144232",
+      "exit_code": 1,
+      "outputCharacters": 0,
+      "session_id": null,
+      "wall_time_seconds": 4.570302582
+    }
+  ],
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-observed-driver-return/v1",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "INVARIANT",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-prep01-bootstrap-diagnostic/v1",
+    "entryRemoved": true,
+    "phase": "ROOT_CLEANUP",
+    "result": "FAILED_HOLD",
+    "rootClosed": false,
+    "zeroNative": true
+  },
+  "diagnosticActualExitCode": 1,
+  "entryStartupAndRemovalPassedBySequentialUnchangedAssertions": true,
+  "exactFinalMonotonicDriverDurationProved": false,
+  "firstObservedFailure": "ROOT_CLEANUP/INVARIANT",
+  "fixtureCorrection": "CONFIRMED_AT_COVERED_ENTRY_STARTUP_AND_REMOVAL_BOUNDARIES",
+  "maximumActiveSeconds": 90,
+  "newModelCalls": 0,
+  "newTaskOrWorkerDispatch": 0,
+  "observationalDerivativeReused": true,
+  "preterminalConservativeActiveSeconds": 17.15429824986495,
+  "preterminalObservedSeconds": 12.154297583037987,
+  "productSourceChanged": false,
+  "records": [
+    {
+      "bytes": 3991,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-execution/executor-result.json",
+      "sha256": "dbea693217de8860d1d22cd0dc414e0873a6f5f0f43654b7e2c66cd4dbb872da"
+    },
+    {
+      "bytes": 3042,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-execution/command-results.json",
+      "sha256": "5a0f017529d16971f4ef18188b5941583b3487cbb91c945277ca2b02cc400f59"
+    },
+    {
+      "bytes": 291,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-execution/diagnostic-result.json",
+      "sha256": "c829b29af4010c0b20267d88c06e0d16e7dc680a1fc490bd9fda9bf26bb6c56f"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-execution/before-after.json",
+      "sha256": "a825e36ecf7cec08b7a52fd56f35877566380495abb38d3268ceb8fbaf3691ca"
+    },
+    {
+      "bytes": 86059,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-execution/root-plan.json",
+      "sha256": "3da6cf3c2f576101a8dab110246c9f5ec03545308b42a7d67a16953a3c93ae35"
+    }
+  ],
+  "replayedOrReset": false,
+  "requestClockIntervalSeconds": 20.146,
+  "requestMs": 1791410274117,
+  "returnMs": 1791410294263,
+  "revision": "bootstrap-diagnostic-r5",
+  "signalAttempts": 0,
+  "sourceSupportedCause": "The original Connection fixture omitted webServer from its originating fiber dependencies. Original public Loader inject:[webServer] composition cleared the observed registration failure while preserving original credentials and unchanged product bytes.",
+  "strictRootCleanup": "Original standalone Cordis root disposal restarts UID0; rootClosed=false and FAILED_HOLD are preserved.",
+  "supportedActionRejected": false,
+  "syntaxActualExitCode": 0,
+  "timingQualification": "Supported invocation/polling clocks and executor-local timestamps are separate records. The supported request interval includes approval/transport/polling; executor monotonic scalars are preterminal and do not prove exact final driver duration. Earlier r4 clock discrepancy remains unchanged.",
+  "uiHandoffReady": false,
+  "underlyingStartupException": "NOT_ESTABLISHED",
+  "wholeHostFilesUnchanged": 27577,
+  "wholeHostLinksUnchanged": 12,
+  "zeroNativeQualification": "Latest covered ready/removal inventories and retained natural event history; not continuous final root-cleanup coverage."
+}
