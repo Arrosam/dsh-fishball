@@ -1,0 +1,25 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "all87": "HOLD",
+  "contractVersion": "df.ni6-prep01-root-review-readback/v1",
+  "exactFinalReviews": {
+    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json": "95eb4ab73787ad63fa85962b855f9f439495a855e5d4c77f95ca68b3bdd262a0",
+    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md": "b632e0b9e0f9b2823ac93d126bac75912872b757fae647fcc3392fb79a09bc3c",
+    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json": "ebff2d368a744f82821b364abc4d442d5d39bd79edccf6ea2b7d124dfbcffd6d",
+    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md": "2a3948179c2dbbfe34e51eb87ff3d709846ea3b848e1a80a2e668ad7e276e49a",
+    "docs/evidence/NI6/public-preparation-r3-independent-source-review.json": "c0a0a257dea85a28cf1e58c5f65e38f6ec68e1b8d3cbf0774168cd61431ed811",
+    "docs/evidence/NI6/public-preparation-r3-independent-source-review.md": "1677abc205b14062853181dfbdb823bb3272a2969960a89b7c72606446d51797",
+    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json": "84d970b2f27fddf13450971f51bc809d29578a36b695dccf7c1d9219729dbdaa",
+    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md": "d1a709b7b547df674cbe503c78483e0baca83e460fe06b021d5abe4eeac4edbc"
+  },
+  "executorManifestSha256": "9455d2c27a8d89fbd2729adab059235e22d2a6e5ef96d714fa78ef9cdbe69c2a",
+  "fixtureManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "newSourceBlockers": 0,
+  "observedAt": "2026-10-07T16:46:39.154791+00:00",
+  "rootFullReads": "Final candidate source, original builders, oracle/transport/bootstrap, exact manifest/proposals and all four MD review narratives fully read; JSON evidence hashes and exact pin identities verified.",
+  "rootReviewedFinalSource": true,
+  "runtimeExecutionSoFar": 0,
+  "supportedActionTimeApprovalStillRequired": true,
+  "wholeGraphReadback": ".runtime/root-ni6-prep01-r3-pre-go-public-readback.json"
+}

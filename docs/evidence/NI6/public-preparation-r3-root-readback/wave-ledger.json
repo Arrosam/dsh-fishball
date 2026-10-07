@@ -1,0 +1,25 @@
+{
+  "activeSeconds": 30.785657708067447,
+  "build": "PASS",
+  "buildFinalized": true,
+  "contractVersion": "df.ni6-prep01-executor-ledger/v1",
+  "phases": [
+    {
+      "commandsObserved": 4,
+      "conservativePhaseChargeSeconds": 15.492590707959607,
+      "observedWorkSeconds": 10.492590707959607,
+      "phase": "build",
+      "result": "PASS"
+    },
+    {
+      "commandsObserved": 8,
+      "conservativePhaseChargeSeconds": 15.29306700010784,
+      "observedWorkSeconds": 10.29306700010784,
+      "phase": "test",
+      "result": "FAILED_HOLD"
+    }
+  ],
+  "sourceManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "test": "FAILED_HOLD",
+  "testFinalized": false
+}

@@ -1,0 +1,58 @@
+# NI6-PREP01 preparation r3 independent SOURCE review
+
+Disposition: **SOURCE_SUPPORTED_WITH_NO_NEW_FIXTURE_BLOCKER; ALL APPLICATION EXECUTION NOT_RUN/HOLD.** The exact canonical r3 selection preserves the r2 fixture meanings and coherently names the actual source-supported executor r3. This is a finite ordinary independent source review, not a build, syntax, unit, integration, native/runtime or acceptance result. Both immutable proposals remain false-GO; root alone owns concrete GO plans and executable actions.
+
+Reviewer `/root/ni6_r3_independent_source_review` is independent of author `/root/ni6_request_validation_rootcause` and root. Date 2026-10-07. Complete final six fixture JavaScript files, Python verifier, selection metadata, proposals and source reports were read as text. Only source/metadata reads, canonical raw-byte/hash/size/inventory checks, lexical import checks, literal comparisons and this new report pair were performed. No candidate parser/import/build/test/execution, application/native/model/DB/profile/listener/network/browser, OS process/signal/fault probe, private-data read or Git operation occurred. Protected final CODE was not investigated or reassessed.
+
+## Exact tree and ancestor preservation
+
+| Artifact | Bytes | SHA256 |
+| --- | ---: | --- |
+| `.runtime/ni6-public-preparation-r3/source-manifest.json` | 103159 | `1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2` |
+| `source-delta.diff` in that capsule | 64934 | `5f45d469fc5a8ac66ae64921a337021cbc326aa5edea6f29e84fe81ebecd618c` |
+| `docs/evidence/NI6/public-preparation-r3-source.md` | 6222 | `5eee48381d0810622b07961c438cb3fee02158013a8c8d96355f0151df9fec94` |
+| `docs/evidence/NI6/public-preparation-r3-source.json` | 10897 | `3897b2b06326893ca7fb3cb2156e92d1ae563622d68caed592686528c525b92e` |
+
+All79 owned plus316 input records match actual canonical regular-file bytes, sizes and SHA256: **395/395, drift0**, with no duplicate canonical record. The physical inventory is exactly78 capsule files including the separately pinned manifest. All309 predecessor owned/input records still match. The current316-input set is independently reproduced exactly from those309 records, the genuine r2 manifest, four final r2 source/test review records and both r3 freezes. No future hash or result is added to that input union.
+
+Exactly69 package/body files are byte-identical to r2: all63 package inputs, `.gitignore`, public oracles, HTTP transport, original bootstrap, public functional test and31-cell pure suite. The package copies also equal their pinned r4 originals. Product59 modules, original builders, package/lock, every application assertion and every pure cell are unchanged. The separately frozen r2 source-review pair (`77d68e98…` / `044dd756…`) and test-design pair (`5a9ec0b4…` / `d66e045d…`) retain their exact full hashes/sizes in the attached JSON and current manifest. Existing r1/r2 rejection history, original designs, r4 closure and running QA remain untouched.
+
+## Nine affected sections and actual coupling
+
+The complete nine-section r2-to-r3 literal diff independently reconstructs byte-for-byte, **+209/-146**. It covers README; build proposal; effect bounds; import inventory; preflight; test proposal; Python verifier; author JSON; author MD. Manifest pin/count changes are separately recorded to avoid a self-hash cycle. README/report changes describe actual lineage/pins and prospective limits; they introduce no application result. Effect/import metadata changes select actual r3 executor/freeze/review paths while preserving every count, observer and import meaning.
+
+`preflight.mjs` is exactly the r2 file after literal canonical namespace and actual executor-path retargets. Its assertions and algorithm otherwise remain byte-identical. Lines9/13/39 select the actual r3 capsule/root execution plan/seal; line43 requires `.runtime/ni6-prep01-executor-r3/runner.py` directly; lines53–61 require genuine four-command r3 build evidence and exact argv; line76 joins actual r3 readback; line98 restricts the r3 inventory. There is no runner alias, reinterpretation, captured handler, override or gate bypass. `verify-built-package.py:9,12,28` is the exact retarget-only verifier; its original algorithm remains unchanged and was not executed.
+
+Both false-GO proposals consistently name the actual r3 runner, new r3 root build/execution plans, capsule/argv, generated/readback namespaces and `public-preparation-r3-build`/`-execution` evidence. Four build commands remain original prebuild, client builder, descriptor builder and seal-built; eight test commands remain six syntax paths in order, pure31, then public functional1, with concurrency1. Those exact arrays agree with the already reviewed executor-r3 selector and coupling constants (`runner.py:15–36,471–489,496–608`). The required eight affected reports and seven executor/design/remediation/ownership/coupling pins agree across manifest/proposals. The immutable r2 runner equality remains historical rather than being silently weakened; the root coupled freeze `b08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671` explicitly selects this new successor.
+
+The selected executor manifest `9455d2c27a8d89fbd2729adab059235e22d2a6e5ef96d714fa78ef9cdbe69c2a` and runner `3040abad3378ac506d2f310a3963afaea4fb596897620f4e6cf949dc0b99f177` match. Its independent source pair is separately sealed (`b632e0b9…` / `95eb4ab7…`), source-supporting the ownership remedy and conserved eight guards with explicit observed-check admission/completion/final-return qualification. This fixture review preserves that separate disposition; it does not turn any36-family executor source branch into a runtime pass. Actual successful build driver return remains mandatory before root test GO; persisted PASS alone cannot prove an uncatchable OS boundary.
+
+## Preserved nine original expectations
+
+| Original case | Source obligation retained on byte-identical final bodies | Actual result |
+| --- | --- | --- |
+| NI6-PREP01-01 authentic build/lifetime | Built-in preflight before original bootstrap import, actual builders/descriptor64/graph/peer binding, original Context/Loader/plugin lifecycle | NOT_RUN |
+| NI6-PREP01-02 owner transport/framing | Genuine original authenticated Node HTTP, bounded token-cookie exchange, exact route/method/RPC-ID/result shapes | NOT_RUN |
+| NI6-PREP01-03 consent/no-write preview/storage | Original setup-required → bounded preview without files/sidecars → explicit confirm/ready and genuine schema7 capabilities/storage metadata | NOT_RUN |
+| NI6-PREP01-04 owner intake/baseline | One genuine intake, queued/auth0 task, closed snapshot18/goal10/detail and independent status/export joins | NOT_RUN |
+| NI6-PREP01-05 complete preparation | Public14-field result/context15 metadata/body, complete provenance/task/memory/source/ledger/digest/text/UTF8/token joins, semantic+1 and first-transition conservation | NOT_RUN |
+| NI6-PREP01-06 historical acknowledgement | Same entire frozen six-field request once, equal complete result, whole snapshot unchanged except observedAt | NOT_RUN |
+| NI6-PREP01-07 different stale command | Only commandRef changes, exact STALE_VERSION, status/export and all public facts unchanged | NOT_RUN |
+| NI6-PREP01-08 zero native effects | Original count hooks before activation;44 live windows/176 registry reads, seven categories and one metadata diagnostic; no observer use after closure | NOT_RUN |
+| NI6-PREP01-09 disposal/preservation | Original Loader.remove once, saved Fiber.await/Loader.await/public absence, parent-live physical404, root closure and retained storage metadata/history | NOT_RUN |
+
+`public-oracles.mjs:12–80,103–153` still closes snapshot18/task9/goal10/context15/detail, requires all11 fact collections empty and schema7/active/safe semantic revision, joins current semantic revision once, retains the old goal exactly and conserves every other top-level first-transition field. The public result/body/task/memory/accounting assertions remain unchanged. GeneratedAt remains an original safe timestamp; no request.now equality or typed-currentness call is added. Actual original lifecycle and DTO behavior still require later execution; a synthetic array/object or source predicate cannot manufacture authority or native facts.
+
+The complete31-cell suite remains byte-identical, three positive/28 negative flat UNIT_ONLY assertions with only Node:test/assert and the pure oracle module, transitively built-in assert/crypto. Lexical import inventory lines match every final source line, including dynamic original-bootstrap import after preflight. No new host/product/provider/authority helper or test family exists.
+
+## Gates, effect bounds and remaining HOLD
+
+`public-preparation.test.mjs:22,45` preserves the before-original-import gate. `preflight.mjs:31–108` still requires genuine root reviewed GO/seal/all395 pins/eight final reviews/actual executor and freeze/design pins, canonical Node/Python identities, full27577-file/12-link original graph, actual four-builder results, actual client/authentic64-file descriptor/readback, original peer link and fresh runtime namespace. Root still must materialize that complete closed plan and actual generated hashes. This source-only review does not reexecute/reimport the unchanged full host graph. No generated client, descriptor, peer link, build-attempt/readback or private-runtime exists at this seal.
+
+Original launch snapshot-before11-plugin activation, synthetic DSH_HOME/XDG_CONFIG_HOME, explicit credential path/dshHome with watch:false, SystemPrompt-before-Tools, genuine original owner HTTP scope and supported scoped logger remain byte-exact. No inherited personal profile/key/credential or QA path, supplied PeerScope/private core/manager handle, model/preset/AgentLoop/persistence activation, fabricated donor or authority is added. Four storage targets remain metadata-only; authentication URL/cookie/headers/raw wrappers/keys/prose never enter the unchanged allowlisted14-field successful diagnostic. Finite source error codes retain fail-stop privacy.
+
+All limits remain prospective:20 HTTP/18 domain calls;44 windows/176 registry reads;seven count-only categories/one public diagnostic;16 interpreter starts;4build/6syntax/1pure/1functional commands;180s shared active and60s command ceilings, with owned cleanup/bookkeeping inside those ceilings; functional10/40/5s and Node55s. Request/response/cookie/HTTP timeout caps remain2048/65536/4096 bytes/2000ms. Expected native/model/tool/claim/grant/worker effects are0, not measured here. Source deadlines and lifecycle checks supply no instant cancellation, atomic filesystem replacement or universal OS-termination guarantee. Every failure/denial/unknown boundary remains HOLD with no retry/advancement.
+
+New fixture SOURCE findings: **0**. The affected canonical selection is source-supported, but all9 functional expectations,31 pure cells and36 executor families remain NOT_RUN/HOLD. Concrete root build/execution plans, full final fixture/executor review pairs, supported action-time approval, genuine build/output evidence and actual successful driver return are still required in sequence. No executable action or acceptance is authorized by this report.
+
+Standalone functional host runnable cells0; prospective root-built public cell1; previous direct-instance mapping0complete/8partial/2held and pending47 calls/IH01–03/IH05/source-task-check identity/Q-count/cold/browser/mounted-UI/typed-currentness/native obligations remain unchanged. All87 remain accepted0/HOLD; final CODE stays permanently blocked. Only this fresh report pair was written; all previous seals and reports remain immutable.

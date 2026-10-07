@@ -1,0 +1,121 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "NI6NewModelPOSTs": 0,
+  "UIProfileListenerMutation": 0,
+  "accepted": 0,
+  "actualBuildDriverExitCode": 0,
+  "actualBuildToolSessionId": 31815,
+  "actualValidationDriverExitCode": 1,
+  "actualValidationToolSessionId": 5023,
+  "aggregateCeilingSeconds": 180,
+  "aggregateConservativeActiveSeconds": 30.785657708067447,
+  "all87": "HOLD",
+  "allObservedCommandGroups": "ABSENT_OBSERVED",
+  "allObservedCommandStreams": "BOTH_EOF_COMPLETE_VERIFIED_PREFIX",
+  "branch": "feat/S3-integrations",
+  "buildCommandsPassed": 4,
+  "buildPublicResultSha256": "267963be7dd12b832b5e7495ab60b8d34b7d11fb5ab1d10d8ca7eb553358606d",
+  "contractVersion": "df.ni6-prep01-r3-root-actual-result/v1",
+  "executorManifestSha256": "9455d2c27a8d89fbd2729adab059235e22d2a6e5ef96d714fa78ef9cdbe69c2a",
+  "finalMVPOrReleaseAccepted": false,
+  "functionalCause": "NOT_OBSERVED",
+  "functionalExitCode": 1,
+  "functionalFailureCode": "EXECUTOR_COMMAND_NONZERO",
+  "functionalFinalDiagnostic": "NOT_OBSERVED",
+  "functionalPassed": 0,
+  "functionalRequestAndNativeCounts": "NOT_OBSERVED",
+  "functionalSelectedCommands": 1,
+  "functionalStage": "NOT_OBSERVED",
+  "historicalModelPOSTs": 1,
+  "markersPreserved": true,
+  "observedAt": "2026-10-07T17:13:58.353920+00:00",
+  "privateOutputDecodedOrCopied": false,
+  "pureTAP": {
+    "cancelled": 0,
+    "fail": 0,
+    "pass": 31,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 31,
+    "todo": 0
+  },
+  "repo": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "runtimeMetadataCopies": [
+    {
+      "bytes": 4798,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/root-materialize-ni6-prep01-r3-go.py",
+      "sha256": "a2aec1deffc4a92dcdbc95c995d95d0b7e5401b478b09fdd7b145cbeaf1bd737",
+      "source": ".runtime/root-materialize-ni6-prep01-r3-go.py"
+    },
+    {
+      "bytes": 2004,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-review-readback.json",
+      "sha256": "056956881d7acc4f2e7b668b52b72d18594c52ecc327ca15b7e7faa85b648b7b",
+      "source": ".runtime/root-ni6-prep01-r3-review-readback.json"
+    },
+    {
+      "bytes": 330,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-pre-go-public-readback.json",
+      "sha256": "615fd1893ffe4a0cb470f14edac778c6e843f6bbabc61d1c6367229befa76a1c",
+      "source": ".runtime/root-ni6-prep01-r3-pre-go-public-readback.json"
+    },
+    {
+      "bytes": 72812,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-public-preparation-r3-build-plan.json",
+      "sha256": "fa728e6cb2bf942f703b9c2fe7548562bb0e197a62838a606855bd8c8a345358",
+      "source": ".runtime/root-ni6-public-preparation-r3-build-plan.json"
+    },
+    {
+      "bytes": 759,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+      "sha256": "71769b976186b302fd455a2728c904b7d02cb5cf5d5f63ad2d69e9751b2d4c14",
+      "source": ".runtime/root-ni6-prep01-r3-observed-build-return.json"
+    },
+    {
+      "bytes": 74529,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-public-preparation-r3-execution-plan.json",
+      "sha256": "f11d107f8d960c4c84d21e048467dc03d4e8b7a356774a021ca3df46c6dad9c6",
+      "source": ".runtime/root-ni6-public-preparation-r3-execution-plan.json"
+    },
+    {
+      "bytes": 348,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/build-invocation.json",
+      "sha256": "54ae942dffb47e98b59f77b201cfd28bd7b3b4c6cbd3147835037c9f9692e8f1",
+      "source": ".runtime/ni6-prep01-executor-r3/build-invocation.json"
+    },
+    {
+      "bytes": 376,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/test-invocation.json",
+      "sha256": "fba3dd9275613f55641a8d49acba4ff57f96beb75bfceade94f3a304b8c744d3",
+      "source": ".runtime/ni6-prep01-executor-r3/test-invocation.json"
+    },
+    {
+      "bytes": 707,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/wave-ledger.json",
+      "sha256": "b8bbb74f51a4f74a26f851fced73a54373eb6f78bc84edfdfadbc9727d6f8c8f",
+      "source": ".runtime/ni6-prep01-executor-r3/wave-ledger.json"
+    },
+    {
+      "bytes": 171,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/build-attempt.json",
+      "sha256": "362d5572307d922c1d68ee12d1a872c1175a73fcb67c2f3ab188a84c62ecfe2f",
+      "source": ".runtime/ni6-public-preparation-r3/build-attempt.json"
+    },
+    {
+      "bytes": 739,
+      "copy": "docs/evidence/NI6/public-preparation-r3-root-readback/build-readback.json",
+      "sha256": "007b657e8d7f07d36cfa279acb8a27dfd0415f8876f2597eb68e2e319f6a67ce",
+      "source": ".runtime/ni6-public-preparation-r3/build-readback.json"
+    }
+  ],
+  "runtimeRetry": 0,
+  "selectedModelCalls": 0,
+  "signalsObserved": 0,
+  "sourceManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "syntaxCommandsPassed": 6,
+  "testCommandResultsSha256": "9a8b0dbb939643924793cf10c83efef5f9b7ba2d5866cd495184e7d88e2aaa06",
+  "testPublicResultSha256": "aebe846cde9fcd2fbbaa75639f43ff0c65edb67b788cc4a7f0998f9c670cefd0",
+  "wholeHostBeforeAfterFiles": 27577,
+  "wholeHostBeforeAfterLinks": 12,
+  "wholeHostBeforeAfterUnchanged": true
+}

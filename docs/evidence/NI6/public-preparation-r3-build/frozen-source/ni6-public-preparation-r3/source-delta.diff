@@ -1,0 +1,682 @@
+--- .runtime/ni6-public-preparation-r2/README.md
++++ .runtime/ni6-public-preparation-r3/README.md
+@@ -1,25 +1,19 @@
+-# NI6-PREP01 public preparation r2 source capsule
++# NI6-PREP01 public preparation r3 source capsule
+ 
+-Status: **SOURCE_ONLY_NOT_RUN; BUILD/EXECUTION GO FALSE.** Root selected this exact successor in `docs/ni6-preparation-r2-delta-2026-10-07.md`, under `docs/ni6-preparation-r2-executor-freeze-2026-10-07.md`, with the additive executor-r2 selection in `docs/ni6-executor-r2-remediation-freeze-2026-10-07.md`. R1 and its two blocking review pairs remain immutable, unexecuted evidence. This capsule changes fixture assertions and future plan plumbing; all63 package build inputs, `.gitignore` and `http-rpc.mjs` remain byte-identical to r1. The unchanged package includes59 r4 source modules and its original builders. There is no actual client, authentic native descriptor, peer link, build marker/readback, synthetic runtime/profile/credential/database or listener at the source seal.
++Status: **SOURCE_ONLY_NOT_RUN; BUILD/EXECUTION GO FALSE.** This successor implements only the literal path/review/namespace retarget selected by `docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md` (4702B, SHAb08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671). Preparation-r2 and executor-r2 remain sealed historical evidence. The separately selected `.runtime/ni6-prep01-executor-r3/runner.py` implements the frozen fresh-destination ownership and observed-stop qualification; its source seal supplies no runtime result.
+ 
+-The original public lifecycle now retains its actual Loader entry ID/fiber, invokes `Loader.remove(entryId)` once, awaits the saved original `Fiber.await()` and `Loader.await()`, checks absence through public `Loader.entries()` and checks fiber closure. The single original authenticated HTTP404 follows while original parent Connection/WebServer remain live. Whole-root disposal follows through its original fiber. There is no second direct disposal of the removed entry or substituted lifecycle.
++All63 original package build inputs, the five public oracle/transport/bootstrap/functional/pure files and `.gitignore` are byte-identical to preparation-r2. That preserves59 product modules, all31 flat UNIT_ONLY cells (three positive/28 negative), every public DTO/semantic/provenance/receipt/protected-text/digest/UTF8/accounting/repeat/stale/removal/cleanup assertion, original11-plugin/auth composition and original observations. The only executable fixture differences are canonical literals in preflight and the retarget-only Python byte verifier. Preflight's runner, root plans, command vectors and evidence/generated namespaces honestly name r3. There is no runner alias, assertion bypass or old report used as acceptance.
+ 
+-The public oracles independently close snapshot18, task9, goal metadata10, prepared-context metadata15, and detail as closed `{task,data}` with exact metadata plus its sole content field. Schema7/active control, safe numeric/reference/byte/crypto/memory domains, unique data references and all11 empty work/fact arrays are required. Goal digest/bytes/version/auth bind the admitted synthetic goal/intake. First preparation advances task and semanticRevision once, joins context.semanticRevision, retains the old goal exactly, and conserves every other public top-level field after excluding only observedAt/task/data/semanticRevision. Agreement between status/export does not admit plaintext or extra fields.
++The original public lifecycle retains the Loader entry ID/fiber, invokes Loader.remove once, awaits saved Fiber.await and Loader.await, checks public entries absence/fiber closure, observes the same single physical404 through the still-live original parent, then closes the root/listener. The closed public shapes remain snapshot18/task9/goal10/context15/detail metadata-plus-content, all11 empty fact arrays, semanticRevision +1/context join and conservation of all other first-transition top fields. Typed currentness stays outside this RPC slice. No private owner/core/manager handle, captured handler, method override, invented PeerScope/receipt/donor or authority mock is supplied.
+ 
+-All earlier correct receipt14/envelope15/provenance/protected-text/digest/UTF8/fixed-density-accounting assertions remain. The fresh request has exactly six fields with terms:[] and one frozen now; the exact repeat preserves that whole request/receipt/public snapshot, and only commandRef changes for the old-CAS stale refusal. Repeat/stale comparisons exclude only observedAt. Public data adds one context; no private paired check is counted. GeneratedAt remains an original safe timestamp and is never equated to request.now. Typed currentness remains outside the public RPC slice.
++Prospective counts remain20HTTP/18domain RPC/44live windows/176registry reads/seven natural event categories/one public diagnostics read/14-field successful diagnostic. Transport limits remain2048-byte JSON request,65536-byte complete response,4096-byte cookie and2000ms per attempt. Connection's maxRequestBodyBytes remains its original /api configuration, not a claimed /df prefix server cap. Expected model/tool/claim/grant/worker/agent/session effects are zero. All observations are prospective; post-close counters are historical only.
+ 
+-`fixture-oracles.test.mjs` contains exactly31 flat **UNIT_ONLY** cells: U01 ordinary baseline, U02 frozen baseline, U03 full prepared transition/detail; U04/U05 missing/extra snapshot; U06/U07 schema/control; U08 semantic domain; U09–U19 eleven separately nonempty fact arrays; U20/U21 leaked/missing goal metadata; U22/U23 leaked/missing context metadata; U24/U25 extra goal/context detail field; U26 source-version mismatch; U27/U28 missing/double semantic increment; U29 semantic join mismatch; U30 policy mutation; U31 retained-goal mutation. These are three positive and28 negative synthetic DTO cases with finite expected codes, no nested cells and no original host/product/provider imports, authority instances or lifecycle facsimiles. The sole local dependency is the pure oracle module with built-in assert/crypto. They prove only assertion behavior if root later runs them.
++One future fresh `private-runtime` under this capsule confines every synthetic launch/profile/workspace/credential/setup/data/session path. Original snapshot-before-plugins, credential watch:false and supported quiet logger remain. The future original127.0.0.1:0 listener excludes3080. Authentication URL/cookie/headers/credential/key/DB/raw wrappers remain private; catches emit finite codes. Only type/owner/mode/device/inode storage metadata is inspected. Nothing is created outside the source tree in this authoring lane; no generated client/descriptor/peer link/build evidence or synthetic runtime exists at seal.
+ 
+-The unchanged public bootstrap uses original Context and11 direct plugins, SystemPrompt before Tools, then one original Loader-installed entry and its genuine setup-activated schema7 child. Before activation it supplies the original launch snapshot with only fresh synthetic DSH_HOME/XDG_CONFIG_HOME. Credential watch is false; all profile/workspace/auth/data/session paths are explicit in the new private-runtime namespace. Public original Connection.apply provides genuine BrowserAuth admission and Node HTTP `/df-setup`/`/df-rpc` prefixes. No captured handler, supplied PeerScope, private route, original-method override, QA cookie/key, inherited credential home, model adapter/preset/Loop/persistence driver or raw owner/core/manager instance is supplied.
++False-GO proposals retain four original build/gate commands, six syntax paths in the frozen order, one31-cell pure command then one public functional command, concurrency1/once/first-failure STOP. The separately reviewed root executor conserves180 active seconds across phases/60 seconds per command, with4s owned cleanup+1s command bookkeeping and5s nonadditive phase terminal charge inside those ceilings,1MiB per private stream/2MiB per command. Functional preflight/active/cleanup remain10/40/5s with55s Node timeout. Maximum16 interpreter starts includes two phase drivers/four build interpreters/six syntax Nodes/two test parents/two ordinary Node test workers; no native worker proof follows.
+ 
+-HTTP20/domain18 remain: one private token-cookie exchange; setup status/prepare/confirm/status; task list/intake/status/export/goal detail/prepareContext/status/context detail/export/exact repeat/status/different stale prepare/status/export; one post-removal physical404. Fixture limits remain2048-byte JSON request,65536-byte full response,4096-byte cookie and2000ms per attempt. Connection's configured maxRequestBodyBytes is its `/api` configuration, not a claimed original `/df-*` cap. Seven original count-only natural categories start before activation and preserve waterfall next delegation. Forty-four live windows perform176 original registry/inventory reads, plus one public metadata-only df.diagnostics read. Expected native/model/tool/claim/grant/execute effects remain zero; all counts are prospective. Post-root-close counters are historical only.
++Final owned inventory remains79 records including the two source reports, with78 physical capsule files including its separate manifest. The ancestor input union is counted from actual canonical records at seal, including the actual final preparation-r2 reviews and both r3 freezes. Future root GO separately requires actual executor source/manifest/design/eight fresh affected reports and later genuine original build/readback/output records. No future hash or success record is invented. `source-delta.diff` records exact r2-to-r3 literals; the manifest is separately pinned to avoid self-hashing.
+ 
+-Only original setup creates the fresh encrypted durable state. Four storage targets are inspected for type/owner/mode/device/inode before and after original closure, never contents, private DB rows, key/cipher hashes or fake terminal evidence. The namespace is preserved and ignored by Git. Original scoped logger config filters output without method replacement or exporter; finite PREP01 errors replace arbitrary payload/cause/AssertionError dumps. Authentication URL/cookie/header/raw wrappers remain private. The existing14-field functional diagnostic output remains unchanged. Root commits only its strictly allowlisted summaries and pinned public source, keeping raw command streams private.
++Root must fully review the fresh fixture/executor source and affected source/test reports, materialize exact pinned true-GO plans and receive supported finite loopback approval before any command. A refused/denied/interrupted/unknown phase cannot advance or retry. The actual successful build driver return is required before test GO; persisted PASS alone cannot prove that OS boundary.
+ 
+-Both immutable proposals remain false-GO and select only the separately frozen root NI6 executor. The separately sealed executor is `.runtime/ni6-prep01-executor-r2/runner.py`; root separately pins its source/manifest, unchanged independent design, additive remediation freeze and eight exact affected reports. Its source-only seal supplies no command outcome. The byte verifier is only retargeted, preserving its algorithm. Root runs exactly four original build/gate commands, six syntax commands in frozen order, one31-cell pure command, then one public functional command. Two phase drivers+four build interpreters+six syntax Nodes+two test parents+two ordinary Node workers bound direct interpreter starts at16; native worker starts are0. Root conserves the shared180-second active budget, at most60 seconds per command with owned process cleanup/stream bounds and first-failure stop. Functional preflight/active/cleanup limits remain10/40/5 seconds and Node timeout55 seconds.
+-
+-Preflight checks the separate exact root GO, manifest/owned/input bytes, eight reports, executor/source-manifest/design pins, genuine four build-command results, generated64 descriptor/client/readback, original full27577-file/12-link graph, peer binding and fresh namespace before importing bootstrap. Credential/launch-environment dependencies outside the product descriptor remain covered by the separately pinned complete official graph. No rejected historical runner is selected and no generated pin or result is invented.
+-
+-Final source inventory:79 owned records including two external reports;230 input records;78 physical capsule files including its manifest. `source-delta.diff` gives literal differences from r1 for changed/new fixture and report files; manifests are separately byte-pinned to avoid a self-hash cycle. All input/source hashes are author raw-byte readbacks, not JavaScript parsing or application evidence. Root must obtain fresh fixture/executor source and test reviews, genuine build/output evidence and supported finite loopback execution GO.
+-
+-Standalone functional host runnable cells at seal0; proposed root-built public cell1; pure cells31 NOT_RUN. Existing direct-instance mapping0complete/8partial/2held, original IH01–03/IH05 setup/donor/cold/lifecycle gaps, partial source/task/check identity and Q index-count gaps, and pending47 calls remain. This capsule proves no cold A-exit/fresh-B, native worker, mounted UI/browser, typed currentness or aggregate acceptance. All87 remain accepted0/HOLD and final CODE remains permanently blocked.
++Standalone functional host runnable cells0; proposed root-built public cell1; pure31 NOT_RUN. Prior direct-instance mapping0complete/8partial/2held and pending47 calls (40reads/2preparations/4owner-intent/1cancel), IH01–03/IH05 original setup/spec/consent/donor/cold/lifecycle/current-owner prerequisites, partial source/task/check identity/Q index-count gaps, typed currentness/native-worker/cold/browser/mounted-UI/global acceptance remain HOLD. All87 accepted0/HOLD and final CODE permanently blocked are unchanged. Running QA and every earlier source/report remain untouched.
+--- .runtime/ni6-public-preparation-r2/build-plan.proposed.json
++++ .runtime/ni6-public-preparation-r3/build-plan.proposed.json
+@@ -8,28 +8,28 @@
+   "buildInputs": 63,
+   "byteGateAuthorityQualification": "Byte checks/readback do not prove builder invocation; genuine actual root command evidence is required separately before functional import.",
+   "commandResultShape": "{commands:[{index,argv,exitCode,timedOut,...}]} after actual root executions, never authored success records",
+-  "commandResults": "docs/evidence/NI6/public-preparation-r2-build/command-results.json",
++  "commandResults": "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+   "commands": [
+     [
+       "/opt/homebrew/bin/python3",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/verify-built-package.py",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/verify-built-package.py",
+       "--prebuild"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package/scripts/build-client.mjs"
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package/scripts/build-client.mjs"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package/scripts/build-native-source-manifest.py",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package/scripts/build-native-source-manifest.py",
+       "--product-root",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/package",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package",
+       "--host-root",
+       "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r2/verify-built-package.py",
++      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/verify-built-package.py",
+       "--seal-built"
+     ]
+   ],
+@@ -41,7 +41,7 @@
+     "NODE_PATH",
+     "NODE_TEST_CONTEXT"
+   ],
+-  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r2-build",
++  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r3-build",
+   "executionDriver": "New root-owned NI6 executor; exact source/manifest/design/eight affected report pins and separate once-only root GO plans required before either phase. Historical runners remain immutable inputs only.",
+   "independentDesign": [
+     "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+@@ -52,21 +52,23 @@
+   "peerLinkCreatedByPrebuild": "package/node_modules -> /Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules",
+   "pinMaterialization": "Use exact source manifest owned/input records plus manifest, these proposed plans, independent design and all four final affected reports. Canonical Node/Python included. Before/after verify full original graph. New root plan is separate; immutable proposed GO remains false.",
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json"
+   ],
+   "requiredRootGoPins": [
+-    ".runtime/ni6-prep01-executor-r2/runner.py",
+-    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    ".runtime/ni6-prep01-executor-r3/runner.py",
++    ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "reservedAbsentOutputs": [
+     "package/lib/client.js",
+@@ -79,15 +81,17 @@
+   "rootFreeze": [
+     "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+     "docs/ni6-preparation-r2-delta-2026-10-07.md",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootOwnsExecution": true,
+   "rootOwnsGit": true,
+-  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r2-build-plan.json",
++  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r3-build-plan.json",
+   "rootReviewedBuildGO": false,
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-prep01-executor-r2/runner.py",
+-  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
++  "runner": ".runtime/ni6-prep01-executor-r3/runner.py",
++  "sourceManifest": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+   "sourceModules": 59,
+   "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstNonzeroOrMismatch": true,
+--- .runtime/ni6-public-preparation-r2/effect-bounds.json
++++ .runtime/ni6-public-preparation-r3/effect-bounds.json
+@@ -105,7 +105,7 @@
+     "rootByteGateCommands": 2,
+     "rootPythonPhaseDrivers": 2,
+     "syntaxCheckCommands": 6,
+-    "testDriver": ".runtime/ni6-prep01-executor-r2/runner.py"
++    "testDriver": ".runtime/ni6-prep01-executor-r3/runner.py"
+   },
+   "publicObservers": {
+     "categoryCount": 7,
+@@ -263,26 +263,30 @@
+     "standaloneFunctionalHostRunnableCellsAtSeal": 0
+   },
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json"
+   ],
+   "requiredRootGoPins": [
+-    ".runtime/ni6-prep01-executor-r2/runner.py",
+-    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    ".runtime/ni6-prep01-executor-r3/runner.py",
++    ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootFreeze": [
+     "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+     "docs/ni6-preparation-r2-delta-2026-10-07.md",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootOwnsExecution": true,
+   "rootOwnsGit": true,
+@@ -297,7 +301,7 @@
+     "prepareCallbacksNewOnly": 1,
+     "qualification": "Original public composition inference; no private instrumentation or executed constructor count."
+   },
+-  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
++  "sourceManifest": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+   "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstNonzeroOrMismatch": true,
+   "time": {
+--- .runtime/ni6-public-preparation-r2/import-inventory.json
++++ .runtime/ni6-public-preparation-r3/import-inventory.json
+@@ -210,17 +210,21 @@
+     "scope": "UNIT_ONLY"
+   },
+   "requiredRootGoPins": [
+-    ".runtime/ni6-prep01-executor-r2/runner.py",
+-    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    ".runtime/ni6-prep01-executor-r3/runner.py",
++    ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootFreeze": [
+     "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+     "docs/ni6-preparation-r2-delta-2026-10-07.md",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+-  ],
+-  "rootRunnerFuturePin": ".runtime/ni6-prep01-executor-r2/runner.py",
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
++  ],
++  "rootRunnerFuturePin": ".runtime/ni6-prep01-executor-r3/runner.py",
+   "status": "LEXICAL_SOURCE_INVENTORY_NOT_PARSED_OR_IMPORTED"
+ }
+--- .runtime/ni6-public-preparation-r2/preflight.mjs
++++ .runtime/ni6-public-preparation-r3/preflight.mjs
+@@ -6,11 +6,11 @@
+ import { check, same, sha } from './public-oracles.mjs';
+ 
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const CAPSULE = resolve(ROOT, '.runtime/ni6-public-preparation-r2');
++const CAPSULE = resolve(ROOT, '.runtime/ni6-public-preparation-r3');
+ const HOST = resolve(ROOT, '.runtime/dsh-web');
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+ const NODE_SHA = '463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de';
+-const PLAN = resolve(ROOT, '.runtime/root-ni6-public-preparation-r2-execution-plan.json');
++const PLAN = resolve(ROOT, '.runtime/root-ni6-public-preparation-r3-execution-plan.json');
+ const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
+ function pathInRoot(name) {
+   check(typeof name === 'string' && !name.startsWith('/') && !name.split('/').some(part => !part || part === '.' || part === '..'), 'PREP01_PIN_PATH');
+@@ -36,11 +36,11 @@
+     check(existsSync(PLAN), 'PREP01_REVIEWED_PLAN_REQUIRED');
+     const plan = readJson(PLAN), manifestPath = resolve(CAPSULE, 'source-manifest.json');
+     check(plan.rootReviewedExecutionGO === true && plan.runCountAuthorized === 1 && plan.all87 === 'HOLD' && plan.CODE === 'BLOCKED_UNCHANGED', 'PREP01_REVIEWED_GO_REQUIRED');
+-    check(plan.pins?.['.runtime/ni6-public-preparation-r2/source-manifest.json'] === sha(readFileSync(manifestPath)), 'PREP01_REVIEWED_SEAL');
++    check(plan.pins?.['.runtime/ni6-public-preparation-r3/source-manifest.json'] === sha(readFileSync(manifestPath)), 'PREP01_REVIEWED_SEAL');
+     check(plan.publicGraphManifest === '.runtime/ni3-native-runtime/public-graph-pins.json', 'PREP01_ORIGINAL_GRAPH_SELECTION');
+     const manifest = readJson(manifestPath);
+     check(manifest.status === 'SOURCE_ONLY_NOT_RUN' && manifest.standaloneFunctionalHostRunnableCells === 0 && manifest.proposedPublicIntegrationCells === 1, 'PREP01_SOURCE_DISPOSITION');
+-    check(plan.runner === '.runtime/ni6-prep01-executor-r2/runner.py', 'PREP01_REVIEWED_EXECUTOR_SELECTION');
++    check(plan.runner === '.runtime/ni6-prep01-executor-r3/runner.py', 'PREP01_REVIEWED_EXECUTOR_SELECTION');
+     for (const row of [...manifest.ownedFiles,...manifest.inputFiles]) verifyRecord(row);
+     // Include the actual root-pinned generated files and fresh independent reports.
+     for (const [name, digest] of Object.entries(plan.pins)) {
+@@ -50,7 +50,7 @@
+     }
+     for (const name of manifest.requiredAffectedReviews) check(typeof plan.pins[name] === 'string', 'PREP01_AFFECTED_REVIEW_PIN_REQUIRED');
+     for (const name of manifest.requiredRootGoPins) check(typeof plan.pins[name] === 'string', 'PREP01_ROOT_GO_PIN_REQUIRED');
+-    check(plan.buildCommandResults === 'docs/evidence/NI6/public-preparation-r2-build/command-results.json'
++    check(plan.buildCommandResults === 'docs/evidence/NI6/public-preparation-r3-build/command-results.json'
+       && typeof plan.pins[plan.buildCommandResults] === 'string', 'PREP01_ORIGINAL_BUILD_RESULTS_PIN');
+     const buildCommands = readJson(resolve(CAPSULE,'build-plan.proposed.json')).commands;
+     const buildResults = readJson(pathInRoot(plan.buildCommandResults)).commands;
+@@ -73,7 +73,7 @@
+     const product = resolve(CAPSULE,'package'), descriptorPath = resolve(product,'native-source-manifest.json');
+     const built = readJson(resolve(CAPSULE,'build-readback.json'));
+     check(built.contractVersion === 'df.ni6-prep01-build-readback/v1' && built.sourceManifestSha256 === sha(readFileSync(manifestPath)), 'PREP01_BUILD_READBACK_SEAL');
+-    check(plan.pins['.runtime/ni6-public-preparation-r2/build-readback.json'] === sha(readFileSync(resolve(CAPSULE,'build-readback.json'))), 'PREP01_BUILD_READBACK_PIN');
++    check(plan.pins['.runtime/ni6-public-preparation-r3/build-readback.json'] === sha(readFileSync(resolve(CAPSULE,'build-readback.json'))), 'PREP01_BUILD_READBACK_PIN');
+     const descriptor = readJson(descriptorPath);
+     check(sha(readFileSync(descriptorPath)) === built.generated.descriptorSha256 && sha(readFileSync(resolve(product,'lib/client.js'))) === built.generated.clientSha256, 'PREP01_BUILT_OUTPUT_DRIFT');
+     check(descriptor.contractVersion === 'df.native-source/v1' && descriptor.product.name === 'dsh-fishball' && descriptor.product.version === '0.1.0-preview.1', 'PREP01_NATIVE_DESCRIPTOR');
+@@ -95,7 +95,7 @@
+     const link = resolve(product,'node_modules');
+     check(lstatSync(link).isSymbolicLink() && readlinkSync(link) === resolve(HOST,'node_modules') && realpathSync(link) === resolve(HOST,'node_modules'), 'PREP01_PEER_BINDING');
+     check(!existsSync(resolve(CAPSULE,'private-runtime')), 'PREP01_NAMESPACE_ALREADY_USED');
+-    const allowed = new Set(manifest.ownedFiles.filter(row => row.path.startsWith('.runtime/ni6-public-preparation-r2/')).map(row => row.path.slice('.runtime/ni6-public-preparation-r2/'.length)));
++    const allowed = new Set(manifest.ownedFiles.filter(row => row.path.startsWith('.runtime/ni6-public-preparation-r3/')).map(row => row.path.slice('.runtime/ni6-public-preparation-r3/'.length)));
+     for (const path of ['source-manifest.json','build-attempt.json','build-readback.json','package/lib/client.js','package/native-source-manifest.json','package/node_modules']) allowed.add(path);
+     function inventory(directory) {
+       for (const name of readdirSync(directory)) {
+--- .runtime/ni6-public-preparation-r2/test-plan.proposed.json
++++ .runtime/ni6-public-preparation-r3/test-plan.proposed.json
+@@ -3,49 +3,49 @@
+   "accepted": 0,
+   "activeAggregateBudgetSecondsBothPhases": 180,
+   "all87": "HOLD",
+-  "buildCommandResults": "docs/evidence/NI6/public-preparation-r2-build/command-results.json",
++  "buildCommandResults": "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+   "commands": [
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r2/public-oracles.mjs"
++      ".runtime/ni6-public-preparation-r3/public-oracles.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r2/http-rpc.mjs"
++      ".runtime/ni6-public-preparation-r3/http-rpc.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r2/original-bootstrap.mjs"
++      ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r2/preflight.mjs"
++      ".runtime/ni6-public-preparation-r3/preflight.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r2/public-preparation.test.mjs"
++      ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs"
++      ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--test",
+       "--test-concurrency=1",
+-      ".runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs"
++      ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--test",
+       "--test-concurrency=1",
+-      ".runtime/ni6-public-preparation-r2/public-preparation.test.mjs"
++      ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -56,13 +56,13 @@
+     "NODE_PATH",
+     "NODE_TEST_CONTEXT"
+   ],
+-  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r2-execution",
++  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r3-execution",
+   "generatedPinsRequired": [
+-    ".runtime/ni6-public-preparation-r2/package/lib/client.js",
+-    ".runtime/ni6-public-preparation-r2/package/native-source-manifest.json",
+-    ".runtime/ni6-public-preparation-r2/build-attempt.json",
+-    ".runtime/ni6-public-preparation-r2/build-readback.json",
+-    "docs/evidence/NI6/public-preparation-r2-build/command-results.json"
++    ".runtime/ni6-public-preparation-r3/package/lib/client.js",
++    ".runtime/ni6-public-preparation-r3/package/native-source-manifest.json",
++    ".runtime/ni6-public-preparation-r3/build-attempt.json",
++    ".runtime/ni6-public-preparation-r3/build-readback.json",
++    "docs/evidence/NI6/public-preparation-r3-build/command-results.json"
+   ],
+   "independentDesign": [
+     "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+@@ -79,37 +79,41 @@
+   "pureUnitScope": "UNIT_ONLY: synthetic DTO oracle acceptance/rejection; zero host authority or functional coverage",
+   "pureUnitTestCells": 31,
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json"
+   ],
+   "requiredRootGoPins": [
+-    ".runtime/ni6-prep01-executor-r2/runner.py",
+-    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    ".runtime/ni6-prep01-executor-r3/runner.py",
++    ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootFreeze": [
+     "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+     "docs/ni6-preparation-r2-delta-2026-10-07.md",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootOwnsExecution": true,
+   "rootOwnsGit": true,
+-  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r2-execution-plan.json",
++  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r3-execution-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootSupportedExecutionApprovalRequired": true,
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-prep01-executor-r2/runner.py",
++  "runner": ".runtime/ni6-prep01-executor-r3/runner.py",
+   "runnerPinRequiredFromRootGO": true,
+-  "sourceCopiesSelection": "Finite public selection from79 owned source records plus source manifest, eight fresh affected reports, the exact executor source/manifest/design/remediation freeze and actual generated original client/descriptor/readback/build results, within the selected executor allowed-copy set. All230 source inputs are pinned/read back; copying an input is not implied. Exclude synthetic runtime, credentials/setup/DB/HTTP bodies and private command streams.",
+-  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
++  "sourceCopiesSelection": "Finite public selection from79 owned source records plus source manifest, eight fresh affected reports, exact executor source/manifest/design/freezes and actual generated original client/descriptor/readback/build results, within the selected executor allowed-copy set. The actual ancestor input union is separately pinned/read back; copying an input is not implied. Exclude synthetic runtime, credentials/setup/DB/HTTP bodies and private command streams.",
++  "sourceManifest": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+   "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstNonzeroOrMismatch": true,
+   "timeoutSecondsPerCommand": 60
+--- .runtime/ni6-public-preparation-r2/verify-built-package.py
++++ .runtime/ni6-public-preparation-r3/verify-built-package.py
+@@ -6,10 +6,10 @@
+ import sys
+ 
+ ROOT = Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-CAPSULE = ROOT / '.runtime/ni6-public-preparation-r2'
++CAPSULE = ROOT / '.runtime/ni6-public-preparation-r3'
+ HOST = ROOT / '.runtime/dsh-web'
+ PRODUCT = CAPSULE / 'package'
+-PLAN = ROOT / '.runtime/root-ni6-public-preparation-r2-build-plan.json'
++PLAN = ROOT / '.runtime/root-ni6-public-preparation-r3-build-plan.json'
+ sha = lambda data: hashlib.sha256(data).hexdigest()
+ 
+ def require(condition, code):
+@@ -25,7 +25,7 @@
+     require(plan['rootReviewedBuildGO'] is True and plan['runCountAuthorized'] == 1
+         and plan['all87'] == 'HOLD' and plan['CODE'] == 'BLOCKED_UNCHANGED', 'PREP01_BUILD_GO')
+     manifest_path = CAPSULE / 'source-manifest.json'
+-    require(plan['pins']['.runtime/ni6-public-preparation-r2/source-manifest.json'] == sha(manifest_path.read_bytes()), 'PREP01_BUILD_SEAL')
++    require(plan['pins']['.runtime/ni6-public-preparation-r3/source-manifest.json'] == sha(manifest_path.read_bytes()), 'PREP01_BUILD_SEAL')
+     manifest = read(manifest_path)
+     for key in ('NODE_OPTIONS', 'NODE_PATH', 'NODE_TEST_CONTEXT'):
+         require(key not in os.environ, 'PREP01_BUILD_ENVIRONMENT')
+--- docs/evidence/NI6/public-preparation-r2-source.json
++++ docs/evidence/NI6/public-preparation-r3-source.json
+@@ -10,19 +10,55 @@
+   "actualClientBuilt": false,
+   "actualNativeDescriptorGenerated": false,
+   "allInputBytesReadAndPinned": true,
++  "ancestorReviewRecords": [
++    {
++      "bytes": 12375,
++      "path": "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
++      "sha256": "77d68e98a3ae1d1e1b8255b3462cfcb8a1e54c10f22a3eec23b68d498c7e9276"
++    },
++    {
++      "bytes": 102952,
++      "path": "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
++      "sha256": "044dd7565902c79420d98ac4dc0c191730bc420f6bb9ab83b6641c598a5000fa"
++    },
++    {
++      "bytes": 13909,
++      "path": "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
++      "sha256": "5a9ec0b496ed49455f30db1a09bcfadf1cb7f820cc15b7b49cabd3bc7596e32b"
++    },
++    {
++      "bytes": 133550,
++      "path": "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
++      "sha256": "d66e045d4e8b04f9f030d29230780a05cfb52114c9a43bf8f65fefc291a11858"
++    }
++  ],
++  "ancestorReviewsPinning": "ALL_FOUR_ACTUAL_SEALED_R2_REPORTS_READ_AND_PINNED; NO_NEW_FIXTURE_ORACLE_BLOCKER; ALL9_PLUS31_NOT_RUN",
+   "applicationSourceChanged": false,
+   "authenticDescriptorExpectedRows": 64,
+   "author": "/root/ni6_request_validation_rootcause",
+-  "buildPlan": ".runtime/ni6-public-preparation-r2/build-plan.proposed.json",
++  "buildPlan": ".runtime/ni6-public-preparation-r3/build-plan.proposed.json",
++  "byteVerifier": "Exact retarget-only copy of preparation-r2; algorithm unchanged.",
+   "contractVersion": "df.ni6-prep01-source-report/v1",
+   "date": "2026-10-07",
+-  "effectBounds": ".runtime/ni6-public-preparation-r2/effect-bounds.json",
+-  "importInventory": ".runtime/ni6-public-preparation-r2/import-inventory.json",
++  "effectBounds": ".runtime/ni6-public-preparation-r3/effect-bounds.json",
++  "exactBytesPreservedFromR2": {
++    ".gitignore": true,
++    "fixture-oracles.test.mjs": true,
++    "http-rpc.mjs": true,
++    "original-bootstrap.mjs": true,
++    "packageBuildInputs": 63,
++    "productModules": 59,
++    "public-oracles.mjs": true,
++    "public-preparation.test.mjs": true
++  },
++  "fixtureDelta": "LITERAL_CANONICAL_PATH_REVIEW_NAMESPACE_METADATA_RETARGET_ONLY; NO_ORACLE_PRODUCT_TRANSPORT_OR_CELL_SEMANTIC_CHANGE",
++  "importInventory": ".runtime/ni6-public-preparation-r3/import-inventory.json",
+   "independentDesign": [
+     "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+   ],
+-  "inputFiles": 230,
++  "inputFiles": 316,
++  "inputFilesExpectedFromActualAncestorUnion": 316,
+   "nativeDirectInstanceDisposition": {
+     "directNativeFixtureRunnableCells": 0,
+     "holds": [
+@@ -52,7 +88,7 @@
+     "proposedRootBuiltPublicIntegrationCells": 1,
+     "standaloneFunctionalHostRunnableCellsAtSeal": 0
+   },
+-  "newCapsule": ".runtime/ni6-public-preparation-r2",
++  "newCapsule": ".runtime/ni6-public-preparation-r3",
+   "officialFullTransitiveGraphFiles": 27577,
+   "officialFullTransitiveGraphLinks": 12,
+   "originalPublicPrerequisites": [
+@@ -67,6 +103,7 @@
+   ],
+   "ownedFilesExpected": 79,
+   "physicalCapsuleFilesIncludingManifestExpected": 78,
++  "preflightRunner": "Exact actual r3 runner equality; no alias/bypass.",
+   "preserved": {
+     "CODE": "permanently blocked unchanged",
+     "all87": "accepted0/HOLD",
+@@ -83,6 +120,16 @@
+       "bytes": 63650,
+       "path": ".runtime/ni6-public-preparation-r1/source-manifest.json",
+       "sha256": "a69066641fac0abcf4300135de1c81e3790af774428392798061bfbab741a77d"
++    },
++    "r2ExecutorManifest": {
++      "bytes": 6318,
++      "path": ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++      "sha256": "f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2"
++    },
++    "r2SourceManifest": {
++      "bytes": 84782,
++      "path": ".runtime/ni6-public-preparation-r2/source-manifest.json",
++      "sha256": "bf8e64c0d9f6146553ea2a1860147a5c303d10260f652e4e4339c48b33828ec8"
+     },
+     "r4Package": "all63 current r4 selected bytes unchanged",
+     "runningQa": "untouched"
+@@ -128,59 +175,67 @@
+     "scope": "UNIT_ONLY"
+   },
+   "remainingBlockers": [
+-    "Fresh fixture and executor independent affected source/test reviews pending.",
+-    "Root-reported selected executor-r2 failure-path destination ownership blocker: its evidence handle precedes successful new-directory creation. Preserve sealed executor-r2; separately frozen reviewed successor/selection amendment required, with no build/runtime GO.",
+-    "Root must pin the sealed selected executor-r2, its unchanged design/source manifest/additive freeze/fresh reviews and exact true-GO plans after full affected review.",
++    "Fresh r3 fixture/executor independent affected source/test reviews pending.",
++    "Root must materialize/pin exact source/review/design/freeze and true-GO plans after full disposition review.",
+     "Authentic original four-command build/output evidence and actual generated hashes absent.",
+     "Supported once-only loopback execution GO and observed genuine lifecycle/HTTP results pending.",
+     "All native/cold/browser/direct-instance/currentness/global acceptance holds unchanged."
+   ],
+   "remediationImplementedSourceOnly": {
+-    "F-PREP01-S01": "Original Loader.remove once, saved Fiber.await, Loader.await, public entry absence and closed fiber before retained-parent404.",
+-    "F-PREP01-S02": "Separate additive-freeze-selected executor-r2 is source-only sealed; exact source/manifest/design/remediation/review/output pins required by root. Historical rejected executor-r1 is not selected; no execution evidence exists.",
+-    "F-PREP01-TD01": "Closed goal10/context15 metadata and whole metadata-plus-content details; status/export independently validated.",
+-    "F-PREP01-TD02": "Closed snapshot18, all11 empty work arrays, schema/control/semantic domain, semantic +1/join and full first-transition conservation."
++    "coupledSelection": "New r3 literal paths align actual preflight runner, root plans, exact argv and evidence/generated namespaces; all existing r2 fixture semantics preserved.",
++    "executorOwnership": "Separately sealed executor-r3 source latches successful fresh evidence/private/ledger creation before access/finalizers and retains all eight predecessor guards; fresh affected review/result pending."
+   },
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-source-review.json",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.md",
+-    "docs/evidence/NI6/prep01-executor-r2-independent-test-review.json"
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-source-review.json",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
++    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json"
+   ],
+   "requiredRootGoPins": [
+-    ".runtime/ni6-prep01-executor-r2/runner.py",
+-    ".runtime/ni6-prep01-executor-r2/source-manifest.json",
++    ".runtime/ni6-prep01-executor-r3/runner.py",
++    ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+     "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
+-  ],
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
++  ],
++  "revision": "r3",
+   "rootFreeze": [
+     "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+     "docs/ni6-preparation-r2-delta-2026-10-07.md",
+-    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md"
++    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
++    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
++    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+   ],
+   "rootReviewedBuildGO": false,
+   "rootReviewedExecutionGO": false,
+-  "rootRunnerSelectedByFinalAmendmentRequired": false,
+-  "selectedExecutor": ".runtime/ni6-prep01-executor-r2/runner.py",
+-  "selectedExecutorReviewState": "ROOT_REPORTED_BLOCKER; FINAL_AFFECTED_REVIEWS_PENDING; NO_REMEDIATION_AUTHORIZED_IN_THIS_SEAL",
++  "selectedExecutor": ".runtime/ni6-prep01-executor-r3/runner.py",
+   "selectedExecutorSeal": {
+-    "bytes": 6318,
+-    "path": ".runtime/ni6-prep01-executor-r2/source-manifest.json",
+-    "qualification": "Separate future root-GO pin; outside the unchanged230 fixture input union.",
+-    "sha256": "f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2",
++    "bytes": 10076,
++    "path": ".runtime/ni6-prep01-executor-r3/source-manifest.json",
++    "qualification": "Actual source seal, separately required root-GO pin; supplies no runtime result.",
++    "sha256": "9455d2c27a8d89fbd2729adab059235e22d2a6e5ef96d714fa78ef9cdbe69c2a",
+     "status": "SOURCE_ONLY_NOT_RUN"
+   },
+-  "sourceDelta": ".runtime/ni6-public-preparation-r2/source-delta.diff",
+-  "sourceManifest": ".runtime/ni6-public-preparation-r2/source-manifest.json",
++  "sourceDelta": ".runtime/ni6-public-preparation-r3/source-delta.diff",
++  "sourceManifest": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+   "sourceManifestDigestQualification": "Exact final digest supplied by immutable author readback/final message; manifest does not self-pin.",
+   "sourceOnly": true,
++  "sourceReadback": {
++    "drift": 0,
++    "inputs": 316,
++    "matched": 395,
++    "owned": 79,
++    "r2PreservedRecords": 309,
++    "unchangedR2BodyPackageFiles": 69
++  },
+   "standaloneFunctionalHostRunnableCells": 0,
+   "status": "SOURCE_ONLY_NOT_RUN",
+-  "testPlan": ".runtime/ni6-public-preparation-r2/test-plan.proposed.json",
++  "testPlan": ".runtime/ni6-public-preparation-r3/test-plan.proposed.json",
+   "wholeHostGraphQualification": "Original graph metadata/source hash frozen; root must verify every original graph file/link before/after actual execution. No full graph was imported or executed by this author."
+ }
+--- docs/evidence/NI6/public-preparation-r2-source.md
++++ docs/evidence/NI6/public-preparation-r3-source.md
+@@ -1,21 +1,19 @@
+-# NI6-PREP01 public preparation r2 SOURCE report
++# NI6-PREP01 public preparation r3 SOURCE report
+ 
+-Disposition: **SOURCE_ONLY_NOT_RUN; ROOT BUILD/EXECUTION GO FALSE.** This new capsule implements only the root-selected fixture delta in `docs/ni6-preparation-r2-delta-2026-10-07.md` (4528 bytes, SHA25669d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5), under the prior6430-byte executor/fixture freeze SHA25663197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb. Author `/root/ni6_request_validation_rootcause`, English Sol6.1 max source lane. Root owns execution, supported action approval and Git. The additive executor-r2 selection is frozen in `docs/ni6-executor-r2-remediation-freeze-2026-10-07.md` (6149 bytes, SHA2565549cc59491cdf053d98b81b41a63bf01bcd607677463242f2229c3ded00f40c); that freeze and the new executor are separate future root-GO pins, outside the unchanged230 fixture input union.
++Disposition: **SOURCE_ONLY_NOT_RUN; ROOT BUILD/EXECUTION GO FALSE.** Author `/root/ni6_request_validation_rootcause`, English Sol6.1 max. This new capsule implements only the coupled literal selection frozen in `docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md` (4702B, SHA256b08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671), alongside the separate executor ownership freeze (4721B, SHA256de7bba6dfacf0fe05154083df137ee7ee839d5e219357e7bed6c41812d06260d). Root owns actual commands/action-time approval and Git.
+ 
+-The immutable r1 source manifest remains63650 bytes SHA256a69066641fac0abcf4300135de1c81e3790af774428392798061bfbab741a77d; all77 owned/143 input records match. R1 SOURCE review SHA2564de3d680b908901fd269e9e0d8e6ea9d83adeeebf2f6e1c36c2b7f8a696759dc / JSON5b98abb75aa5a8da3e492542dac8ce509414ebf19da1a99016c16d6d2a5cc57a and test-design d1f588eb6cbe287141959f39440c50d0807896f244f76590dd8be70e1fd0f83e / JSONc7cfc2f20e55aed4809bdd55c303007bde4a675cafc12ae440a180883d6b7ab4 remain unchanged blocking evidence. Neither source remediation nor synthetic unit definitions turns those historical NOT_RUN cases into passes.
++The sealed preparation-r2 manifest84782B SHA256bf8e64c0d9f6146553ea2a1860147a5c303d10260f652e4e4339c48b33828ec8 and executor-r2 manifest6318B SHA256f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2 remain immutable. All four actual preparation-r2 affected review files are fully read and pinned: SOURCE MD12375B SHA25677d68e98a3ae1d1e1b8255b3462cfcb8a1e54c10f22a3eec23b68d498c7e9276 / JSON102952B SHA256044dd7565902c79420d98ac4dc0c191730bc420f6bb9ab83b6641c598a5000fa; test-design MD13909B SHA2565a9ec0b496ed49455f30db1a09bcfadf1cb7f820cc15b7b49cabd3bc7596e32b / JSON133550B SHA256d66e045d4e8b04f9f030d29230780a05cfb52114c9a43bf8f65fefc291a11858. They identify no new fixture/oracle blocker; all9 functional families and31 pure cells remain NOT_RUN. The original nine-case preparation design and36-family executor design, all old freezes/reports and earlier executed evidence retain their original disposition.
+ 
+-The successor owns79 source records, including this report pair, with78 physical capsule files including its separate manifest. Its230 known input records preserve all inherited143 inputs,77 r1 owned files/r1 manifest/four reviews, both root freezes and the needed original public lifecycle declarations. All63 package inputs,59 product modules, `.gitignore` and `http-rpc.mjs` are unchanged. Exact literal differences are in `source-delta.diff`; manifests remain separately pinned to avoid self-hashing. Final manifest digest comes from the author's immutable readback message, not a self-reference. The original r4 closure and official host graph27577 files/12 links remain provenance, never executed here.
++All63 package build inputs/59 product modules, all31 pure cells and the public oracle/transport/bootstrap/functional test bodies and `.gitignore` are copied byte-exact from r2. The full closed snapshot18/task9/goal10/context15/detail assertions,11 empty fact collections, semantic +1/join/first-transition conservation, original receipt14/envelope15/protected-text/provenance/digest/UTF8/accounting/repeat/stale checks and supported Loader.remove/saved Fiber.await/Loader.await/public entry absence/physical404/root closure remain unchanged. GeneratedAt is never equated with request.now. The typed check-currentness call remains outside this public RPC slice.
+ 
+-F-PREP01-S01 is addressed in source by original public Loader.remove(entryId) once, retaining the actual entry fiber and awaiting Fiber.await then Loader.await, checking public entries() no longer contains that ID and the saved fiber is closed. EntryTree public declarations are tree.d.ts15/19/27, original remove implementation lib/index.js194–198/group70–76; original Fiber.await is declared fiber.d.ts178 and implemented Cordis lib/index.js1399. Parent Connection/WebServer stay live for the same single physical404; original whole-root closure follows. No removed fiber is directly disposed a second time, no private route/handler or fabricated lifecycle is used.
++Only preflight/verifier canonical paths and metadata literals select the new r3 capsule/runner/root plans/evidence/generated namespace. Preflight honestly requires the actual r3 runner; no runner-field reinterpretation/alias, captured handler, method override, substituted identity/authority/donor/receipt or new host helper is introduced. The Python verifier differs only by literal retarget, with its original algorithm retained. Exact r2-to-r3 differences are sealed in source-delta.diff; manifests are separately pinned to avoid a self-hash cycle.
+ 
+-TD01/TD02 source remediation closes snapshot18/task9/goal10/context15/detail metadata-plus-content; independently validates status/export metadata, original domains and unique references; requires schema7/active control and all11 empty work arrays; joins goal/source/committed task/auth/memory and full public detail; enforces semanticRevision +1 and context join; conserves all14 remaining first-transition public top-level fields. Original public projection citations are the frozen runtime API and reviewer-owned prescriptions. Full original receipt14/envelope15/protected-text/provenance/digest/UTF8/fixed-density counts and exact-repeat/stale assertions remain. GeneratedAt is not equated with request.now. No private raw-currentness RPC or paired protected-check row is selected.
++The selected executor-r3 manifest10076B SHA2569455d2c27a8d89fbd2729adab059235e22d2a6e5ef96d714fa78ef9cdbe69c2a has28/28 matched owned/input records. Its runner42440B SHA2563040abad3378ac506d2f310a3963afaea4fb596897620f4e6cf949dc0b99f177 remains source-only. It latches successful fresh owned destinations, rechecks ownership before evidence access/finalizers/copies and preserves refused existing destinations; it retains the eight r2 guards and qualified observed-stop/last-postwrite/final-return boundary. A real successful driver return is mandatory before test GO; stored finalized records alone do not prove the OS boundary. Its fresh affected reviews remain separate required future root-GO pins, not invented acceptance.
+ 
+-The new pure suite has31 flat UNIT_ONLY cells, three positive and28 negative, with finite inputs/codes exactly listed in README and source. Static imports are Node test/assert and the pure oracle module; its only transitive imports are built-in assert/crypto. It exercises ordinary/frozen baseline/full preparation and selected missing/extra/leak/domain/work-array/semantic/source/policy/retained-row refusals. Synthetic DTOs are not native receipts, an original Context/Fiber/Loader, a donor or a host publication. There is no original lifecycle mock or unit claim for original removal/cleanup.
++Command/effect/private/time ceilings are unchanged and prospective: four original build/gate commands; six syntax paths in frozen order; one31-cell UNIT_ONLY pure command then one public functional command, concurrency1/once/first-failure STOP; maximum16 interpreter starts; shared180s active/60s command ceilings,4s cleanup+1s command bookkeeping and5s nonadditive phase charge inside those ceilings. Functional10/40/5s and55s Node timeout remain. Public20HTTP/18domain RPC/44windows/176registry reads/seven zero-event categories/one diagnostics read and existing14-field successful diagnostic remain unchanged. Pure31 cells are three positive/28 negative synthetic DTO assertions with only Node test/assert plus pure built-in assert/crypto; they provide no host/lifecycle/authority proof.
+ 
+-Future plans retain exactly four original build/gate commands, six syntax commands in frozen order, one pure then one genuine public test command, concurrency1/once/first failure STOP. Sixteen maximum interpreter starts count two Python phase drivers/four build interpreters/six syntax Nodes/two test parents/two ordinary workers; native worker starts0. Shared180-second active budget and clipped60-second command limits are root-executor obligations. Functional limits remain10s preflight/40s active/5s cleanup/55s Node test.20HTTP/18domainRPC/44livewindows/176registryreads/seven natural event categories/one df.diagnostics and the existing14-field successful diagnostic remain unchanged and prospective.
++Original Context/11 plugins/launch snapshot-before-activation/local credential watch:false/authenticated public Node HTTP setup/RPC composition remains byte-exact. One future fresh capsule-local synthetic profile/data namespace and original127.0.0.1:0 listener distinct3080 are root-owned. Token URL/cookie/headers/credential/key/DB/raw wrappers stay private; finite errors and supported logger config remain. Storage inspection is metadata-only. No actual client/descriptor/peer link/build marker/readback/profile/database/listener, runtime/import/test/build/provider/model/network/browser/OS process/signal/fault probe/Git or protected investigation occurred in this author lane.
+ 
+-F-S02 remains a genuine execution prerequisite: the selected successor `.runtime/ni6-prep01-executor-r2/runner.py` is sealed SOURCE_ONLY_NOT_RUN, and root must separately pin its source/manifest, unchanged executor design, additive freeze/eight affected reports and separate true-GO plans. Its6318-byte source manifest SHA256f3a308d98b2c7976af405b5e23e5c16862f5a28fc077bffcd33be5de39e76be2 has18/18 matched owned/input records; this is author byte evidence, not a command result. Inert proposals stay false-GO; no incompatible historical runner is selected. Preflight requires these finite future pins, actual four original build results, original generated64-file descriptor/client/readback and full original host graph before host imports. The Python verifier algorithm is unchanged and only r2-retargeted. No actual generated output or original command success is authored. Root provides hard owned process/stream/aggregate enforcement and private output handling; failed or unobserved cleanup remains HOLD.
++Final inventory is79 owned reports/source records,316 actual canonical input records and78 physical capsule files including the separate manifest. All395 records match with0drift; all309 ancestor records and69 package/body files remain exact. The ancestor union preserves every r2 owned/input/manifest byte, its actual final affected reviews and both r3 freezes. Future executor/review/generated/build result/true-GO records are separately required, without authored successes. Raw-byte/hash/literal readback supplies source evidence only; root still needs all fresh affected reviews, complete exact root plans, genuine original build/output evidence and supported finite loopback GO/results.
+ 
+-Original public composition, synthetic snapshot-before-activation, explicit fresh credential/profile/data paths,11 direct official plugins, original auth transport and public no-effect observers remain unchanged. One future namespace/listener distinct3080 is root-owned. Tokenized URL/cookie/header/credential/key/DB/raw wrappers stay private; code/catches/logger/export surface remains finite. Only storage type/owner/mode/device/inode metadata is inspected by the proposed functional cell. Source author made no Node parsing/import/build/test, runtime/native/DB/model/provider/network/listener/profile/browser/Git or protected investigation action. Author actions were source text/JSON metadata reads, raw-byte hashes and authorized new source writes only.
+-
+-Root has reported a blocking failure-path destination ownership issue in the selected sealed executor-r2: the evidence handle precedes successful fresh-directory creation. That source remains immutable, no correction is adopted here, and a separately frozen reviewed successor/selection amendment is required before any build. Final executor affected dispositions are pending; this capsule seal and its exact path pins are source evidence only. Fresh fixture reviews, final executor/plan pinning, genuine build/output evidence and supported finite loopback GO/results remain pending. Standalone functional host runnable cells0; proposed public integration1; pure31 NOT_RUN. Direct-instance mapping0complete/8partial/2held and pending47-call selection remain; original IH01–03/IH05 setup/spec/consent/donor/cold/lifecycle prerequisites, source/task/check identity and Q index-count gaps, typed currentness/cold/browser/native-worker/global acceptance remain HOLD. All87 accepted0/HOLD; protected final CODE permanently blocked and untouched. Running QA, r4, r1, old reports and historical runners were preserved.
++Standalone functional host runnable cells0; proposed root-built public cell1; pure31 NOT_RUN. The prior0complete/8partial/2held direct-instance mapping, pending47 calls (40reads/2prepare/4owner-intent/1cancel), original IH01–03/IH05 setup/spec/consent/donor/cold/lifecycle/current-owner contracts and partial source/task/check identity/Q index-count gaps remain HOLD. Typed currentness/native worker/cold/browser/mounted-UI/global acceptance are outside this slice. All87 accepted0/HOLD and permanently blocked final CODE remain unchanged; no current QA or previous seal was changed.

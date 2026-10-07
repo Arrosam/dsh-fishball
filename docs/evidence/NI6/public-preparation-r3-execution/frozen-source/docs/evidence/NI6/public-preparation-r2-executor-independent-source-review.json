@@ -1,0 +1,486 @@
+{
+  "CODE": "PERMANENTLY_BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "actualLaneEffects": {
+    "GitOperations": 0,
+    "applicationParseImportTestBuild": 0,
+    "candidateCommandStarts": 0,
+    "candidatePythonParseImportExecute": 0,
+    "onlyNewReportPairWritten": true,
+    "ownedProcessGroupsOrSignals": 0,
+    "privateRuntimeReads": 0,
+    "sealedCandidateChanges": 0,
+    "servicesListenersNativeDBModelNetworkBrowser": 0
+  },
+  "actualPinModes": [
+    {
+      "canonical": true,
+      "mode": "0o600",
+      "path": ".runtime/ni6-prep01-executor-r1/runner.py",
+      "regular": true,
+      "uid": 501
+    },
+    {
+      "canonical": true,
+      "mode": "0o644",
+      "path": "AGENTS.md",
+      "regular": true,
+      "uid": 501
+    },
+    {
+      "canonical": true,
+      "mode": "0o644",
+      "path": "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+      "regular": true,
+      "uid": 501
+    },
+    {
+      "canonical": true,
+      "mode": "0o644",
+      "path": "docs/ni6-preparation-r2-delta-2026-10-07.md",
+      "regular": true,
+      "uid": 501
+    },
+    {
+      "canonical": true,
+      "mode": "0o644",
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "regular": true,
+      "uid": 501
+    },
+    {
+      "canonical": true,
+      "mode": "0o555",
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "regular": true,
+      "uid": 501
+    },
+    {
+      "canonical": true,
+      "mode": "0o700",
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "regular": true,
+      "uid": 501
+    }
+  ],
+  "additionalIndependentDesignPins": [
+    {
+      "bytes": 14952,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+      "sha256": "72152ce0f59b08f458bda8a1d86e3c3278c87e457bddf1f246b6ac9fb3cf923b"
+    },
+    {
+      "bytes": 37877,
+      "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+      "sha256": "f6fbf477c652c2d8e12f406ed8af5129d98a42a59fc4161265c11979a8e14067"
+    }
+  ],
+  "all7DeclaredPinsMatch": true,
+  "all87": "HOLD",
+  "commandsDisposition": {
+    "build4": "NOT_RUN",
+    "publicFunctional1": "NOT_RUN",
+    "pure31Cells": "NOT_RUN",
+    "syntax6": "NOT_RUN"
+  },
+  "companionMarkdown": {
+    "bytes": 14466,
+    "path": "docs/evidence/NI6/public-preparation-r2-executor-independent-source-review.md",
+    "sha256": "84c2527f1aaa67b3f46cb3e3b7cd3e3816101d5f11550874b62e87af1847df3a"
+  },
+  "contractVersion": "df.ni6-prep01-executor-independent-source-review/v1",
+  "date": "2026-10-07",
+  "diagnosticContractFullyRead": true,
+  "disposition": "BLOCKING_SOURCE_FINDINGS_EXECUTOR_R1_NOT_RUN_NO_GO",
+  "executorDirectory": {
+    "canonical": true,
+    "manifestMode": "0o600",
+    "mode": "0o700",
+    "path": ".runtime/ni6-prep01-executor-r1",
+    "physicalFiles": [
+      "source-manifest.json",
+      "runner.py"
+    ],
+    "privateBuildExists": false,
+    "privateTestExists": false,
+    "runnerMode": "0o600",
+    "uid": 501,
+    "waveLedgerExists": false
+  },
+  "familyCoverageLimitations": [
+    "No actual candidate execution or signal/capture/timeout/OS-denial probe",
+    "Default-failure/once/mode/EOF/interrupt/budget/denial/schema findings block whole executor disposition",
+    "No universal instant cleanup for uninterruptible operations or uncatchable termination",
+    "Actual future sealed r2 fixtures, concrete root plans, reports and generated evidence need separate review",
+    "Schema/public output mapping is not arbitrary-output authenticity, native authority or acceptance",
+    "Python interpreter bootstrap/actual environment binding remains root action-time responsibility"
+  ],
+  "findings": [
+    {
+      "id": "F-EXE-S01",
+      "lines": [
+        350,
+        351,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        370,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391
+      ],
+      "requiredDelta": "Exclusive once-only per-phase invocation latch before proposal/input validation after minimum safe identity/namespace admission; include early work in failure-by-default scope; preserve consumed uncertain state and refuse every later invocation.",
+      "severity": "BLOCKER",
+      "title": "Invocation consumption follows command selection and manifest validation"
+    },
+    {
+      "id": "F-EXE-S02",
+      "lines": [
+        401,
+        409,
+        449,
+        450,
+        456,
+        457,
+        461,
+        462,
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469
+      ],
+      "requiredDelta": "Default FAILED_HOLD; explicit success latch only after every required command/capture/schema/owned-group absence/final fullpin+graph verification; catch ordinary unexpected errors and interruptions with finite codes; failed bookkeeping remains unknown/HOLD.",
+      "severity": "BLOCKER",
+      "title": "Unhandled exception can write phase PASS"
+    },
+    {
+      "effectiveEnclosingDirectoryPrivacyRetained": true,
+      "id": "F-EXE-S03",
+      "lines": [
+        89,
+        90,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423
+      ],
+      "requiredDelta": "Create/verify every owned directory component0700 and canonical owner/type; refuse unknown components; enforce/check every exclusive file descriptor0600 independently of ambient umask.",
+      "severity": "REQUIRED_SOURCE_FIX",
+      "title": "Recursive copy directories do not enforce every0700 mode"
+    },
+    {
+      "id": "F-EXE-S04",
+      "lines": [
+        164,
+        165,
+        166,
+        167,
+        168,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        215,
+        216,
+        217,
+        218,
+        245,
+        246,
+        247,
+        248,
+        249,
+        252,
+        253,
+        254,
+        255
+      ],
+      "requiredDelta": "Per-stream EOF/completeness and capture termination reason; absent EOF means UNKNOWN/incomplete, while stored size/hash and received-at-least bytes remain prefix observations; overflow discard metadata remains truthful.",
+      "severity": "REQUIRED_EVIDENCE_FIX",
+      "title": "Missing EOF can still produce truncated:false"
+    },
+    {
+      "id": "F-EXE-S05",
+      "lines": [
+        156,
+        157,
+        215,
+        216,
+        217,
+        218,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244
+      ],
+      "requiredDelta": "Handle SIGTERM and supported interruptions through one finite internal flag/exception; protect same owned bounded TERM/KILL cleanup and recording against a second catchable interruption; unobserved/uncatchable outcomes stay unknown/HOLD.",
+      "severity": "REQUIRED_CLEANUP_FIX",
+      "title": "Catchable driver SIGTERM bypasses finally group cleanup"
+    },
+    {
+      "id": "F-EXE-S06",
+      "independentlyConfirmedBy": "/root/ni5_r3_affected_review",
+      "lines": [
+        251,
+        252,
+        253,
+        254,
+        255,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        457,
+        458,
+        459,
+        460,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469
+      ],
+      "requiredDelta": "Conservatively charge all required readback/parser/bookkeeping with absolute command+shared aggregate deadlines, reserve terminal costs, and postwrite observed overrun HOLD.",
+      "severity": "REQUIRED_BUDGET_FIX",
+      "title": "Command/aggregate observed accounting omits required hash/parser/terminal-record work"
+    },
+    {
+      "id": "F-EXE-S07",
+      "independentDesignObligation": "EX21 and MD39",
+      "lines": [
+        136,
+        137,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        201,
+        202,
+        222,
+        223,
+        224,
+        234,
+        235
+      ],
+      "requiredDelta": "Persist denial/ownership-unknown state, stop every further signal including finalizer selection immediately, preserve actual denied result and cleanup UNKNOWN/HOLD, no stronger follow-up or alternate target.",
+      "severity": "REQUIRED_DENIAL_FIX",
+      "title": "Denied/unknown group boundary can select further signals"
+    },
+    {
+      "id": "F-EXE-S08",
+      "independentDesignObligation": "EX26/EX27 and MD43",
+      "independentDetailedScenarioOwner": "/root/ni5_r3_affected_review",
+      "lines": [
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        302,
+        303,
+        304
+      ],
+      "noActualRawSecretPublicationClaim": true,
+      "requiredDelta": "Strict duplicate-member-rejecting nested JSON parser; recognize/count every occurrence of selected declared diagnostic identity including ambiguous alternate serialization; exactly one fully validated selected record; ordinary unrelated rawtext stays private.",
+      "severity": "REQUIRED_SCHEMA_FIX",
+      "title": "Duplicate JSON members and alternate second diagnostics can pass selected-output mapping"
+    }
+  ],
+  "independentDesignRelevantLinesRead": [
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+  ],
+  "pendingR2FixtureAssertionsRead": false,
+  "preservation": "Executor r1, preparation r1, historical runners/evidence, pendingr2 assertion files and QA not written in this lane.",
+  "reviewKind": "INDEPENDENT_SOURCE_TEXT_BYTE_ONLY",
+  "reviewLanguage": "English",
+  "reviewedInputFiles": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 6430,
+      "path": "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+      "sha256": "63197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb"
+    },
+    {
+      "bytes": 4528,
+      "path": "docs/ni6-preparation-r2-delta-2026-10-07.md",
+      "sha256": "69d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5"
+    },
+    {
+      "bytes": 2079,
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "sha256": "c68c943a72438940f19196d2f12e8d1f862231af9b9496562d93beebdcc66bf2"
+    },
+    {
+      "bytes": 84640,
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+    },
+    {
+      "bytes": 52448,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "sha256": "2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12"
+    }
+  ],
+  "reviewedManifest": {
+    "bytes": 1815,
+    "path": ".runtime/ni6-prep01-executor-r1/source-manifest.json",
+    "sha256": "26d777f4064c5b26c2229baa133ca70ff5d9fafd82976a8affd6b97ceeca18e0"
+  },
+  "reviewedOwnedFiles": [
+    {
+      "bytes": 25578,
+      "path": ".runtime/ni6-prep01-executor-r1/runner.py",
+      "sha256": "78c81f04a75130fc47e110aef29ecc0853821bb55caf3896783a2e2c6967e626"
+    }
+  ],
+  "reviewedRunner": {
+    "bytes": 25578,
+    "path": ".runtime/ni6-prep01-executor-r1/runner.py",
+    "sha256": "78c81f04a75130fc47e110aef29ecc0853821bb55caf3896783a2e2c6967e626"
+  },
+  "reviewer": "/root/ni6_r3_independent_source_review",
+  "rootACFullyRead": true,
+  "rootReviewedBuildGO": false,
+  "rootReviewedExecutionGO": false,
+  "runnerFullyReadAsText": true,
+  "selectedDeltaFullyRead": true,
+  "sourceSupportedFamilies": {
+    "actualHostGraphRehashThisExecutorReview": "NOT_RUN_UNRELATED_REPEAT_NOT_SELECTED",
+    "actualR2PinSetVerification": "NOT_YET_SEALED_OR_REVIEWED",
+    "arbitraryRawTextPrivate": true,
+    "combinedStoredByteMaximum": 2097152,
+    "commandCounts": {
+      "build": 4,
+      "functional": 1,
+      "pure": 1,
+      "syntax": 6
+    },
+    "commandMaximumSeconds": 60,
+    "concurrency": 1,
+    "eachSignalAllowanceSeconds": 2,
+    "exactCommandLists": true,
+    "exactTwoCanonicalExternalInterpreterPins": true,
+    "fixedRepositoryCwdAndRootPlanNames": true,
+    "freshOwnedSessionPerCommand": true,
+    "functionalCellCountDeclared": 1,
+    "generatedAndBuildEvidenceRequiredAtTest": true,
+    "graphAlgorithmIncludesContainmentAndLinkTargets": true,
+    "hostGraphFileCount": 27577,
+    "hostGraphLinkCount": 12,
+    "interpreterJoin": {
+      "buildInterpreters": 4,
+      "ordinaryTestWorkers": 2,
+      "pythonPhaseDrivers": 2,
+      "syntaxNodes": 6,
+      "testParents": 2
+    },
+    "maxSelectedKILL": 1,
+    "maxSelectedTERM": 1,
+    "maximumDeclaredInterpreterStarts": 16,
+    "missingExtraDuplicatePinsRefused": true,
+    "nativeWorkersSelected": 0,
+    "perStreamStoredByteMaximum": 1048576,
+    "phaseList": [
+      "build",
+      "test"
+    ],
+    "privateConcurrentNonblockingCapture": true,
+    "publicSummaryDomain": "metadata/numericTAP/finitecodes/validated14fielddiagnostic",
+    "pureCellCountDeclared": 31,
+    "rawBytesPublicCopies": 0,
+    "remoteTermination": "NOT_CLAIMED",
+    "requiredExecutorReportFiles": 6,
+    "requiredPinsDerivedFromAllFutureFixtureRecords": true,
+    "reservationRelease": "NOT_CLAIMED",
+    "rootPlanAddedToBeforeAfterPins": true,
+    "sharedActiveMaximumSeconds": 180,
+    "shellFalse": true,
+    "sourceCopiesFinitePinnedPublicSelection": true,
+    "stdinDEVNULL": true
+  }
+}

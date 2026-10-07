@@ -1,0 +1,120 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "activeAggregateBudgetSecondsBothPhases": 180,
+  "all87": "HOLD",
+  "buildCommandResults": "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-public-preparation-r3/public-oracles.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-public-preparation-r3/http-rpc.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-public-preparation-r3/preflight.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs"
+    ]
+  ],
+  "concurrency": 1,
+  "contractVersion": "df.ni6-prep01-test-proposal/v1",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "environmentMustBeAbsent": [
+    "NODE_OPTIONS",
+    "NODE_PATH",
+    "NODE_TEST_CONTEXT"
+  ],
+  "evidenceDirectory": "docs/evidence/NI6/public-preparation-r3-execution",
+  "generatedPinsRequired": [
+    ".runtime/ni6-public-preparation-r3/package/lib/client.js",
+    ".runtime/ni6-public-preparation-r3/package/native-source-manifest.json",
+    ".runtime/ni6-public-preparation-r3/build-attempt.json",
+    ".runtime/ni6-public-preparation-r3/build-readback.json",
+    "docs/evidence/NI6/public-preparation-r3-build/command-results.json"
+  ],
+  "independentDesign": [
+    "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+    "docs/evidence/NI6/public-preparation-r1-independent-design.json"
+  ],
+  "maximumDirectInterpreterStartsBothPhases": 16,
+  "oneFunctionalCell": true,
+  "ordinaryNodeTestWorkerExpected": 1,
+  "ordinaryNodeTestWorkersExpectedBothCommands": 2,
+  "pinMaterialization": "All source manifest owned/input records, exact manifest, original full host graph manifest, root runner, actual generated outputs/build results and all four fresh affected reports. Root adds actual hashes only after genuine build.",
+  "privateOutputHandling": "Only allowlisted stable codes/public references/digests/counts may be committed. Tokenized URLs/cookies/headers/key/credential/database/raw RPC payloads stay private; do not commit unexpected command streams.",
+  "proofBoundary": "Public authenticated preparation joins/idempotence/CAS/disposal only; no native worker, currentness, cold restart, browser or protected CODE acceptance.",
+  "publicGraphManifest": ".runtime/ni3-native-runtime/public-graph-pins.json",
+  "pureUnitScope": "UNIT_ONLY: synthetic DTO oracle acceptance/rejection; zero host authority or functional coverage",
+  "pureUnitTestCells": 31,
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/public-preparation-r3-independent-source-review.md",
+    "docs/evidence/NI6/public-preparation-r3-independent-source-review.json",
+    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
+    "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json",
+    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md",
+    "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json",
+    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
+    "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json"
+  ],
+  "requiredRootGoPins": [
+    ".runtime/ni6-prep01-executor-r3/runner.py",
+    ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+    "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
+    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
+    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+  ],
+  "rootFreeze": [
+    "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+    "docs/ni6-preparation-r2-delta-2026-10-07.md",
+    "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
+    "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
+    "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+  ],
+  "rootOwnsExecution": true,
+  "rootOwnsGit": true,
+  "rootPlanToMaterialize": ".runtime/root-ni6-public-preparation-r3-execution-plan.json",
+  "rootReviewedExecutionGO": false,
+  "rootSupportedExecutionApprovalRequired": true,
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-prep01-executor-r3/runner.py",
+  "runnerPinRequiredFromRootGO": true,
+  "sourceCopiesSelection": "Finite public selection from79 owned source records plus source manifest, eight fresh affected reports, exact executor source/manifest/design/freezes and actual generated original client/descriptor/readback/build results, within the selected executor allowed-copy set. The actual ancestor input union is separately pinned/read back; copying an input is not implied. Exclude synthetic runtime, credentials/setup/DB/HTTP bodies and private command streams.",
+  "sourceManifest": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+  "status": "PROPOSED_SOURCE_ONLY_NOT_RUN",
+  "stopAfterFirstNonzeroOrMismatch": true,
+  "timeoutSecondsPerCommand": 60
+}

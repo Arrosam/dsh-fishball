@@ -1,0 +1,4402 @@
+{
+  "contractVersion": "ni6-prep01-preparation-r3-affected-independent-test-design-review-v1",
+  "title": "NI6-PREP01 preparation r3 affected independent test-design review",
+  "date": "2026-10-07",
+  "reviewer": "/root/ni5_r3_affected_review",
+  "model": "Sol6.1",
+  "reasoning": "max",
+  "status": "SOURCE_SUPPORTED_NOT_RUN_PRE_GO_HOLD",
+  "sourceOnly": true,
+  "GO": false,
+  "buildGO": false,
+  "runtimeGO": false,
+  "executionGO": false,
+  "companionMd": {
+    "path": "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
+    "bytes": 11417,
+    "sha256": "d1a709b7b547df674cbe503c78483e0baca83e460fe06b021d5abe4eeac4edbc"
+  },
+  "scope": {
+    "capsule": ".runtime/ni6-public-preparation-r3",
+    "manifest": {
+      "path": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+      "bytes": 103159,
+      "sha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2"
+    },
+    "governingCoupledFreeze": {
+      "path": "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md",
+      "bytes": 4702,
+      "sha256": "b08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671"
+    },
+    "review": "Only exact frozen path/review/namespace selection, final-source read and conservation against immutable design/r2 review",
+    "rootOwnsExecutionPermissionsAdoptionAndGit": true,
+    "denied": [
+      "Application JS/Python parsing/import/run",
+      "Build/test/runtime/fault probe",
+      "OS process/signal actions",
+      "Private content",
+      "Profile/listener/DB/browser/provider/model/network/Git",
+      "Product/capsule/design/prior-report changes",
+      "Protected final CODE"
+    ]
+  },
+  "independence": {
+    "originalNineCaseDesignPrecededAssertions": true,
+    "originalNineCasesPreservedVerbatim": true,
+    "root31CellSelectionUnchanged": true,
+    "priorR2CompletedReviewReusedByReferenceNotRerun": true,
+    "fullFinalFixtureSourceRead": true,
+    "sourceAdequacyIsNotRuntimeProof": true,
+    "executorAndFixtureReportsKeptDistinct": true
+  },
+  "sourceBasis": [
+    {
+      "path": ".runtime/ni6-public-preparation-r3/source-manifest.json",
+      "bytes": 103159,
+      "sha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/source-delta.diff",
+      "bytes": 64934,
+      "sha256": "5f45d469fc5a8ac66ae64921a337021cbc326aa5edea6f29e84fe81ebecd618c"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/.gitignore",
+      "bytes": 126,
+      "sha256": "d4a12288b694b3fa88b13b33d524ba67b1711e5ab8a7ca866aff561ae76f431a"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/README.md",
+      "bytes": 5456,
+      "sha256": "506182b262cd825f777468a0111f1aeb73e772803f54bd17ea823ce5936cf849"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/build-plan.proposed.json",
+      "bytes": 5100,
+      "sha256": "4ad4ead6b7c94962cfe61789cfe0ea0e12fd5015948547a1ab54a28c9bd991ae"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/effect-bounds.json",
+      "bytes": 10154,
+      "sha256": "6ed66d735f3c2a159d021952dd3f55db4d7946be8ecfe221c7544a9472179469"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs",
+      "bytes": 8805,
+      "sha256": "f4bcd2d1b707a81a3e526e4c80734e71a51d6141a0b2b955c4c35333a8d606fa"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+      "bytes": 5810,
+      "sha256": "184bfb9f85aa8dd711f9d9eaec26c6940972a686b431cb91d5cf64b80cc3a597"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/import-inventory.json",
+      "bytes": 7949,
+      "sha256": "b4d5af8ba9abd031984261852767bcc67a394916330120d87f3e0739dd2e9b42"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+      "bytes": 8721,
+      "sha256": "6f66cbd564448be228621cdc7d30d6d3b871fa6fd30fd1c25e51485839083421"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/preflight.mjs",
+      "bytes": 9332,
+      "sha256": "65a4e7bc72747fe0480a58ef630d2c3de30511af903b194c00376f557111bca2"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+      "bytes": 12757,
+      "sha256": "8517a015814684cb4cc27007e56a3b3f5c534281ea9a22bff2a7de4f0c7075e9"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+      "bytes": 10489,
+      "sha256": "fbdc1addc3f2d095a1663f562c5ff0ec6bdddd4032763132a469a890a45e6173"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/source-delta.diff",
+      "bytes": 64934,
+      "sha256": "5f45d469fc5a8ac66ae64921a337021cbc326aa5edea6f29e84fe81ebecd618c"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/test-plan.proposed.json",
+      "bytes": 5848,
+      "sha256": "5f0d60f22d0b0c3c1984d62f83e0f77a8b90aff96e11b8089bcb6b59e3e634f7"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/verify-built-package.py",
+      "bytes": 7139,
+      "sha256": "11c9162b0b28125515de8dc298fea217ed868fb47c2778d8b54bfcebf4e870db"
+    },
+    {
+      "path": "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+      "bytes": 22143,
+      "sha256": "c827612dcb572c14b0854fbf495e563fd8975f60c99ea9dcd441c74e3e74c87e"
+    },
+    {
+      "path": "docs/evidence/NI6/public-preparation-r1-independent-design.json",
+      "bytes": 51851,
+      "sha256": "77bf9aa7dd56355a0931b3ea65c410c2806954790e39dea5829c9340d4b1d7f8"
+    },
+    {
+      "path": "docs/ni6-preparation-r2-delta-2026-10-07.md",
+      "bytes": 4528,
+      "sha256": "69d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5"
+    },
+    {
+      "path": "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+      "bytes": 6430,
+      "sha256": "63197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb"
+    },
+    {
+      "path": "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
+      "bytes": 4721,
+      "sha256": "de7bba6dfacf0fe05154083df137ee7ee839d5e219357e7bed6c41812d06260d"
+    },
+    {
+      "path": "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md",
+      "bytes": 4702,
+      "sha256": "b08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671"
+    },
+    {
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "bytes": 2079,
+      "sha256": "c68c943a72438940f19196d2f12e8d1f862231af9b9496562d93beebdcc66bf2"
+    },
+    {
+      "path": "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
+      "bytes": 12855,
+      "sha256": "2a3948179c2dbbfe34e51eb87ff3d709846ea3b848e1a80a2e668ad7e276e49a"
+    },
+    {
+      "path": "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json",
+      "bytes": 62393,
+      "sha256": "ebff2d368a744f82821b364abc4d442d5d39bd79edccf6ea2b7d124dfbcffd6d"
+    }
+  ],
+  "sourceReadQualification": {
+    "allSixModulesCompletelyReadAsText": true,
+    "byteVerifierReadAsTextNotParsedImportedExecuted": true,
+    "otherFinalSourcesRead": [
+      "README",
+      "build/test proposals",
+      "full effect/import inventories",
+      "author source-report MD/JSON",
+      "source-manifest metadata"
+    ],
+    "rawLiteralDeltaReconstructed": true,
+    "lexicalImportRowsAllMatched": true,
+    "helpers": "Separate public byte/hash/JSON/difflib/owned evidence helpers only; no application parser or runtime",
+    "oldOraclesNotChangedOrReauthored": true
+  },
+  "verification": {
+    "recordCount": 395,
+    "ownedRecords": 79,
+    "inputRecords": 316,
+    "verifiedRecords": [
+      {
+        "path": ".runtime/ni6-public-preparation-r3/.gitignore",
+        "bytes": 126,
+        "sha256": "d4a12288b694b3fa88b13b33d524ba67b1711e5ab8a7ca866aff561ae76f431a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/README.md",
+        "bytes": 5456,
+        "sha256": "506182b262cd825f777468a0111f1aeb73e772803f54bd17ea823ce5936cf849"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/build-plan.proposed.json",
+        "bytes": 5100,
+        "sha256": "4ad4ead6b7c94962cfe61789cfe0ea0e12fd5015948547a1ab54a28c9bd991ae"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/effect-bounds.json",
+        "bytes": 10154,
+        "sha256": "6ed66d735f3c2a159d021952dd3f55db4d7946be8ecfe221c7544a9472179469"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs",
+        "bytes": 8805,
+        "sha256": "f4bcd2d1b707a81a3e526e4c80734e71a51d6141a0b2b955c4c35333a8d606fa"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+        "bytes": 5810,
+        "sha256": "184bfb9f85aa8dd711f9d9eaec26c6940972a686b431cb91d5cf64b80cc3a597"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/import-inventory.json",
+        "bytes": 7949,
+        "sha256": "b4d5af8ba9abd031984261852767bcc67a394916330120d87f3e0739dd2e9b42"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+        "bytes": 8721,
+        "sha256": "6f66cbd564448be228621cdc7d30d6d3b871fa6fd30fd1c25e51485839083421"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/scripts/build-native-source-manifest.py",
+        "bytes": 5303,
+        "sha256": "48e73c32e777d3a089043e348ad499c96f19073284e210f28c9d1b06d471e63e"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/scripts/dsh-web-runtime-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/approval-preview.mjs",
+        "bytes": 13904,
+        "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/audit-input-pair.mjs",
+        "bytes": 7647,
+        "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/audit.mjs",
+        "bytes": 6184,
+        "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/chat.mjs",
+        "bytes": 15251,
+        "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/client-entry.cjs",
+        "bytes": 151616,
+        "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/config.mjs",
+        "bytes": 2918,
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/control.mjs",
+        "bytes": 2926,
+        "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/coordinator.mjs",
+        "bytes": 13403,
+        "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/environment.mjs",
+        "bytes": 9792,
+        "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/event-clock.mjs",
+        "bytes": 7432,
+        "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/events.mjs",
+        "bytes": 10602,
+        "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/foundation.mjs",
+        "bytes": 22111,
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/host-probe.mjs",
+        "bytes": 6739,
+        "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/index.mjs",
+        "bytes": 4354,
+        "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit-native-source.mjs",
+        "bytes": 13615,
+        "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit-phases.mjs",
+        "bytes": 6835,
+        "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit.mjs",
+        "bytes": 56388,
+        "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-config.mjs",
+        "bytes": 4122,
+        "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-events.mjs",
+        "bytes": 23241,
+        "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-invocation.mjs",
+        "bytes": 2341,
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory-continuity.mjs",
+        "bytes": 22246,
+        "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory.mjs",
+        "bytes": 3538,
+        "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-normal-services.mjs",
+        "bytes": 14134,
+        "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-owned-stream.mjs",
+        "bytes": 1071,
+        "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-plugin.mjs",
+        "bytes": 10275,
+        "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-results.mjs",
+        "bytes": 48343,
+        "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-role-recipes.mjs",
+        "bytes": 2127,
+        "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker-config.mjs",
+        "bytes": 5018,
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker-facts.mjs",
+        "bytes": 21961,
+        "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker.mjs",
+        "bytes": 47301,
+        "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/messages.mjs",
+        "bytes": 15586,
+        "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-adapter.mjs",
+        "bytes": 40758,
+        "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-contributions.mjs",
+        "bytes": 10953,
+        "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-history-collector.mjs",
+        "bytes": 11620,
+        "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-source-descriptor.mjs",
+        "bytes": 2328,
+        "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-operations.mjs",
+        "bytes": 20325,
+        "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-planning.mjs",
+        "bytes": 2860,
+        "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-request.mjs",
+        "bytes": 2675,
+        "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-rpc.mjs",
+        "bytes": 1473,
+        "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-selection.mjs",
+        "bytes": 6689,
+        "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-resume-controls.mjs",
+        "bytes": 15595,
+        "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-source-planning-binding.mjs",
+        "bytes": 1541,
+        "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/notifications.mjs",
+        "bytes": 11442,
+        "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/operator-bridge.mjs",
+        "bytes": 9944,
+        "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/owner-native-command-controls.mjs",
+        "bytes": 3908,
+        "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/results.mjs",
+        "bytes": 13766,
+        "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-plugin.mjs",
+        "bytes": 67362,
+        "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-store.mjs",
+        "bytes": 347241,
+        "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/scheduler.mjs",
+        "bytes": 11509,
+        "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/schema7-runtime-composition.mjs",
+        "bytes": 6085,
+        "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/setup-state.mjs",
+        "bytes": 20740,
+        "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+        "bytes": 15937,
+        "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/worker.mjs",
+        "bytes": 36640,
+        "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/preflight.mjs",
+        "bytes": 9332,
+        "sha256": "65a4e7bc72747fe0480a58ef630d2c3de30511af903b194c00376f557111bca2"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+        "bytes": 12757,
+        "sha256": "8517a015814684cb4cc27007e56a3b3f5c534281ea9a22bff2a7de4f0c7075e9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+        "bytes": 10489,
+        "sha256": "fbdc1addc3f2d095a1663f562c5ff0ec6bdddd4032763132a469a890a45e6173"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/source-delta.diff",
+        "bytes": 64934,
+        "sha256": "5f45d469fc5a8ac66ae64921a337021cbc326aa5edea6f29e84fe81ebecd618c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/test-plan.proposed.json",
+        "bytes": 5848,
+        "sha256": "5f0d60f22d0b0c3c1984d62f83e0f77a8b90aff96e11b8089bcb6b59e3e634f7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/verify-built-package.py",
+        "bytes": 7139,
+        "sha256": "11c9162b0b28125515de8dc298fea217ed868fb47c2778d8b54bfcebf4e870db"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r3-source.json",
+        "bytes": 10897,
+        "sha256": "3897b2b06326893ca7fb3cb2156e92d1ae563622d68caed592686528c525b92e"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r3-source.md",
+        "bytes": 6222,
+        "sha256": "5eee48381d0810622b07961c438cb3fee02158013a8c8d96355f0151df9fec94"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+        "bytes": 24077,
+        "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/entry.d.ts",
+        "bytes": 2465,
+        "sha256": "047a95a352588e566336593969e4a3a7164b3a6ef1bd0ca16a1eb6b766b1c6a5"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/group.d.ts",
+        "bytes": 1041,
+        "sha256": "4fccac47dcb65b6f9a7ed674b97a72ed6e5340ab01deebd1320e7fb926d7db02"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts",
+        "bytes": 1773,
+        "sha256": "82c2812f98f18b377d7ffffe1c8576a54fde3b1704d79761b3e58961d430c520"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+        "bytes": 3345,
+        "sha256": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+        "bytes": 1086,
+        "sha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "bytes": 60361,
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+        "bytes": 4749,
+        "sha256": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts",
+        "bytes": 12204,
+        "sha256": "f72cc0e13b57c436817ab8199268bc7defc609c7121f8fda49018ca919bf84c9"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+        "bytes": 8430,
+        "sha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts",
+        "bytes": 858,
+        "sha256": "51237bf92ef225c92c897c5fb0aa8e4482267a5ae6ff1cf768726a40c9a7db86"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts",
+        "bytes": 3742,
+        "sha256": "fcc969c54b945c21a4ad9a9e4565ae0d535f45c1755910a882826c5785f160f8"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts",
+        "bytes": 8327,
+        "sha256": "84a46d00b1a6528add43e0f27c1f27bab158f1454d8d05c7ea120a0907a6dc7b"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+        "bytes": 1274,
+        "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "bytes": 28207,
+        "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+        "bytes": 20779,
+        "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+        "bytes": 1985,
+        "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "bytes": 35140,
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/index.d.ts",
+        "bytes": 3474,
+        "sha256": "d83649e8d3f48e7e28fe930df033632ae303843d5512ddd1b81a2098d4e33d78"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+        "bytes": 1635,
+        "sha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+        "bytes": 32699,
+        "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/types/index.d.ts",
+        "bytes": 10414,
+        "sha256": "c99722ae8a63d708dac752ebdba403cd2754a348ee81efaa523d34cb65b4ebf0"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/package.json",
+        "bytes": 1478,
+        "sha256": "adc1b6af2031f34c33772cb72af6aa33f321cbdd13714e31078f7f3c3f7a91e3"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials/lib/index.js",
+        "bytes": 6755,
+        "sha256": "c1008e2a37c62ba13e61c2ffdd7451c886e214f131c30ced1a5a67bf06a8df5e"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials/lib/types/index.d.ts",
+        "bytes": 10727,
+        "sha256": "73a1a49c7c2a9d895ce7c0e2b28bee18d9978edf496cc49669c2500de1f8080a"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials/package.json",
+        "bytes": 1103,
+        "sha256": "7cf3e3eecdcf418144e2dd43d308138987860c46f4ec4e0185724bb6b581e2d2"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+        "bytes": 13284,
+        "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/types/index.d.ts",
+        "bytes": 6473,
+        "sha256": "342d45c37bfa5f17197cc2692057b112b795924d40f3b0d337d8fe156867641d"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/package.json",
+        "bytes": 1122,
+        "sha256": "244a65cf447e0a0b8160fcc8942787b181f7a440fabb720656b7bf71210a8edb"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js",
+        "bytes": 2991,
+        "sha256": "6aab33b43d6caa4ee483f7d796a17afb400fca02b7a259fb55d486626e6bb7f0"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/types/index.d.ts",
+        "bytes": 3782,
+        "sha256": "453cd83423580ca2b9dd5bdc3dbbc4429b97152a9c28d7e5ad527daf4ca1a0e1"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/package.json",
+        "bytes": 893,
+        "sha256": "d7375a37566ed1b39cae77f4aa27229ed37d4abe2f4175695f10d986162756c7"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "bytes": 103333,
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+        "bytes": 22871,
+        "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+        "bytes": 2082,
+        "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+        "bytes": 20021,
+        "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.d.ts",
+        "bytes": 17075,
+        "sha256": "f29f3512b31036e12c5adf45f5ea7ef7dac319cf3a110f12ea2ac56de494fe16"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+        "bytes": 1272,
+        "sha256": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "bytes": 89972,
+        "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+        "bytes": 27461,
+        "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+        "bytes": 1553,
+        "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+        "bytes": 17395,
+        "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts",
+        "bytes": 13719,
+        "sha256": "954717f76586dc0e824f74bb51378529cf4963aff4582e3d25a7bc3c8142727d"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+        "bytes": 1108,
+        "sha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/index.js",
+        "bytes": 31507,
+        "sha256": "39ed60a470b240f8bbc82befdb0bbbad1f409732e8ba8d12d41a1059de0dde05"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/estimate.js",
+        "bytes": 4200,
+        "sha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/index.d.ts",
+        "bytes": 3418,
+        "sha256": "23c9c226b748abbdeb96e849fe0dd7a37ec5bda473aa3d837227673cb69f224f"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/package.json",
+        "bytes": 1910,
+        "sha256": "2c28b0db84463a5d5b2242eeb326135b5e831da272d5bf539e01ac77067dfc60"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+        "bytes": 158002,
+        "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts",
+        "bytes": 44449,
+        "sha256": "3536b173ec22361dcda85c05281921fc850db49984813b138d05395c4fe4510f"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+        "bytes": 2241,
+        "sha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+        "bytes": 8478,
+        "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+        "bytes": 7437,
+        "sha256": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2"
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+        "bytes": 1767,
+        "sha256": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e"
+      },
+      {
+        "path": ".runtime/dsh-web/package-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      {
+        "path": ".runtime/ni3-native-runtime/public-graph-pins.json",
+        "bytes": 4028913,
+        "sha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd"
+      },
+      {
+        "path": ".runtime/ni6-installed-continuation-fixture-slice-r2/source-manifest.json",
+        "bytes": 19964,
+        "sha256": "c2ea5a0ffe0d046626297a84817eaa3ae87a19d1203c15a37d98e76057affb58"
+      },
+      {
+        "path": ".runtime/ni6-installed-continuation-public-contract/public-callables.d.ts.txt",
+        "bytes": 16576,
+        "sha256": "7641c24bc0c7f2734404b7572b9ba5813a96d3d0ccb760dc80b829603e9d913b"
+      },
+      {
+        "path": ".runtime/ni6-preparation-independent-continuation-r4/source-manifest.json",
+        "bytes": 132698,
+        "sha256": "767cb05aab89fde616f649b12199d76c672b72339166bc139f33b39a45e93e42"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/.gitignore",
+        "bytes": 126,
+        "sha256": "d4a12288b694b3fa88b13b33d524ba67b1711e5ab8a7ca866aff561ae76f431a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/README.md",
+        "bytes": 8391,
+        "sha256": "6390b1a1d1763b6fa238a9ebc9e66d2004b3c1a8904c6f1882089cb1953e51c3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/build-plan.proposed.json",
+        "bytes": 3850,
+        "sha256": "812e7fe36153c68316909865c8405dfbe0fcdcbb04a0d634c9a16c778b016bc7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/effect-bounds.json",
+        "bytes": 8500,
+        "sha256": "fff583e126e8b73dc5dd255b1c0d6d258de9271a148790f351c49e9b3b2a60e2"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/http-rpc.mjs",
+        "bytes": 5810,
+        "sha256": "184bfb9f85aa8dd711f9d9eaec26c6940972a686b431cb91d5cf64b80cc3a597"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/import-inventory.json",
+        "bytes": 6187,
+        "sha256": "f8d9560cba7166388b96664b49316339b33c78010a5d4a7d2cd87b97745fa50e"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/original-bootstrap.mjs",
+        "bytes": 8517,
+        "sha256": "ab5f5af0d2fb7a52f40677616c90fde17da128d427db6b065bf56977e98be3b9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/scripts/build-native-source-manifest.py",
+        "bytes": 5303,
+        "sha256": "48e73c32e777d3a089043e348ad499c96f19073284e210f28c9d1b06d471e63e"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/scripts/dsh-web-runtime-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/approval-preview.mjs",
+        "bytes": 13904,
+        "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/audit-input-pair.mjs",
+        "bytes": 7647,
+        "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/audit.mjs",
+        "bytes": 6184,
+        "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/chat.mjs",
+        "bytes": 15251,
+        "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/client-entry.cjs",
+        "bytes": 151616,
+        "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/config.mjs",
+        "bytes": 2918,
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/control.mjs",
+        "bytes": 2926,
+        "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/coordinator.mjs",
+        "bytes": 13403,
+        "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/environment.mjs",
+        "bytes": 9792,
+        "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/event-clock.mjs",
+        "bytes": 7432,
+        "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/events.mjs",
+        "bytes": 10602,
+        "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/foundation.mjs",
+        "bytes": 22111,
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/host-probe.mjs",
+        "bytes": 6739,
+        "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/index.mjs",
+        "bytes": 4354,
+        "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-audit-native-source.mjs",
+        "bytes": 13615,
+        "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-audit-phases.mjs",
+        "bytes": 6835,
+        "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-audit.mjs",
+        "bytes": 56388,
+        "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-config.mjs",
+        "bytes": 4122,
+        "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-events.mjs",
+        "bytes": 23241,
+        "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-invocation.mjs",
+        "bytes": 2341,
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-memory-continuity.mjs",
+        "bytes": 22246,
+        "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-memory.mjs",
+        "bytes": 3538,
+        "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-normal-services.mjs",
+        "bytes": 14134,
+        "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-owned-stream.mjs",
+        "bytes": 1071,
+        "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-plugin.mjs",
+        "bytes": 10275,
+        "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-results.mjs",
+        "bytes": 48343,
+        "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-role-recipes.mjs",
+        "bytes": 2127,
+        "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-worker-config.mjs",
+        "bytes": 5018,
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-worker-facts.mjs",
+        "bytes": 21961,
+        "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/installed-worker.mjs",
+        "bytes": 47301,
+        "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/messages.mjs",
+        "bytes": 15586,
+        "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/native-adapter.mjs",
+        "bytes": 40758,
+        "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/native-contributions.mjs",
+        "bytes": 10953,
+        "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/native-history-collector.mjs",
+        "bytes": 11620,
+        "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/native-source-descriptor.mjs",
+        "bytes": 2328,
+        "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-native-operations.mjs",
+        "bytes": 20325,
+        "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-native-planning.mjs",
+        "bytes": 2860,
+        "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-native-request.mjs",
+        "bytes": 2675,
+        "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-native-rpc.mjs",
+        "bytes": 1473,
+        "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-native-selection.mjs",
+        "bytes": 6689,
+        "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-resume-controls.mjs",
+        "bytes": 15595,
+        "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/normal-source-planning-binding.mjs",
+        "bytes": 1541,
+        "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/notifications.mjs",
+        "bytes": 11442,
+        "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/operator-bridge.mjs",
+        "bytes": 9944,
+        "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/owner-native-command-controls.mjs",
+        "bytes": 3908,
+        "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/results.mjs",
+        "bytes": 13766,
+        "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/runtime-plugin.mjs",
+        "bytes": 67362,
+        "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/runtime-store.mjs",
+        "bytes": 347241,
+        "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/scheduler.mjs",
+        "bytes": 11509,
+        "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/schema7-runtime-composition.mjs",
+        "bytes": 6085,
+        "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/setup-state.mjs",
+        "bytes": 20740,
+        "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/testing-provider.mjs",
+        "bytes": 15937,
+        "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/package/src/worker.mjs",
+        "bytes": 36640,
+        "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/preflight.mjs",
+        "bytes": 9095,
+        "sha256": "0eed4b66c2956435667b330440b3548c4f96447e50b8d4209850291cbbc6b788"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/public-oracles.mjs",
+        "bytes": 9379,
+        "sha256": "42dc10201dc90737a711320087f71fb1de257b197ae76209c48013fabc1d2751"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/public-preparation.test.mjs",
+        "bytes": 10692,
+        "sha256": "87e9558373c2af431312eca4a4c3f320f59fe24e4182b4012577d30b9b78d19a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/source-manifest.json",
+        "bytes": 63650,
+        "sha256": "a69066641fac0abcf4300135de1c81e3790af774428392798061bfbab741a77d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/test-plan.proposed.json",
+        "bytes": 4013,
+        "sha256": "b0980bc94d9b66b7a1018c595bc864da6ae5f2b6eea192431c09684ef6707844"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r1/verify-built-package.py",
+        "bytes": 7139,
+        "sha256": "7b49210abe9ca5bc32db67787c4bdaf28cfb6d1557b942f52e1f47af7057c7eb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/.gitignore",
+        "bytes": 126,
+        "sha256": "d4a12288b694b3fa88b13b33d524ba67b1711e5ab8a7ca866aff561ae76f431a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/README.md",
+        "bytes": 8398,
+        "sha256": "8a1a10c99e3f7154ab0c219e34570fb4b9e88fada56a0bbf1e9947dcc4e40992"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/build-plan.proposed.json",
+        "bytes": 4818,
+        "sha256": "5b6370d5a3cfa2851c909d66543f95cee10d58bed20cbb40f05e1e2f2cdd3a26"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/effect-bounds.json",
+        "bytes": 9872,
+        "sha256": "1f0feb7e3ac0389fb1b34d1522dc5bbdc824115e7463a9a03fc0cbd8d086b162"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs",
+        "bytes": 8805,
+        "sha256": "f4bcd2d1b707a81a3e526e4c80734e71a51d6141a0b2b955c4c35333a8d606fa"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/http-rpc.mjs",
+        "bytes": 5810,
+        "sha256": "184bfb9f85aa8dd711f9d9eaec26c6940972a686b431cb91d5cf64b80cc3a597"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/import-inventory.json",
+        "bytes": 7667,
+        "sha256": "5f798692c83f5f2df542fe2b387c450e16d7488f3bc05330c19ef275b9c24f47"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/original-bootstrap.mjs",
+        "bytes": 8721,
+        "sha256": "6f66cbd564448be228621cdc7d30d6d3b871fa6fd30fd1c25e51485839083421"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/scripts/build-native-source-manifest.py",
+        "bytes": 5303,
+        "sha256": "48e73c32e777d3a089043e348ad499c96f19073284e210f28c9d1b06d471e63e"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/scripts/dsh-web-runtime-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/approval-preview.mjs",
+        "bytes": 13904,
+        "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/audit-input-pair.mjs",
+        "bytes": 7647,
+        "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/audit.mjs",
+        "bytes": 6184,
+        "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/chat.mjs",
+        "bytes": 15251,
+        "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/client-entry.cjs",
+        "bytes": 151616,
+        "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/config.mjs",
+        "bytes": 2918,
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/control.mjs",
+        "bytes": 2926,
+        "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/coordinator.mjs",
+        "bytes": 13403,
+        "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/environment.mjs",
+        "bytes": 9792,
+        "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/event-clock.mjs",
+        "bytes": 7432,
+        "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/events.mjs",
+        "bytes": 10602,
+        "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/foundation.mjs",
+        "bytes": 22111,
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/host-probe.mjs",
+        "bytes": 6739,
+        "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/index.mjs",
+        "bytes": 4354,
+        "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-audit-native-source.mjs",
+        "bytes": 13615,
+        "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-audit-phases.mjs",
+        "bytes": 6835,
+        "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-audit.mjs",
+        "bytes": 56388,
+        "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-config.mjs",
+        "bytes": 4122,
+        "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-events.mjs",
+        "bytes": 23241,
+        "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-invocation.mjs",
+        "bytes": 2341,
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-memory-continuity.mjs",
+        "bytes": 22246,
+        "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-memory.mjs",
+        "bytes": 3538,
+        "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-normal-services.mjs",
+        "bytes": 14134,
+        "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-owned-stream.mjs",
+        "bytes": 1071,
+        "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-plugin.mjs",
+        "bytes": 10275,
+        "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-results.mjs",
+        "bytes": 48343,
+        "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-role-recipes.mjs",
+        "bytes": 2127,
+        "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-worker-config.mjs",
+        "bytes": 5018,
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-worker-facts.mjs",
+        "bytes": 21961,
+        "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/installed-worker.mjs",
+        "bytes": 47301,
+        "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/messages.mjs",
+        "bytes": 15586,
+        "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/native-adapter.mjs",
+        "bytes": 40758,
+        "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/native-contributions.mjs",
+        "bytes": 10953,
+        "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/native-history-collector.mjs",
+        "bytes": 11620,
+        "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/native-source-descriptor.mjs",
+        "bytes": 2328,
+        "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-operations.mjs",
+        "bytes": 20325,
+        "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-planning.mjs",
+        "bytes": 2860,
+        "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-request.mjs",
+        "bytes": 2675,
+        "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-rpc.mjs",
+        "bytes": 1473,
+        "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-selection.mjs",
+        "bytes": 6689,
+        "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-resume-controls.mjs",
+        "bytes": 15595,
+        "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/normal-source-planning-binding.mjs",
+        "bytes": 1541,
+        "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/notifications.mjs",
+        "bytes": 11442,
+        "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/operator-bridge.mjs",
+        "bytes": 9944,
+        "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/owner-native-command-controls.mjs",
+        "bytes": 3908,
+        "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/results.mjs",
+        "bytes": 13766,
+        "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/runtime-plugin.mjs",
+        "bytes": 67362,
+        "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/runtime-store.mjs",
+        "bytes": 347241,
+        "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/scheduler.mjs",
+        "bytes": 11509,
+        "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/schema7-runtime-composition.mjs",
+        "bytes": 6085,
+        "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/setup-state.mjs",
+        "bytes": 20740,
+        "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/testing-provider.mjs",
+        "bytes": 15937,
+        "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/package/src/worker.mjs",
+        "bytes": 36640,
+        "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/preflight.mjs",
+        "bytes": 9332,
+        "sha256": "71dfc54e39bfbf5d2ee0aeee4f3839f1b4d804aab75a9648435ca95ca8a24290"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/public-oracles.mjs",
+        "bytes": 12757,
+        "sha256": "8517a015814684cb4cc27007e56a3b3f5c534281ea9a22bff2a7de4f0c7075e9"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/public-preparation.test.mjs",
+        "bytes": 10489,
+        "sha256": "fbdc1addc3f2d095a1663f562c5ff0ec6bdddd4032763132a469a890a45e6173"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/source-delta.diff",
+        "bytes": 88544,
+        "sha256": "1528a20258900038d57f567fbf11f5799622bfe574b3191beb99d995a5c83970"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+        "bytes": 84782,
+        "sha256": "bf8e64c0d9f6146553ea2a1860147a5c303d10260f652e4e4339c48b33828ec8"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/test-plan.proposed.json",
+        "bytes": 5560,
+        "sha256": "07f60186c5702b7b41b96c4e1db2b7c0288559fbedd6739302cf5c55e0fed5da"
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r2/verify-built-package.py",
+        "bytes": 7139,
+        "sha256": "8d8508a93f0b093e715443d39b2a90d4bc8a5dc0ec1440221f7833cc2b4b626f"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/full-composition-source-pins.json",
+        "bytes": 23926,
+        "sha256": "1d61f4f0be80d1bc08c00e9a293273c35889f78d937305c7ae26ab65d7259403"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/package.json",
+        "bytes": 2691,
+        "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/scripts/build-client.mjs",
+        "bytes": 1166,
+        "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/scripts/build-native-source-manifest.py",
+        "bytes": 5303,
+        "sha256": "48e73c32e777d3a089043e348ad499c96f19073284e210f28c9d1b06d471e63e"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/scripts/dsh-web-runtime-lock.json",
+        "bytes": 388886,
+        "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/source-closure.json",
+        "bytes": 93650,
+        "sha256": "f8ae5efd9fcfb1b19fa7a9cb1bafac3b30770b323878f644b14d2f72f62d7c27"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/approval-preview.mjs",
+        "bytes": 13904,
+        "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/audit-input-pair.mjs",
+        "bytes": 7647,
+        "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/audit.mjs",
+        "bytes": 6184,
+        "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/chat.mjs",
+        "bytes": 15251,
+        "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/client-entry.cjs",
+        "bytes": 151616,
+        "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/config.mjs",
+        "bytes": 2918,
+        "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/control.mjs",
+        "bytes": 2926,
+        "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/coordinator.mjs",
+        "bytes": 13403,
+        "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/environment.mjs",
+        "bytes": 9792,
+        "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/event-clock.mjs",
+        "bytes": 7432,
+        "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/events.mjs",
+        "bytes": 10602,
+        "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/foundation.mjs",
+        "bytes": 22111,
+        "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/host-probe.mjs",
+        "bytes": 6739,
+        "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/index.mjs",
+        "bytes": 4354,
+        "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-audit-native-source.mjs",
+        "bytes": 13615,
+        "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-audit-phases.mjs",
+        "bytes": 6835,
+        "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-audit.mjs",
+        "bytes": 56388,
+        "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-config.mjs",
+        "bytes": 4122,
+        "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-events.mjs",
+        "bytes": 23241,
+        "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-invocation.mjs",
+        "bytes": 2341,
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-memory-continuity.mjs",
+        "bytes": 22246,
+        "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-memory.mjs",
+        "bytes": 3538,
+        "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-normal-services.mjs",
+        "bytes": 14134,
+        "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-owned-stream.mjs",
+        "bytes": 1071,
+        "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-plugin.mjs",
+        "bytes": 10275,
+        "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-results.mjs",
+        "bytes": 48343,
+        "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-role-recipes.mjs",
+        "bytes": 2127,
+        "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-worker-config.mjs",
+        "bytes": 5018,
+        "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-worker-facts.mjs",
+        "bytes": 21961,
+        "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/installed-worker.mjs",
+        "bytes": 47301,
+        "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/messages.mjs",
+        "bytes": 15586,
+        "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/native-adapter.mjs",
+        "bytes": 40758,
+        "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/native-contributions.mjs",
+        "bytes": 10953,
+        "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/native-history-collector.mjs",
+        "bytes": 11620,
+        "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/native-source-descriptor.mjs",
+        "bytes": 2328,
+        "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-native-operations.mjs",
+        "bytes": 20325,
+        "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-native-planning.mjs",
+        "bytes": 2860,
+        "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-native-request.mjs",
+        "bytes": 2675,
+        "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-native-rpc.mjs",
+        "bytes": 1473,
+        "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-native-selection.mjs",
+        "bytes": 6689,
+        "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-resume-controls.mjs",
+        "bytes": 15595,
+        "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/normal-source-planning-binding.mjs",
+        "bytes": 1541,
+        "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/notifications.mjs",
+        "bytes": 11442,
+        "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/operator-bridge.mjs",
+        "bytes": 9944,
+        "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/owner-native-command-controls.mjs",
+        "bytes": 3908,
+        "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/results.mjs",
+        "bytes": 13766,
+        "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/runtime-plugin.mjs",
+        "bytes": 67362,
+        "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/runtime-store.mjs",
+        "bytes": 347241,
+        "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/scheduler.mjs",
+        "bytes": 11509,
+        "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/schema7-runtime-composition.mjs",
+        "bytes": 6085,
+        "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/setup-state.mjs",
+        "bytes": 20740,
+        "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/testing-provider.mjs",
+        "bytes": 15937,
+        "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+      },
+      {
+        "path": ".runtime/ni6-runtime-composition-r4/src/worker.mjs",
+        "bytes": 36640,
+        "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+        "bytes": 45312,
+        "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210"
+      },
+      {
+        "path": ".runtime/root-bounded-execution-60s.py",
+        "bytes": 5855,
+        "sha256": "e57882ad45265fead78c87c98bedd762314297f71cd46e654e18b0074e33532a"
+      },
+      {
+        "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+        "bytes": 84640,
+        "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+      },
+      {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 52448,
+        "sha256": "2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12"
+      },
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+      },
+      {
+        "path": "LICENSE",
+        "bytes": 1064,
+        "sha256": "e65cdd31ae4a1bbbb2ff700b6e12c2317de385c355af15c4d473ead81468a6fa"
+      },
+      {
+        "path": "THIRD_PARTY_NOTICES.md",
+        "bytes": 3057,
+        "sha256": "1d2774c8a7b25728afda591265f1d46509eefc3f0437448fbe9625ca1a99f182"
+      },
+      {
+        "path": "docs/development-workflow.md",
+        "bytes": 4700,
+        "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7"
+      },
+      {
+        "path": "docs/evidence/NI6/installed-continuation-independent-design.json",
+        "bytes": 187561,
+        "sha256": "6d7f60e7468c21a087735a5a39396d951f85e262d4ab2c2078fd8531ea387977"
+      },
+      {
+        "path": "docs/evidence/NI6/installed-continuation-independent-design.md",
+        "bytes": 121145,
+        "sha256": "bd896d6486f4e7f2ee58cf8a2da83d7a8a446a5dec38891c750696dd0579e90e"
+      },
+      {
+        "path": "docs/evidence/NI6/native-runtime-composition-r4-independent-source-review.json",
+        "bytes": 1009891,
+        "sha256": "43c0f2fef097d131ea73697879e8591418c54b6baf76130aa1a0d0428d99e4d1"
+      },
+      {
+        "path": "docs/evidence/NI6/native-runtime-composition-r4-independent-source-review.md",
+        "bytes": 21205,
+        "sha256": "0ff783b0ebe5fdd9a3c1cd67da51c1844d2de304a860d582218188e80fce0f00"
+      },
+      {
+        "path": "docs/evidence/NI6/native-runtime-composition-r4-source.md",
+        "bytes": 8912,
+        "sha256": "e6c7454e818e18194aa308151d6fa137db75925da4e813cc106284d5fded0375"
+      },
+      {
+        "path": "docs/evidence/NI6/preparation-PREP01-public-snapshot-rootcause.md",
+        "bytes": 9402,
+        "sha256": "34769feeb8ecf3b21806791d03c6e20ec0d182b0e6694f1a2e01a1fa6805eba8"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-independent-design.json",
+        "bytes": 51851,
+        "sha256": "77bf9aa7dd56355a0931b3ea65c410c2806954790e39dea5829c9340d4b1d7f8"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-independent-design.md",
+        "bytes": 22143,
+        "sha256": "c827612dcb572c14b0854fbf495e563fd8975f60c99ea9dcd441c74e3e74c87e"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-independent-source-review.json",
+        "bytes": 75317,
+        "sha256": "5b98abb75aa5a8da3e492542dac8ce509414ebf19da1a99016c16d6d2a5cc57a"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-independent-source-review.md",
+        "bytes": 11462,
+        "sha256": "4de3d680b908901fd269e9e0d8e6ea9d83adeeebf2f6e1c36c2b7f8a696759dc"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.json",
+        "bytes": 158294,
+        "sha256": "c7cfc2f20e55aed4809bdd55c303007bde4a675cafc12ae440a180883d6b7ab4"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-independent-test-design-review.md",
+        "bytes": 15554,
+        "sha256": "d1f588eb6cbe287141959f39440c50d0807896f244f76590dd8be70e1fd0f83e"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-source.json",
+        "bytes": 5046,
+        "sha256": "dcd94066c1c194d7899c974fc996cccc94b1bebf295d2b0c424d3a3104a45ae2"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r1-source.md",
+        "bytes": 6619,
+        "sha256": "6ba95f0fbc70bc69f2d3b177442d72aace22e30047fd30104e0961f4a8f017a5"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+        "bytes": 102952,
+        "sha256": "044dd7565902c79420d98ac4dc0c191730bc420f6bb9ab83b6641c598a5000fa"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+        "bytes": 12375,
+        "sha256": "77d68e98a3ae1d1e1b8255b3462cfcb8a1e54c10f22a3eec23b68d498c7e9276"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+        "bytes": 133550,
+        "sha256": "d66e045d4e8b04f9f030d29230780a05cfb52114c9a43bf8f65fefc291a11858"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+        "bytes": 13909,
+        "sha256": "5a9ec0b496ed49455f30db1a09bcfadf1cb7f820cc15b7b49cabd3bc7596e32b"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r2-source.json",
+        "bytes": 9161,
+        "sha256": "a380002f19b5d0ac1ec98600b620d713b50c56a3b8f05c4c957c4f731c3f9a72"
+      },
+      {
+        "path": "docs/evidence/NI6/public-preparation-r2-source.md",
+        "bytes": 7859,
+        "sha256": "3f000abc56a40e320b76aaeb91ec3f63fed7b1d7f4149867c99493dad7df6a09"
+      },
+      {
+        "path": "docs/evidence/ni3-ni6-remaining-work-2026-10-07.md",
+        "bytes": 7784,
+        "sha256": "5d58d8c3ea48fde69019c230ff31c9e84d3172199596f7628b2055578952493d"
+      },
+      {
+        "path": "docs/next-native-wave-2026-10-07.md",
+        "bytes": 6662,
+        "sha256": "840aaa086d41b9a2e6579ca4d86f0247305a413631ab7da48bb9ca703c28ba44"
+      },
+      {
+        "path": "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
+        "bytes": 4721,
+        "sha256": "de7bba6dfacf0fe05154083df137ee7ee839d5e219357e7bed6c41812d06260d"
+      },
+      {
+        "path": "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md",
+        "bytes": 4702,
+        "sha256": "b08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671"
+      },
+      {
+        "path": "docs/ni6-preparation-r2-delta-2026-10-07.md",
+        "bytes": 4528,
+        "sha256": "69d640925d3d0292d5eee875707439c69a254fe393954e02117292aefca185d5"
+      },
+      {
+        "path": "docs/ni6-preparation-r2-executor-freeze-2026-10-07.md",
+        "bytes": 6430,
+        "sha256": "63197b73ef53b8b40e2185cb88b225474db347311e85edffbef20c08db43a9bb"
+      },
+      {
+        "path": "docs/onboarding-contract.md",
+        "bytes": 8087,
+        "sha256": "f61ea745b6ae9080f9d9f12bdbbcf27ff5235d5278fcfce41827e40af7aa6fcd"
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-07-ollama.md",
+        "bytes": 2185,
+        "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+      },
+      {
+        "path": "docs/runtime-api.md",
+        "bytes": 23123,
+        "sha256": "f6263a663dc2fff31f871a157a987b321abc1736e2d56f5c2642988b66e704ab"
+      }
+    ],
+    "drift": 0,
+    "physicalCapsuleFilesIncludingManifest": 78,
+    "preservedR2Manifest": {
+      "path": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+      "bytes": 84782,
+      "sha256": "bf8e64c0d9f6146553ea2a1860147a5c303d10260f652e4e4339c48b33828ec8"
+    },
+    "preserved309R2RecordsMatch": true,
+    "exactInputUnion": {
+      "records": 316,
+      "components": {
+        "actualR2OwnedAndInputRecords": 309,
+        "actualR2Manifest": 1,
+        "actualFinalR2Reviews": 4,
+        "twoAdditiveR3Freezes": 2
+      },
+      "missing": 0,
+      "extra": 0,
+      "contradictoryDuplicateIdentities": 0,
+      "canonicalIdentityDeduplicationProven": true,
+      "newRecords": [
+        {
+          "path": ".runtime/ni6-public-preparation-r2/source-manifest.json",
+          "bytes": 84782,
+          "sha256": "bf8e64c0d9f6146553ea2a1860147a5c303d10260f652e4e4339c48b33828ec8"
+        },
+        {
+          "bytes": 12375,
+          "path": "docs/evidence/NI6/public-preparation-r2-independent-source-review.md",
+          "sha256": "77d68e98a3ae1d1e1b8255b3462cfcb8a1e54c10f22a3eec23b68d498c7e9276"
+        },
+        {
+          "bytes": 102952,
+          "path": "docs/evidence/NI6/public-preparation-r2-independent-source-review.json",
+          "sha256": "044dd7565902c79420d98ac4dc0c191730bc420f6bb9ab83b6641c598a5000fa"
+        },
+        {
+          "bytes": 13909,
+          "path": "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.md",
+          "sha256": "5a9ec0b496ed49455f30db1a09bcfadf1cb7f820cc15b7b49cabd3bc7596e32b"
+        },
+        {
+          "bytes": 133550,
+          "path": "docs/evidence/NI6/public-preparation-r2-independent-test-design-review.json",
+          "sha256": "d66e045d4e8b04f9f030d29230780a05cfb52114c9a43bf8f65fefc291a11858"
+        },
+        {
+          "path": "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
+          "bytes": 4721,
+          "sha256": "de7bba6dfacf0fe05154083df137ee7ee839d5e219357e7bed6c41812d06260d"
+        },
+        {
+          "path": "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md",
+          "bytes": 4702,
+          "sha256": "b08d264f5d6e5dd8edb81ef1a734781f75ab098b09d350baa55973717393e671"
+        }
+      ]
+    },
+    "unchangedBodyPackageFiles": [
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/approval-preview.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/approval-preview.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/approval-preview.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/approval-preview.mjs",
+          "bytes": 13904,
+          "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/audit-input-pair.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/audit-input-pair.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/audit-input-pair.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/audit-input-pair.mjs",
+          "bytes": 7647,
+          "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/audit.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/audit.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/audit.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/audit.mjs",
+          "bytes": 6184,
+          "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/chat.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/chat.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/chat.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/chat.mjs",
+          "bytes": 15251,
+          "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/client-entry.cjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/client-entry.cjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/client-entry.cjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/client-entry.cjs",
+          "bytes": 151616,
+          "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/config.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/config.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/config.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/config.mjs",
+          "bytes": 2918,
+          "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/context.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/context.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/context.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/context.mjs",
+          "bytes": 28297,
+          "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/control.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/control.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/control.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/control.mjs",
+          "bytes": 2926,
+          "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/coordinator.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/coordinator.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/coordinator.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/coordinator.mjs",
+          "bytes": 13403,
+          "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/environment.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/environment.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/environment.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/environment.mjs",
+          "bytes": 9792,
+          "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/event-clock.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/event-clock.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/event-clock.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/event-clock.mjs",
+          "bytes": 7432,
+          "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/events.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/events.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/events.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/events.mjs",
+          "bytes": 10602,
+          "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/fishball-memory-core.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/fishball-memory-core.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/fishball-memory-core.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/fishball-memory-core.mjs",
+          "bytes": 21009,
+          "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/foundation.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/foundation.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/foundation.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/foundation.mjs",
+          "bytes": 22111,
+          "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/host-probe.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/host-probe.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/host-probe.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/host-probe.mjs",
+          "bytes": 6739,
+          "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/index.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/index.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/index.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/index.mjs",
+          "bytes": 4354,
+          "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit-native-source.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-audit-native-source.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-audit-native-source.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit-native-source.mjs",
+          "bytes": 13615,
+          "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit-phases.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-audit-phases.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-audit-phases.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit-phases.mjs",
+          "bytes": 6835,
+          "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-audit.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-audit.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-audit.mjs",
+          "bytes": 56388,
+          "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-config.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-config.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-config.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-config.mjs",
+          "bytes": 4122,
+          "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-events.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-events.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-events.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-events.mjs",
+          "bytes": 23241,
+          "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-invocation.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-invocation.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-invocation.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-invocation.mjs",
+          "bytes": 2341,
+          "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory-continuity.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-memory-continuity.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-memory-continuity.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory-continuity.mjs",
+          "bytes": 22246,
+          "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-memory.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-memory.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-memory.mjs",
+          "bytes": 3538,
+          "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-normal-services.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-normal-services.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-normal-services.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-normal-services.mjs",
+          "bytes": 14134,
+          "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-owned-stream.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-owned-stream.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-owned-stream.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-owned-stream.mjs",
+          "bytes": 1071,
+          "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-plugin.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-plugin.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-plugin.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-plugin.mjs",
+          "bytes": 10275,
+          "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-results.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-results.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-results.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-results.mjs",
+          "bytes": 48343,
+          "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-role-recipes.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-role-recipes.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-role-recipes.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-role-recipes.mjs",
+          "bytes": 2127,
+          "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker-config.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-worker-config.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-worker-config.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker-config.mjs",
+          "bytes": 5018,
+          "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker-facts.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-worker-facts.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-worker-facts.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker-facts.mjs",
+          "bytes": 21961,
+          "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/installed-worker.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/installed-worker.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker.mjs",
+          "bytes": 47301,
+          "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/ledger.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/ledger.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/ledger.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/ledger.mjs",
+          "bytes": 21799,
+          "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/memory.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/memory.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/memory.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/memory.mjs",
+          "bytes": 36680,
+          "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/messages.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/messages.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/messages.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/messages.mjs",
+          "bytes": 15586,
+          "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-adapter.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/native-adapter.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/native-adapter.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/native-adapter.mjs",
+          "bytes": 40758,
+          "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-contributions.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/native-contributions.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/native-contributions.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/native-contributions.mjs",
+          "bytes": 10953,
+          "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-history-collector.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/native-history-collector.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/native-history-collector.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/native-history-collector.mjs",
+          "bytes": 11620,
+          "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/native-source-descriptor.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/native-source-descriptor.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/native-source-descriptor.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/native-source-descriptor.mjs",
+          "bytes": 2328,
+          "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-contracts.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-contracts.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-contracts.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-contracts.mjs",
+          "bytes": 31990,
+          "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-operations.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-operations.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-native-operations.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-operations.mjs",
+          "bytes": 20325,
+          "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-planning.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-planning.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-native-planning.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-planning.mjs",
+          "bytes": 2860,
+          "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-request.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-request.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-native-request.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-request.mjs",
+          "bytes": 2675,
+          "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-rpc.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-rpc.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-native-rpc.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-rpc.mjs",
+          "bytes": 1473,
+          "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-selection.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-native-selection.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-native-selection.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-selection.mjs",
+          "bytes": 6689,
+          "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-resume-controls.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-resume-controls.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-resume-controls.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-resume-controls.mjs",
+          "bytes": 15595,
+          "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/normal-source-planning-binding.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/normal-source-planning-binding.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/normal-source-planning-binding.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/normal-source-planning-binding.mjs",
+          "bytes": 1541,
+          "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/notifications.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/notifications.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/notifications.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/notifications.mjs",
+          "bytes": 11442,
+          "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/operator-bridge.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/operator-bridge.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/operator-bridge.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/operator-bridge.mjs",
+          "bytes": 9944,
+          "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/owner-native-command-controls.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/owner-native-command-controls.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/owner-native-command-controls.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/owner-native-command-controls.mjs",
+          "bytes": 3908,
+          "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/results.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/results.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/results.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/results.mjs",
+          "bytes": 13766,
+          "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-plugin.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/runtime-plugin.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/runtime-plugin.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-plugin.mjs",
+          "bytes": 67362,
+          "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-security.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/runtime-security.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/runtime-security.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-security.mjs",
+          "bytes": 6033,
+          "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-store.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/runtime-store.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/runtime-store.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/runtime-store.mjs",
+          "bytes": 347241,
+          "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/scheduler.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/scheduler.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/scheduler.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/scheduler.mjs",
+          "bytes": 11509,
+          "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/schema7-runtime-composition.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/schema7-runtime-composition.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/schema7-runtime-composition.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/schema7-runtime-composition.mjs",
+          "bytes": 6085,
+          "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/setup-state.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/setup-state.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/setup-state.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/setup-state.mjs",
+          "bytes": 20740,
+          "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/testing-provider.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/testing-provider.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+          "bytes": 15937,
+          "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/src/worker.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/src/worker.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/src/worker.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/src/worker.mjs",
+          "bytes": 36640,
+          "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/package.json",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/package.json",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/package.json",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/package.json",
+          "bytes": 2691,
+          "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/scripts/build-client.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/scripts/build-client.mjs",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/scripts/build-client.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/scripts/build-client.mjs",
+          "bytes": 1166,
+          "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/scripts/dsh-web-runtime-lock.json",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/scripts/dsh-web-runtime-lock.json",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/scripts/dsh-web-runtime-lock.json",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/scripts/dsh-web-runtime-lock.json",
+          "bytes": 388886,
+          "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/package/scripts/build-native-source-manifest.py",
+        "r2Path": ".runtime/ni6-public-preparation-r2/package/scripts/build-native-source-manifest.py",
+        "originalR4Path": ".runtime/ni6-runtime-composition-r4/scripts/build-native-source-manifest.py",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/package/scripts/build-native-source-manifest.py",
+          "bytes": 5303,
+          "sha256": "48e73c32e777d3a089043e348ad499c96f19073284e210f28c9d1b06d471e63e"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/.gitignore",
+        "r2Path": ".runtime/ni6-public-preparation-r2/.gitignore",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/.gitignore",
+          "bytes": 126,
+          "sha256": "d4a12288b694b3fa88b13b33d524ba67b1711e5ab8a7ca866aff561ae76f431a"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/fixture-oracles.test.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs",
+          "bytes": 8805,
+          "sha256": "f4bcd2d1b707a81a3e526e4c80734e71a51d6141a0b2b955c4c35333a8d606fa"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/http-rpc.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+          "bytes": 5810,
+          "sha256": "184bfb9f85aa8dd711f9d9eaec26c6940972a686b431cb91d5cf64b80cc3a597"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/original-bootstrap.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+          "bytes": 8721,
+          "sha256": "6f66cbd564448be228621cdc7d30d6d3b871fa6fd30fd1c25e51485839083421"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/public-oracles.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+          "bytes": 12757,
+          "sha256": "8517a015814684cb4cc27007e56a3b3f5c534281ea9a22bff2a7de4f0c7075e9"
+        },
+        "byteExact": true
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+        "r2Path": ".runtime/ni6-public-preparation-r2/public-preparation.test.mjs",
+        "pin": {
+          "path": ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+          "bytes": 10489,
+          "sha256": "fbdc1addc3f2d095a1663f562c5ff0ec6bdddd4032763132a469a890a45e6173"
+        },
+        "byteExact": true
+      }
+    ],
+    "unchangedBodyPackageFileCount": 69,
+    "originalR4PackageCopies": 63,
+    "retargetOnlySourceComparisons": [
+      {
+        "path": ".runtime/ni6-public-preparation-r3/preflight.mjs",
+        "beforePin": {
+          "path": ".runtime/ni6-public-preparation-r2/preflight.mjs",
+          "bytes": 9332,
+          "sha256": "71dfc54e39bfbf5d2ee0aeee4f3839f1b4d804aab75a9648435ca95ca8a24290"
+        },
+        "afterPin": {
+          "path": ".runtime/ni6-public-preparation-r3/preflight.mjs",
+          "bytes": 9332,
+          "sha256": "65a4e7bc72747fe0480a58ef630d2c3de30511af903b194c00376f557111bca2"
+        },
+        "frozenCanonicalLiteralRetargetOnly": true,
+        "algorithmChanged": false
+      },
+      {
+        "path": ".runtime/ni6-public-preparation-r3/verify-built-package.py",
+        "beforePin": {
+          "path": ".runtime/ni6-public-preparation-r2/verify-built-package.py",
+          "bytes": 7139,
+          "sha256": "8d8508a93f0b093e715443d39b2a90d4bc8a5dc0ec1440221f7833cc2b4b626f"
+        },
+        "afterPin": {
+          "path": ".runtime/ni6-public-preparation-r3/verify-built-package.py",
+          "bytes": 7139,
+          "sha256": "11c9162b0b28125515de8dc298fea217ed868fb47c2778d8b54bfcebf4e870db"
+        },
+        "frozenCanonicalLiteralRetargetOnly": true,
+        "algorithmChanged": false
+      }
+    ],
+    "frozenLiteralMap": [
+      [
+        "ni6-public-preparation-r2",
+        "ni6-public-preparation-r3"
+      ],
+      [
+        "ni6-prep01-executor-r2",
+        "ni6-prep01-executor-r3"
+      ],
+      [
+        "public-preparation-r2-build",
+        "public-preparation-r3-build"
+      ],
+      [
+        "public-preparation-r2-execution",
+        "public-preparation-r3-execution"
+      ]
+    ],
+    "delta": {
+      "pin": {
+        "path": ".runtime/ni6-public-preparation-r3/source-delta.diff",
+        "bytes": 64934,
+        "sha256": "5f45d469fc5a8ac66ae64921a337021cbc326aa5edea6f29e84fe81ebecd618c"
+      },
+      "sections": [
+        [
+          ".runtime/ni6-public-preparation-r2/README.md",
+          ".runtime/ni6-public-preparation-r3/README.md"
+        ],
+        [
+          ".runtime/ni6-public-preparation-r2/build-plan.proposed.json",
+          ".runtime/ni6-public-preparation-r3/build-plan.proposed.json"
+        ],
+        [
+          ".runtime/ni6-public-preparation-r2/effect-bounds.json",
+          ".runtime/ni6-public-preparation-r3/effect-bounds.json"
+        ],
+        [
+          ".runtime/ni6-public-preparation-r2/import-inventory.json",
+          ".runtime/ni6-public-preparation-r3/import-inventory.json"
+        ],
+        [
+          ".runtime/ni6-public-preparation-r2/preflight.mjs",
+          ".runtime/ni6-public-preparation-r3/preflight.mjs"
+        ],
+        [
+          ".runtime/ni6-public-preparation-r2/test-plan.proposed.json",
+          ".runtime/ni6-public-preparation-r3/test-plan.proposed.json"
+        ],
+        [
+          ".runtime/ni6-public-preparation-r2/verify-built-package.py",
+          ".runtime/ni6-public-preparation-r3/verify-built-package.py"
+        ],
+        [
+          "docs/evidence/NI6/public-preparation-r2-source.json",
+          "docs/evidence/NI6/public-preparation-r3-source.json"
+        ],
+        [
+          "docs/evidence/NI6/public-preparation-r2-source.md",
+          "docs/evidence/NI6/public-preparation-r3-source.md"
+        ]
+      ],
+      "sectionCount": 9,
+      "exactBeforeAfterReconstruction": true,
+      "addedLines": 209,
+      "removedLines": 146,
+      "semanticsChanged": false
+    },
+    "wholeHostGraphQualification": "Original graph source manifest/locks pinned; actual complete27577-file/12-link checkpoint verification remains required future root work, not invented execution evidence"
+  },
+  "findings": [],
+  "priorFindings": [
+    {
+      "id": "TD01",
+      "disposition": "SOURCE_REMEDIATED",
+      "runtimeProof": "NOT_RUN",
+      "expectation": "Closed complete snapshot/task/goal/context metadata and full detail joins, not only selected fields",
+      "actualSource": [
+        "public-oracles.mjs:13-16",
+        "public-oracles.mjs:19-80"
+      ],
+      "sourceFacts": "Plain own enumerable data fields, closed snapshot18/task9/goal10/context15, metadata domains, schema7/active control, closed detail task/data and complete metadata equality"
+    },
+    {
+      "id": "TD02",
+      "disposition": "SOURCE_REMEDIATED",
+      "runtimeProof": "NOT_RUN",
+      "expectation": "Initial zero work/schema/control and full current/repeat/stale/export conservation",
+      "actualSource": [
+        "public-oracles.mjs:49-64",
+        "public-oracles.mjs:82-154",
+        "public-preparation.test.mjs:95-127"
+      ],
+      "sourceFacts": "All11 work arrays empty; single preserved goal plus one context; task+1/semantic+1; full retained metadata, policy and14 top-level fields conserved; every public status/export validates before unchanged comparison"
+    }
+  ],
+  "coupledSelection": {
+    "sourceDisposition": "SOURCE_SUPPORTED",
+    "selectedExecutor": ".runtime/ni6-prep01-executor-r3/runner.py",
+    "rootPlans": [
+      ".runtime/root-ni6-public-preparation-r3-build-plan.json",
+      ".runtime/root-ni6-public-preparation-r3-execution-plan.json"
+    ],
+    "evidenceDirectories": [
+      "docs/evidence/NI6/public-preparation-r3-build",
+      "docs/evidence/NI6/public-preparation-r3-execution"
+    ],
+    "requiredAffectedReviews": [
+      "docs/evidence/NI6/public-preparation-r3-independent-source-review.md",
+      "docs/evidence/NI6/public-preparation-r3-independent-source-review.json",
+      "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.md",
+      "docs/evidence/NI6/public-preparation-r3-independent-test-design-review.json",
+      "docs/evidence/NI6/prep01-executor-r3-independent-source-review.md",
+      "docs/evidence/NI6/prep01-executor-r3-independent-source-review.json",
+      "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
+      "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json"
+    ],
+    "requiredRootGoPins": [
+      ".runtime/ni6-prep01-executor-r3/runner.py",
+      ".runtime/ni6-prep01-executor-r3/source-manifest.json",
+      "docs/evidence/NI6/public-preparation-r2-executor-independent-design.md",
+      "docs/evidence/NI6/public-preparation-r2-executor-independent-design.json",
+      "docs/ni6-executor-r2-remediation-freeze-2026-10-07.md",
+      "docs/ni6-executor-r3-ownership-selection-freeze-2026-10-07.md",
+      "docs/ni6-preparation-executor-r3-coupled-selection-2026-10-07.md"
+    ],
+    "futurePinsOutside316InputUnion": true,
+    "actualFutureHashesNotInvented": true,
+    "preflightSource": [
+      "preflight.mjs:9",
+      "preflight.mjs:13",
+      "preflight.mjs:39",
+      "preflight.mjs:43",
+      "preflight.mjs:53-61",
+      "preflight.mjs:76",
+      "preflight.mjs:98"
+    ],
+    "verifierSource": "Only canonical capsule/build-plan/manifest namespace literals differ; same genuine original verification algorithm",
+    "proposedRootGO": false,
+    "exactBuildArgv": [
+      [
+        "/opt/homebrew/bin/python3",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/verify-built-package.py",
+        "--prebuild"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package/scripts/build-client.mjs"
+      ],
+      [
+        "/opt/homebrew/bin/python3",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package/scripts/build-native-source-manifest.py",
+        "--product-root",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/package",
+        "--host-root",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+      ],
+      [
+        "/opt/homebrew/bin/python3",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-public-preparation-r3/verify-built-package.py",
+        "--seal-built"
+      ]
+    ],
+    "exactTestArgv": [
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-r3/public-oracles.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-r3/http-rpc.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-r3/preflight.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs"
+      ]
+    ],
+    "rootActualSuccessfulBuildDriverReturnRequiredBeforeTestGO": true,
+    "noRunnerAliasOrR2GateBypass": true,
+    "initialOwnershipFreezeR2PathAssumption": "Explicitly superseded by coupled-selection freeze; both old capsules/documents preserved"
+  },
+  "associatedExecutorReview": {
+    "separatePair": [
+      {
+        "path": "docs/evidence/NI6/prep01-executor-r3-independent-test-review.md",
+        "bytes": 12855,
+        "sha256": "2a3948179c2dbbfe34e51eb87ff3d709846ea3b848e1a80a2e668ad7e276e49a"
+      },
+      {
+        "path": "docs/evidence/NI6/prep01-executor-r3-independent-test-review.json",
+        "bytes": 62393,
+        "sha256": "ebff2d368a744f82821b364abc4d442d5d39bd79edccf6ea2b7d124dfbcffd6d"
+      }
+    ],
+    "status": "SOURCE_SUPPORTED_NOT_RUN_PRE_GO_HOLD",
+    "r2ER2_01": "SOURCE_REMEDIATED_FOR_EXACT_EXECUTOR_R3_ONLY",
+    "runtimeFamilies": "All36 NOT_RUN/HOLD",
+    "qualification": "Not acceptance by inheritance. Exact driver source already reviewed in a separate pair; root actual successful return/observed-stop boundaries and closed plans remain gates"
+  },
+  "publicDTOs": {
+    "taskFields": [
+      "ownerRef",
+      "workspaceRef",
+      "taskRef",
+      "status",
+      "version",
+      "taskVersion",
+      "authEpoch",
+      "createdAt",
+      "updatedAt"
+    ],
+    "snapshotFields": [
+      "schemaVersion",
+      "observedAt",
+      "task",
+      "data",
+      "actions",
+      "workers",
+      "policy",
+      "messages",
+      "artifacts",
+      "deliveries",
+      "progress",
+      "reviews",
+      "control",
+      "executions",
+      "audits",
+      "semanticRevision",
+      "notificationFacts",
+      "notifications"
+    ],
+    "emptyArrays": [
+      "actions",
+      "workers",
+      "messages",
+      "artifacts",
+      "deliveries",
+      "progress",
+      "reviews",
+      "executions",
+      "audits",
+      "notificationFacts",
+      "notifications"
+    ],
+    "goalMetadataFields": [
+      "recordRef",
+      "digest",
+      "kind",
+      "sourceRef",
+      "taskVersion",
+      "authEpoch",
+      "generationRef",
+      "createdAt",
+      "byteLength",
+      "cryptoVersion"
+    ],
+    "contextMetadataExtension": [
+      "sourceTaskVersion",
+      "sourceAuthEpoch",
+      "semanticRevision",
+      "memoryNamespaceRef",
+      "memoryRevision"
+    ],
+    "detailFields": [
+      "task",
+      "data"
+    ],
+    "detailDataFields": "Exactly complete corresponding metadata plus sole content field",
+    "receiptFields": [
+      "recordRef",
+      "digest",
+      "kind",
+      "byteLength",
+      "cryptoVersion",
+      "sourceRef",
+      "task",
+      "sourceTaskVersion",
+      "sourceAuthEpoch",
+      "memory",
+      "inputCounts",
+      "retainedRefs",
+      "droppedRefs",
+      "verification"
+    ],
+    "envelopeFields": [
+      "contractVersion",
+      "materialKind",
+      "sourceScope",
+      "sourceTaskVersion",
+      "sourceAuthEpoch",
+      "generatedAt",
+      "sourceRefs",
+      "sourceProvenance",
+      "memory",
+      "ledgerSnapshotDigest",
+      "content",
+      "inputCounts",
+      "retainedRefs",
+      "droppedRefs",
+      "verification"
+    ],
+    "closedFieldValidation": "Plain own enumerable data descriptors; no extra/accessor/symbol field admitted",
+    "integerDomains": "Unsigned safe integers; task/source versions positive; cryptoVersion2; generationRef null; refs64hex; nonzero metadata bytes <=16384; original input-count bounds",
+    "currentTransition": "One context, exact retained goal, task+1, semantic+1, unchanged task identity/status/auth and complete remaining top-level state",
+    "conservedTopLevelFields": [
+      "schemaVersion",
+      "actions",
+      "workers",
+      "policy",
+      "messages",
+      "artifacts",
+      "deliveries",
+      "progress",
+      "reviews",
+      "control",
+      "executions",
+      "audits",
+      "notificationFacts",
+      "notifications"
+    ],
+    "generatedAt": "Safe original timestamp only; no equality to request.now is required"
+  },
+  "accounting": {
+    "protectedGoal": "Actual single goal reference/provenance retained separately from optional background refs",
+    "optionalBackground": "retainedRefs/droppedRefs=[], memory.provenance=[], memory.revision=0",
+    "envelopeDigestAndByteLength": "SHA256 and UTF8 bytes of whole original envelope",
+    "inputCounts": "UTF8 bytes of protected content; original fixed-density tokens ceil(content.length/4)+4",
+    "fixedDensityQualification": "Local context-admission estimate, not model API usage or billing",
+    "ledgerDigest": "Exact original baseline task and nine projected work-facts surfaces",
+    "sourceDigest": "Original owner/workspace/task/source-version/auth/sourceRefs/memory namespace+revision scope",
+    "fullProtectedText": "Exact independently projected authoritative prefix, goal, no-constraints and work-facts text; public-preparation.test.mjs:113-114"
+  },
+  "idempotenceAndCAS": {
+    "request": "One frozen six-field object taskRef/commandRef/expectedTaskVersion/expectedAuthEpoch/terms:[]/now",
+    "repeat": "Same object/literal once; new transport rpcId only; deep full historical receipt and current snapshot/export equality except observedAt",
+    "stale": "Only commandRef new; original V0/A0/terms/now retained; exact safe STALE_VERSION; full status/export unchanged",
+    "retry": false,
+    "extraPreparedQuery": false
+  },
+  "bootstrap": {
+    "directOriginalPluginActivations": 11,
+    "installedEntryViaOriginalLoaderCreate": 1,
+    "context": "Genuine original Context; explicit synthetic launchEnvironment before activation",
+    "inventory": [
+      "Loader",
+      "SessionProjectionRegistry",
+      "SessionStore",
+      "ApprovalService",
+      "AgentRegistry",
+      "LlmRuntime",
+      "SystemPrompt",
+      "ToolRuntime",
+      "LocalCredentialProvider",
+      "WebServer",
+      "Connection original namespace apply"
+    ],
+    "systemPromptBeforeTools": true,
+    "providerPresetLoopJsonlActivations": 0,
+    "workerEnabled": "Constructor composition needed for schema7; executionEnabled false, original permission default deny, no provider/preset registered",
+    "originalLifetime": "Save entry id/fiber before original Loader.remove once; await saved Fiber.await plus Loader.await; original public entry absence and saved fiber closed; parent remains live for404 then whole root-fiber dispose",
+    "noFabricatedPeerOrHandler": "Original Connection owns token-cookie/trust/operator Peer; no captured domain handler or method/prototype override"
+  },
+  "transport": {
+    "selectedDomainAttempts": 18,
+    "selectedAuthExchange": 1,
+    "selectedRemovedRouteProbe": 1,
+    "selectedHTTPAttempts": 20,
+    "schedule": "Original D01-D18 unchanged from independent design; H00 token-cookie then H19 after entry removal before root closure",
+    "counters": "Increment before transport: attempt counts, not accepted backend-dispatch counts",
+    "requestCorrelation": "Actual original framed rpcId equality and closed server response/success/error DTOs; only D16 logical STALE_VERSION",
+    "listener": "One original fresh temporary 127.0.0.1 port0 assigned port distinct3080",
+    "postRemoval": "One framed statusPOST physical404 with empty body while original parent live, no catchall",
+    "postRootProbe": 0,
+    "retries": 0,
+    "requestBytesMax": 2048,
+    "responseBytesMax": 65536,
+    "cookieBytesMax": 4096,
+    "socketTimeoutMs": 2000,
+    "ownerAdmission": "Actual original Host/Origin/cookie/trust/Peer path; no synthetic acceptance wrapper"
+  },
+  "observationRefinement": {
+    "originalNineCaseDesignUnchanged": true,
+    "originalDesignWindows": 21,
+    "rootExplicitlyAgreedSelectedWindows": 44,
+    "qualification": "Finite prospective refinement, no actual observed count; case expectation retained verbatim with separately recorded selected refinement",
+    "windowContributions": {
+      "bootstrap": 2,
+      "authBeforeAfter": 2,
+      "beforeAfter18DomainRPCs": 36,
+      "entryDisposal": 1,
+      "afterEntryBefore404": 1,
+      "after404": 1,
+      "beforeRootClose": 1
+    },
+    "originalSurfaces": [
+      "agents.list",
+      "sessions.list",
+      "tools.schemas",
+      "llm.listProviders"
+    ],
+    "readsEach": 44,
+    "combinedReads": 176,
+    "publicDiagnosticsReads": 1,
+    "naturalEventCategories": [
+      "agent/created",
+      "agent/disposed",
+      "session/created",
+      "session/disposed",
+      "session/event",
+      "llm/stream",
+      "tools/execute"
+    ],
+    "naturalEventCategoryCount": 7,
+    "callbacks": "Count only; stream/tool delegate next; installed before activation; no reset/mocks",
+    "historicalCountsAfterRootCloseOnly": true,
+    "expectedSelectedNativeModelToolAuthorityEffects": 0,
+    "unknownScope": "No typed raw-instance currentness, native role/admission/usage/release, donor/cold/browser or aggregate proof"
+  },
+  "functionalCases": [
+    {
+      "id": "NI6-PREP01-01",
+      "name": "Authentic build and original lifetime",
+      "requests": [],
+      "techniques": [
+        "source provenance",
+        "closed inventory",
+        "lifecycle"
+      ],
+      "expected": [
+        "Authentic r4 64-row product descriptor, not a hand-constructed descriptor or prior bundle",
+        "59 measured source files + package + lock + two unchanged builders + actual freshly built client = 64; actual original host descriptor and lock measured",
+        "Original pinned Context/Loader/services and original installed entry; fresh synthetic profile/database namespace; no fake PeerScope or private handle",
+        "One original WebServer listening at 127.0.0.1 with port=0 and actual assigned port distinct from 3080; no fallback/catchall owner"
+      ],
+      "ac": [
+        "BUB001-01",
+        "BUB001-03",
+        "BUB012-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-02",
+      "name": "Actual owner transport and framing",
+      "requests": [
+        "H00",
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "techniques": [
+        "authenticated carrier",
+        "DTO validation",
+        "request correlation"
+      ],
+      "expected": [
+        "One genuine native launch-token/index exchange; private cookie retained in memory, redirect not followed",
+        "Original Connection owns trusted Host/Origin admission and operator Peer; every domain request goes over actual HTTP to the one owned listener",
+        "Client-request and server-response envelopes preserve exact rpcId correlation; no fabricated wrapper or response DTO",
+        "18 admitted domain RPC attempts, counted before transport; no retry, extra endpoint, captured handler or route lookup"
+      ],
+      "ac": [
+        "BUB006-01",
+        "BUB006-03",
+        "BUB001-01"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-03",
+      "name": "Consent, no-write preview and storage activation",
+      "requests": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "techniques": [
+        "state transition",
+        "before/after metadata",
+        "explicit consent"
+      ],
+      "expected": [
+        "DF setup_required and executionEnabled false before consent",
+        "Only volatile preview prior to confirm; no DF setup directory/key/state/database created",
+        "Native host-auth signing-secret storage is separately allowed in the fresh synthetic host home; it is not a DF setup preview write",
+        "Explicit accept:true, current preview/digest, original one-time setup publication, ready after original child activation",
+        "One original public df.diagnostics() read after activation establishes schemaVersion 7 and original memory capability; no raw store/owner extraction"
+      ],
+      "ac": [
+        "BUB001-01",
+        "BUB003-03",
+        "BUB006-03",
+        "BUB006-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-04",
+      "name": "One owner intake and public baseline joins",
+      "requests": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "techniques": [
+        "valid partition",
+        "source identity",
+        "cross-surface consistency"
+      ],
+      "expected": [
+        "Empty initial task list",
+        "One fresh deduplicated:false queued task; factual positive V0 and A0=0 captured once from actual receipt; taskVersion equals version",
+        "One goal metadata row and original admitted detail of G; no constraints, summary, context or memory mutation",
+        "Full owner/workspace/task tuple agrees across intake/status/detail/export; metadata-only export"
+      ],
+      "ac": [
+        "BUB003-01",
+        "BUB003-05",
+        "BUB007-03",
+        "BUB008-01"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-05",
+      "name": "One complete prepared context and immutable receipt",
+      "requests": [
+        10,
+        11,
+        12,
+        13
+      ],
+      "techniques": [
+        "valid partition",
+        "exact DTO",
+        "source provenance",
+        "independent accounting"
+      ],
+      "expected": [
+        "PreparedReceipt has exactly 14 top-level fields and pinned nested domains",
+        "Task version advances exactly once V0 to V1; task status, identity and authorization epoch remain unchanged",
+        "Receipt, original prepared data and public task metadata join on exact references/digests/source/versions/memory",
+        "Goal-only sourceRefs contains goalRef; empty optional background retainedRefs/droppedRefs; memory revision 0",
+        "Whole-envelope SHA256/UTF8 bytes are distinct from content-only inputCounts.bytes and fixed-density tokens",
+        "Complete original protected text and ledger work-facts projection from S0; no fabricated (none) constraints source or unrelated memory"
+      ],
+      "ac": [
+        "BUB003-02",
+        "BUB007-06",
+        "BUB008-01",
+        "BUB008-02",
+        "BUB008-03",
+        "BUB008-05",
+        "BUB012-04",
+        "BUB012-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-06",
+      "name": "Exact historical preparation acknowledgement",
+      "requests": [
+        14,
+        15
+      ],
+      "techniques": [
+        "idempotence",
+        "metamorphic unchanged state"
+      ],
+      "expected": [
+        "Same CP,V0,A0,terms,N and optional-field absence; fresh transport rpcId only",
+        "Deep equality of full historical receipt with R despite current task now V1",
+        "No added context or visible state/task/auth transition; private new-only observer behavior requires independent source review and is not inferred from an event echo"
+      ],
+      "ac": [
+        "BUB003-02",
+        "BUB007-04",
+        "BUB008-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-07",
+      "name": "Different new command with stale CAS",
+      "requests": [
+        16,
+        17,
+        18
+      ],
+      "techniques": [
+        "invalid stale partition",
+        "CAS",
+        "state conservation"
+      ],
+      "expected": [
+        "Only commandRef changes to new CS, preserving old V0/A0/terms/N",
+        "Public STALE_VERSION refusal with exact safe logical-error DTO",
+        "No refreshed expected version, second preparation attempt, auto-retry, added context or changed task/auth/action state",
+        "Final metadata-only export conserves E1 excluding only observedAt"
+      ],
+      "ac": [
+        "BUB003-02",
+        "BUB006-02",
+        "BUB008-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-08",
+      "name": "Zero native/model/tool/authority effects throughout",
+      "requests": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "techniques": [
+        "effect inventory",
+        "public lifetime observations"
+      ],
+      "expected": [
+        "Exactly zero agent/session creations, resumes and native-worker dispatches; original public creation counters cover transient publication",
+        "Authentic agents.list()/sessions.list() empty at 21 finite checkpoints; no fake registries or snapshot substitution",
+        "No model/catalog/policy/grant/claim/execute/capture/finish/provider-stream/tool RPC or instance effect; original public observational surfaces and closed source request inventory required",
+        "worker.enabled true is constructor selection needed for schema7, not permission for native work; hostPermission remains original default deny",
+        "Zero requests does not fabricate actual billing/usage, native acceptance or role/release evidence; unobservable effect boundary is HOLD"
+      ],
+      "ac": [
+        "BUB006-05",
+        "BUB007-06",
+        "BUB008-04",
+        "BUB012-01",
+        "BUB012-02",
+        "BUB012-03",
+        "BUB012-04"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NI6-PREP01-09",
+      "name": "Original disposal, truthful route absence and preservation",
+      "requests": [
+        "H19"
+      ],
+      "techniques": [
+        "lifecycle",
+        "negative route boundary",
+        "state preservation"
+      ],
+      "expected": [
+        "Remove original owned installed entry/runtime subtree and await original Loader lifecycle before probe",
+        "Keep parent Connection/WebServer active with no fallback or catchall; one original framed task-status POST returns physical HTTP404 and no logical task success",
+        "HTTP404 is unmatched-route evidence, not operator admission, release or a stopped-socket response; full Web static fallback 405 is a separate composition",
+        "Then original root Context fiber disposal closes the one listener; no new probe/restart/rebind or process kill",
+        "Preserve synthetic database/setup/key metadata and generated namespace; ordinary SQLite sidecar teardown is allowed, byte-identical database/WAL assertions are not required",
+        "No raw SQL/private state read, synthetic terminal witness, durable reopen or cold acceptance"
+      ],
+      "ac": [
+        "BUB001-01",
+        "BUB001-04",
+        "BUB003-01",
+        "BUB003-05"
+      ],
+      "status": "NOT_RUN",
+      "acceptance": "HOLD"
+    }
+  ],
+  "functionalSourceAssessments": [
+    {
+      "id": "NI6-PREP01-01",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "preflight.mjs:1-114",
+        "original-bootstrap.mjs:1-89"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-02",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "http-rpc.mjs:19-88",
+        "public-preparation.test.mjs:50-78"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-03",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "public-preparation.test.mjs:59-82"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-04",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "public-preparation.test.mjs:87-102",
+        "public-oracles.mjs:19-80"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-05",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "public-preparation.test.mjs:105-116",
+        "public-oracles.mjs:88-163"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-06",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "public-preparation.test.mjs:118-121",
+        "public-oracles.mjs:82-87"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-07",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "public-preparation.test.mjs:122-127",
+        "http-rpc.mjs:49-65",
+        "public-oracles.mjs:82-87"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-08",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "original-bootstrap.mjs:53-65",
+        "public-preparation.test.mjs:50-58,82,129-144"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    },
+    {
+      "id": "NI6-PREP01-09",
+      "originalExpectedPreserved": true,
+      "locations": [
+        "original-bootstrap.mjs:95-116",
+        "public-preparation.test.mjs:129-138",
+        "http-rpc.mjs:90-96"
+      ],
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionBodyFromR2": true
+    }
+  ],
+  "pureUnitCells": [
+    {
+      "id": "U01",
+      "name": "Ordinary closed baseline and goal join",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:55-59",
+      "expected": {
+        "partition": "positive",
+        "code": null,
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U02",
+      "name": "Frozen closed baseline and goal detail",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:60-64",
+      "expected": {
+        "partition": "positive",
+        "code": null,
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U03",
+      "name": "Complete receipt/detail/prepared transition",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:65-70",
+      "expected": {
+        "partition": "positive",
+        "code": null,
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U04",
+      "name": "Missing snapshot notifications",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:71-74",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U05",
+      "name": "Extra snapshot content",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:75-78",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U06",
+      "name": "Schema 6 instead of 7",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:79-82",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_SNAPSHOT_SCHEMA_CONTROL",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U07",
+      "name": "Paused control instead of active",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:83-86",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_SNAPSHOT_SCHEMA_CONTROL",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U08",
+      "name": "Negative semantic revision",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:87-90",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_INTEGER",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U09",
+      "name": "Nonempty actions",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U10",
+      "name": "Nonempty workers",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U11",
+      "name": "Nonempty messages",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U12",
+      "name": "Nonempty artifacts",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U13",
+      "name": "Nonempty deliveries",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U14",
+      "name": "Nonempty progress",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U15",
+      "name": "Nonempty reviews",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U16",
+      "name": "Nonempty executions",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U17",
+      "name": "Nonempty audits",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U18",
+      "name": "Nonempty notificationFacts",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U19",
+      "name": "Nonempty notifications",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:91-99",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_UNEXPECTED_WORK_FACT",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U20",
+      "name": "Leaked goal metadata content",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:100-103",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U21",
+      "name": "Missing goal createdAt",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:104-107",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U22",
+      "name": "Leaked context metadata content",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:108-111",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U23",
+      "name": "Missing context memoryRevision",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:112-115",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U24",
+      "name": "Extra goal detail field",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:116-119",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U25",
+      "name": "Extra context detail field",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:120-123",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_DTO_KEYS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U26",
+      "name": "Context source-version mismatch",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:124-127",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_PREPARED_METADATA_VERSIONS",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U27",
+      "name": "Missing semantic increment",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:128-131",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_SEMANTIC_TRANSITION",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U28",
+      "name": "Double semantic increment",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:132-135",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_SEMANTIC_TRANSITION",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U29",
+      "name": "Context/current semantic mismatch",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:136-139",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_CONTEXT_SEMANTIC_JOIN",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U30",
+      "name": "Changed policy",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:140-143",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_POLICY_CHANGED",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    },
+    {
+      "id": "U31",
+      "name": "Changed retained goal",
+      "source": ".runtime/ni6-public-preparation-r3/fixture-oracles.test.mjs:144-147",
+      "expected": {
+        "partition": "negative",
+        "code": "PREP01_SOURCE_RECORD_CHANGED",
+        "qualification": "UNIT_ONLY synthetic DTO, no original instance or authority evidence"
+      },
+      "sourceDisposition": "SOURCE_SUPPORTED",
+      "status": "NOT_RUN",
+      "acceptance": "HOLD",
+      "byteExactAssertionSourceFromR2": true
+    }
+  ],
+  "pureUnitCount": 31,
+  "purePositiveCount": 3,
+  "pureNegativeCount": 28,
+  "pureExpectedCodesUnchanged": true,
+  "pureQualification": "31 flat UNIT_ONLY DTO/oracle cells. Built-in test/assert/crypto plus public-oracles only; no product/host/provider import, no original lifecycle/currentness/authority evidence. Exact code predicates are source-reviewed, never executed.",
+  "timingAndCommands": {
+    "buildCommands": 4,
+    "syntaxCommands": 6,
+    "syntaxOrder": [
+      "public-oracles.mjs",
+      "http-rpc.mjs",
+      "original-bootstrap.mjs",
+      "preflight.mjs",
+      "public-preparation.test.mjs",
+      "fixture-oracles.test.mjs"
+    ],
+    "pureCommands": 1,
+    "functionalCommands": 1,
+    "maximumInterpreterStarts": 16,
+    "preflightSeconds": 10,
+    "functionalActiveSeconds": 40,
+    "cleanupSeconds": 5,
+    "nodeTestMilliseconds": 55000,
+    "sharedExecutorActiveSeconds": 180,
+    "hardCommandSecondsIncludingCleanup": 60,
+    "qualification": "All prospective. Synchronous OS work cannot be instantly interrupted; Promise.race timeout does not cancel underlying original operation; actual root supported command/cleanup/return observations required"
+  },
+  "publicDiagnostics": {
+    "fieldCount": 14,
+    "contract": {
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "bytes": 2079,
+      "sha256": "c68c943a72438940f19196d2f12e8d1f862231af9b9496562d93beebdcc66bf2"
+    },
+    "qualification": "Allowlisted refs/counts and original asserted entry/root closure only; tokenized URL/cookie/header/raw response/private key/state remain private; typedCurrentness OUTSIDE/acceptance HOLD"
+  },
+  "storageQualification": {
+    "selected": "Fresh synthetic namespace only; database/setup/key/state type/owner/mode/dev/inode before/after",
+    "privateContentReads": 0,
+    "nativeAuthVsDfPreview": "Host auth creation allowed in separate fresh home, DF preview still no-write before explicit confirm",
+    "sidecars": "Ordinary SQLite teardown allowed; no byte-identical DB/WAL claim",
+    "coldReopen": false
+  },
+  "remainingExecutionGates": [
+    "Root full exact source/review/closed-plan/pin/copy/argv materialization with all8 fresh affected reports and both additive freezes",
+    "Genuine original four-builder command results/generated client+64-row descriptor/peer/build readback before functional import",
+    "Supported once-only canonical build/test approval and actual successful build-driver return before testGO",
+    "Actual20HTTP/18RPC/44windows/176reads/7natural categories/schema7/receipt/metadata/detail/export/idempotence/stale/removal404/root assertions",
+    "Complete bounded capture/EOF/owned-group/actualTAP/strict14-field diagnostic/after-pin checks under observed time budgets",
+    "Unknown/denied/uninterruptible/late return/partial persistence staysHOLD; no retry/reset/alternate target"
+  ],
+  "acceptance": {
+    "all87Accepted": 0,
+    "all87": "HOLD",
+    "allNineFunctionalCases": "NOT_RUN_HOLD",
+    "all31PureCells": "UNIT_ONLY_NOT_RUN_HOLD",
+    "all36ExecutorFamilies": "NOT_RUN_HOLD",
+    "native": "HOLD",
+    "CODE": "PERMANENTLY_BLOCKED_UNTOUCHED"
+  },
+  "remainingHolds": [
+    "Typed raw-instance currentness outside public RPC slice",
+    "Original setup/spec/consent/donor/current-owner/native-role/admission/usage/release gaps",
+    "Cold A exit/fresh B not selected",
+    "Browser/mounted UI not selected",
+    "Prior direct-instance0complete/8partial/2held and47pending calls unchanged",
+    "All9+31+36 NOT_RUN/HOLD",
+    "All87 accepted0/HOLD",
+    "Permanent final CODE untouched"
+  ],
+  "actualEffects": {
+    "applicationParses": 0,
+    "applicationImports": 0,
+    "applicationExecutions": 0,
+    "builds": 0,
+    "syntaxChecks": 0,
+    "tests": 0,
+    "faultProbes": 0,
+    "HTTP": 0,
+    "domainRPCs": 0,
+    "profiles": 0,
+    "listeners": 0,
+    "DB": 0,
+    "browser": 0,
+    "provider": 0,
+    "model": 0,
+    "network": 0,
+    "OSProcessQueries": 0,
+    "signals": 0,
+    "Git": 0,
+    "privateContentReads": 0,
+    "productOrCapsuleWrites": 0,
+    "priorDesignOrReportWrites": 0,
+    "newEvidenceWrites": 2,
+    "qualification": "Only public source/JSON/raw hash/diff helpers and this new review pair. All declared counts remain prospective."
+  }
+}
