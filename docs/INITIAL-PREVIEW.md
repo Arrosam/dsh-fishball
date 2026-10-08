@@ -107,6 +107,8 @@ CLI-r5 failed in root preparation because the wrong envelope shape was supplied;
 
 The87-row compact reconciliation preserves **4 PASS /81 PARTIAL /1 NOT_RUN /1 OUT_OF_PHASE /0 BLOCKED** at its documented cut; four PASS rows include an alias, not four independent achievements. [Traceability](acceptance-traceability.md), [tickets](tickets/README.md), [acceptance debt](evidence/acceptance-debt.md) and the canonical compact reconciliation preserve the full scope. This delivery does not promote those rows automatically. The new smoke and targeted change-review results are added to the work log rather than copied into a new report family.
 
+The new packaged initial path passed authenticated original CLI/storage setup, one deterministic native worker, committed execution, exact artifact result and finish with reservation released. Owned SIGINT closed the endpoint and retained state. Same-profile restart passed ready storage and persisted task/worker/execution/artifact metadata, but `workerResult` refused `WORKER_RESULT_UNAVAILABLE`; the whole restart/result check is failed. This does not establish native cold-resume or restart-safe result-content viewing. Detailed actual outcomes and tested executable identity are in [INITIAL-PREVIEW-DELIVERY.md](INITIAL-PREVIEW-DELIVERY.md). Visual validation and real inference remain unrun.
+
 When the owner is ready, acceptance can proceed in this order:
 
 1. Verify the artifact hash/commit and existing pinned host, launch the exact package in a new owned profile and confirm native UI/client/build identity and authenticated API together.

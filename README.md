@@ -6,6 +6,8 @@ A native DeepSeek Harness workbench for durable tasks, scoped memory/context and
 
 The owner requested this local **0.1.0-preview.1 initial preview** now and accepts incomplete validation. It is not the accepted full MVP or stable release. The default worker uses an existing source-owned deterministic DSH provider: no network/model billing. The requested Ollama cloud path remains blocked/unverified; synthetic results do not establish real inference or model quality.
 
+The packaged native path passed explicit storage setup, one synthetic task/worker execution, result capture/retrieval and worker finish. After an owned stop/restart, task and artifact metadata persisted, but result-content retrieval returned `WORKER_RESULT_UNAVAILABLE`. Read results during the current host lifetime; restart-safe result viewing remains unfinished. See the exact [delivery checks](docs/INITIAL-PREVIEW-DELIVERY.md). Rendered UI validation is still open.
+
 ## Run on this Mac
 
 Use the already installed pinned DSH Web0.2.1-alpha.1 flat host and Node22.22.2. From the repository:
