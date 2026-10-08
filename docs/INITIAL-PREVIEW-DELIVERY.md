@@ -182,3 +182,148 @@ Build from the exact source tree identified by BUILD-METADATA; the destination d
 
 The launcher owns127.0.0.1:3091, the private df-initial-preview profile and its original CLI child. Its private `.runtime/initial-preview/private/current-launch.json` points to the local access handoff; keep all authenticated URLs and credentials private. Ctrl+C stops the owned host and retains state. Do not precreate state or clear another launcher's lock. No daemon/remote/listener bypass is introduced. See [the design](INITIAL-PREVIEW.md), [work log](INITIAL-PREVIEW-WORKLOG.md) and later acceptance checklist before continuing.
 
+
+## Result-reopening follow-up — current corrected executable
+
+Initial Library version0 and its FAILED restart-content record above remain historical. The owner authorized this one practical correction after delivery. Diagnosis showed the cryptoVersion2 artifact/index/data survived restart and remained readable through the scoped detail API; the installed workerResult incorrectly required a lifetime-local captures Map entry before reading it.
+
+Executable source **9f23122eed4ff63e0208944cd35d9c83e31b0865** changes only workerResult. It reads the scoped immutable artifact/data, verifies the closed envelope and content/digest/byte bounds, binds persisted worker/action/execution metadata and rechecks scope/CAS and the unchanged binding. Any present live receipt must still agree. No schema, transcript, key, protected core, native handle, stream or recapture change is needed. Four targeted pure installer tests passed; independent CODE and separate ISTQB reviews found no blocking issue for this changed path.
+
+The actual packaged original-CLI path passed one synthetic task/create/execute/capture/result/finish. Owned stop completed exit130/EOF and the endpoint/lock were gone. Same exact profile/package restart and stored-result reopening **PASSED**: exact113-byte content, artifact record/digest and complete source object matched; only six read-only calls, zero execution/capture replay, zero real-model calls. A stopped worker and one execution/artifact remain. This does not prove native worker continuation, full visual/recovery acceptance or independently reviewed/delivered content.
+
+```json
+{
+  "path": {
+    "sourceCommit": "9f23122eed4ff63e0208944cd35d9c83e31b0865",
+    "package": "0.1.0-preview.1",
+    "profile": "df-initial-preview",
+    "endpoint": "http://127.0.0.1:3091",
+    "steps": [
+      "status",
+      "prepare",
+      "confirm",
+      "status",
+      "list",
+      "intake",
+      "status",
+      "prepareContext",
+      "detail",
+      "workerCatalog",
+      "workerPolicyPreview",
+      "workerPolicyConfirm",
+      "workerPlan",
+      "workerPreview",
+      "workerGrant",
+      "workerCreate",
+      "workerQuery",
+      "workerExecute",
+      "workerQuery",
+      "workerCapture",
+      "workerResult",
+      "workerFinish",
+      "status"
+    ],
+    "requests": 25,
+    "workerExecuteRequests": 1,
+    "realModelRequests": 0,
+    "visualValidation": "NOT_RUN",
+    "nativeChildPid": 93908,
+    "launchId": "6aae3481-a397-491c-b1af-f0ff371415f1",
+    "clientDigest": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+    "nativePageHTTP": 200,
+    "taskRef": "d441229fe6b8e238ec39dd79b592b12a485046bdca200cfd189ff2d9aa99989f",
+    "result": "PASS",
+    "phase": "COMPLETE",
+    "taskVersion": 4,
+    "authEpoch": 1,
+    "workerQuery": {
+      "taskRef": "d441229fe6b8e238ec39dd79b592b12a485046bdca200cfd189ff2d9aa99989f",
+      "actionRef": "4e7ae0c19c1a1ee771cff08e9dffa330ce5f4e712ad1cb8fc84076350631bc82",
+      "claimRef": "ec3a0e2b6d5c069dce498843d625067236c548b179a066f41ae0f7711ff7c7d0",
+      "generationRef": "64a0ef989096b7d4f3e05dc5b864636e982a3852aa29f9ebd8213417329234fe"
+    },
+    "artifactRef": "d899cd1716d9b380b64e8621b3b2656eb65edbdfde62a5a169347787ba23f3c9",
+    "artifactVersion": 1,
+    "artifactDigest": "b4478aee758f2b35d7f707ae2f489bb2dab6f8e84dccba929e2308e9d6478e89",
+    "artifactRecordRef": "1c6a9e4559763d7b70e8f1aed22ac6c4629824a4e622d8f9c0751219dfe64bb4",
+    "resultSource": {
+      "actionDigest": "b7956f00c94e8fd4add8f493622675cd2138d59c2f7c81f05f22dfca11c2ca3f",
+      "actionRef": "4e7ae0c19c1a1ee771cff08e9dffa330ce5f4e712ad1cb8fc84076350631bc82",
+      "claimRef": "ec3a0e2b6d5c069dce498843d625067236c548b179a066f41ae0f7711ff7c7d0",
+      "cursor": 9,
+      "executionRef": "7a0deaf59704b324258e24f7049305a49543ba720601140c9620c74d5c90f784",
+      "generationRef": "64a0ef989096b7d4f3e05dc5b864636e982a3852aa29f9ebd8213417329234fe",
+      "inputDigest": "68fbb52158fbbde20b445547e2ab0b18145e2c81e7733ef7e70dfa0a842eacee",
+      "resultDigest": "ba66c85ca547bc0e6001c5cb4d406a5b3ed67aeacf1238904a251f64a3ba1e8f",
+      "sessionRef": "1eacaa34b1e33ff9989fd03d3888d8eb1f0256745b45afc85174a5a0aad52429",
+      "taskRef": "d441229fe6b8e238ec39dd79b592b12a485046bdca200cfd189ff2d9aa99989f"
+    },
+    "resultBytes": 113,
+    "resultDigest": "ba66c85ca547bc0e6001c5cb4d406a5b3ed67aeacf1238904a251f64a3ba1e8f",
+    "inputDigest": "68fbb52158fbbde20b445547e2ab0b18145e2c81e7733ef7e70dfa0a842eacee",
+    "executionRef": "7a0deaf59704b324258e24f7049305a49543ba720601140c9620c74d5c90f784",
+    "executionUsage": {
+      "accounting": "df-testing-utf8-byte-units/v1",
+      "state": "actual",
+      "units": 3018
+    },
+    "reservationReleased": true,
+    "workerStopped": true,
+    "artifactCount": 1,
+    "executionCount": 1,
+    "verification": "not-reviewed",
+    "delivery": "not-requested",
+    "observedAtUTC": "2026-10-08T16:36:09Z"
+  },
+  "restart": {
+    "sourceCommit": "9f23122eed4ff63e0208944cd35d9c83e31b0865",
+    "package": "0.1.0-preview.1",
+    "profile": "df-initial-preview",
+    "endpoint": "http://127.0.0.1:3091",
+    "workerExecuteRequests": 0,
+    "realModelRequests": 0,
+    "visualValidation": "NOT_RUN",
+    "nativeChildPid": 93984,
+    "launchId": "ac7b4baa-3f2b-43fc-9bf1-afef6145bf93",
+    "clientDigest": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+    "result": "PASS",
+    "phase": "COMPLETE",
+    "setup": "ready",
+    "taskRef": "d441229fe6b8e238ec39dd79b592b12a485046bdca200cfd189ff2d9aa99989f",
+    "taskVersion": 4,
+    "authEpoch": 1,
+    "artifactRef": "d899cd1716d9b380b64e8621b3b2656eb65edbdfde62a5a169347787ba23f3c9",
+    "artifactVersion": 1,
+    "resultDigest": "ba66c85ca547bc0e6001c5cb4d406a5b3ed67aeacf1238904a251f64a3ba1e8f",
+    "artifactDigest": "b4478aee758f2b35d7f707ae2f489bb2dab6f8e84dccba929e2308e9d6478e89",
+    "artifactRecordRef": "1c6a9e4559763d7b70e8f1aed22ac6c4629824a4e622d8f9c0751219dfe64bb4",
+    "resultSource": {
+      "actionDigest": "b7956f00c94e8fd4add8f493622675cd2138d59c2f7c81f05f22dfca11c2ca3f",
+      "actionRef": "4e7ae0c19c1a1ee771cff08e9dffa330ce5f4e712ad1cb8fc84076350631bc82",
+      "claimRef": "ec3a0e2b6d5c069dce498843d625067236c548b179a066f41ae0f7711ff7c7d0",
+      "cursor": 9,
+      "executionRef": "7a0deaf59704b324258e24f7049305a49543ba720601140c9620c74d5c90f784",
+      "generationRef": "64a0ef989096b7d4f3e05dc5b864636e982a3852aa29f9ebd8213417329234fe",
+      "inputDigest": "68fbb52158fbbde20b445547e2ab0b18145e2c81e7733ef7e70dfa0a842eacee",
+      "resultDigest": "ba66c85ca547bc0e6001c5cb4d406a5b3ed67aeacf1238904a251f64a3ba1e8f",
+      "sessionRef": "1eacaa34b1e33ff9989fd03d3888d8eb1f0256745b45afc85174a5a0aad52429",
+      "taskRef": "d441229fe6b8e238ec39dd79b592b12a485046bdca200cfd189ff2d9aa99989f"
+    },
+    "resultBytes": 113,
+    "resultContentMatches": true,
+    "resultSourceMatches": true,
+    "artifactDigestMatches": true,
+    "persistedTaskCount": 1,
+    "persistedArtifactCount": 1,
+    "persistedExecutionCount": 1,
+    "workerPhase": "stopped",
+    "nativePageHTTP": 200,
+    "requests": 6,
+    "observedAtUTC": "2026-10-08T16:38:15Z"
+  }
+}
+```
+
+The code above is the exact checked revision; final archive BUILD-METADATA identifies its later documentation-only packaging commit. The old failing package/profile is preserved. Current original CLI child PID93984, launcher PTY22011, profile df-initial-preview, endpoint127.0.0.1:3091, is ready in `.runtime/result-reopen-package-9f23122/dsh-fishball-0.1.0-preview.1-initial-preview/`. Its private `.runtime/initial-preview/private/current-launch.json` is the local browser handoff; no private URL/credential is included here. Root owns this foreground launcher until handoff/stop. A fresh task is required for additional execution cases; the stopped smoke recordd441229f is retained.
+
+
