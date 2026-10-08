@@ -1,0 +1,247 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "UI": "PAUSED_MAC_LOCKED",
+  "accepted": 0,
+  "all87": "HOLD",
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidate": "positive-one-worker-r6",
+  "caseOracles": {
+    "casesExecutedByReviewer": 0,
+    "counterAdvancesAfterRejectionOrAcceptanceAndInputOracles": true,
+    "exceptionPropertiesInspected": false,
+    "expectedTypeDefaultPreservesApprovalTailOracle": true,
+    "headerCasesRetained": 3,
+    "newCases": [
+      {
+        "expected": "ACCEPT; input header/event-array references and complete values preserved; one event/no marker; empty nodes/messages and measured zero generations",
+        "id": "C11",
+        "input": "one request/header event; nonempty synthetic provider/model, deterministic reasoningEffort, maxTokens128 and both true corresponding defaults"
+      },
+      {
+        "expected": "REJECT with inputs/projections unchanged",
+        "id": "C12",
+        "input": "only provider becomes empty"
+      },
+      {
+        "expected": "REJECT with inputs/projections unchanged",
+        "id": "C13",
+        "input": "only model becomes empty"
+      },
+      {
+        "expected": "REJECT with inputs/projections unchanged",
+        "id": "C14",
+        "input": "only config.reasoningEffort removed; true marker retained"
+      },
+      {
+        "expected": "REJECT with inputs/projections unchanged",
+        "id": "C15",
+        "input": "only config.maxTokens removed; true marker retained"
+      }
+    ],
+    "projectionCasesMaximumAndRequired": 12,
+    "pureCasesProveGenuineHostCompatibility": false,
+    "retainedC04ThroughC10": 7,
+    "sameFutureChildPhaseBeforeContext": true,
+    "strictClonedInputComparisonsRetainUndefinedAndNegativeZero": true
+  },
+  "cloud": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "completeAuthorMarkdownAndJsonNarrativesRead": true,
+  "conservation": {
+    "additionalMeasuredRecords": 79,
+    "allProposedGOFlags": false,
+    "boundedResultReadBytes": 1025,
+    "changedProductCodeFiles": 2,
+    "createPhases": 8,
+    "descriptorOnlyTwoProductDigestLeavesChanged": true,
+    "driverOutsideNamesAndProjection12Bound": "BYTE_RECONSTRUCTS_R5",
+    "fixtureOutsideNamesExpectedTypeFiveCasesAndFinalCount": "BYTE_RECONSTRUCTS_R5",
+    "freshActualDestinations": "ABSENT",
+    "futurePinUnionIncludingSelfAndFourReports": 742,
+    "hostFileRows": 87,
+    "hostModules": 27,
+    "inertMaximumCompactScalarBytesIncludingNewline": 660,
+    "inheritedInputRecordsUnchangedByPath": 651,
+    "inputBytes": 24979690,
+    "inputFileCount": 730,
+    "literalSevenFileDelta": "EXACT",
+    "newClientBuild": false,
+    "originalBuildAuthority": "ANCESTOR_ONLY",
+    "originalClientUnchanged": true,
+    "ownedMeasuredRecords": 7,
+    "phases": 51,
+    "producerOutsideSelectedSessionList": "BYTE_IDENTICAL_R5",
+    "productDescriptorRows": 64,
+    "proposalPins": {},
+    "refusalLabels": 37,
+    "regularPackageFiles": 65,
+    "resultByteCap": 1024,
+    "resultFields": 29,
+    "sourceCopies": 321,
+    "tenAddedPublicImportBindingsUnchanged": true,
+    "topology": 9,
+    "unchangedRegularPackageFiles": 62,
+    "wholeHostMetadataOrderedRowsEqualR5": true,
+    "wholeInheritedGraphReaudited": false
+  },
+  "contractVersion": "df.ni6-independent-affected-source-review/v1",
+  "date": "2026-10-07",
+  "disposition": "NO_MATERIAL_SOURCE_GATE_BLOCKER",
+  "executionGO": false,
+  "historicalR5Findings": [
+    {
+      "R6SourceDisposition": "CORRECTED_WITHIN_FREEZE",
+      "consumerOrderingOrCurrentnessRelaxed": false,
+      "entireOrderedOutputEqual": true,
+      "entireSerializedDescriptorBytes": 18440,
+      "entireSerializedDescriptorSha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9",
+      "evidence": "Only the session HOST_FILES literal order changes to strict ascending. Independent inert construction from the complete literal inventory and actual measured product/host metadata/digests reproduces every serialized descriptor byte, including newline.",
+      "historicalGate": "BLOCKED_UNRUN_PRESERVED",
+      "id": "R5-SOURCE-01",
+      "producerEvaluated": false
+    },
+    {
+      "R6SourceDisposition": "CORRECTED_WITHIN_FREEZE",
+      "evidence": "After unchanged nativeEvents type/key validation, the existing helper event loop rejects empty provider/model and true reasoningEffort/maxTokens default markers with absent corresponding config values, using fixed INVALID_INPUT. No constructor, exception inspection or other product function is added.",
+      "historicalGate": "BLOCKED_UNRUN_PRESERVED",
+      "id": "R5-SOURCE-02",
+      "originalPublicSourceLines": [
+        1144,
+        1154,
+        1173,
+        1177,
+        1218,
+        1222
+      ],
+      "otherConstructorGuardAuthority": "R5 traced ordinary-domain coverage, original snapshots and SurfaceManager plus unchanged strict validators/read guards are retained."
+    }
+  ],
+  "inheritedExecutor": "Names and projectionCases12 validation only. Once/inode ownership, full official graph/source drift, shared deadlines, finite captures/EOF/groups, first-reason and stop controls remain. Root owns actual supported invocation and stores its actual return before optional processing.",
+  "inheritedFlow": "Genuine provider/plugins/public Loader dependency; actual returned task/grant/claim/command refs and CAS; actual createPhase ready before query/execute; waterfall next(); exact actual input-plus-known-output usage; one task/worker/execute/request/stream/turn/step, HTTP25 and zero tools/external inference/memory writes; factual capture/result/finish/stopped absence/release, six owned Loader removals/preset/404 and strict root assertion remain.",
+  "inheritedGuards": "Original header/depth0/absolute cwd/lossless/envelope/sequence/snapshot/message/assistant settlement/surface/inherited-domain validation; original Session/service class identities, public resolveHostSource and source.assertCurrent; flush/stat/id/access/currentness/bounds/inbox/interrupted-turn and every full live/stored header/log/seq/surface/messages comparison remain unchanged. Helper returns borrowed inputs and uses original supplied messageProjections without adding events or constructing Session/context/handle/capability.",
+  "materialFindings": [],
+  "qualifications": [
+    "Source-only clearance of these two R5 findings is not a runtime result, generated PASS or execution GO. R3/R5 stay UNRUN and consumed r2/r4 evidence stays immutable.",
+    "Actual R4 first exception and reached reconstruction remain NOT_ESTABLISHED; its supported driver return remains NOT_CAPTURED. No replay, reset or child-exit inference repairs that gap.",
+    "NOT_RETURNED and failed readiness flags do not prove no HTTP/native creation or reservation. Release requires factual evidence; no reservation adoption or balance claim follows.",
+    "Original root dispose restarts; active rootClosed=false must retain strict FAILED_HOLD separately from positive evidence. No continuous root-cleanup event claim.",
+    "Child projection/exits, EOF/groups, executor finalization, supported driver return and timing observations remain distinct. Preterminal scalars do not establish final enclosing duration.",
+    "No UI handoff, task completion/review/delivery, all87 acceptance, cloud attempt or protected final CODE closure follows."
+  ],
+  "remaining": [
+    "Separate final ISTQB gate and root complete readback/actual pins/GO selection",
+    "Supported once invocation and directly retained actual return, if root authorizes"
+  ],
+  "reviewedAffectedProduct": [
+    {
+      "bytes": 12958,
+      "path": ".runtime/ni6-positive-one-worker-r6/package/src/native-history-collector.mjs",
+      "sha256": "5473de8f79f8b4aec13ba56f212ef8ee7a32e68e7dee9ce8ce61ed8be1704149"
+    },
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r6/package/scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    },
+    {
+      "bytes": 18440,
+      "path": ".runtime/ni6-positive-one-worker-r6/package/native-source-manifest.json",
+      "sha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9"
+    }
+  ],
+  "reviewedAuthoritySeals": [
+    {
+      "bytes": 7362,
+      "path": "docs/ni6-positive-one-worker-r6-conservation-fix-freeze-2026-10-07.md",
+      "sha256": "31d0e7ce4aaa9e4701d0c19b55bd084cea57399b5eb796a68c0862c6dfc87fe6"
+    },
+    {
+      "bytes": 5108,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-independent-source-review.md",
+      "sha256": "cd567e5d9d4bd4fdf40c23a084f2876a502beae47d4627d3da184cbcd44f5a96"
+    },
+    {
+      "bytes": 16720,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-independent-source-review.json",
+      "sha256": "1a9dceca73f41b22ce34c11ef2af9a0302610eb377d1ac19f9807c5d080976f2"
+    },
+    {
+      "bytes": 2922,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-root-producer-order-hold.json",
+      "sha256": "ef0b0ba0e025cbfa26ca7546b0309b502e18509c2a6b1dd28141e07305a01cfa"
+    },
+    {
+      "bytes": 89972,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    }
+  ],
+  "reviewedFinalSourcePacket": [
+    {
+      "bytes": 36351,
+      "path": ".runtime/ni6-positive-one-worker-r6/fixture.mjs",
+      "sha256": "01b2217c78402949cc63f3967d07b94fbbdea914a292922e28b33de7794c961e"
+    },
+    {
+      "bytes": 32328,
+      "path": ".runtime/ni6-positive-one-worker-r6/run-once.py",
+      "sha256": "b90363c35c78b2d2d26e4d7a4288c616f1ec5bf3b68dc64aa085379ad3161cc1"
+    },
+    {
+      "bytes": 29656,
+      "path": ".runtime/ni6-positive-one-worker-r6/execution-plan.proposed.json",
+      "sha256": "40bad86dc09d908cb5bb4c65de7e95bff5d825fbdc1d4aefefeec18992fff796"
+    },
+    {
+      "bytes": 73596,
+      "path": ".runtime/ni6-positive-one-worker-r6/source-delta.diff",
+      "sha256": "7c0d5161772dec1f04ca95330a0092e7c64ff37eefeb74fcae7f43e1bfd5122a"
+    },
+    {
+      "bytes": 5245,
+      "path": ".runtime/ni6-positive-one-worker-r6/README.md",
+      "sha256": "d4a0c44adc1ebda9b86086a55f7012a47a475ccc2604226c7eb05c87d0f9fe57"
+    },
+    {
+      "bytes": 210135,
+      "path": ".runtime/ni6-positive-one-worker-r6/source-manifest.json",
+      "sha256": "37ac9b883b0a9973f4b319ae3340334565e89d0eb8c2c966dcd32e9b0171dc15"
+    },
+    {
+      "bytes": 3581,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-source.md",
+      "sha256": "cfd634cc60a43ea73df8b9e13391ba562b09fd373785f1854109719656c78b6c"
+    },
+    {
+      "bytes": 54708,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-source.json",
+      "sha256": "e300824f1001f9c57215a60cc94f443c712ef0c839d97b5e447cc4fe8dc69bdb"
+    }
+  ],
+  "reviewer": "independent CODE/SOURCE reviewer",
+  "reviewerActions": {
+    "candidateParseCheckCompileImportBuildTestRun": false,
+    "descriptorProducerEvaluated": false,
+    "gitAction": false,
+    "helperDelegation": false,
+    "networkListenerModelBrowserCloudAction": false,
+    "privateProfileKeyDatabaseHistoryCaptureErrorPayloadRead": false,
+    "protectedCODEInvestigation": false,
+    "sourceMutation": false
+  },
+  "scope": "Exact frozen R5-to-R6 constructor implications, ordered producer/descriptor conservation, five case additions and finite metadata/executor changes. Existing genuine flow and source authority reused; protected final CODE scope excluded.",
+  "status": "SOURCE_ONLY_REVIEW_COMPLETE"
+}

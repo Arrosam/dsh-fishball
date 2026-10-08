@@ -1,0 +1,174 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-test-design-review/v1",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "scope": "NARROW_R2_USAGE_FIX_AND_CONSERVATION",
+  "decision": "NO_NEW_SOURCE_GATE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "sourceGateBlockerCount": 0,
+  "T01": "CLOSED_BY_SOURCE_REVIEW_ONLY",
+  "runtimeGO": false,
+  "candidateParseCompileImportExecution": false,
+  "runtimeOrFaultProbe": false,
+  "privatePayloadRead": false,
+  "protectedCODEInvestigation": false,
+  "gitAction": false,
+  "helperDelegation": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "lockedUI": "PAUSED",
+  "reviewedFinalSources": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/fixture.mjs",
+      "bytes": 32061,
+      "sha256": "414547d5dcda859b41c0d41551d83ebf5862a92595ca0db34c8185b49d64afdd"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/run-once.py",
+      "bytes": 31987,
+      "sha256": "8cf8cfa6a258ee35b31fb1a5c5f19459aeec937b7272a9705540bdc3220ddc6b"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/execution-plan.proposed.json",
+      "bytes": 8282,
+      "sha256": "00101ceca8c67265fc9a398e20ec64188417354205beb5e6e5a568dc7be2179f"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/source-delta.diff",
+      "bytes": 16405,
+      "sha256": "5989a943f7ddc5c3b790e718881f600f2f430c3e79266e403a23c1fb98def79c"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/README.md",
+      "bytes": 4111,
+      "sha256": "bc3fbe4e4676a1f9fc672594e976ba4946eec8975be3a1ad2ef262c0aa01d6cb"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r2/source-manifest.json",
+      "bytes": 113487,
+      "sha256": "357bd5d18c5d7dbaded35b06ab56a1380c56fd057652cb64407e5f7b33540e47"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r2-source.md",
+      "bytes": 2827,
+      "sha256": "443eb73654432ac6c8738999ee6fc1bf23991f48e8543327e9a1e82db5f89b0f"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r2-source.json",
+      "bytes": 12839,
+      "sha256": "be69865ee60f6ac26eadbac5917a33441b4bf064a6fcc516212e3fc8b849572c"
+    }
+  ],
+  "immutableAuthority": [
+    {
+      "bytes": 7139,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
+      "sha256": "5277a4fe0bbaac81656b0997764a55f1a00b5eb8dda70060eb96e7d10dc98a3f"
+    },
+    {
+      "bytes": 11754,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json",
+      "sha256": "baf0d156915e9b6f51276df5b637e754d6802d59c630a63319b118852372396e"
+    },
+    {
+      "bytes": 2603,
+      "path": "docs/ni6-positive-one-worker-r2-usage-fix-2026-10-07.md",
+      "sha256": "c6815b6475be1931d244fdbc8c86c737d46020c01094587459cf870401a239e4"
+    }
+  ],
+  "affectedSourceReadback": {
+    "completeLiteralDeltaRead": true,
+    "completeProposalRead": true,
+    "completeReadmeRead": true,
+    "completeAuthorNarrativesRead": true,
+    "allEightSealsMatch": true,
+    "literalFourFileDeltaEqual": true,
+    "literalDeltaBytes": 16405,
+    "fixtureEqualsR1AfterReversingThreeOracleOperationsAndNamespace": true,
+    "executorNamespaceOnly": true,
+    "proposalNamespaceAnd13ProvenanceCopiesOnly": true,
+    "inherited438RowsPreserved": true,
+    "newInputHashesMatch": 13,
+    "ownedHashesMatch": 7,
+    "inputFiles": 451,
+    "inputBytes": 17363903,
+    "futurePinsIncludingSelfAndFourReviews": 463,
+    "sourceCopies": 42,
+    "wholeGraphReaudit": false,
+    "newBuild": false,
+    "freshExecutionPathsAbsent": true,
+    "proposalGOReportsApprovalFlags": false,
+    "proposalPinsEmpty": true
+  },
+  "oracleAssessment": {
+    "status": "SOURCE_SUPPORTED_NOT_RUN",
+    "counterInitializationLine": 186,
+    "publicStreamObserverLine": 226,
+    "exactUsageAssertionLine": 266,
+    "input": "Buffer.byteLength(JSON.stringify(options.messages),utf8)",
+    "inputRequirements": "one stream; positive safe integer <=16384; internal scalar only",
+    "output": "Buffer.byteLength(expected,utf8) from known deterministic result",
+    "usageRequirements": "actual state/accounting; safe integer <=32768; equals observed input bytes plus expected output bytes",
+    "originalProvider": {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+      "accountingLines": [
+        92,
+        121
+      ]
+    },
+    "publicForwarding": {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "basis": "Original public stream waterfall and text-only projection; no developer filtering or assistant replay transformation changes selected system/user values",
+      "scopeQualification": "Fresh ordinary system/user text-only request only"
+    },
+    "continuation": "next() returned unchanged",
+    "payloadMutationHashPublication": false,
+    "additionalHTTPOrProviderCalls": 0,
+    "falsePositiveClosed": "Zero or other incorrect usage total cannot satisfy the exact positive sum; source reasoning only."
+  },
+  "conserved": [
+    "genuine unchanged original r3 product, symbolic testing-provider and Connection public webServer injection",
+    "25 bounded ordinary HTTP calls and no redirects/retries",
+    "actual returned refs/CAS and one create/execute/capture/result/finish",
+    "one native worker/agent/session/stream/turn/step, zero tools/external inference and idle zero streams",
+    "owned raw fiber joins and six once-attempted Loader removals plus retained preset disposer",
+    "positivePath after removal404/count/empty inventory",
+    "first failure and declared original private storage effects",
+    "26-field1024-byte closed projection,1025-byte finite result read and phase/refusal sets",
+    "exclusive once admission,original inode/FD ownership,capped EOF captures,owned process groups,input/build-return/drift pins",
+    "90 outer/85 primary;20setup+5syntax+35functional+25post+5terminal;Node24work/5cleanup/30final"
+  ],
+  "design": [
+    {
+      "id": "D01",
+      "selection": "Frozen syntax command",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "selection": "Frozen single ordinary positive native worker/provider path",
+      "status": "NOT_RUN",
+      "affectedOracle": "Require exact observed public input-message UTF-8 bytes plus expected deterministic output UTF-8 bytes, retaining every r1 positive and strict-cleanup oracle."
+    }
+  ],
+  "additionalRuntimeCasesSelected": 0,
+  "additionalRuntimeCasesExecuted": 0,
+  "qualifications": [
+    "Source gate verdict is not execution GO, actual success, or acceptance.",
+    "Original public root disposal restarts; active root requires rootClosedfalse and FAILED_HOLD independently of positive-path evidence.",
+    "Pinned fixture positivePath follows full removal/404/count gates; executor positivePath implication alone is partial, so read actual flags/counts together.",
+    "Schema-valid child selection cannot override nonzero child/driver outcome; first executor reason remains authoritative.",
+    "Preterminal scalars do not prove final driver duration or supported-tool return; root records actual returns separately.",
+    "R1 D01/D02 remain unrun; preserved r1 T01 history is not rewritten.",
+    "All previous r1 effects, restrictions and result/phase qualifications remain in force."
+  ],
+  "nextAction": "Root may select its closed fresh r2 plan only after required final reviews; root owns supported once-only runtime.",
+  "reportPair": {
+    "markdown": "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.md",
+    "json": "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.json",
+    "markdownBytes": 4751,
+    "markdownSha256": "6b20fee46244bfb05c798bc3167300fb25d9707dd743bccaf798f0672817590c",
+    "jsonSelfHash": "REPORTED_EXTERNALLY_AFTER_FULL_READBACK"
+  },
+  "createdUTC": "2026-10-07T22:36:16.827963+00:00"
+}

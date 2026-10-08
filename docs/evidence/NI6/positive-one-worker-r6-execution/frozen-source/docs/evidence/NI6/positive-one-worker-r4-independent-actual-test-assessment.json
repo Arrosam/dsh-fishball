@@ -1,0 +1,277 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-actual-test-assessment/v1",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "scope": "R4_AFFECTED_ACTUAL_RESULT_FIXED_PUBLIC_JSON_ONLY",
+  "outcome": "FAILED_HOLD_PARTIAL_LITERAL_CASE_PASS_SUPPORTED_DRIVER_RETURN_NOT_CAPTURED",
+  "executionGOGranted": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "lockedUI": "PAUSED",
+  "cloudAction": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "verifiedPublicInputs": [
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-actual-return.json",
+      "bytes": 9552,
+      "sha256": "c9ca1014b407897d4d23ebb277df4d09e189eca547e92b1ff62f895897b06eaf"
+    },
+    {
+      "bytes": 698,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/fixture-result.json",
+      "sha256": "b254c745128eb2dd548264488695c8ff79a693465d7c7d39f4c30f35d84040b9"
+    },
+    {
+      "bytes": 4388,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/executor-result.json",
+      "sha256": "bc494b52113cb7b3677ffd7dcdf3c25819606c1ea2333d20d3bf11b7d9facd21"
+    },
+    {
+      "bytes": 2996,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/command-results.json",
+      "sha256": "983104f88dc18d0c8b9539cb76d3b95ebd1e1ab1cfe209cf8674e242878406e1"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/before-after.json",
+      "sha256": "0fca82918f204dc3acfe0061c0668d31887b1f90a40b452f262ad2de6cb34c28"
+    },
+    {
+      "bytes": 95266,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/root-plan.json",
+      "sha256": "31d3737a26a921548fdc07987265d2246cf5f661f963b127f9b5e0c3e3501480"
+    }
+  ],
+  "allowedPublicFilesOnly": true,
+  "publicRecordsCrossConsistent": true,
+  "sourceAndDesignBindingFromPublicRootPlan": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/fixture.mjs",
+      "sha256": "1ea3e4c1bb9d90b1377d587177b536d43f4c21662aa724f014206184b0d8ef00",
+      "readAgainForThisAssessment": false
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/run-once.py",
+      "sha256": "aee6eb04bd4320647a2d944494e9c94d9190564b783d599c0b8f937550f36055",
+      "readAgainForThisAssessment": false
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-independent-test-design-review.md",
+      "sha256": "e955067eb40f83bb5cb20a0b59dfbfccf346fa5b5fc5403943626a26170f7222",
+      "readAgainForThisAssessment": false
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-independent-test-design-review.json",
+      "sha256": "5df5eb461156fe9598ea25b33b8739aa120379f2ff6d7b86728c244066b7f99b",
+      "readAgainForThisAssessment": false
+    }
+  ],
+  "sourceDesignPairModified": false,
+  "candidateSourceReadAgain": false,
+  "candidateParseImportCompileRun": false,
+  "newRuntimeOrFaultProbe": false,
+  "privatePayloadRead": false,
+  "protectedCODEInvestigation": false,
+  "gitAction": false,
+  "helperDelegation": false,
+  "caseAssessment": [
+    {
+      "id": "C01",
+      "status": "PASS",
+      "behavior": "Explicit literal root depth0 accepted unchanged",
+      "evidenceBasis": "Observed headerCases3 in consistent fixture/executor/root proof; exact plan-pinned reviewed fixture increments only after each complete expected assertion. No raw trace was read."
+    },
+    {
+      "id": "C02",
+      "status": "PASS",
+      "behavior": "Same literal header missing depth rejected INVALID_INPUT; candidate/original unchanged",
+      "evidenceBasis": "Observed headerCases3 in consistent fixture/executor/root proof; exact plan-pinned reviewed fixture increments only after each complete expected assertion. No raw trace was read."
+    },
+    {
+      "id": "C03",
+      "status": "PASS",
+      "behavior": "Same literal header depth1 rejected INVALID_INPUT; candidate/original unchanged",
+      "evidenceBasis": "Observed headerCases3 in consistent fixture/executor/root proof; exact plan-pinned reviewed fixture increments only after each complete expected assertion. No raw trace was read."
+    },
+    {
+      "id": "D01",
+      "status": "PASS",
+      "oracle": "Fixture Node syntax command returned0",
+      "scopeLimit": "Syntax pass is not genuine host or driver success."
+    },
+    {
+      "id": "D02",
+      "status": "FAILED_HOLD",
+      "firstPhase": "WORKER_CREATE",
+      "category": "INVARIANT",
+      "actualCreatePhase": "unknown",
+      "refusalCode": "NONE",
+      "childExitCode": 1,
+      "positivePath": false,
+      "scopeLimit": "Readiness failed before native inventory/query/execute; no genuine positive-path pass."
+    }
+  ],
+  "closedFixtureObservation": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "INVARIANT",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "unknown",
+    "entryRemoved": true,
+    "executionCommitted": false,
+    "headerCases": 3,
+    "httpRequests": 17,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_CREATE",
+    "positivePath": false,
+    "refusalCode": "NONE",
+    "requests": 0,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 0,
+    "stepStarts": 0,
+    "streams": 0,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 0,
+    "turnStarts": 0,
+    "workerCreated": false,
+    "workerStopped": false
+  },
+  "observedPartialMilestones": {
+    "taskCreated": true,
+    "completedBaseHostConfigurations": 11,
+    "headerCases": 3,
+    "httpRequests": 17,
+    "entryRemoved": true
+  },
+  "notEstablished": [
+    "genuine root baseline/persistence compatibility",
+    "worker ready admission",
+    "native execute/exact runtime usage",
+    "captured/returned ordinary result",
+    "successful worker finish/session absence",
+    "reservation release/zero or held balance",
+    "all-owned-entry positive removal milestone",
+    "strict root terminal close",
+    "supported driver OS exit and return timestamp",
+    "final enclosing driver duration",
+    "task completion/review/delivery/aggregate acceptance"
+  ],
+  "childReturnAndTerminationEvidence": [
+    {
+      "index": 1,
+      "exitCode": 0,
+      "durationSeconds": 0.068787,
+      "durationMeaning": "Executor-recorded child duration only",
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": 0,
+      "signalOutcomes": 0,
+      "timedOut": false,
+      "interrupted": false,
+      "overflow": false,
+      "privateCapturePayloadRead": false
+    },
+    {
+      "index": 2,
+      "exitCode": 1,
+      "durationSeconds": 6.164843,
+      "durationMeaning": "Executor-recorded child duration only",
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": 0,
+      "signalOutcomes": 0,
+      "timedOut": false,
+      "interrupted": false,
+      "overflow": false,
+      "privateCapturePayloadRead": false
+    }
+  ],
+  "executorAndMarker": {
+    "executorResult": "FAILED_HOLD",
+    "executorFirstReason": "EXECUTOR_COMMAND_NONZERO",
+    "executorFinalized": false,
+    "markerProjectionSource": "docs/evidence/NI6/positive-one-worker-r4-actual-return.json",
+    "markerState": "FAILED_HOLD",
+    "markerFinalized": false,
+    "actualMarkerFileRead": false,
+    "consumed": true,
+    "resetOrRepeatPermitted": false
+  },
+  "supportedDriverReturn": {
+    "observed": false,
+    "exitCode": null,
+    "timing": "NOT_CAPTURED",
+    "finalEnclosingDuration": "NOT_ESTABLISHED",
+    "captureFailure": {
+      "location": "Root wrapper after awaited exec_command resolved",
+      "name": "ReferenceError",
+      "message": "TextEncoder is not defined",
+      "returnedToolObjectRetained": false
+    },
+    "driverExitInferredFromChildOrArtifacts": false
+  },
+  "timingQualification": {
+    "childDurations": "Recorded separately in public child rows",
+    "executorObservedPreterminalSeconds": 18.30259395809844,
+    "executorConservativePreterminalSeconds": 23.302594624925405,
+    "finalDriverDurationClaim": false,
+    "requestToPublicReadbackIsDriverDuration": false,
+    "sharedBudgetPassClaim": false
+  },
+  "reportedSourceGraphBeforeAfter": {
+    "after": {
+      "complete": true,
+      "inputCount": 563,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "before": {
+      "complete": true,
+      "inputCount": 563,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    }
+  },
+  "independentSourceGraphReaudit": false,
+  "rootPlanPublicClosure": {
+    "pins": 563,
+    "sourceCopies": 142,
+    "fields": 28,
+    "planFlagsMeaning": "Sealed root execution admission bits, not a recovered actual supported return"
+  },
+  "claimLimits": [
+    "Three literal header passes do not establish genuine host compatibility.",
+    "createPhaseunknown is actual returned admission evidence, not the unobserved underlying exception.",
+    "refusalCodeNONE does not mean readiness or the genuine path succeeded.",
+    "workerCreatedfalse is a failed readiness milestone, not zero native creation/reservation proof.",
+    "reservationReleasedfalse means release not established; no held/zero balance is inferred.",
+    "entryRemovedtrue supports product-entry removal; ownedEntriesRemovedfalse alone does not prove all final cleanup failed.",
+    "rootClosedfalse remains mandatory strict cleanup HOLD; process-group absence does not replace it.",
+    "Public EOF/group proof covers the owned Node children only; remote/native release is not claimed.",
+    "No actual supported driver return or final enclosing duration can be substituted from executor/marker/child metadata.",
+    "Sealed source-design statuses remain truthful prospective history; this new assessment records later observed case outcomes only.",
+    "R4 is consumed and cannot be replayed/reset; R3 remains source-only unrun."
+  ],
+  "remainingBlockers": [
+    "D02 genuine positive flow failed at actual unknown create phase; later execute/result/finish/release evidence absent.",
+    "Supported driver return object was not captured; actual driver exit and final enclosing duration remain unknown."
+  ],
+  "nextAction": "Root owns any separate fresh ordinary diagnostic/fix selection; this assessment authorizes no run or private/protected investigation.",
+  "reportPair": {
+    "markdown": "docs/evidence/NI6/positive-one-worker-r4-independent-actual-test-assessment.md",
+    "json": "docs/evidence/NI6/positive-one-worker-r4-independent-actual-test-assessment.json",
+    "markdownBytes": 5096,
+    "markdownSha256": "71574f9adedcd5f61d01c1e238b6e4bb84ca90d4aad174db716b354849ba7b9a",
+    "jsonSelfHash": "REPORTED_EXTERNALLY_AFTER_FULL_READBACK"
+  },
+  "createdUTC": "2026-10-07T23:20:15.165320+00:00"
+}
