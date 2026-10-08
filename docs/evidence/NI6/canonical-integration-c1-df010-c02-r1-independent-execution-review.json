@@ -1,0 +1,441 @@
+{
+  "schema": "df.canonical-c1.df010-c02-r1-independent-execution-review/v1",
+  "date": "2026-10-08",
+  "reviewer": {
+    "task": "/root/c02_r1_code_review",
+    "language": "English",
+    "requestedModel": "gpt-6.1-sol",
+    "requestedReasoning": "max",
+    "role": "INDEPENDENT_ACTUAL_CODE_EVIDENCE",
+    "separateFromExecutionOwnerAndAuthor": true
+  },
+  "verdict": "BOUNDED_SELECTED_SYNTHETIC_ASSERTIONS_PASS_NO_MATERIAL_EVIDENCE_RECORD_BLOCKER",
+  "result": "PASS_BOUNDED_SELECTED_SYNTHETIC_ASSERTIONS",
+  "materialEvidenceBlocker": false,
+  "findings": [],
+  "executionGO": false,
+  "acceptanceGO": false,
+  "publicationGO": false,
+  "fullAcceptance": false,
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "criterion": {
+    "id": "DF010-C02",
+    "exactText": "Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route.",
+    "selectedPartitionStatus": "BOUNDED_PASS_SUPPORTED_BY_EXACT_SOURCE_COMMAND_AND_JOINT_ORACLES",
+    "wholeCriterionAcceptance": "PENDING_EXACT_COMBINED_PER_CLAUSE_RECONCILIATION",
+    "liveProviderDelivery": "OUT_OF_THIS_PHASE_NO_DELIVERY_CLAIM",
+    "MVP": "HOLD"
+  },
+  "declaredProductRevision": "4fea2809345823b3da8cf3f6b165babd5701d482",
+  "gitQueried": false,
+  "publicEvidenceIdentities": [
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-actual-return.json",
+      "bytes": 4357,
+      "sha256": "cc44b445ce67672e9a5a8deb942a2dcf267d077753e70d9c521516b35b971253"
+    },
+    {
+      "bytes": 24162,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/root-plan.json",
+      "sha256": "dac870093f0a66c55072cd71149cc7e4c226a200e022f0e89d77da698772468b",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/root-plan.json"
+    },
+    {
+      "bytes": 2500,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/executor-result.json",
+      "sha256": "da6ff4cdf819aebf439431a651e610d9944f5d2993670f847be590332a99eb09",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/executor-result.json"
+    },
+    {
+      "bytes": 1497,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/command-results.json",
+      "sha256": "b3cf574e790279bb855ffbd4d9e1b514c46da683dfbd242096489a9dfbd15f09",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/command-results.json"
+    },
+    {
+      "bytes": 174,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/before-after.json",
+      "sha256": "f016a1f81b2bb027c0e8b78042852e9608af3f7c4eee01c537c6224f8d98c8e0",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/before-after.json"
+    }
+  ],
+  "finalSourceDesignAuthority": [
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-source-review.md",
+      "bytes": 12472,
+      "sha256": "77f008039b1f1fc343126fd8ba487fe278289bd7d66579132338c0f28aecb466",
+      "readback": "5ea998"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-source-review.json",
+      "bytes": 17815,
+      "sha256": "7e05b8a49be6f8d1eb62b9e258421584be7df01d47e49e83484feed85617177a",
+      "readback": "d16192"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-test-design-review.md",
+      "bytes": 12766,
+      "sha256": "8725f3771830c029fcdab20e7d1bcc0431357faacaae26c26d30bb51253eb215",
+      "readback": "06e4bf"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-test-design-review.json",
+      "bytes": 20731,
+      "sha256": "b744f29e1784633491fb06089ef3265e0c051c6e1a68fba78e29da5e7fd3151e",
+      "readback": "CURRENT_OPAQUE_HASH_ONLY_ROOT_FINAL_DESIGN_AUTHORITY"
+    }
+  ],
+  "selectedTest": {
+    "bytes": 21368,
+    "path": "test/df010-c02-synthetic.test.mjs",
+    "sha256": "e742af01cfe4259cb1b27b3b9a355ac60da5c2e2bebca42b71c6a31693863c5b"
+  },
+  "selectedOwner": {
+    "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+    "bytes": 27519,
+    "sha256": "d8f4aca6eda1d91be57ad561c7dbf7300d02d2f76b597aabcacbe6924f3dd864",
+    "primitiveBytes": 19279,
+    "primitiveSha256": "cd730157a1cb135eb5782eb5d7d54128d7af4103a2bc550e4bf0ada3d0eb6074",
+    "fullSourceAssessmentReused": true,
+    "newSemanticSourceRead": false
+  },
+  "readbacks": {
+    "proof": "50fa06",
+    "originalPublicRootPlanCopy": "e99515",
+    "executor": "21d767",
+    "commands": "595d35",
+    "boundary": "32f89e",
+    "finalDesignMD": "06e4bf",
+    "allFivePublicEvidenceRecordsFullyReadUntruncated": true,
+    "sourceGraphProtectedSemanticAuditRepeated": false,
+    "privateRawReadback": false
+  },
+  "physicalPublicMetadataChecks": {
+    "fivePublicEvidenceByteShaSealsMatch": true,
+    "fourPublicCopiesByteEqualExactOriginalClosedRecords": true,
+    "rootPlanCopyEqualsExactOriginalRootPlan": true,
+    "ownFinalSourcePairCurrentByteSha": true,
+    "finalDesignPairCurrentByteSha": true,
+    "selectedTestOwnerManifestCurrentOpaqueHashesMatchPlan": true,
+    "newWholeGraphAuditOrRehash": false,
+    "tools": [
+      {
+        "kind": "hash",
+        "chunk": "334765"
+      },
+      {
+        "kind": "size",
+        "chunk": "1a4076"
+      },
+      {
+        "kind": "plan",
+        "chunk": "3cd548"
+      },
+      {
+        "kind": "copy:docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/root-plan.json",
+        "chunk": "b32dd5"
+      },
+      {
+        "kind": "copy:docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/executor-result.json",
+        "chunk": "54c931"
+      },
+      {
+        "kind": "copy:docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/command-results.json",
+        "chunk": "31c1bb"
+      },
+      {
+        "kind": "copy:docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/before-after.json",
+        "chunk": "0ae772"
+      },
+      {
+        "kind": "actualPlanCopy",
+        "chunk": "d47158"
+      },
+      {
+        "kind": "absent",
+        "chunk": "753ab3"
+      }
+    ],
+    "authorityHashChunk": "b2a8cc",
+    "authoritySizeChunk": "7e55e1",
+    "outputPairAbsentBeforeCreationChunk": "753ab3"
+  },
+  "planAssessment": {
+    "bytes": 24162,
+    "sha256": "dac870093f0a66c55072cd71149cc7e4c226a200e022f0e89d77da698772468b",
+    "pinCount": 164,
+    "inputRows": 152,
+    "inputBytes": 3315861,
+    "ownedRows": 5,
+    "manifestSelfSeparate": 1,
+    "authorProvenanceSlots": 2,
+    "independentSourceDesignSlots": 4,
+    "requiredReportSlots": 6,
+    "duplicateOrExtraPinPaths": false,
+    "exactManifestUnionAndFixedDigests": true,
+    "authorPairPinsMatchPreviouslyReviewedSeals": true,
+    "allFourIndependentFinalSourceDesignHashesMatchCurrent": true,
+    "onlyThreeRootGOFieldsAndPinsChangedFromProposal": true,
+    "reversedProposalBytes": 3229,
+    "reversedProposalSha256": "deb7337464fd3901dc19870e1f150c448a2e2188738d4b074a7aa66daf7a4cb4",
+    "rootPlanSelfPinned": false,
+    "runCountAuthorized": 1,
+    "allOriginalSelectedRootGOFieldsTrue": true,
+    "actualOuterArgv": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+      ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json"
+    ],
+    "descriptivePlanDriverArgv": [
+      "/opt/homebrew/bin/python3",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+      ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json"
+    ],
+    "outerArgvQualification": "REMOVING_ONLY_PYTHON_ISOLATED_FLAG_MINUS_I_REPRODUCES_DESCRIPTIVE_PLAN_ARGV_OWNER_DOES_NOT_GATE_OUTER_FLAG_EQUALITY",
+    "commands": [
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "test/df010-c02-synthetic.test.mjs"
+      ]
+    ],
+    "extraSelectedCommands": false,
+    "conservedBudgets": {
+      "bookkeepingInsideCommand": 1,
+      "cleanupInsideCommand": 5,
+      "commandTotal": 60,
+      "finalReserveInsideOuter": 5,
+      "outer": 90,
+      "preflight": 20,
+      "primaryAbsoluteEnd": 85
+    },
+    "publicRecordByteCap": 65536,
+    "aggregateStreamByteCap": 262144,
+    "streamByteCap": 131072
+  },
+  "directSupportedReturn": {
+    "authority": "SEALED_ROOT_ORIGINAL_TOOL_RETURN_METADATA_PARENT_ATTESTATION_NOT_INDEPENDENT_ORIGINAL_TOOL_ACCESS",
+    "chunkId": "f15f68",
+    "exitCode": 0,
+    "complete": true,
+    "outputBytes": 0,
+    "sessionId": null,
+    "pollingNeeded": false,
+    "wallTimeSecondsMetadata": 0.966374031,
+    "wallTimeSummedOrPromotedToFinalDuration": false
+  },
+  "jointOracles": {
+    "originalSupportedDriverExitZero": true,
+    "exactOriginalNodeExitZero": true,
+    "completeOriginalIdentityBoundCaptureReadbackAndEOF": true,
+    "ownedProcessGroupAbsentObserved": true,
+    "uniqueClosedOwnerFooterPass": true,
+    "prePostFinalPinsPlanBuildEvidenceGuards": true,
+    "finalOutsideBaseExceptionWrapperReturnCorroboratedByDriverExitZero": true,
+    "evidenceStatus": "ALL_POSITIVE_GATES_AGREE_IN_PUBLIC_RECORDS_AND_FINAL_SOURCE_AUTHORITY",
+    "sourceBasedFinalReturnInference": true,
+    "independentFinalMainInstrumentation": false
+  },
+  "originalNode": {
+    "index": 1,
+    "pid": 51243,
+    "ownedGroup": 51243,
+    "argv": [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      "test/df010-c02-synthetic.test.mjs"
+    ],
+    "exitCode": 0,
+    "failureCode": null,
+    "processGroupState": "ABSENT_OBSERVED",
+    "timedOut": false,
+    "overflow": false,
+    "interrupted": false,
+    "captureComplete": true,
+    "captureTerminationReason": "EOF_OBSERVED",
+    "signalAttempts": [],
+    "signalOutcomes": [],
+    "signalBoundary": "NOT_SELECTED",
+    "commandRowsEqualInExecutorAndCommands": true,
+    "remoteTermination": "NOT_CLAIMED",
+    "reservationRelease": "NOT_CLAIMED"
+  },
+  "privateStreamPublicMetadata": {
+    "stdout": {
+      "bytes": 2264,
+      "complete": true,
+      "eofObserved": true,
+      "prefixVerified": true,
+      "truncated": false
+    },
+    "stderr": {
+      "bytes": 0,
+      "complete": true,
+      "eofObserved": true,
+      "prefixVerified": true,
+      "truncated": false
+    },
+    "totalBytes": 2264,
+    "privateStreamHashesSeenAsPublishedMetadataOnly": true,
+    "rawPrivateReadCopiedDecodedHashedByReviewer": false,
+    "footerDecodedOnlyByOriginalOwnerFromAlreadyBoundCompleteStdout": true,
+    "testNamesErrorsStacksPayloadsDecodedOrPublishedByReviewer": false
+  },
+  "closedFooter": {
+    "cancelled": 0,
+    "durationMs": "909.966209",
+    "fail": 0,
+    "pass": 9,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 9,
+    "todo": 0
+  },
+  "currentness": {
+    "before": {
+      "complete": true,
+      "inputCount": 164,
+      "unchanged": true
+    },
+    "after": {
+      "complete": true,
+      "inputCount": 164,
+      "unchanged": true
+    },
+    "rootFinal": {
+      "complete": true,
+      "inputCount": 164,
+      "unchanged": true
+    },
+    "beforeAfterRecordsIdentical": true,
+    "allThreeClosedSummariesAgree": true,
+    "whole164PhysicalVerificationAuthority": "ORIGINAL_OWNER_AND_ROOT_SEALED_PROOF_NOT_REPEATED_BY_THIS_REVIEW",
+    "priorIndependentSourceExactClosureReused": true,
+    "planHashAndBuildAuthority": "UNCHANGED_REVIEWED_PRE_POST_FINAL_SOURCE_GUARDS_PLUS_PINNED_CURRENT_BUILD_PROOF",
+    "finiteObservedCutsNotAtomicContinuousLease": true
+  },
+  "selectedActualAssertionAssessment": {
+    "authority": "SOURCE_BASED_EXECUTION_INFERENCE_FROM_FIXED_UNCHANGED_257_LINE_TEST_EXACT_NODE_COMMAND_DRIVER_EXIT0_AND_9PASS_ZERO_SKIPS_FOOTER",
+    "sourceDerivedTopLevelFamilies": 6,
+    "sourceDerivedThreadSubtests": 3,
+    "actualAggregateFooterTests": 9,
+    "privatePerCaseNameTranscript": false,
+    "independentPerAssertionCounters": false,
+    "families": [
+      {
+        "id": "T1",
+        "boundedDisposition": "PASS_SUPPORTED_BY_JOINT_ORACLES",
+        "meaningfulOracles": "Three thread replace/add/remove partitions retain wrong-route intake/status/control denials, old/new-channel original-task refusal before callback, distinct same-provider-ID changed-thread admission, foreign-owner refusal, exact old-route restoration/dedup and completed original action/goal/receipt/effect conservation.",
+        "limits": "Callback route envelopes report sent only; no provider/ResultPipeline journey or new pairing revision authority."
+      },
+      {
+        "id": "T2",
+        "boundedDisposition": "PASS_SUPPORTED_BY_JOINT_ORACLES",
+        "meaningfulOracles": "Held older normalization released after later reconfigured-thread admission rejects STALE_SOURCE; later completed action/goal/receipt remain exact with one task/receipt/rate and old-route status refusal.",
+        "limits": "One deterministic await interleaving, not exhaustive race coverage."
+      },
+      {
+        "id": "T3",
+        "boundedDisposition": "PASS_SUPPORTED_BY_JOINT_ORACLES",
+        "meaningfulOracles": "Reverse observed-time distinct IDs retain separate tasks/original goals and exact complete identity hashes; exact redelivery deduplicates, same-ID changed material conflicts, and close/reopen plus reverse replay conserves the original completed action/receipt/goal/effect.",
+        "limits": "No provider total order; effect array persists in memory across reopen rather than durable arbitrary external effects."
+      },
+      {
+        "id": "T4",
+        "boundedDisposition": "PASS_SUPPORTED_BY_JOINT_ORACLES",
+        "meaningfulOracles": "Edit/delete before original deny without task/receipt/rate; original later admits; late mutation and changed-content conflict deny; exact original redelivery conserves completed action/goal/receipt/effect.",
+        "limits": "Explicit event mutation denial, not provider edit-revision/tombstone support."
+      },
+      {
+        "id": "T5",
+        "boundedDisposition": "PASS_SUPPORTED_BY_JOINT_ORACLES",
+        "meaningfulOracles": "First-seen age 10001 ms expires; age 10000 ms admits independently; exact known expired event reconciles without effect/rate replay, while expired changed-content same ID conflicts and preserves the original.",
+        "limits": "Known duplicate reconciliation is not new admission or authorization renewal."
+      },
+      {
+        "id": "T6",
+        "boundedDisposition": "PASS_SUPPORTED_BY_JOINT_ORACLES",
+        "meaningfulOracles": "Newer pause increments version once; older pre-pause cancel rejects STALE_VERSION; exact pause duplicate retains current paused/version/authority and original action/goal/receipt/effect.",
+        "limits": "Ordinary CAS-bound control; no running native-worker termination or release proof."
+      }
+    ],
+    "newFileSyntaxAndRuntime": "SUCCESSFUL_ORIGINAL_SELECTED_RUN_WITHOUT_SEPARATE_CHECK_COMMAND_PRIOR_SOURCE_NOT_RUN_REMAINS_HISTORICAL"
+  },
+  "topologyAndEffects": {
+    "authority": "FINAL_UNCHANGED_SOURCE_NOT_CHILD_OR_EFFECT_INSTRUMENTATION",
+    "maximumInterpreterStarts": 3,
+    "maximumLiveInterpreters": 3,
+    "maximumNestedStarts": 0,
+    "maximumNestedChildren": 0,
+    "retainedChildKillCallbacks": 0,
+    "freshSyntheticFixtureDirectories": 8,
+    "sameDatabaseReopens": 1,
+    "selectedEffect": "SYNCHRONOUS_ARRAY_APPEND_ONLY",
+    "anticipatedIfAllCompleteAppends": 8,
+    "anticipatedInjectedSendCallbacks": 6,
+    "nativeWorkerProviderModelAccountListenerCLIExternalEffectsSelected": 0,
+    "actualProcessAndEffectStartsIndependentlyInstrumented": false,
+    "outerCaptureCapsDoNotUniversallyBoundFixtureHeap": true
+  },
+  "timing": {
+    "commandPreterminalSeconds": 0.992974,
+    "driverPreterminalSeconds": 1.052351,
+    "ownerFooterDurationMs": "909.966209",
+    "finalEnclosingMonotonicDuration": "NOT_ESTABLISHED",
+    "pollToolWallTimesNotSummed": true,
+    "absoluteFinalGuardCorroboratedByOriginalDriverExitZero": true,
+    "instantCancellationOrProcessEscapeGuarantee": false
+  },
+  "historicalCuts": {
+    "sealedSourceAuthorDesignNOT_RUNUnchanged": true,
+    "rootActualProofIndependentActualCODE": "PENDING_AT_PROOF_CUT",
+    "rootActualProofIndependentActualISTQB": "PENDING_AT_PROOF_CUT",
+    "laterReviewSeparateAuthority": true,
+    "noOldEvidenceEditedOrConsumedPacketReplayed": true,
+    "originalProposalProtectedSnippetExposure": "QUALIFIED_PRIOR_DISCLOSURE_RETAINED_NO_SNIPPETS_REPEATED_OR_INTERPRETED",
+    "priorAuthorPathnameOnlyExposure": "RETAINED_NO_PRIVATE_PATHNAME_OR_CONTENT_REPEATED"
+  },
+  "notEstablished": [
+    "whole-criterion DF010-C02 acceptance without exact combined prior/current per-clause reconciliation",
+    "all source identity dimensions independently varied by this narrow new fixture",
+    "live provider delivery/openability/current recipient accessibility or full ResultPipeline outbox journey",
+    "exactly-once arbitrary external effects or durable effect array across processes",
+    "native worker cancellation/termination/reservation release or installed DSH full quit/restart",
+    "independent instrumentation of all process/effect/fixture counts or exhaustive races",
+    "final enclosing monotonic duration from preterminal records or API wall times",
+    "owner/parser/deadline/drift/overflow/interruption/capture/group/final exception fault branches"
+  ],
+  "excluded": [
+    "protected final CODE receipt/signature/envelope/revision999 and capture/finish semantics",
+    "private raw captures/errors/responses/profiles/keys/databases/history",
+    "runtime/import/eval/check/build/test/helper starts or consumed replay",
+    "Git/main/remotes/push/publication",
+    "provider/model/network/cloud/browser/listener workarounds",
+    "shared QA/3080 and cancelled 4da34a6d"
+  ],
+  "process": {
+    "writes": "ASSIGNED_NEW_EXCLUSIVE_ACTUAL_CODE_MD_JSON_PAIR_ONLY",
+    "sourceOrOldEvidenceEdits": false,
+    "runtime": false,
+    "Git": false,
+    "network": false,
+    "cloud": false,
+    "model": false,
+    "browser": false,
+    "delegation": false,
+    "privateContentsReadCopiedHashedDecoded": false,
+    "newProtectedSemanticRead": false,
+    "rawSourceExpansion": false,
+    "sourceCopies": false,
+    "finalFullPairReadbackRequired": true,
+    "externalSeals": "TOOL_RETURN_AFTER_FINAL_READBACK_NO_EMBEDDED_SELF_HASH"
+  },
+  "remaining": [
+    "separate independent actual ISTQB assessment",
+    "root exact combined DF010-C02 per-clause reconciliation",
+    "all unrelated installed/native/UI/protected and full-MVP residuals remain HOLD"
+  ]
+}

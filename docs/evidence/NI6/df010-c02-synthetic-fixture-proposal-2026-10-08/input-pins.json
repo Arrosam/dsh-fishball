@@ -1,0 +1,95 @@
+{
+  "status": "EXACT_NAMED_PUBLIC_INPUT_PINS",
+  "pins": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "bytes": 5304,
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "bytes": 2185,
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+    },
+    {
+      "path": "docs/owner-normal-entry-continuation-2026-10-04.md",
+      "bytes": 2024,
+      "sha256": "e1370ac0a8fe31be56a111d443a1110307d195e2c24389470619df5716351078"
+    },
+    {
+      "path": "docs/owner-ni2-continuation-2026-10-04.md",
+      "bytes": 2021,
+      "sha256": "5fd20898836545a7dd0b3858e935bd7213c50901fdc524977ed97508d9e5ebd1"
+    },
+    {
+      "path": "docs/evidence/NI6/continuation-checkpoint.md",
+      "bytes": 5632,
+      "sha256": "748727538d220237329559b3f252d64abb733e06711c9c989209aec1d9a57a99"
+    },
+    {
+      "path": "docs/reference/approved-ticket-review.zh.txt",
+      "bytes": 45578,
+      "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3"
+    },
+    {
+      "path": "docs/evidence/NI6/c1-individual-acceptance-reconciliation-preparation-2026-10-08.md",
+      "bytes": 32323,
+      "sha256": "2489ab220e0a9764053e792c20b9a1ae959938c669d37f25e435bf1bf61d0f3c"
+    },
+    {
+      "path": "docs/evidence/NI6/c1-individual-acceptance-reconciliation-preparation-2026-10-08.json",
+      "bytes": 142693,
+      "sha256": "38efd33860bc2ad439eb7c8c288bd1e6b6ec590859d51b65be021fdbe015007c"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.json",
+      "bytes": 21859,
+      "sha256": "9169dbbcadf0e2a354afb2b15b3204ac1b4ae5ff0fbbed1da59e822db5f7acba"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-execution-review.md",
+      "bytes": 8188,
+      "sha256": "5d4348ee5f589e43f2b7b62a968334dfd30cc5fb91babdca19a581f917532064"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-execution-review.json",
+      "bytes": 10437,
+      "sha256": "9a90a1ef7e9cf56af3fe894291829b867c6869a78a7ac63c5ce4723677ccc354"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-actual-test-assessment.md",
+      "bytes": 7195,
+      "sha256": "e245cc4672b4d448e0d7a54cbb04ae74b2bbfe7d130d5fd7efe48d4e1073f18b"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-actual-test-assessment.json",
+      "bytes": 9202,
+      "sha256": "7a8a56587e9aa066478b9a8a7b75b24c2179cce2bcc739bca727a1e68cafd0b8"
+    },
+    {
+      "path": "test/chat.test.mjs",
+      "bytes": 24559,
+      "sha256": "5234574e4cc9ee9c0471d014bb85b3890e7e9da36bd0da669b7bb43d115c0620"
+    },
+    {
+      "path": "test/event-adapters-adversarial.test.mjs",
+      "bytes": 33052,
+      "sha256": "0193921ffd774d4190bff6fb79c7f89f22c10635d9c712a1da0a651d711f564c"
+    },
+    {
+      "path": "docs/development-workflow.md",
+      "bytes": 4700,
+      "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7"
+    },
+    {
+      "path": "test/runtime-store.test.mjs",
+      "bytes": 34582,
+      "sha256": "8beae3455fa939e1fca50e29a206b40501b7f7a989ffd6634e1101440ce91ef0"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+d8f4aca6eda1d91be57ad561c7dbf7300d02d2f76b597aabcacbe6924f3dd864  .runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py
+deb7337464fd3901dc19870e1f150c448a2e2188738d4b074a7aa66daf7a4cb4  .runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution-plan.proposed.json
+e15c63915f19344619722abf5e23817479f4bc7e41e0f8966331de8f94fa303b  .runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/README.md
+06eb401c6a25a3c5eb53f7be2c75db0591fc8570d2156401df97f50bf82efab0  .runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/source-delta.patch
+a83567a7423be2bb7b6ddc24c181f1ea9a1901f2ac2605e872f39b448fab74b6  .runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/literal-delta.json
+8e3bcfe11c94adea7aa67f4a30188e9feb5e96e48a98b45e8c196ec7eb8f6a76  .runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/source-manifest.json
+9c797a99eab4596819c449e8be987b52585f8865d7359f57e3d8f02816f8e422  docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.md
+0b161731dbe4308e5a1124c5c47c89fa59ddedfb5a8eb9880cf0b72a0df6ab9d  docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.json

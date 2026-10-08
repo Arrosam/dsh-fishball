@@ -1,0 +1,114 @@
+{
+  "beforeAfterFinalRootPinVerification": {
+    "complete": true,
+    "inputCount": 164,
+    "unchanged": true
+  },
+  "closedOwnerFooter": {
+    "cancelled": 0,
+    "durationMs": "909.966209",
+    "fail": 0,
+    "pass": 9,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 9,
+    "todo": 0
+  },
+  "criterion": "DF010-C02",
+  "criterionQualification": "Selected changed-thread/reordered-event synthetic contract assertions; whole-criterion exact reconciliation pending independent actual CODE/ISTQB and combined prior contract evidence. No provider delivery/fullMVP inference.",
+  "directDriverReturn": {
+    "actualArgv": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+      ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json"
+    ],
+    "complete": true,
+    "exitCode": 0,
+    "originalToolReturns": [
+      {
+        "chunkId": "f15f68",
+        "exitCode": 0,
+        "outputBytes": 0,
+        "sessionId": null,
+        "wallTimeSeconds": 0.966374031
+      }
+    ],
+    "outputBytes": 0
+  },
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "durationQualification": "Preterminal snapshot; final enclosing duration NOT_ESTABLISHED. Final wrapper guard is source-based corroboration joined with original driver EXIT0.",
+  "exactOriginalNodeArgv": [
+    "/opt/homebrew/opt/node@22/bin/node",
+    "--test",
+    "--test-concurrency=1",
+    "test/df010-c02-synthetic.test.mjs"
+  ],
+  "fullAcceptance": false,
+  "independentActualCODE": "PENDING",
+  "independentActualISTQB": "PENDING",
+  "modelProviderNativeWorkerListenerCalls": 0,
+  "originalCommandDurationSeconds": 0.992974,
+  "originalDriverDurationSecondsSnapshot": 1.052351,
+  "originalNodeTerminal": {
+    "bothEOFAndCompleteReadback": true,
+    "exitCode": 0,
+    "failureCode": null,
+    "interrupted": false,
+    "overflow": false,
+    "ownedProcessGroup": 51243,
+    "pid": 51243,
+    "processGroupState": "ABSENT_OBSERVED",
+    "signalAttempts": 0,
+    "timedOut": false
+  },
+  "productRevision": "4fea2809345823b3da8cf3f6b165babd5701d482",
+  "protectedSemanticsChanged": false,
+  "rawCapturesRootOrReviewerRead": false,
+  "recordPins": [
+    {
+      "bytes": 24162,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/root-plan.json",
+      "sha256": "dac870093f0a66c55072cd71149cc7e4c226a200e022f0e89d77da698772468b",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/root-plan.json"
+    },
+    {
+      "bytes": 2500,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/executor-result.json",
+      "sha256": "da6ff4cdf819aebf439431a651e610d9944f5d2993670f847be590332a99eb09",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/executor-result.json"
+    },
+    {
+      "bytes": 1497,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/command-results.json",
+      "sha256": "b3cf574e790279bb855ffbd4d9e1b514c46da683dfbd242096489a9dfbd15f09",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/command-results.json"
+    },
+    {
+      "bytes": 174,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-execution/before-after.json",
+      "sha256": "f016a1f81b2bb027c0e8b78042852e9608af3f7c4eee01c537c6224f8d98c8e0",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/before-after.json"
+    }
+  ],
+  "result": "PASS_BOUNDED_SELECTED_SYNTHETIC_ASSERTIONS",
+  "rootPlan": {
+    "bytes": 24162,
+    "path": ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json",
+    "pins": 164,
+    "sha256": "dac870093f0a66c55072cd71149cc7e4c226a200e022f0e89d77da698772468b"
+  },
+  "schema": "df.canonical-c1.df010-c02-r1-actual-return/v1",
+  "selectedTest": {
+    "bytes": 21368,
+    "path": "test/df010-c02-synthetic.test.mjs",
+    "sha256": "e742af01cfe4259cb1b27b3b9a355ac60da5c2e2bebca42b71c6a31693863c5b"
+  },
+  "sharedQA3080Touched": false,
+  "sourceDerivedMaximumConcurrentInterpreters": 3,
+  "sourceDerivedMaximumInterpreterStarts": 3,
+  "sourceDerivedNestedStarts": 0,
+  "stderrBytesMetadataOnly": 0,
+  "stdoutBytesOwnerFooterOnlyDecoded": 2264,
+  "wholeCriterionAcceptance": "PENDING_EXACT_COMBINED_PER_CLAUSE_RECONCILIATION"
+}

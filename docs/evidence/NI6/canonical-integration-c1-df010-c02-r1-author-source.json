@@ -1,0 +1,319 @@
+{
+  "acceptanceGO": false,
+  "actualStarts": 0,
+  "authorTask": "/root/df010c02_fixture_author",
+  "closedFooter": {
+    "captureBinding": "Original identity-bound complete stdout readback bytes retained in owning executor memory, no second private-file read",
+    "fields": [
+      "tests",
+      "suites",
+      "pass",
+      "fail",
+      "cancelled",
+      "skipped",
+      "todo",
+      "durationMs"
+    ],
+    "grammar": "Top-level plan 1..positive16digits; exactly eight ordered known footer lines; integer totals canonical zero or positive16digits; duration nonnegative decimal up to16 integer and16 fractional digits; duplicates/malformed/missing refuse",
+    "pass": "tests>0 and pass==tests and fail==cancelled==skipped==todo==0",
+    "testNamesErrorsStacksPayloadsPublished": false
+  },
+  "closedSelection": {
+    "actualDestinations": [
+      ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/invocation.json",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/private-capture",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/root-plan.json",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/executor-result.json",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/command-results.json",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/before-after.json"
+    ],
+    "actualDestinationsAbsentBeforeAuthorPair": true,
+    "allThreeGOFalse": true,
+    "authorPairAbsentBeforeCreation": true,
+    "commands": [
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--test",
+        "--test-concurrency=1",
+        "test/df010-c02-synthetic.test.mjs"
+      ]
+    ],
+    "driverArgv": [
+      "/opt/homebrew/bin/python3",
+      ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+      ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json"
+    ],
+    "futureReportSlotCount": 6,
+    "independentReviewSlotCount": 4,
+    "manifestSelfPinSeparate": true,
+    "pins": {},
+    "requiredReportSlots": [
+      "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.md",
+      "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.json",
+      "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-source-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-source-review.json",
+      "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-test-design-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-test-design-review.json"
+    ],
+    "rootPlanSelfPinned": false,
+    "runCountAuthorized": 1
+  },
+  "conservation": {
+    "ASTOrCandidateParsingEvaluationImportCheckBuildTest": false,
+    "allOtherMainTerminalWrapperBytesConserved": true,
+    "deltaApplied": false,
+    "inertRunnerDeltaExact": true,
+    "inverseOccurrences": 11,
+    "inverseRules": 10,
+    "materializedTestExact21368ByteProposal": true,
+    "normalizedCoreRunner": {
+      "bytes": 27666,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+      "sha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e"
+    },
+    "primitive": {
+      "bytes": 19279,
+      "equalCoreR2ContractsR1": true,
+      "sha256": "cd730157a1cb135eb5782eb5d7d54128d7af4103a2bc550e4bf0ada3d0eb6074"
+    },
+    "testAssertionsChanged": false
+  },
+  "criterion": {
+    "actualStatus": "NOT_RUN",
+    "exactText": "Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route.",
+    "families": [
+      "T1_changed_thread_replace_add_remove_scope_conservation",
+      "T2_await_old_thread_source_revision_fence",
+      "T3_reverse_time_distinct_ids_exact_dedup_conflict_reopen",
+      "T4_reordered_edit_delete_before_after_original",
+      "T5_stale_unseen_boundary_exact_expired_reconciliation",
+      "T6_stale_control_after_newer_pause_exact_duplicate"
+    ],
+    "id": "DF010-C02",
+    "mapping": "docs/evidence/NI6/df010-c02-synthetic-fixture-proposal-2026-10-08/proposal.json",
+    "source": "docs/owner-amendment-2026-10-04.md:22",
+    "wholeCriterionReconciliation": "PENDING_EXACT_PER_CLAUSE_ASSESSMENT"
+  },
+  "effects": {
+    "CLIStarts": 0,
+    "aggregateByteCap": 262144,
+    "commands": 1,
+    "externalProviderCalls": 0,
+    "listeners": 0,
+    "maximumConcurrentInterpreters": 3,
+    "maximumConcurrentNestedChildren": 0,
+    "maximumInterpreterStarts": 3,
+    "maximumNestedInterpreterStarts": 0,
+    "maximumOriginalRetainedChildKillCalls": 0,
+    "maximumSequentialNodeFileWorkers": 1,
+    "modelCalls": 0,
+    "publicRecordByteCap": 65536,
+    "stderrByteCap": 131072,
+    "stdoutByteCap": 131072,
+    "testConcurrency": 1
+  },
+  "excluded": [
+    "protected final CODE receipt/signature/envelope/revision999 and native capture/finish semantics",
+    "private profile/key/db/history/raw capture/error inspection",
+    "live account/provider/model/paid/network/browser/listener/CLI/native worker effects",
+    "shared3080/ui-qa-a58c522",
+    "cancelled4da34a6d NEVER_EXECUTE",
+    "twice-denied cloud NO_RETRY",
+    "unsupported browser/locked Mac NO_WORKAROUND",
+    "installed DSH/Desktop main/remotes/push/publication"
+  ],
+  "executionGO": false,
+  "parentSuppliedIdentity": {
+    "branch": "feat/S3-integrations",
+    "gitQueried": false,
+    "localDocsCommits": [
+      "a9cf491",
+      "559358b"
+    ],
+    "productCommit": "4fea2809345823b3da8cf3f6b165babd5701d482"
+  },
+  "passJointOracles": [
+    "original supported owner driver EXIT0",
+    "exact original Node command EXIT0",
+    "complete original identity-bound bounded capture readback and EOF",
+    "owned command-group ABSENT_OBSERVED",
+    "original-owner-only closed unique ordered footer tests>0/pass=tests/fail=cancelled=skipped=todo=0",
+    "before/after/final exact input/plan/build authority currentness and owning evidence identity",
+    "final terminal return from unchanged outside-BaseException sys.exit wrapper"
+  ],
+  "preservedBudgetsSeconds": {
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflight": 20,
+    "primaryAbsoluteEnd": 85
+  },
+  "preservedCaps": {
+    "aggregate": 262144,
+    "fixtureHeapUniversalBound": false,
+    "perStream": 131072,
+    "publicRecord": 65536
+  },
+  "process": {
+    "Git": false,
+    "candidateEvaluation": false,
+    "delegation": false,
+    "existingTestCanonicalProposalPriorEvidenceMutation": false,
+    "externalSeals": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/SHA256SUMS",
+    "runtime": false,
+    "sealFileSelfHash": false,
+    "sourcePreparationIntermediate": "TEMPORARY_METADATA_STAGING_FILE_INSIDE_FRESH_CAPSULE_REMOVED_BEFORE_SEAL",
+    "writes": "FRESH_OWNING_CAPSULE_AND_NEW_AUTHOR_REPORT_PAIR_ONLY"
+  },
+  "provenance": {
+    "allDeclaredInputOwnedPinsCurrent": true,
+    "canonical65Bytes": 1952632,
+    "canonical65ConservedOpaqueOnly": true,
+    "capsuleMode700AndOwner": true,
+    "existingBuildSyntaxTargets": 152,
+    "existingBuildSyntaxTargetsExcludeNewFile": true,
+    "finalCoreR2SourceAndActualCODEISTQBPairsBound": true,
+    "forecastIsActualPlan": false,
+    "futureActualPinCount": 164,
+    "genuineBuildProofBound": true,
+    "inputBytes": 3315861,
+    "inputCount": 152,
+    "newSyntaxRuntimeValidity": "NOT_ESTABLISHED",
+    "originalProposalCutStatus": "HISTORICAL_UNAPPLIED_THEN_ROOT_MATERIALIZED_EXACT_TEST",
+    "originalProposalFilesAndInputPinsBound": true,
+    "ownedRecords": 5,
+    "rootPlanForecastBytesIncludingLF": 24162,
+    "sourceCopies": 0,
+    "tenForbiddenEnvironmentNamesAbsent": true,
+    "topologyEntries": [
+      {
+        "path": "/opt/homebrew/opt/node@22",
+        "resolved": "/opt/homebrew/Cellar/node@22/22.22.2_1",
+        "target": "../Cellar/node@22/22.22.2_1"
+      },
+      {
+        "path": "/opt/homebrew/bin/python3",
+        "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "target": "../Cellar/python@3.14/3.14.5/bin/python3"
+      },
+      {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/bin/python3",
+        "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "target": "../Frameworks/Python.framework/Versions/3.14/bin/python3"
+      }
+    ]
+  },
+  "publicationGO": false,
+  "qualifiedBoundaries": {
+    "newProtectedSemanticRead": false,
+    "noPerfectHistoricalReadNonExposureClaim": true,
+    "originalProposalExposure": {
+      "effect": "UNRELATED_PROTECTED_NORMAL_NATIVE_SNIPPETS_RETURNED_IN_TRUNCATED_OUTPUT",
+      "file": "src/runtime-store.mjs",
+      "operation": "ONE_MISTAKEN_BROAD_TEXTUAL_CLAIM_RETURN_FIELD_SEARCH",
+      "perfectProtectedReadNonExposureClaim": false,
+      "protectedBoundary": "UNCHANGED_BLOCKED",
+      "protectedInterpretationImplementationExecutionAcceptance": false,
+      "snippetsReproduced": false,
+      "status": "QUALIFIED_SCOPE_ERROR_DISCLOSED_TO_ROOT",
+      "subsequentBroadRuntimeStoreSearch": false,
+      "subsequentOrdinarySources": "EXISTING_PUBLIC_CONSUMER_TESTS_AND_ALREADY_IDENTIFIED_PRECISE_ORDINARY_API_RANGES"
+    },
+    "privateCaptureContentReadCopiedDecodedHashed": false,
+    "thisPreparationPathnames": "INITIAL_SOURCE_PATH_LISTING_SURFACED_HISTORICAL_PRIVATE_CAPTURE_PATHNAMES_ONLY_NO_CONTENT_READ_COPY_DECODE_HASH"
+  },
+  "readbacks": {
+    "READMEProposalLiteralDeltaPatchFullUntruncated": "a66eed",
+    "finalManifestChangedFieldsMetadataReadback": "0610e1",
+    "finalManifestReadbackMethod": "Initial complete manifest readback plus complete final changed fields readback; unchanged manifest body conserved.",
+    "finalREADMEAndManifestChangedMetadataReadbackRequired": false,
+    "finalREADMEFullUntruncated": "5ef415",
+    "manifestFullUntruncatedChunks": [
+      "8189d0",
+      "e66586",
+      "224f0b"
+    ],
+    "owningSourceFullUntruncated": "c91470",
+    "selectedTestCurrentOpaquePinMatchesPriorCompleteSource": true,
+    "selectedTestPriorFullReadbacks": [
+      "ef9c20",
+      "4c2e0c"
+    ]
+  },
+  "remaining": [
+    "independent max affected CODE source review",
+    "separate independent ISTQB design review",
+    "root full read/seal/actual once original supported execution",
+    "independent actual CODE and ISTQB assessments",
+    "all candidate validity and actual assertions NOT_RUN",
+    "owner/footer/deadline/drift/overflow/interruption/cleanup/final-exception fault branches NOT_RUN",
+    "exact per-clause C02 reconciliation; no overall MVP/publication GO"
+  ],
+  "schema": "df.canonical-c1.df010-c02-r1-author-source/v1",
+  "selectedSyntheticFixture": {
+    "actualAggregateTests": null,
+    "anticipatedAggregateTests": 9,
+    "deliveryOracle": "PRIVATE_INJECTED_SENT_ROUTE_ENVELOPE_ONLY_NO_PROVIDER_DELIVERY",
+    "freshDirectories": 8,
+    "fullCriterionAcceptance": false,
+    "grantOracle": "PUBLIC_ACTION_SPEC_DIGEST_STATE_OUTCOME_AND_TASK_AUTH_EPOCH_NO_GRANT_TABLE_READ",
+    "mode": "none",
+    "nativeWorkerLaunches": 0,
+    "reopens": 1,
+    "sourceLines": 257,
+    "syntheticEffects": "SYNCHRONOUS_ARRAY_APPEND_ONLY_NO_ARBITRARY_EXTERNAL_EFFECT",
+    "test": {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 21368,
+      "coverage": "Complete source identity; changed-thread/add/remove routing; normalization-await source fence; reversed timestamp intake; mutation conflict; stale admission/exact expired reconciliation; stale control; synthetic completed-action/route conservation",
+      "path": "test/df010-c02-synthetic.test.mjs",
+      "sha256": "e742af01cfe4259cb1b27b3b9a355ac60da5c2e2bebca42b71c6a31693863c5b"
+    },
+    "threadSubtests": 3,
+    "topLevelDeclarations": 6,
+    "topLevelTimeoutSeconds": 5
+  },
+  "selection": {
+    "bytes": 4584,
+    "path": "docs/ni6-canonical-integration-c1-df010-c02-r1-selection-2026-10-08.md",
+    "sha256": "b7cb0ec46a8f02032eeca1e91d5ab423b12d960e135fc046c96261c3c821a1d5"
+  },
+  "sourceIdentities": [
+    {
+      "bytes": 27519,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+      "sha256": "d8f4aca6eda1d91be57ad561c7dbf7300d02d2f76b597aabcacbe6924f3dd864"
+    },
+    {
+      "bytes": 3229,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution-plan.proposed.json",
+      "sha256": "deb7337464fd3901dc19870e1f150c448a2e2188738d4b074a7aa66daf7a4cb4"
+    },
+    {
+      "bytes": 9538,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/README.md",
+      "sha256": "e15c63915f19344619722abf5e23817479f4bc7e41e0f8966331de8f94fa303b"
+    },
+    {
+      "bytes": 6436,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/source-delta.patch",
+      "sha256": "06eb401c6a25a3c5eb53f7be2c75db0591fc8570d2156401df97f50bf82efab0"
+    },
+    {
+      "bytes": 3048,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/literal-delta.json",
+      "sha256": "a83567a7423be2bb7b6ddc24c181f1ea9a1901f2ac2605e872f39b448fab74b6"
+    },
+    {
+      "bytes": 38823,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/source-manifest.json",
+      "sha256": "8e3bcfe11c94adea7aa67f4a30188e9feb5e96e48a98b45e8c196ec7eb8f6a76"
+    }
+  ],
+  "status": "SOURCE_ONLY_NOT_RUN"
+}

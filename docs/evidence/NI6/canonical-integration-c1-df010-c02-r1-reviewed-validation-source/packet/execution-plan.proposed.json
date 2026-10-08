@@ -1,0 +1,65 @@
+{
+  "actualBuildProof": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+  "actualDestinations": [
+    ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/invocation.json",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/private-capture",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/root-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/executor-result.json",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/command-results.json",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution/before-after.json"
+  ],
+  "aggregateStreamByteCap": 262144,
+  "budgetsSeconds": {
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflight": 20,
+    "primaryAbsoluteEnd": 85
+  },
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      "test/df010-c02-synthetic.test.mjs"
+    ]
+  ],
+  "contractVersion": "df.canonical-c1.df010-c02-r1/v1",
+  "criterionQualification": "Exact selected DF010-C02 synthetic changed-thread/reordered-event assertions only; no whole-criterion/live-delivery/MVP acceptance",
+  "driverArgv": [
+    "/opt/homebrew/bin/python3",
+    ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+    ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json"
+  ],
+  "maximumConcurrentInterpreters": 3,
+  "maximumConcurrentNestedChildren": 0,
+  "maximumInterpreterStarts": 3,
+  "maximumNestedInterpreterStarts": 0,
+  "maximumNodeFileWorkers": 1,
+  "maximumOriginalRetainedChildKillCalls": 0,
+  "nestedStreamQualification": "No selected nested helper streams; outer stream caps do not bound fixture heap allocation",
+  "pins": {},
+  "publicRecordByteCap": 65536,
+  "rawTestContentPublished": false,
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.md",
+    "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.json",
+    "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-test-design-review.json"
+  ],
+  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json",
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+  "streamByteCap": 131072,
+  "testConcurrency": 1,
+  "testStores": "Fresh synthetic stores created only by original selected tests after GO; TMPDIR is the owning fresh private tmp directory"
+}

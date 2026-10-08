@@ -1,0 +1,79 @@
+{
+  "basis": {
+    "bytes": 27666,
+    "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+    "sha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e"
+  },
+  "fullSourceInverseConserved": true,
+  "inverseOccurrenceCount": 11,
+  "inverseRuleCount": 10,
+  "normalizedCoreSha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e",
+  "primitive": {
+    "bytes": 19279,
+    "equalCoreR2ContractsR1": true,
+    "sha256": "cd730157a1cb135eb5782eb5d7d54128d7af4103a2bc550e4bf0ada3d0eb6074"
+  },
+  "rules": [
+    {
+      "from": "Source-only C1core-r2: one fixed original Node test command; root GO required.",
+      "name": "source-title",
+      "occurrences": 1,
+      "to": "Source-only C1DF010-C02-r1: one fixed original Node test command; root GO required."
+    },
+    {
+      "from": "validation/core-r2",
+      "name": "capsule-identity",
+      "occurrences": 1,
+      "to": "validation/df010-c02-r1"
+    },
+    {
+      "from": "integration-c1-core-r2-plan.json",
+      "name": "plan-identity",
+      "occurrences": 1,
+      "to": "integration-c1-df010-c02-r1-plan.json"
+    },
+    {
+      "from": "run-core.py",
+      "name": "runner-identity",
+      "occurrences": 2,
+      "to": "run-df010-c02.py"
+    },
+    {
+      "from": "df.canonical-c1.core-r2/v1",
+      "name": "record-contract",
+      "occurrences": 1,
+      "to": "df.canonical-c1.df010-c02-r1/v1"
+    },
+    {
+      "from": "'selectedTestFiles': 8, 'maximumInterpreterStarts': 18,\n              'maximumConcurrentInterpreters': 5, 'maximumConcurrentNestedChildren': 2, 'maximumNestedInterpreterStarts': 8,",
+      "name": "finite-selected-topology",
+      "occurrences": 1,
+      "to": "'selectedTestFiles': 1, 'maximumInterpreterStarts': 3,\n              'maximumConcurrentInterpreters': 3, 'maximumConcurrentNestedChildren': 0, 'maximumNestedInterpreterStarts': 0,"
+    },
+    {
+      "from": "'DF010C02ChangedThreadReordering': 'NOT_RUN'",
+      "name": "criterion-selection",
+      "occurrences": 1,
+      "to": "'DF010C02ChangedThreadReordering': 'SELECTED_SYNTHETIC_ASSERTIONS_ONLY'"
+    },
+    {
+      "from": "commands = [[NODE, '--test', '--test-concurrency=1', 'test/coordinator.test.mjs', 'test/context.test.mjs',\n                     'test/memory.test.mjs', 'test/messages.test.mjs', 'test/control.test.mjs', 'test/results.test.mjs',\n                     'test/notifications.test.mjs', 'test/audit.test.mjs']]",
+      "name": "literal-node-argv",
+      "occurrences": 1,
+      "to": "commands = [[NODE, '--test', '--test-concurrency=1', 'test/df010-c02-synthetic.test.mjs']]"
+    },
+    {
+      "from": "EXECUTOR_CORE_COMMAND_FAILED",
+      "name": "command-failure-namespace",
+      "occurrences": 1,
+      "to": "EXECUTOR_DF010_C02_COMMAND_FAILED"
+    },
+    {
+      "from": "EXECUTOR_CORE_GATE_FAILED",
+      "name": "outer-failure-namespace",
+      "occurrences": 1,
+      "to": "EXECUTOR_DF010_C02_GATE_FAILED"
+    }
+  ],
+  "status": "SOURCE_ONLY_TEXTUAL_INVERSES_NO_AST_OR_CANDIDATE_EVALUATION"
+}

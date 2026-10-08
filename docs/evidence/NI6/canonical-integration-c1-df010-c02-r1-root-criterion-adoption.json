@@ -1,0 +1,215 @@
+{
+  "consumed": "DO_NOT_REPLAY",
+  "criterion": {
+    "clauses": [
+      {
+        "C02Families": [
+          "T1",
+          "T3",
+          "T5"
+        ],
+        "clause": "Complete source identity deduplicates",
+        "disposition": "PASS",
+        "oracles": [
+          "Canonical complete identity hash binds provider/source identity/principal/conversation/kind/thread/unique ID",
+          "Exact duplicate task/eventDigest conservation and reopen",
+          "Changed-thread same-ID separate identity, restored-route exact dedup",
+          "Known exact expired reconciliation without new rate/effect"
+        ],
+        "priorOracles": [
+          "Durable complete-identity dedup",
+          "Subscription change cannot replay complete identity",
+          "New local source registration of same complete identity cannot mint task/quota"
+        ],
+        "priorSources": [
+          "test/events.test.mjs:35",
+          "test/events.test.mjs:129",
+          "test/event-adapters-adversarial.test.mjs:233"
+        ],
+        "qualification": "Unavailable provider ID at events:119 is explicitly same_command_only and does not supply complete-identity evidence",
+        "remainingInPhaseGap": null
+      },
+      {
+        "C02Families": [
+          "T4"
+        ],
+        "clause": "Edits cannot silently replace an admitted action or original route",
+        "disposition": "PASS",
+        "oracles": [
+          "EVENT_MUTATION_DENIED before/after original completed action",
+          "Same-ID changed message IDEMPOTENCY_CONFLICT",
+          "Full task/action/authority/data/control/goal/receipt/route/effect conservation"
+        ],
+        "priorOracles": [
+          "Authenticated edit denial and unchanged admitted task intent"
+        ],
+        "priorSources": [
+          "test/chat.test.mjs:137",
+          "test/events.test.mjs:50"
+        ],
+        "remainingInPhaseGap": null
+      },
+      {
+        "C02Families": [
+          "T4"
+        ],
+        "clause": "Deletes cannot silently replace an admitted action or original route",
+        "disposition": "PASS",
+        "oracles": [
+          "EVENT_MUTATION_DENIED before/after original completed action",
+          "Zero pre-original tasks/receipts/rate, no implicit tombstone",
+          "Original action/goal/receipt/route/effect conserved"
+        ],
+        "priorOracles": [
+          "Authenticated delete denial"
+        ],
+        "priorSources": [
+          "test/chat.test.mjs:137"
+        ],
+        "remainingInPhaseGap": null
+      },
+      {
+        "C02Families": [
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6"
+        ],
+        "clause": "Order cannot silently replace an admitted action or original route",
+        "disposition": "PASS",
+        "oracles": [
+          "Old normalization STALE_SOURCE after later thread admission",
+          "Reversed distinct timestamps preserve separate instructions",
+          "Reordered mutations deny and same-ID conflicts refuse",
+          "Age 10000/10001 and exact expired reconciliation remain distinct",
+          "Old pre-pause control STALE_VERSION; exact newer duplicate applies once"
+        ],
+        "priorOracles": [
+          "Captured material preserved across awaits",
+          "Simultaneous exact controls apply once; conflicting intent refuses"
+        ],
+        "priorSources": [
+          "test/events.test.mjs:56",
+          "test/event-adapters-adversarial.test.mjs:218",
+          "test/event-adapters-adversarial.test.mjs:248"
+        ],
+        "qualification": "No provider total order/latest-wins rule exists in the controlling contract",
+        "remainingInPhaseGap": null
+      },
+      {
+        "C02Families": [
+          "T1",
+          "T2"
+        ],
+        "clause": "Thread changes cannot silently replace an admitted action or original route",
+        "disposition": "PASS",
+        "oracles": [
+          "Thread replacement/addition/removal route decision table",
+          "Wrong-route intake/status/control before change and old/new-route old-task sends after change refuse before callback",
+          "Changed-thread event/task independent; exact old route can reconcile",
+          "Awaited old source fenced by revision",
+          "Original action spec/digest/state/outcome/authority and goal/receipt/route/effect deeply conserved"
+        ],
+        "priorOracles": [
+          "Wrong private window and pairing revision cannot inherit original task route",
+          "Outbound permission await cannot inherit a reconfigured conversation; no send callback; existing action remains unknown-held"
+        ],
+        "priorSources": [
+          "test/chat.test.mjs:115",
+          "test/chat.test.mjs:127",
+          "test/event-adapters-adversarial.test.mjs:334"
+        ],
+        "qualification": "Synthetic durable route evidence and injected guards; no live provider/full outbox delivery/C05 acceptance",
+        "remainingInPhaseGap": null
+      }
+    ],
+    "countsAloneEstablishCriterion": false,
+    "disposition": "PASS",
+    "dispositionAuthority": "INDEPENDENT_ISTQB_CRITERION_EVIDENCE_ASSESSMENT_ROOT_ADOPTION_SEPARATE",
+    "evidenceCombination": "CONSUMED_CANONICAL_CONTRACTS_R1_PLUS_CONSUMED_C02_R1_CURRENT_SOURCE_BOUND_ASSERTIONS",
+    "exactText": "Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route.",
+    "fullUnchangedStatementReviewed": true,
+    "historicalAlias": "BUB010-02",
+    "id": "DF010-C02",
+    "priorHistoricalMissingCaseStatusRewritten": false,
+    "remainingRequiredInPhaseCriterionGaps": [],
+    "scope": "OWNER_CURRENT_PROVIDER_NEUTRAL_CONTRACT_VALIDATION_WITH_SYNTHETIC_ADAPTERS_AND_AUTHORITATIVE_LEDGER",
+    "source": "docs/owner-amendment-2026-10-04.md:22"
+  },
+  "finalActualReports": [
+    {
+      "bytes": 12212,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-execution-review.md",
+      "sha256": "22b9800d8689ee0a9ecd33ab7eccd9ad72364565aec615e381a7c273640d744e"
+    },
+    {
+      "bytes": 18625,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-execution-review.json",
+      "sha256": "bd69ce2008be810f6dc1c9a788113b0f72212afb1cf4bc6fc3f10a92ef16433d"
+    },
+    {
+      "bytes": 12968,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-actual-test-assessment.md",
+      "sha256": "57f5720e922a0c609e2afba6b1118bbe8d67b838de7ba5fdfba0dd1165b7d335"
+    },
+    {
+      "bytes": 21702,
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-independent-actual-test-assessment.json",
+      "sha256": "40afaf031032552d3047f4f21326102c67801243703f9d4a04fc7146f3242cf7"
+    }
+  ],
+  "finalEnclosingDuration": "NOT_ESTABLISHED",
+  "fullAcceptance": false,
+  "historicalExposureQualificationsPreserved": true,
+  "laterPublicPinCheck": {
+    "allExact": true,
+    "count": 164,
+    "finiteNotAtomic": true
+  },
+  "newFooter": {
+    "authority": "ORIGINAL_OWNER_CLOSED_UNIQUE_FOOTER_BOUND_TO_COMPLETE_IDENTITY_VERIFIED_STDOUT",
+    "cancelled": 0,
+    "durationMs": "909.966209",
+    "fail": 0,
+    "pass": 9,
+    "reviewerReparsedRawTAP": false,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 9,
+    "todo": 0
+  },
+  "originalSupportedReturn": {
+    "chunkId": "f15f68",
+    "exitCode": 0,
+    "outputBytes": 0,
+    "sessionId": null
+  },
+  "overallMVP": "HOLD",
+  "priorContractsFooter": {
+    "cancelled": 0,
+    "durationMs": "4256.225708",
+    "fail": 0,
+    "pass": 121,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 121,
+    "todo": 0
+  },
+  "privateContentsCopiedOrRead": false,
+  "productRevision": "4fea2809345823b3da8cf3f6b165babd5701d482",
+  "publicArchiveInventory": {
+    "bytes": 2675,
+    "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-reviewed-validation-source/inventory.json",
+    "sha256": "f6fbf9f5e09e189bba9d5389485e2abae2232e1003aa0345675f3ffacee6233f"
+  },
+  "publicationGO": false,
+  "rootCriterionAdoption": "PASS",
+  "rootFinalActualCODEISTQBPairsFullyRead": true,
+  "rootMD": {
+    "bytes": 2741,
+    "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-root-criterion-adoption.md",
+    "sha256": "546955907ef5cd1a249a06eeabc3ca80c3f043bf22e68c1a053667a8e6b13fee"
+  },
+  "schema": "df.canonical-c1.df010-c02-r1-root-criterion-adoption/v1"
+}

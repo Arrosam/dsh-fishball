@@ -1,0 +1,85 @@
+--- a/.runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py
++++ b/.runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py
+@@ -1,4 +1,4 @@
+-"""Source-only C1core-r2: one fixed original Node test command; root GO required."""
++"""Source-only C1DF010-C02-r1: one fixed original Node test command; root GO required."""
+ import time
+ STARTED = time.monotonic()
+ import datetime
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/core-r2'
++NAME='.runtime/ni6-canonical-integration-c1/validation/df010-c02-r1'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-core-r2-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-df010-c02-r1-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -460,15 +460,15 @@
+     marker = CAPSULE / 'invocation.json'; private = CAPSULE / 'private-capture'; evidence = CAPSULE / 'execution'
+     marker_owned = evidence_owned = False; marker_id = evidence_id = None
+     rows = []; before = after = footer = None; finalized = False
+-    record = {'contractVersion': 'df.canonical-c1.core-r2/v1', 'result': 'FAILED_HOLD', 'failureCode': None,
++    record = {'contractVersion': 'df.canonical-c1.df010-c02-r1/v1', 'result': 'FAILED_HOLD', 'failureCode': None,
+               'commands': rows, 'tapFooter': None, 'before': None, 'after': None, 'directDriverReturnRequired': True,
+-              'rawTestContentPublished': False, 'selectedTestFiles': 8, 'maximumInterpreterStarts': 18,
+-              'maximumConcurrentInterpreters': 5, 'maximumConcurrentNestedChildren': 2, 'maximumNestedInterpreterStarts': 8,
++              'rawTestContentPublished': False, 'selectedTestFiles': 1, 'maximumInterpreterStarts': 3,
++              'maximumConcurrentInterpreters': 3, 'maximumConcurrentNestedChildren': 0, 'maximumNestedInterpreterStarts': 0,
+               'interpreterCountAuthority': 'SOURCE_DERIVED_MAXIMUM_NOT_CHILD_INSTRUMENTATION',
+-              'fullAcceptance': False, 'DF010C02ChangedThreadReordering': 'NOT_RUN'}
++              'fullAcceptance': False, 'DF010C02ChangedThreadReordering': 'SELECTED_SYNTHETIC_ASSERTIONS_ONLY'}
+     try:
+         need(len(sys.argv) == 2 and sys.argv[1] == PLAN_NAME and Path.cwd() == ROOT
+-             and Path(__file__).resolve() == CAPSULE / 'run-core.py', 'EXECUTOR_IDENTITY')
++             and Path(__file__).resolve() == CAPSULE / 'run-df010-c02.py', 'EXECUTOR_IDENTITY')
+         owned_directory(CAPSULE); marker_id = save(marker, {'state': 'IN_PROGRESS'}, fresh=True); marker_owned = True
+         proposal = read_json(CAPSULE / 'execution-plan.proposed.json'); manifest = read_json(CAPSULE / 'source-manifest.json')
+         plan_path = contained(PLAN_NAME); owned_file(plan_path); plan_raw = plan_path.read_bytes()
+@@ -478,7 +478,7 @@
+             if key not in ('rootReviewedExecutionGO', 'rootSupportedExecutionApprovalGranted', 'rootReviewedFinalAffectedReports', 'pins'):
+                 need(plan[key] == proposal[key], 'EXECUTOR_PLAN_SELECTION')
+         need(all(plan[key] is True for key in ('rootReviewedExecutionGO', 'rootSupportedExecutionApprovalGranted', 'rootReviewedFinalAffectedReports')), 'EXECUTOR_ROOT_GO')
+-        need(plan['runCountAuthorized'] == 1 and plan['runner'] == NAME + '/run-core.py', 'EXECUTOR_ONCE')
++        need(plan['runCountAuthorized'] == 1 and plan['runner'] == NAME + '/run-df010-c02.py', 'EXECUTOR_ONCE')
+         for key in manifest['environmentMustBeAbsent']: need(key not in os.environ, 'EXECUTOR_ENVIRONMENT')
+         need(str(Path(sys.executable).resolve()) == PYTHON_REAL and str(Path(NODE).resolve()) == NODE_REAL, 'EXECUTOR_BINARY')
+         for item in manifest['topology']:
+@@ -493,9 +493,7 @@
+             need(pin_path(item['path']).stat().st_size == item['bytes'], 'EXECUTOR_PIN_SIZE')
+         before = verify(plan['pins'], min(work_end, STARTED + 20)); build_authority(manifest)
+         guard(min(work_end, STARTED + 20), 'EXECUTOR_PREFLIGHT_DEADLINE')
+-        commands = [[NODE, '--test', '--test-concurrency=1', 'test/coordinator.test.mjs', 'test/context.test.mjs',
+-                     'test/memory.test.mjs', 'test/messages.test.mjs', 'test/control.test.mjs', 'test/results.test.mjs',
+-                     'test/notifications.test.mjs', 'test/audit.test.mjs']]
++        commands = [[NODE, '--test', '--test-concurrency=1', 'test/df010-c02-synthetic.test.mjs']]
+         need(plan['commands'] == commands, 'EXECUTOR_EXACT_COMMANDS')
+         for path in (private, evidence): need(not path.exists() and not path.is_symlink(), 'EXECUTOR_NAMESPACE_CONSUMED')
+         private_directory(private); private_directory(evidence); evidence_id = identity(evidence); evidence_owned = True
+@@ -504,7 +502,7 @@
+         guard(work_end); need(sha(plan_path.read_bytes()) == plan_digest, 'EXECUTOR_PLAN_DRIFT')
+         row, _, _, _, stdout = run_command(commands[0], 1, private, work_end, 60, 5, environment); rows.append(row)
+         need(row['failureCode'] is None and row['exitCode'] == 0 and row['captureComplete']
+-             and row['processGroupState'] == 'ABSENT_OBSERVED', 'EXECUTOR_CORE_COMMAND_FAILED')
++             and row['processGroupState'] == 'ABSENT_OBSERVED', 'EXECUTOR_DF010_C02_COMMAND_FAILED')
+         guard(work_end)
+         stream = row['privateStreams']['stdout']
+         need(type(stdout) is bytes and len(stdout) == stream['bytes'] and sha(stdout) == stream['sha256']
+@@ -513,7 +511,7 @@
+         after = verify(plan['pins'], work_end); build_authority(manifest)
+         need(sha(plan_path.read_bytes()) == plan_digest, 'EXECUTOR_PLAN_DRIFT'); guard(work_end); finalized = True
+     except Exception:
+-        FIRST_REASON = FIRST_REASON or 'EXECUTOR_CORE_GATE_FAILED'; finalized = False
++        FIRST_REASON = FIRST_REASON or 'EXECUTOR_DF010_C02_GATE_FAILED'; finalized = False
+     finally:
+         try:
+             guard(end, cleanup=True)

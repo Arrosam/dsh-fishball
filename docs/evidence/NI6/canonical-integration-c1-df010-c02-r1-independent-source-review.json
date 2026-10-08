@@ -1,0 +1,501 @@
+{
+  "schema": "df.canonical-c1.df010-c02-r1-independent-source-review/v1",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "verdict": "NO_MATERIAL_AFFECTED_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "reviewer": {
+    "task": "/root/c02_r1_code_review",
+    "role": "INDEPENDENT_AFFECTED_CODE",
+    "language": "English",
+    "requestedModel": "gpt-6.1-sol",
+    "requestedReasoning": "max",
+    "separateFromAuthorAndISTQB": true
+  },
+  "date": "2026-10-08",
+  "acceptanceGO": false,
+  "executionGO": false,
+  "publicationGO": false,
+  "criterion": {
+    "id": "DF010-C02",
+    "exactText": "Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route.",
+    "source": "docs/owner-amendment-2026-10-04.md:22",
+    "actual": "NOT_RUN",
+    "wholeCriterionAcceptance": false,
+    "residual": "EXACT_PER_CLAUSE_RECONCILIATION_REMAINS_REQUIRED"
+  },
+  "parentSuppliedIdentity": {
+    "productCommit": "4fea2809345823b3da8cf3f6b165babd5701d482",
+    "branch": "feat/S3-integrations",
+    "docsCommits": [
+      "a9cf491",
+      "559358b"
+    ],
+    "gitQueried": false
+  },
+  "sourceIdentities": [
+    {
+      "bytes": 27519,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/run-df010-c02.py",
+      "sha256": "d8f4aca6eda1d91be57ad561c7dbf7300d02d2f76b597aabcacbe6924f3dd864"
+    },
+    {
+      "bytes": 3229,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/execution-plan.proposed.json",
+      "sha256": "deb7337464fd3901dc19870e1f150c448a2e2188738d4b074a7aa66daf7a4cb4"
+    },
+    {
+      "bytes": 9538,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/README.md",
+      "sha256": "e15c63915f19344619722abf5e23817479f4bc7e41e0f8966331de8f94fa303b"
+    },
+    {
+      "bytes": 6436,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/source-delta.patch",
+      "sha256": "06eb401c6a25a3c5eb53f7be2c75db0591fc8570d2156401df97f50bf82efab0"
+    },
+    {
+      "bytes": 3048,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/literal-delta.json",
+      "sha256": "a83567a7423be2bb7b6ddc24c181f1ea9a1901f2ac2605e872f39b448fab74b6"
+    },
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/df010-c02-r1/source-manifest.json",
+      "bytes": 38823,
+      "sha256": "8e3bcfe11c94adea7aa67f4a30188e9feb5e96e48a98b45e8c196ec7eb8f6a76"
+    },
+    {
+      "path": "test/df010-c02-synthetic.test.mjs",
+      "bytes": 21368,
+      "lines": 257,
+      "sha256": "e742af01cfe4259cb1b27b3b9a355ac60da5c2e2bebca42b71c6a31693863c5b"
+    },
+    {
+      "path": "docs/ni6-canonical-integration-c1-df010-c02-r1-selection-2026-10-08.md",
+      "bytes": 4584,
+      "sha256": "b7cb0ec46a8f02032eeca1e91d5ab423b12d960e135fc046c96261c3c821a1d5"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.md",
+      "bytes": 6224,
+      "sha256": "9c797a99eab4596819c449e8be987b52585f8865d7359f57e3d8f02816f8e422"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-df010-c02-r1-author-source.json",
+      "bytes": 13673,
+      "sha256": "0b161731dbe4308e5a1124c5c47c89fa59ddedfb5a8eb9880cf0b72a0df6ab9d"
+    }
+  ],
+  "fullReadbacks": {
+    "selectedTest": "e42fdc",
+    "owningRunner": [
+      "1b8bb9",
+      "b2da9c",
+      "b8a805"
+    ],
+    "owningREADMEAndDelta": "9cad43",
+    "owningManifest": [
+      "9b8f31",
+      "9a5147",
+      "0b9aa6"
+    ],
+    "owningLiteralAndProposal": "7d741c",
+    "rootSelection": "19e465",
+    "authorMDJSON": "f70e40/6b473d",
+    "originalProposalMD": "29610e",
+    "originalProposalJSON": "c92b6d",
+    "originalInputPinsAndVerification": "e65edc",
+    "originalAddFilePatchTextuallyEqualsFullyReadSelectedTest": "fead35/093875",
+    "publicChat": "a24646",
+    "publicEvents": "66bd0a",
+    "publicSecurity": "e1e23f",
+    "ordinaryRuntimeStore": [
+      "77236b",
+      "37fb32"
+    ],
+    "ordinaryConsumerTests": [
+      "954e72",
+      "ec1d61",
+      "0ac1b1"
+    ],
+    "finalCoreSourceDesignMDs": "a63a43",
+    "finalCoreActualCODEISTQBMDs": "d41aa7",
+    "publicBuildAndCoreProofs": "2afcdb",
+    "externalSourceAndOriginalSeals": "886cda",
+    "allAffectedReadbacksUntruncated": true,
+    "initialCombinedOutputTruncatedThenRequiredFilesReread": true,
+    "AgentsAndOwnerWorkflow": "42724f/4a436a"
+  },
+  "semanticReadScope": {
+    "completeOrdinaryFiles": [
+      "test/df010-c02-synthetic.test.mjs",
+      "src/chat.mjs",
+      "src/events.mjs",
+      "src/runtime-security.mjs"
+    ],
+    "runtimeStoreWholeFileSemanticRead": false,
+    "runtimeStoreOpaquePin": {
+      "bytes": 347241,
+      "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+    },
+    "runtimeStoreRootAuthorizedOrdinaryRanges": [
+      {
+        "start": 2008,
+        "end": 2031,
+        "method": "configureSource"
+      },
+      {
+        "start": 2083,
+        "end": 2103,
+        "methods": [
+          "#eventBinding",
+          "#routeAssociation"
+        ]
+      },
+      {
+        "start": 2104,
+        "end": 2189,
+        "methods": [
+          "ingestEvent",
+          "#ingestEvent",
+          "#eventReceipt"
+        ]
+      },
+      {
+        "start": 2256,
+        "end": 2278,
+        "methods": [
+          "chatTask",
+          "chatControl"
+        ]
+      }
+    ],
+    "extraRuntimeStoreDeclarationOnly": {
+      "line": 2279,
+      "source": "ENDPOINT_INCLUDED_IN_ROOT_SUPPLIED_RANGE",
+      "bodyRead": false,
+      "interpreted": false
+    },
+    "runtimeStoreSearch": "EXACT_ANCHORED_DECLARATIONS_ONLY_FOR_TWO_ALREADY_REFERENCED_ORDINARY_HELPERS",
+    "claimGrantPlanSettlementBodiesRead": false,
+    "claimGrantPlanSettlementAuthority": "FULL_SELECTED_TEST_PLUS_EXISTING_PINNED_PUBLIC_CONSUMERS_AND_NORMALIZED_SPEC_ONLY",
+    "grantTableRead": false,
+    "consumerRanges": [
+      {
+        "path": "test/runtime-store.test.mjs",
+        "ranges": [
+          "1-27"
+        ]
+      },
+      {
+        "path": "test/chat.test.mjs",
+        "ranges": [
+          "1-168",
+          "216-254"
+        ]
+      },
+      {
+        "path": "test/event-adapters-adversarial.test.mjs",
+        "ranges": [
+          "203-247",
+          "334-347"
+        ]
+      }
+    ],
+    "ordinarySourceInference": "PROSPECTIVE_ORACLES_COHERENT_WITH_CURRENT_PUBLIC_CONSUMERS_AND_EXACT_EVENT_LEDGER_RANGES_NO_RUNTIME_CORRECTNESS_CLAIM"
+  },
+  "literalConservation": {
+    "rules": 10,
+    "occurrences": 11,
+    "eachExactOccurrenceCount": true,
+    "completeInverseEqualsConsumedCoreR2": true,
+    "normalizedCore": {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+      "bytes": 27666,
+      "sha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e"
+    },
+    "primitive": {
+      "bytes": 19279,
+      "sha256": "cd730157a1cb135eb5782eb5d7d54128d7af4103a2bc550e4bf0ada3d0eb6074",
+      "equalsCoreR2AndContractsR1": true
+    },
+    "allOtherMainTerminalWrapperBytesConserved": true,
+    "actualDiffEqualsEntireInertPatch": true,
+    "patchBytes": 6436,
+    "patchApplied": false,
+    "materializedTestEqualsOriginalInertSource": true,
+    "original257LineAddFilePatchTextConserved": true,
+    "sourceCopiesCreated": 0,
+    "candidateParsingEvaluationImportCheckBuildTest": false,
+    "toolChunks": [
+      "472b85",
+      "e3e455",
+      "617bb5",
+      "90798e",
+      "090cb1",
+      "54d65d",
+      "39fb0f",
+      "a894d9",
+      "fead35",
+      "093875"
+    ]
+  },
+  "closure": {
+    "independentCurrentByteHashRows": 160,
+    "allRowsMatch": true,
+    "inputs": 152,
+    "inputBytes": 3315861,
+    "inputPathsUnique": true,
+    "canonical65": 65,
+    "canonicalBytes": 1952632,
+    "canonicalAuthorityAndManifestRowsExact": true,
+    "canonicalSemanticsOutsideScope": "OPAQUE_HASH_ONLY",
+    "originalInputPins": 18,
+    "allOriginalPinsInUnionExactly": true,
+    "ownedFiles": 5,
+    "manifestSelfPinSeparate": true,
+    "authorProvenanceSlots": 2,
+    "independentReportSlots": 4,
+    "totalFutureReportSlots": 6,
+    "futureActualPins": 164,
+    "actualRootPlanSelfPinned": false,
+    "inertFuturePlanForecastBytesIncludingLF": 24162,
+    "inertForecastIsActualPlan": false,
+    "sourceExternalSealRows": 8,
+    "originalExternalSealRows": 7,
+    "allExternalRowsMatch": true,
+    "externalSealsSelfHashed": false,
+    "genuineBuildProofBound": true,
+    "buildProofGeneratedRecordsRootPlanExact": true,
+    "buildSyntaxTargets": 152,
+    "buildSyntaxTargetsExcludeNewTest": true,
+    "newTestSyntaxRuntimeValidity": "NOT_ESTABLISHED",
+    "finalCoreR2SourceCODEISTQBAndActualCODEISTQBPairsBound": true,
+    "currentnessQualification": "FINITE_OBSERVED_SOURCE_CUT_NOT_ATOMIC_OR_CONTINUOUS_LEASE",
+    "toolChunks": [
+      "e2227b",
+      "a1868d",
+      "886cda",
+      "172974",
+      "4b6f1e",
+      "fdb234"
+    ]
+  },
+  "meaningfulAssertions": [
+    {
+      "id": "T1",
+      "lines": "118-165",
+      "sourceResult": "NOT_RUN",
+      "oracles": [
+        "replace/add/remove thread changes",
+        "wrong-thread intake/status/control ROUTE_MISMATCH",
+        "old-channel CHAT_DELIVERY_ROUTE and changed-channel old-task ROUTE_MISMATCH before send callback",
+        "foreign owner snapshot refusal",
+        "same provider ID changed thread has distinct event/task and goal/receipt route digests",
+        "restored exact route deduplicates original",
+        "full public original task/actions/spec/digest/state/outcome/data/receipt/goal/authEpoch/effects deep equality"
+      ],
+      "limitations": [
+        "injected sent callback only",
+        "restored original pairing revision is not new pairing authority"
+      ]
+    },
+    {
+      "id": "T2",
+      "lines": "167-184",
+      "sourceResult": "NOT_RUN",
+      "oracles": [
+        "hold older normalization at explicit reached gate",
+        "change source route revision before later same-ID admission",
+        "complete later mode-none action before releasing older",
+        "older request STALE_SOURCE",
+        "one task/receipt/rate charge and later-state conservation",
+        "old-route status refusal"
+      ],
+      "limitations": [
+        "one deterministic await interleaving"
+      ]
+    },
+    {
+      "id": "T3",
+      "lines": "186-213",
+      "sourceResult": "NOT_RUN",
+      "oracles": [
+        "later-before-earlier distinct nonexpired IDs admit separate original goals",
+        "relative original observations and equal fixture receipt clock",
+        "exact complete identity hashes and identityLimit",
+        "both exact replays deduplicate without rate charge",
+        "older-timestamp same-ID changed content IDEMPOTENCY_CONFLICT",
+        "reopen and reverse replay conserve completed original action/goal/receipt/effect"
+      ],
+      "limitations": [
+        "no provider total order",
+        "effect array retained in memory across reopen"
+      ]
+    },
+    {
+      "id": "T4",
+      "lines": "215-228",
+      "sourceResult": "NOT_RUN",
+      "oracles": [
+        "pre-original delete/edit EVENT_MUTATION_DENIED and zero tasks/receipts/rate",
+        "later original admission remains possible",
+        "late edit/delete EVENT_MUTATION_DENIED",
+        "changed-content same-ID IDEMPOTENCY_CONFLICT",
+        "exact original dedup with full conservation"
+      ],
+      "limitations": [
+        "explicit mutation denial rather than provider revision/tombstone implementation"
+      ]
+    },
+    {
+      "id": "T5",
+      "lines": "230-244",
+      "sourceResult": "NOT_RUN",
+      "oracles": [
+        "first-seen age10001 EVENT_EXPIRED",
+        "distinct first-seen age10000 admitted",
+        "known exact expired duplicate reconciles receipt",
+        "expired changed-content same-ID IDEMPOTENCY_CONFLICT",
+        "conserved original and no extra effect/rate"
+      ],
+      "limitations": [
+        "existing duplicate reconciliation does not renew authorization or create new admission"
+      ]
+    },
+    {
+      "id": "T6",
+      "lines": "246-257",
+      "sourceResult": "NOT_RUN",
+      "oracles": [
+        "newer pause increments version once",
+        "pre-pause older cancel STALE_VERSION",
+        "exact pause duplicate retains accepted version",
+        "full paused/current authority/action/goal/receipt/effect conservation"
+      ],
+      "limitations": [
+        "no native running-worker cancellation oracle"
+      ]
+    }
+  ],
+  "isolationAndEffects": {
+    "newSyntheticDirectories": 8,
+    "sameDatabaseReopens": 1,
+    "freshOpaquePrincipals": true,
+    "independentPayloadTicketAndProviderMessageId": true,
+    "payloadDigestBoundPrivateIssuedFacts": true,
+    "fakeClock": true,
+    "ordinaryExecutorMode": "none",
+    "syntheticEffect": "SYNCHRONOUS_ARRAY_APPEND_ONLY",
+    "anticipatedAppends": 8,
+    "anticipatedInjectedSendCallbacks": 6,
+    "nativeWorkerProviderModelAccountListenerCLIExternalEffects": 0,
+    "selectedCommands": 1,
+    "selectedNodeFiles": 1,
+    "testConcurrency": 1,
+    "maximumInterpreterStarts": 3,
+    "maximumLiveInterpreters": 3,
+    "maximumNodeFileWorkers": 1,
+    "maximumNestedStarts": 0,
+    "maximumLiveNestedChildren": 0,
+    "retainedChildKillCallbacks": 0,
+    "countsAuthority": "SOURCE_DERIVED_NOT_INSTRUMENTED",
+    "topLevelDeclarations": 6,
+    "explicitThreadSubtests": 3,
+    "anticipatedAggregateTests": 9,
+    "actualAggregateTests": null,
+    "topLevelTimeoutSeconds": 5,
+    "capsuleMode": "700",
+    "capsuleObservedOwner": 501,
+    "exactSymlinkTargetsMatch": true,
+    "forbiddenEnvironmentNamesAbsent": 10,
+    "actualDestinationsCheckedAbsent": 8,
+    "assignedReportDestinationsCheckedAbsent": 2,
+    "toolChunks": [
+      "8424a8",
+      "8f408b",
+      "1f1aa9",
+      "6affb3",
+      "54b093",
+      "b42319"
+    ]
+  },
+  "ownerGuards": {
+    "budgetsSeconds": {
+      "bookkeepingInsideCommand": 1,
+      "cleanupInsideCommand": 5,
+      "commandTotal": 60,
+      "finalReserveInsideOuter": 5,
+      "outer": 90,
+      "preflight": 20,
+      "primaryAbsoluteEnd": 85
+    },
+    "streamCaps": {
+      "stdout": 131072,
+      "stderr": 131072,
+      "aggregate": 262144,
+      "publicRecord": 65536,
+      "fixtureHeapUniversalBound": false
+    },
+    "onceMarker": "EXCLUSIVE_FRESH_CONSUMED_ON_ATTEMPT_NO_REPLAY",
+    "sourcePlanBuildEvidenceGuardsConserved": true,
+    "stopFirstFailureSignalDenialNoRetargetCleanupGuardsConserved": true,
+    "footer": "ORIGINAL_OWNER_ONLY_FROM_COMPLETE_IDENTITY_BOUND_STDOUT_ALREADY_IN_MEMORY_UNIQUE_ORDERED_CLOSED_FIELDS",
+    "passJointOracles": [
+      "supported original outer driver EXIT0",
+      "exact Node command EXIT0",
+      "complete bounded original capture readback and both EOFs",
+      "owned-group ABSENT_OBSERVED",
+      "tests>0/pass=tests/fail=cancelled=skipped=todo=0",
+      "pre/post/final exact pin/plan/build authority and evidence identity",
+      "unchanged outside-BaseException terminal wrapper final return"
+    ],
+    "inheritedDriverFlagQualification": "Consumed core-r2 actual proof uses python3 -I; its descriptive plan.driverArgv and this derivative proposal omit -I. Owner gates script/cwd/plan/executable, not outer flag equality. Root must retain exact actual supported argv/return; no consumed record was changed.",
+    "faultBranches": "NOT_RUN",
+    "finalEnclosingDuration": "NOT_ESTABLISHED"
+  },
+  "findings": [],
+  "materialSourceBlocker": false,
+  "qualifications": [
+    "SOURCE_ONLY verdict is not syntax, import, runtime, external-delivery or whole-criterion acceptance.",
+    "Public synthetic action conservation includes observable spec/digest/state/outcome and task authority epoch; it is not an internal grant-table or protected CODE audit.",
+    "Callback sent route probes are not delivered/currently accessible or ResultPipeline outbox evidence.",
+    "Aggregate anticipated9 cannot substitute for six-family/three-thread-source assertions and actual independent assessments.",
+    "Closure hashes are opaque outside the expressly bounded ordinary semantic reads.",
+    "Known historical original proposal protected-snippet exposure and author pathname-only exposure remain disclosed; no snippets/private pathnames were repeated or interpreted here."
+  ],
+  "excluded": [
+    "protected final CODE receipt/signature/envelope/revision999 semantics",
+    "normal-native capture/finish implementation bodies",
+    "private profile/key/database/history/capture/error/response content",
+    "live provider/account/model/native/browser/listener/CLI or external effects",
+    "shared QA/3080",
+    "cancelled4da34a6d NEVER_EXECUTE",
+    "denied cloud NO_RETRY and unsupported browser/locked Mac NO_WORKAROUND",
+    "installed DSH/Desktop/main/remotes/push/publication"
+  ],
+  "process": {
+    "writes": "ASSIGNED_FRESH_EXCLUSIVE_MD_JSON_PAIR_ONLY",
+    "noExistingSourceEvidenceChanged": true,
+    "reviewStartsOfCandidateOrOwner": 0,
+    "runtime": false,
+    "Git": false,
+    "network": false,
+    "cloud": false,
+    "model": false,
+    "browser": false,
+    "delegation": false,
+    "privateContentReadCopiedHashedDecoded": false,
+    "newProtectedSemanticRead": false,
+    "sourceCopies": false,
+    "sealFileSelfHash": false,
+    "finalPairFullReadbackRequired": true,
+    "externalSeals": "TOOL_RETURN_AFTER_FULL_REPORT_READBACK_NOT_EMBEDDED_SELF_HASH"
+  },
+  "remaining": [
+    "separate final independent ISTQB design review",
+    "root complete final read/seal/once supported selection",
+    "candidate syntax/runtime validity and actual selected assertions NOT_RUN",
+    "independent actual CODE and ISTQB evidence assessments",
+    "exact complete DF010-C02 per-clause reconciliation and all unrelated MVP residuals",
+    "negative owner/parser/deadline/drift/overflow/interruption/capture/group/final exception partitions NOT_RUN"
+  ]
+}
