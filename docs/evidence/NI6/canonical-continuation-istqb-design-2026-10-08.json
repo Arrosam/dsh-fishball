@@ -1,0 +1,632 @@
+{
+  "schema": "df.canonical-continuation-istqb-design/v1",
+  "date": "2026-10-08",
+  "status": "SOURCE_ONLY_DESIGN_READY_FOR_FRESH_FIXTURE_REVIEW",
+  "reviewer": {
+    "task": "/root/r7b_transport_test_review",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "language": "English",
+    "independentOfAuthorAndCodeReviewer": true
+  },
+  "outcome": {
+    "materialDesignBlockers": [],
+    "runtimeExecuted": false,
+    "buildExecuted": false,
+    "executionGO": false,
+    "acceptanceGO": false,
+    "publicationGO": false,
+    "overallAcceptance": "HOLD",
+    "complete87RowReconciliation": "SEPARATE_POST_ACTUAL_ASSESSMENT_BY_NEWEST_ROOT_COORDINATION"
+  },
+  "sourceBasis": {
+    "freezeCommitParentReported": "3981f2f5f70e5063ed82ca910545e30bf5ff0682",
+    "baselineParentReported": "ceab2700e103a02baa0189de04819b432475950e",
+    "gitQueried": false,
+    "canonicalGraph": {
+      "selected": 65,
+      "identicalUntouched": 25,
+      "replacements": 21,
+      "additions": 19,
+      "changedCanonicalPaths": 40,
+      "sourceAndTargetBytes": 1952632,
+      "preExistingCanonicalPaths": 46,
+      "preExistingCanonicalBytes": 1506872
+    },
+    "conservation": "EXACT_R13_GRAPH_FROM_AUTHOR_AND_SEALED_MAP_NOT_OLD_CANONICAL_PROTECTED_EQUALITY",
+    "canonicalGraphRepeatAudit": false,
+    "copiedBuildArtifactsAreNewBuild": false,
+    "opaqueSemanticsReviewed": false,
+    "r13Replay": false
+  },
+  "inputs": [
+    {
+      "path": "docs/ni6-canonical-integration-c1-freeze-2026-10-08.md",
+      "bytes": 8806,
+      "sha256": "86d0ad4608efedaded09a66fd1cd34d7e39a288e7e09c7551463ed2d49c6608f"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-ordinary-wiring-selection-2026-10-08.md",
+      "bytes": 9815,
+      "sha256": "19f917b8017baa000a6a2c780dbd5cf8fecd949d26deffabd9547e78dbae80ff"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-ordinary-wiring-selection-2026-10-08.json",
+      "bytes": 22288,
+      "sha256": "7725b06dacc00522b86b29b70b3815e81587dc9ff19f7c66955255e4a30fdeed"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-author-source.md",
+      "bytes": 2815,
+      "sha256": "28edd2943e0e616c850ccbb184e8f5fd69d604bfa23f3531492ef52297a85b1d"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-author-source.json",
+      "bytes": 44037,
+      "sha256": "f61a9d8f6932e1f90ab5e878e7b155adf47e0b7c1fcc431bb67861181c549c86"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r13-actual-return.json",
+      "bytes": 19180,
+      "sha256": "41f5872b76203d6710baa3aad1e4cc483130e8678cd961a6584d6cac5b94ece4"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r13-independent-test-design-review.md",
+      "bytes": 12353,
+      "sha256": "8dfdbfeb8347fb4f4e3551a6c924489de015fc5a8d57677ca8f0affc3dabc03a"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r13-independent-test-design-review.json",
+      "bytes": 16629,
+      "sha256": "23281e86cdf4ec50e67cf58199fe9ce04e46accc99f34f86934bb798d0efa03e"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r13-independent-actual-test-assessment.md",
+      "bytes": 12206,
+      "sha256": "f90480ac38d4b9ad3057b35da863ffd8d915412f1009cbd2571b9be520518671"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r13-independent-actual-test-assessment.json",
+      "bytes": 22857,
+      "sha256": "b86647122abbb83e1ccb086f4a9f99a5db673529cac8a47946a693d9baa1f4e0"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "path": "docs/reference/approved-ticket-review.zh.txt",
+      "bytes": 45578,
+      "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3"
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "bytes": 5304,
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+    },
+    {
+      "path": "docs/acceptance-traceability.md",
+      "bytes": 37983,
+      "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64"
+    },
+    {
+      "path": "docs/normal-entry-integration-plan.md",
+      "bytes": 13532,
+      "sha256": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0"
+    },
+    {
+      "path": "docs/compatibility.md",
+      "bytes": 4073,
+      "sha256": "5ad7d101eb8a9766e63e95616cec7a711b549290e2c3441338926b18e3f209fe"
+    },
+    {
+      "path": "docs/development-workflow.md",
+      "bytes": 4700,
+      "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7"
+    },
+    {
+      "path": "docs/three-stage-development.md",
+      "bytes": 7220,
+      "sha256": "6b223ab045f941ce7224f5831cb30d7c95f617d37cfbff75bd541b5d2c245a9b"
+    },
+    {
+      "path": "package.json",
+      "bytes": 2691,
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1064,
+      "sha256": "e65cdd31ae4a1bbbb2ff700b6e12c2317de385c355af15c4d473ead81468a6fa"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "bytes": 3057,
+      "sha256": "1d2774c8a7b25728afda591265f1d46509eefc3f0437448fbe9625ca1a99f182"
+    },
+    {
+      "path": "scripts/dsh-web.mjs",
+      "bytes": 5557,
+      "sha256": "c2e263b24529bec25815aac00ed3750b8eb1410971e6f7390ce4579361d9c686"
+    },
+    {
+      "path": "scripts/web-profile-smoke.mjs",
+      "bytes": 1737,
+      "sha256": "4a5820aa6b60b0a155e8197a6dd6ca93ef59921e8ff9e1a40e83eb9ba49bdf0c"
+    },
+    {
+      "path": "src/installed-plugin.mjs",
+      "bytes": 10275,
+      "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+    },
+    {
+      "path": "src/operator-bridge.mjs",
+      "bytes": 9944,
+      "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+    },
+    {
+      "path": "src/normal-native-operations.mjs",
+      "bytes": 20496,
+      "sha256": "c6c2b7c4ec7aa7d8a6d7e00d9c078484e3797aa8fcbc9d953d82ffd3803cdfa7"
+    },
+    {
+      "path": "src/setup-state.mjs",
+      "bytes": 20740,
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+    },
+    {
+      "path": "src/config.mjs",
+      "bytes": 2918,
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "path": "test/native-request-current.test.mjs",
+      "bytes": 9064,
+      "sha256": "48c48575535328e32641330237d087d44e15373477e82e9aa471d48b663d93ba"
+    },
+    {
+      "path": "docs/evidence/M6/normal-native-lifecycle.md",
+      "bytes": 13634,
+      "sha256": "62381a96c095273adec6ca3791cdc66140ea824a9df34c59584075d43bc9b25e"
+    },
+    {
+      "path": "docs/evidence/M6/normal-native-initial-constructor-failure-state.json",
+      "bytes": 530,
+      "sha256": "772ba1b19c5debc856bb9dc9bb0e8edb62a5e213fd619133efb633352a544781"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/bin.js",
+      "bytes": 11697,
+      "sha256": "1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+      "bytes": 12593,
+      "sha256": "c394b2aa2ce08a3b1fcc8c544257c7d689dd4d0b1cfaf8602687e65eeaba5aa1"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/startup.js",
+      "bytes": 3456,
+      "sha256": "4568ec210759973d102a07402e9dfe42eb448543d49e4a701f4861a8bb3a6694"
+    }
+  ],
+  "caseCounts": {
+    "workerNamedGroups": 39,
+    "retainedC": 23,
+    "header": 3,
+    "projection": 12,
+    "stream": 8,
+    "retainedF": 5,
+    "retainedG": 5,
+    "retainedL": 5,
+    "cleanupPredicateAssertions": 20,
+    "addedDuplicateExecutionCase": 1,
+    "cliCaseSets": 3,
+    "cliStartsMaximum": 4,
+    "concurrentCLIStartsMaximum": 1,
+    "canonicalBuildCommandsProposed": 4,
+    "selectedRuntimeCaseSets": 4
+  },
+  "buildPreparation": {
+    "status": "NOT_RUN",
+    "commands": [
+      "existing canonical syntax check",
+      "existing actual client producer",
+      "same client producer --check",
+      "public Python native descriptor producer"
+    ],
+    "rootFreezesExactArgumentsOutputsAndDeadlineSeparately": true,
+    "noInstallDownloadDependencyOrLifecycle": true
+  },
+  "worker": {
+    "id": "W01",
+    "status": "NOT_RUN",
+    "sourcePaths": [
+      ".runtime/ni6-canonical-integration-c1/validation/worker/fixture.mjs",
+      ".runtime/ni6-canonical-integration-c1/validation/worker/run-once.py",
+      ".runtime/ni6-canonical-integration-c1/validation/worker/execution-plan.proposed.json"
+    ],
+    "productBinding": "current actual canonical product and newly sealed build outputs; no old capsule invocation",
+    "drivers": 1,
+    "nodeChildrenSequential": 2,
+    "workSeconds": 24,
+    "finalSeconds": 30,
+    "cleanupSeconds": 5,
+    "outerSeconds": 90,
+    "maximumHTTP": 26,
+    "originalHTTP": 25,
+    "addedExpectedRefusalHTTP": 1,
+    "tasks": 1,
+    "workers": 1,
+    "requests": 1,
+    "streams": 1,
+    "turns": 1,
+    "steps": 1,
+    "tools": 0,
+    "externalInference": 0,
+    "duplicate": {
+      "id": "N01",
+      "when": "after original acknowledged execute, before capture",
+      "request": "same exact request with current task/auth versions and unchanged bindings",
+      "expectedPublicCode": "WORKER_EXECUTION_ALREADY_SUBMITTED",
+      "wrongBindingStaleGenericTimeoutOrSecondRequestFails": true,
+      "firstUnexpectedFailurePreserved": true,
+      "noDiagnosticFieldAddedIfSequentialCompleteProvesReach": true
+    },
+    "retainedOracles": [
+      "all original C23/F5/G5/L5 and20 cleanup predicate assertions",
+      "original producer instances, pushes, snapshots and borrowed input conservation",
+      "genuine owner identity/source/descriptor/currentness/consent/CAS/context/memory",
+      "exact actual request/result and committed persistence/source/usage/disposition",
+      "guarded finish and factual owned stop before cleanup",
+      "exact agent/session absence and reservationHeld=false authoritative release",
+      "paired created/disposed counts, preset release, six once verified terminal Loader removals/absence",
+      "Cordis post-disposal404 and strict original-object rootCleanup=RESTARTED",
+      "first failure/origin latch before destructive cleanup, bounded callbacks and late settlement",
+      "original supported driver exit0 independently captured; EOF and marker alone insufficient"
+    ],
+    "diagnostic": {
+      "closedFields": 36,
+      "phases": 55,
+      "worstCompactIncludingLF": 878,
+      "worstPrettyIncludingLF": 1023,
+      "cap": 1024,
+      "readMaximum": 1025,
+      "prettyHeadroom": 1,
+      "rederiveOnAnyFixtureChange": true
+    },
+    "selectedTimersMs": {
+      "executeHTTP": 10000,
+      "executeRPC": 10500,
+      "finishHTTP": 10000,
+      "finishRPC": 10500,
+      "otherHTTP": 2000,
+      "otherRPC": 2500
+    },
+    "controlCoverageLimit": "finite synthetic controls are not exhaustive real callbacks/provider/network/races"
+  },
+  "cli": {
+    "status": "NOT_RUN",
+    "sourcePaths": [
+      ".runtime/ni6-canonical-integration-c1/validation/cli/lifecycle-driver.py",
+      ".runtime/ni6-canonical-integration-c1/validation/cli/observer.mjs",
+      ".runtime/ni6-canonical-integration-c1/validation/cli/execution-plan.proposed.json"
+    ],
+    "route": {
+      "node": "pinned Node22.22.2",
+      "cli": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/bin.js",
+      "arguments": [
+        "--profile",
+        "web",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "0",
+        "--no-open"
+      ],
+      "port0SupportedByOriginalSource": true,
+      "portDiscovery": "readonly observer of original assigned listener port; no network polling/scanning",
+      "originalAuthConnectionCredentialProviderProfileContext": true,
+      "noHostMethodWrapOrSubstitute": true,
+      "realModelAccountTitleProvidersDisabled": true,
+      "browserOpenPrintURLAndTelemetryDisabled": true,
+      "ambientEnvironmentNotInherited": true
+    },
+    "familyOuterSeconds": 180,
+    "caseCeilingsSumSeconds": 170,
+    "familyCleanupReserveSeconds": 10,
+    "caseDriversSeparate": true,
+    "positive120DoesNotIncludeNegatives": true,
+    "maximumHTTP": 48,
+    "providerNativeWorkerModelToolExternalAttempts": 0,
+    "caseRoots": {
+      "positive": ".runtime/ni6-canonical-integration-c1/validation/cli/cases/positive",
+      "disabled": ".runtime/ni6-canonical-integration-c1/validation/cli/cases/disabled",
+      "invalid": ".runtime/ni6-canonical-integration-c1/validation/cli/cases/invalid"
+    },
+    "caseLeaves": [
+      "home",
+      "agents",
+      "workspace",
+      "private",
+      "public"
+    ],
+    "physicalProductRelative": "home/profiles/web/node_modules/dsh-fishball",
+    "privateDirectoriesMode": "0700",
+    "privateFilesMode": "0600",
+    "nativeProfileMode": "reviewed original allowed non-foreign-writable mode",
+    "symlinkOrForeignAncestorRefuses": true,
+    "signal": "SIGTERM once to retained actually created owned PID/group; ownership unknown or denied stops that action",
+    "globalScansOrUnrelatedKills": false,
+    "cases": [
+      {
+        "id": "Q01",
+        "status": "NOT_RUN",
+        "driverSeconds": 120,
+        "starts": 2,
+        "maxHTTP": 32,
+        "perProcessHTTP": [
+          20,
+          12
+        ],
+        "perProcessBootSeconds": 15,
+        "perProcessRPCObservationSeconds": 20,
+        "perProcessStopSeconds": 8,
+        "finalCleanupSecondsInsideDriver": 10,
+        "databaseRelative": "home/profiles/web/df-data/runtime.sqlite",
+        "optionalWorkerAuditAutomationResults": "disabled; no second native execution",
+        "oracles": [
+          "authentic anonymous/forged/foreign-origin denials and admitted operator",
+          "setup_required/status/preview before consent with declared DF leaves absent",
+          "exact prepared consent then one task, complete-source duplicate stays one task, paused current version/auth",
+          "genuine DF setup/runtime/owned-child terminal UID/state/absence and admission fence observed at defined disposal cut",
+          "observer completion plus actual original process/group/listener absence and complete EOF; exit0 insufficient",
+          "restart only after original process/group/listener absence",
+          "same owned store/namespace/setup identity metadata and paused task/version/source dedup via public original authenticated RPC",
+          "no automatic action/worker/request/stream/message/schedule replay before reconcile/admission",
+          "second process same full quit oracle"
+        ],
+        "limits": [
+          "idle/base-ledger lifecycle, not active worker crash or uncertain effect recovery",
+          "browser-close and visual state unrun",
+          "no third uninstall/reload process",
+          "observer own disposed flag alone insufficient",
+          "original five-second forced exit can also return0"
+        ]
+      },
+      {
+        "id": "Q02",
+        "status": "NOT_RUN",
+        "driverSeconds": 25,
+        "starts": 1,
+        "maxHTTP": 8,
+        "sharedBootObservationRPCSeconds": 15,
+        "stopSeconds": 8,
+        "recordSeconds": 2,
+        "selection": "original Loader disabled DF entry; no invented installed enabled field",
+        "oracles": [
+          "disabled selected entry",
+          "no DF setup/runtime service or route",
+          "all work counters0",
+          "exact declared DB/setup namespace leaves absent",
+          "owned stop/group/listener/EOF completion"
+        ]
+      },
+      {
+        "id": "Q03",
+        "status": "NOT_RUN",
+        "driverSeconds": 25,
+        "starts": 1,
+        "maxHTTP": 8,
+        "sharedBootObservationRPCSeconds": 15,
+        "stopSeconds": 8,
+        "recordSeconds": 2,
+        "databaseRelative": "home/profiles/web/df-invalid.sqlite",
+        "relativeDepth": 1,
+        "outsideOwnedRootTarget": false,
+        "sourceExpectedCode": "SETUP_UNAVAILABLE",
+        "observedCodeRule": "literal original public host code only; otherwise NOT_OBSERVED, never stderr/error text parse",
+        "oracles": [
+          "failed selected original entry",
+          "setup/runtime unavailable and DF routes absent",
+          "all work counters0",
+          "exact DB/setup namespace leaves absent before any DF write",
+          "owned stop/group/listener/EOF completion"
+        ]
+      }
+    ],
+    "missingRouteOracle": "full original Web fallback is separate from W01 Cordis404; stopped listener gives connection failure",
+    "originalExit0Insufficient": true,
+    "rootUidNullOrLoaderReloadNotApplicationQuitOracle": true
+  },
+  "outputCaps": {
+    "workerResult": 1024,
+    "workerReadMaximum": 1025,
+    "cliCaseResult": 4096,
+    "cliCaseReadMaximum": 4097,
+    "commandsAndExecutor": 16384,
+    "beforeAfter": 4096,
+    "compactSelectedPlan": 65536,
+    "privateChildStdout": 65536,
+    "privateChildStderr": 65536,
+    "overflowFailsClosed": true,
+    "publicContent": "fixed codes/phases, bounded counters/booleans and executor-produced equalities/absence; no raw payload/error/key/auth/history/database",
+    "privateCaptureAccess": "owning executor only; reviewers/root use bounded public metadata"
+  },
+  "preExecutionDependencies": [
+    "root exact new fixture/source/plan freeze",
+    "fresh source final affected code and ISTQB fixture reviews with external seals",
+    "actual existing build producers/outputs independently bound after supported action selection",
+    "closed output validators and maximum bounds independently read",
+    "owned paths/type/mode/symlink/port/process handles and original environment source reviewed",
+    "all runtime GO flags false and review pins empty until root alone selects supported action",
+    "original supported direct return captured before optional processing; nonzero or uncertain remains HOLD"
+  ],
+  "preliminaryCriterionProposals": [
+    {
+      "id": "BUB001-05",
+      "status": "PASS",
+      "basis": "whole documentary version/configuration compatibility matrix: Web pinned, Desktop excluded, interactive/non-Web CLI unverified; no cross-mode inference",
+      "evidence": [
+        "docs/compatibility.md"
+      ],
+      "newRuntimePass": false
+    },
+    {
+      "id": "BUB016-06",
+      "status": "PASS",
+      "basis": "current package private0.1.0-preview.1, owner-only stable policy, selected script surface has no automatic release/channel switch",
+      "evidence": [
+        "package.json",
+        "AGENTS.md",
+        "docs/ni6-canonical-integration-c1-freeze-2026-10-08.md"
+      ],
+      "futureReleaseGO": false
+    },
+    {
+      "id": "BUB015-02",
+      "status": "PARTIAL",
+      "residual": "bind final C1 independent author/code/ISTQB identity and exact final reviewed pins; no self-sign substitute"
+    },
+    {
+      "id": "BUB001-04",
+      "status": "PARTIAL",
+      "residual": "actual Q01 full application idle quit/restart NOT_RUN; browser-close host-state check BLOCKED"
+    },
+    {
+      "id": "BUB004-03",
+      "status": "PARTIAL",
+      "residual": "genuine existing native session resume+work and absent/foreign refusal not selected; R13 new worker is insufficient"
+    },
+    {
+      "id": "BUB003-01",
+      "status": "PARTIAL",
+      "residual": "all four crash cut points and uncertain external-effect reconciliation not selected"
+    },
+    {
+      "id": "BUB014-04",
+      "status": "BLOCKED",
+      "residual": "supported actual browser resize/Chinese/keyboard/focus/loading/error oracle absent"
+    },
+    {
+      "id": "BUB016-02",
+      "status": "PARTIAL",
+      "residual": "full applicable native chain/security/memory/events/UI/result acceptance exceeds fresh worker plus idle CLI cases"
+    },
+    {
+      "id": "BUB016-03",
+      "status": "PARTIAL",
+      "residual": "active/unknown quit, upgrade, revoke, export/delete and full resources matrix remain"
+    },
+    {
+      "id": "BUB010-01",
+      "status": "OUT_OF_PHASE",
+      "applicability": "actual provider/platform portion only; provider-neutral duties retained by DF010-C01..C05"
+    },
+    {
+      "id": "BUB010-02",
+      "status": "OUT_OF_PHASE",
+      "applicability": "actual provider/platform portion only; provider-neutral duties retained by DF010-C01..C05"
+    },
+    {
+      "id": "BUB010-03",
+      "status": "OUT_OF_PHASE",
+      "applicability": "actual provider/platform portion only; provider-neutral duties retained by DF010-C01..C05"
+    },
+    {
+      "id": "BUB010-04",
+      "status": "OUT_OF_PHASE",
+      "applicability": "actual provider/platform portion only; provider-neutral duties retained by DF010-C01..C05"
+    },
+    {
+      "id": "BUB010-05",
+      "status": "OUT_OF_PHASE",
+      "applicability": "actual provider/platform portion only; provider-neutral duties retained by DF010-C01..C05"
+    },
+    {
+      "id": "DF010-C01",
+      "status": "PARTIAL",
+      "residual": "exact existing synthetic adapter evidence-to-current-source binding and any residual current contract oracle; no live provider prerequisite"
+    },
+    {
+      "id": "DF010-C02",
+      "status": "PARTIAL",
+      "residual": "exact existing synthetic adapter evidence-to-current-source binding and any residual current contract oracle; no live provider prerequisite"
+    },
+    {
+      "id": "DF010-C03",
+      "status": "PARTIAL",
+      "residual": "exact existing synthetic adapter evidence-to-current-source binding and any residual current contract oracle; no live provider prerequisite"
+    },
+    {
+      "id": "DF010-C04",
+      "status": "PARTIAL",
+      "residual": "exact existing synthetic adapter evidence-to-current-source binding and any residual current contract oracle; no live provider prerequisite"
+    },
+    {
+      "id": "DF010-C05",
+      "status": "PARTIAL",
+      "residual": "exact existing synthetic adapter evidence-to-current-source binding and any residual current contract oracle; no live provider prerequisite"
+    }
+  ],
+  "criterionReconciliation": {
+    "exactOriginalCriteria": 82,
+    "currentProviderNeutralCriteria": 5,
+    "retainedTotal": 87,
+    "primaryAndTicketApprovedTextReconciled": true,
+    "BUB007ABParentIdsRetained": 6,
+    "all87HOLDNotMechanicallyCopied": true,
+    "full87RowsDeferredToSeparatePostActualAssessment": true,
+    "PASSRule": "whole exact owner-amended criterion met by actual relevant evidence; planned tests never PASS",
+    "otherStatusOptions": [
+      "PARTIAL",
+      "NOT_RUN",
+      "BLOCKED",
+      "OUT_OF_PHASE"
+    ],
+    "overallAcceptance": "HOLD"
+  },
+  "remainingUnrun": [
+    "negative terminal wrapper returned1/exception/stop/deadline",
+    "active-worker actual full quit and unknown effect recovery/no replay at all four cuts",
+    "existing native session resume",
+    "all creation/cancel/disconnect/transport/provider/last-slot races",
+    "complete storage corruption/diskfull/migration/export/delete matrix",
+    "supported browser whole visual/functional acceptance",
+    "full installed aggregate/product acceptance"
+  ],
+  "retainedBlocks": {
+    "protectedFinalCODE": "BLOCKED_UNCHANGED",
+    "browser": "SUPPORTED_ROUTE_UNAVAILABLE_NO_CORRECTED_HANDOFF; additional Mac lock; no Browser LUA/native/CDP/proxy route or new probe",
+    "LunaModelBlanketBan": false,
+    "cloud": "DENIED_TWICE_NO_THIRD_ATTEMPT",
+    "cancelled4da34a6d": "NEVER_EXECUTE",
+    "sharedQAAndPort3080": "UNTOUCHED",
+    "mainDraftsHistoricalReportsR13": "UNTOUCHED",
+    "remotePublicationStable": "NO_GO"
+  },
+  "performed": {
+    "publicInertReadsJSONMetadataHashesOnly": true,
+    "candidateParseImportCheckBuildTestRun": false,
+    "producerHelperEvaluation": false,
+    "runtimeNetworkModelBrowserCloud": false,
+    "credentialOrPrivateContentReadCopyDecodeHashEnumeration": false,
+    "opaqueCaptureFinishOrProtectedCODEInspection": false,
+    "gitOrCanonicalMutation": false,
+    "delegation": false,
+    "assignedReportPairOnly": true
+  },
+  "reportPair": {
+    "markdown": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.md",
+    "json": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.json",
+    "creation": "O_EXCL|O_NOFOLLOW; both exact destinations absent before creation",
+    "fullReadbackRequired": true,
+    "externalFinalSealsRequired": true,
+    "recursiveSelfHash": false
+  },
+  "markdownContent": {
+    "bytes": 17324,
+    "sha256": "7bca4bd76bddb98f5fea70ab17acf3f0478ea9342e97dcff8ba42501c97e4683"
+  }
+}

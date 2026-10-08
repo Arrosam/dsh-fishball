@@ -1,0 +1,13 @@
+# C1 root source checkpoint — 2026-10-08
+
+Canonical incorporation is complete on local branch `feat/S3-integrations`, with HEAD `3981f2f5f70e5063ed82ca910545e30bf5ff0682`. The source changes remain uncommitted pending fresh validation. All65 selected files (1,952,632 bytes) match frozen R13 source exactly:25 retained,21 replacements,19 additions. This is conservation from R13 and coherent canonical wiring; it does not establish old canonical protected-region equality or close excluded final semantic review.
+
+Root fully read the final ordinary CODE pair and final independent ISTQB design pair, checked their external byte/SHA seals, and independently verified the current canonical65 records against the CODE pair. The supplied unrelated draft seals remain exact. Original read/check returns are `fc6b1f`, `7c8824`, `26c5d9`, `6821d0` and `b50637`, all exit0 and complete; the individual outputs were bounded rather than a truncated aggregate read. The earlier author JSON aggregate display was corrected through complete two-part reads before this checkpoint.
+
+The final ordinary CODE verdict is NO_MATERIAL_ORDINARY_SOURCE_BLOCKER_SOURCE_ONLY_NOT_VALIDATED. The independent ISTQB design has no material design blocker. Neither report grants execution or acceptance GO. The fully read validation selection is `docs/ni6-canonical-integration-c1-validation-freeze-2026-10-08.md`,8412 bytes, SHA256 `22c58bfc7a9af511394ddcb8dd6d2bd04c3223e39b147540559ecf4f2d1c777e`.
+
+Next selected units are a fresh four-command canonical build, canonical synthetic worker with one duplicate-execute refusal (39 groups,26HTTP maximum), and original installed CLI positive quit/restart plus disabled/invalid configuration cases (four sequential starts,48HTTP maximum). Their final helpers/fixtures/plans still require affected independent reviews and root supported once selection. No canonical build, check, module load, test, listener, CLI or model was run for this checkpoint. Prior consumed R13 is immutable and is not current canonical validation.
+
+Current final CODE/opaque semantic review remains unresolved. UI QA remains paused for supported browser capability absence and Mac lock; no browser probe or corrected handoff occurred. Shared QA, port3080 and cancelled4da34a6d are untouched. Twice-denied real-model transmission remains paused, with no third attempt. Main remains `3b136e1ab264040b535c1e787b89f659328b30c4`, remotes0 and indexempty at the physical check. No merge, push, publication, stable release or overall acceptance follows.
+
+Individual full criteria will be reconciled against actual relevant evidence rather than inheriting a blanket historical87HOLD. Overall acceptance remains HOLD while required functional, visual and review evidence is incomplete.

@@ -1,0 +1,478 @@
+{
+  "schema": "df.canonical-ordinary-wiring-selection/v1",
+  "date": "2026-10-08",
+  "role": "Independent read-only Sol6.1 max ordinary interface/wiring assessment",
+  "basis": {
+    "repository": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+    "head": "ceab2700e103a02baa0189de04819b432475950e",
+    "headQualification": "Parent-reported only; no Git query",
+    "branch": "feat/S3-integrations",
+    "manifest": {
+      "path": ".runtime/ni6-positive-one-worker-r13/source-manifest.json",
+      "bytes": 419964,
+      "sha256": "b46a77d8d84d2c29e82ee10ae5d09dcda70fba6892855b342edccc79c84dda32"
+    },
+    "authority": [
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+      },
+      {
+        "path": "docs/owner-normal-entry-continuation-2026-10-04.md",
+        "bytes": 2024,
+        "sha256": "e1370ac0a8fe31be56a111d443a1110307d195e2c24389470619df5716351078"
+      },
+      {
+        "path": "docs/evidence/NI6/native-worker-r13-checkpoint-2026-10-08.md",
+        "bytes": 10357,
+        "sha256": "b743e7108aea2e2969bd6b72de9ee306f1e774ca3b09ce1173bbeaf20fab4803"
+      },
+      {
+        "path": "docs/evidence/NI6/canonical-package-byte-map-2026-10-08.md",
+        "bytes": 11549,
+        "sha256": "7e4c81dfd27a19344da9316bdddb8772a9d19b9f215b58418c55526a6381e975"
+      },
+      {
+        "path": "docs/evidence/NI6/canonical-package-byte-map-2026-10-08.json",
+        "bytes": 55703,
+        "sha256": "016dd86ddb74cd2958effe5b48ce5695a3085024591b19c1dd4dd5860f600dac"
+      }
+    ]
+  },
+  "outcome": {
+    "status": "READ_ONLY_MAP_COMPLETE",
+    "canonicalMutation": false,
+    "execution": false,
+    "acceptanceDetermination": "NONE_NEW",
+    "r13Replay": false,
+    "preciseWorkerDependency": "Canonical lacks the original schema7 exports and named prototype APIs. Ordinary entry/module imports alone cannot reproduce R13 with the old canonical store.",
+    "authorizationBlocker": "NO_CONCRETE_ONGOING_PROHIBITION_IDENTIFIED_FOR_ROOT_SELECTED_EXACT_OPAQUE_R13_INCORPORATION"
+  },
+  "authorityInterpretation": {
+    "ordinaryDevelopment": "AGENTS.md and owner-normal-entry-continuation require and authorize local staged normal-entry integration. Parent explicitly continues ordinary canonical implementation without another ordinary approval.",
+    "earlierNoAdoption": "The earlier map/checkpoint no-adoption statements bounded the consumed R13 unit and recorded a not-yet-selected development step. They are not a permanent source-filename prohibition or tool denial.",
+    "currentLane": "This delegated task is read-only. It excludes semantic inspection/alteration of captureNormalNativeResult, finishNormalNativeExecution and protected final CODE receipt/signature/envelope/revision999 internals.",
+    "newestRootSelection": "Root is considering explicit byte-for-byte incorporation of all 65 already-owned R13 public files. Measuring conservation against the frozen R13 graph can preserve excluded implementation bytes without interpreting or modifying them.",
+    "distinction": "Absent canonical methods are ABSENT_TO_PRESENT integration, not proof that canonical counterpart bodies are byte-identical. Whole-file R13/canonical differences do not locate changes inside other protected methods.",
+    "remainingReview": "Protected final CODE semantic review coverage remains unresolved. Opaque incorporation and ordinary public-interface tests cannot close or relabel that gap. No automatic approval rejection or other new policy/tool denial occurred."
+  },
+  "counts": {
+    "packagePinsVerified": 65,
+    "identical": 25,
+    "replacements": 21,
+    "additions": 19,
+    "minimumDestinationByteChangesForExact65Target": 40,
+    "nonregularOrSymlink": 0,
+    "scope": "65 named regular files only; not a full canonical tree or host peer/link topology audit"
+  },
+  "groups": {
+    "replace": [
+      "lib/client.js",
+      "src/approval-preview.mjs",
+      "src/client-entry.cjs",
+      "src/context.mjs",
+      "src/installed-audit.mjs",
+      "src/installed-config.mjs",
+      "src/installed-invocation.mjs",
+      "src/installed-plugin.mjs",
+      "src/installed-results.mjs",
+      "src/installed-worker-facts.mjs",
+      "src/installed-worker.mjs",
+      "src/ledger.mjs",
+      "src/memory.mjs",
+      "src/native-adapter.mjs",
+      "src/native-contributions.mjs",
+      "src/operator-bridge.mjs",
+      "src/runtime-plugin.mjs",
+      "src/runtime-security.mjs",
+      "src/runtime-store.mjs",
+      "src/testing-provider.mjs",
+      "src/worker.mjs"
+    ],
+    "add": [
+      "native-source-manifest.json",
+      "scripts/build-native-source-manifest.py",
+      "src/installed-audit-native-source.mjs",
+      "src/installed-audit-phases.mjs",
+      "src/installed-normal-services.mjs",
+      "src/installed-owned-stream.mjs",
+      "src/installed-role-recipes.mjs",
+      "src/native-history-collector.mjs",
+      "src/native-source-descriptor.mjs",
+      "src/normal-contracts.mjs",
+      "src/normal-native-operations.mjs",
+      "src/normal-native-planning.mjs",
+      "src/normal-native-request.mjs",
+      "src/normal-native-rpc.mjs",
+      "src/normal-native-selection.mjs",
+      "src/normal-resume-controls.mjs",
+      "src/normal-source-planning-binding.mjs",
+      "src/owner-native-command-controls.mjs",
+      "src/schema7-runtime-composition.mjs"
+    ],
+    "retain": [
+      "package.json",
+      "scripts/build-client.mjs",
+      "scripts/dsh-web-runtime-lock.json",
+      "src/audit-input-pair.mjs",
+      "src/audit.mjs",
+      "src/chat.mjs",
+      "src/config.mjs",
+      "src/control.mjs",
+      "src/coordinator.mjs",
+      "src/environment.mjs",
+      "src/event-clock.mjs",
+      "src/events.mjs",
+      "src/fishball-memory-core.mjs",
+      "src/foundation.mjs",
+      "src/host-probe.mjs",
+      "src/index.mjs",
+      "src/installed-events.mjs",
+      "src/installed-memory-continuity.mjs",
+      "src/installed-memory.mjs",
+      "src/installed-worker-config.mjs",
+      "src/messages.mjs",
+      "src/notifications.mjs",
+      "src/results.mjs",
+      "src/scheduler.mjs",
+      "src/setup-state.mjs"
+    ]
+  },
+  "wiringEdges": [
+    {
+      "from": "package.json:7-12",
+      "to": "src/installed-plugin.mjs",
+      "finding": "The ./installed public export already exists and is byte-identical. No package-export edit is needed."
+    },
+    {
+      "from": "src/installed-config.mjs:6-26",
+      "to": "R13 src/installed-config.mjs:10-41",
+      "finding": "Canonical accepts memory/worker only. R13 validates audit/automation/results and split continuation with disabled defaults and cross-feature bounds."
+    },
+    {
+      "from": "src/installed-plugin.mjs:19,33-36",
+      "to": "R13 src/installed-plugin.mjs:26-27,41-48",
+      "finding": "Canonical supplies memory and the installed worker. R13 supplies selected audit/events/results, continuation and installation-owned authenticated native source."
+    },
+    {
+      "from": "R13 src/installed-plugin.mjs:70-100",
+      "to": "src/installed-plugin.mjs setup RPC/features",
+      "finding": "R13 adds auditStatus and capability-based automation/results/continuity readiness under the existing operator, abort and live-child gates."
+    },
+    {
+      "from": "R13 src/runtime-plugin.mjs:44,98-111",
+      "to": "src/schema7-runtime-composition.mjs:2-3,11-18,26-48",
+      "finding": "Factory accepts selection/source installers, then constructs original branded root capabilities rather than a payload-supplied store or substitute."
+    },
+    {
+      "from": "R13 src/runtime-plugin.mjs:203-217",
+      "to": "selection/planner/planning-binding/normal native operations",
+      "finding": "Source selection and genuine prepared input feed the ordinary producer planner, guarded dispatch, history collection and owner finish controls."
+    },
+    {
+      "from": "R13 src/runtime-plugin.mjs:227-238,259-273",
+      "to": "NativeAdapter and installed-worker operations",
+      "finding": "One genuine adapter is bound to normal operations; the existing composeNativeWorker and owner-scoped operation names dispatch marked work into that route."
+    },
+    {
+      "from": "R13 src/installed-worker.mjs:203-222",
+      "to": "R13 src/native-adapter.mjs:342-395",
+      "finding": "Hooks validate baseline/current committed history, then before-stop and detached stopped history; factual UID-null and exact agent/session absence remain required."
+    },
+    {
+      "from": "R13 src/normal-native-operations.mjs:71-76",
+      "to": "core.native.captureNormalNativeResult",
+      "finding": "Original adapter result/current persisted history/actual usage supply the opaque capture call; its body is excluded."
+    },
+    {
+      "from": "R13 src/normal-native-operations.mjs:113-128",
+      "to": "NativeAdapter.finishExecution -> core.native.finishNormalNativeExecution",
+      "finding": "Read-first owner idempotence, durable typed capture, original owned stop, matching usage and final original query precede the opaque writer; its body is excluded."
+    },
+    {
+      "from": "R13 src/normal-native-rpc.mjs:8-15",
+      "to": "existing authenticated operator service",
+      "finding": "Owner finish/resume operations reuse the existing invocation carrier and bounded detached output rather than registering another listener."
+    }
+  ],
+  "missingExports": [
+    {
+      "path": "src/runtime-store.mjs",
+      "name": "assertPreparationSourceBinding",
+      "canonicalOccurrences": 0,
+      "r13Line": 3381,
+      "consumer": "src/schema7-runtime-composition.mjs:2"
+    },
+    {
+      "path": "src/context.mjs",
+      "name": "assemblePreparedContextFromSource",
+      "canonicalOccurrences": 0,
+      "r13Line": 301,
+      "consumer": "src/schema7-runtime-composition.mjs:3"
+    },
+    {
+      "path": "src/context.mjs",
+      "name": "assertAssemblerPreparationBinding",
+      "canonicalOccurrences": 0,
+      "r13Line": 300,
+      "qualification": "Additional R13 preparation export; no body inspected"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "name": "preparationSourceMethods",
+      "canonicalOccurrences": 0,
+      "r13Line": 3384,
+      "qualification": "Additional R13 preparation export; no body inspected"
+    },
+    {
+      "path": "src/worker.mjs",
+      "name": "workerDeadline",
+      "canonicalOccurrences": 0,
+      "r13Line": 10,
+      "consumer": "src/normal-native-operations.mjs:4"
+    }
+  ],
+  "missingOriginalPrototypeMethods": {
+    "consumer": "src/schema7-runtime-composition.mjs:11-18",
+    "count": 16,
+    "names": [
+      "planNormalNativeAction",
+      "claimNormalCreate",
+      "recordNormalNativeOrigin",
+      "captureNormalNativeResult",
+      "captureNormalNativeAuditResult",
+      "writeNormalNativeRepairArtifact",
+      "finishNormalNativeExecution",
+      "planNormalResume",
+      "claimNormalResume",
+      "resolveNormalNativeIdentity",
+      "readNormalNativeFinish",
+      "readNormalResumeOrigin",
+      "readNormalResumeInput",
+      "readNormalNativeArtifact",
+      "readNormalNativeAuditResult",
+      "readPreparedContextCheck"
+    ],
+    "canonicalNameOccurrencesEach": 0,
+    "qualification": "Declaration/name metadata only. No implementation of these store methods was decoded, printed or semantically inspected."
+  },
+  "opaqueRegions": [
+    {
+      "name": "captureNormalNativeResult",
+      "path": "src/runtime-store.mjs",
+      "canonicalNameOccurrences": 0,
+      "canonicalDeclarationPresent": false,
+      "packageLine": 3160,
+      "startByteZeroBased": 299409,
+      "endByteExclusive": 301284,
+      "bytes": 1875,
+      "sha256": "c669b24f13e533e434af6d9858ac5f01608a53aca094458a81da4ad2b472261b",
+      "nextDeclaration": "captureNormalNativeAuditResult"
+    },
+    {
+      "name": "finishNormalNativeExecution",
+      "path": "src/runtime-store.mjs",
+      "canonicalNameOccurrences": 0,
+      "canonicalDeclarationPresent": false,
+      "packageLine": 3171,
+      "startByteZeroBased": 309947,
+      "endByteExclusive": 312767,
+      "bytes": 2820,
+      "sha256": "ff7697b77ff395dc98ccfbad9752b1f20ae53cbe0dad3382c1632fc8e8854498",
+      "nextDeclaration": "readNormalNativeFinish"
+    }
+  ],
+  "conservationMethod": {
+    "canonicalVsR13": "The two excluded method regions have no canonical counterpart. Other final CODE protected-region equality between canonical and R13 is NOT_ESTABLISHED; no semantic inquiry into those regions was made.",
+    "exactRootProposedTarget": "For a fresh frozen integration unit, use all 65 correctedPackageRecords, including source, built client, descriptor and producer. Preserve package.json and lock/unchanged files; replace only the 21 different named destinations and add the 19 absent destinations. Do not copy directories recursively or touch unrelated docs/tests/profiles.",
+    "proof": "Verify every destination's exact byte length and SHA-256 against the frozen R13 manifest. Entire runtime-store.mjs equality to 347241 bytes / 4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7 conserves all nested excluded R13 bytes without printing them. The two explicit opaque ranges provide extra independently checkable conservation pins.",
+    "limits": "This conserves R13 implementation bytes, not all previous canonical bytes. It is source conservation, not semantic CODE acceptance, build completion, public-interface compatibility or current host topology proof.",
+    "noMixedCore": "A partial new wrapper/old core combination lacks authentic exports and original prototype capabilities. No adapter shim, fabricated capability, receipt, stop or release is selected.",
+    "postCopyChanges": "Any later ordinary change needs its own concrete frozen hunk and must conserve excluded R13 bytes opaquely; this report selects no such post-copy alteration."
+  },
+  "sourcePins": [
+    {
+      "path": "package.json",
+      "status": "IDENTICAL",
+      "packageBytes": 2691,
+      "packageSha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+      "canonicalBytes": 2691,
+      "canonicalSha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "path": "src/context.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 28297,
+      "packageSha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+      "canonicalBytes": 24196,
+      "canonicalSha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": "src/installed-config.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 4122,
+      "packageSha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88",
+      "canonicalBytes": 2173,
+      "canonicalSha256": "3da0ed1c99cd1ed920e7093fad0dafc6ce5f1653bfd09879018a10dd8d02e5ed"
+    },
+    {
+      "path": "src/installed-plugin.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 10275,
+      "packageSha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5",
+      "canonicalBytes": 7194,
+      "canonicalSha256": "73f65198c642b3b3c1413c7fbb8ffd0a2a6b56605abbc0a5bfce875a9177ea1d"
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 47428,
+      "packageSha256": "5a60c989df978ecc2d51ff936cda33065f164189478e0bf73d35dc8caa8c84d2",
+      "canonicalBytes": 33262,
+      "canonicalSha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb"
+    },
+    {
+      "path": "src/memory.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 36680,
+      "packageSha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+      "canonicalBytes": 31812,
+      "canonicalSha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01"
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 41015,
+      "packageSha256": "3a996cc4953f318000c14457f512b05c7c47c2af5a68b50405edd5eb44f149b7",
+      "canonicalBytes": 37074,
+      "canonicalSha256": "eb990b3def82c29312ec7f94cf5aa1f3003a5f8364a26e9b9b0f8a6cac644bb0"
+    },
+    {
+      "path": "src/native-history-collector.mjs",
+      "status": "ABSENT",
+      "packageBytes": 13351,
+      "packageSha256": "6751f38d21bbcba7633495f9be84a9844032166caeea8bdd800bff84964c9efd",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/native-source-descriptor.mjs",
+      "status": "ABSENT",
+      "packageBytes": 2328,
+      "packageSha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/normal-contracts.mjs",
+      "status": "ABSENT",
+      "packageBytes": 32057,
+      "packageSha256": "82da87ecf5468f4f028b419193bc4b79153b62c22abe4b877b0f293d9b8c6a1a",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/normal-native-operations.mjs",
+      "status": "ABSENT",
+      "packageBytes": 20496,
+      "packageSha256": "c6c2b7c4ec7aa7d8a6d7e00d9c078484e3797aa8fcbc9d953d82ffd3803cdfa7",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/normal-native-planning.mjs",
+      "status": "ABSENT",
+      "packageBytes": 2860,
+      "packageSha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/normal-native-rpc.mjs",
+      "status": "ABSENT",
+      "packageBytes": 1473,
+      "packageSha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/normal-native-selection.mjs",
+      "status": "ABSENT",
+      "packageBytes": 6689,
+      "packageSha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/normal-source-planning-binding.mjs",
+      "status": "ABSENT",
+      "packageBytes": 1541,
+      "packageSha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 67362,
+      "packageSha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095",
+      "canonicalBytes": 36350,
+      "canonicalSha256": "30c8e1c0aee9d495563d19eb4b71357198912ea472b6b61201168079b7885fb2"
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 347241,
+      "packageSha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7",
+      "canonicalBytes": 239793,
+      "canonicalSha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f"
+    },
+    {
+      "path": "src/schema7-runtime-composition.mjs",
+      "status": "ABSENT",
+      "packageBytes": 6085,
+      "packageSha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c",
+      "canonicalBytes": null,
+      "canonicalSha256": null
+    },
+    {
+      "path": "src/worker.mjs",
+      "status": "DIFFERENT",
+      "packageBytes": 36640,
+      "packageSha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a",
+      "canonicalBytes": 36626,
+      "canonicalSha256": "b794af781c0f490a4d61d269c28bfc8d32a6b3705ac79c0ce82bc5ed27ff7e1d"
+    }
+  ],
+  "meaningfulFutureValidation": [
+    "Fresh canonical source-only review of ordinary imports/exports, disabled defaults, owner authentication, bounded requests/output, source descriptor currentness and original factory/service wiring; preserve final CODE review gap separately.",
+    "Fresh candidate using the actual canonical installed entry and original pinned host interfaces, not replaying/adopting the consumed R13 session or its actual results.",
+    "Retain genuine one-worker execute/result/source identity/input digest/usage/currentness/persistence/disposition assertions, factual owned stop, exact agent/session absence and authoritative reservation release.",
+    "Retain compact-stream C01-C23 coverage including original-accumulator positive and malformed-gap negative cases, plus actual cleanup/owned-entry absence and post-cleanup service removal checks.",
+    "Review and perform canonical client/descriptor production or exact artifact conservation under the root freeze; a copied built client is not a newly executed build claim.",
+    "Keep real full installed DSH quit/restart/reconciliation, fresh supported browser QA, aggregate acceptance and publication decisions separate; this assessment runs none."
+  ],
+  "scope": {
+    "allowed": "Individually manifest-selected public files; ordinary source/interface/wiring reads and import/export metadata; opaque public source hashing; fresh report-only O_EXCL writes.",
+    "excluded": "Opaque store capture/finish bodies and final CODE internals semantic reads; private runtime/profile/key/db/history/capture/raw response/error content; imports/evaluation, producers/builds/tests/runtime, browser/model/network/credentials, Git and canonical mutation.",
+    "browser": "Browser LUA avoided; no blanket Luna-model ban. No browser probe or model call was made.",
+    "noInheritedAcceptanceFinding": "Historical checkpoint qualifications are preserved. This lane does not carry the old all87 HOLD count forward as a new acceptance determination."
+  },
+  "readback": {
+    "method": "Exact absolute destinations, both absent including dangling symlinks before O_EXCL, full authored-content equality/readback; external final byte/SHA seals supplied in handoff.",
+    "selfHashesEmbedded": false
+  },
+  "markdownSibling": "docs/evidence/NI6/canonical-ordinary-wiring-selection-2026-10-08.md",
+  "jsonSibling": "docs/evidence/NI6/canonical-ordinary-wiring-selection-2026-10-08.json",
+  "priorMapConservation": {
+    "priorPackageRowsPhysicallyEqualToR13": 65,
+    "priorCanonicalRowsAndAbsencesStillEqual": 65,
+    "priorMapUnmodified": true
+  }
+}
