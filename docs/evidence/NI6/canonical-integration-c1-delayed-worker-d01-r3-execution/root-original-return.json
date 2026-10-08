@@ -1,0 +1,143 @@
+{
+  "all87": "INDIVIDUAL_RECONCILIATION_PENDING_NO_BLANKET_HOLD",
+  "currentness": {
+    "atomicContinuousClaimed": false,
+    "beforeAfterComplete": true,
+    "declaredHostFiles": 27577,
+    "declaredHostLinks": 12,
+    "distinctPins": 248,
+    "unchanged": true
+  },
+  "date": "2026-10-08",
+  "directDriverReturn": {
+    "complete": true,
+    "exitCode": 1,
+    "outputBytes": 0,
+    "sessionId": 80182,
+    "sessionTerminated": true
+  },
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "fullCriterionPASS": false,
+  "fullMVPAcceptance": false,
+  "independentActualReviews": "PENDING_AT_ROOT_PROOF_CUT",
+  "observations": {
+    "bothCommandsCompleteCaptureBothEOF": true,
+    "bothGroupsAbsent": true,
+    "category": "INVARIANT",
+    "currentCorrectedContext": true,
+    "directHeldReservationObserved": true,
+    "entryRemoval": true,
+    "exactFailedComparison": "NOT_RECORDED",
+    "executionState": "unknown",
+    "factualWorkerStoppedAndPairedAbsenceSourceQualified": true,
+    "finalNoArtifactPredicate": "NOT_ESTABLISHED_UNREACHED",
+    "firstFailurePhase": "FINAL_STATUS",
+    "functionalExitCode": 1,
+    "functionalFailure": "EXECUTOR_COMMAND_NONZERO",
+    "functionalSeconds": 9.700845,
+    "httpRequests": 30,
+    "ownedEntryRemovalComplete": false,
+    "ownedGroups": [
+      84203,
+      84204
+    ],
+    "positivePath": false,
+    "rootDisposal": "RESTARTED_STANDALONE_NOT_CLI_QUIT",
+    "signalAttempts": [],
+    "staleCaptureRefused": true,
+    "syntaxExitCode": 0,
+    "syntheticRequestsStreamsTurnsSteps": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "tools": 0
+  },
+  "originalDriverCommand": "/opt/homebrew/bin/python3 -I .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/run-once.py .runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r3-plan.json",
+  "originalDriverMode": "NORMAL_SCOPED_REQUIRE_ESCALATED_APPROVED",
+  "originalToolReturns": [
+    {
+      "chunk_id": "377781",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 80182,
+      "wall_time_seconds": 10.001980375
+    },
+    {
+      "chunk_id": "d4754e",
+      "exit_code": 1,
+      "original_token_count": 0,
+      "output": "",
+      "wall_time_seconds": 4.427377256
+    }
+  ],
+  "protectedCODE": "BLOCKED_UNCHANGED",
+  "publicationGO": false,
+  "qualifications": [
+    "Original six public records cross-bind; main FAILED_HOLD plus auxiliary PASS is permitted and does not pass the invocation",
+    "False final noArtifact/ownedEntriesRemoved/positivePath flags are unreached or failed predicates, not artifact-existence or blanket zero-effect proof",
+    "Query/context/held-count/stop portions passed before the final retained failure according to the reviewed original sequence; no exact final conjunct or full 38-control count is independently instrumented",
+    "One natural factual-stop cleanup path does not execute the ten declarative M01-M10 faults",
+    "Functional private stderr169 bytes remains unread; no root raw capture read/hash/copy or extra observer",
+    "Original D01 MUST_NOT_EXECUTE, consumed D01-r2 FAILED_HOLD and its later supplement remain immutable",
+    "O01 PASS54 and DF010-C02 full PASS remain unchanged"
+  ],
+  "recordPins": [
+    {
+      "bytes": 55105,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/root-plan.json",
+      "sha256": "c37413cd3c9c3659cec1953e6b3a59b5ed4eb388ff512db98d961ae4e27bff20"
+    },
+    {
+      "bytes": 942,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/fixture-result.json",
+      "sha256": "b8531c85ed8a9dee608e30905e4dcedfa131cdc387b119f03cb8f406ea72dc32"
+    },
+    {
+      "bytes": 397,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/responsiveness.json",
+      "sha256": "018b6610f293921a8587097815db4ec3ae27e360c9d27b0d99a01e239ddad0bb"
+    },
+    {
+      "bytes": 5170,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/executor-result.json",
+      "sha256": "769d0aa0e5469020c905b27ed1ff9407bc15fe56a3b80f26476cb84fc0ec6b2d"
+    },
+    {
+      "bytes": 3066,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/command-results.json",
+      "sha256": "b8c9385a963cf850e742e519e5251001e59e1d844d1f80b42792f7f0daf27b44"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/before-after.json",
+      "sha256": "1daedb54ee5b2a5edfe34e1f6328fd76b9eab0a870d5f3fc1f80e339d5e262ee"
+    }
+  ],
+  "replayGO": false,
+  "responsiveness": {
+    "calibratedSLAOrLoad": false,
+    "latenciesMs": [
+      19,
+      37,
+      35,
+      12
+    ],
+    "sourceQualifiedPendingGateFourChecksPASS": true
+  },
+  "result": "FAILED_HOLD",
+  "rootPlan": {
+    "bytes": 55105,
+    "path": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r3-plan.json",
+    "sha256": "c37413cd3c9c3659cec1953e6b3a59b5ed4eb388ff512db98d961ae4e27bff20"
+  },
+  "schema": "df.canonical-c1.delayed-worker-d01-r3-actual-return/v1",
+  "timing": {
+    "conservativeSeconds": 23.071031874977052,
+    "cut": "PRE_TERMINAL_PUBLICATION",
+    "driverFinalizedAtPublication": false,
+    "finalEnclosingInterval": "NOT_ESTABLISHED",
+    "observedSeconds": 18.07103137485683
+  }
+}

@@ -1,0 +1,558 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "categories": [
+    "NONE",
+    "REJECTION",
+    "INVARIANT",
+    "DEADLINE"
+  ],
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--check",
+      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture.mjs"
+    ]
+  ],
+  "concurrency": 1,
+  "contractVersion": "df.canonical-c1.delayed-worker-d01-plan/v1",
+  "createPhases": [
+    "NOT_RETURNED",
+    "created",
+    "ready",
+    "running",
+    "unknown",
+    "cancel_requested",
+    "stopped",
+    "not_created"
+  ],
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "diagnosticByteCap": 1024,
+  "diagnosticContractVersion": "df.d01-worker/v1",
+  "diagnosticFields": [
+    "contractVersion",
+    "result",
+    "phase",
+    "category",
+    "refusalCode",
+    "createPhase",
+    "executeHttpPhase",
+    "executeTransportFailure",
+    "executeHttpStatus",
+    "executeIdlePhase",
+    "correctionCurrent",
+    "noArtifact",
+    "headerCases",
+    "projectionCases",
+    "streamCases",
+    "positivePath",
+    "taskCreated",
+    "workerCreated",
+    "executionState",
+    "staleCaptureRefused",
+    "workerStopped",
+    "reservationHeld",
+    "entryRemoved",
+    "ownedEntriesRemoved",
+    "rootCleanup",
+    "completedPlugins",
+    "httpRequests",
+    "requests",
+    "streams",
+    "tools",
+    "stepStarts",
+    "stepEnds",
+    "turnStarts",
+    "turnEnds",
+    "all87",
+    "CODE"
+  ],
+  "diagnosticResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture-result.json",
+  "effects": "Two synthetic tasks, only A executes: one original worker/request/stream/turn/step; bounded original waterfall hold and four pending domain observations; old-CAS stale capture refuses, current correction/no artifact, factual stopped/absent worker and held reservation.31HTTP;50source-derived named groups; tools/memory/external/model0.",
+  "evidenceDirectory": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-execution",
+  "executeHttpPhases": [
+    "NOT_SENT",
+    "REQUEST_STARTED",
+    "HEADERS_OBSERVED",
+    "BODY_COMPLETE",
+    "RPC_VALUE_RETURNED"
+  ],
+  "executeHttpStatuses": [
+    "NOT_RETURNED",
+    "HTTP_200",
+    "OTHER_STATUS"
+  ],
+  "executeIdlePhases": [
+    "NOT_OBSERVED",
+    "WAITING",
+    "RETURNED",
+    "REJECTED"
+  ],
+  "executeTransportFailures": [
+    "NONE",
+    "REQUEST_ERROR",
+    "RESPONSE_ERROR",
+    "RESPONSE_LIMIT",
+    "TIMER_EXPIRED"
+  ],
+  "executionStates": [
+    "NOT_OBSERVED",
+    "committed",
+    "unknown"
+  ],
+  "expectedStaleRefusal": "STALE_VERSION",
+  "failureCleanup": "Release gate every path; before factual stop/absence, refuse fixture entry/root removal and preserve FAILED_HOLD/UNKNOWN. Original owning driver bounded group/EOF cleanup remains authoritative; no extra HTTP/lifecycle call.",
+  "finishTraceCodeCount": 38,
+  "finishTraceCodes": [
+    "000",
+    "006",
+    "008",
+    "00A",
+    "100",
+    "101",
+    "104",
+    "105",
+    "10A",
+    "210",
+    "211",
+    "212",
+    "213",
+    "214",
+    "215",
+    "21A",
+    "220",
+    "221",
+    "222",
+    "223",
+    "224",
+    "225",
+    "22A",
+    "310",
+    "316",
+    "317",
+    "318",
+    "319",
+    "31A",
+    "320",
+    "326",
+    "328",
+    "32A",
+    "410",
+    "416",
+    "418",
+    "41A",
+    "51B"
+  ],
+  "finishTracePositiveAndPassRequired": null,
+  "finishWaitElapsedMaximum": 9999,
+  "finishWaitStages": [
+    "000",
+    "W01",
+    "W02",
+    "W03",
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "A01",
+    "A02",
+    "A03",
+    "A04",
+    "A05",
+    "A06",
+    "A07",
+    "A08",
+    "H01",
+    "H02",
+    "H03",
+    "H04",
+    "H05",
+    "H06",
+    "H07",
+    "H08",
+    "H09",
+    "H10",
+    "H11",
+    "H12",
+    "H13",
+    "H14"
+  ],
+  "finishWaitWidth": 7,
+  "freshInvocationMarker": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/invocation.json",
+  "freshRuntimeDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/private-runtime",
+  "httpLimits": {
+    "authGets": 1,
+    "domainPosts": 29,
+    "httpRequestsMaximum": 31,
+    "otherRpcStepSecondsInsideSharedWork": 2.5,
+    "perRequestSecondsInsideSharedWork": 2,
+    "postDisposalPosts": 1,
+    "requestBytes": 2048,
+    "responseBytes": 65536,
+    "selectedExecuteAcknowledgementSecondsInsideSharedWork": 10,
+    "selectedExecuteRpcStepSecondsInsideSharedWork": 10.5,
+    "totalRequests": 31
+  },
+  "maximumActiveSeconds": 90,
+  "maximumDirectInterpreterStarts": 3,
+  "maximumNodeChildStarts": 2,
+  "namedAssertionGroups": 50,
+  "operationPosts": [
+    [
+      "/df-setup",
+      "status"
+    ],
+    [
+      "/df-setup",
+      "prepare"
+    ],
+    [
+      "/df-setup",
+      "confirm"
+    ],
+    [
+      "/df-setup",
+      "status"
+    ],
+    [
+      "/df-rpc",
+      "list"
+    ],
+    [
+      "/df-rpc",
+      "intake"
+    ],
+    [
+      "/df-rpc",
+      "status"
+    ],
+    [
+      "/df-rpc",
+      "prepareContext"
+    ],
+    [
+      "/df-rpc",
+      "detail"
+    ],
+    [
+      "/df-rpc",
+      "workerCatalog"
+    ],
+    [
+      "/df-rpc",
+      "workerPolicyPreview"
+    ],
+    [
+      "/df-rpc",
+      "workerPolicyConfirm"
+    ],
+    [
+      "/df-rpc",
+      "workerPlan"
+    ],
+    [
+      "/df-rpc",
+      "workerPreview"
+    ],
+    [
+      "/df-rpc",
+      "workerGrant"
+    ],
+    [
+      "/df-rpc",
+      "workerCreate"
+    ],
+    [
+      "/df-rpc",
+      "workerQuery"
+    ],
+    [
+      "/df-rpc",
+      "workerExecute"
+    ],
+    [
+      "/df-rpc",
+      "status"
+    ],
+    [
+      "/df-rpc",
+      "intake"
+    ],
+    [
+      "/df-rpc",
+      "revise"
+    ],
+    [
+      "/df-rpc",
+      "status"
+    ],
+    [
+      "/df-rpc",
+      "workerCapture"
+    ],
+    [
+      "/df-rpc",
+      "workerQuery"
+    ],
+    [
+      "/df-rpc",
+      "prepareContext"
+    ],
+    [
+      "/df-rpc",
+      "detail"
+    ],
+    [
+      "/df-rpc",
+      "control"
+    ],
+    [
+      "/df-rpc",
+      "workerQuery"
+    ],
+    [
+      "/df-rpc",
+      "status"
+    ]
+  ],
+  "oracleChanges": {
+    "removedFromD01": [
+      "W01 N01 duplicate execute",
+      "forced committed execute",
+      "adopted artifact/exact result/workerResult",
+      "workerFinish/finishTrace51B/finishWait required positive diagnostic",
+      "released reservation"
+    ],
+    "requiredForD01": [
+      "Truthful committed-or-unknown original execute envelope",
+      "Old CAS STALE_VERSION refusal",
+      "Original query unknown with all seven worker bindings",
+      "Fresh original context contains corrected goal and front/middle/end constraints, omits old goal",
+      "Pause directly reports one held reservation",
+      "Original stopped worker and agent/session absence before removal",
+      "Current paused task, same unknown action and seven execution identities, no artifact",
+      "All original owner/auth/currentness/source/policy/consent/preset/six Loader/post404/root restart/EOF/group/private stream guards"
+    ]
+  },
+  "phases": [
+    "PREFLIGHT",
+    "HEADER_CONTRACT",
+    "STORED_PROJECTION_CONTRACT",
+    "COMPACT_STREAM_CONTRACT",
+    "FINISH_TRACE_CONTRACT",
+    "FINISH_WAIT_CONTRACT",
+    "HOST_CLEANUP_CONTRACT",
+    "IMPORTS",
+    "NAMESPACE",
+    "CONTEXT",
+    "PLUGIN_LOADER",
+    "PLUGIN_PROJECTIONS",
+    "PLUGIN_SESSIONS",
+    "PLUGIN_APPROVAL",
+    "PLUGIN_AGENTS",
+    "PLUGIN_LLM",
+    "PLUGIN_SYSTEM_PROMPT",
+    "PLUGIN_TOOLS",
+    "PLUGIN_CREDENTIALS",
+    "PLUGIN_WEB_SERVER",
+    "PLUGIN_CONNECTION",
+    "LISTENER_FENCE",
+    "INDEX_ROUTE",
+    "PUBLIC_SERVICES",
+    "PRESET",
+    "ENTRY_START",
+    "AUTH",
+    "SETUP_STATUS",
+    "SETUP_PREPARE",
+    "SETUP_CONFIRM",
+    "SETUP_READY",
+    "LIST",
+    "INTAKE",
+    "STATUS",
+    "CONTEXT_PREPARE",
+    "CONTEXT_DETAIL",
+    "CATALOG",
+    "POLICY_PREVIEW",
+    "POLICY_CONFIRM",
+    "WORKER_PLAN",
+    "WORKER_PREVIEW",
+    "WORKER_GRANT",
+    "WORKER_CREATE",
+    "WORKER_IDLE",
+    "WORKER_EXECUTE",
+    "GATE_WAIT",
+    "PENDING_STATUS",
+    "OTHER_INTAKE",
+    "TASK_REVISE",
+    "CORRECTED_STATUS",
+    "GATE_RELEASE",
+    "WORKER_QUERY",
+    "WORKER_CAPTURE",
+    "CURRENT_CONTEXT_PREPARE",
+    "CURRENT_CONTEXT_DETAIL",
+    "WORKER_PAUSE",
+    "STOPPED_QUERY",
+    "FINAL_STATUS",
+    "PRESET_RELEASE",
+    "ENTRY_REMOVE",
+    "POST_DISPOSAL",
+    "ROOT_CLEANUP",
+    "COMPLETE"
+  ],
+  "pins": {},
+  "privateCaptureDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/private-capture",
+  "privateStreamAggregateByteCap": 262144,
+  "privateStreamByteCap": 131072,
+  "privateStreamsDecodedOrPublished": false,
+  "publicRecords": {
+    "caps": {
+      "before-after.json": 4096,
+      "command-results.json": 16384,
+      "executor-result.json": 16384,
+      "fixture-result.json": 1024,
+      "responsiveness.json": 1024,
+      "root-plan.json": 65536
+    },
+    "count": 6,
+    "crossBind": "Owning driver decodes both after original EOF/group absence; mainPASS requires responsivenessPASS; executor diagnostic/responsiveness equal separately published validated records. Root later proof must bind all six and direct original driver return.",
+    "paths": [
+      "fixture-result.json",
+      "responsiveness.json",
+      "executor-result.json",
+      "command-results.json",
+      "before-after.json",
+      "root-plan.json"
+    ]
+  },
+  "refusalCodes": [
+    "NONE",
+    "STALE_VERSION",
+    "WORKER_POLICY_REQUIRED",
+    "WORKER_POLICY_STALE",
+    "WORKER_PREVIEW_STALE",
+    "WORKER_CONFIRMATION_REQUIRED",
+    "WORKER_CONTEXT_INVALID",
+    "WORKER_MAPPING_MISMATCH",
+    "WORKER_RESULT_UNAVAILABLE",
+    "WORKER_FINISH_UNAVAILABLE",
+    "WORKER_SOURCE_UNAVAILABLE",
+    "WORKER_PERSISTENCE_UNSUPPORTED",
+    "WORKER_PRESET_UNAVAILABLE",
+    "WORKER_REQUEST_DENIED",
+    "WORKER_SESSION_UNAVAILABLE",
+    "WORKER_CATALOG_UNAVAILABLE",
+    "WORKER_NOT_CONFIGURED",
+    "COST_UNKNOWN",
+    "CONFIG_INVALID",
+    "INPUT_INVALID",
+    "OUTPUT_TOO_LARGE",
+    "SERVICE_DISPOSED",
+    "CONTEXT_LIMIT",
+    "STORAGE_INVALID",
+    "WORKER_EXECUTION_ALREADY_SUBMITTED",
+    "INVALID_INPUT",
+    "STALE_AUTHORITY",
+    "HOST_PERMISSION_DENIED",
+    "STALE_MEMORY",
+    "HOST_DENIED",
+    "APPROVAL_INVALID",
+    "CLAIM_REVOKED",
+    "SPEC_MISMATCH",
+    "STALE_POLICY",
+    "ACTIVE_FULL",
+    "OPERATION_REJECTED",
+    "OTHER_REFUSAL"
+  ],
+  "remainingCriteria": "Subsequent genuine corrected request/full BUB002-02, calibrated full BUB002-04, status budget-panel/full BUB012, protected final semantics, browser/CLI/full87 acceptance remain open. B is queued secondary task, not corrected continuation.",
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-test-design-review.json"
+  ],
+  "reservationEvidence": "Operation27 receipt.reservationsHeld===1 is direct observation.28 exact stopped binding+original agent/session absence and29 current paused task/same unknown action+seven execution identity fields/no artifact follow. Held after29 is retention inference with no finish/release, not independently measured status count.",
+  "responsivenessBounds": {
+    "byteCap": 1024,
+    "compactMaximumIncludingNewline": 465,
+    "fieldCount": 16,
+    "latencyMaximum": 30000,
+    "measurement": "Ceil monotonic send-to-fully-decoded response; successful exact domain assertions and original A running/execute pending/gate held at send, decoded return and immutable freeze; no added latency<=2000 threshold.",
+    "prettyMaximumIncludingNewline": 530,
+    "readMaximum": 1025
+  },
+  "responsivenessContractVersion": "df.d01-responsiveness/v1",
+  "responsivenessFields": [
+    "contractVersion",
+    "result",
+    "statusBeforeMs",
+    "statusBeforeOk",
+    "intakeMs",
+    "intakeOk",
+    "reviseMs",
+    "reviseOk",
+    "statusAfterMs",
+    "statusAfterOk",
+    "nodeVersion",
+    "platform",
+    "kernelRelease",
+    "arch",
+    "cpuCount",
+    "totalRamBytes"
+  ],
+  "responsivenessResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/responsiveness.json",
+  "resultSizeBounds": {
+    "byteCap": 1024,
+    "compactFormat": "JSON.stringify plus newline; existing fixture format",
+    "compactMaximumIncludingNewline": 873,
+    "fieldCount": 36,
+    "maximumMethod": "Independent per-field longest closed ASCII enum, maximum digit-width counters, false booleans (five bytes); conservative Cartesian scalar bound, no candidate evaluation",
+    "prettyFormat": "Python json.dumps indent=2 sort_keys=True allow_nan=False plus newline; existing executor public save format",
+    "prettyMaximumIncludingNewline": 1018,
+    "readMaximum": 1025
+  },
+  "rootCleanupPhases": [
+    "NOT_RUN",
+    "UNCERTAIN",
+    "RESTARTED"
+  ],
+  "rootCleanupQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. D01 factual stopped worker/agent-session absence, direct held-count/currentness/no-artifact/preset/post404 guards remain independent; no finish, release or adopted-result persistence is claimed; failed or unverified cleanup stays HOLD.",
+  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-plan.json",
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "rootTerminalQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. D01 factual stopped worker/agent-session absence, direct held-count/currentness/no-artifact/preset/post404 guards remain independent; no finish, release or adopted-result persistence is claimed; failed or unverified cleanup stays HOLD.",
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/run-once.py",
+  "sourceCopies": [],
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "stopAfterFirstFailure": true,
+  "streamCasesMaximum": 8,
+  "streamCasesPositiveAndPassRequired": 8,
+  "streamGate": {
+    "callbacks": "No option/chunk/provider/lifecycle replacement, detached process or extra model call",
+    "clampedTo": "Original shared24s work deadline",
+    "maximumMilliseconds": 4000,
+    "surface": "Original documented llm/stream waterfall; next exactly once, original first text-delta unchanged, then hold original iteration; release every path"
+  },
+  "testWorkerStarts": 0
+}

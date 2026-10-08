@@ -1,0 +1,18 @@
+{
+  "arch": "arm64",
+  "contractVersion": "df.d01-responsiveness/v1",
+  "cpuCount": 20,
+  "intakeMs": 37,
+  "intakeOk": true,
+  "kernelRelease": "27.0.0",
+  "nodeVersion": "v22.22.2",
+  "platform": "darwin",
+  "result": "PASS",
+  "reviseMs": 35,
+  "reviseOk": true,
+  "statusAfterMs": 12,
+  "statusAfterOk": true,
+  "statusBeforeMs": 19,
+  "statusBeforeOk": true,
+  "totalRamBytes": 68719476736
+}

@@ -1,0 +1,281 @@
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture.mjs
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs
+@@ -12,10 +12,10 @@
+ const STARTED = performance.now();
+ const WORK_END = STARTED + 24000, FINAL_END = STARTED + 30000;
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const NAME = '.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01';
++const NAME = '.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2';
+ const CAPSULE = resolve(ROOT, NAME), HOST = resolve(ROOT, '.runtime/dsh-web');
+ const PRODUCT = ROOT;
+-const PLAN_NAME = '.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-plan.json';
++const PLAN_NAME = '.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json';
+ const RESULT = resolve(CAPSULE, 'fixture-result.json');
+ const GRAPH_NAME = '.runtime/ni3-native-runtime/public-graph-pins.json';
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+@@ -227,7 +227,7 @@
+   total:()=>total,close(){active=false;cookie=undefined;}};
+ }
+ async function main() {
+- let ctx,http,presetDisposer,presetReleased=false,workerAgent,currentTask,addressed,positivePath=false;
++ let ctx,http,presetDisposer,presetReleased=false,workerAgent,workerCreationAttempted=false,currentTask,addressed,positivePath=false;
+  const directFibers=[],entries=[],counts={...ZERO},facts={taskCreated:false,workerCreated:false,executionState:'NOT_OBSERVED',staleCaptureRefused:false,workerStopped:false,reservationHeld:false,ownedEntriesRemoved:false};
+  let correctionCurrent=false,noArtifact=false;
+  let requests=0,stepStarts=0,stepEnds=0,turnStarts=0,turnEnds=0,ownedEventCount=0,inputMessageBytes=0;
+@@ -487,6 +487,8 @@
+   const binding=()=>({...cas(),actionRef:action.actionRef,actionDigest:action.actionDigest});
+   const preview=await rpc('WORKER_PREVIEW','/df-rpc','workerPreview',{...binding(),recordRef:prepared.recordRef});ref(preview.previewRef);
+   await rpc('WORKER_GRANT','/df-rpc','workerGrant',{...binding(),previewRef:preview.previewRef,commandRef:synthetic('grant'),expiresAt:Date.now()+55000,accept:true});
++  // Creation may act before any returned phase/binding/local agent is validated.
++  workerCreationAttempted=true;
+   const created=await rpc('WORKER_CREATE','/df-rpc','workerCreate',{...binding(),commandRef:synthetic('create')});const worker=created.worker;
+   invariant(worker&&CREATE_PHASES.includes(worker.phase)&&worker.phase!=='NOT_RETURNED');createPhase=worker.phase;invariant(createPhase==='ready');
+   for(const k of ['claimRef','generationRef','sessionRef','reservationRef'])ref(worker[k]);invariant(worker.taskRef===currentTask.taskRef&&worker.actionRef===action.actionRef&&worker.actionDigest===action.actionDigest);
+@@ -544,7 +546,7 @@
+  } catch {finishObserver.terminal('A');failure('REJECTION');}
+  finally {
+   releaseGate();
+-  if(ctx&&(!workerAgent||facts.workerStopped)){const end=Math.min(performance.now()+5000,FINAL_END-500);
++  if(ctx&&(!workerCreationAttempted||facts.workerStopped)){const end=Math.min(performance.now()+5000,FINAL_END-500);
+    if(presetDisposer&&!presetReleased)try{await step('PRESET_RELEASE',async()=>{presetReleased=true;await presetDisposer();},5000,end);}catch{failure('REJECTION');}
+    for(const row of [...entries].reverse())if(!row.removed)try{await remove(row,end);}catch{failure('REJECTION');}
+    rootCleanup='UNCERTAIN';let rootDisposalReturned=false;
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/run-once.py
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/run-once.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01'
++NAME='.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -532,7 +532,7 @@
+     marker_owned=evidence_owned=private_owned=False
+     marker_id=evidence_id=private_id=None
+     marker=CAPSULE/'invocation.json'
+-    evidence=ROOT/'docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-execution'
++    evidence=ROOT/'docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution'
+     private=CAPSULE/'private-capture'
+     result_path=CAPSULE/'fixture-result.json'
+     rows=[]; before=after=None; selected=None; responsive=None; finalized=False; plan_digest=None
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/execution-plan.proposed.json
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/execution-plan.proposed.json
+@@ -22,15 +22,25 @@
+     "INVARIANT",
+     "DEADLINE"
+   ],
++  "cleanupCreationAttemptGate": {
++    "addsPublicFields": false,
++    "internalOnly": true,
++    "localWorkerAgentSufficient": false,
++    "negativePathsExecuted": false,
++    "neverReset": true,
++    "postAttemptRequired": "Original facts.workerStopped assigned only after original stopped binding plus paired agent/session absence assertions",
++    "rootNumberingClarification": "Sealed r2 selection says numeric17 workerCreate. Root clarified the immutable table operation16 workerCreate/named source call is authoritative;17 is ready query. No operation order/count change.",
++    "setBefore": "Actual original operation16 workerCreate submission"
++  },
+   "commands": [
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture.mjs"
++      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture.mjs"
++      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -86,9 +96,9 @@
+     "all87",
+     "CODE"
+   ],
+-  "diagnosticResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/fixture-result.json",
++  "diagnosticResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture-result.json",
+   "effects": "Two synthetic tasks, only A executes: one original worker/request/stream/turn/step; bounded original waterfall hold and four pending domain observations; old-CAS stale capture refuses, current correction/no artifact, factual stopped/absent worker and held reservation.31HTTP;50source-derived named groups; tools/memory/external/model0.",
+-  "evidenceDirectory": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-execution",
++  "evidenceDirectory": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution",
+   "executeHttpPhases": [
+     "NOT_SENT",
+     "REQUEST_STARTED",
+@@ -120,7 +130,7 @@
+     "unknown"
+   ],
+   "expectedStaleRefusal": "STALE_VERSION",
+-  "failureCleanup": "Release gate every path; before factual stop/absence, refuse fixture entry/root removal and preserve FAILED_HOLD/UNKNOWN. Original owning driver bounded group/EOF cleanup remains authoritative; no extra HTTP/lifecycle call.",
++  "failureCleanup": "Creation-attempt latch is set before actual operation16 workerCreate submission and never cleared. Before any attempt original no-worker cleanup is permitted; after any attempt original factual workerStopped requires exact stopped binding and paired agent/session absence before destructive entry/root cleanup. Missing local handle, refusal, timeout, invalid phase/binding/count or late callbacks retain uncertainty. Gate release and transport close are unconditional; unchanged owner bounded group/EOF cleanup handles failure, no additional lifecycle/HTTP call or first-failure reset.",
+   "finishTraceCodeCount": 38,
+   "finishTraceCodes": [
+     "000",
+@@ -198,8 +208,8 @@
+     "H14"
+   ],
+   "finishWaitWidth": 7,
+-  "freshInvocationMarker": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/invocation.json",
+-  "freshRuntimeDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/private-runtime",
++  "freshInvocationMarker": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/invocation.json",
++  "freshRuntimeDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/private-runtime",
+   "httpLimits": {
+     "authGets": 1,
+     "domainPosts": 29,
+@@ -420,7 +430,7 @@
+     "COMPLETE"
+   ],
+   "pins": {},
+-  "privateCaptureDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/private-capture",
++  "privateCaptureDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/private-capture",
+   "privateStreamAggregateByteCap": 262144,
+   "privateStreamByteCap": 131072,
+   "privateStreamsDecodedOrPublished": false,
+@@ -485,10 +495,10 @@
+   ],
+   "remainingCriteria": "Subsequent genuine corrected request/full BUB002-02, calibrated full BUB002-04, status budget-panel/full BUB012, protected final semantics, browser/CLI/full87 acceptance remain open. B is queued secondary task, not corrected continuation.",
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.json",
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-test-design-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-test-design-review.json"
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-design-review.json"
+   ],
+   "reservationEvidence": "Operation27 receipt.reservationsHeld===1 is direct observation.28 exact stopped binding+original agent/session absence and29 current paused task/same unknown action+seven execution identity fields/no artifact follow. Held after29 is retention inference with no finish/release, not independently measured status count.",
+   "responsivenessBounds": {
+@@ -519,7 +529,7 @@
+     "cpuCount",
+     "totalRamBytes"
+   ],
+-  "responsivenessResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/responsiveness.json",
++  "responsivenessResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/responsiveness.json",
+   "resultSizeBounds": {
+     "byteCap": 1024,
+     "compactFormat": "JSON.stringify plus newline; existing fixture format",
+@@ -536,14 +546,96 @@
+     "RESTARTED"
+   ],
+   "rootCleanupQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. D01 factual stopped worker/agent-session absence, direct held-count/currentness/no-artifact/preset/post404 guards remain independent; no finish, release or adopted-result persistence is claimed; failed or unverified cleanup stays HOLD.",
+-  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-plan.json",
++  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "rootTerminalQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. D01 factual stopped worker/agent-session absence, direct held-count/currentness/no-artifact/preset/post404 guards remain independent; no finish, release or adopted-result persistence is claimed; failed or unverified cleanup stays HOLD.",
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/run-once.py",
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/run-once.py",
+   "sourceCopies": [],
++  "sourceOnlyFaultPathMatrix": [
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": false,
++      "destructiveFixtureCleanupAllowed": true,
++      "id": "M01",
++      "path": "Before any workerCreate submission",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M02",
++      "path": "Submitted create may act; response pending and no local handle",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M03",
++      "path": "Create RPC refusal or original HTTP/RPC rejection",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M04",
++      "path": "Create timeout/interruption or missing response",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M05",
++      "path": "Returned create phase or identity/binding invalid",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M06",
++      "path": "Returned create but actual original agent count/lookup invalid",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M07",
++      "path": "Local handle exists; original stopped binding not established",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M08",
++      "path": "Stopped reply exists; paired agent/session absence assertion fails",
++      "workerStoppedEstablished": false
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": true,
++      "id": "M09",
++      "path": "Exact original stopped bindings and paired absence/disposition established",
++      "workerStoppedEstablished": true
++    },
++    {
++      "actual": "NOT_RUN_SOURCE_DERIVED",
++      "creationAttempted": true,
++      "destructiveFixtureCleanupAllowed": false,
++      "id": "M10",
++      "path": "Late callback or falsy local handle after attempted creation",
++      "workerStoppedEstablished": false
++    }
++  ],
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+   "streamCasesMaximum": 8,
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01/README.md
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/README.md
+@@ -1,4 +1,4 @@
+-# D01 delayed native-worker source
++# D01-r2 delayed native-worker source
+ 
+ SOURCE_ONLY_NOT_RUN. Root owns final reviews, exclusive plan, GO and supported once execution. Canonical65 and consumed W01/other packets are immutable; genuine original build proof is prerequisite authority. No source copies or author execution.
+ 
+@@ -9,3 +9,7 @@
+ All C01-C23/F01-F05/G01-G05/L01-L05 remain byte-identical (38 groups); D01-D12 name12 affected domain groups, total50 source-derived, not independent telemetry.36 main fields/63 phases:873 compact/1018 pretty including LF;16 responsiveness fields:465/530; each cap1024/read1025. Original deadlines, private stream caps, canonical/full-host/source/build currentness, auth/consent/policy/source guards, paired absence, preset/six exact Loader removals/post404/root RESTARTED and owning EOF/group/signal/once protections remain. Python owner + sequential syntax Node + functional Node =3 maximum interpreter starts; author starts0.
+ 
+ Six public records are strict metadata only; owning decoder cross-binds main/auxiliary with executor, publishes valid partial failure in original finally window, and root eventual proof must validate/seal all six plus original driver return. Standalone root RESTARTED is not whole CLI quit. Queued B does not demonstrate corrected subsequent request/full BUB002-02; calibrated performance/full BUB002-04, status budget visibility/full BUB012, protected final semantics and full acceptance remain open.
++
++D01-r2 repairs only uncertain-creation destructive cleanup. Internal workerCreationAttempted is latched before the original operation16 workerCreate call, never cleared by refusal/timeout/malformed phase, binding or agent count, and never inferred from a local handle. After any attempt, only original factual stopped binding plus paired agent/session absence/disposition (existing workerStopped gate) permits entry/root cleanup. Pre-creation no-worker cleanup is unchanged. Gate release and transport closure remain unconditional; failed/unknown creation is handled by the unchanged owning process-group/EOF cleanup, not manufactured normal native stop. First failure remains latched. No extra call, test, negative execution, helper, signal, field, timer, provider or policy change.
++
++The sealed selection's numeric17 workerCreate is a clerical discrepancy explicitly clarified by root: the exact table and named original workerCreate call16 govern, ready query is17. Table, order and31 total HTTP are unchanged. Proposal M01-M10 are a finite source-derived fault-path matrix only, all NOT_RUN, without adding to the50 existing named groups. D01 is immutable MUST_NOT_EXECUTE; its final independent findings and all eight original artifacts are explicit successor authority. Prior qualified scope exposures remain disclosed in both author records, with no excluded snippets or private names repeated. Protected implementation/CODE remains BLOCKED_UNCHANGED.

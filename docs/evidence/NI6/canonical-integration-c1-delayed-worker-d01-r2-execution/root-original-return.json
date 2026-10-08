@@ -1,0 +1,135 @@
+{
+  "claimLimits": {
+    "actualHTTPCount": "NOT_ESTABLISHED",
+    "actualTaskOrWorkerAttempts": "NOT_ESTABLISHED",
+    "conservativeActiveSeconds": 43.165808708174154,
+    "delayedGateObservation": "NOT_ESTABLISHED",
+    "driverFinalized": false,
+    "factualNativeTermination": "NOT_ESTABLISHED",
+    "finalEnclosingWindow": "NOT_ESTABLISHED",
+    "functionalEOFProved": false,
+    "latency": "NOT_ESTABLISHED",
+    "missingReportsCannotBeRetrofitted": true,
+    "observedSeconds": 38.16580800013617,
+    "publicTerminationProofLabel": "OWNED_PROCESS_GROUP_AND_EOF_ONLY",
+    "reservationRelease": "NOT_ESTABLISHED",
+    "sourcePureControlsActualPass": "NOT_ESTABLISHED",
+    "taskCorrectionAndContext": "NOT_ESTABLISHED",
+    "timingCut": "PRE_TERMINAL_PUBLICATION"
+  },
+  "closedPublicRecords": [
+    {
+      "bytes": 3815,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/executor-result.json",
+      "sha256": "beed066c3397534407753adba01fe9cae6c3dbee5ba532c93a981469781df84c"
+    },
+    {
+      "bytes": 3148,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/command-results.json",
+      "sha256": "e7adb224179e41e5d77b41e7a55587c8833f4e8b6d69654350d56996d25dca84"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/before-after.json",
+      "sha256": "0d66ed3b1411cce6acb728943f0a7265a99f2df60ab7a349156f21b59127ebc2"
+    },
+    {
+      "bytes": 49327,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/root-plan.json",
+      "sha256": "7090761cd795324f55fbc54bd142b21676db740f436ca6e4572f38ef8b9fcf61"
+    }
+  ],
+  "commands": {
+    "functional": {
+      "captureComplete": false,
+      "captureTerminationReason": "EXECUTOR_COMMAND_TIMEOUT",
+      "durationSeconds": 30.056399,
+      "eofObserved": false,
+      "exitCode": -15,
+      "failureCode": "EXECUTOR_COMMAND_TIMEOUT",
+      "groupState": "ABSENT_OBSERVED",
+      "pidAndGroup": 66952,
+      "signalBoundary": "OWNED_SUBMITTED",
+      "signals": [
+        "SIGTERM"
+      ],
+      "stderrRecordedBytes": 169,
+      "stdoutRecordedBytes": 0,
+      "timedOut": true,
+      "truncation": "UNKNOWN"
+    },
+    "syntax": {
+      "captureComplete": true,
+      "durationSeconds": 0.068138,
+      "eofObserved": true,
+      "exitCode": 0,
+      "groupState": "ABSENT_OBSERVED",
+      "pidAndGroup": 66951,
+      "signals": []
+    }
+  },
+  "consumedNoReplay": true,
+  "fixture": "delayed-worker-d01-r2",
+  "independentActualAssessment": "PENDING",
+  "missingPublicRecords": [
+    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/fixture-result.json",
+    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/responsiveness.json"
+  ],
+  "originalD01MustNotExecute": true,
+  "overallAcceptanceGO": false,
+  "pinConservation": {
+    "afterComplete": true,
+    "beforeComplete": true,
+    "pins": 219,
+    "unchanged": true,
+    "wholePublicHostFiles": 27577,
+    "wholePublicHostLinks": 12
+  },
+  "preservedBoundaries": {
+    "CLIReplayOrDeniedListenRetry": false,
+    "DF010C02": "PASS_UNCHANGED",
+    "all87LegacyField": "AGGREGATE_ACCEPTANCE_ONLY_NOT_PER_CRITERION_STATUS",
+    "cancelled4da34a6d": "NEVER_EXECUTE",
+    "cloudRetry": false,
+    "protectedFinalCODE": "BLOCKED_UNCHANGED",
+    "remoteOrPublication": false,
+    "shared3080AndProfile": "UNTOUCHED"
+  },
+  "privateCaptureReadOrDecodedByRoot": false,
+  "privateRawCopiedToEvidence": false,
+  "result": "FAILED_HOLD",
+  "rootOriginalSupportedCommand": {
+    "argv": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/run-once.py",
+      ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json"
+    ],
+    "cellState": "COMPLETED",
+    "functionCell": 475,
+    "initialReturn": {
+      "chunkId": "81e99c",
+      "outputBytes": 0,
+      "sessionId": 69446,
+      "wallTimeSeconds": 10.000798242
+    },
+    "pollReturn": {
+      "chunkId": "1935a1",
+      "exitCode": 1,
+      "outputBytes": 0,
+      "wallTimeSeconds": 1.5623e-05
+    },
+    "sandboxPermissions": "require_escalated",
+    "submittedExactlyOnce": true
+  },
+  "rootPlan": {
+    "actualDestinationsFreshBeforePlan": 17,
+    "bothFinalSourceReviewPairsFullyReadAndSealedByRoot": true,
+    "bytes": 49327,
+    "exclusivePreparationReturn": "6358b7",
+    "pins": 219,
+    "sha256": "7090761cd795324f55fbc54bd142b21676db740f436ca6e4572f38ef8b9fcf61",
+    "sourceAndAuthorCurrent": true
+  },
+  "schema": "df.canonical-c1.delayed-worker-d01-root-return/v1"
+}

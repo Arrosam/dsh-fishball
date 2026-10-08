@@ -1,0 +1,395 @@
+{
+  "schema": "NI6_CANONICAL_C1_DELAYED_WORKER_D01_R2_INDEPENDENT_AFFECTED_CODE_SOURCE_REVIEW_V1",
+  "date": "2026-10-08",
+  "reviewerLane": "Independent CODE source review; Sol 6.1 maximum reasoning",
+  "scope": "SOURCE_ONLY_NOT_RUN; changed risk-bearing source with sealed original D01 coverage reused",
+  "verdict": "SOURCE_CORRECTION_VERIFIED_NO_MATERIAL_AFFECTED_CODE_BLOCKER",
+  "materialFindings": [],
+  "repairedPredecessorFinding": {
+    "id": "D01-CODE-01",
+    "predecessorStatus": "OPEN_IN_FROZEN_SOURCE; original D01 immutable MUST_NOT_EXECUTE",
+    "successorStatus": "REPAIRED_IN_SOURCE_ACTUAL_NOT_RUN",
+    "title": "Creation uncertainty can no longer authorize destructive cleanup through a missing local worker handle",
+    "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs",
+    "ranges": [
+      {
+        "start": 230,
+        "end": 230,
+        "purpose": "False creation-attempt latch initialized"
+      },
+      {
+        "start": 490,
+        "end": 495,
+        "purpose": "True latch precedes workerCreate and all return validation/handle assignment"
+      },
+      {
+        "start": 533,
+        "end": 533,
+        "purpose": "Unchanged exact stopped binding, paired agent/session absence and disposed counts precede stopped fact"
+      },
+      {
+        "start": 549,
+        "end": 554,
+        "purpose": "Destructive entry/root cleanup requires no attempt or original factual stopped authority"
+      }
+    ],
+    "reasoning": "The latch has exactly one false initialization, one true assignment before the original possible creation effect, and one cleanup use; it is never reset. Any refusal, timeout, invalid phase/binding/count or missing/falsy handle after attempted creation keeps the latch true and cannot satisfy the destructive cleanup guard unless the original factual workerStopped assertion has completed. Both the successful path and finally path preserve the original stopped/binding/paired-absence prerequisite. Late callbacks cannot clear this local latch or independently establish its factual stop authority.",
+    "conservativeCase": "If the original RPC rejects locally before submission after the latch is set, destructive fixture cleanup is still refused; this retains uncertainty without claiming independently proven non-creation.",
+    "failureBoundary": "After attempted creation without factual stop, preset/Loader/root destructive cleanup is skipped and rootCleanup remains UNCERTAIN when ctx exists. Gate release and HTTP transport close remain unconditional. The unchanged owning executor may perform its bounded group/EOF failure cleanup; that is separate from factual worker absence and cannot promote the failed result.",
+    "actualVerification": "All ten fault rows are declarative NOT_RUN_SOURCE_DERIVED; no actual negative-path execution is claimed."
+  },
+  "executionEligibility": "ROOT_ONLY; pending joint affected reviews, fresh plan and direct supported execution authority",
+  "executionGO": false,
+  "acceptanceGO": false,
+  "publicationGO": false,
+  "candidateActionsByReviewer": {
+    "candidateProcessStarts": 0,
+    "parseImportEvaluateSyntaxCheckTestBuildHelperRuntimeCalls": 0,
+    "protectedOrPrivateSemanticExpansion": false,
+    "gitNetworkBrowserCloudModelActions": 0,
+    "sourceChanges": 0,
+    "writes": "Only this exclusive Markdown/JSON review pair"
+  },
+  "method": {
+    "reusedCoverage": "Original full D01 source review, exact file seals below, remains current. No repeated unchanged whole-graph semantic audit.",
+    "affectedReads": "Full r2 selector, author pair, literal delta, README and inert proposal/manifest metadata; whole fixture/driver strings obtained only for literal equivalence and targeted changed lifecycle ranges.",
+    "textualProof": "All 281 delta lines and all 17 hunks consumed; exact coordinates/context and reconstructed four-file strings match r2. Complete fixture and driver inverse transformations match the frozen D01 strings. No patch, candidate parser/evaluation or author regeneration helper invoked.",
+    "metadata": "217 explicit manifest/provenance regular-file identities externally measured by SHA-256 and stat; final 217-identity recheck unchanged. No private capture content, broad runtime walk or RuntimeStore body search.",
+    "metadataEvidenceChunks": [
+      "84ef26",
+      "f8283e"
+    ],
+    "literalEvidenceChunks": [
+      "df730a",
+      "4d4795"
+    ],
+    "absenceEvidenceChunk": "71ec10",
+    "scopeQualifications": "Previously disclosed author/root excluded implementation-line and private-pathname incidents remain qualified. Excluded snippets/pathnames were not reproduced or interpreted; no private content was read, copied or hashed. No new excluded-source/private-name expansion occurred in this review, and no pristine historical boundary is claimed."
+  },
+  "reusedCoverage": [
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.md",
+      "bytes": 12910,
+      "sha256": "69c417b8209726d18bb4e508f1712fb0e04004bd249e1297628374fdbb45f351"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.json",
+      "bytes": 22657,
+      "sha256": "f143141fdfe5c23e9edffdfa460ba1f3defaab288ebedf811ce3d5540f152c78"
+    }
+  ],
+  "reviewedPacketIdentities": [
+    {
+      "bytes": 64737,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs",
+      "sha256": "8953a70bbcc27ae765a6f24cec54671ded90ae57325775056f13c6dc02eae0d7"
+    },
+    {
+      "bytes": 38618,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/run-once.py",
+      "sha256": "c19e871c8afc4b794a982b60cccee60a608e4764c2e5bbe802f37a28dff86b06"
+    },
+    {
+      "bytes": 19395,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/execution-plan.proposed.json",
+      "sha256": "57b792de2940f41bc2a577fbdbb8cbc81bf6323346a7bbaf24b449003ede156e"
+    },
+    {
+      "bytes": 4355,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/README.md",
+      "sha256": "2ac4f4d95945140c2a2f88bce547d08919bc5356986b35825b87faf01c4eb31e"
+    },
+    {
+      "bytes": 19273,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/source-delta.diff",
+      "sha256": "790083586c835dc5d88ca03f3fbd5129e16d69f05e3bd84b27d168ed761f4ec3"
+    },
+    {
+      "bytes": 65257,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/source-manifest.json",
+      "sha256": "6cfcffbe29b8f3b0d139d27911551f6f389a3f3401f0aa964e2fe44fb66632ed"
+    },
+    {
+      "bytes": 5500,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-author-source.md",
+      "sha256": "0ebfd8adcd14d09128c74b2e1c667ae06162f9b12f10fa9732f02d77499356e6"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-author-source.json",
+      "bytes": 19778,
+      "sha256": "1960a8b3fd4451a122fa403447160c1ac798e27b93a51ddd3173500c535d6f25"
+    },
+    {
+      "path": "docs/ni6-canonical-integration-c1-delayed-worker-d01-r2-selection-2026-10-08.md",
+      "bytes": 3920,
+      "sha256": "f516d1ba1218fb80eca0b503180a0a2b216994b7a91a2b6d261077fb9401d168"
+    }
+  ],
+  "literalDelta": {
+    "bytes": 19273,
+    "lines": 281,
+    "hunks": 17,
+    "added": 121,
+    "removed": 23,
+    "files": [
+      {
+        "name": "fixture.mjs",
+        "hunks": 4,
+        "added": 6,
+        "removed": 4,
+        "reconstructedExact": true
+      },
+      {
+        "name": "run-once.py",
+        "hunks": 3,
+        "added": 3,
+        "removed": 3,
+        "reconstructedExact": true
+      },
+      {
+        "name": "execution-plan.proposed.json",
+        "hunks": 8,
+        "added": 107,
+        "removed": 15,
+        "reconstructedExact": true
+      },
+      {
+        "name": "README.md",
+        "hunks": 2,
+        "added": 5,
+        "removed": 1,
+        "reconstructedExact": true
+      }
+    ],
+    "allTextConsumed": true,
+    "wholeReconstructionExact": true,
+    "sourceEditsOrPatchApplication": false,
+    "independentAuthorDiffRegenerationClaimed": false
+  },
+  "conservation": {
+    "fixtureNamespaceOccurrences": 2,
+    "fixtureInverseChanges": [
+      {
+        "occurrences": 1,
+        "change": "workerAgent,workerCreationAttempted=false,currentTask restored to workerAgent,currentTask"
+      },
+      {
+        "occurrences": 1,
+        "change": "Remove the two added comment/true-latch lines immediately before original workerCreate"
+      },
+      {
+        "occurrences": 1,
+        "change": "Restore !workerCreationAttempted||facts.workerStopped to predecessor !workerAgent||facts.workerStopped"
+      }
+    ],
+    "fixtureWholeNormalizedExact": true,
+    "driverNamespaceOccurrences": 3,
+    "driverWholeNormalizedExact": true,
+    "proposalWholeNormalizedExact": "Namespace normalization, removal of only cleanupCreationAttemptGate/sourceOnlyFaultPathMatrix, and restoration of failureCleanup description yields exact D01 proposal metadata",
+    "originalControlBlockExact": true,
+    "originalControlBlock": {
+      "bytes": 13080,
+      "sha256": "06da8c0022843d356dcfe170150f4181244c64d296596da1cd46b9269cbaff84"
+    },
+    "originalOwningPrimitive": {
+      "bytes": 18306,
+      "sha256": "481fb091ab43acc1e00a90f00764f8ac381968b19fd9632a8dfeabad24678735",
+      "status": "Reused original seal; exact whole-driver namespace equivalence establishes unchanged primitive"
+    },
+    "originalStoppedBindingAndPairedAbsenceAssignmentExact": true,
+    "unchangedOrdinaryJourneyAndOwnerPredicates": true,
+    "runtimeControlGroups": 50,
+    "originalPureControls": 38,
+    "delayedWorkerGroups": 12,
+    "addedRuntimeControls": 0,
+    "declarativeFaultMatrix": {
+      "rows": 10,
+      "allActual": "NOT_RUN_SOURCE_DERIVED",
+      "matchesCleanupPredicate": true,
+      "allowsBeforeAttempt": "M01",
+      "allowsAfterEstablishedOriginalStop": "M09",
+      "refusesUnestablishedAfterAttempt": [
+        "M02",
+        "M03",
+        "M04",
+        "M05",
+        "M06",
+        "M07",
+        "M08",
+        "M10"
+      ]
+    }
+  },
+  "metadataClosure": {
+    "inputCount": 209,
+    "inputBytes": 8868110,
+    "inheritedInputCount": 196,
+    "inheritedInputBytes": 8501749,
+    "inheritedRowsExact": true,
+    "addedInputCount": 13,
+    "addedInputBytes": 366361,
+    "addedComposition": "Original D01 six capsule files, two author records and four final independent finding records, plus r2 selector",
+    "allExplicitPathsUnique": true,
+    "canonical65Count": 65,
+    "canonical65Bytes": 1952632,
+    "canonical65Unchanged": true,
+    "currentMeasuredCount": 217,
+    "currentMeasuredComposition": "209 inputs + five owned files + manifest self + two r2 author provenance files",
+    "finalMeasuredCount": 217,
+    "finalMeasuredUnchanged": true,
+    "mismatches": [],
+    "futureActualPinCount": 219,
+    "futureActualComposition": "209 inputs + five owned files + manifest self + four required final affected review files; r2 author pair remains separate provenance",
+    "sourceCopies": 0,
+    "exactTopologyLinks": 3,
+    "topologyTargetsMatch": true,
+    "capsuleOwnerUID": 501,
+    "capsuleMode": "0700",
+    "sourceProposalPinsEmpty": true,
+    "rootExecutionFlags": [
+      false,
+      false,
+      false
+    ],
+    "wholeHostLimit": "Pinned graph authority and original full semantic owner coverage reused. The original owner still requires its full host-file/link preflight at execution; this reviewer did not re-enumerate that unchanged graph.",
+    "currentnessLimit": "Explicit finite currentness cuts, not continuous or atomic exclusion."
+  },
+  "ordinaryTaskRefresh": {
+    "status": "SOURCE_SUPPLIED_RESOLVED_REUSED",
+    "authority": {
+      "path": "src/installed-worker.mjs",
+      "line": 255,
+      "bytes": 47428,
+      "sha256": "5a60c989df978ecc2d51ff936cda33065f164189478e0bf73d35dc8caa8c84d2"
+    },
+    "contract": "Public workerQuery returns immutable({task:snapshot(value.taskRef).task,worker}); unchanged STOPPED_QUERY therefore refreshes currentTask through rpc update(value.task) before finalVersion/finalAuth at r2 line 535.",
+    "additionalImplementationRead": false,
+    "protectedInference": false,
+    "otherReusedOrdinaryFacts": "Root-supplied ordinary final.control==='paused' scalar and seven public consumer execution identity fields remain exact; no invented execution phase/state and no surrounding RuntimeStore/normal-native body read."
+  },
+  "unchangedJointOracles": {
+    "delayedRun": "One original synthetic unchanged-provider action/session/stream; llm/stream next exactly once and held original iteration, task A executes while B is only queued; one attempt, maxActive 1, tools 0, retry 0, external/model calls 0.",
+    "duringGate": "Original status/intake/revise/status calls must complete while the original gate is held, execute is pending and the factual agent is running; latency fields are finite. No new <=2-second PASS threshold is introduced.",
+    "staleAndCurrent": "Old CAS capture must yield STALE_VERSION without artifact; current prepared/detail context contains all revised front/middle/end constraints and omits old goal.",
+    "originalLifecycle": "Unknown original worker binding remains; pause follows the original execution/gate settlement, exact stopped query and paired agent/session absence precede any destructive entry/root cleanup.",
+    "reservation": "Operation 27 directly checks value.receipt.reservationsHeld===1. Operation 29 preserves current paused task, same unknown action, exact seven execution identity fields and no artifact; continued held retention after 29 remains inference with no finish/release, not a second snapshot budget scalar.",
+    "cleanup": "Standalone root RESTARTED requires original returned disposal, root UID 0/state 2, ten exact unique retained direct child fibers terminal and six retained Loader rows removed/absent/terminal. It does not establish whole application quit or native final capture/finish semantics.",
+    "firstFailure": "Original first-failure behavior, gate release, transport close, publication window and bounded owner group/EOF handling are unchanged."
+  },
+  "operationClosure": {
+    "domainPosts": 29,
+    "authGets": 1,
+    "postRemovalPosts": 1,
+    "totalHTTPMaximum": 31,
+    "actualWorkerCreateOperation": 16,
+    "readyWorkerQueryOperation": 17,
+    "selectorClericalQualification": "Frozen selector says operation 17 workerCreate; author/proposal/README qualify authoritative immutable table operation 16 create and 17 ready query. No order/count change.",
+    "directInterpreterMaximum": 3,
+    "maximumConcurrentInterpreters": 2,
+    "starts": {
+      "pythonOwner": 1,
+      "nodeSyntax": 1,
+      "nodeFunctional": 1,
+      "nestedTestWorkers": 0
+    },
+    "addedRPCOrLifecycleCalls": 0
+  },
+  "evidenceGrammar": {
+    "mainFields": 36,
+    "phases": 63,
+    "auxiliaryResponsivenessFields": 16,
+    "schemasBoundsPhasesBudgetsPublicRecordsAndHTTPLimitsExactlyConserved": true,
+    "mainCompactBytes": 873,
+    "mainPrettyLFBytes": 1018,
+    "mainCapBytes": 1024,
+    "mainPrettyHeadroomBytes": 6,
+    "auxiliaryCompactBytes": 465,
+    "auxiliaryPrettyLFBytes": 530,
+    "auxiliaryCapBytes": 1024,
+    "boundedReadMaximumBytes": 1025,
+    "prospectiveRootPlan": {
+      "pins": 219,
+      "prettyLFBytes": 49327,
+      "capBytes": 65536,
+      "metadataOnly": true,
+      "written": false,
+      "placeholderFinalReviewSeals": true,
+      "prospectiveFlagsDoNotGrantGO": true
+    },
+    "publicRecords": {
+      "count": 6,
+      "capsBytes": {
+        "fixture-result.json": 1024,
+        "responsiveness.json": 1024,
+        "executor-result.json": 16384,
+        "command-results.json": 16384,
+        "before-after.json": 4096,
+        "root-plan.json": 65536
+      }
+    },
+    "jointPASS": "Owning driver requires original group absence and both EOFs before strict diagnostic/responsiveness decoding; closed schema, duplicate/nonfinite/type/cap rules remain. Main PASS requires responsiveness PASS and executor equality with separately validated published records. Root later must independently bind all six public records and the supported direct return.",
+    "failurePublication": "Valid partial failed records remain within original finally publication window; opaque raw streams/errors are not decoded or published by reviewer.",
+    "responsivenessEnvironment": "Only original public platform/architecture/CPU/RAM scalar fields; no kernel or marketing-version expansion."
+  },
+  "budgets": {
+    "exactlyConserved": true,
+    "seconds": {
+      "setup": 20,
+      "syntaxTotal": 5,
+      "syntaxCleanupInside": 1,
+      "bookkeepingInsideEach": 1,
+      "diagnosticTotal": 35,
+      "diagnosticCleanupInside": 4,
+      "postReadbackMaximum": 25,
+      "primaryAbsoluteEnd": 85,
+      "terminalReserveInsideTotal": 5,
+      "totalOwnerMaximum": 90,
+      "nodeWork": 24,
+      "nodeFinalEnd": 30,
+      "nodeCleanupInside": 5,
+      "nodeResultReserveInside": 0.5,
+      "ordinaryHTTPRequest": 2,
+      "selectedExecuteHTTPRequest": 10,
+      "ordinaryRPCStep": 2.5,
+      "selectedExecuteRPCStep": 10.5
+    },
+    "heldGateMaximumMilliseconds": 4000,
+    "heldGateInsideSharedNodeWork": true,
+    "privateStreamCapsBytes": {
+      "each": 131072,
+      "aggregate": 262144
+    },
+    "actualBudgetFitOrCancellationProved": false
+  },
+  "currentAbsenceCut": {
+    "actualDestinations": 17,
+    "allActualDestinationsAbsent": true,
+    "finalReviewSlots": 4,
+    "allAbsentAtPrepublicationCut": true,
+    "ownPairAbsentBeforeExclusiveWrite": true,
+    "forbiddenEnvironmentKeysAbsent": 8,
+    "environmentValuesExposed": false,
+    "observation": "Before this review publication only; later independently published reviews are separate authority"
+  },
+  "legacyAggregateQualification": {
+    "inheritedAll87Value": "HOLD",
+    "interpretation": "Aggregate not accepted metadata only; not 87 per-criterion dispositions. This review does not rewrite a criterion table or invalidate current evidence, including existing C02 full criterion PASS.",
+    "noAcceptanceGO": true
+  },
+  "remainingWork": [
+    "Root needs both final affected reviews and a fresh fully pinned plan before independently deciding whether to authorize one supported r2 invocation. This reviewer grants no GO.",
+    "Actual D01-r2 delayed run, latencies, current public environment, factual cleanup and fault outcomes remain NOT_RUN; original D01 stays MUST_NOT_EXECUTE.",
+    "A genuine subsequent corrected request/full BUB002-02 remains open; queued task B does not establish that continuation.",
+    "Calibrated full BUB002-04/SLA, full BUB012 status budget-panel visibility, protected final semantics, full CLI/browser and aggregate acceptance/publication remain open."
+  ],
+  "reportPublication": {
+    "destinations": [
+      "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.json"
+    ],
+    "exclusiveMode": "0600",
+    "fullAuthoredReadbackRequired": true,
+    "externalByteSHA256SealsReturnedSeparately": true,
+    "selfHashEmbedded": false
+  }
+}

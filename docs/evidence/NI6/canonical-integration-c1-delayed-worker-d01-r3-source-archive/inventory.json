@@ -1,0 +1,52 @@
+{
+  "README": {
+    "bytes": 538,
+    "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/README.md",
+    "sha256": "3a64f2db1e9ae53c762fb114f3228baae9ef616c612d2a9118d7e35ae09142ae"
+  },
+  "candidateStartsByArchiving": 0,
+  "disposition": "CONSUMED_FAILED_HOLD_DO_NOT_REPLAY",
+  "files": [
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/fixture.mjs.txt",
+      "bytes": 65237,
+      "sha256": "9cd43225de8bccf3e21d19b5c92cfa38e0b638f19099c157aa2c58a0264acdc7",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture.mjs"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/run-once.py.txt",
+      "bytes": 38618,
+      "sha256": "803be99617e16e1154277f3ab27954e99dc9ff907d79baa54298e74611aace5e",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/run-once.py"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/execution-plan.proposed.json.txt",
+      "bytes": 20273,
+      "sha256": "6cc36e98ed8d894fa2fbf2d23b02d8f3c51b865f649f9a6048aa62f1c7380975",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/execution-plan.proposed.json"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/README.md.txt",
+      "bytes": 6026,
+      "sha256": "f0bd327adbe128b7d241fcc10f762b8a83ef40c2d165455048ea702c48e246df",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/README.md"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/source-delta.diff.txt",
+      "bytes": 23714,
+      "sha256": "edba256ab21d10cf569194590ad55a327018ab73d54ab7d58ad9c0ef39dd7ef6",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/source-delta.diff"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/source-manifest.json.txt",
+      "bytes": 72626,
+      "sha256": "4902091e778415ba2c479ee5276fe66287ba99958b2e12d033245928e2a528bf",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/source-manifest.json"
+    }
+  ],
+  "nonExecutable": true,
+  "privateStateIncluded": false,
+  "schema": "df.source-archive/v1",
+  "sourceBytes": 226494,
+  "sourceCount": 6
+}

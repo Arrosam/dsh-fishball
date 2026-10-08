@@ -1,0 +1,236 @@
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture.mjs
+@@ -10,12 +10,12 @@
+ import { release as kernelRelease, cpus, totalmem } from 'node:os';
+ 
+ const STARTED = performance.now();
+-const WORK_END = STARTED + 24000, FINAL_END = STARTED + 30000;
++const WORK_END = STARTED + 24000, FINAL_END = STARTED + 28000;
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const NAME = '.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2';
++const NAME = '.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3';
+ const CAPSULE = resolve(ROOT, NAME), HOST = resolve(ROOT, '.runtime/dsh-web');
+ const PRODUCT = ROOT;
+-const PLAN_NAME = '.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json';
++const PLAN_NAME = '.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r3-plan.json';
+ const RESULT = resolve(CAPSULE, 'fixture-result.json');
+ const GRAPH_NAME = '.runtime/ni3-native-runtime/public-graph-pins.json';
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+@@ -493,6 +493,7 @@
+   invariant(worker&&CREATE_PHASES.includes(worker.phase)&&worker.phase!=='NOT_RETURNED');createPhase=worker.phase;invariant(createPhase==='ready');
+   for(const k of ['claimRef','generationRef','sessionRef','reservationRef'])ref(worker[k]);invariant(worker.taskRef===currentTask.taskRef&&worker.actionRef===action.actionRef&&worker.actionDigest===action.actionDigest);
+   const ids=ctx.agents.list();invariant(ids.length===1);workerAgent=ids[0];invariant(workerAgent&&ctx.agents.get(workerAgent.id)===workerAgent&&sha(Buffer.from(workerAgent.id))===worker.sessionRef&&ctx.sessions.get(workerAgent.id)===workerAgent.session&&counts.agentCreated===1&&counts.sessionCreated===1&&counts.streams===0);facts.workerCreated=true;
++  const originalSession=workerAgent.session; // Retained original session identity; no new authority.
+   const query={taskRef:currentTask.taskRef,actionRef:action.actionRef,claimRef:worker.claimRef,generationRef:worker.generationRef};
+   const idle=await rpc('WORKER_IDLE','/df-rpc','workerQuery',query);invariant(idle.worker.phase==='ready'&&counts.streams===0);
+   const oldCas=Object.freeze({...cas()}),oldVersion=currentTask.version;
+@@ -521,8 +522,10 @@
+   invariant(currentTask.taskRef===addressed.taskRef&&currentTask.version===afterCorrection.task.version&&counts.streams===1&&requests===1&&counts.tools===0&&stepStarts===1&&stepEnds===1&&turnStarts===1&&turnEnds===1);
+   // D07: old CAS refuses STALE_VERSION; no adopted result is manufactured.
+   await step('WORKER_CAPTURE',()=>http.call('/df-rpc','workerCapture',{...oldCas,actionRef:action.actionRef,claimRef:worker.claimRef,generationRef:worker.generationRef,executionRef:execution.executionRef,commandRef:synthetic('stale-capture')},false,false,'STALE_VERSION'),2500);facts.staleCaptureRefused=true;
+-  // D08: original query retains unknown phase and all original worker bindings.
+-  const unknown=await rpc('WORKER_QUERY','/df-rpc','workerQuery',query);invariant(unknown.worker.phase==='unknown'&&unknown.worker.claimRef===worker.claimRef&&unknown.worker.generationRef===worker.generationRef);for(const k of ['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','reservationRef'])invariant(unknown.worker[k]===worker[k]);
++  // D08: native query ready/unknown is independent of durable execution; original public agent is idle.
++  const queried=await rpc('WORKER_QUERY','/df-rpc','workerQuery',query);invariant(['ready','unknown'].includes(queried.worker.phase)&&queried.worker.claimRef===worker.claimRef&&queried.worker.generationRef===worker.generationRef);for(const k of ['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','reservationRef'])invariant(queried.worker[k]===worker[k]);
++  invariant(workerAgent&&ctx.agents.get(workerAgent.id)===workerAgent&&workerAgent.status==='idle'&&workerAgent.session===originalSession&&ctx.sessions.get(workerAgent.id)===originalSession&&sha(Buffer.from(workerAgent.id))===worker.sessionRef);
++  // Public service/receipt observations only; no independent hidden stream-state match or full state matrix.
+   // D09: freshly prepared original context contains current front/middle/end constraints and omits old goal.
+   const fresh=await rpc('CURRENT_CONTEXT_PREPARE','/df-rpc','prepareContext',{...cas(),commandRef:synthetic('current-context'),terms:[],now:Date.now()});ref(fresh.recordRef);ref(fresh.digest);
+   const corrected=await rpc('CURRENT_CONTEXT_DETAIL','/df-rpc','detail',{...cas(),recordRef:fresh.recordRef});invariant(corrected.data.kind==='context'&&typeof corrected.data.content==='string'&&sha(Buffer.from(corrected.data.content))===fresh.digest&&Buffer.byteLength(corrected.data.content)<=16384);
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/run-once.py
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/run-once.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2'
++NAME='.runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r3-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -532,7 +532,7 @@
+     marker_owned=evidence_owned=private_owned=False
+     marker_id=evidence_id=private_id=None
+     marker=CAPSULE/'invocation.json'
+-    evidence=ROOT/'docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution'
++    evidence=ROOT/'docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution'
+     private=CAPSULE/'private-capture'
+     result_path=CAPSULE/'fixture-result.json'
+     rows=[]; before=after=None; selected=None; responsive=None; finalized=False; plan_digest=None
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/execution-plan.proposed.json
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/execution-plan.proposed.json
+@@ -3,12 +3,14 @@
+   "all87": "HOLD",
+   "budgetsSeconds": {
+     "bookkeepingInsideEachCommand": 1,
++    "childStartupReserveInsideOwnerWorkCutoff": 2,
+     "diagnosticCleanupInsideTotal": 4,
+     "diagnosticTotal": 35,
+     "nodeCleanupInsideDiagnostic": 5,
+-    "nodeFinalAbsoluteEnd": 30,
++    "nodeFinalAbsoluteEnd": 28,
+     "nodeResultReserveInsideFinal": 0.5,
+     "nodeWorkInsideDiagnostic": 24,
++    "ownerFunctionalWorkCutoff": 30,
+     "postReadbackMaximum": 25,
+     "primaryAbsoluteEnd": 85,
+     "setupPreflight": 20,
+@@ -36,11 +38,11 @@
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs"
++      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture.mjs"
++      ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -96,9 +98,9 @@
+     "all87",
+     "CODE"
+   ],
+-  "diagnosticResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/fixture-result.json",
++  "diagnosticResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture-result.json",
+   "effects": "Two synthetic tasks, only A executes: one original worker/request/stream/turn/step; bounded original waterfall hold and four pending domain observations; old-CAS stale capture refuses, current correction/no artifact, factual stopped/absent worker and held reservation.31HTTP;50source-derived named groups; tools/memory/external/model0.",
+-  "evidenceDirectory": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution",
++  "evidenceDirectory": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution",
+   "executeHttpPhases": [
+     "NOT_SENT",
+     "REQUEST_STARTED",
+@@ -208,8 +210,8 @@
+     "H14"
+   ],
+   "finishWaitWidth": 7,
+-  "freshInvocationMarker": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/invocation.json",
+-  "freshRuntimeDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/private-runtime",
++  "freshInvocationMarker": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/invocation.json",
++  "freshRuntimeDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/private-runtime",
+   "httpLimits": {
+     "authGets": 1,
+     "domainPosts": 29,
+@@ -356,7 +358,7 @@
+     "requiredForD01": [
+       "Truthful committed-or-unknown original execute envelope",
+       "Old CAS STALE_VERSION refusal",
+-      "Original query unknown with all seven worker bindings",
++      "Original query ready/unknown with retained original agent/session identity, original public agent idle and all seven worker bindings; independent durable execution state",
+       "Fresh original context contains corrected goal and front/middle/end constraints, omits old goal",
+       "Pause directly reports one held reservation",
+       "Original stopped worker and agent/session absence before removal",
+@@ -430,7 +432,7 @@
+     "COMPLETE"
+   ],
+   "pins": {},
+-  "privateCaptureDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/private-capture",
++  "privateCaptureDirectory": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/private-capture",
+   "privateStreamAggregateByteCap": 262144,
+   "privateStreamByteCap": 131072,
+   "privateStreamsDecodedOrPublished": false,
+@@ -453,6 +455,20 @@
+       "before-after.json",
+       "root-plan.json"
+     ]
++  },
++  "queryQualification": {
++    "agentStatusRequired": "idle",
++    "allSevenWorkerBindingsRequired": true,
++    "allowedReceiptPhases": [
++      "ready",
++      "unknown"
++    ],
++    "executionStateSeparate": true,
++    "fullNativeStateMatrix": "NOT_RUN_UNAVAILABLE",
++    "hiddenStreamStateIndependentlyObserved": false,
++    "newResultFields": 0,
++    "originalSessionRefHashRequired": true,
++    "retainedOriginalAgentAndSessionRequired": true
+   },
+   "refusalCodes": [
+     "NONE",
+@@ -495,10 +511,10 @@
+   ],
+   "remainingCriteria": "Subsequent genuine corrected request/full BUB002-02, calibrated full BUB002-04, status budget-panel/full BUB012, protected final semantics, browser/CLI/full87 acceptance remain open. B is queued secondary task, not corrected continuation.",
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.json",
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-design-review.json"
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-test-design-review.json"
+   ],
+   "reservationEvidence": "Operation27 receipt.reservationsHeld===1 is direct observation.28 exact stopped binding+original agent/session absence and29 current paused task/same unknown action+seven execution identity fields/no artifact follow. Held after29 is retention inference with no finish/release, not independently measured status count.",
+   "responsivenessBounds": {
+@@ -529,7 +545,7 @@
+     "cpuCount",
+     "totalRamBytes"
+   ],
+-  "responsivenessResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/responsiveness.json",
++  "responsivenessResult": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/responsiveness.json",
+   "resultSizeBounds": {
+     "byteCap": 1024,
+     "compactFormat": "JSON.stringify plus newline; existing fixture format",
+@@ -546,13 +562,13 @@
+     "RESTARTED"
+   ],
+   "rootCleanupQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. D01 factual stopped worker/agent-session absence, direct held-count/currentness/no-artifact/preset/post404 guards remain independent; no finish, release or adopted-result persistence is claimed; failed or unverified cleanup stays HOLD.",
+-  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r2-plan.json",
++  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r3-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "rootTerminalQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. D01 factual stopped worker/agent-session absence, direct held-count/currentness/no-artifact/preset/post404 guards remain independent; no finish, release or adopted-result persistence is claimed; failed or unverified cleanup stays HOLD.",
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/run-once.py",
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/run-once.py",
+   "sourceCopies": [],
+   "sourceOnlyFaultPathMatrix": [
+     {
+@@ -636,6 +652,7 @@
+       "workerStoppedEstablished": false
+     }
+   ],
++  "startupReserveQualification": "Internal FINAL_END28 leaves conservative2s versus unchanged owner functional work cutoff30; WORK_END24/owner35total-cleanup4-bookkeeping1 unchanged; no calibrated startup guarantee or product SLA.",
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+   "streamCasesMaximum": 8,
+--- .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r2/README.md
++++ .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/README.md
+@@ -1,15 +1,19 @@
+-# D01-r2 delayed native-worker source
++# D01-r3 delayed native-worker source
+ 
+ SOURCE_ONLY_NOT_RUN. Root owns final reviews, exclusive plan, GO and supported once execution. Canonical65 and consumed W01/other packets are immutable; genuine original build proof is prerequisite authority. No source copies or author execution.
+ 
+ The original documented llm/stream waterfall calls next once, forwards the original first text delta unchanged, then holds original iteration <=4000ms within unchanged24s work. While original A is running/execute HTTP unsettled/gate held, statusA, queued intakeB, exact-CAS operator reviseA and corrected statusA must all decode successfully before release. Four send-to-decoded ceil-ms values and public Node/Darwin-kernel/arch/CPU-count/RAM appear only in the separate exact16-field responsiveness record; no added <=2000ms SLA. Immutable freeze requires pending facts; late callbacks cannot promote success. Gate releases on every path.
+ 
+-Exact29 operation POSTs + one original auth GET + original post-removal404 =31HTTP. Original settlement reports committed or unknown truthfully. Old-CAS capture refuses STALE_VERSION; query is unknown with original bindings; fresh context contains current front/middle/end constraints and omits old goal. Operation27 nested receipt.reservationsHeld==1 is direct count;28 observes same stopped worker and original agent/session absence before removal;29 verifies current paused task/same unknown action/seven execution identities/no artifact. Held after29 is source-based retention inference, not a second status budget scalar. No workerResult/finish/release/duplicate execute or taskB execution occurs. On failure before factual stop, skip destructive entry/root removal; original driver bounded group/EOF cleanup reports uncertainty.
++Exact29 operation POSTs + one original auth GET + original post-removal404 =31HTTP. Original settlement reports committed or unknown truthfully. Old-CAS capture refuses STALE_VERSION; query receipt may be ready/unknown with all seven original bindings; retained original agent/session identity, sessionRef hash and original public agent idle must match independently of durable execution state; fresh context contains current front/middle/end constraints and omits old goal. Operation27 nested receipt.reservationsHeld==1 is direct count;28 observes same stopped worker and original agent/session absence before removal;29 verifies current paused task/same unknown action/seven execution identities/no artifact. Held after29 is source-based retention inference, not a second status budget scalar. No workerResult/finish/release/duplicate execute or taskB execution occurs. On failure before factual stop, skip destructive entry/root removal; original driver bounded group/EOF cleanup reports uncertainty.
+ 
+ All C01-C23/F01-F05/G01-G05/L01-L05 remain byte-identical (38 groups); D01-D12 name12 affected domain groups, total50 source-derived, not independent telemetry.36 main fields/63 phases:873 compact/1018 pretty including LF;16 responsiveness fields:465/530; each cap1024/read1025. Original deadlines, private stream caps, canonical/full-host/source/build currentness, auth/consent/policy/source guards, paired absence, preset/six exact Loader removals/post404/root RESTARTED and owning EOF/group/signal/once protections remain. Python owner + sequential syntax Node + functional Node =3 maximum interpreter starts; author starts0.
+ 
+ Six public records are strict metadata only; owning decoder cross-binds main/auxiliary with executor, publishes valid partial failure in original finally window, and root eventual proof must validate/seal all six plus original driver return. Standalone root RESTARTED is not whole CLI quit. Queued B does not demonstrate corrected subsequent request/full BUB002-02; calibrated performance/full BUB002-04, status budget visibility/full BUB012, protected final semantics and full acceptance remain open.
+ 
+-D01-r2 repairs only uncertain-creation destructive cleanup. Internal workerCreationAttempted is latched before the original operation16 workerCreate call, never cleared by refusal/timeout/malformed phase, binding or agent count, and never inferred from a local handle. After any attempt, only original factual stopped binding plus paired agent/session absence/disposition (existing workerStopped gate) permits entry/root cleanup. Pre-creation no-worker cleanup is unchanged. Gate release and transport closure remain unconditional; failed/unknown creation is handled by the unchanged owning process-group/EOF cleanup, not manufactured normal native stop. First failure remains latched. No extra call, test, negative execution, helper, signal, field, timer, provider or policy change.
++Inherited D01-r2 uncertain-creation destructive cleanup repair remains exact. Internal workerCreationAttempted is latched before the original operation16 workerCreate call, never cleared by refusal/timeout/malformed phase, binding or agent count, and never inferred from a local handle. After any attempt, only original factual stopped binding plus paired agent/session absence/disposition (existing workerStopped gate) permits entry/root cleanup. Pre-creation no-worker cleanup is unchanged. Gate release and transport closure remain unconditional; failed/unknown creation is handled by the unchanged owning process-group/EOF cleanup, not manufactured normal native stop. First failure remains latched. No extra call, test, negative execution, helper, signal, field, timer, provider or policy change.
+ 
+-The sealed selection's numeric17 workerCreate is a clerical discrepancy explicitly clarified by root: the exact table and named original workerCreate call16 govern, ready query is17. Table, order and31 total HTTP are unchanged. Proposal M01-M10 are a finite source-derived fault-path matrix only, all NOT_RUN, without adding to the50 existing named groups. D01 is immutable MUST_NOT_EXECUTE; its final independent findings and all eight original artifacts are explicit successor authority. Prior qualified scope exposures remain disclosed in both author records, with no excluded snippets or private names repeated. Protected implementation/CODE remains BLOCKED_UNCHANGED.
++The sealed selection's numeric17 workerCreate is a clerical discrepancy explicitly clarified by root: the exact table and named original workerCreate call16 govern, ready query is17. Table, order and31 total HTTP are unchanged. Proposal M01-M10 are a finite source-derived fault-path matrix only, all NOT_RUN, without adding to the50 existing named groups. Original D01 is immutable MUST_NOT_EXECUTE; consumed D01-r2 is FAILED_HOLD/DO_NOT_REPLAY. Its public source/actual/producer/diagnosis/assessment authority is explicitly pinned. Prior qualified scope exposures remain disclosed in both author records, with no excluded snippets or private names repeated. Protected implementation/CODE remains BLOCKED_UNCHANGED.
++
++D01-r3 changes only the selected query oracle and internal final window, apart from namespace and descriptive provenance. Public native query ready/unknown is an ownership/stream/agent-state receipt independent of durable execution outcome; precise r2 returned query phase/failing comparison was not retained. The original agent and creation-time session object are retained and checked against original public registries/status/hash. This is public service observation, not an independent hidden stream-state match or full native lifecycle matrix. Separate stale-CAS refusal, truthful execution state, corrected context, no artifact, direct held count, final paused unknown action/execution identity and factual stopped paired absence remain exact. Creation-attempt latch remains set before operation16, and uncertainty never authorizes destructive cleanup.
++
++FINAL_END is28s from Node fixture startup, preserving WORK_END24 and original cleanup clamp/publication reserve. The unchanged Python owner has30s functional work inside35 total minus4 cleanup minus1 bookkeeping; the2s startup reserve is conservative and not calibrated or additive. Original parent cutoff/EOF/group/driver-return gates govern if startup consumes it. No new RPC, field, observer/control, helper, provider/product change or budget increase. Aggregate diagnostic all87:HOLD means acceptance ungranted, not a per-row blanket; prior full C02 PASS remains conserved.

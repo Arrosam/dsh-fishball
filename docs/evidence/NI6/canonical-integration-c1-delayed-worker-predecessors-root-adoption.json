@@ -1,0 +1,332 @@
+{
+  "MVP": false,
+  "R2": "CONSUMED_FAILED_HOLD_WORKER_QUERY_SUPPLEMENT",
+  "R2IncompleteEOFNotPromoted": true,
+  "R2exactQueryLeaf": "NOT_RECORDED",
+  "R3": "CONSUMED_FAILED_HOLD_FINAL_STATUS_INVARIANT",
+  "R3BothOwnedEOFAndAbsence": true,
+  "R3exactFinalLeaf": "NOT_RECORDED",
+  "calibratedSLA": false,
+  "date": "2026-10-08",
+  "falseNoArtifactMeansArtifactExists": false,
+  "mainMerge": false,
+  "markdown": {
+    "bytes": 3010,
+    "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-predecessors-root-adoption.md",
+    "sha256": "f026e6258cbf4b0bbf65201697d40d10e747b109e8f16c79a3fedae9d7b2387b"
+  },
+  "noNewFullCriterionPASS": true,
+  "noReplay": true,
+  "originalD01": "SOURCE_HOLD_MUST_NOT_EXECUTE",
+  "originalPublicIdentities": [
+    {
+      "bytes": 16426,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-author-source.json",
+      "sha256": "7fa11600da5e5071b1e704db1ee80a9c307152113be2ba6b7874f949d4bd3ff1"
+    },
+    {
+      "bytes": 3672,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-author-source.md",
+      "sha256": "c6d6603ae058e0d4b26745edc36c78caed486b088b02b259bec01f4344318f33"
+    },
+    {
+      "bytes": 22657,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.json",
+      "sha256": "f143141fdfe5c23e9edffdfa460ba1f3defaab288ebedf811ce3d5540f152c78"
+    },
+    {
+      "bytes": 12910,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-source-review.md",
+      "sha256": "69c417b8209726d18bb4e508f1712fb0e04004bd249e1297628374fdbb45f351"
+    },
+    {
+      "bytes": 31503,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-test-design-review.json",
+      "sha256": "7a0c5150ed4d35ee41478f639fc130194548e9c648b0862ab0107bfa8939d2e4"
+    },
+    {
+      "bytes": 21820,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-independent-test-design-review.md",
+      "sha256": "db1eb36823c6909adc846a40d04d946c25551cc498c4e39ae136f06f7937771f"
+    },
+    {
+      "bytes": 19778,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-author-source.json",
+      "sha256": "1960a8b3fd4451a122fa403447160c1ac798e27b93a51ddd3173500c535d6f25"
+    },
+    {
+      "bytes": 5500,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-author-source.md",
+      "sha256": "0ebfd8adcd14d09128c74b2e1c667ae06162f9b12f10fa9732f02d77499356e6"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/before-after.json",
+      "sha256": "0d66ed3b1411cce6acb728943f0a7265a99f2df60ab7a349156f21b59127ebc2"
+    },
+    {
+      "bytes": 3148,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/command-results.json",
+      "sha256": "e7adb224179e41e5d77b41e7a55587c8833f4e8b6d69654350d56996d25dca84"
+    },
+    {
+      "bytes": 3815,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/executor-result.json",
+      "sha256": "beed066c3397534407753adba01fe9cae6c3dbee5ba532c93a981469781df84c"
+    },
+    {
+      "bytes": 4677,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/root-original-return.json",
+      "sha256": "3a4202d3a305f80c2ef654a15302abd895e34bdf5d762745cbd9c8a388a295c9"
+    },
+    {
+      "bytes": 49327,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-execution/root-plan.json",
+      "sha256": "7090761cd795324f55fbc54bd142b21676db740f436ca6e4572f38ef8b9fcf61"
+    },
+    {
+      "bytes": 15116,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-execution-review.json",
+      "sha256": "e0123903b5be06b19f9e39eec1b252966e2ab51d9eb29f1d6ceaa165fa92c469"
+    },
+    {
+      "bytes": 6678,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-execution-review.md",
+      "sha256": "077e115732d7812d21312f0a863c4fa20e29c697e9709d6d22f48f3469bef217"
+    },
+    {
+      "bytes": 19356,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.json",
+      "sha256": "f4a114297b6f24bc3e70d66586de9a5e799057f5637a2a8788fab1ee42985c79"
+    },
+    {
+      "bytes": 9512,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-source-review.md",
+      "sha256": "fbc5fe3db3d007bbb12ed75cc68b757a8622054a315c447234d7ce10b8fa9c81"
+    },
+    {
+      "bytes": 26312,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-design-review.json",
+      "sha256": "257be589b673aaa4784be5f067d750a4a3388cc352f24d1b7f8a32b6d5116f25"
+    },
+    {
+      "bytes": 12744,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-design-review.md",
+      "sha256": "2e65678aa9f53d48e8768c456d5f481ca29442b12c9382b49ec765eedeaa7673"
+    },
+    {
+      "bytes": 27993,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-execution-review.json",
+      "sha256": "3b575a5b9de96a5f59a4b15b46408cafc3c137192f2da31ce58d2e4befd45bfa"
+    },
+    {
+      "bytes": 12470,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-independent-test-execution-review.md",
+      "sha256": "19b7e08fe0191cdef851606922f09681044cf4d7327178713a2a4a1c03dd7571"
+    },
+    {
+      "bytes": 801,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-producer-supplement/fixture-result.json",
+      "sha256": "2afd0854a034093cc863c1d2008da1abf631b9b644c3ca4f2c378d96759a4abc"
+    },
+    {
+      "bytes": 332,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-producer-supplement/responsiveness.json",
+      "sha256": "bd0d8f63ecc71e87a1000591303c662e40b8ee5d89747ef2ff4564dd20687bdd"
+    },
+    {
+      "bytes": 3243,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-producer-supplement/root-adoption.json",
+      "sha256": "938d78b5bbdee7f864477fd9a068ab308a10addb06524660fb58c4513c6a8c46"
+    },
+    {
+      "bytes": 3094,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-producer-supplement/root-adoption.md",
+      "sha256": "ee79c8853f886e35192ab372eeda88c5f010a06d13cec1d5077d534cc1e7e1ba"
+    },
+    {
+      "bytes": 17983,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-public-source-diagnosis.json",
+      "sha256": "cf9648b9a208edffcc4b1774fd5f1deeaec583d58dd2970ceccf77462d25b745"
+    },
+    {
+      "bytes": 6834,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-public-source-diagnosis.md",
+      "sha256": "03bc218875c228f12841ec2eb7b2ac822eeea3fb69c21c22ca3451849c8f28d2"
+    },
+    {
+      "bytes": 9878,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-supplement-independent-test-execution-review.json",
+      "sha256": "cf7fa08357898b813d5f1c8971eec03fe0e8ebf9227365f390827ea94ed079ac"
+    },
+    {
+      "bytes": 4965,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-supplement-independent-test-execution-review.md",
+      "sha256": "ffcaba1f676142f386c002ca2ed27997c2574cd571a7be4efaad4da3946b1dee"
+    },
+    {
+      "bytes": 11314,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-author-source.json",
+      "sha256": "70cf17f69e68df7beac321e20c2b3b3a2833efe1ffbdd2fca4b0d7eeb61c90ad"
+    },
+    {
+      "bytes": 5733,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-author-source.md",
+      "sha256": "e021f41cf64c0f1e54c08497d4c2ac9a8d258b4fde710803f4d0d2ceff32d84f"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/before-after.json",
+      "sha256": "1daedb54ee5b2a5edfe34e1f6328fd76b9eab0a870d5f3fc1f80e339d5e262ee"
+    },
+    {
+      "bytes": 3066,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/command-results.json",
+      "sha256": "b8c9385a963cf850e742e519e5251001e59e1d844d1f80b42792f7f0daf27b44"
+    },
+    {
+      "bytes": 5170,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/executor-result.json",
+      "sha256": "769d0aa0e5469020c905b27ed1ff9407bc15fe56a3b80f26476cb84fc0ec6b2d"
+    },
+    {
+      "bytes": 942,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/fixture-result.json",
+      "sha256": "b8531c85ed8a9dee608e30905e4dcedfa131cdc387b119f03cb8f406ea72dc32"
+    },
+    {
+      "bytes": 397,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/responsiveness.json",
+      "sha256": "018b6610f293921a8587097815db4ec3ae27e360c9d27b0d99a01e239ddad0bb"
+    },
+    {
+      "bytes": 5325,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/root-original-return.json",
+      "sha256": "b5ba81864afd3ba7ebaa3bc67213052c581e097ab4c0f91a768c42cf073232d8"
+    },
+    {
+      "bytes": 55105,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution/root-plan.json",
+      "sha256": "c37413cd3c9c3659cec1953e6b3a59b5ed4eb388ff512db98d961ae4e27bff20"
+    },
+    {
+      "bytes": 11893,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-actual-test-assessment.json",
+      "sha256": "a3b8ac9415ce3119ed1a5da9dbc12b6e5e0c1f6e2c2aafe50537eae8131f4038"
+    },
+    {
+      "bytes": 5539,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-actual-test-assessment.md",
+      "sha256": "28eb9576d5476a6c0d2101ab296162ab32ea3b3fcd6164ea5a8db5b086ee3703"
+    },
+    {
+      "bytes": 11971,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-execution-review.json",
+      "sha256": "62cc24e32f603cccf7f580a40300ba9376046ecc63f5456bb4f74748da297a10"
+    },
+    {
+      "bytes": 5999,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-execution-review.md",
+      "sha256": "b4800e5d30cea1b334c7c3c5539a162c5da52d846c4b2087a4841a26ad3f57d2"
+    },
+    {
+      "bytes": 11989,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-source-review.json",
+      "sha256": "38c72712baa02553ca0c954bd621472ff895c000895414bfc04ee82268670043"
+    },
+    {
+      "bytes": 5979,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-source-review.md",
+      "sha256": "59354cdd6d7bf9c802038d4d79010deae56bca134e6ab00bef9211f3dcf7ab17"
+    },
+    {
+      "bytes": 11968,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-test-design-review.json",
+      "sha256": "dd4f713279221b7275932a2f35ca170e287f1dd8af1e4ed601dd51f468e87b12"
+    },
+    {
+      "bytes": 5934,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-independent-test-design-review.md",
+      "sha256": "c6bb05a369d51c408e9f112c9ca1e7014ffdd672f14450f0a1a6b40234977861"
+    },
+    {
+      "bytes": 11263,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-public-source-diagnosis.json",
+      "sha256": "4fe84b80a2b6b4c359627dc99bff62afd4c3ae9d0c1d62095e867349741b1d4a"
+    },
+    {
+      "bytes": 5968,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-public-source-diagnosis.md",
+      "sha256": "458a1023b19303cf66fea6dc30ea9b9ea8f8ab04ce46d4123b636723380c066d"
+    },
+    {
+      "bytes": 4794,
+      "path": "docs/ni6-canonical-integration-c1-delayed-worker-d01-selection-2026-10-08.md",
+      "sha256": "07eb478d44e470400566abd80cd67183eb6852854054a757f79ec8c4aedb52a5"
+    },
+    {
+      "bytes": 3393,
+      "path": "docs/ni6-canonical-integration-c1-delayed-worker-d01-status-evidence-refinement-2026-10-08.md",
+      "sha256": "ff3d09475991212275f20aa07d4808a7d3b549e0f5714b51aa4a4d13e30c5cf4"
+    },
+    {
+      "bytes": 6022,
+      "path": "docs/ni6-canonical-integration-c1-delayed-worker-d01-refinement-2026-10-08.md",
+      "sha256": "9880b50ef0eb01bc14230dd2ef4d2d046448e9107c8811e8c6433c900aec147d"
+    },
+    {
+      "bytes": 3920,
+      "path": "docs/ni6-canonical-integration-c1-delayed-worker-d01-r2-selection-2026-10-08.md",
+      "sha256": "f516d1ba1218fb80eca0b503180a0a2b216994b7a91a2b6d261077fb9401d168"
+    },
+    {
+      "bytes": 6013,
+      "path": "docs/ni6-canonical-integration-c1-delayed-worker-d01-r3-selection-2026-10-08.md",
+      "sha256": "2404eb57a927eaa923084d094940cf401cc64c3052e1485c200b2f3cdb72d284"
+    },
+    {
+      "bytes": 1851,
+      "path": "docs/evidence/NI6/canonical-integration-c1-d01-r2-original-producer-selection.md",
+      "sha256": "9411142a7aebc493301d159fd18f27d9bb8b6cc11e1afa520df6269121131649"
+    }
+  ],
+  "partialEvidence": "Source-qualified pending correction/query/held reservation/factual stop; no corrected subsequent dispatch",
+  "protectedCODE": "BLOCKED_UNCHANGED",
+  "publication": false,
+  "remote": false,
+  "responsivenessMs": {
+    "R2": [
+      12,
+      37,
+      37,
+      11
+    ],
+    "R3": [
+      19,
+      37,
+      35,
+      12
+    ]
+  },
+  "rootFullReads": "Final independent source/actual pairs,supplement and diagnosis; originalcuts retained",
+  "rootRestartMeansCLIQuit": false,
+  "schema": "df.canonical-c1.delayed-worker-predecessors-root-adoption/v1",
+  "sourceArchives": [
+    {
+      "bytes": 2502,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-source-archive/inventory.json",
+      "sha256": "9d78c735b32c8165283ebabe6c3bae8bff9809002f45fb298b5504c5a159f9ac"
+    },
+    {
+      "bytes": 2547,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r2-source-archive/inventory.json",
+      "sha256": "8329607db9464cdc2c521816a9696191c0d92625bbea0b9404f6ba5b28f0df17"
+    },
+    {
+      "bytes": 2547,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-source-archive/inventory.json",
+      "sha256": "22fbc422d82a654045547f1fb354d5b6e673f9139474788ae8b3edbd460e88cd"
+    }
+  ],
+  "tenFaultRowsExecuted": false
+}

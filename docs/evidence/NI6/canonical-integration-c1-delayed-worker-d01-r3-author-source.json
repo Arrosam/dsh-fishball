@@ -1,0 +1,212 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GO": false,
+  "acceptance": "UNGRANTED",
+  "actualBuildAuthority": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+  "actualDestinationsAbsent": {
+    "capsule": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3",
+    "capsuleSuffixes": [
+      "invocation.json",
+      "fixture-result.json",
+      "responsiveness.json",
+      "executor-result.json",
+      "command-results.json",
+      "before-after.json",
+      "root-plan.json",
+      "private-runtime",
+      "private-capture"
+    ],
+    "count": 17,
+    "publicDirectory": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-execution",
+    "publicSuffixes": [
+      "fixture-result.json",
+      "responsiveness.json",
+      "executor-result.json",
+      "command-results.json",
+      "before-after.json",
+      "root-plan.json"
+    ],
+    "rootPlan": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r3-plan.json"
+  },
+  "actualStartsByAuthor": 0,
+  "addedInputRows": 29,
+  "all87": "HOLD_AGGREGATE_ONLY_NOT_PER_ROW",
+  "allOtherFunctionalAndCleanupBlocksByteIdentical": true,
+  "authGets": 1,
+  "callbackResourceCensus": "Original contained waterfall next once/first unchanged delta/gate<=4000 clamped24. All original status/dispatch/whenIdle callbacks/timers/first failure conserved; no new callback/timer/request/helper/worker. originalSession is local retained identity.",
+  "canonical65Bytes": 1952632,
+  "canonical65Unchanged": true,
+  "cleanupCreationAttemptGate": "Exact inherited never-cleared latch before operation16 workerCreate; operation17 is ready-query, as root clarified sealed r2 clerical numbering. After attempted creation only factual stopped+paired absence/disposition permits removal.",
+  "codingIdentity": "gpt-6.1-sol high; English",
+  "controlBlock": {
+    "C01C23F01F05G01G05L01L05ByteIdentical": true,
+    "bytes": 13080,
+    "sha256": "06da8c0022843d356dcfe170150f4181244c64d296596da1cd46b9269cbaff84"
+  },
+  "domainGroups": 12,
+  "domainPosts": 29,
+  "externalInference": 0,
+  "files": [
+    {
+      "bytes": 65237,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture.mjs",
+      "sha256": "9cd43225de8bccf3e21d19b5c92cfa38e0b638f19099c157aa2c58a0264acdc7"
+    },
+    {
+      "bytes": 38618,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/run-once.py",
+      "sha256": "803be99617e16e1154277f3ab27954e99dc9ff907d79baa54298e74611aace5e"
+    },
+    {
+      "bytes": 20273,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/execution-plan.proposed.json",
+      "sha256": "6cc36e98ed8d894fa2fbf2d23b02d8f3c51b865f649f9a6048aa62f1c7380975"
+    },
+    {
+      "bytes": 6026,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/README.md",
+      "sha256": "f0bd327adbe128b7d241fcc10f762b8a83ef40c2d165455048ea702c48e246df"
+    },
+    {
+      "bytes": 23714,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/source-delta.diff",
+      "sha256": "edba256ab21d10cf569194590ad55a327018ab73d54ab7d58ad9c0ef39dd7ef6"
+    },
+    {
+      "bytes": 72626,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/source-manifest.json",
+      "sha256": "4902091e778415ba2c479ee5276fe66287ba99958b2e12d033245928e2a528bf"
+    },
+    {
+      "bytes": 5733,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r3-author-source.md",
+      "sha256": "e021f41cf64c0f1e54c08497d4c2ac9a8d258b4fde710803f4d0d2ceff32d84f"
+    }
+  ],
+  "fixtureLiteralSubstitutions": [
+    {
+      "count": 2,
+      "new": "delayed-worker-d01-r3",
+      "old": "delayed-worker-d01-r2"
+    },
+    {
+      "count": 1,
+      "new": "FINAL_END = STARTED + 28000",
+      "old": "FINAL_END = STARTED + 30000"
+    },
+    {
+      "count": 1,
+      "new": "facts.workerCreated=true;\n  const originalSession=workerAgent.session; // Retained original session identity; no new authority.\n  const query=",
+      "old": "facts.workerCreated=true;\n  const query="
+    },
+    {
+      "count": 1,
+      "new": "  // D08: native query ready/unknown is independent of durable execution; original public agent is idle.\n  const queried=await rpc('WORKER_QUERY','/df-rpc','workerQuery',query);invariant(['ready','unknown'].includes(queried.worker.phase)&&queried.worker.claimRef===worker.claimRef&&queried.worker.generationRef===worker.generationRef);for(const k of ['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','reservationRef'])invariant(queried.worker[k]===worker[k]);\n  invariant(workerAgent&&ctx.agents.get(workerAgent.id)===workerAgent&&workerAgent.status==='idle'&&workerAgent.session===originalSession&&ctx.sessions.get(workerAgent.id)===originalSession&&sha(Buffer.from(workerAgent.id))===worker.sessionRef);\n  // Public service/receipt observations only; no independent hidden stream-state match or full state matrix.\n",
+      "old": "  // D08: original query retains unknown phase and all original worker bindings.\n  const unknown=await rpc('WORKER_QUERY','/df-rpc','workerQuery',query);invariant(unknown.worker.phase==='unknown'&&unknown.worker.claimRef===worker.claimRef&&unknown.worker.generationRef===worker.generationRef);for(const k of ['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','reservationRef'])invariant(unknown.worker[k]===worker[k]);\n"
+    }
+  ],
+  "fullCriterionLimits": [
+    "Queued B not corrected subsequent request/full BUB002-02",
+    "Calibrated load/SLA/full BUB002-04 NOT_RUN",
+    "Full BUB012 open; held-after29 inference only",
+    "Hidden stream-state/full lifecycle matrix unavailable",
+    "Resume/protected final semantics/aggregate acceptance open",
+    "All87 aggregate only; prior C02 full PASS conserved"
+  ],
+  "fullGaplessInertReadback": true,
+  "futureActualPinCount": 248,
+  "httpMaximum": 31,
+  "independentLongestClosedAsciiSizing": true,
+  "inheritedInputRowsExact": 209,
+  "inheritedPureControls": 38,
+  "inputBytes": 9336606,
+  "inputFileCount": 238,
+  "literalDelta": {
+    "bytes": 23714,
+    "completeRegenerated": true,
+    "convention": "Four file order fixture/owner/proposal/README; difflib.unified_diff n=3 lineterm LF; splitlines keepends; exact relative headers; empty preamble; concatenate",
+    "lines": 236,
+    "path": ".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/source-delta.diff"
+  },
+  "mainBounds": {
+    "byteCap": 1024,
+    "compact": 873,
+    "fieldCount": 36,
+    "headroomPretty": 6,
+    "phases": 63,
+    "pretty": 1018,
+    "readMaximum": 1025
+  },
+  "manifestContainsCompleteUniqueInputRecords": true,
+  "materialSourcePreparationBlockers": [],
+  "maximumInterpreterStarts": 3,
+  "maximumLiveInterpreters": 2,
+  "namedGroups": 50,
+  "nestedWorkers": 0,
+  "noCandidateEvaluationOrExecution": true,
+  "originalFullPublicHostAuthority": {
+    "authorReenumerated": false,
+    "files": 27577,
+    "links": 12
+  },
+  "originalSyntheticProviderRequestsStreamsTurnsStepsMaximum": 1,
+  "ownerNamespaceOccurrences": 3,
+  "pins": {},
+  "postRemovalPosts": 1,
+  "predecessorStatus": "CONSUMED_FAILED_HOLD_DO_NOT_REPLAY",
+  "productRevisionSupplied": "4fea2809345823b3da8cf3f6b165babd5701d482",
+  "publicRecords": {
+    "caps": {
+      "before-after.json": 4096,
+      "command-results.json": 16384,
+      "executor-result.json": 16384,
+      "fixture-result.json": 1024,
+      "responsiveness.json": 1024,
+      "root-plan.json": 65536
+    },
+    "count": 6,
+    "strictDualRecordExecutorCrossBindingUnchanged": true
+  },
+  "queryQualification": "Original ready/unknown + retained original agent/session identities, public idle, sessionRef hash, seven bindings; independent durable execution state. Hidden stream-state/full lifecycle matrix unavailable.",
+  "r2ProducerAndActualCutQualifications": [
+    "WORKER_QUERY/INVARIANT after25HTTP; query phase/failing comparison NOT_RECORDED; source coupling defect is not exact retrospective leaf/product defect.",
+    "Later stop/held/current-context predicates unreached. Original EXIT1/timeout/SIGTERM/functional EOF unknown remains; group absence not native stop/release.",
+    "Public producer supplement adopted later; cut-time original assessments preserved. Four overlaps12/37/37/11ms subset only, not full PASS/SLA.",
+    "Observed38.165808/conservative43.165808 pre-terminal only; enclosing final interval NOT_ESTABLISHED. Exact pending/live-handle cause unidentified."
+  ],
+  "requiredAffectedReviewsAbsent": {
+    "count": 4,
+    "exactPathsInManifest": true
+  },
+  "reservationEvidence": "Only27 nested receipt count directly measured;28 stopped binding+paired absence;29 paused same unknown action/seven execution identities/no artifact. Held afterward inference without finish/release, not snapshot scalar.",
+  "responsivenessBounds": {
+    "byteCap": 1024,
+    "compactMaximumIncludingNewline": 465,
+    "fieldCount": 16,
+    "latencyMaximum": 30000,
+    "measurement": "Ceil monotonic send-to-fully-decoded response; successful exact domain assertions and original A running/execute pending/gate held at send, decoded return and immutable freeze; no added latency<=2000 threshold.",
+    "prettyMaximumIncludingNewline": 530,
+    "readMaximum": 1025
+  },
+  "rootEvidenceHeadSupplied": "df32d46d5f92dc22b962cbd96153231ab5302031",
+  "rootPlanCap": 65536,
+  "rootPlanForecastBytes": 55105,
+  "rootPlanForecastOnlyInMemory": true,
+  "rootSelection": "docs/ni6-canonical-integration-c1-delayed-worker-d01-r3-selection-2026-10-08.md",
+  "schema": "df.canonical-c1.d01-r3.author-source/v1",
+  "scopeErrorsAndBoundaryQualifications": [
+    "One mistaken ordinary-field search returned excluded finish implementation lines; search stopped, lines not reproduced/interpreted/used, no further RuntimeStore search/body read. Protected implementation/final CODE boundary remains BLOCKED_UNCHANGED; no pristine historical read boundary is claimed.",
+    "A later mistaken rg --files lookup on the consumed W01 worker namespace exposed private descendant path names while finding the inherited proposal filename. No private file contents were opened/read/hashed/copied; stopped and resumed explicit known public paths only. No private path names are reproduced in this packet.",
+    "Root's narrow ordinary snapshot-tail read also displayed an unused generic-envelope-helper prefix. No signing/receipt investigation or use followed; initial flattened control-class hypothesis was corrected to HTTP value.receipt.reservationsHeld before source freeze.",
+    "R3 no further excluded-source/private-name exposure; no snippets/private names or pristine historical boundary claim."
+  ],
+  "sourceCopies": 0,
+  "sourceFaultPathMatrix": "Ten inherited M01-M10 entries exact in proposal, NOT_RUN_SOURCE_DERIVED; no new control",
+  "startupReserveQualification": "FINAL_END28/WORK_END24; unchanged parent work30 within35 minus4 cleanup minus1 bookkeeping; reserve2 conservative, not calibrated or additive; original cutoff/EOF/group/return govern.",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "tools": 0,
+  "topologyRows": 3,
+  "twoDraftsUnchanged": true,
+  "wholeFixtureForwardAndInverseExact": true,
+  "wholeOwnerNamespaceInverseExact": true
+}
