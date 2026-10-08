@@ -1,0 +1,157 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "actualDriverReturnRequired": true,
+  "after": {
+    "complete": true,
+    "inputCount": 1298,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "all87": "HOLD",
+  "before": {
+    "complete": true,
+    "inputCount": 1298,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-positive-one-worker-r12/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 93692,
+      "durationSeconds": 0.070604,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-08T05:14:48.981570+00:00",
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 93692,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T05:14:48.911027+00:00",
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-positive-one-worker-r12/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 93693,
+      "durationSeconds": 12.759294,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-08T05:15:01.851663+00:00",
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 93693,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "c74e284dd830cd09a9f452e97aa4dc557276d775097254435450be576dcc07a1",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T05:14:49.092429+00:00",
+      "timedOut": false
+    }
+  ],
+  "conservativeActiveSeconds": 31.30809475015849,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-executor/v1",
+  "diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "NONE",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v2",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "finishTrace": "51B",
+    "finishWait": "W030001",
+    "headerCases": 3,
+    "httpRequests": 25,
+    "ownedEntriesRemoved": true,
+    "phase": "COMPLETE",
+    "positivePath": true,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "requests": 1,
+    "reservationReleased": true,
+    "result": "PASS",
+    "resultReturned": true,
+    "rootCleanup": "RESTARTED",
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streamCases": 8,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": true
+  },
+  "failureCode": null,
+  "finalized": true,
+  "observedSeconds": 26.308094167150557,
+  "result": "PASS",
+  "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+}

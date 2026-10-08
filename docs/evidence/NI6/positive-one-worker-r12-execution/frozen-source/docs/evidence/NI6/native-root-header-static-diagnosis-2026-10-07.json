@@ -1,0 +1,230 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GitOperations": 0,
+  "accepted": 0,
+  "actualRefusalCodeBeyondOtherRefusal": "NOT_ESTABLISHED",
+  "all87": "HOLD",
+  "author": "/root/entry_start_minimal_fix",
+  "candidateParsingImportBuildTestRuntime": false,
+  "cloud": "BLOCKED_NO_THIRD_ATTEMPT",
+  "companionMarkdownRecord": {
+    "bytes": 3646,
+    "path": "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.md",
+    "sha256": "3767e4b231a0a586fd5b50a31cc66e2652227f69299be90e891c910c5b125e34"
+  },
+  "consumedAttemptsChangedOrReset": false,
+  "contractVersion": "df.ni6-native-root-header-static-diagnosis/v1",
+  "date": "2026-10-07",
+  "durabilityTiming": {
+    "classification": "NO_STATIC_MISMATCH_ESTABLISHED",
+    "finding": "Publication awaits seed/setup suffix append; SessionStore flush awaits listeners; JSONL flush materializes even an empty write session. No sleep or weaker baseline check is justified.",
+    "sourceChain": [
+      "publicationTiming",
+      "sessionStore",
+      "jsonl"
+    ]
+  },
+  "establishedStaticIncompatibilities": [
+    {
+      "actualFirstExceptionConfirmed": false,
+      "classification": "ESTABLISHED_FROM_PUBLIC_SOURCE",
+      "finding": "Selected native create metadata omits optional depth, while original JSONL supplies and restores zero; full live/restored header equality rejects the differing field sets if reached.",
+      "id": "LIVE_RESTORED_ROOT_HEADER_DEPTH_MISMATCH",
+      "sourceChain": [
+        "nativeAdapter",
+        "agentForwarding",
+        "sessionStore",
+        "jsonl",
+        "baselineCollector"
+      ]
+    },
+    {
+      "actualFirstExceptionConfirmed": false,
+      "classification": "ESTABLISHED_FROM_PUBLIC_SOURCE",
+      "finding": "Original ordinary header validator lacks delegationDepth in its exact allowed keys; a valid public restored header with explicit zero is rejected.",
+      "id": "ORDINARY_HEADER_EXACT_KEYS_REJECT_STANDARD_DEPTH",
+      "sourceChain": [
+        "jsonl",
+        "ordinaryHeaderValidator"
+      ]
+    }
+  ],
+  "firstSwallowedR2Exception": "NOT_ESTABLISHED",
+  "freezeRecord": {
+    "bytes": 5285,
+    "path": "docs/ni6-positive-one-worker-r4-native-header-fix-freeze-2026-10-07.md",
+    "sha256": "1b4781f2f319e11820b0ee00339cad75c51016cb614e21489f7599b340908757"
+  },
+  "futureVerification": {
+    "actualGoGranted": false,
+    "checksExecutedHere": false,
+    "genuineHostPathRequired": true,
+    "independentAffectedReviewsPending": true,
+    "literalSyntheticHeaderCases": [
+      {
+        "depth": 0,
+        "expected": "ACCEPT_UNCHANGED"
+      },
+      {
+        "depth": "ABSENT",
+        "expected": "INVALID_INPUT"
+      },
+      {
+        "depth": 1,
+        "expected": "INVALID_INPUT"
+      }
+    ],
+    "pureCasesAloneProveHostCompatibility": false,
+    "runtimeOwner": "root"
+  },
+  "hashRecursion": "No own JSON/self hash is embedded; exact external pair seals are returned to root.",
+  "modelBrowserNetworkActions": 0,
+  "newDeliverables": [
+    "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.md",
+    "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.json"
+  ],
+  "ownFilesModeOctal": "0600",
+  "postCreateFailurePropagation": {
+    "finding": "Baseline observation/origin recording failure is caught into unknown; execute refuses a latched row before native dispatch. The consumed public projection does not reveal which failure happened first.",
+    "source": "postCreateCatch"
+  },
+  "privateProfileHistoryKeyDatabaseCaptureReads": false,
+  "protectedCodeInvestigationPerformed": false,
+  "publicObservedR2": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "entryRemoved": true,
+    "executionCommitted": false,
+    "httpRequests": 19,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_EXECUTE",
+    "positivePath": false,
+    "refusalCode": "OTHER_REFUSAL",
+    "requests": 0,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 0,
+    "stepStarts": 0,
+    "streams": 0,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 0,
+    "turnStarts": 0,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "publicObservedResultRecord": {
+    "bytes": 659,
+    "path": "docs/evidence/NI6/positive-one-worker-r2-execution/fixture-result.json",
+    "sha256": "cf84c141c5654017bd481221339eea44ec8b1efd4fbaf9f4c9f62532a6f8db38"
+  },
+  "readbackMethod": "Inert byte equality, SHA-256 and ownership/mode checks of the two new files; root receives both external seals.",
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSelectedSuccessorCorrection": {
+    "coercionOrFieldStrippingSelected": false,
+    "delegatedParentOriginAcceptanceSelected": false,
+    "fullLivePersistedHeaderEqualityRetained": true,
+    "nativeCreationMetadata": "{cwd:entry.cwd,delegationDepth:0}",
+    "ordinaryHeaderAllowedAndRequiredIncludesDelegationDepth": true,
+    "ordinaryHeaderDepthValidation": "integer(v.delegationDepth,0,0)",
+    "previousStrictHeaderVersionUnseededAndFieldChecksRetained": true,
+    "productOrHostSourceModifiedByThisLane": false
+  },
+  "rootSupportedExecutionApprovalGranted": false,
+  "scope": "Ordinary original root synthetic worker creation/baseline compatibility only",
+  "sourcePoliciesGitAndExistingProductChanged": false,
+  "sourceRecords": {
+    "agentForwarding": {
+      "bytes": 28207,
+      "linePointers": [
+        451,
+        455
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    "baselineCollector": {
+      "bytes": 11620,
+      "linePointers": [
+        43,
+        57,
+        68,
+        85
+      ],
+      "path": ".runtime/ni6-public-preparation-r3/package/src/native-history-collector.mjs",
+      "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+    },
+    "jsonl": {
+      "bytes": 142847,
+      "linePointers": [
+        129,
+        808,
+        814,
+        822,
+        832
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    },
+    "nativeAdapter": {
+      "bytes": 40758,
+      "linePointers": [
+        280,
+        341,
+        348
+      ],
+      "path": ".runtime/ni6-public-preparation-r3/package/src/native-adapter.mjs",
+      "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+    },
+    "ordinaryHeaderValidator": {
+      "bytes": 31990,
+      "linePointers": [
+        35,
+        40
+      ],
+      "path": ".runtime/ni6-public-preparation-r3/package/src/normal-contracts.mjs",
+      "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+    },
+    "postCreateCatch": {
+      "bytes": 20325,
+      "linePointers": [
+        50,
+        53,
+        58,
+        62
+      ],
+      "path": ".runtime/ni6-public-preparation-r3/package/src/normal-native-operations.mjs",
+      "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+    },
+    "publicationTiming": {
+      "bytes": 72994,
+      "linePointers": [
+        1839,
+        1890,
+        1891
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    "sessionStore": {
+      "bytes": 89972,
+      "linePointers": [
+        1064,
+        1339,
+        1699,
+        1707,
+        1832
+      ],
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    }
+  },
+  "status": "STATIC_DIAGNOSIS_SOURCE_ONLY_NOT_RUN",
+  "ui": "PAUSED"
+}

@@ -1,0 +1,434 @@
+{
+  "actualCommands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-positive-one-worker-r8/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 77023,
+      "durationSeconds": 0.067368,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-08T01:38:46.564833+00:00",
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 77023,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T01:38:46.497520+00:00",
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-positive-one-worker-r8/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 77024,
+      "durationSeconds": 9.214725,
+      "exitCode": 1,
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finishedAt": "2026-10-08T01:38:55.855136+00:00",
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 77024,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "a956a45c9a4fbada237a3229c93e4f9304e60e5d2a11592ed7810199751069f1",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T01:38:46.640471+00:00",
+      "timedOut": false
+    }
+  ],
+  "actualDiagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "headerCases": 3,
+    "httpRequests": 21,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_CAPTURE",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "WORKER_RESULT_UNAVAILABLE",
+    "requests": 1,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "actualSupportedDriverExitCaptured": true,
+  "actualSupportedDriverExitCode": 1,
+  "assessment": {
+    "acknowledgement": "ESTABLISHED_RPC_VALUE_RETURNED_HTTP_200_NO_TRANSPORT_FAILURE",
+    "acknowledgementProgressQualification": "R8 returned the original guarded acknowledgement under the selected bounded window; this does not prove the earlier exact latency cause or a general timer-only product fix.",
+    "captureFailureQualification": "A finite original worker-result-unavailable refusal was observed at WORKER_CAPTURE. No private response, capture, database, history or raw error contents were inspected. Snapshot booleans are evidence reached, not proof of absent durable records.",
+    "completeEOF": "ESTABLISHED_BOTH_CHILDREN",
+    "exactActualServerCause": "NOT_ESTABLISHED",
+    "executionCommitment": "ESTABLISHED_BY_ORIGINAL_GUARDED_ACKNOWLEDGEMENT_ORACLE",
+    "firstReason": "EXECUTOR_COMMAND_NONZERO",
+    "functionalD02": "FAIL_WORKER_CAPTURE_WORKER_RESULT_UNAVAILABLE",
+    "headerCases": "PASS_3",
+    "idle": "RETURNED_AT_FROZEN_SELECTED_BOUNDARY",
+    "laterWorkerResultFinishFinalStatusPost404": "NOT_REACHED",
+    "nextWork": "Diagnose ordinary public capture/source-selection guards and fixture producer contract, freeze a concrete correction, then run the original actual result/stop/release oracles on one fresh bounded synthetic fixture. Never replay consumed R8.",
+    "noInterruptionTimeoutOverflowTruncationSignals": true,
+    "ownedProcessGroups": "ABSENT_OBSERVED_BOTH_CHILDREN",
+    "positivePath": "NOT_ESTABLISHED",
+    "projectionCases": "PASS_12",
+    "reservationRelease": "NOT_ESTABLISHED",
+    "resultCapture": "NOT_ESTABLISHED",
+    "returnedResult": "NOT_ESTABLISHED",
+    "strictRootClosure": "FAILED_HOLD_ROOT_CLOSED_FALSE",
+    "syntax": "PASS_EXIT0",
+    "workerFactualStop": "NOT_ESTABLISHED",
+    "workerQuery": "PASSED_UNCHANGED_QUERY_GUARDS_BEFORE_WORKER_CAPTURE"
+  },
+  "contractVersion": "df.ni6-positive-one-worker-r8-observed-actual-driver-return/v1",
+  "date": "2026-10-08",
+  "directSupportedExecution": {
+    "actualReturnMissing": false,
+    "clockQualification": "The subsequent clock is a later read, not the completion time. Receipt time is not interpreter duration. The actual final supported return is chunk7597b6 exit1.",
+    "command": "/opt/homebrew/bin/python3 -I .runtime/ni6-positive-one-worker-r8/run-once.py .runtime/root-ni6-positive-one-worker-r8-execution-plan.json",
+    "optionalProcessingBeforeStoredActualReturns": false,
+    "priorClockReadUTC": "2026-10-08 01:38:11 UTC",
+    "requestedAtMilliseconds": 1791423508669,
+    "subsequentClockReadUTC": "2026-10-08 01:39:21 UTC",
+    "toolReceipts": [
+      {
+        "actualExitCode": null,
+        "chunkId": "99aac0",
+        "outputIsEmpty": true,
+        "receivedAtMilliseconds": 1791423519338,
+        "sessionId": 63120,
+        "stage": "initial",
+        "toolWallSeconds": 1.001225709
+      },
+      {
+        "actualExitCode": null,
+        "chunkId": "e48faf",
+        "outputIsEmpty": true,
+        "receivedAtMilliseconds": 1791423531612,
+        "sessionId": 63120,
+        "stage": "poll0",
+        "toolWallSeconds": 5.001404025
+      },
+      {
+        "actualExitCode": 1,
+        "chunkId": "7597b6",
+        "outputIsEmpty": true,
+        "receivedAtMilliseconds": 1791423540504,
+        "sessionId": null,
+        "stage": "poll1",
+        "toolWallSeconds": 0.852964802
+      }
+    ],
+    "workingDirectory": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball"
+  },
+  "executorMetadata": {
+    "after": {
+      "complete": true,
+      "inputCount": 925,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "before": {
+      "complete": true,
+      "inputCount": 925,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "conservativeActiveSecondsBeforeTerminalPublication": 26.92505987500772,
+    "durationQualification": "Executor snapshots were taken before final source copying and evidence writes. Original public marker timestamps are metadata; no final enclosing monotonic duration was captured.",
+    "failureCode": "EXECUTOR_COMMAND_NONZERO",
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "finalized": false,
+    "maximumActiveSeconds": 90,
+    "observedSecondsBeforeTerminalPublication": 21.92505916696973,
+    "result": "FAILED_HOLD",
+    "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+  },
+  "frozenPublicCopyVerification": {
+    "allExpectedSha256Matched": true,
+    "bytes": 14257973,
+    "count": 502,
+    "privateContentRead": false,
+    "sourceCopyListAgreesWithExactPlan": true
+  },
+  "publicArtifactReadbackChunk": "ea0707",
+  "publicEvidenceRecords": [
+    {
+      "bytes": 891,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/fixture-result.json",
+      "sha256": "51fac626be5b4d24a149e50c77b8e7c52645957f205326b8916f5eebb1483dd4"
+    },
+    {
+      "bytes": 4590,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/executor-result.json",
+      "sha256": "56e6cde8154d8c730239d7be568257684c9d937573fc86db13e5c1f13c052a01"
+    },
+    {
+      "bytes": 2996,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/command-results.json",
+      "sha256": "449aada0af9f0df065a07dff6201ee7d03895371a38b1e47c19b0fb09ea1f020"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/before-after.json",
+      "sha256": "42ff2de90d5ae9ab8e300e663a378cdce47512463ae6c37fd275fa0145a3a213"
+    },
+    {
+      "bytes": 175646,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/root-plan.json",
+      "sha256": "6e89d064796fcde8ff7a522f28887a31d767a63b93b7ccb50952c0f78084c98b"
+    }
+  ],
+  "publicInvocationMarker": {
+    "bytes": 272,
+    "path": ".runtime/ni6-positive-one-worker-r8/invocation.json",
+    "sha256": "98149681652cb16bc9e41e58e36d05490663b99a0ceb9f6634c2fa7fab481dc9",
+    "value": {
+      "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-invocation/v1",
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finalized": false,
+      "finishedAt": "2026-10-08T01:39:00.447315+00:00",
+      "startedAt": "2026-10-08T01:38:38.216940+00:00",
+      "state": "FAILED_HOLD"
+    }
+  },
+  "rawStreamsDecodedReadOrCopiedByRoot": false,
+  "recordOwner": "root",
+  "retainedGates": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "UI": "PAUSED_MAC_LOCKED_NO_CORRECTED_FIXTURE_HANDOFF",
+    "accepted": 0,
+    "all87": "HOLD",
+    "browserEntries": [
+      "Codex built-in browser",
+      "Chrome extension"
+    ],
+    "cloud": "BLOCKED_AFTER_SECOND_AUTOMATIC_APPROVAL_REVIEW_REJECTION_NO_THIRD_ATTEMPT",
+    "git": "LOCAL_ONLY_NO_REMOTE_PUSH_PUBLICATION_MAIN_ACCEPTANCE",
+    "nativeChromeFallback": false,
+    "root": "HOLD",
+    "taskCompletionReviewDeliveryAcceptanceReleaseEstablished": false
+  },
+  "retainedQualifications": {
+    "R3_R5": "UNRUN",
+    "R4ActualSupportedReturn": "NOT_CAPTURED_NO_RETROACTIVE_REPAIR",
+    "R6": "CONSUMED_IMMUTABLE_NO_REPLAY",
+    "R7B": "CONSUMED_IMMUTABLE_FAILED_HOLD_NO_REPLAY",
+    "historicalPrivateContentInspected": false,
+    "historicalR7BAuthorInitialPrivatePathnameEnumeration": true,
+    "protectedFinalReceiptSignatureEnvelopeRevision999Investigation": "BLOCKED_UNCHANGED_NOT_INSPECTED_OR_REROUTED"
+  },
+  "revision": "R8",
+  "rootPlan": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "accepted": 0,
+    "actualSupportedExecutionProducedReturn": true,
+    "actualSupportedExecutionRequested": true,
+    "additionalInputs": 94,
+    "all87": "HOLD",
+    "bytes": 175646,
+    "exactPinUnion": 925,
+    "flagQualification": "The three true flags record root's exact selection; supported execution is established separately by the captured tool return. SOURCE_ONLY_NOT_RUN and testWorkerStarts0 are preserved historical proposal fields; actual runtime counters below supersede them for this invocation.",
+    "inheritedExact": 819,
+    "inputBytes": 30349750,
+    "inputCount": 913,
+    "mode": "0600",
+    "onlyProposalChanges": [
+      "rootReviewedExecutionGO",
+      "rootSupportedExecutionApprovalGranted",
+      "rootReviewedFinalAffectedReports",
+      "pins"
+    ],
+    "path": ".runtime/root-ni6-positive-one-worker-r8-execution-plan.json",
+    "sha256": "6e89d064796fcde8ff7a522f28887a31d767a63b93b7ccb50952c0f78084c98b",
+    "sourceCopies": 502,
+    "sourceVerdict": "NO_MATERIAL_SOURCE_GATE_BLOCKER",
+    "status": "EXCLUSIVE_ROOT_SELECTION_READY_NOT_RUN",
+    "testVerdict": "NO_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+    "topology": 11,
+    "verifiedCandidateFiles": 8,
+    "verifiedManifestInputAndOwnedFiles": 920,
+    "verifiedReviewFiles": 4
+  },
+  "sourceReviewBasis": {
+    "candidateFullyRead": true,
+    "candidateSeals": [
+      {
+        "bytes": 39553,
+        "path": ".runtime/ni6-positive-one-worker-r8/fixture.mjs",
+        "sha256": "1798ad35f380f469f2818f9bd04ee4f02f4a340ba03cf82d15612634552dc869"
+      },
+      {
+        "bytes": 33147,
+        "path": ".runtime/ni6-positive-one-worker-r8/run-once.py",
+        "sha256": "304710cf2b64706b17f672729ba5e0cbb9e9e93dde90b4008e1f2caf5f565d55"
+      },
+      {
+        "bytes": 44637,
+        "path": ".runtime/ni6-positive-one-worker-r8/execution-plan.proposed.json",
+        "sha256": "df1a7ba46384f9366d441d6cabe90ea13b8ef0f9ed5511672701e8e6a9169a81"
+      },
+      {
+        "bytes": 41017,
+        "path": ".runtime/ni6-positive-one-worker-r8/source-delta.diff",
+        "sha256": "4c312fca6aecc3f1021e7e115ede84bc7ae9647d435aa960fca819c5f6aaabad"
+      },
+      {
+        "bytes": 5947,
+        "path": ".runtime/ni6-positive-one-worker-r8/README.md",
+        "sha256": "b5c7096c7b380fa9db35e2bc7449cf0e818ef67ef53d5a3f52909ac886e6d6c3"
+      },
+      {
+        "bytes": 268738,
+        "path": ".runtime/ni6-positive-one-worker-r8/source-manifest.json",
+        "sha256": "385a9a2010e4b7a49c844e71dd1ee35f4534f48a3538439be03d9a8688932472"
+      },
+      {
+        "bytes": 6170,
+        "path": "docs/evidence/NI6/positive-one-worker-r8-source.md",
+        "sha256": "b8bc4c5ad7d85d5b6044cc1b50bee5086fa67775eaa14e053054d1410913b3c0"
+      },
+      {
+        "bytes": 82680,
+        "path": "docs/evidence/NI6/positive-one-worker-r8-source.json",
+        "sha256": "1a5ba2e9b0c3fb5b3deb53f27fd65a9a1ec1e4aff5525ab90f85c3f600f37715"
+      }
+    ],
+    "codePairSealVerificationChunk": "26e49e",
+    "finalAffectedPairSeals": [
+      {
+        "bytes": 8512,
+        "path": "docs/evidence/NI6/positive-one-worker-r8-independent-source-review.md",
+        "sha256": "e2a8ce96dfbb05b2106d49eb5d0f9aa7753815b9dffd300489fff09f3b6f129a"
+      },
+      {
+        "bytes": 16517,
+        "path": "docs/evidence/NI6/positive-one-worker-r8-independent-source-review.json",
+        "sha256": "6b072dd2e9a62c81fdb8957bff5458f03365aaf7e8a52ed66cccfa64138e458a"
+      },
+      {
+        "bytes": 7562,
+        "path": "docs/evidence/NI6/positive-one-worker-r8-independent-test-design-review.md",
+        "sha256": "6ebd2affdde4a94af3c50b413394a115f419b2fac28669b522d08308648d9df1"
+      },
+      {
+        "bytes": 15108,
+        "path": "docs/evidence/NI6/positive-one-worker-r8-independent-test-design-review.json",
+        "sha256": "68a5d156ed23ae5b1f172efb46993667cffe2487189ebee2130c92c98225545a"
+      }
+    ],
+    "finalAffectedPairsFullyRead": true,
+    "finalExactCandidateAndReviewVerificationChunk": "6a7294",
+    "rootCandidateReadback": {
+      "additionalRows": 94,
+      "compactBytes": 812,
+      "completeLiteralDeltaMatches": true,
+      "deltaChunk": "96bef6",
+      "executorChunk": "2db03f",
+      "fields": 33,
+      "fixtureChunk": "5be273",
+      "hashVerifiedOwnedAndInputRows": 920,
+      "inertResult": "PASS_INERT_ROOT_READBACK_ONLY",
+      "inertVerificationChunk": "fe551b",
+      "inheritedInputRows": 819,
+      "inputBytes": 30349750,
+      "manifestRemainingMetadataChunk": "8f4fc8",
+      "noCandidateEvaluation": true,
+      "noGOOrActualPlan": true,
+      "packageFilesIdentical": 65,
+      "prettyBytes": 945,
+      "proposalRemainingFieldsChunk": "adbf2b",
+      "prospectivePins": 925,
+      "sourceCopies": 502,
+      "sourceFullyRead": true,
+      "sourceJsonChunks": [
+        "1d90ef",
+        "ca7c4b",
+        "cefd9c"
+      ],
+      "sourceMdAndSealsChunk": "5862dd",
+      "topology": 11
+    },
+    "sourceGOIsNotAcceptance": true,
+    "sourceVerdict": "NO_MATERIAL_SOURCE_GATE_BLOCKER",
+    "testPairSealVerificationChunk": "80fd5a",
+    "testVerdict": "NO_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+  },
+  "status": "CONSUMED_IMMUTABLE_FAILED_HOLD"
+}

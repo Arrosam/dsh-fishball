@@ -1,0 +1,18 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "all87": "HOLD",
+  "buildAttemptSha256": "362d5572307d922c1d68ee12d1a872c1175a73fcb67c2f3ab188a84c62ecfe2f",
+  "contractVersion": "df.ni6-prep01-build-readback/v1",
+  "generated": {
+    "clientSha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+    "descriptorSha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382"
+  },
+  "hostModuleCount": 25,
+  "hostModuleFileCount": 77,
+  "originalBuilderSourcesPinned": true,
+  "productBuildInputCount": 63,
+  "productDescriptorFileCount": 64,
+  "rootBuildCommandResultsRequiredSeparately": true,
+  "runtimeExecuted": false,
+  "sourceManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2"
+}

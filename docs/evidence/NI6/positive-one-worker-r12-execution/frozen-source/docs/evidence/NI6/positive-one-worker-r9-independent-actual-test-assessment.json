@@ -1,0 +1,563 @@
+{
+  "acceptance": false,
+  "actualDiagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "headerCases": 3,
+    "httpRequests": 23,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_FINISH",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "requests": 1,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": true,
+    "rootClosed": false,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streamCases": 8,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "actualRunOwner": "root",
+  "actualSupportedReturn": {
+    "actualReturnMissing": false,
+    "allToolReceiptOutputsEmpty": true,
+    "capturedBeforeOptionalProcessing": true,
+    "clockQualification": "later read, not completion; no interpreter duration inference",
+    "exitCode": 1,
+    "finalChunk": "49a8b1",
+    "initialChunk": "79ab22",
+    "initialSession": 4325,
+    "pollChunk": "34055c",
+    "subsequentClockReadUTC": "2026-10-08 02:31:27 UTC"
+  },
+  "boundsAndBudgets": {
+    "budgetsSeconds": {
+      "bookkeepingInsideEachCommand": 1,
+      "diagnosticCleanupInsideTotal": 4,
+      "diagnosticTotal": 35,
+      "nodeCleanupInsideDiagnostic": 5,
+      "nodeFinalAbsoluteEnd": 30,
+      "nodeResultReserveInsideFinal": 0.5,
+      "nodeWorkInsideDiagnostic": 24,
+      "postReadbackMaximum": 25,
+      "primaryAbsoluteEnd": 85,
+      "setupPreflight": 20,
+      "syntaxCleanupInsideTotal": 1,
+      "syntaxTotal": 5,
+      "terminalConservativeReserve": 5
+    },
+    "fields": 34,
+    "fixtureByteCap": 1024,
+    "fixtureBytes": 888,
+    "httpLimits": {
+      "authGets": 1,
+      "domainPosts": 23,
+      "otherRpcStepSecondsInsideSharedWork": 2.5,
+      "perRequestSecondsInsideSharedWork": 2,
+      "postDisposalPosts": 1,
+      "requestBytes": 2048,
+      "responseBytes": 65536,
+      "selectedExecuteAcknowledgementSecondsInsideSharedWork": 10,
+      "selectedExecuteRpcStepSecondsInsideSharedWork": 10.5,
+      "totalRequests": 25
+    },
+    "maximumActiveSeconds": 90,
+    "maximumNodeChildren": 2,
+    "newBudgetsOrTimerChanges": false,
+    "phases": 52,
+    "reviewedReadMaximum": 1025,
+    "reviewedWorstCompactIncludingNewline": 828,
+    "reviewedWorstPrettyIncludingNewline": 965
+  },
+  "closedDriftEvidence": {
+    "after": {
+      "complete": true,
+      "inputCount": 1018,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "basis": "closed executor and before-after records; no repeated pin target/whole-host verification",
+    "before": {
+      "complete": true,
+      "inputCount": 1018,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "frozenCopiesReadOrRehashedByReviewer": false,
+    "rootExplicitFrozenPublicCopyVerification": {
+      "allExpectedSha256Matched": true,
+      "bytes": 17198300,
+      "count": 595,
+      "privateContentRead": false,
+      "sourceCopyListAgreesWithExactPlan": true
+    }
+  },
+  "contractVersion": "df.ni6-positive-one-worker-independent-actual-test-assessment/v1",
+  "coverageLimits": [
+    "one bounded deterministic synthetic fixture, not full host/provider/general acceptance",
+    "unselected request/response/limit/timer and idle callback/race partitions NOT_RUN",
+    "unselected provider/input families, maximum sizes and other stream record variants NOT_RUN",
+    "R8 first capture-refusing guard remains NOT_INDEPENDENTLY_WITNESSED",
+    "earlier precise acknowledgement latency cause/general timer-only fix NOT_ESTABLISHED",
+    "execute observation cannot establish finish transport status/body/cause",
+    "false booleans and selected entry removal do not classify all durable facts or cleanup",
+    "syntax success not a new actual build; returned result not review/delivery/task completion",
+    "EOF/group absence not factual worker stop/release/root closure"
+  ],
+  "date": "2026-10-08",
+  "durationQualification": {
+    "executorConservativeActiveSecondsBeforeTerminalPublication": 29.949862834066153,
+    "executorObservedSecondsBeforeTerminalPublication": 24.949862249894068,
+    "finalEnclosingMonotonicDriverDuration": "NOT_ESTABLISHED",
+    "functionalChildObservedSeconds": 12.496648,
+    "laterClockOrReceiptTimesSubstitutedForDuration": false,
+    "processDeadlineObserved": false,
+    "syntaxChildObservedSeconds": 0.068354
+  },
+  "evidenceBasis": {
+    "allSealsMatch": true,
+    "beforeAfterExactAgreement": true,
+    "boundedReadCaps": {
+      "beforeAfter": 4096,
+      "commands": 16384,
+      "executor": 16384,
+      "fixture": 1024,
+      "rootPlan": 200000
+    },
+    "closedPublicReports": [
+      {
+        "bytes": 888,
+        "path": "docs/evidence/NI6/positive-one-worker-r9-execution/fixture-result.json",
+        "sha256": "a11a61314d0417f8bec1ff95b6b38b60399cd7d7cf1c5a2c8d0fe42a5de34e85"
+      },
+      {
+        "bytes": 4594,
+        "path": "docs/evidence/NI6/positive-one-worker-r9-execution/executor-result.json",
+        "sha256": "4f62184f49bcb414fc212fba4680a19f11a53d9431bab4978dd4e6e537dff3a5"
+      },
+      {
+        "bytes": 2997,
+        "path": "docs/evidence/NI6/positive-one-worker-r9-execution/command-results.json",
+        "sha256": "48f1de2c22ef72ca75bb90643952ad8d15573070574dce83bca95eec7b0a5b0b"
+      },
+      {
+        "bytes": 286,
+        "path": "docs/evidence/NI6/positive-one-worker-r9-execution/before-after.json",
+        "sha256": "e8c633addbb38534742ff6d6783424df4676640b27cec4c249030850bb6a48cc"
+      },
+      {
+        "bytes": 195974,
+        "path": "docs/evidence/NI6/positive-one-worker-r9-execution/root-plan.json",
+        "sha256": "499273a345e1e3cf4c7a3a96130f1ca1c2c9b018d712313548022d9d5f6192cf"
+      }
+    ],
+    "fixtureExecutorProofAndCommandsExactAgreement": true,
+    "privateRuntimeMarkerRead": false,
+    "publicMarkerInterpretation": "root proof closed metadata only",
+    "rootPlanFullInertJsonRead": true,
+    "rootProof": {
+      "bytes": 17941,
+      "path": "docs/evidence/NI6/positive-one-worker-r9-actual-return.json",
+      "sha256": "3d475323c864f72d6245581dd644a3f94295121d6633098da1d671a026cf9ac2"
+    },
+    "sealedSourceTestDesignAssessment": {
+      "bytes": 20781,
+      "path": "docs/evidence/NI6/positive-one-worker-r9-independent-test-design-review.json",
+      "sha256": "afbff82c7f0008c575e8d65493bf706965074dd4ae45e5f1e79189233bafd669"
+    }
+  },
+  "exactPlanMetadata": {
+    "allCopyPathsUniqueAndPinned": true,
+    "bytes": 195974,
+    "commandsMatchClosedActualCommands": true,
+    "flagsAreAcceptance": false,
+    "historicalFieldQualification": "preserved proposal fields; actual counters establish consumed run, not zero actual runtime activity",
+    "historicalStatus": "SOURCE_ONLY_NOT_RUN",
+    "historicalTestWorkerStarts": 0,
+    "pins": 1018,
+    "rootSelectionFlagsTrue": 3,
+    "runCountAuthorized": 1,
+    "sha256": "499273a345e1e3cf4c7a3a96130f1ca1c2c9b018d712313548022d9d5f6192cf",
+    "sourceCopyPaths": 595
+  },
+  "executionGO": false,
+  "executor": {
+    "actualDriverReturnRequired": true,
+    "allEofComplete": true,
+    "bothOwnedGroupsAbsentObserved": true,
+    "children": [
+      {
+        "captureComplete": true,
+        "captureTerminationReason": "EOF_OBSERVED",
+        "childPid": 81342,
+        "durationSeconds": 0.068354,
+        "exitCode": 0,
+        "failureCode": null,
+        "index": 1,
+        "interrupted": false,
+        "overflow": false,
+        "processGroupState": "ABSENT_OBSERVED",
+        "signalAttempts": [],
+        "signalOutcomes": [],
+        "timedOut": false
+      },
+      {
+        "captureComplete": true,
+        "captureTerminationReason": "EOF_OBSERVED",
+        "childPid": 81343,
+        "durationSeconds": 12.496648,
+        "exitCode": 1,
+        "failureCode": "EXECUTOR_COMMAND_NONZERO",
+        "index": 2,
+        "interrupted": false,
+        "overflow": false,
+        "processGroupState": "ABSENT_OBSERVED",
+        "signalAttempts": [],
+        "signalOutcomes": [],
+        "timedOut": false
+      }
+    ],
+    "finalized": false,
+    "firstReason": "EXECUTOR_COMMAND_NONZERO",
+    "noProcessTimeoutInterruptionOverflowTruncationSignals": true,
+    "privateCaptureMetadataOnly": {
+      "functionalStderrBytes": 169,
+      "functionalStdoutBytes": 0,
+      "rawContentReadCopiedDecodedOrHashedByReviewer": false,
+      "syntaxStderrBytes": 0,
+      "syntaxStdoutBytes": 0
+    },
+    "privateStreamAggregateByteCap": 262144,
+    "privateStreamByteCap": 131072,
+    "remoteTerminationOrReleaseEstablishedByContainment": false,
+    "result": "FAILED_HOLD",
+    "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+  },
+  "language": "English",
+  "materialFindings": [
+    {
+      "evidence": "HTTP23, functional child exit1, fixture FAILED_HOLD, exact origin unestablished",
+      "finding": "D02 failed at WORKER_FINISH/REJECTION/NONE; no guarded finish acknowledgement or factual stop/release established",
+      "id": "R9-ACTUAL-F01",
+      "rootCauseEstablished": false,
+      "severity": "BLOCKING_FUNCTIONAL_GATE"
+    },
+    {
+      "evidence": "closed fixture snapshot; EOF/group absence cannot replace original root predicate",
+      "finding": "strict rootClosed=false remains independently required and unsatisfied",
+      "id": "R9-ACTUAL-F02",
+      "rootCauseEstablished": false,
+      "severity": "BLOCKING_TERMINAL_GATE"
+    }
+  ],
+  "model": "gpt-6.1-sol",
+  "nextEvidenceBoundary": "separate root-owned bounded ordinary finish/lifecycle diagnosis; no replay or repair selection by this assessment",
+  "reachedOracles": {
+    "actualUsageAndExpectedOutputDigest": "PASS_EXACT_UTF8_INPUT_PLUS_OUTPUT_GUARD",
+    "capture": "PASS_ARTIFACT_REFERENCE_VERSION_ORACLE",
+    "delivery": "not-requested",
+    "executeGuardedAcknowledgement": "PASS",
+    "executeTransportObservation": [
+      "RPC_VALUE_RETURNED",
+      "HTTP_200",
+      "NONE"
+    ],
+    "executionCommitment": "PASS_ORIGINAL_GUARDED_ORACLE",
+    "idleInferenceLimit": "idle only; no independent operation or finish/stop/release inference",
+    "postExecuteQuery": "PASS_REACHED_NEXT_PHASE",
+    "readyWorkerAndExactNativeBinding": "PASS",
+    "realRequestStreamStepTurnCounts": "PASS_ONE_EACH_TOOLS_ZERO",
+    "returnedResult": "PASS_EXACT_CONTENT_SOURCE_INPUT_RESULT_DIGEST_BINDINGS",
+    "selectedIdleSnapshot": "RETURNED",
+    "verification": "not-reviewed"
+  },
+  "reasoningEffort": "max",
+  "remainingMilestones": {
+    "completed25RequestPositivePath": "NOT_ESTABLISHED",
+    "entryRemoved": "TRUE_SELECTED_ENTRY_REMOVAL",
+    "exactAgentSessionAbsence": "NOT_ESTABLISHED",
+    "exactFinishTransportServerCause": "NOT_ESTABLISHED",
+    "factualWorkerStop": "NOT_ESTABLISHED",
+    "falseSnapshotFlags": "unestablished milestones; not absent durable facts or all cleanup failures",
+    "laterFinalStatus": "NOT_REACHED",
+    "mainPathPresetReleaseAndAllOwnedRemovals": "NOT_REACHED_AS_COMPLETED_MAIN_PATH",
+    "post404": "NOT_REACHED",
+    "reservationRelease": "NOT_ESTABLISHED",
+    "strictRootClosure": "FAILED_HOLD_ROOT_CLOSED_FALSE",
+    "workerFinishAcknowledgement": "NOT_ESTABLISHED"
+  },
+  "reportIntegrity": {
+    "fullFinalReadbackRequired": true,
+    "jsonSelfSeal": "EXTERNAL_AFTER_COMPLETE_READBACK_NO_RECURSIVE_SELF_PIN",
+    "markdown": {
+      "bytes": 8435,
+      "path": "docs/evidence/NI6/positive-one-worker-r9-independent-actual-test-assessment.md",
+      "sha256": "bbfbab74413afb0220b857e1e58d0c4130d4ca563f1d0e480642fe143cb5ab12"
+    }
+  },
+  "retainedGates": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "UI": "BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF",
+    "accepted": 0,
+    "all87": "HOLD",
+    "browserEntries": [
+      "Codex built-in browser",
+      "Chrome extension fallback"
+    ],
+    "cancelledQATask": "4da34a6d NEVER_EXECUTE",
+    "cloud": "BLOCKED_AFTER_SECOND_AUTOMATIC_APPROVAL_REVIEW_REJECTION_NO_THIRD_ATTEMPT",
+    "git": "LOCAL_ONLY_NO_REMOTE_PUSH_PUBLICATION_MAIN_ACCEPTANCE",
+    "nativeChromeFallback": false,
+    "root": "HOLD",
+    "taskCompletionReviewDeliveryAcceptanceReleaseEstablished": false
+  },
+  "reviewer": "/root/r7b_transport_test_review",
+  "reviewerExecutedOrReplayedCandidate": false,
+  "revision": "positive-one-worker-r9",
+  "role": "INDEPENDENT_ISTQB_FINAL_ACTUAL_EVIDENCE_ASSESSMENT",
+  "scope": {
+    "broadEnumerationOrPrivateInventory": false,
+    "candidateParseCheckImportBuildTestRun": false,
+    "newRepairProposalOrTestFamilyAdded": false,
+    "onlyFreshAssignedPairWritten": true,
+    "privateContentReadCopyDecodeHash": false,
+    "protectedFinalCodeOrOpaqueCaptureFinishImplementationInspected": false,
+    "publicInertBoundedReadOnly": true,
+    "rerunReplayResetAdoption": false,
+    "runtimeListenerBrowserNetworkModelGitCredentialsHelpers": false,
+    "soleAssessmentOfImmutableNewActualRecord": true,
+    "sourceOrPriorEvidenceMutated": false,
+    "sourceProductOrWholeGraphAuditRepeated": false
+  },
+  "status": "ACTUAL_REVIEW_COMPLETE_FAILED_HOLD",
+  "streamRegression": {
+    "allEightAssertionsPassed": true,
+    "borrowedInputAndOriginalSnapshotsPreserved": true,
+    "internalNegativeGuardBranchClaimed": false,
+    "negativeCasesDetachedCopies": true,
+    "originalProducerInstances": 3,
+    "positiveGapCounts": [
+      0,
+      1,
+      2
+    ],
+    "positiveNativeEventsSameReference": true,
+    "positiveTextCounts": [
+      1,
+      2,
+      3
+    ],
+    "pushes": 6,
+    "qualification": "selected fixture proves authored stream partitions; not all host payloads or the exact consumed R8 first refusing guard",
+    "snapshots": 3
+  },
+  "tests": {
+    "C01_C23": {
+      "actualAssertionResult": "PASS_ALL_23",
+      "basis": "closed counters after preserved sequential assertions and later WORKER_FINISH phase, interpreted against sealed source test oracles",
+      "cases": [
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "ACCEPT",
+          "id": "C01",
+          "inputPartition": "valid original root header",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C02",
+          "inputPartition": "missing delegationDepth",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C03",
+          "inputPartition": "delegationDepth1",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "ACCEPT",
+          "id": "C04",
+          "inputPartition": "original approval tail without marker",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C05",
+          "inputPartition": "noncontiguous sequence",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C06",
+          "inputPartition": "negative-zero sequence",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C07",
+          "inputPartition": "own undefined optional field",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C08",
+          "inputPartition": "unsupported required event",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C09",
+          "inputPartition": "seeded root header",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C10",
+          "inputPartition": "parentSession on root header",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "ACCEPT",
+          "id": "C11",
+          "inputPartition": "complete coupled request defaults",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C12",
+          "inputPartition": "empty provider",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C13",
+          "inputPartition": "empty model",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C14",
+          "inputPartition": "missing reasoning default",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE",
+          "id": "C15",
+          "inputPartition": "missing token default",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "ACCEPT_SAME_BORROWED_EVENTS_AND_UNCHANGED_STREAM",
+          "id": "C16",
+          "inputPartition": "original one same-index text delta; dt[]/texts[one]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "ACCEPT_SAME_BORROWED_EVENTS_AND_UNCHANGED_STREAM",
+          "id": "C17",
+          "inputPartition": "original two consecutive same-index deltas; dt[2]/texts[one,two]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "ACCEPT_SAME_BORROWED_EVENTS_AND_UNCHANGED_STREAM",
+          "id": "C18",
+          "inputPartition": "original three consecutive same-index deltas; dt[2,2]/texts[one,two,three]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE_UNCHANGED",
+          "id": "C19",
+          "inputPartition": "detached two-text original snapshot copy; dt=[]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE_UNCHANGED",
+          "id": "C20",
+          "inputPartition": "detached single-text original snapshot copy; dt=[0]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE_UNCHANGED",
+          "id": "C21",
+          "inputPartition": "detached single-text original snapshot copy; texts=[]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE_UNCHANGED",
+          "id": "C22",
+          "inputPartition": "detached two-text original snapshot copy; dt=[-1]",
+          "inputPreservationAssertionsPassed": true
+        },
+        {
+          "actualAssertionResult": "PASS",
+          "expected": "REFUSE_UNCHANGED",
+          "id": "C23",
+          "inputPartition": "detached two-text original snapshot copy; dt=[0.5]",
+          "inputPreservationAssertionsPassed": true
+        }
+      ],
+      "headerCases": 3,
+      "projectionCases": 12,
+      "refusalCasesPassMeansExpectedRejection": true,
+      "streamCases": 8
+    },
+    "D01": {
+      "actualResult": "PASS_EXIT0",
+      "syntaxOnlyNotNewBuild": true
+    },
+    "D02": {
+      "actualResult": "FAILED_HOLD",
+      "exactOrigin": "NOT_ESTABLISHED",
+      "finishTransportObserverSelected": false,
+      "finiteRpcRefusal": "NONE",
+      "firstFixtureCategory": "REJECTION",
+      "firstFixturePhase": "WORKER_FINISH",
+      "functionalChildExitCode": 1,
+      "httpRequests": 23
+    }
+  },
+  "verdict": "D01_AND_C01_C23_PASS_D02_FAILED_HOLD_WORKER_FINISH_ORIGIN_NOT_ESTABLISHED"
+}

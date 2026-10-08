@@ -1,0 +1,149 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "actualDriverReturnRequired": true,
+  "after": {
+    "complete": true,
+    "inputCount": 563,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "all87": "HOLD",
+  "before": {
+    "complete": true,
+    "inputCount": 563,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-positive-one-worker-r4/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 64111,
+      "durationSeconds": 0.068787,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-07T23:14:08.810280+00:00",
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 64111,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-07T23:14:08.741560+00:00",
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-positive-one-worker-r4/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 64112,
+      "durationSeconds": 6.164843,
+      "exitCode": 1,
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finishedAt": "2026-10-07T23:14:15.025033+00:00",
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 64112,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "beadd597b0eb3e979946f576b84d1bf7ee7f323033c62ff3d9511e379411590c",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-07T23:14:08.860261+00:00",
+      "timedOut": false
+    }
+  ],
+  "conservativeActiveSeconds": 23.302594624925405,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-executor/v1",
+  "diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "INVARIANT",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "unknown",
+    "entryRemoved": true,
+    "executionCommitted": false,
+    "headerCases": 3,
+    "httpRequests": 17,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_CREATE",
+    "positivePath": false,
+    "refusalCode": "NONE",
+    "requests": 0,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 0,
+    "stepStarts": 0,
+    "streams": 0,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 0,
+    "turnStarts": 0,
+    "workerCreated": false,
+    "workerStopped": false
+  },
+  "failureCode": "EXECUTOR_COMMAND_NONZERO",
+  "finalized": false,
+  "observedSeconds": 18.30259395809844,
+  "result": "FAILED_HOLD",
+  "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+}

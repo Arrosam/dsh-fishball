@@ -1,0 +1,294 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-test-design-review/v1",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "scope": "MAX_AFFECTED_R4_ORDINARY_ROOT_HEADER_ONLY",
+  "decision": "NO_NEW_SOURCE_GATE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "sourceGateBlockerCount": 0,
+  "runtimeGO": false,
+  "candidateParseCompileImportBuildCheckExecution": false,
+  "runtimeOrFaultProbe": false,
+  "privatePayloadRead": false,
+  "protectedCODEInvestigation": false,
+  "gitAction": false,
+  "helperDelegation": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "lockedUI": "PAUSED",
+  "cloudAction": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "reviewedFinalSources": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/fixture.mjs",
+      "bytes": 33515,
+      "sha256": "1ea3e4c1bb9d90b1377d587177b536d43f4c21662aa724f014206184b0d8ef00"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/run-once.py",
+      "bytes": 32241,
+      "sha256": "aee6eb04bd4320647a2d944494e9c94d9190564b783d599c0b8f937550f36055"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/execution-plan.proposed.json",
+      "bytes": 16148,
+      "sha256": "1c28a2ff531b844e0341c57d8219a1c39d688b3d55c321c78c62a8b6309d67f1"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/source-delta.diff",
+      "bytes": 70266,
+      "sha256": "60eb611a3c09f31199d720af86cb834359d78236bb8a4303515138aadad368b4"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/README.md",
+      "bytes": 4280,
+      "sha256": "76450d241f0f731146953e3eb0439928d87954c5394831c536c5d8da2a53f862"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/source-manifest.json",
+      "bytes": 156341,
+      "sha256": "ff82a794bfb071c69c3b2fd2306c4bd1a4df942801570c8335f8bbd18fb1e9e5"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-source.md",
+      "bytes": 3353,
+      "sha256": "13a663051ea60bd0ce097f28ae2bbd379ec952e3191ff2e2f626011449c39725"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-source.json",
+      "bytes": 50796,
+      "sha256": "5adafdd88703d3483009d139d84ef7242d8321d76386d31e3746780304f875cc"
+    }
+  ],
+  "reviewedCorrectedProduct": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/native-adapter.mjs",
+      "bytes": 40778,
+      "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/normal-contracts.mjs",
+      "bytes": 32057,
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/native-source-manifest.json",
+      "bytes": 17236,
+      "sha256": "d4199cc0d5e70de6297c5652bca2991a3124f6642b5d8137ee85300665efe278"
+    }
+  ],
+  "immutableAuthority": [
+    {
+      "bytes": 4935,
+      "path": "docs/evidence/NI6/positive-one-worker-r3-independent-test-design-review.md",
+      "sha256": "da7d4cb02d280e95449a028b3f63d8ab37e3088d75eb84f7e5f059eacd4365e5"
+    },
+    {
+      "bytes": 9094,
+      "path": "docs/evidence/NI6/positive-one-worker-r3-independent-test-design-review.json",
+      "sha256": "ab12c6ac3ba862515c7dcaaf9c2eb5f7336cfb67264aaa269c1793e4cd0628ef"
+    },
+    {
+      "bytes": 5285,
+      "path": "docs/ni6-positive-one-worker-r4-native-header-fix-freeze-2026-10-07.md",
+      "sha256": "1b4781f2f319e11820b0ee00339cad75c51016cb614e21489f7599b340908757"
+    },
+    {
+      "bytes": 3646,
+      "path": "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.md",
+      "sha256": "3767e4b231a0a586fd5b50a31cc66e2652227f69299be90e891c910c5b125e34"
+    },
+    {
+      "bytes": 7979,
+      "path": "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.json",
+      "sha256": "0296389206f9bd7d62645516f686ab4062f79945e05004208db966231515fe07"
+    }
+  ],
+  "affectedReadback": {
+    "affectedFixtureExecutorDeltaAndNarrativesRead": true,
+    "authorJsonAllNarrativeFieldsAndContractCaseRecordsRead": true,
+    "authorRecordArraysVerifiedAsMetadata": true,
+    "eightSourceAndThreeProductSealsMatch": true,
+    "literalSevenFileDeltaEqual": true,
+    "literalDeltaBytes": 70266,
+    "exactFixtureAndExecutorAffectedReconstruction": true,
+    "originalPackageFileCount": 65,
+    "original65InputHashesPreserved": true,
+    "correctedCopyPhysicalChanges": [
+      "src/native-adapter.mjs",
+      "src/normal-contracts.mjs",
+      "native-source-manifest.json"
+    ],
+    "productSourceEdits": 2,
+    "exactProductSourceReplacementsOnly": true,
+    "descriptorDigestLeavesChanged": 2,
+    "descriptorOtherMetadataAnd64RowIdentitiesPreserved": true,
+    "inherited471InputRowsPreserved": true,
+    "additionalInputHashesMatch": 80,
+    "ownedHashesMatch": 7,
+    "inputFiles": 551,
+    "inputBytes": 19941699,
+    "futurePinsIncludingSelfAndFourReviews": 563,
+    "sourceCopies": 142,
+    "topology": 7,
+    "newPeerToOfficialHost": true,
+    "broadHostGraphReaudit": false,
+    "proposalGOReportsApprovalFlags": false,
+    "proposalPinsEmpty": true,
+    "freshActualExecutionPathsAbsent": true
+  },
+  "publicCompatibilitySupport": [
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "lines": [
+        1699,
+        1707
+      ],
+      "meaning": "Live root header retains explicit metadata depth, omits absent depth"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "lines": [
+        808,
+        814,
+        822,
+        832
+      ],
+      "meaning": "JSONL supplies/restores explicit depth0 for absent ordinary root depth"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/native-history-collector.mjs",
+      "lines": [
+        57,
+        68
+      ],
+      "meaning": "Whole public stored/live header and other baseline identity comparisons preserved"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/normal-contracts.mjs",
+      "line": 35,
+      "meaning": "Depth is exact allowed+required safe integer0; all earlier guards retained"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/runtime-security.mjs",
+      "line": 7,
+      "meaning": "Safe integer bound0..0 rejects depth1 without coercion"
+    }
+  ],
+  "buildProvenance": {
+    "originalProduct": ".runtime/ni6-public-preparation-r3/package",
+    "selectedCorrectedProduct": ".runtime/ni6-positive-one-worker-r4/package",
+    "originalActualBuildReturn": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "originalClientSha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+    "originalActualBuiltDescriptorSha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382",
+    "correctedDescriptorSha256": "d4199cc0d5e70de6297c5652bca2991a3124f6642b5d8137ee85300665efe278",
+    "newBuild": false,
+    "originalProductUnchanged": true,
+    "correctedProductIsByteIdenticalOriginal": false
+  },
+  "headerDesign": {
+    "phase": "HEADER_CONTRACT",
+    "insideD02SameChildBeforeContext": true,
+    "privateOrLiveData": false,
+    "extraInterpreterHTTPProviderSessionStarts": 0,
+    "cases": [
+      {
+        "id": "C01",
+        "data": "Literal public-source-shaped version4 unseeded root header; depth0",
+        "oracle": "Accept and deep-equal unchanged original",
+        "status": "NOT_RUN"
+      },
+      {
+        "id": "C02",
+        "data": "Same literal header with depth absent",
+        "oracle": "INVALID_INPUT; unchanged candidate and original header",
+        "status": "NOT_RUN"
+      },
+      {
+        "id": "C03",
+        "data": "Same literal header with depth1",
+        "oracle": "INVALID_INPUT; unchanged candidate and original header",
+        "status": "NOT_RUN"
+      }
+    ],
+    "counter": "Increment only after completed oracle;0..3; positive/PASS requires3",
+    "caseFailure": "First failure stays HEADER_CONTRACT and stops before Context creation",
+    "aloneProvesHostCompatibility": false
+  },
+  "genuineHostOracle": {
+    "status": "NOT_RUN",
+    "required": [
+      "original actual native persistence and full baseline identity",
+      "actual createPhase ready before native query/execute",
+      "one idle worker with zero streams before the sole execute",
+      "one request/stream/turn/step, continuation forwarded and zero tools",
+      "exact observed public input-message UTF-8 plus expected output units and original reserved bound",
+      "actual returned refs/CAS/digests and ordinary not-reviewed/not-requested output",
+      "capture/result/finish plus stopped/session absent and actual released reservation",
+      "six owned raw-fiber Loader removals/preset disposer and post-disposal404/HTTP25",
+      "strict root disposal separately assessed; restart HOLD retained"
+    ]
+  },
+  "closedProjection": {
+    "fieldCount": 28,
+    "newField": "headerCases",
+    "newFieldIntegerBounds": [
+      0,
+      3
+    ],
+    "positiveAndPASSRequiredHeaderCases": 3,
+    "newPhase": "HEADER_CONTRACT",
+    "createPhaseCount": 8,
+    "refusalCount": 37,
+    "byteCap": 1024,
+    "boundedExecutorReadMaximum": 1025,
+    "inertCompactScalarUpperBoundIncludingNewlineBytes": 633,
+    "sizingIsRuntimeTest": false,
+    "privatePayloadProjection": false
+  },
+  "conserved": [
+    "actual createPhase enum/ready gate and all37 finite refusal labels",
+    "exact synthetic input/output usage and original genuine provider export",
+    "ordinary actual returned refs/CAS/output/capture/result/finish evidence",
+    "maximum25 owner HTTP requests,one native create/execute/stream/turn/step,zero tools/external inference",
+    "original native baseline/persistence/identity guards",
+    "owned raw-fiber once removals,preset disposer,post-disposal404 before positivePath",
+    "first failure and original declared fresh private storage effects",
+    "exclusive once/inode ownership,capped EOF captures,owned process groups,full pinned input/graph/drift checks",
+    "outer90/primary85/setup20+syntax5+functional35+post25+terminal5;Node24/5/30"
+  ],
+  "design": [
+    {
+      "id": "D01",
+      "selection": "Frozen syntax command",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "selection": "Frozen genuine ordinary positive path includingC01/C02/C03 beforeContext",
+      "status": "NOT_RUN"
+    }
+  ],
+  "runtimeCasesExecuted": 0,
+  "additionalExternalRuntimeOrFaultCasesSelected": 0,
+  "qualifications": [
+    "Static compatibility defects do not establish consumed r2 first caught exception.",
+    "Literal cases alone cannot establish actual host compatibility; genuine baseline/persistence/create/execution/finish path is mandatory.",
+    "No depth coercion,stripping,parent/origin/delegated acceptance,protected final receipt/envelope or revision999 investigation is selected.",
+    "NOT_RETURNED is no valid phase captured and does not prove no HTTP return.",
+    "workerCreatedfalse is a failed readiness milestone and does not prove zero native creation or reservation.",
+    "reservationReleasedfalse means release not established,not a known held balance or proof no reservation exists.",
+    "Original root dispose restarts; rootClosedfalse/FAILED_HOLD remains if active,independent of positive evidence.",
+    "Schema-valid child selection,command/driver return,executor first reason,supported return,EOF/group evidence and final timing remain distinct.",
+    "Preterminal scalars and prior clock observations do not establish final driver duration or a common enclosing interval.",
+    "R3 remains sealed and NOT_RUN; all earlier qualifiers and aggregate HOLD persist."
+  ],
+  "nextAction": "Root owns final plan/GO and supported once-only invocation after required reviews; this source verdict grants no GO.",
+  "reportPair": {
+    "markdown": "docs/evidence/NI6/positive-one-worker-r4-independent-test-design-review.md",
+    "json": "docs/evidence/NI6/positive-one-worker-r4-independent-test-design-review.json",
+    "markdownBytes": 6236,
+    "markdownSha256": "e955067eb40f83bb5cb20a0b59dfbfccf346fa5b5fc5403943626a26170f7222",
+    "jsonSelfHash": "REPORTED_EXTERNALLY_AFTER_FULL_READBACK"
+  },
+  "createdUTC": "2026-10-07T23:10:12.008139+00:00"
+}

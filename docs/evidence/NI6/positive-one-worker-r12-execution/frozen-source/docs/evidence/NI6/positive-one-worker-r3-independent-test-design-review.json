@@ -1,0 +1,237 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-test-design-review/v1",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "scope": "NARROW_R3_CREATE_PHASE_AND_CONSERVATION",
+  "decision": "NO_NEW_SOURCE_GATE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "sourceGateBlockerCount": 0,
+  "runtimeGO": false,
+  "candidateParseCompileImportExecution": false,
+  "runtimeOrFaultProbe": false,
+  "privatePayloadRead": false,
+  "protectedCODEInvestigation": false,
+  "gitAction": false,
+  "helperDelegation": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "lockedUI": "PAUSED",
+  "cloudAction": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "reviewedFinalSources": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/fixture.mjs",
+      "bytes": 32687,
+      "sha256": "be1d4a5c86f8e5d903c69e8c6370bdafb8a3c57fa56a6dd058015e3d843af188"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/run-once.py",
+      "bytes": 32169,
+      "sha256": "f466a9eb390a6a429c6377c5d61f54de2fe1bc67e3017ba2e2588f3bc88681b4"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/execution-plan.proposed.json",
+      "bytes": 10142,
+      "sha256": "ba4e5b5db6432c647ace0d7f9d83478ea3f18d9cc1c6ce83f7b787ec89e235eb"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/source-delta.diff",
+      "bytes": 26243,
+      "sha256": "29d5f9b9309aa0bbf76d5441599d28bffd64535928cc03e9574f940cb8b3adb5"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/README.md",
+      "bytes": 3558,
+      "sha256": "7303e42cac3e7d5331cf9e7cdd8050bab3105a5deddf2789112917a39fffe319"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/source-manifest.json",
+      "bytes": 119530,
+      "sha256": "eef74748ee6de286ef155a6dfd5f91d22cd912d01e06cd5d861680f18870087f"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r3-source.md",
+      "bytes": 2917,
+      "sha256": "027327d85dabe62b4d614003cc968df297ae0fd757add851b71d4c5a3f7426cb"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r3-source.json",
+      "bytes": 17558,
+      "sha256": "8033c94040744752589042d14851e7fb667aff4414ded6ef3cc9c1bf1cec10bb"
+    }
+  ],
+  "immutableAuthority": [
+    {
+      "bytes": 4751,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.md",
+      "sha256": "6b20fee46244bfb05c798bc3167300fb25d9707dd743bccaf798f0672817590c"
+    },
+    {
+      "bytes": 7916,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.json",
+      "sha256": "127eeef9bce848c113ad4db54dd770746a1fa481142b3cd0b9f2f1bccb73b8b7"
+    },
+    {
+      "bytes": 3754,
+      "path": "docs/ni6-positive-one-worker-r3-create-phase-freeze-2026-10-07.md",
+      "sha256": "4651b3ce7788e08642424988d0b3bf3680e5bd73d692944b84dc41c3de454e75"
+    }
+  ],
+  "affectedReadback": {
+    "completeLiteralDeltaProposalReadmeAuthorNarrativesRead": true,
+    "eightSourceSealsMatch": true,
+    "literalFourFileDeltaEqual": true,
+    "literalDeltaBytes": 26243,
+    "fixtureExactAffectedOperationsAndNamespaceOnly": true,
+    "executorExactAffectedValidationAndNamespaceOnly": true,
+    "proposalOnlyAffectedSchemaAndNamespaceProvenance": true,
+    "inherited451RowsPreserved": true,
+    "newInputHashesMatch": 20,
+    "ownedHashesMatch": 7,
+    "inputFiles": 471,
+    "inputBytes": 17705325,
+    "futurePinsIncludingSelfAndFourReviews": 483,
+    "sourceCopies": 62,
+    "fullGraphReaudit": false,
+    "newBuild": false,
+    "proposalGOReportsApprovalFlags": false,
+    "proposalPinsEmpty": true,
+    "freshActualExecutionPathsAbsent": true
+  },
+  "createPhaseOracle": {
+    "status": "SOURCE_SUPPORTED_NOT_RUN",
+    "fixtureLine": 262,
+    "source": "Actual returned workerCreate.worker.phase",
+    "enum": [
+      "NOT_RETURNED",
+      "created",
+      "ready",
+      "running",
+      "unknown",
+      "cancel_requested",
+      "stopped",
+      "not_created"
+    ],
+    "admission": "Validate public phase, retain actual finite value, require ready before Agent inventory/query/execute",
+    "nativeReadinessCannotSubstitute": true,
+    "nonReadyValidPhase": "Stops at WORKER_CREATE/INVARIANT through conserved first-failure logic",
+    "sentinelQualification": "NOT_RETURNED is initial/no valid phase captured; also retained for missing/invalid phase rejected before assignment, so it alone does not prove HTTP never returned.",
+    "publicPhaseAuthority": {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/installed-worker.mjs",
+      "lines": [
+        34,
+        39
+      ],
+      "scope": "Public workerView phase projection only"
+    },
+    "diagnosticCauseClaim": false
+  },
+  "closedProjection": {
+    "fields": [
+      "contractVersion",
+      "result",
+      "phase",
+      "category",
+      "refusalCode",
+      "createPhase",
+      "positivePath",
+      "taskCreated",
+      "workerCreated",
+      "executionCommitted",
+      "resultReturned",
+      "workerStopped",
+      "reservationReleased",
+      "entryRemoved",
+      "ownedEntriesRemoved",
+      "rootClosed",
+      "completedPlugins",
+      "httpRequests",
+      "requests",
+      "streams",
+      "tools",
+      "stepStarts",
+      "stepEnds",
+      "turnStarts",
+      "turnEnds",
+      "all87",
+      "CODE"
+    ],
+    "fieldCount": 27,
+    "createPhaseCount": 8,
+    "refusalCount": 37,
+    "addedRefusals": [
+      "WORKER_EXECUTION_ALREADY_SUBMITTED",
+      "INVALID_INPUT",
+      "STALE_AUTHORITY",
+      "HOST_PERMISSION_DENIED",
+      "STALE_MEMORY",
+      "HOST_DENIED",
+      "APPROVAL_INVALID",
+      "CLAIM_REVOKED",
+      "SPEC_MISMATCH",
+      "STALE_POLICY",
+      "ACTIVE_FULL",
+      "OPERATION_REJECTED"
+    ],
+    "unknownRefusal": "OTHER_REFUSAL",
+    "completeOriginalBridgeRefusalEnumerationClaim": false,
+    "publicRefusalAuthority": {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/operator-bridge.mjs",
+      "lines": [
+        7,
+        24,
+        122
+      ],
+      "scope": "Ordinary finite public labels and fallback only"
+    },
+    "byteCap": 1024,
+    "boundedExecutorReadMaximum": 1025,
+    "inertCompactScalarUpperBoundIncludingNewlineBytes": 617,
+    "sizingIsRuntimeTest": false,
+    "executorEnumStringTypeAndMembership": true,
+    "executorPositiveAndPassRequireReady": true,
+    "privateErrorPayloadPublished": false
+  },
+  "conserved": [
+    "exact public-message UTF-8 input bytes plus deterministic output usage total and original reservation bound",
+    "genuine unchanged original r3 product/provider and public Connection identity",
+    "all actual returned refs/CAS/output/capture/result/finish oracles",
+    "maximum25 ordered owner HTTP calls; one execute/stream/turn/step; zero tools/external inference",
+    "raw owned Loader fibers, once removal joins/preset disposer,post-disposal404 before positivePath",
+    "first failure and declared private credentials/SQLite/JSONL effects",
+    "exclusive once/inode ownership,capped private EOF captures,owned groups,original build-return and full pinned drift checks",
+    "outer90/primary85/setup20+syntax5+functional35+post25+terminal5;Node24/5/30"
+  ],
+  "design": [
+    {
+      "id": "D01",
+      "selection": "Frozen syntax command",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "selection": "Frozen single ordinary positive worker/provider path",
+      "status": "NOT_RUN",
+      "affectedOracle": "Returned createPhase must be ready before native inventory/query/execute; all prior exact usage/result/finish/removal/root obligations remain."
+    }
+  ],
+  "additionalRuntimeCasesSelected": 0,
+  "additionalRuntimeCasesExecuted": 0,
+  "qualifications": [
+    "Source-supported admission observation does not prove r2 underlying refusal or product root cause.",
+    "A non-ready create return can stop before full HTTP flow; result/capture/reservation release need actual evidence.",
+    "Original public root dispose restarts; rootClosedfalse/FAILED_HOLD remains mandatory when active, independent of positive observations.",
+    "Assess actual result flags/counts,child command return,executor first reason and supported-tool return separately; schema selection cannot override nonzero outcome.",
+    "Preterminal timing does not prove final driver duration or actual supported return.",
+    "All prior r2 phase,cleanup,projection,ownership and timing qualifications remain.",
+    "R3 may stay unrun; a separate product correction is outside this review."
+  ],
+  "nextAction": "Root owns any future closed plan, supported once-only execution or separate fresh product correction; this source review grants no GO.",
+  "reportPair": {
+    "markdown": "docs/evidence/NI6/positive-one-worker-r3-independent-test-design-review.md",
+    "json": "docs/evidence/NI6/positive-one-worker-r3-independent-test-design-review.json",
+    "markdownBytes": 4935,
+    "markdownSha256": "da7d4cb02d280e95449a028b3f63d8ab37e3088d75eb84f7e5f059eacd4365e5",
+    "jsonSelfHash": "REPORTED_EXTERNALLY_AFTER_FULL_READBACK"
+  },
+  "createdUTC": "2026-10-07T22:58:12.166259+00:00"
+}

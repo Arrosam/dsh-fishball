@@ -1,0 +1,793 @@
+{
+  "contractVersion": "df.ni6-ordinary-execute-public-diagnosis/v1",
+  "date": "2026-10-08",
+  "diagnosticLane": "/root/ordinary_execute_ack_diagnosis",
+  "model": "gpt-6.1-sol",
+  "reasoningEffort": "max",
+  "independentOfAuthorsAndReviewers": true,
+  "status": "PUBLIC_SOURCE_DIAGNOSIS_COMPLETE_ACTUAL_ACKNOWLEDGEMENT_CAUSE_NOT_ESTABLISHED",
+  "executionGO": false,
+  "candidateOrRuntimeSelected": false,
+  "acceptanceGranted": false,
+  "behavioralFixImplemented": false,
+  "primaryFinding": {
+    "finding": "R7B exported turn/step ends are post-cleanup observations. They do not establish idle-promise or worker-operation return before the selected client timer.",
+    "exactServerAcknowledgementCause": "NOT_ESTABLISHED",
+    "neverReturningPromiseEstablished": false,
+    "timerIncreaseEstablishedAsFix": false,
+    "sourceContractMismatchEstablished": true,
+    "sourceContractMismatch": {
+      "operation": "workerExecute synchronous full native completion",
+      "installedDeadlineMilliseconds": 60000,
+      "callerHttpMaximumMillisecondsInsideSharedWork": 2000,
+      "callerRpcStepMaximumMillisecondsInsideSharedWork": 2500,
+      "sharedWorkMilliseconds": 24000,
+      "finalMilliseconds": 30000,
+      "headerBehavior": "Gateway writes headers after handler completion.",
+      "consequence": "A caller expiration destroys the selected request and can revoke the original request-signal currentness while previously admitted work remains real.",
+      "actualCauseQualification": "The mismatch can preempt valid completion; no actual latency or server cause is established by R7B."
+    },
+    "existingCounterQualification": {
+      "fixtureCounterLines": [
+        "274-278",
+        "330-339"
+      ],
+      "hostFinallyLines": [
+        "990-995",
+        "1025-1033"
+      ],
+      "countersPublishedAfterCleanup": true,
+      "endEventsAppendedOnSuccessErrorOrAbort": true,
+      "endEventsOccurredBeforeTimer": "NOT_ESTABLISHED",
+      "originalProviderIteratorCompletion": "NOT_ESTABLISHED",
+      "originalIdlePromiseReturn": "NOT_ESTABLISHED",
+      "workerOperationReturn": "NOT_ESTABLISHED"
+    }
+  },
+  "actualEvidence": {
+    "consumed": true,
+    "run": "positive-one-worker-r7b",
+    "source": "docs/evidence/NI6/positive-one-worker-r7b-actual-return.json",
+    "actualSupportedDriverExitCode": 1,
+    "result": "FAILED_HOLD",
+    "phase": "WORKER_EXECUTE",
+    "category": "REJECTION",
+    "refusalCode": "NONE",
+    "httpRequests": 19,
+    "executeHttpPhase": "REQUEST_STARTED",
+    "executeTransportFailure": "TIMER_EXPIRED",
+    "executeHttpStatus": "NOT_RETURNED",
+    "createPhase": "ready",
+    "completedPlugins": 11,
+    "pureContractCasesPassed": 15,
+    "requests": 1,
+    "streams": 1,
+    "turnStarts": 1,
+    "turnEnds": 1,
+    "stepStarts": 1,
+    "stepEnds": 1,
+    "tools": 0,
+    "executionCommitmentResultStopReservationRelease": "NOT_ESTABLISHED",
+    "rootClosed": false,
+    "processGroupAndEOF": "OWNED_PROCESS_GROUPS_ABSENT_COMPLETE_EOF_ONLY",
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "rawErrorsResponsesHistoryOrPrivateContentUsed": false,
+    "resetReplayAdoptionAuthorized": false
+  },
+  "causalChain": [
+    {
+      "id": "caller",
+      "path": ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
+      "lines": [
+        "12",
+        "38-48",
+        "171-191",
+        "218",
+        "315"
+      ],
+      "fact": "Selected workerExecute request is awaited through send/call/rpc. HTTP timer is min(2000ms, shared work remainder); the surrounding RPC step is capped at2500ms. Shared work/final bounds are24000/30000ms."
+    },
+    {
+      "id": "http",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "lines": [
+        "228-259"
+      ],
+      "fact": "Original Node HTTP server selects and awaits the original route handler."
+    },
+    {
+      "id": "gateway",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "lines": [
+        "34-38",
+        "82-88",
+        "640-655",
+        "673-700"
+      ],
+      "fact": "Gateway buffers the original request, awaits handler completion and only then writes response headers. Socket close before writableEnded aborts the original request signal."
+    },
+    {
+      "id": "owner",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
+      "lines": [
+        "89-119"
+      ],
+      "fact": "Original admitted /df-rpc operation is awaited. Currentness includes operator identity, service lifetime and request-signal abort; no await precedes operation admission."
+    },
+    {
+      "id": "carrier",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
+      "lines": [
+        "35-41",
+        "42-59"
+      ],
+      "fact": "Original invocation carrier awaits the callback and rechecks its guard; a denied carrier is latched. It does not await an unrelated lifecycle drain."
+    },
+    {
+      "id": "installed",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker.mjs",
+      "lines": [
+        "253",
+        "259-262"
+      ],
+      "fact": "workerExecute first awaits refresh, then awaits executeContext with timeoutMs60000; after that await it uses synchronous guards, usage/view/snapshot and immutable return."
+    },
+    {
+      "id": "routing",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
+      "lines": [
+        "227-238",
+        "271-273",
+        "490",
+        "494",
+        "506"
+      ],
+      "fact": "Marked normal execution forwards through managerCall to normalNative.executeContext over the original NativeAdapter. createNormalNativeRpc adds resume/finish operations, rather than supplying workerExecute."
+    },
+    {
+      "id": "operation",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
+      "lines": [
+        "61-69"
+      ],
+      "fact": "The original single execution completion awaits NativeAdapter.executeContext, then performs synchronous currentness/observation and returns. workerDeadline races this completion against the selected60000ms deadline."
+    },
+    {
+      "id": "deadline",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs",
+      "lines": [
+        "10-15"
+      ],
+      "fact": "workerDeadline uses Promise.race and clears its timer in finally. It neither retries nor resolves the native executor by itself."
+    },
+    {
+      "id": "native",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
+      "lines": [
+        "317-333"
+      ],
+      "fact": "The durable guarded admission and bind precede one public agent.send. The next await is agent.whenIdle at328. After this await, native execution computes stream/result commitment, queries and returns synchronously."
+    },
+    {
+      "id": "driver",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "lines": [
+        "790-805",
+        "854-900",
+        "990-1039",
+        "1067-1155"
+      ],
+      "fact": "wakeDriver assigns fresh driver.promise to activityDone before emitting running, then chains withInitiator(kick). whenIdle awaits the current activity until stable. kick drains turns, contains failures and sets idle in finally. Step/turn end events are appended in finally, including failure/abort."
+    },
+    {
+      "id": "initiator",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "lines": [
+        "398-400",
+        "643-667"
+      ],
+      "fact": "withInitiator preserves the callback's exact promise. runWithInitiator tracks its completion via contained then callbacks and returns it; initiator-drain teardown is a separate method, outside this execute completion."
+    },
+    {
+      "id": "hoststream",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "lines": [
+        "2277-2365"
+      ],
+      "fact": "The host awaits each original adapter iterator.next, returns on done, contains adapter failures as terminal chunks and keeps middleware failures thrown."
+    },
+    {
+      "id": "ownedstream",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-owned-stream.mjs",
+      "lines": [
+        "4-26"
+      ],
+      "fact": "The original lazy stream invokes each next under its captured owner carrier and returns when step.done. Iterator closure occurs only for an unfinished iterator."
+    },
+    {
+      "id": "mock",
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/testing-provider.mjs",
+      "lines": [
+        "103-125"
+      ],
+      "fact": "The permitted deterministic worker stream has no asynchronous wait in its body: after currentness/one-use checks it yields text, usage and stop, then returns. The llm/stream event count alone does not prove this body/terminal path completed."
+    },
+    {
+      "id": "eventtiming",
+      "path": ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
+      "lines": [
+        "274-278",
+        "330-339"
+      ],
+      "fact": "Public counters increment in original events, but their exported values are assembled after failure cleanup. R7B does not order its observed turn/step ends before the selected HTTP timer."
+    }
+  ],
+  "completionAnalysis": {
+    "freshActivityInstalledBeforeRunningEvent": true,
+    "source": "dsh-agent-loop/lib/index.js:859-875",
+    "kickHasIdleFinally": "dsh-agent-loop/lib/index.js:887-900",
+    "initiatorPreservesExactCallbackPromise": "dsh-agent/lib/index.js:643-667",
+    "initiatorDrainNotOnThisAwaitChain": true,
+    "lastNativeExecuteAwait": "native-adapter.mjs:328 agent.whenIdle",
+    "laterOrdinaryOperationAwaits": [
+      "normal-native-operations.mjs:67 await nativeAdapter.executeContext",
+      "installed-worker.mjs:253 await compose().executeContext",
+      "installed-invocation.mjs:49 await callback",
+      "operator-bridge.mjs:117 await operation",
+      "dsh-client-connection/lib/index.js:695 await handler and82 await apiHandler.fetch"
+    ],
+    "postNativeIdleWork": "Synchronous native stream/result/query checks, ordinary currentness/observation, installed usage/view/snapshot/immutable return; containing promise continuations and gateway serialization.",
+    "remainingDriverDependencies": [
+      "pre-step/system-prompt/request waterfall",
+      "original LLM prepareCall",
+      "original owned adapter iterator.next and unfinished iterator.return",
+      "serial agent/turn-stopping listeners",
+      "driver finally and activity promise continuation"
+    ],
+    "unresolvedPromiseOrOrderingDefectIdentified": "NONE_ESTABLISHED_IN_INSPECTED_ORDINARY_SOURCE",
+    "protectedDomainUsedAsInvestigationRoute": false
+  },
+  "minimalDiscriminatingCorrection": {
+    "status": "PROPOSED_ONLY_ROOT_FREEZE_REQUIRED",
+    "scope": "Fresh fixture and its closed metadata validators only for the minimal public idle witness; no original host method wrapping or replacement.",
+    "observer": {
+      "interface": "Original public workerAgent.whenIdle()",
+      "attachment": "Only exact already verified owned workerAgent's first agent/status status=running transition while selected execute remains unsettled.",
+      "attachmentReason": "wakeDriver assigns driver.promise/activityDone at860 before emitting running at861-867, and starts withInitiator(kick) at868. This observes fresh activity; pre-send whenIdle may observe old resolved idle.",
+      "maximumAttachments": 1,
+      "eventListenerMustNotAwaitOrReturnObserver": true,
+      "callbackContainment": "Attach success and rejection callbacks; ignore rejection arguments; callbacks cannot dispatch or mutate host ownership.",
+      "phases": [
+        "NOT_OBSERVED",
+        "WAITING",
+        "RETURNED",
+        "REJECTED"
+      ],
+      "snapshot": "Latch at first selected still-unsettled transport failure before request destroy and cleanup, or after unchanged guards at successful RPC_VALUE_RETURNED.",
+      "firstSnapshotImmutableAgainstLaterCallbacksAndCleanup": true,
+      "preservesSameNativeActivityWaitSemantics": true,
+      "additionalDispatches": 0,
+      "additionalHttpCalls": 0,
+      "additionalModels": 0,
+      "emitsExceptionContent": false,
+      "grantsAuthority": false,
+      "infersCommitmentOrReceipt": false
+    },
+    "partitions": [
+      {
+        "idleSnapshot": "NOT_OBSERVED",
+        "meaning": "Selected running edge was not witnessed before first failure; driver return unestablished."
+      },
+      {
+        "idleSnapshot": "WAITING",
+        "meaning": "Observer did not return before first failure; provider/middleware/serial/driver continuation still unwitnessed, not proof of indefinite pending."
+      },
+      {
+        "idleSnapshot": "RETURNED",
+        "headers": "NOT_RETURNED",
+        "meaning": "Original stable idle completion witnessed before first failure. Later product return/currentness/observation or gateway/response scheduling remains; exact worker-operation return unestablished."
+      },
+      {
+        "idleSnapshot": "REJECTED",
+        "meaning": "Public idle rejection witnessed; export finite origin only without reading its error."
+      },
+      {
+        "idleSnapshot": "RETURNED",
+        "rpc": "RPC_VALUE_RETURNED/HTTP_200/NONE",
+        "meaning": "Driver return and public guarded acknowledgement witnessed; full exact commitment/result/stop/release oracles still required."
+      }
+    ],
+    "smallestIndependentWorkerReturnObservation": {
+      "alreadyAvailable": "HEADERS_OBSERVED follows handler completion; RPC_VALUE_RETURNED follows unchanged caller guards.",
+      "exactStandaloneWorkerOperationReturnPublicEvent": "NOT_AVAILABLE_IN_INSPECTED_SCOPE",
+      "ifNeededLater": "Separately frozen internal ordinary value-ready/return milestone at installed-worker.mjs:253 or operator-bridge.mjs:117; not selected or authored here."
+    },
+    "boundedCallerCorrection": {
+      "status": "NO_NEW_NUMERIC_TIMEOUT_SELECTED",
+      "candidate": "Jointly align only the selected execute HTTP wait and enclosing RPC step with one finite admitted acknowledgement window inside unchanged aggregate work/final/cleanup bounds, alongside the single native idle witness.",
+      "timerOnlyPatchInsufficient": true,
+      "reason": "Increasing only send's2000ms timer leaves rpc's2500ms step and early currentness revocation.",
+      "condition": "Treat as correction/probe of the established caller/server contract mismatch, never proof of actual server cause; root must freeze exact chosen bounds and oracles.",
+      "productRuntimePolicyChange": false,
+      "aggregateBudgetExpansion": false,
+      "blanketTimeoutIncrease": false
+    }
+  },
+  "functionalOraclesProposedNotRun": [
+    {
+      "id": "O1_FRESH_ACTIVITY",
+      "oracle": "Exactly one read-only observer arms at owned running after selected request start; no pre-send resolved-idle inference, extra dispatch, HTTP or model."
+    },
+    {
+      "id": "O2_FIRST_FAILURE_ORDER",
+      "oracle": "Snapshot precedes destroy/cleanup; late idle/end/error callbacks cannot replace first snapshot or original transport first origin."
+    },
+    {
+      "id": "O3_ACK_AND_RESULT",
+      "oracle": "Original genuine single worker, committed RPC execution with exact refs/CAS/context/consent/catalog/policy, one request/stream/turn/step and tools0, exact input-plus-known-output UTF-8 actual usage, exact result via capture/workerResult."
+    },
+    {
+      "id": "O4_STOP_RELEASE",
+      "oracle": "Original factual finish after owned stop, exact agent/session identities absent and supported reservationHeld=false; idle and event counts cannot substitute."
+    },
+    {
+      "id": "O5_LIFECYCLE",
+      "oracle": "Six once-owned Loader removals, preset disposer, post-removal404, complete EOF/owned-group observations and strict rootClosed recorded independently."
+    },
+    {
+      "id": "O6_CLOSED_OUTPUT",
+      "oracle": "Finite observation/validator grammar and exact compact/pretty result bounds remeasured under1024-byte cap/1025-byte bounded read."
+    }
+  ],
+  "sourceReadAndHashScope": {
+    "publicOnly": true,
+    "productFrozenRoot": ".runtime/ni6-positive-one-worker-r7b/package/src",
+    "wrongCanonicalNativeAdapterRead": false,
+    "hostRoot": ".runtime/dsh-web/node_modules/@deepseek-ai",
+    "additionalManifestSelectedCallerFiles": [
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
+        "reason": "Actual /df-rpc operation wait and original abort currentness."
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
+        "reason": "Actual installed workerExecute registration and marked native-operation forwarding."
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
+        "reason": "Original callback completion and guard-carrier continuation."
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs",
+        "reason": "Only original public workerDeadline race/clear declaration."
+      }
+    ],
+    "agentLoopExtension": "docs/ni6-r8-ordinary-agent-loop-read-scope-2026-10-08.md",
+    "originalHostOrSavedFullGraphReaudited": false,
+    "sourceRows": [
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
+        "bytes": 38353,
+        "sha256": "12ceb405f7929f3c405cb39b2c66486ead98f505431d272842d04cfb5a00d6dd",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "11-48",
+            "168-191",
+            "218",
+            "274-278",
+            "309-340"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-rpc.mjs",
+        "bytes": 1473,
+        "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "8-15"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
+        "bytes": 20325,
+        "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "19-34",
+            "61-75",
+            "112-127"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-request.mjs",
+        "bytes": 2675,
+        "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "8-21"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker.mjs",
+        "bytes": 47301,
+        "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "42-95",
+            "150-201",
+            "217-262"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-facts.mjs",
+        "bytes": 21961,
+        "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "99-142",
+            "184-218"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-owned-stream.mjs",
+        "bytes": 1071,
+        "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "4-26"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
+        "bytes": 40778,
+        "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "12-18",
+            "74-91",
+            "188-213",
+            "256-334",
+            "335-432"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/testing-provider.mjs",
+        "bytes": 15937,
+        "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "32-143",
+            "145-166"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
+        "bytes": 9944,
+        "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "75-130"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
+        "bytes": 67362,
+        "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "210-273",
+            "302-313",
+            "480-494",
+            "506"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
+        "bytes": 2341,
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "whole file"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs",
+        "bytes": 36640,
+        "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "8-15"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+        "bytes": 28207,
+        "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "210-271",
+            "300-451",
+            "530-557",
+            "590-700"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+        "bytes": 20779,
+        "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "selected declaration excerpts; full file not read"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/types.d.ts",
+        "bytes": 3946,
+        "sha256": "5a081173f2064e948b5652f9090ccdc41351fc3ef49d3f9b9e9f11e7ce18bbf7",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "1-95"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+        "bytes": 72994,
+        "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "16-180",
+            "730-1199",
+            "1624-1751"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/agent.d.ts",
+        "bytes": 3414,
+        "sha256": "66131a86c5f024fabb77e99103f3f07cdca5818cbce7d6aaecb058197c66589e",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "1-70"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "bytes": 103333,
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "2270-2378"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "bytes": 89972,
+        "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "1-45",
+            "1441-1481",
+            "1822-1841"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "bytes": 60361,
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "58-165",
+            "281-339",
+            "733-775",
+            "882-927"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+        "bytes": 35140,
+        "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "34-105",
+            "604-655",
+            "673-744"
+          ]
+        }
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+        "bytes": 13284,
+        "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5",
+        "inspection": {
+          "kind": "SELECTED_ORDINARY_PUBLIC_RANGES",
+          "lineRanges": [
+            "228-259"
+          ]
+        }
+      }
+    ]
+  },
+  "fullyReadPublicAuthorityAndEvidenceSeals": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/ni6-positive-one-worker-r8-acknowledgement-diagnosis-freeze-2026-10-08.md",
+      "bytes": 4006,
+      "sha256": "e82856851c1c4576fd7b745007c82990c88fb9d5dbfa20cbef77f48f7cb01107",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/ni6-r8-ordinary-agent-loop-read-scope-2026-10-08.md",
+      "bytes": 1321,
+      "sha256": "2574789333199c3b24e65848834d5f53988cd6e73f93a393f92ce938cf77de47",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/ni6-positive-one-worker-r7-transport-observation-freeze-2026-10-08.md",
+      "bytes": 7220,
+      "sha256": "2cf6147f518a0578d0044c6ddf5647fcd69188f0aa6f8a684476bc0718dd5712",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/ni6-positive-one-worker-r7b-author-namespace-freeze-2026-10-08.md",
+      "bytes": 2466,
+      "sha256": "244400e61a52f85a8be3a85e5c9992fd56cc86b8ba7e852504f04fb8637bf6c6",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-source.md",
+      "bytes": 5751,
+      "sha256": "b911bd0bd30f39b0215858497bfaae97927749103d6ac44c0c4221ebd82918d6",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-actual-return.json",
+      "bytes": 13492,
+      "sha256": "c0e5ea7289cfa0058ffaa0048aa7aa203a3e7b67e2b90c2843b8f672b38d2f78",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/fixture-result.json",
+      "bytes": 847,
+      "sha256": "2cbc9009b5b22efe135b77b7c85af1051c153b52ae8887166579ed01dc48b629",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/executor-result.json",
+      "bytes": 4547,
+      "sha256": "e68c4512ecae3e3785407f9c907758059f7c24034226bf7dc6008b6c9141e61a",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/command-results.json",
+      "bytes": 2998,
+      "sha256": "4b821095e11e297d5bb855bcd059998cdf0d1a699d97fc1e25f9f8ae0bf9a05c",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/before-after.json",
+      "bytes": 284,
+      "sha256": "3815ac0ca466417b4b9f5194d2cbd306db1948fa1910ce60d210fff573949f60",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-execution-evidence-review.md",
+      "bytes": 5528,
+      "sha256": "b4c4bfbb871711f78851bdfbd93deb06bb0ddf440612b0c0bc7ed4627e351ecc",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-execution-evidence-review.json",
+      "bytes": 9597,
+      "sha256": "eba2860a59787570bad3ac0a4d258b4f5943873102e9b6f3525e27e864c36eef",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-actual-test-assessment.md",
+      "bytes": 6027,
+      "sha256": "89bccac448c4ae1ed2853d12a27b9fa27d7fe1f0c5bfb73838a5f16521d3e6f8",
+      "read": "FULL"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-actual-test-assessment.json",
+      "bytes": 12837,
+      "sha256": "0b5175fd44c36a8193ed1afa10ad1abc803737aa3f7c107a640867b366a48d6c",
+      "read": "FULL"
+    }
+  ],
+  "rootPlanQualification": {
+    "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/root-plan.json",
+    "bytes": 154456,
+    "sha256": "fee1c978c7cbbfa0dcebec7a74b49ea2e6e97fdab0c2e29cdb881a58f66c591d",
+    "ownFullGraphOrPlanAuditPerformed": false,
+    "source": "Qualified full metadata/pin assertions of the fully read sealed root proof and final actual assessment pairs."
+  },
+  "protectedOpaqueBoundary": {
+    "call": "core.native.finishNormalNativeExecution",
+    "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
+    "line": 127,
+    "implementationInspected": false,
+    "finalCodeReceiptSignatureEnvelopeRevision999": "BLOCKED_UNCHANGED",
+    "idleOrCounterEvidenceClosesIt": false
+  },
+  "actions": {
+    "writtenPaths": [
+      "docs/evidence/NI6/ordinary-execute-r7b-public-diagnosis.md",
+      "docs/evidence/NI6/ordinary-execute-r7b-public-diagnosis.json"
+    ],
+    "freshBeforeWrites": true,
+    "diagnosticReportsOnly": true,
+    "sourceMutation": false,
+    "candidateParseImportCheckBuildTestRun": false,
+    "runtimeListenerBrowserModelNetworkCloudCredentials": false,
+    "privateRuntimeProfileKeyDatabaseHistoryCaptureResponseErrorContentReadCopiedDecodedHashed": false,
+    "protectedFinalCodeImplementationReadOrHashed": false,
+    "broadRuntimeEnumeration": false,
+    "helpersOrDelegation": false,
+    "git": false,
+    "r7bReplay": false
+  },
+  "retainedGates": {
+    "all87": "HOLD",
+    "accepted": 0,
+    "root": "HOLD",
+    "CODE": "BLOCKED_UNCHANGED",
+    "R6": "CONSUMED_IMMUTABLE",
+    "R7B": "CONSUMED_IMMUTABLE_FAILED_HOLD",
+    "R3R5": "UNRUN",
+    "R4SupportedReturn": "NOT_CAPTURED",
+    "UI": "PAUSED_MAC_LOCKED_NO_CORRECTED_HANDOFF",
+    "cloud": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION_NO_THIRD_CALL",
+    "publication": "LOCAL_ONLY_GATED",
+    "acceptanceReleaseTaskCompletionReviewDeliveryClaimed": false
+  },
+  "reportsFullyReadBackBeforeExternalSealsRequired": true,
+  "reportSelfSeals": "EXTERNAL_EXACT_BYTES_SHA256_AFTER_FULL_READBACK_NO_RECURSIVE_SELF_PIN"
+}
+

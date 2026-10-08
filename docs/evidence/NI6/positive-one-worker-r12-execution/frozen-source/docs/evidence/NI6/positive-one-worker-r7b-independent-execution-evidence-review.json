@@ -1,0 +1,236 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-execution-evidence-review/v1",
+  "date": "2026-10-08",
+  "revision": "positive-one-worker-r7b",
+  "reviewer": "/root/r7b_transport_code_review",
+  "independent": true,
+  "oneActualEvidenceAssessment": true,
+  "verdict": "NO_MATERIAL_EVIDENCE_BLOCKER",
+  "materialRecordBlockers": [],
+  "actualRunStatus": "CONSUMED_FAILED_HOLD_SUPPORTED_DRIVER_RETURN_CAPTURED",
+  "D02": "FAIL",
+  "executionGO": false,
+  "acceptanceGranted": false,
+  "replayAuthorized": false,
+  "publicInputsCompletelyReadAndSealed": [
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-actual-return.json",
+      "bytes": 13492,
+      "sha256": "c0e5ea7289cfa0058ffaa0048aa7aa203a3e7b67e2b90c2843b8f672b38d2f78"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/fixture-result.json",
+      "bytes": 847,
+      "sha256": "2cbc9009b5b22efe135b77b7c85af1051c153b52ae8887166579ed01dc48b629"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/executor-result.json",
+      "bytes": 4547,
+      "sha256": "e68c4512ecae3e3785407f9c907758059f7c24034226bf7dc6008b6c9141e61a"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/command-results.json",
+      "bytes": 2998,
+      "sha256": "4b821095e11e297d5bb855bcd059998cdf0d1a699d97fc1e25f9f8ae0bf9a05c"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/before-after.json",
+      "bytes": 284,
+      "sha256": "3815ac0ca466417b4b9f5194d2cbd306db1948fa1910ce60d210fff573949f60"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/root-plan.json",
+      "bytes": 154456,
+      "sha256": "fee1c978c7cbbfa0dcebec7a74b49ea2e6e97fdab0c2e29cdb881a58f66c591d"
+    }
+  ],
+  "sealedFinalSourceAuthorityPreserved": [
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.md",
+      "bytes": 7266,
+      "sha256": "8dc62c4f22a8b78745978716d859e52c3d889a7e1a737b8b16c88977b44f783a"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.json",
+      "bytes": 15561,
+      "sha256": "9d95ced75338eef43151180ef818055551b948a94c3e719e79c1c7664e17ad04"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
+      "bytes": 7659,
+      "sha256": "d3f8f307b64130154a2c7e26495663da2a289162cf80aa46bc3bd09ce86ca1f4"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json",
+      "bytes": 14581,
+      "sha256": "5a9fc86dc77d44f1150db7c2f3450f40af6f25ef8fd0502b79688c9765f3c844"
+    }
+  ],
+  "observedFiniteExecuteBoundary": {
+    "executeHttpPhase": "REQUEST_STARTED",
+    "executeTransportFailure": "TIMER_EXPIRED",
+    "executeHttpStatus": "NOT_RETURNED",
+    "established": "Selected existing client timer branch fired while its request promise was unsettled, before response headers were observed by the selected observer.",
+    "timerMaximumMillisecondsInsideSharedWork": 2000,
+    "exactTwoSecondWaitEstablished": false,
+    "serverLatencyCauseContentTransmissionAdmissionEstablished": false,
+    "ledgerReceiptCommitmentResultReleaseDeliveryEstablished": false,
+    "unobservedOtherTransportBranchesClaimedCovered": false
+  },
+  "actualMilestones": {
+    "fixtureResult": "FAILED_HOLD",
+    "phase": "WORKER_EXECUTE",
+    "category": "REJECTION",
+    "refusalCode": "NONE",
+    "D01ChildExit": 0,
+    "D02ChildExit": 1,
+    "headerCases": 3,
+    "projectionCases": 12,
+    "contractCasesPassed": 15,
+    "completedPlugins": 11,
+    "createPhase": "ready",
+    "httpRequests": 19,
+    "taskCreated": true,
+    "workerCreated": true,
+    "requests": 1,
+    "streams": 1,
+    "turnStarts": 1,
+    "turnEnds": 1,
+    "stepStarts": 1,
+    "stepEnds": 1,
+    "tools": 0,
+    "positivePath": false,
+    "executionCommitted": false,
+    "resultReturned": false,
+    "workerStopped": false,
+    "reservationReleased": false,
+    "ownedEntriesRemoved": false,
+    "entryRemoved": true,
+    "rootClosed": false,
+    "followUpQueryCaptureResultFinishFinalStatusPostDisposal": "NOT_REACHED",
+    "factualCommitmentAcknowledgedSettlementResultStopRelease": "NOT_ESTABLISHED",
+    "ledgerAbsenceOrBalanceInferred": false,
+    "entryRemovalMeansAllCleanupPassed": false,
+    "ownedEntriesRemovedFalseMeansEveryCleanupFailed": false
+  },
+  "publicConsistency": {
+    "allSixSuppliedByteHashSealsMatch": true,
+    "closed32FieldSchemaMatchesSelectedPlan": true,
+    "fieldCount": 32,
+    "actualCompactBytesIncludingNewline": 718,
+    "actualPrettyBytesIncludingNewline": 847,
+    "publicResultByteCap": 1024,
+    "fixtureEqualsExecutorDiagnostic": true,
+    "fixtureEqualsRootClosedProjection": true,
+    "finiteTripletEqualsRootObservation": true,
+    "commandRecordsEqualExecutorCommands": true,
+    "commandMetadataEqualsRootProjections": true,
+    "commandsMatchSelectedPlan": true,
+    "beforeAfterEqualExecutorAndRoot": true,
+    "executorMarkerAndRootStateReasonFinalizationAgree": true
+  },
+  "supportedDriverReturn": {
+    "observed": true,
+    "exitCode": 1,
+    "initialChunkId": "a4aece",
+    "sessionId": 10711,
+    "runningPollChunkId": "d04ae4",
+    "finalChunkId": "3ea188",
+    "finalSessionId": null,
+    "allToolOutputsEmpty": true,
+    "directSummaryAgreesWithFinalPollOnAllSharedFields": true,
+    "directReturnObservedMs": 1791420144347,
+    "returnRecordedBeforeOptionalProcessing": "ESTABLISHED_BY_SEALED_ROOT_PROOF",
+    "childExitCodes": [0, 1],
+    "distinctFromChildAndExecutorResults": true
+  },
+  "executorAndPublishedMarker": {
+    "result": "FAILED_HOLD",
+    "failureCode": "EXECUTOR_COMMAND_NONZERO",
+    "finalized": false,
+    "markerMetadataSource": "SEALED_PUBLIC_ROOT_PROOF_ONLY",
+    "runtimeMarkerRead": false,
+    "resetOrReplayAllowed": false
+  },
+  "commandTermination": {
+    "commands": 2,
+    "completeEOF": true,
+    "ownedProcessGroups": "ABSENT_OBSERVED",
+    "signals": 0,
+    "interrupted": false,
+    "processSupervisionTimedOut": false,
+    "overflow": false,
+    "truncated": false,
+    "publicPrivateStreamMetadataOnly": true,
+    "rawStreamsInspectedOrHashedByReviewer": false,
+    "remoteTermination": "NOT_CLAIMED",
+    "reservationRelease": "NOT_CLAIMED",
+    "clientHttpTimerAndProcessTimeoutAreDistinctControls": true,
+    "processGroupAbsenceProvesReservationReleaseServiceDisposalRootClosure": false
+  },
+  "planAndBeforeAfter": {
+    "completePublicPlanMetadataRead": true,
+    "beforeCompleteUnchanged": true,
+    "afterCompleteUnchanged": true,
+    "reportedPinsAtBothBoundaries": 831,
+    "reportedWholeOfficialHostFiles": 27577,
+    "reportedWholeOfficialHostLinks": 12,
+    "planPinCount": 831,
+    "planSourceCopies": 410,
+    "uniquePlanSourceCopies": 410,
+    "allCopyPathsIncludedInPins": true,
+    "fourFinalReportSealsMatchPins": true,
+    "eightFrozenSourceSealsMatchPins": true,
+    "rootReportsPublicSourceCopiesHashVerifiedAfterRun": 410,
+    "sourceCopiesOrOfficialGraphRehashedByReviewer": false,
+    "selectedPlanHistoricalStatus": "SOURCE_ONLY_NOT_RUN",
+    "historicalPlanSnapshotReplacesActualConsumedResult": false,
+    "preInvocationCandidateExecutionFalseMeansNeverExecuted": false
+  },
+  "timingQualifications": {
+    "childDurationSeconds": [0.060925, 8.401407],
+    "executorObservedSecondsPreterminal": 19.985509332967922,
+    "executorConservativeActiveSecondsPreterminal": 24.98550995788537,
+    "directToolReturnObservedMs": 1791420144347,
+    "subsequentClockReadUTC": "2026-10-08 00:42:54 UTC",
+    "subsequentClockIsDirectReturnObservation": false,
+    "returnObservedMsMatchesFinalPollAndTimingProjection": true,
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "transportIntervalsLastPollWallTimeMarkerTimesAreDriverDuration": false
+  },
+  "assessmentScope": {
+    "onlyExplicitPublicEvidenceAndFinalReviewAuthority": true,
+    "reviewPairFreshBeforeWrite": true,
+    "sourceAuditRepeated": false,
+    "sourceReportsChanged": false,
+    "privateEnumeration": false,
+    "privateRuntimeProfileKeyDatabaseHistoryCaptureResponseErrorContentReadCopiedHashed": false,
+    "protectedReceiptSignatureEnvelopeRevision999CODEWork": false,
+    "executionOrReplay": false,
+    "runtimeListenerBrowserModelNetworkCloudGitHelperAction": false,
+    "writtenPaths": [
+      "docs/evidence/NI6/positive-one-worker-r7b-independent-execution-evidence-review.md",
+      "docs/evidence/NI6/positive-one-worker-r7b-independent-execution-evidence-review.json"
+    ]
+  },
+  "retainedQualifications": {
+    "R6": "CONSUMED_IMMUTABLE_FAILED_HOLD",
+    "R3R5": "UNRUN",
+    "R4SupportedDriverReturn": "NOT_CAPTURED",
+    "all87": "HOLD",
+    "accepted": 0,
+    "strictRootCleanup": "HOLD",
+    "CODE": "BLOCKED_UNCHANGED",
+    "UI": "PAUSED_MAC_LOCKED_NO_CORRECTED_HANDOFF",
+    "cloud": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+    "publication": "LOCAL_ONLY_GATED",
+    "taskCompletionReviewDeliveryAcceptanceReleaseEstablished": false
+  },
+  "remainingEvidenceLimits": [
+    "D02 full positive path failed; commitment, exact acknowledged settlement, returned result, factual stop and reservation release remain unestablished.",
+    "Finite timer origin does not establish server cause/content/latency, transmission/admission or ledger receipt.",
+    "Strict root closure remains HOLD separately from positive-path evidence.",
+    "Final enclosing driver duration remains NOT_ESTABLISHED; no reset/replay or new GO follows."
+  ],
+  "reportSelfSeals": "EXTERNAL_EXACT_BYTE_SHA256_SEALS_AFTER_FULL_READBACK; no recursive self-pin"
+}
