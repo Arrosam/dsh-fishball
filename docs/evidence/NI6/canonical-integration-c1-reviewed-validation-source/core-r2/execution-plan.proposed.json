@@ -1,0 +1,70 @@
+{
+  "actualBuildProof": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+  "actualDestinations": [
+    ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/invocation.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/private-capture",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/root-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/executor-result.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/command-results.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/before-after.json"
+  ],
+  "aggregateStreamByteCap": 262144,
+  "budgetsSeconds": {
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflight": 20,
+    "primaryAbsoluteEnd": 85
+  },
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      "test/coordinator.test.mjs",
+      "test/context.test.mjs",
+      "test/memory.test.mjs",
+      "test/messages.test.mjs",
+      "test/control.test.mjs",
+      "test/results.test.mjs",
+      "test/notifications.test.mjs",
+      "test/audit.test.mjs"
+    ]
+  ],
+  "contractVersion": "df.canonical-c1.core-r2/v1",
+  "criterionQualification": "Exact selected current core regression only; source counts are not actual TAP totals; no aggregate journey/MVP/acceptance claim",
+  "driverArgv": [
+    "/opt/homebrew/bin/python3",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+    ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json"
+  ],
+  "maximumConcurrentInterpreters": 5,
+  "maximumConcurrentNestedChildren": 2,
+  "maximumInterpreterStarts": 18,
+  "maximumNestedInterpreterStarts": 8,
+  "maximumNodeFileWorkers": 8,
+  "maximumOriginalRetainedChildKillCalls": 6,
+  "nestedStreamQualification": "Outer131072/262144 caps do not bound every original nested helper in-memory buffer",
+  "pins": {},
+  "publicRecordByteCap": 65536,
+  "rawTestContentPublished": false,
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.json"
+  ],
+  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+  "streamByteCap": 131072,
+  "testConcurrency": 1,
+  "testStores": "Fresh synthetic stores created only by original selected tests after GO; TMPDIR is the owning fresh private tmp directory"
+}

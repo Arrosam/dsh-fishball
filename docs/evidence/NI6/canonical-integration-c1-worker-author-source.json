@@ -1,0 +1,97 @@
+{
+  "GO": false,
+  "actualBuildAuthority": {
+    "bytes": 4870,
+    "path": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+    "sha256": "b2648682052fc5b266e7a6d033c7299e5c90d665476daf407062e09ce8fafc4b"
+  },
+  "actualDestinationsAbsent": [
+    ".runtime/ni6-canonical-integration-c1/validation/worker/invocation.json",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/fixture-result.json",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/executor-result.json",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/command-results.json",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/before-after.json",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/root-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/private-runtime",
+    ".runtime/ni6-canonical-integration-c1/validation/worker/private-capture",
+    ".runtime/root-ni6-canonical-integration-c1-worker-plan.json",
+    "docs/evidence/NI6/canonical-integration-c1-worker-execution"
+  ],
+  "actualStartsByAuthor": 0,
+  "bounds": {
+    "byteCap": 1024,
+    "compact": 878,
+    "fieldCount": 36,
+    "headroomPretty": 1,
+    "phases": 56,
+    "pretty": 1023,
+    "readMaximum": 1025
+  },
+  "canonical65Bytes": 1952632,
+  "canonical65Unchanged": true,
+  "codingIdentity": "gpt-6.1-sol high",
+  "completeLiteralDeltaRegenerated": true,
+  "fields": 36,
+  "files": [
+    {
+      "bytes": 54799,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/worker/fixture.mjs",
+      "sha256": "3a535a9d67f52817dc41c57d6573570a0df8631af4b7838f577de3e6b98fae36"
+    },
+    {
+      "bytes": 35561,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/worker/run-once.py",
+      "sha256": "baef525a98fa1c6d6483f02e3b716eef3140444ef6b84fbf722fb796996d6fe1"
+    },
+    {
+      "bytes": 9561,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/worker/execution-plan.proposed.json",
+      "sha256": "dfa0e40fd0bd0ce8a992e46c6f77661e897e920ab5bb95a65cba5e5ba56be44d"
+    },
+    {
+      "bytes": 1118,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/worker/README.md",
+      "sha256": "24dc610d866c1ef60fdcaefb95ba88c303d4dcbae532811e67f5370c39c56e9c"
+    },
+    {
+      "bytes": 99296,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/worker/source-delta.diff",
+      "sha256": "1b6bbc6934c77779bcc14cc409450f15095a2e6c2470026b1d9b065b2d9f72a1"
+    },
+    {
+      "bytes": 42984,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/worker/source-manifest.json",
+      "sha256": "99b01f14b15a73d9e390c7a99377a66ca1fb7e60c85901a272f29362ed501e5d"
+    }
+  ],
+  "fullOwnedReadback": true,
+  "futureActualPinCount": 181,
+  "httpMaximum": 26,
+  "inputBytes": 8117392,
+  "inputFileCount": 171,
+  "literalDeltaConvention": "difflib.unified_diff n=3, lineterm='\\n', splitlines(keepends=True), ''.join, explicit from/to headers; no preamble",
+  "namedGroups": 39,
+  "newGroup": "N01 acknowledged duplicate execute refusal",
+  "newPhase": "DUPLICATE_EXECUTE",
+  "originalC01C23F01F05G01G05L01L05Conserved": true,
+  "originalCleanupOracleExact": true,
+  "originalControlBlockNormalizedSHA256": "06da8c0022843d356dcfe170150f4181244c64d296596da1cd46b9269cbaff84",
+  "phases": 56,
+  "pins": {},
+  "qualifications": [
+    "Root fresh canonical buildPASS is a prerequisite, not author execution or worker/CLI/acceptancePASS.",
+    "No canonical/private/protected implementation changes, raw private contents or browser/model action.",
+    "Finite currentness/teardown observations do not prove continuous atomic workspace exclusion or instant cancellation.",
+    "Final affected source reviews/root GO/original supported once calls remain required."
+  ],
+  "requiredAffectedReviewsAbsent": [
+    "docs/evidence/NI6/canonical-integration-c1-worker-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-worker-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-worker-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-worker-independent-test-design-review.json"
+  ],
+  "schema": "df.canonical-c1.worker-author-source/v1",
+  "sourceCopies": 0,
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "topologyRows": 3
+}

@@ -1,0 +1,168 @@
+{
+  "actualBuildReturn": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+  "caseLimits": {
+    "disabled": {
+      "bootObservationRpcSeconds": 15,
+      "boots": 1,
+      "finalSeconds": 2,
+      "httpRequests": 8,
+      "seconds": 25,
+      "stopSeconds": 8
+    },
+    "invalid": {
+      "bootObservationRpcSeconds": 15,
+      "boots": 1,
+      "finalSeconds": 2,
+      "httpRequests": 8,
+      "seconds": 25,
+      "stopSeconds": 8
+    },
+    "positive": {
+      "bootSeconds": 15,
+      "boots": 2,
+      "httpRequests": 32,
+      "perBootHttp": [
+        20,
+        12
+      ],
+      "rpcSeconds": 20,
+      "seconds": 120,
+      "stopSeconds": 8
+    }
+  },
+  "caseOrder": [
+    "positive",
+    "disabled",
+    "invalid"
+  ],
+  "caseResultContractVersion": "df.canonical-c1.cli-case/v1",
+  "cases": {
+    "disabled": {
+      "actualRefusalCode": "NOT_OBSERVED",
+      "database": "home/profiles/web/df-data/runtime.sqlite",
+      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/invocation-disabled.json",
+      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/cases/disabled",
+      "sourceExpectedRefusalCode": "NONE"
+    },
+    "invalid": {
+      "actualRefusalCode": "NOT_OBSERVED",
+      "database": "home/profiles/web/df-invalid.sqlite",
+      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/invocation-invalid.json",
+      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/cases/invalid",
+      "sourceExpectedRefusalCode": "SETUP_UNAVAILABLE"
+    },
+    "positive": {
+      "actualRefusalCode": "NOT_OBSERVED",
+      "database": "home/profiles/web/df-data/runtime.sqlite",
+      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/invocation-positive.json",
+      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/cases/positive",
+      "sourceExpectedRefusalCode": "NONE"
+    }
+  },
+  "commands": [
+    [
+      "/opt/homebrew/bin/python3",
+      ".runtime/ni6-canonical-integration-c1/validation/cli-r2/lifecycle-driver.py",
+      ".runtime/root-ni6-canonical-integration-c1-cli-r2-plan.json",
+      "positive"
+    ],
+    [
+      "/opt/homebrew/bin/python3",
+      ".runtime/ni6-canonical-integration-c1/validation/cli-r2/lifecycle-driver.py",
+      ".runtime/root-ni6-canonical-integration-c1-cli-r2-plan.json",
+      "disabled"
+    ],
+    [
+      "/opt/homebrew/bin/python3",
+      ".runtime/ni6-canonical-integration-c1/validation/cli-r2/lifecycle-driver.py",
+      ".runtime/root-ni6-canonical-integration-c1-cli-r2-plan.json",
+      "invalid"
+    ]
+  ],
+  "concurrency": 1,
+  "contractVersion": "df.canonical-c1.cli-plan/v1",
+  "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "effects": "One paused task and complete-identity intake duplicate; same-store restart reconciliation. Zero agent/session/worker/provider/model/tool/external attempts. Original Loader disabled and depth1 invalid-target negatives. Four family-total retained endpoint absence probes, separate unsuccessful connection attempts inside stop/case/family ceilings.",
+  "familyController": "Root creates one exclusive plan with time.monotonic()+180 once and retains its digest/deadline. It calls these three original supported drivers sequentially in one functions script, retains each direct return immediately and stops on denial/nonzero/uncertain. Each driver clamps to the same absolute deadline, without reset or model-processing delay. Root final closed-record/cleanup uses remaining time with at most10s family reserve. No signal after denied/unknown ownership; no retry/concurrent CLI.",
+  "httpDeadlineRegression": {
+    "case": "positive",
+    "controls": [
+      "Original HTTPResponse complete headers with withheld declared one-byte body must raise source-owned timeout",
+      "Followed by successful original HTTPResponse one-byte body read",
+      "Timer/handler and first-failure identity preserved after both; original sockets closed"
+    ],
+    "listeners": 0,
+    "literalHeaderBytesMaximum": 128,
+    "nativeHTTPRequests": 0,
+    "networkEndpoints": 0,
+    "position": "After root GO/public pins/build proof, before case setup/CLI start",
+    "processes": 0,
+    "publicResultFieldsAdded": 0,
+    "qualification": "Source-only until selected once positive driver; no slow-host/network reproduction or universal OS timing guarantee.",
+    "runsMaximum": 1,
+    "secondsMaximumInsideExistingCaseAndFamily": 0.2,
+    "socketPairsMaximum": 2,
+    "successSliceSecondsMaximum": 0.03,
+    "syntheticBodyBytesMaximum": 1,
+    "threads": 0,
+    "timeoutSliceSecondsMaximum": 0.03
+  },
+  "httpRequestsMaximum": 48,
+  "httpTotalDeadline": {
+    "absoluteEnd": "min(original shared RPC deadline, monotonic()+2); consumes existing case/family deadlines",
+    "cleanupReserveUnchanged": true,
+    "mechanism": "Owning main-process one-shot ITIMER_REAL/SIGALRM around one retained exchange; no thread/process/second endpoint",
+    "perExchangeSecondsMaximum": 2,
+    "priorHandlerRequiredDefault": true,
+    "priorSIGALRMRequiredUnblocked": true,
+    "priorTimerRequiredInactive": true,
+    "qualification": "Timely supported process-local interruption; no instant cancellation or universal OS timing guarantee.",
+    "restoreEveryExit": true,
+    "stableFailureLatch": "Source-owned HTTPDeadline without error payload; only real Transport timeout boundary latches first failure. Expected probe timeout never resets or alters first failure.",
+    "stableTimeoutCode": "EXECUTOR_HTTP_TOTAL_DEADLINE"
+  },
+  "invalidRefusalQualification": "Source-supported SETUP_UNAVAILABLE; actual NOT_OBSERVED; opaque errors not inspected.",
+  "maximumActiveSeconds": 180,
+  "maximumCaseDriverStarts": 3,
+  "maximumChildStartsIncludingCaseDrivers": 7,
+  "maximumCliStarts": 4,
+  "originalCliCommand": [
+    "/opt/homebrew/opt/node@22/bin/node",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/bin.js",
+    "--profile",
+    "web",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "0",
+    "--no-open"
+  ],
+  "pins": {},
+  "postStopConnectionAttemptsMaximumFamilyTotal": 4,
+  "privateStreamAggregateByteCap": 131072,
+  "privateStreamByteCap": 65536,
+  "privateStreamsDecodedOrPublished": false,
+  "publicCaps": {
+    "beforeAfter": 4096,
+    "caseRead": 4097,
+    "caseResult": 4096,
+    "commandResults": 16384,
+    "plan": 65536
+  },
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-test-design-review.json"
+  ],
+  "rootFamilyDeadlineMonotonic": null,
+  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-cli-r2-plan.json",
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "runCountAuthorizedPerCase": 1,
+  "runner": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/lifecycle-driver.py",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "stopAfterFirstFailure": true,
+  "testWorkerStarts": 0
+}

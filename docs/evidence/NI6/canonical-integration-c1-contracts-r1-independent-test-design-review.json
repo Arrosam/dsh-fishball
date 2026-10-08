@@ -1,0 +1,355 @@
+{
+  "acceptance": false,
+  "bounds": {
+    "aggregateBytes": 262144,
+    "childInstrumentationClaim": false,
+    "commandBookkeepingSeconds": 1,
+    "commandCleanupSeconds": 5,
+    "commandWorkMaximumSeconds": 54,
+    "commands": 1,
+    "finalReserveInsideOuterSeconds": 5,
+    "interpreterMaximumSourceDerived": 7,
+    "modelExternalProviderListenerCLIAdditionalChild": 0,
+    "nodeParent": 1,
+    "nonadditive": true,
+    "outerSeconds": 90,
+    "preflightSeconds": 20,
+    "primaryEndFromStartSeconds": 85,
+    "publicRecordAndPlanBytes": 65536,
+    "pythonOwner": 1,
+    "retryResetReplay": false,
+    "runCountAuthorized": 1,
+    "sequentialNodeFileWorkersMaximum": 5,
+    "singleCommandTotalSeconds": 60,
+    "stderrBytes": 131072,
+    "stdoutBytes": 131072,
+    "testConcurrency": 1
+  },
+  "conservation": {
+    "GOFlagsAllFalse": true,
+    "actualStarts": 0,
+    "assignedReportDestinationsAbsentBeforeExclusiveCreation": true,
+    "canonicalBytes": 1952632,
+    "canonicalMetadataExactAgainstSealedAuthority": true,
+    "canonicalRecords": 65,
+    "currentInputOwnedRows": 86,
+    "filledPlanLiteralBytes": 13069,
+    "futurePins": 91,
+    "inputBytes": 2315443,
+    "inputCount": 82,
+    "literalDeltaBytes": 27640,
+    "literalDeltaExact": true,
+    "manifestSelfPin": 1,
+    "ownedArtifactPhysicalSealsMatch": true,
+    "ownedFiles": 4,
+    "proposalPins": {},
+    "requiredReviewPins": 4,
+    "selectedTestPhysicalSealsMatch": true,
+    "sourceCopies": 0,
+    "topology": 3
+  },
+  "date": "2026-10-08",
+  "executionGO": false,
+  "futureGO": false,
+  "limits": {
+    "DF010C02FullCriterionEstablished": false,
+    "LunaModelBlanketBan": false,
+    "OSStop": "NO_INSTANT_CANCELLATION_GUARANTEE",
+    "all87Disposition": "SEPARATE_EXACT_CRITERION_MAPPING_NOT_UNIVERSAL_HOLD",
+    "browser": "BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF",
+    "buildR2WorkerW01": "CONSUMED_PASS_DO_NOT_REPLAY",
+    "changedThreadCase": "MISSING_NOT_RUN",
+    "cloud": "TWICE_DENIED_NO_THIRD_ATTEMPT",
+    "currentBuild": "CONSUMED_GENUINE_BUILD_AUTHORITY_NOT_NEW_BUILD",
+    "exhaustiveRacesGeneralExactlyOnceHiddenTeardown": "NOT_ESTABLISHED",
+    "fakeClockModuleDisposeProvesFullInstalledQuit": false,
+    "freshCLIr2": "SEPARATE_INDEPENDENT_LANE",
+    "fullInstalledLifecycleActiveWorkerResumeFaultLoadDeliveryVisual": "SEPARATE_RESIDUAL_ORACLES",
+    "historicalAbsenceSnapshots": "AUTHOR_TIME_METADATA",
+    "liveChatProvider": "OUT_OF_PHASE",
+    "nativeAndBrowserLUARoutes": "PROHIBITED",
+    "originalCLI": "NOT_RUN_MUST_NOT_EXECUTE",
+    "protectedFinalCODE": "BLOCKED_UNCHANGED",
+    "publicationMVPTaskCompletionClaim": false,
+    "reorderedProviderEventCase": "MISSING_NOT_RUN",
+    "sharedQAAndPort3080": "UNTOUCHED",
+    "workspaceCurrentness": "FINITE_CUTS_NOT_ATOMIC_EXCLUSION"
+  },
+  "materialFindings": [],
+  "meaningfulActualRegressionOracle": [
+    "independently retained original supported driver exit0",
+    "exact selected plan/source/pins/current build authority",
+    "original fixed Node command exit0",
+    "complete bounded identity-bound stdout/stderr capture/EOF",
+    "owned group ABSENT_OBSERVED",
+    "unique strict passing top-level TAP footer",
+    "finalized owner records",
+    "unexpired uninterrupted terminal final gates"
+  ],
+  "overallAcceptance": "HOLD",
+  "reportMarkdown": {
+    "bytes": 10326,
+    "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.md",
+    "sha256": "86303dd5b876c64c142508e312ed774e25f7581370646950237e05fb1727eefe"
+  },
+  "reviewedPublicIdentities": [
+    {
+      "bytes": 27495,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/run-contracts.py",
+      "sha256": "6054eb3cae271912c0a7c3f41334bdc3ce4c5403c3dc2c63757b766975dee566"
+    },
+    {
+      "bytes": 2906,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution-plan.proposed.json",
+      "sha256": "2c713e34712c9c65373c00babb08f95586a20200aa52f2796a0d3cbaeec4f40c"
+    },
+    {
+      "bytes": 2796,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/README.md",
+      "sha256": "1185bdc06c455f04e9c64192c841e39e4bf9e267f9e0db989b1a8fd567da00a4"
+    },
+    {
+      "bytes": 27640,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/source-delta.patch",
+      "sha256": "25a879857f0ff59f2a3e34ca02010dcdc676720cc6ac97f000dfe1bd3d886d05"
+    },
+    {
+      "bytes": 20603,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/source-manifest.json",
+      "sha256": "03992bae5ea1e7d4e2bed5a400fbc489e0aafce94ef2030b13bf5069f7212eaa"
+    },
+    {
+      "bytes": 4116,
+      "path": "docs/ni6-canonical-integration-c1-contracts-r1-selection-2026-10-08.md",
+      "sha256": "a79b3124bde7b612df41d883b361aa1a17a332afd0eb0aff9d66b1c69dd3b766"
+    },
+    {
+      "bytes": 3241,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-author-source.md",
+      "sha256": "5c500a1b8db92a9c817c191b580ae33f6e37cddf575fe5d17a42c65ec93adaa9"
+    },
+    {
+      "bytes": 3744,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-author-source.json",
+      "sha256": "69591507befab3c55a3fbafc9a1222f21e5aba695414a2eceaa7d58c674f4068"
+    }
+  ],
+  "reviewer": {
+    "independentOfAuthorAndCodeLane": true,
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "role": "independent ISTQB affected source/test-design"
+  },
+  "rootDuty": "Fully read both final independent pairs; select and seal exact once plan; obtain supported action-bound execution approval; retain original return before processing; no review GO granted.",
+  "schema": "df.canonical-c1.contracts-r1-independent-test-design-review/v1",
+  "scope": {
+    "candidateEvaluationImportParseCheckBuildTestRun": false,
+    "canonicalOrTestBytesModified": false,
+    "completeExecutorRead": true,
+    "completeFiveTestsAndInlineHelpersRead": true,
+    "completeLiteralDeltaReadAndRegenerated": true,
+    "inertPublicOnly": true,
+    "inheritedFullGraphAuthorityReused": true,
+    "manifestMetadataRead": true,
+    "newFullHostAudit": false,
+    "opaqueCaptureFinishAndProtectedSemanticsInspected": false,
+    "privateContentReadHashCopyDecodeOrEnumerate": false,
+    "proposalRead": true,
+    "readmeAndAuthorPairRead": true,
+    "runtimeHelperSocketListenerCLIProviderBrowserNetworkGit": false
+  },
+  "selectedTests": [
+    {
+      "actual": "NOT_RUN",
+      "bytes": 24559,
+      "path": "test/chat.test.mjs",
+      "sha256": "5234574e4cc9ee9c0471d014bb85b3890e7e9da36bd0da669b7bb43d115c0620",
+      "sourceLines": 263,
+      "topLevelDeclarationsSourceOnly": 14
+    },
+    {
+      "actual": "NOT_RUN",
+      "bytes": 12138,
+      "path": "test/events.test.mjs",
+      "sha256": "3a0ee1a7c1b60ab174f644d9713302cc5153d1643b9db151b13c544cf34c5320",
+      "sourceLines": 137,
+      "topLevelDeclarationsSourceOnly": 9
+    },
+    {
+      "actual": "NOT_RUN",
+      "bytes": 15255,
+      "path": "test/scheduler.test.mjs",
+      "sha256": "c699f764fce6f96676cec0922b042df15e02342631535b17624021474160a557",
+      "sourceLines": 194,
+      "topLevelDeclarationsSourceOnly": 14
+    },
+    {
+      "actual": "NOT_RUN",
+      "bytes": 33052,
+      "path": "test/event-adapters-adversarial.test.mjs",
+      "sha256": "0193921ffd774d4190bff6fb79c7f89f22c10635d9c712a1da0a651d711f564c",
+      "sourceLines": 403,
+      "topLevelDeclarationsSourceOnly": 16
+    },
+    {
+      "actual": "NOT_RUN",
+      "bytes": 6085,
+      "path": "test/event-clock.test.mjs",
+      "sha256": "61a17da02aa0a05a492eafd1d34e661c62f56d7aa29afb3eb3c8aa9ade58b9a9",
+      "sourceLines": 88,
+      "topLevelDeclarationsSourceOnly": 8
+    }
+  ],
+  "sourceCoverage": [
+    {
+      "actual": "NOT_RUN",
+      "file": "chat.test.mjs",
+      "partitions": [
+        "complete pairing identity/dedup/reopen",
+        "owner/group/forward/cross-task denial",
+        "pairing revision/window gates",
+        "immutable edit/delete/identity conflict",
+        "exact control intent/version/currentness",
+        "late authorization/revoke/dispose",
+        "attachment scope/digest/quota/expiry/encryption",
+        "sent/delivered/access distinction",
+        "unknown-held send/no retry"
+      ]
+    },
+    {
+      "actual": "NOT_RUN",
+      "file": "events.test.mjs",
+      "partitions": [
+        "verifier/source/subscription authority",
+        "captured-before-await payload",
+        "revoke/currentness/unload",
+        "encrypted durable identity/receipt",
+        "age/future/rate/malformed/secret refusal/no partial commit",
+        "degraded same-command identity",
+        "cross-subscription dedup"
+      ]
+    },
+    {
+      "actual": "NOT_RUN",
+      "file": "scheduler.test.mjs",
+      "partitions": [
+        "durable cursor/coalesce/skip/verify/reopen",
+        "exact owner approval",
+        "external-effect classification/no dispatch",
+        "revision/permission/disposal races",
+        "rollback/over128 gap/future-start",
+        "two-instance dedup",
+        "fake timer lifecycle/late callback",
+        "IANA fold restart"
+      ]
+    },
+    {
+      "actual": "NOT_RUN",
+      "file": "event-adapters-adversarial.test.mjs",
+      "partitions": [
+        "128 registrations/32 pending",
+        "strict currentness/redaction/slot release",
+        "65535/65536/65537 UTF8 serialization",
+        "age99/100/101",
+        "awaited payload capture/revoke/unregister/dispose",
+        "provider/control identity dedup",
+        "attachment exact views and expiry edges",
+        "unknown outbound-held reservation",
+        "schedule32/cadence bounds/queued and pending timer fences"
+      ]
+    },
+    {
+      "actual": "NOT_RUN",
+      "file": "event-clock.test.mjs",
+      "partitions": [
+        "due/gap boundaries",
+        "DST fold/missing local time/timezone",
+        "missed planning/verify/expiry",
+        "quiet-hours/emergency edges",
+        "proxy/accessor/malformed policies",
+        "forged/duplicate/wrong-bound occurrence",
+        "unsupported Date bounds"
+      ]
+    }
+  ],
+  "sourceFixRequired": false,
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "syntheticPreflight": {
+    "callbacks": [
+      "verification",
+      "normalization",
+      "attachment",
+      "send/query/open",
+      "fake clock/timer Maps"
+    ],
+    "declarationsByFile": [
+      14,
+      9,
+      14,
+      16,
+      8
+    ],
+    "eventualTAPTestTotalPredicted": false,
+    "keysIdentities": "Fixed synthetic keys/identities",
+    "localHelpers": "INLINE_ONLY_NO_ADDITIONAL_IMPORT",
+    "ordinaryTransportReceiptsIncluded": true,
+    "protectedFinalReceiptEnvelopeRevision999Excluded": true,
+    "realAccountInferencePersonalProfileListenerCLIChildHelper": false,
+    "selectedSourceFiles": 5,
+    "sourceBytes": 91089,
+    "sourceLines": 1085,
+    "stores": "Fresh owner TMPDIR synthetic SQLite/temp directories only after GO",
+    "testsInspectTheirOwnFreshSyntheticDatabaseForPlaintextAbsence": true,
+    "topLevelDeclarationsSourceOnly": 61
+  },
+  "tapOracle": {
+    "beforeParseRequires": [
+      "Node exit0",
+      "no command failure",
+      "stdout/stderr complete EOF/prefix/readback",
+      "owned group ABSENT_OBSERVED"
+    ],
+    "durationGrammar": "Nonnegative decimal with up to16 integer and16 fractional digits",
+    "faultBranchesActuallyExecuted": false,
+    "knownFieldOccurrenceCount": 1,
+    "knownOrderedFields": [
+      "tests",
+      "suites",
+      "pass",
+      "fail",
+      "cancelled",
+      "skipped",
+      "todo",
+      "duration_ms"
+    ],
+    "newFaultSuiteSelected": false,
+    "originalIdentityBoundCompleteStdoutBytesRetainedInOwnerMemory": true,
+    "originalOwningExecutorOnly": true,
+    "pass": "tests>0; pass==tests; fail/cancelled/skipped/todo==0",
+    "rawNamesErrorsStacksPayloadsOrStderrPublished": false,
+    "secondPrivateFileReadForParser": false,
+    "sourceOnlyFaultPartitions": [
+      "missing/duplicate/malformed/reordered footer",
+      "zero tests or pass mismatch",
+      "nonzero fail/cancel/skip/todo",
+      "capture replacement/incomplete/overflow",
+      "nonzero child/timeout/interruption",
+      "group unknown/remains or signal denied",
+      "plan/pin/build drift",
+      "record/final-stop/deadline/exception failure"
+    ],
+    "topLevelPlan": "1..positive integer up to16 digits",
+    "totalsGrammar": "Canonical nonnegative integers up to16 digits"
+  },
+  "terminalWrapper": {
+    "exitZeroAloneSufficient": false,
+    "mainReturnStoredUnderBaseExceptionHandler": true,
+    "observedGroupAbsenceLatch": true,
+    "ownerDurationSnapshotIsFinalEnclosingDuration": false,
+    "savedPASSOrFooterAloneSufficient": false,
+    "signalDenialLatchNoRetargetRetryOrLaterEscalation": true,
+    "sysExitOutsideHandler": true
+  },
+  "verdict": "NO_MATERIAL_AFFECTED_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

@@ -1,0 +1,153 @@
+{
+  "acceptanceGO": false,
+  "actualBuildCommands": 4,
+  "commandSummary": [
+    {
+      "EOFComplete": true,
+      "childPid": 19943,
+      "durationSeconds": 9.599703,
+      "exitCode": 0,
+      "group": "ABSENT_OBSERVED",
+      "index": 1,
+      "signalAttempts": 0
+    },
+    {
+      "EOFComplete": true,
+      "childPid": 20147,
+      "durationSeconds": 0.083079,
+      "exitCode": 0,
+      "group": "ABSENT_OBSERVED",
+      "index": 2,
+      "signalAttempts": 0
+    },
+    {
+      "EOFComplete": true,
+      "childPid": 20148,
+      "durationSeconds": 0.079773,
+      "exitCode": 0,
+      "group": "ABSENT_OBSERVED",
+      "index": 3,
+      "signalAttempts": 0
+    },
+    {
+      "EOFComplete": true,
+      "childPid": 20149,
+      "durationSeconds": 0.07712,
+      "exitCode": 0,
+      "group": "ABSENT_OBSERVED",
+      "index": 4,
+      "signalAttempts": 0
+    }
+  ],
+  "directDriverReturn": {
+    "complete": true,
+    "exitCode": 0,
+    "originalToolReturns": [
+      {
+        "chunkId": "b2f889",
+        "exitCode": null,
+        "index": 1,
+        "outputBytes": 0,
+        "sessionId": 40616,
+        "tool": "exec_command",
+        "wallTimeSeconds": 1.001406859
+      },
+      {
+        "chunkId": "14377e",
+        "exitCode": null,
+        "index": 2,
+        "outputBytes": 0,
+        "sessionId": 40616,
+        "tool": "write_stdin",
+        "wallTimeSeconds": 5.000899968
+      },
+      {
+        "chunkId": "e40cc2",
+        "exitCode": 0,
+        "index": 3,
+        "outputBytes": 0,
+        "sessionId": null,
+        "tool": "write_stdin",
+        "wallTimeSeconds": 2.2464e-05
+      }
+    ],
+    "outputBytes": 0
+  },
+  "generated": [
+    {
+      "bytes": 151584,
+      "path": "lib/client.js",
+      "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+    },
+    {
+      "bytes": 18440,
+      "path": "native-source-manifest.json",
+      "sha256": "fdfdc09f672fbd584deff350b43a322dd4d1371a3680ce7c140cc8303dbdb2a5"
+    }
+  ],
+  "generatedAt": "2026-10-08T07:16:21.871227+00:00",
+  "invocation": {
+    "bytes": 66,
+    "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/invocation.json",
+    "sha256": "2fb84997d8cb198a2f8bcc90a64f554c2b9c64d2b186022dcfc6a750c980c10a"
+  },
+  "originalBuildSubset": "IMMUTABLE_NOT_RUN_MUST_NOT_EXECUTE",
+  "privateCaptureContentReadByRootOrReviewers": false,
+  "privateStreamsDecodedByExecutor": false,
+  "publicationGO": false,
+  "qualifications": [
+    "Producer/client check and descriptor production genuinely ran; identical ancestor output bytes do not erase this new execution evidence.",
+    "Client/descriptor witnesses are finite observed currentness cuts, not continuous or atomic workspace exclusion.",
+    "durationSeconds10.005537 is pre-terminal bookkeeping, not independently instrumented final driver duration.",
+    "Original supported driverexit0 corroborates source final gates; negative branches and fault injection NOT_RUN.",
+    "BuildPASS is not worker, installed full quit/restart, browser, semantic review, overall acceptance or publicationPASS."
+  ],
+  "recordPins": [
+    {
+      "bytes": 35174,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/root-plan.json",
+      "sha256": "077ddcd76d69c3111b53dc69a56bfe25958449d591791f132571d30f6c411966"
+    },
+    {
+      "bytes": 6613,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/executor-result.json",
+      "sha256": "7aaffb19ebf3667207c26ee76e1335fa95c088addc8216dace5adbe4e15b044f"
+    },
+    {
+      "bytes": 5888,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/command-results.json",
+      "sha256": "c40a2755947fd0bd1bc1a014bf8bf6dd7150e10e916cd679280c112511dc88c8"
+    },
+    {
+      "bytes": 174,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/before-after.json",
+      "sha256": "58ec91502ee49751704c853d1fc7d738db98bae8572522a6ecd8ef34026caba3"
+    }
+  ],
+  "result": "PASS",
+  "rootPlan": {
+    "bytes": 35174,
+    "path": ".runtime/root-ni6-canonical-integration-c1-build-r2-plan.json",
+    "sha256": "077ddcd76d69c3111b53dc69a56bfe25958449d591791f132571d30f6c411966"
+  },
+  "schema": "df.canonical-c1.build-actual-return/v1",
+  "scope": "FRESH_CANONICAL_BUILD_ONLY",
+  "sourceConservation": {
+    "afterImmutablePins": 270,
+    "beforePins": 272,
+    "descriptorHostModules": 27,
+    "descriptorProductDigests": 64,
+    "finalRootPhysicalVerification": "PASS",
+    "generatedWitnessesSeparate": 2
+  },
+  "syntax": {
+    "countAuthority": "SOURCE_DERIVED_FROM_EXACT_PINNED_SCRIPT_AND_SUCCESSFUL_COMMAND_NOT_NESTED_CHILD_INSTRUMENTATION",
+    "maximumChildStartsIncludingFourTopLevel": 156,
+    "scripts": 12,
+    "source": 59,
+    "targets": 152,
+    "test": 81,
+    "testBodiesExecuted": false
+  },
+  "workerOrCLIExecution": "NOT_RUN"
+}

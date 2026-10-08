@@ -1,0 +1,46 @@
+{
+  "commandMaximumSeconds": 60,
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "scripts/check.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "scripts/build-client.mjs"
+    ],
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "scripts/build-client.mjs",
+      "--check"
+    ],
+    [
+      "/opt/homebrew/bin/python3",
+      "scripts/build-native-source-manifest.py",
+      "--product-root",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+      "--host-root",
+      "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+    ]
+  ],
+  "contractVersion": "df.canonical-c1.build-plan/v1",
+  "finalReserveSeconds": 10,
+  "generatedOutputCaps": {
+    "lib/client.js": 1048576,
+    "native-source-manifest.json": 65536
+  },
+  "outerSeconds": 90,
+  "pins": {},
+  "privateStreamCap": 65536,
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-test-design-review.json"
+  ],
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py"
+}

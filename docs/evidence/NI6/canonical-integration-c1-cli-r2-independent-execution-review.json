@@ -1,0 +1,271 @@
+{
+  "actualCounts": {
+    "CLIStarts": 1,
+    "caseDriversWithDirectReturn": 1,
+    "disabled": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+    "driverHTTPRequests": 0,
+    "invalid": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+    "recordedCLIChildPid": 32910,
+    "recordedCLIProcessGroup": 32910
+  },
+  "authorization": {
+    "acceptanceGO": false,
+    "cleanupRetarget": false,
+    "executionGO": false,
+    "newSuccessorAuthorizedByReviewer": false,
+    "publicationGO": false,
+    "replay": false,
+    "secondCase": false,
+    "sourceMutation": false
+  },
+  "cleanupObservations": {
+    "captureComplete": true,
+    "commandFailureCode": "EXECUTOR_FORCED_CLEANUP",
+    "eofComplete": true,
+    "exitQualification": "OWNING_FORCED_CLEANUP_ONLY_NOT_LIFECYCLE_PASS",
+    "forcedCleanup": true,
+    "listenerAbsenceEstablished": false,
+    "originalChildExitCode": 0,
+    "originalFiberServiceTerminationEstablished": false,
+    "originalTeardownEstablished": false,
+    "overflow": false,
+    "ownedGroup": "ABSENT_OBSERVED",
+    "signalAttempts": [
+      "SIGTERM"
+    ],
+    "signalOutcomes": [
+      "SUBMITTED"
+    ],
+    "truncation": false
+  },
+  "closedCaseResult": {
+    "case": "positive",
+    "contractVersion": "df.canonical-c1.cli-case/v1",
+    "directDriverReturnRequired": true,
+    "duplicateIntake": false,
+    "durationSeconds": 0.626533,
+    "failureCode": "EXECUTOR_READY_FIELDS",
+    "httpRequests": 0,
+    "listenerAbsent": false,
+    "originalTeardown": false,
+    "pausedDurableTask": false,
+    "refusalCode": "NOT_OBSERVED",
+    "result": "FAILED_HOLD",
+    "sameStoreReconciled": false,
+    "sourceExpectedRefusalCode": "NONE",
+    "starts": 1,
+    "zeroAttempts": false
+  },
+  "currentness": {
+    "after": null,
+    "afterCurrentnessEstablished": false,
+    "before": {
+      "complete": true,
+      "inputCount": 212,
+      "unchanged": true
+    },
+    "completeBeforeAfterUnchangedEstablished": false,
+    "planPins": 212,
+    "publicProofAndFiveRecordsSealsVerified": true,
+    "publicRootPlanEntireObjectRead": true,
+    "reviewerCurrentPhysicalGraphReaudit": false
+  },
+  "directReturn": {
+    "authority": "ROOT_SEALED_ORIGINAL_TOOL_METADATA_NOT_REVIEWER_DIRECT_TOOL_ACCESS",
+    "case": "positive",
+    "complete": true,
+    "exitCode": 1,
+    "originalToolMetadata": [
+      {
+        "chunkId": "723c31",
+        "exitCode": 1,
+        "outputBytes": 0,
+        "sessionId": null,
+        "wallTimeSeconds": 0.545414784
+      }
+    ],
+    "outputBytes": 0,
+    "returnStoredBeforeProcessingByRoot": true
+  },
+  "executionProtocolQualifications": [
+    {
+      "currentRecordAccurate": true,
+      "currentRunMutationOrReplayAuthorized": false,
+      "id": "C1-CLI-R2-ACTUAL-ARCHIVE",
+      "observation": "Administrative failure archive started outside original family deadline, explicitly false in receipt.",
+      "requiredFutureControllerBehavior": "Archive failure inside the original supported family script before model handoff, using remaining original trusted deadline/existing reserve; preserve stop-after-first-failure/once/ownership.",
+      "severity": "MATERIAL_EXECUTION_SCOPE_LIMIT",
+      "timelyFamilyFinalizationEstablished": false
+    }
+  ],
+  "functionalBlocker": {
+    "actualCause": "NOT_ESTABLISHED",
+    "code": "EXECUTOR_READY_FIELDS",
+    "consumedDisposition": "DO_NOT_REPLAY",
+    "scope": "positive original readiness protocol",
+    "status": "FAILED_HOLD"
+  },
+  "httpDeadlineControl": {
+    "actualRealTransportExchangeEstablished": false,
+    "assessment": "INFERRED_COMPLETED_SEQUENTIAL_SOURCE_PREFIX",
+    "authority": "Exact source calls control after root GO/pins/build proof and before case creation/CLI start; actual readiness failure is later with starts1.",
+    "faultBranchesActuallyCovered": "NOT_ESTABLISHED_BEYOND_SOURCE_ENTAILED_SELECTED_PREFIX",
+    "generalOSDeadlineGuaranteeEstablished": false,
+    "independentCounter": false,
+    "listenersFromControl": 0,
+    "measuredControlDurationEstablished": false,
+    "nativeHTTPRequestsFromControl": 0,
+    "originalControlTranscriptAvailableToReviewer": false
+  },
+  "interpretationQualifications": [
+    "False milestone booleans and NOT_OBSERVED mean unestablished, not proof of factual absence.",
+    "EXECUTOR_READY_FIELDS does not identify a failed observer assertion or uniquely distinguish the compact fallback; specific boot/service/loader/error cause remains unwitnessed.",
+    "Child exit0 after forced SIGTERM is cleanup only; cannot promote driver1/FAILED_HOLD into lifecycle PASS.",
+    "Frozen SOURCE_ONLY_NOT_RUN/root expected-effect fields are historical selected proposal fields; actual direct return and start/HTTP records supersede them.",
+    "Root receipt accurately qualifies outside-family administrative archive. Later10s cap is not original family time remaining.",
+    "Source-entailment control prefix is separate from direct counters or real transport success; no full dynamic deadline-fault or atomic cancellation guarantee.",
+    "Source, consumed execution and earlier evidence remain immutable; no new run/second case/repair is selected.",
+    "No whole criterion, full installed DSH quit, zero effects, aggregate acceptance/MVP or publication claim; per-criterion reconciliation remains separate."
+  ],
+  "materialEvidenceRecordCorrections": [],
+  "privateStreamMetadataOnly": {
+    "stderr": {
+      "bytes": 2055,
+      "complete": true,
+      "eofObserved": true,
+      "sha256": "a0abd29120648cb3ffae58dbb231e0431491b5544efd1f9cb0a34559fbb808db",
+      "truncated": false
+    },
+    "stdout": {
+      "bytes": 0,
+      "complete": true,
+      "eofObserved": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "truncated": false
+    }
+  },
+  "reports": [
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-execution-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-execution-review.json"
+  ],
+  "reusedFinalSourcePair": [
+    {
+      "bytes": 8119,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.md",
+      "sha256": "5d92735f143002acf352008b838f0b8260d849e9e538c06e846d51609c7f5022"
+    },
+    {
+      "bytes": 12294,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.json",
+      "sha256": "e783e0569c7ab83557b5149284b549cee27297dabfb29fda99dacde2570bc387"
+    }
+  ],
+  "reviewProcess": {
+    "GitNetworkModelBrowserCloudActions": 0,
+    "candidateRuntimeOrHelperActions": 0,
+    "delegation": false,
+    "externalSealsRequired": true,
+    "fullReadbackRequired": true,
+    "initialInertPublicPathAssertionCorrectedFromReceipt": true,
+    "onlyNamedClosedPublicCopiesRead": true,
+    "opaqueCaptureFinishBodiesInspected": false,
+    "privateEnumeration": false,
+    "privateProfileKeyDatabaseHistoryResponseErrorContentReadCopiedDecodedRehashed": false,
+    "privateReadyAccessOrRawStreamsRead": false,
+    "protectedFinalCODEInspected": false,
+    "reportWrites": "FRESH_O_EXCL_O_NOFOLLOW_0600"
+  },
+  "reviewedProof": {
+    "bytes": 3690,
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-actual-return.json",
+    "sha256": "a5e236ed5478185095af00461be477729aa2c3dc56d13846c6697fb715881d92"
+  },
+  "reviewedPublicRecords": [
+    {
+      "bytes": 494,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/positive/case-result.json",
+      "sha256": "706429ba818b988c885091bfe0c53c93b523e13cac935674f70782c223db5c9f"
+    },
+    {
+      "bytes": 964,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/positive/command-results.json",
+      "sha256": "de5af0dd34cda219f41dec1906634bff54409e3ec05d6af9aec1420916c2b9dd"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/positive/before-after.json",
+      "sha256": "482a755141febcd774638637627084b3f79bfc0e13ffb62461dcaede92870bac"
+    },
+    {
+      "bytes": 71,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/invocation-result.json",
+      "sha256": "ee9bd71978a733a61580cba544490bd7cba86fcee411c54d55db2dcd8b726565"
+    },
+    {
+      "bytes": 35717,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/root-plan.json",
+      "sha256": "15aec8f3424a10f14ecee669e17c4f7ecd7ba4f69a4da04eaa01e5e5f3a1f9d3"
+    }
+  ],
+  "reviewer": {
+    "date": "2026-10-08",
+    "independentOf": [
+      "author",
+      "ISTQB lane"
+    ],
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "max"
+  },
+  "schema": "df.canonical-c1.cli-r2-independent-code-execution-review/v1",
+  "selectedFamilyBounds": {
+    "absoluteDeadlineFromPlan": 1463349.549407958,
+    "archivalDeadlineQualification": "CURRENT_ADMINISTRATIVE_ARCHIVE_OUTSIDE_ORIGINAL_FAMILY_WINDOW",
+    "caseSeconds": [
+      120,
+      25,
+      25
+    ],
+    "familyTotalStopProbesMaximum": 4,
+    "maximumActiveSeconds": 180,
+    "maximumCLIStarts": 4,
+    "maximumCaseDrivers": 3,
+    "maximumHTTPRequests": 48,
+    "runCountAuthorizedPerCase": 1,
+    "sourceDerivedMaximaNotActualCounters": true,
+    "stopAfterFirstFailure": true
+  },
+  "sourceAuditRepeated": false,
+  "sourcePairBoundByExactActualRootPlan": true,
+  "sourceSelectedIdentities": {
+    "driverSHA256": "800c115ba06e81539268408b9aff4db7ed0afac23b1563d74e63aac5ee6c5adc",
+    "manifestSHA256": "eeefd39c4647d220a563d20dc3ceac58fb037b47ba8093dc49a330bc48ca98ae",
+    "observerSHA256": "7559472fac5fed231e5cb24432abbeaf4c0c9a7b98c37f3526f3a67faba93fb8"
+  },
+  "timing": {
+    "archiveWithinOriginalFamilyAtStart": false,
+    "casePreterminalSnapshotSeconds": 0.626533,
+    "finalEnclosingMonotonicDuration": "NOT_ESTABLISHED",
+    "rootFailureArchiveSecondsCap": 10,
+    "snapshotAndToolWallEqualityOrCauseInference": false,
+    "supportedToolReportedWallSeconds": 0.545414784
+  },
+  "unestablishedMilestones": [
+    "accepted readiness protocol",
+    "authenticated RPC/setup/intake",
+    "paused durable task",
+    "duplicate intake",
+    "same-store restart reconciliation",
+    "disabled case",
+    "invalid case/sourceExpected SETUP_UNAVAILABLE",
+    "original DF teardown",
+    "original fiber/service termination/admission closure",
+    "retained listener absence",
+    "worker/task activity",
+    "zero-attempt invariant",
+    "after-currentness",
+    "timely original-family failure archive",
+    "final enclosing monotonic duration"
+  ],
+  "verdict": "FAILED_HOLD_NO_MATERIAL_CLOSED_EVIDENCE_RECORD_BLOCKER"
+}

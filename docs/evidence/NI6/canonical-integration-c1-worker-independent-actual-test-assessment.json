@@ -1,0 +1,336 @@
+{
+  "actualRecordPins": [
+    {
+      "bytes": 4620,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/executor-result.json",
+      "sha256": "464389c9abe480fcd845aaa7b5f2f7ab647df6b796a8d2155dfc957d3e1c35e7"
+    },
+    {
+      "bytes": 3015,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/command-results.json",
+      "sha256": "8174a5a62f47b9bf3d4533c5cc5e1886dc5aa4ef64b0975664a224a37f39908d"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/before-after.json",
+      "sha256": "4acd56fd7544c39265c6e1745ceab94e5d0a1666b8098dffce29fa404cd415ff"
+    },
+    {
+      "bytes": 925,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/fixture-result.json",
+      "sha256": "32d47241740e555959c64c5eb2d2f7111ecfd4546e0f9e393940503a1dde442c"
+    },
+    {
+      "bytes": 33404,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/root-plan.json",
+      "sha256": "7377e03b6e4b1c31b4bcc4de378bc44b0188b0994bdbab88aad32de93f836a8e"
+    }
+  ],
+  "all39IndependentRuntimeCounters": false,
+  "assertionGroups": [
+    {
+      "actual": "PASS",
+      "authority": "headerCases3 plus unchanged sequential source",
+      "groups": 3,
+      "ids": "C01-C03"
+    },
+    {
+      "actual": "PASS",
+      "authority": "projectionCases12 plus unchanged sequential source",
+      "groups": 12,
+      "ids": "C04-C15"
+    },
+    {
+      "actual": "PASS",
+      "authority": "streamCases8 plus original accumulator3/6/3 and unchanged sequential source",
+      "groups": 8,
+      "ids": "C16-C23"
+    },
+    {
+      "actual": "PASS_SOURCE_ENTAILED",
+      "groups": 5,
+      "ids": "F01-F05",
+      "independentCounter": false
+    },
+    {
+      "actual": "PASS_SOURCE_ENTAILED",
+      "groups": 5,
+      "ids": "G01-G05",
+      "independentCounter": false
+    },
+    {
+      "actual": "PASS_SOURCE_ENTAILED",
+      "groups": 5,
+      "ids": "L01-L05",
+      "independentCounter": false,
+      "predicateAssertions": 20
+    },
+    {
+      "actual": "PASS_SOURCE_ENTAILED",
+      "currentCAS": true,
+      "expectedRefusal": "WORKER_EXECUTION_ALREADY_SUBMITTED",
+      "groups": 1,
+      "ids": "N01",
+      "independentCounter": false,
+      "position": "After acknowledged execute before capture",
+      "sameAcknowledgedBinding": true
+    }
+  ],
+  "bounds": {
+    "actualFixtureBytes": 925,
+    "actualWithinCaps": true,
+    "beforeAfterBytes": 284,
+    "beforeAfterCap": 4096,
+    "boundaryFaultsExecuted": false,
+    "commandsBytes": 3015,
+    "commandsCap": 16384,
+    "executorBytes": 4620,
+    "executorCap": 16384,
+    "fields": 36,
+    "fixtureCap": 1024,
+    "fixtureReadMaximum": 1025,
+    "prettyHeadroom": 1,
+    "rootPlanBytes": 33404,
+    "rootPlanCap": 65536,
+    "sourceCompactMaximumIncludingLF": 878,
+    "sourcePrettyMaximumIncludingLF": 1023
+  },
+  "capturesAndGroups": {
+    "functionalStderrMetadataBytes": 169,
+    "functionalStderrOwnerPublishedSHA256": "767604ebf7fd9447c2f1b7b5412689b2251dc07bb80e87ef061b2941d72828da",
+    "groups": "ABSENT_OBSERVED",
+    "interruption": false,
+    "overflow": false,
+    "privateContentOpenedDecodedCopiedHashed": false,
+    "processFactsSubstituteForNativeStopRelease": false,
+    "rawStderrClassification": "NOT_ESTABLISHED",
+    "signalAttempts": 0,
+    "signalOutcomes": 0,
+    "storedPrefixesVerified": true,
+    "timeout": false,
+    "truncation": false,
+    "twoChildEOFComplete": true
+  },
+  "commands": [
+    {
+      "childPid": 26410,
+      "durationSeconds": 0.068861,
+      "exitCode": 0,
+      "id": "D01",
+      "meaning": "Syntax only",
+      "result": "PASS"
+    },
+    {
+      "childPid": 26411,
+      "durationSeconds": 12.093146,
+      "exitCode": 0,
+      "id": "D02/W01",
+      "meaning": "Canonical deterministic worker functional fixture",
+      "result": "PASS"
+    }
+  ],
+  "conservation": {
+    "authority": "Owning closed public verification/root attestation; reviewer record/source/review seal checks, no repeated full graph audit",
+    "beforeAfter": {
+      "after": {
+        "complete": true,
+        "inputCount": 181,
+        "unchanged": true,
+        "wholeHostFiles": 27577,
+        "wholeHostLinks": 12
+      },
+      "before": {
+        "complete": true,
+        "inputCount": 181,
+        "unchanged": true,
+        "wholeHostFiles": 27577,
+        "wholeHostLinks": 12
+      }
+    },
+    "finiteCutsNotAtomic": true,
+    "rootRecheckedSelectedPins": 181
+  },
+  "criteria": {
+    "BUB001-04": "Full CLI/browser-close residual; whole criterion not PASS here",
+    "BUB004-03": "Existing-session resume/work residual",
+    "aggregateAcceptance": "HOLD",
+    "individual87Mapping": "Separate exact full-criterion lane, no mechanical universal historical HOLD",
+    "liveChatProviderDelivery": "OUT_OF_PHASE",
+    "oneWorkerExecutionResultUsageLifecycleDuplicatePortions": "Actually supported within exact bounded synthetic scope"
+  },
+  "date": "2026-10-08",
+  "directDriverReturn": {
+    "access": "SEALED_ROOT_PUBLIC_TRANSCRIPT_METADATA_NOT_INDEPENDENT_ORIGINAL_TOOL_WITNESS",
+    "exitCode": 0,
+    "normalMain0Inference": "Reviewed outside-handler source and original driver0 corroborate normal return/final gates, not separate selected-status instrumentation",
+    "originalChunks": [
+      "eb3ab1",
+      "9f037c"
+    ],
+    "originalInvocation": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-canonical-integration-c1/validation/worker/run-once.py",
+      ".runtime/root-ni6-canonical-integration-c1-worker-plan.json"
+    ],
+    "originalSession": 79277,
+    "outputBytes": 0
+  },
+  "effects": {
+    "HTTP": 26,
+    "externalModelCalls": 0,
+    "memoryWrites": 0,
+    "provider": "Original registered deterministic synthetic provider",
+    "providerRequests": 1,
+    "steps": 1,
+    "streams": 1,
+    "tasks": 1,
+    "tools": 0,
+    "turns": 1,
+    "workers": 1
+  },
+  "functionalObserved": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "NONE",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v2",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "finishTrace": "51B",
+    "finishWait": "W030000",
+    "headerCases": 3,
+    "httpRequests": 26,
+    "ownedEntriesRemoved": true,
+    "phase": "COMPLETE",
+    "positivePath": true,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "requests": 1,
+    "reservationReleased": true,
+    "result": "PASS",
+    "resultReturned": true,
+    "rootCleanup": "RESTARTED",
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streamCases": 8,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": true
+  },
+  "historicalPlanQualification": {
+    "selectedActualResult": "PASS",
+    "status": "SOURCE_ONLY_NOT_RUN retained proposal metadata",
+    "testWorkerStarts0": "Authoring snapshot, not actual native worker count"
+  },
+  "markdownContent": {
+    "bytes": 8192,
+    "sha256": "cc9342868f13cde65f7a641ee7d9d239c10b04f34a9f10ebb2b20d30ca4af9cb"
+  },
+  "materialFindings": [],
+  "materialRecordCorrections": [],
+  "namedGroupTotal": 39,
+  "observationsQualification": {
+    "expectedN01RefusalAndDiagnosticNONE": "Expected refusal passed without unexpected first failure",
+    "finishTrace51B": "Closed checked-success code, not response bytes/independent stop proof",
+    "finishWaitW030000": "Last literal W03 plus floored elapsed client bucket, not exact server cause/latency",
+    "idleReturned": "Observed original idle, not separate result/stop/release proof",
+    "rootCleanupRESTARTED": "Standalone root restart contract, not full installed CLI/application quit"
+  },
+  "originalGenuineGuardsPassedBySourceEntailment": [
+    "Owner HTTP/auth/identity/currentness/CAS/consent/approved input",
+    "Actual usage units=input bytes+expected output bytes; commitment/result digest",
+    "Original capture/exact returned result/source/persisted agreement/not-reviewed-not-requested disposition",
+    "Guarded finish plus independent stopped worker/exact agents-sessions absence before cleanup/paired disposals",
+    "reservationHeld=false/release",
+    "Preset release/six once verified terminal Loader removals/absence/post404/exact26HTTP",
+    "Returned standalone disposal/root0state2/10direct+6Loader unique terminal fibers -> RESTARTED"
+  ],
+  "outcome": {
+    "CLIVisual": "NOT_RUN",
+    "W01": "PASS_CONSUMED_ONCE_DO_NOT_REPLAY",
+    "acceptance": false,
+    "acceptanceGO": false,
+    "executionGO": false,
+    "overallAcceptance": "HOLD",
+    "publicationGO": false
+  },
+  "performed": {
+    "GitNetworkBrowserModelCloudDelegation": false,
+    "inertPublicEvidenceJSONHashOnly": true,
+    "onlyAssignedPairWritten": true,
+    "opaqueProtectedInspection": false,
+    "privateContentOrMarkerReadHashCopyDecodeEnumeration": false,
+    "runtimeCandidateHelperRerun": false
+  },
+  "proof": {
+    "bytes": 5992,
+    "path": "docs/evidence/NI6/canonical-integration-c1-worker-actual-return.json",
+    "sha256": "e06bd1a17797467963b800746cccd110ce653bda6f9a485d7ae74255bff409b2"
+  },
+  "recordValidation": {
+    "beforeAfterExecutorProofEqual": true,
+    "executorCommandsEqualCommandRecord": true,
+    "finalReviewPinsMatch": true,
+    "fiveSealsMatch": true,
+    "fixtureExecutorProofEqual": true,
+    "fullClosedObjectsRead": true,
+    "markerContentOpened": false,
+    "onlyThreeGOFlagsAnd181PinsDiffer": true,
+    "sixAffectedSourceIdentitiesCurrent": true,
+    "wholeHostAuditRepeated": false
+  },
+  "remainingNotRun": [
+    "Wrapper return/exception/stop/deadline negative paths",
+    "Input/pin/identity drift/cap/partial-read/capture/EOF/group/denied signal faults",
+    "Unexecuted transport callback/timer/provider failures",
+    "Exhaustive38 finish-code partitions/real observer races",
+    "Active-worker/crash matrix/existing-session resume",
+    "Full original CLI quit/restart/negatives and visual/browser cases"
+  ],
+  "reports": {
+    "exclusiveCreation": true,
+    "fullReadbackExternalSealsRequired": true,
+    "json": "docs/evidence/NI6/canonical-integration-c1-worker-independent-actual-test-assessment.json",
+    "markdown": "docs/evidence/NI6/canonical-integration-c1-worker-independent-actual-test-assessment.md"
+  },
+  "retainedBlocks": {
+    "BrowserLUA": "Browser route only, not Luna model ban",
+    "browser": "NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF; Mac lock additional",
+    "cancelled4da34a6d": "NEVER_EXECUTE",
+    "cloud": "DENIED_TWICE_NO_THIRD",
+    "originalCLI": "H01_IMMUTABLE_MUST_NOT_EXECUTE; fresh successor separate",
+    "protectedCODE": "BLOCKED_UNCHANGED",
+    "sharedQA3080MainDraftsHistory": "UNTOUCHED"
+  },
+  "reviewer": {
+    "independent": true,
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "task": "/root/r7b_transport_test_review"
+  },
+  "schema": "df.canonical-c1.worker-independent-actual-test-assessment/v1",
+  "sourceAssessment": {
+    "bytes": 9044,
+    "path": "docs/evidence/NI6/canonical-integration-c1-worker-independent-test-design-review.json",
+    "sha256": "ce175956b8de63ddf3a3a92b48145ee2044ab49f1e2f1ddb32734b161b1f3d7e"
+  },
+  "status": "SELECTED_CANONICAL_WORKER_ACTUAL_PASS",
+  "timing": {
+    "childDurationAuthority": "Original owning executor",
+    "conservativePreterminalSeconds": 29.76246033399366,
+    "finalEnclosingSupportedDuration": "NOT_ESTABLISHED",
+    "instantAtomicCancellation": false,
+    "observedPreterminalSeconds": 24.762459750054404
+  }
+}

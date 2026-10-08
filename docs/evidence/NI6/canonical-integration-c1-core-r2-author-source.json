@@ -1,0 +1,195 @@
+{
+  "GO": false,
+  "acceptanceQualification": "Exact selected current core regression only; source counts are not actual TAP totals; no aggregate journey/MVP/acceptance claim",
+  "actualExecution": "NOT_RUN",
+  "actualStarts": 0,
+  "artifacts": [
+    {
+      "bytes": 27666,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+      "sha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e"
+    },
+    {
+      "bytes": 3176,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution-plan.proposed.json",
+      "sha256": "394f2a97d39f90d5562f000e1da7af4cd778c66e1c122dc259818849aeafd0cf"
+    },
+    {
+      "bytes": 4080,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/README.md",
+      "sha256": "707e469bf99e34641f3d565cd71aaf67dfccf4f45d03808cda0281015bbcc481"
+    },
+    {
+      "bytes": 18729,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/source-delta.patch",
+      "sha256": "e0954e963c2d3bdd4eb78855f0f9641e80cf061f864758015eb11eea9c7bd7b8"
+    },
+    {
+      "bytes": 29092,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/source-manifest.json",
+      "sha256": "ac394e59a15c8030106d5c389f70971bad476747e645992754773205f75e074d"
+    }
+  ],
+  "authorizedRootPlanByteForecast": 14511,
+  "canonicalConservation": {
+    "bytes": 1952632,
+    "exact": true,
+    "files": 65
+  },
+  "contractsCodeDescriptiveQualification": "The immutable contracts CODE Markdown's phrase four additions/inverses means five literal inverse substitutions; exact normalized source/hash result and companion JSON unchanged.",
+  "contractsFinalReviewAuthority": [
+    {
+      "bytes": 8813,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.md",
+      "sha256": "9ec17741b2f4d089940b9a703ac380655c40c6efe322a19bb506c711bac1e838"
+    },
+    {
+      "bytes": 12908,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.json",
+      "sha256": "d28511734fb536fbe3bcf53b49d42ec86a43f50b0e2c976c784b08bcf2735b50"
+    },
+    {
+      "bytes": 10326,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.md",
+      "sha256": "86303dd5b876c64c142508e312ed774e25f7581370646950237e05fb1727eefe"
+    },
+    {
+      "bytes": 12851,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.json",
+      "sha256": "55de4ce0c9b804941e9ce7ef2e2f3eaf80f2c28899beb00f72a2e2e32bb2ad7c"
+    }
+  ],
+  "coreR1": "SOURCE_ONLY_NOT_RUN_MUST_NOT_EXECUTE_NAMESPACE_ROOT_PLAN_ABSENT",
+  "destinationsAbsent": [
+    ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/invocation.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/private-capture",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/root-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/executor-result.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/command-results.json",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/before-after.json",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.json"
+  ],
+  "effects": {
+    "CLIStarts": 0,
+    "additionalChildrenBeyondSelectedNested": 0,
+    "aggregateByteCap": 262144,
+    "commands": 1,
+    "externalProviderCalls": 0,
+    "listeners": 0,
+    "maximumConcurrentInterpreters": 5,
+    "maximumConcurrentNestedChildren": 2,
+    "maximumInterpreterStarts": 18,
+    "maximumNestedInterpreterStarts": 8,
+    "maximumOriginalRetainedChildKillCalls": 6,
+    "maximumSequentialNodeFileWorkers": 8,
+    "modelCalls": 0,
+    "publicRecordByteCap": 65536,
+    "stderrByteCap": 131072,
+    "stdoutByteCap": 131072,
+    "testConcurrency": 1
+  },
+  "futureActualPinCount": 100,
+  "inputBytes": 2474843,
+  "inputFileCount": 91,
+  "nestedInheritance": "Default environment/cwd/process group inherited; no shell/detached/new session; source expectations, not observed execution",
+  "nestedSpawnTopology": [
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT"
+      ],
+      "concurrent": 2,
+      "localTestTimeoutSeconds": 10,
+      "retainedChildKillCalls": 2,
+      "scriptLine": 136,
+      "spawnLine": 137,
+      "starts": 2,
+      "stdio": [
+        "pipe",
+        "pipe",
+        "pipe"
+      ],
+      "test": "test/coordinator.test.mjs"
+    },
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT"
+      ],
+      "concurrent": 2,
+      "localTestTimeoutSeconds": 10,
+      "retainedChildKillCalls": 2,
+      "scriptLine": 232,
+      "spawnLine": 233,
+      "starts": 2,
+      "stdio": [
+        "pipe",
+        "pipe",
+        "pipe"
+      ],
+      "test": "test/memory.test.mjs"
+    },
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT"
+      ],
+      "concurrent": 1,
+      "expectedChildExitCode": 73,
+      "localTestTimeoutSeconds": 10,
+      "retainedChildKillCalls": 2,
+      "scriptLine": 250,
+      "spawnLine": 251,
+      "starts": 2,
+      "stdio": [
+        "ignore",
+        "pipe",
+        "pipe"
+      ],
+      "test": "test/memory.test.mjs"
+    },
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT",
+        "FRESH_SYNTHETIC_DATABASE_PATH",
+        "JSON_SYNTHETIC_INPUT"
+      ],
+      "concurrent": 2,
+      "localTestTimeoutSeconds": null,
+      "retainedChildKillCalls": 0,
+      "scriptLine": 177,
+      "spawnLine": 178,
+      "starts": 2,
+      "stdio": "DEFAULT_THREE_PIPES",
+      "test": "test/notifications.test.mjs"
+    }
+  ],
+  "nestedStreamQualification": "Outer131072/262144 caps do not bound every original nested helper in-memory buffer",
+  "primitiveAndFooterConservation": "All primitive functions class Stop through build_authority byte-identical to final reviewed contracts-r1; only selected namespace/argv/closed source-derived topology metadata and stable core code namespace changed",
+  "reviewPins": {},
+  "schema": "df.canonical-c1.core-r2-author/v1",
+  "scopeBlockers": [],
+  "sourceCopies": [],
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "testConservation": {
+    "bytes": 195374,
+    "exact": true,
+    "files": 8,
+    "helpersScriptsFullyRead": true,
+    "lines": 1683
+  }
+}

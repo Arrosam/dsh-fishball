@@ -1,0 +1,111 @@
+{
+  "actualClosedFooter": {
+    "cancelled": 0,
+    "durationMs": "9528.052333",
+    "fail": 0,
+    "pass": 148,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 148,
+    "todo": 0
+  },
+  "actualCommands": 1,
+  "argv": [
+    "/opt/homebrew/bin/python3",
+    "-I",
+    ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+    ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json"
+  ],
+  "candidateProductCommit": "4fea2809345823b3da8cf3f6b165babd5701d482",
+  "command": {
+    "bothEOF": true,
+    "captureComplete": true,
+    "exitCode": 0,
+    "failureCode": null,
+    "groupState": "ABSENT_OBSERVED",
+    "preterminalDurationSeconds": 9.609129,
+    "signalAttempts": 0
+  },
+  "consumption": "CONSUMED_DO_NOT_REPLAY",
+  "currentness": {
+    "beforeAfterCompleteUnchanged": true,
+    "pins": 100,
+    "rootCurrentPublicPinRecheck": true
+  },
+  "directDriverReturn": {
+    "complete": true,
+    "exitCode": 0,
+    "finalEnclosingDurationSeconds": "NOT_ESTABLISHED",
+    "originalToolReturns": [
+      {
+        "chunkId": "022776",
+        "complete": false,
+        "exitCode": null,
+        "outputBytes": 0,
+        "sessionId": 5423
+      },
+      {
+        "chunkId": "85167a",
+        "complete": true,
+        "exitCode": 0,
+        "outputBytes": 0
+      }
+    ],
+    "outputBytes": 0,
+    "pollWallTimesSummed": false
+  },
+  "fullAcceptance": false,
+  "originalNodePidAndGroup": 38855,
+  "privateCaptures": {
+    "onlyOriginalOwnerFooterDecoded": true,
+    "rootOrReviewerRead": false,
+    "stderrBytes": 0,
+    "stdoutBytes": 37471
+  },
+  "qualifications": [
+    "Original memory crash children expect73; parent exit0 and closed footer gate are separate.",
+    "Command/driver duration records are pre-terminal snapshots, not final enclosing duration.",
+    "Notification child waits rely on enclosing owned-group guard.",
+    "Exact selected ordinary synthetic regression only; no installed CLI lifecycle, live provider delivery, UI, protected final CODE or MVP acceptance.",
+    "DF010-C02 changed-thread/reordering remains NOT_RUN in this pack."
+  ],
+  "recordPins": [
+    {
+      "bytes": 14511,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/root-plan.json",
+      "sha256": "b342a73b3530a9a72df556cee5cd520430682efd88d62d487bd041b9046216cf"
+    },
+    {
+      "bytes": 2703,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/executor-result.json",
+      "sha256": "14569d1cc5d99f406e744d06f1af162c7f5c0590488f9136ef35915a0942d726"
+    },
+    {
+      "bytes": 1726,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/command-results.json",
+      "sha256": "24f53fbd9635b446525ffa681a7df002726b7a3f376878f3afc233dcff88e8ee"
+    },
+    {
+      "bytes": 174,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/before-after.json",
+      "sha256": "4009e834d774c850b0e3a2a05baa5b2d7e15b117b6de1c14702739b3546c5ea5"
+    }
+  ],
+  "result": "PASS",
+  "rootPlan": {
+    "bytes": 14511,
+    "path": ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
+    "sha256": "b342a73b3530a9a72df556cee5cd520430682efd88d62d487bd041b9046216cf"
+  },
+  "schema": "df.canonical-c1.core-r2-actual-return/v1",
+  "selectedTestFiles": 8,
+  "sourceDerivedTopology": {
+    "childInstrumentation": false,
+    "maximumInterpreterStarts": 18,
+    "maximumLiveInterpreters": 5,
+    "maximumLiveNestedChildren": 2,
+    "maximumNestedStarts": 8,
+    "nestedMemoryBuffersBoundedByOuterCaps": false,
+    "retainedKillCallbacks": 6
+  }
+}

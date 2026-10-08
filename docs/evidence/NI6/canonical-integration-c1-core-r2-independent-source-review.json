@@ -1,0 +1,571 @@
+{
+  "acceptanceQualification": "No runtime/acceptance/publication GO; no whole-criterion or aggregate MVP claim. Existing consumed build/W01/contracts passes and failed CLI-r2/R12 evidence retain their exact scope and DO_NOT_REPLAY.",
+  "affectedScope": [
+    "Complete affected core-r2 owner/main and terminal wrapper",
+    "Proposal, README, closed metadata and whole literal three-file delta",
+    "Complete eight selected unchanged ordinary test files and inline child scripts",
+    "Exact primitive/footer and entire normalized runner conservation from contracts-r1",
+    "Explicit public hash rows, package/test identity, topology, environment and path absence"
+  ],
+  "budgetsSeconds": {
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflightAbsoluteEnd": 20,
+    "primaryAbsoluteEnd": 85,
+    "qualification": "Nested inside original absolute/shared windows; nonadditive; no dynamic failure/elapsed/cancellation guarantee established by source review"
+  },
+  "caps": {
+    "forecastIsActualPlan": false,
+    "nestedBuffersUniversallyCapped": false,
+    "outerAggregate": 262144,
+    "outerStderr": 131072,
+    "outerStdout": 131072,
+    "publicRecord": 65536,
+    "rootPlanForecastIncludingLF": 14511
+  },
+  "closedPlan": {
+    "actualDestinations": [
+      ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/invocation.json",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/private-capture",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/root-plan.json",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/executor-result.json",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/command-results.json",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/before-after.json"
+    ],
+    "actualDestinationsAbsentBeforeReports": true,
+    "allThreeGOFalse": true,
+    "authorStarts": 0,
+    "coreR1NamespaceAndRootPlanAbsent": true,
+    "coreR1Selection": "MUST_NOT_EXECUTE",
+    "namespaceMutationByReviewer": false,
+    "otherReviewAbsenceAuthority": "Author source cut; concurrent ISTQB reports do not change the immutable selection",
+    "ownTwoReviewDestinationsAbsentBeforeCreation": true,
+    "pins": {},
+    "requiredAffectedReviews": [
+      "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.json",
+      "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.json"
+    ],
+    "rootGo": false,
+    "runCountAuthorized": 1,
+    "sourceOnly": true
+  },
+  "commandSelection": {
+    "CLIStarts": 0,
+    "additionalChildrenBeyondSelectedNested": 0,
+    "argv": [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      "test/coordinator.test.mjs",
+      "test/context.test.mjs",
+      "test/memory.test.mjs",
+      "test/messages.test.mjs",
+      "test/control.test.mjs",
+      "test/results.test.mjs",
+      "test/notifications.test.mjs",
+      "test/audit.test.mjs"
+    ],
+    "commands": 1,
+    "externalProviderCalls": 0,
+    "listeners": 0,
+    "maximumConcurrentInterpreters": 5,
+    "maximumConcurrentNestedChildren": 2,
+    "maximumInterpreterStarts": 18,
+    "maximumNestedStarts": 8,
+    "maximumRetainedChildKillCallbacks": 6,
+    "maximumSequentialNodeFileWorkers": 8,
+    "modelCalls": 0,
+    "nestedInterpreterAccountingAuthority": "SOURCE_DERIVED_MAXIMUM_NOT_CHILD_INSTRUMENTATION",
+    "testConcurrency": 1,
+    "wildcards": false
+  },
+  "completeRunnerConservation": {
+    "allOtherMainSignalGuardWrapperBytesConserved": true,
+    "allowedDifferences": [
+      "capsule/plan/runner identity",
+      "contract version",
+      "explicit eight-file argv",
+      "closed source-derived interpreter-count metadata",
+      "stable core failure-code namespace",
+      "source-only description"
+    ],
+    "baselineBytes": 27495,
+    "baselineSHA256": "6054eb3cae271912c0a7c3f41334bdc3ce4c5403c3dc2c63757b766975dee566",
+    "candidateASTParsing": false,
+    "entireRunnerNormalizedByteIdentical": true,
+    "from": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/run-contracts.py",
+    "literalInverseOccurrences": 10,
+    "literalInverseRules": 9,
+    "primitiveFooterByteIdentical": true,
+    "primitiveFooterBytes": 19279,
+    "primitiveFooterSHA256": "cd730157a1cb135eb5782eb5d7d54128d7af4103a2bc550e4bf0ada3d0eb6074"
+  },
+  "currentC1IdentityAuthority": {
+    "bytes": 44037,
+    "bytesConserved": 1952632,
+    "files": 65,
+    "path": "docs/evidence/NI6/canonical-integration-c1-author-source.json",
+    "rows": "targetCanonicalRecords",
+    "semanticExpansion": false,
+    "sha256": "f61a9d8f6932e1f90ab5e878e7b155adf47e0b7c1fcc431bb67861181c549c86"
+  },
+  "currentTestIdentityAuthority": {
+    "bytes": 35174,
+    "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/root-plan.json",
+    "qualification": "Existing exact test pins, not a claim that build syntax selection executed test cases",
+    "sha256": "077ddcd76d69c3111b53dc69a56bfe25958449d591791f132571d30f6c411966"
+  },
+  "descriptiveQualifications": [
+    {
+      "detail": "Core-r2 explicitly corrects core-r1 accounting to18 starts/max5 live/max2 nested/eight nested starts/six retained kill callbacks; no core-r1 execution occurred.",
+      "kind": "CORRECTED_SELECTION_ACCOUNTING"
+    },
+    {
+      "detail": "The earlier four additions/inverses phrase means five literal inverse substitutions; exact normalized source/hash and JSON remain unchanged.",
+      "kind": "INHERITED_IMMUTABLE_CONTRACTS_PROSE"
+    },
+    {
+      "detail": "The earlier contracts source-cut selection commit claim is qualified; this report uses exact public seals and asserts no verified commit status. No Git action was taken.",
+      "kind": "PROVENANCE_NOT_GIT_ASSERTION"
+    }
+  ],
+  "excludedScope": [
+    "Opaque native capture/finish implementation semantics",
+    "Protected final CODE/signature/receipt/envelope/revision999 investigation",
+    "Private profile/key/database/history/capture/response/error content",
+    "Whole host/product/dependency graph re-audit",
+    "Runtime/CLI/listener/network/model/browser/cloud/Git actions"
+  ],
+  "execution": {
+    "GO": false,
+    "acceptanceGO": false,
+    "actual": "NOT_RUN",
+    "authorActualStarts": 0,
+    "candidateParsedImportedEvaluated": false,
+    "publicationGO": false,
+    "reviewerCandidateStarts": 0,
+    "rootExecutionDecision": "ROOT_ONLY_AFTER_FINAL_REVIEWS"
+  },
+  "finiteVerification": {
+    "GO": false,
+    "actualDestinationsAbsent": 8,
+    "actualStarts": 0,
+    "all10EnvironmentNamesAbsent": true,
+    "canonicalBytes": 1952632,
+    "canonicalFiles": 65,
+    "completeRunnerNormalizedToContracts": true,
+    "coreR1NamespaceAndPlanAbsent": true,
+    "deltaBodyBytes": 18520,
+    "deltaPreambleBytes": 209,
+    "futurePinUnion": 100,
+    "inputBytes": 2474843,
+    "inputFiles": 91,
+    "inverseRules": 9,
+    "literalInverseOccurrences": 10,
+    "ownReviewDestinationsAbsent": 2,
+    "presentHashRows": 95,
+    "primitiveAndFooterBytes": 19279,
+    "primitiveAndFooterSHA256": "cd730157a1cb135eb5782eb5d7d54128d7af4103a2bc550e4bf0ada3d0eb6074",
+    "rootPlanByteForecastIncludingLF": 14511,
+    "sourceArtifactAndSelectionSealsVerified": 9,
+    "sourceCopies": 0,
+    "status": "INERT_VERIFICATION_PASS_SOURCE_ONLY_NOT_RUN",
+    "testBytes": 195374,
+    "testHashConservationFromBuildPins": true,
+    "testLines": 1683,
+    "tests": 8,
+    "topology": 3,
+    "wholeDeltaBytes": 18729,
+    "wholeDeltaFiles": 3
+  },
+  "footer": {
+    "fields": [
+      "tests",
+      "suites",
+      "pass",
+      "fail",
+      "cancelled",
+      "skipped",
+      "todo",
+      "durationMs"
+    ],
+    "grammar": "Exactly eight unique ordered numeric fields; canonical bounded integer totals, bounded nonnegative duration and positive top-level plan",
+    "jointPASS": [
+      "original Node exit0",
+      "no command failure",
+      "complete EOF/captures",
+      "ABSENT_OBSERVED owned process group",
+      "tests>0",
+      "pass==tests",
+      "fail==cancelled==skipped==todo==0",
+      "pre/post/final pin and plan currentness",
+      "original stop/deadline/finalization gates"
+    ],
+    "originalOwnerOnly": true,
+    "rawNamesErrorsStacksPayloadsPublished": false,
+    "reviewerRawStdoutRead": false,
+    "sourceBinding": "Fresh original owner uses its complete identity-bound stdout readback bytes already in memory; no second private stream read",
+    "sourceCountsAreActualTAPCounts": false,
+    "stderrDecoded": false
+  },
+  "fullReadback": {
+    "AGENTS": true,
+    "README": true,
+    "affectedOwner": true,
+    "aggregateTruncationRecovery": "Bounded stored-output gaps were read; truncated aggregate displays are not claimed as full reads",
+    "authorPair": true,
+    "bothSelections": true,
+    "eightTestsGapless": true,
+    "manifestAllPublicHashRows": true,
+    "manifestNonbulkFields": true,
+    "primitiveInheritedByExactConservation": true,
+    "proposal": true,
+    "wholeLiteralDelta": true
+  },
+  "inheritedReviewAuthority": [
+    {
+      "bytes": 8813,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.md",
+      "sha256": "9ec17741b2f4d089940b9a703ac380655c40c6efe322a19bb506c711bac1e838"
+    },
+    {
+      "bytes": 12908,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.json",
+      "sha256": "d28511734fb536fbe3bcf53b49d42ec86a43f50b0e2c976c784b08bcf2735b50"
+    },
+    {
+      "bytes": 10326,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.md",
+      "sha256": "86303dd5b876c64c142508e312ed774e25f7581370646950237e05fb1727eefe"
+    },
+    {
+      "bytes": 12851,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.json",
+      "sha256": "55de4ce0c9b804941e9ce7ef2e2f3eaf80f2c28899beb00f72a2e2e32bb2ad7c"
+    }
+  ],
+  "materialFindings": [],
+  "nestedQualifications": [
+    "Original default environment/cwd/group inheritance is a source expectation, not an actual process observation or universal escape/cancellation guarantee.",
+    "Two sequential memory crash children deliberately return73 and are checked by their original durability assertions; Node parent exit0 remains a separate final gate.",
+    "Notification contenders have no local test timeout or retained kill callback; the enclosing original command-group cleanup/deadline is required.",
+    "Six callbacks retain original child handles; no arbitrary PID retarget or replacement is added.",
+    "Outer stream caps do not bound every original nested helper in-memory buffer."
+  ],
+  "nestedTopology": [
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT"
+      ],
+      "concurrent": 2,
+      "localTestTimeoutSeconds": 10,
+      "retainedChildKillCalls": 2,
+      "scriptLine": 136,
+      "spawnLine": 137,
+      "starts": 2,
+      "stdio": [
+        "pipe",
+        "pipe",
+        "pipe"
+      ],
+      "test": "test/coordinator.test.mjs"
+    },
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT"
+      ],
+      "concurrent": 2,
+      "localTestTimeoutSeconds": 10,
+      "retainedChildKillCalls": 2,
+      "scriptLine": 232,
+      "spawnLine": 233,
+      "starts": 2,
+      "stdio": [
+        "pipe",
+        "pipe",
+        "pipe"
+      ],
+      "test": "test/memory.test.mjs"
+    },
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT"
+      ],
+      "concurrent": 1,
+      "expectedChildExitCode": 73,
+      "localTestTimeoutSeconds": 10,
+      "retainedChildKillCalls": 2,
+      "scriptLine": 250,
+      "spawnLine": 251,
+      "starts": 2,
+      "stdio": [
+        "ignore",
+        "pipe",
+        "pipe"
+      ],
+      "test": "test/memory.test.mjs"
+    },
+    {
+      "argv": [
+        "process.execPath",
+        "--input-type=module",
+        "-e",
+        "PINNED_INLINE_SCRIPT",
+        "FRESH_SYNTHETIC_DATABASE_PATH",
+        "JSON_SYNTHETIC_INPUT"
+      ],
+      "concurrent": 2,
+      "localTestTimeoutSeconds": null,
+      "retainedChildKillCalls": 0,
+      "scriptLine": 177,
+      "spawnLine": 178,
+      "starts": 2,
+      "stdio": "DEFAULT_THREE_PIPES",
+      "test": "test/notifications.test.mjs"
+    }
+  ],
+  "preservedGuards": [
+    "exclusive once-marker consumption and identity-bound replacement",
+    "capsule/plan/runner/owner/type identity",
+    "exact executable digest and selected link topology",
+    "ten environment exclusions",
+    "duplicate-free exact pin union with separate manifest self pin",
+    "selected current build proof/generated artifacts/records",
+    "preflight/pre-post-final public source currentness",
+    "original single Node command process-group ownership and cleanup",
+    "bounded opaque stream capture/readback complete EOF and group absence",
+    "original owner-only closed TAP footer binding",
+    "immutable first failure and signal stop latch",
+    "plan-digest and evidence-identity gates",
+    "final deadline and outside-BaseException sys.exit(main return) semantics"
+  ],
+  "process": {
+    "Git": false,
+    "browser": false,
+    "candidateParseImportEvaluateCheckBuildTestRun": false,
+    "canonicalPriorEvidenceDraftQAEdits": false,
+    "cloud": false,
+    "earlierR7BPrivacyQualification": "Historical author pathname enumeration only/no CONTENT inspection; no private path repeated here",
+    "freshTestStoreCreation": false,
+    "inertOnly": true,
+    "model": false,
+    "network": false,
+    "privateContentReadCopyHashDecode": false,
+    "privateDirectoryEnumeration": false,
+    "rawPrivateCaptureRead": false,
+    "runtime": false,
+    "writes": "Only fresh exclusive independent source-review Markdown/JSON"
+  },
+  "provenance": {
+    "allSelectedHashesVerified": true,
+    "canonicalPackageOpaqueMeasurementOnlyWhereExcluded": true,
+    "futurePins": 100,
+    "futureReviewSlots": 4,
+    "inputBytes": 2474843,
+    "inputs": 91,
+    "manifestSelfPinSeparate": true,
+    "ownedRows": 4,
+    "presentInputOwnedRows": 95,
+    "rootPlanSelfPinned": false,
+    "sourceCopies": 0,
+    "topology": [
+      {
+        "path": "/opt/homebrew/opt/node@22",
+        "resolved": "/opt/homebrew/Cellar/node@22/22.22.2_1",
+        "target": "../Cellar/node@22/22.22.2_1"
+      },
+      {
+        "path": "/opt/homebrew/bin/python3",
+        "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "target": "../Cellar/python@3.14/3.14.5/bin/python3"
+      },
+      {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/bin/python3",
+        "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "target": "../Frameworks/Python.framework/Versions/3.14/bin/python3"
+      }
+    ]
+  },
+  "remainingDependencies": [
+    "Independent final affected ISTQB review and separate root once selection",
+    "Actual original Node/driver/EOF/group/footer/currentness/final-gate evidence remains NOT_RUN",
+    "Dynamic drift/overflow/deadline/interruption/cleanup/capture/footer fault branches remain NOT_RUN",
+    "DF010-C02 changed-thread/reordering partitions remain missing",
+    "Broader genuine lifecycle/provider/UI journeys and full installed DSH quit are outside this packet",
+    "Protected final CODE and opaque native capture/finish semantic review remain excluded"
+  ],
+  "reviewer": {
+    "delegation": false,
+    "independentOf": [
+      "source author",
+      "ISTQB lane"
+    ],
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max"
+  },
+  "schema": "df.canonical-c1.core-r2-independent-source-review/v1",
+  "selectedAuthority": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 4553,
+      "path": "docs/ni6-canonical-integration-c1-core-r2-selection-2026-10-08.md",
+      "sha256": "74099e9fa7d4fc6fdaaffb787d123ee20da59b50e3a614e0987dcd672b3067e0"
+    },
+    {
+      "bytes": 3696,
+      "path": "docs/ni6-canonical-integration-c1-core-r1-selection-2026-10-08.md",
+      "qualification": "HISTORICAL_SOURCE_ONLY_NOT_RUN_MUST_NOT_EXECUTE",
+      "sha256": "3a92991f071e26beeae60da3a727211771dc245475b2a451aae403ef27ed843f"
+    }
+  ],
+  "selectedTests": [
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 21253,
+      "coverage": "Task ingress/deduplication, clarification/CAS/current context, injected stop callbacks, one two-process CAS race",
+      "path": "test/coordinator.test.mjs",
+      "sha256": "43ebcaaebbaf541d50952bfe18a8d5b1bc99294f6328d618e53625686e4ff834",
+      "sourceLines": 213
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 15025,
+      "coverage": "Exact compaction byte/token boundaries, source scope/CAS/currentness, ordinary execution-context validation and recursion/supplement fences",
+      "path": "test/context.test.mjs",
+      "sha256": "dce8ec648405579ea402e6d3d3d6e64e6d62699c798bd7db72b331d676347c42",
+      "sourceLines": 148
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 50934,
+      "coverage": "Synthetic memory isolation/correction/deletion/replay/faults, context projection/preparation/currentness and supplements; two-process CAS plus two sequential crash children",
+      "path": "test/memory.test.mjs",
+      "sha256": "0ea938dd1fbe179922bc3115f75970902ffddbc69366ef4237cee7b0af302d68",
+      "sourceLines": 430
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 16712,
+      "coverage": "Immutable scoped message normalization, relay/identity/hop/byte bounds, outbox unknown/reconcile/cancel, injected send/query callbacks",
+      "path": "test/messages.test.mjs",
+      "sha256": "0644e40078a1520a8b9209237f09288a578e45c7b0d0037f4f51e189f23c5338",
+      "sourceLines": 146
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 7702,
+      "coverage": "State-specific controls, stale/deduplicated clicks, admission cancellation with held obligations and authoritative refresh",
+      "path": "test/control.test.mjs",
+      "sha256": "c9ed87ff1af69f2522e4192f51c90b7fbbef50d3caf97fa907324b11bc9da271",
+      "sourceLines": 63
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 20876,
+      "coverage": "Independent synthetic artifact verification, exact delivery/access receipts, held unknown effects, explicit known-failure retry and atomic capacity/boundaries",
+      "path": "test/results.test.mjs",
+      "sha256": "8a9c62fe7fdbf4a883677dc78753561e76428392e801345f241070e6b4ef6cfe",
+      "sourceLines": 149
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 30181,
+      "coverage": "Synthetic notification policy/quiet/DST/merge/rate/dedup/unknown-held/revoke bounds and two independent process claim contenders",
+      "path": "test/notifications.test.mjs",
+      "sha256": "b473f780ac370fa61da7dd0771ed9153d5fdf9d6374653d9d65f8a807930843e",
+      "sourceLines": 233
+    },
+    {
+      "actual": "NOT_RUN",
+      "assertionsChanged": false,
+      "bytes": 32691,
+      "coverage": "Synthetic independent audit material/coverage/claim/repair lineage, held release/semantic currentness, exact thresholds and completion gates",
+      "path": "test/audit.test.mjs",
+      "sha256": "e0c24d1b1857565b927e5b731f53567f6ea35ed382ff18a3db528b09b60dc0ec",
+      "sourceLines": 301
+    }
+  ],
+  "sourceIdentities": [
+    {
+      "bytes": 27666,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+      "sha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e"
+    },
+    {
+      "bytes": 3176,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution-plan.proposed.json",
+      "sha256": "394f2a97d39f90d5562f000e1da7af4cd778c66e1c122dc259818849aeafd0cf"
+    },
+    {
+      "bytes": 4080,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/README.md",
+      "sha256": "707e469bf99e34641f3d565cd71aaf67dfccf4f45d03808cda0281015bbcc481"
+    },
+    {
+      "bytes": 18729,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/source-delta.patch",
+      "sha256": "e0954e963c2d3bdd4eb78855f0f9641e80cf061f864758015eb11eea9c7bd7b8"
+    },
+    {
+      "bytes": 29092,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/source-manifest.json",
+      "sha256": "ac394e59a15c8030106d5c389f70971bad476747e645992754773205f75e074d"
+    },
+    {
+      "bytes": 3892,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-author-source.md",
+      "sha256": "0f1c6c5223dad8e4ba2fbc0ecb0c59283ed14b76eb835f9060e5e03dcb6eb0e9"
+    },
+    {
+      "bytes": 6987,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-author-source.json",
+      "sha256": "f1f43de11e6168d7eeacc72d14c30118d2d10852f8cad8c52deda2736f4cfa4d"
+    }
+  ],
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "testAssessment": {
+    "allAssertionsConserved": true,
+    "allCurrentHashesMatchExistingBuildPins": true,
+    "bytes": 195374,
+    "featureSkipQualification": "Existing conditional feature skips remain; joint final footer refuses skipped>0. No actual skip status established here.",
+    "files": 8,
+    "fixedSyntheticKeysPrincipalsClocksAndData": true,
+    "freshSyntheticStoresOnly": "Created by original selected tests only after separately selected execution",
+    "fullOrdinarySourceRead": true,
+    "lines": 1683,
+    "newTestHelperImport": false,
+    "ordinaryContextReceiptAuditConsumersReviewed": true,
+    "personalOrHistoricalPrivateInputSelected": false,
+    "protectedFinalReviewClosed": false,
+    "pureOrInjectedAdapters": true
+  },
+  "verdict": "NO_MATERIAL_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

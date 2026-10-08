@@ -1,0 +1,264 @@
+{
+  "schema": "df.canonical-c1.build-r2-independent-test-design-review/v1",
+  "date": "2026-10-08",
+  "reviewer": {
+    "task": "/root/r7b_transport_test_review",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "language": "English",
+    "independent": true
+  },
+  "status": "NO_MATERIAL_AFFECTED_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "materialFindings": [],
+  "outcome": {
+    "executionGO": false,
+    "acceptanceGO": false,
+    "publicationGO": false,
+    "actualBuild": "NOT_RUN",
+    "actualStarts": 0,
+    "overallAcceptance": "HOLD",
+    "originalBuildMustNotExecute": true,
+    "rootFinalSelectionAndSupportedApprovalRequired": true
+  },
+  "inputs": [
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py",
+      "bytes": 25527,
+      "sha256": "6c655593d26c027fa9de800334b092f09d0a3b4393d1b64d35d3aeec3db0d45e"
+    },
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution-plan.proposed.json",
+      "bytes": 1528,
+      "sha256": "3c57962edb427a21c4228bd4ee609e9d4cf1fb83571297fcd75cb84fd0c057b3"
+    },
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/README.md",
+      "bytes": 984,
+      "sha256": "0f25a3b09dad93d124eb29bde9d5f5ee40360acd3102c80d97b155e3832bc503"
+    },
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/source-manifest.json",
+      "bytes": 91522,
+      "sha256": "5fa08e3331273deb97d4a31c4255a1b0191c5cc2e2407f73b09f6ab4625ec576"
+    },
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/source-delta.diff",
+      "bytes": 10601,
+      "sha256": "81eab180c60346fd19e2cf690d69f533d988f54d4a3a3340e3e845f6c1f8011e"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-r2-author-source.md",
+      "bytes": 693,
+      "sha256": "58f3a552f3303c679ea119e42a99b81361f249ccb318d07b5cfcc95432539557"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-r2-author-source.json",
+      "bytes": 1907,
+      "sha256": "c5200230638ee21cc5ff5fa61aa7a58e764a3ce7c9fb8d4b5f288d48a8f651d8"
+    },
+    {
+      "path": "docs/ni6-canonical-integration-c1-build-r2-selection-2026-10-08.md",
+      "bytes": 2761,
+      "sha256": "41a0a89a731563959e1de7b1ae31c360f1a3b2e19538e458d9f1e909b7d72e39"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.md",
+      "bytes": 8995,
+      "sha256": "4da8d0ab78d8970e7ff6776169d039936d0abb26fb51c43c9d3846cc8a5d2cb0"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.json",
+      "bytes": 13287,
+      "sha256": "59b8cf117554a31eb996cd3b1a216c0ace9b4ace14c07e6d3188d07a3f28a18c"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-independent-test-design-review.md",
+      "bytes": 7329,
+      "sha256": "86be2e2da03b7a46a0b721050fe98f84d4b2358a05a738089ecea00b37e3f355"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-independent-test-design-review.json",
+      "bytes": 10471,
+      "sha256": "d3bc0b3d853e4eb1cf205cc6d16a7ce9a37ffb89873b48d77fc906d5e88d4b15"
+    }
+  ],
+  "originalFindingsDisposition": [
+    {
+      "finding": "ISTQB B01 / CODE C1-BUILD-CODE-01 client subpart",
+      "status": "ADDRESSED_IN_SOURCE_NOT_DYNAMICALLY_TESTED",
+      "witness": "actual successful command2-produced client path/bytes/SHA/device+inode",
+      "checks": [
+        "before3",
+        "after3",
+        "before4",
+        "after4",
+        "before product hashing",
+        "after product hashing",
+        "before record writes",
+        "after record writes"
+      ],
+      "recordBinding": "project existing witness metadata; ancestor SHA not substituted"
+    },
+    {
+      "finding": "CODE C1-BUILD-CODE-01 descriptor split-read subpart",
+      "status": "ADDRESSED_IN_SOURCE_NOT_DYNAMICALLY_TESTED",
+      "witness": "one bounded descriptor_raw used for strict JSON validation and recorded seal",
+      "checks": [
+        "after product hashing",
+        "before record writes",
+        "after record writes"
+      ],
+      "readQualification": "subsequent bounded reads compare current witness; no second unvalidated snapshot becomes record"
+    }
+  ],
+  "affectedPartitions": [
+    {
+      "id": "R01",
+      "case": "correct fresh producer/check/descriptor/witnesses",
+      "source": "INTENDED_POSITIVE_BOUND",
+      "actual": "NOT_RUN"
+    },
+    {
+      "id": "R02",
+      "case": "client bytes/size/identity drift at observed cuts",
+      "source": "WITNESS_OR_FILE_GUARD_REFUSES",
+      "actual": "NOT_RUN"
+    },
+    {
+      "id": "R03",
+      "case": "descriptor drift after common validated snapshot",
+      "source": "BOUND_RECORD_AND_CURRENTNESS_REFUSE",
+      "actual": "NOT_RUN"
+    },
+    {
+      "id": "R04",
+      "case": "missing/unowned/symlink/nonregular/oversized/short/changed read",
+      "source": "GUARDED_NONZERO",
+      "actual": "NOT_RUN"
+    },
+    {
+      "id": "R05",
+      "case": "invalid/duplicate/nonfinite JSON or wrong host/lock/product/current hash",
+      "source": "STRICT_FINAL_REFUSAL",
+      "actual": "NOT_RUN"
+    },
+    {
+      "id": "R06",
+      "case": "late output drift/stop/deadline after earlier PASS record",
+      "source": "DIRECT_DRIVER_NONZERO_OR_UNFINISHED_MARKER_PRECLUDES_AGGREGATE_PASS",
+      "actual": "NOT_RUN"
+    }
+  ],
+  "selection": {
+    "commandsUnchanged": [
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/check.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/build-client.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/build-client.mjs",
+        "--check"
+      ],
+      [
+        "/opt/homebrew/bin/python3",
+        "scripts/build-native-source-manifest.py",
+        "--product-root",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+        "--host-root",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+      ]
+    ],
+    "topLevelCount": 4,
+    "syntaxCounts": {
+      "src": 59,
+      "scripts": 12,
+      "test": 81
+    },
+    "syntaxOrder": [
+      "src",
+      "scripts",
+      "test"
+    ],
+    "syntaxChildren": 152,
+    "maximumStarts": 156,
+    "testBodiesExecuted": false,
+    "literalThreeFileDeltaMatches": true,
+    "deltaBytes": 10601,
+    "runCommandByteIdenticalToOriginal": true,
+    "inheritedInputRowsExact": 256,
+    "newProvenanceRows": 8,
+    "inputRows": 264,
+    "inputBytes": 6334779,
+    "ownedRows": 3,
+    "manifestSelfPin": 1,
+    "affectedReviewPins": 4,
+    "futurePinUnion": 272,
+    "initialFutureVerification": 272,
+    "afterImmutableVerification": 270,
+    "generatedOutputsSeparate": 2,
+    "descriptorProductRecords": 64,
+    "physicalProductRecords": 65,
+    "descriptorHostModules": 27,
+    "proposalGOFalseAndPinsEmpty": true,
+    "exactFutureDestinationsAbsentAtInspection": true
+  },
+  "bounds": {
+    "finalSeconds": 90,
+    "workSeconds": 80,
+    "finalReserveSeconds": 10,
+    "commandMaximumSeconds": 60,
+    "commandCleanupSeconds": 4,
+    "commandBookkeepingSeconds": 1,
+    "sharedNonadditive": true,
+    "privateStreamBytes": 65536,
+    "privateAggregateBytes": 131072,
+    "generatedClientBytes": 1048576,
+    "generatedDescriptorBytes": 65536,
+    "snapshotReadMaximum": "cap+1",
+    "privateCaptureEOFOwnershipPrefixReadbackConserved": true
+  },
+  "actualPositiveOracle": [
+    "four exact original command exit0 records and complete EOF/group absence",
+    "fresh client witness current across original check/descriptor/final cuts",
+    "exact descriptor snapshot validated and its seal current through records",
+    "current64 product/original27 host+lock and immutable pins verified",
+    "full bounded closed records plus finalized marker",
+    "original supported driver exit0 captured independently before optional processing"
+  ],
+  "limits": [
+    "source fix assessment only, no dynamic producer/fault/build evidence",
+    "finite observations not continuous/atomic exclusion or eliminated races",
+    "late failure may retain earlier PASS snapshot/inprogress marker; original driver0 mandatory",
+    "preterminal duration not final supported-tool duration",
+    "syntax count not executed test assertions",
+    "copied artifacts not new build",
+    "no applicationquit/browser/provider/aggregate acceptance",
+    "opaque/protected semantic review remains blocked"
+  ],
+  "performed": {
+    "publicInertSourceJSONMetadataHashesOnly": true,
+    "candidateEvaluationParseImportCheckBuildTestRun": false,
+    "producerHelperInvocation": false,
+    "privateContentEnumerationReadCopyDecodeHash": false,
+    "opaqueProtectedSemanticInspection": false,
+    "runtimeModelNetworkBrowserCloudGitSourceMutationDelegation": false,
+    "assignedPairOnly": true
+  },
+  "reports": {
+    "markdown": "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-test-design-review.md",
+    "json": "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-test-design-review.json",
+    "creation": "O_EXCL|O_NOFOLLOW; exact both destinations absent",
+    "fullAuthoredReadbackRequired": true,
+    "externalByteSHASealsRequired": true,
+    "recursiveSelfHash": false
+  },
+  "markdownContent": {
+    "bytes": 6659,
+    "sha256": "ebf6b0fecf84cbbd455f64e8cac969b67c93f80562d8eaf4282cfdbb166ab4a7"
+  }
+}

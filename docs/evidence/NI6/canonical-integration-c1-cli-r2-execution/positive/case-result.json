@@ -1,0 +1,18 @@
+{
+  "case": "positive",
+  "contractVersion": "df.canonical-c1.cli-case/v1",
+  "directDriverReturnRequired": true,
+  "duplicateIntake": false,
+  "durationSeconds": 0.626533,
+  "failureCode": "EXECUTOR_READY_FIELDS",
+  "httpRequests": 0,
+  "listenerAbsent": false,
+  "originalTeardown": false,
+  "pausedDurableTask": false,
+  "refusalCode": "NOT_OBSERVED",
+  "result": "FAILED_HOLD",
+  "sameStoreReconciled": false,
+  "sourceExpectedRefusalCode": "NONE",
+  "starts": 1,
+  "zeroAttempts": false
+}

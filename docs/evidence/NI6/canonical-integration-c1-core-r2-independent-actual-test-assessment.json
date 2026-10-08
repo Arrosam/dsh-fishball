@@ -1,0 +1,299 @@
+{
+  "acceptance": false,
+  "actualFooter": {
+    "cancelled": 0,
+    "durationMs": "9528.052333",
+    "fail": 0,
+    "pass": 148,
+    "skipped": 0,
+    "suites": 0,
+    "tests": 148,
+    "todo": 0
+  },
+  "assessmentActions": {
+    "GitOrSourceMutation": false,
+    "candidateExecutionOrReplay": false,
+    "delegation": false,
+    "newRuntimeListenerNetworkModelBrowser": false,
+    "opaqueCaptureFinishOrProtectedSemanticReview": false,
+    "otherEvidenceMutation": false,
+    "privateContentOrMarkerRead": false,
+    "writes": "ONLY_EXCLUSIVE_ASSIGNED_ACTUAL_ASSESSMENT_PAIR"
+  },
+  "captureMetadata": {
+    "aggregateCap": 262144,
+    "metadataOrigin": "ORIGINAL_OWNER_PUBLIC_CLOSED_RECORD_ONLY",
+    "nestedBuffersBoundedByOuterCaps": false,
+    "originalOwnerFooterOnlyDecoded": true,
+    "perStreamCap": 131072,
+    "reviewerPrivateContentReadCopiedDecodedHashed": false,
+    "stderrBytes": 0,
+    "stdoutBytes": 37471,
+    "stdoutSHA256": "be54c877d2259c0ea639210cc94e0a530bd9d4c256e839b07827cf16a18f5b4f"
+  },
+  "countsQualification": {
+    "actualAggregatePassed": 148,
+    "actualAggregateTests": 148,
+    "actualAssertions": "NOT_INSTRUMENTED",
+    "actualPerFileTotals": "NOT_SEPARATELY_RECORDED",
+    "childCountsIndependentlyInstrumented": false,
+    "expectedCrashExitIsEnclosingFailure": false,
+    "expectedMemoryCrashChildExit": 73,
+    "nestedSubtestsIncluded": true,
+    "sourceDerivedTopology": {
+      "childInstrumentation": false,
+      "maximumInterpreterStarts": 18,
+      "maximumLiveInterpreters": 5,
+      "maximumLiveNestedChildren": 2,
+      "maximumNestedStarts": 8,
+      "nestedMemoryBuffersBoundedByOuterCaps": false,
+      "retainedKillCallbacks": 6
+    },
+    "sourceTopLevelDeclarations": 122
+  },
+  "coverageLimits": {
+    "CLIInstalledFullQuitRestart": "NOT_ESTABLISHED_BY_CORE_PACK",
+    "DF010C02ChangedThreadReordering": "NOT_RUN",
+    "aggregateJourneyMVPFullProductAcceptance": false,
+    "atomicCancellationGuarantee": false,
+    "exhaustiveRaceOrInputCoverage": false,
+    "heapCapGuarantee": false,
+    "instantOSCleanupGuarantee": false,
+    "liveChatProviderScope": "OUT_OF_PHASE",
+    "notificationTimeoutBranch": "NOT_RUN_DEPENDS_ON_ENCLOSING_GROUP_GUARD",
+    "ownerFooterCaptureDriftSignalDeadlineExceptionUnfinalizedFaultBranches": "NOT_RUN_SOURCE_REVIEWED",
+    "protectedFinalCodeSemantics": "EXCLUDED_BLOCKED_UNCHANGED",
+    "realRecipientDelivery": "NOT_ESTABLISHED_INJECTED_CALLBACKS",
+    "selectedSyntheticPositiveAndNegativeAssertions": "PASS_SOURCE_ENTAILED_BY_CURRENT_FIXED_COMMAND_AND_ZERO_SKIP_FOOTER"
+  },
+  "currentnessQualification": "100-pin complete unchanged finite before/after cuts plus root current-public recheck and executed owner build authority; not an atomic no-drift guarantee, new build or repeated full-host audit.",
+  "directDriver": {
+    "argv": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+      ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json"
+    ],
+    "complete": true,
+    "exitCode": 0,
+    "finalEnclosingDurationSeconds": "NOT_ESTABLISHED",
+    "immediateRetentionAuthority": "ROOT_SEALED_PROOF",
+    "normalMainReturn0": "SOURCE_BASED_INFERENCE_FROM_OUTSIDE_HANDLER_WRAPPER_AND_DIRECT_EXIT0_NOT_SEPARATE_INSTRUMENTATION",
+    "outputBytes": 0,
+    "pollWallTimesSummed": false,
+    "returns": [
+      {
+        "chunkId": "022776",
+        "complete": false,
+        "exitCode": null,
+        "outputBytes": 0,
+        "sessionId": 5423
+      },
+      {
+        "chunkId": "85167a",
+        "complete": true,
+        "exitCode": 0,
+        "outputBytes": 0
+      }
+    ],
+    "reviewerAccess": "PUBLIC_ROOT_TRANSCRIPT_METADATA_NOT_INDEPENDENT_ORIGINAL_TOOL_RETURN"
+  },
+  "durationQualification": {
+    "commandAndExecutorAuthority": "PRETERMINAL_BOOKKEEPING_NOT_FINAL_ENCLOSING_DURATION",
+    "commandSeconds": 9.609129,
+    "executorSeconds": 9.653669,
+    "finalEnclosingMonotonicDuration": "NOT_ESTABLISHED",
+    "footerAuthority": "ORIGINAL_NODE_FOOTER_VALUE",
+    "footerDurationMs": "9528.052333"
+  },
+  "findings": [],
+  "fullAcceptance": false,
+  "futureExecutionGO": false,
+  "individualCriterionReconciliation": "SEPARATE_EXACT_CRITERION_EVIDENCE_LANE",
+  "jointEvidence": {
+    "beforeAfterPinsCompleteUnchanged": 100,
+    "completeIdentityBoundReadbackAndEOF": true,
+    "directSupportedEXIT0": true,
+    "exactCommand": true,
+    "failCancelledSkippedTodoAllZero": true,
+    "finalSourcePairPlanBindingMatches": true,
+    "fourClosedRecordsAgree": true,
+    "originalNodeEXIT0": true,
+    "ownedGroupAbsent": true,
+    "positiveFooterTestsEqualPass": true,
+    "rootCurrentPublicPinRecheck": true,
+    "standalonePersistedPASSIsSufficient": false
+  },
+  "language": "en",
+  "markdown": {
+    "bytes": 8190,
+    "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-actual-test-assessment.md",
+    "sha256": "8e7f10a0c8ba7704b4d231b59c54224e284e18bbb1a3bfd4f1d93cc1d19c39e5"
+  },
+  "materialRecordCorrectionRequired": false,
+  "originalNodeCommand": {
+    "PID": 38855,
+    "actualCommands": 1,
+    "bothEOF": true,
+    "captureComplete": true,
+    "exactSelectedFiles": 8,
+    "exitCode": 0,
+    "failureCode": null,
+    "groupState": "ABSENT_OBSERVED",
+    "interrupted": false,
+    "overflow": false,
+    "ownedGroup": 38855,
+    "prefixCompleteVerified": true,
+    "remoteTermination": "NOT_CLAIMED",
+    "reservationRelease": "NOT_CLAIMED",
+    "signalAttempts": 0,
+    "timedOut": false,
+    "truncated": false
+  },
+  "overallAcceptance": "HOLD",
+  "publicActualRecordSeals": [
+    {
+      "bytes": 14511,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/root-plan.json",
+      "sha256": "b342a73b3530a9a72df556cee5cd520430682efd88d62d487bd041b9046216cf"
+    },
+    {
+      "bytes": 2703,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/executor-result.json",
+      "sha256": "14569d1cc5d99f406e744d06f1af162c7f5c0590488f9136ef35915a0942d726"
+    },
+    {
+      "bytes": 1726,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/command-results.json",
+      "sha256": "24f53fbd9635b446525ffa681a7df002726b7a3f376878f3afc233dcff88e8ee"
+    },
+    {
+      "bytes": 174,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-execution/before-after.json",
+      "sha256": "4009e834d774c850b0e3a2a05baa5b2d7e15b117b6de1c14702739b3546c5ea5"
+    }
+  ],
+  "readAuthorities": [
+    {
+      "bytes": 3555,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-actual-return.json",
+      "sha256": "e674e6bb4fd80fe0e202857600aed84c691e9515f54823fe8a5e166dd2f1749e"
+    },
+    {
+      "bytes": 8639,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.md",
+      "sha256": "a75daf520e2ae2e27e3e753be7df63d134aa9c39001148a243f53d904782a1ad"
+    },
+    {
+      "bytes": 15072,
+      "path": "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.json",
+      "sha256": "dad6a91f874161876453ad651211e9be73f533f3a724cffc610e1cdba75d69e9"
+    }
+  ],
+  "retainedDependencies": {
+    "CLI_R2": "CONSUMED_FAILURE_IMMUTABLE",
+    "browser": "NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF_NO_NATIVE_OR_BROWSER_LUA_ROUTE",
+    "buildR2_W01_contractsR1": "CONSUMED_PASS_IMMUTABLE_DO_NOT_REPLAY",
+    "cancelled4da34a6d": "NEVER_EXECUTE",
+    "cloud": "TWICE_DENIED_NO_THIRD_ATTEMPT",
+    "coreR1": "NOT_RUN_MUST_NOT_EXECUTE",
+    "protectedCODE": "BLOCKED_UNCHANGED",
+    "sharedQAAnd3080": "UNTOUCHED"
+  },
+  "reviewAuthority": "Independent ISTQB lane; gpt-6.1-sol max",
+  "schema": "df.canonical-c1.core-r2.independent-actual-test-assessment/v1",
+  "selectedExecutedPartitions": [
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Ingress/deduplication, dependent clarification, durable CAS/current facts, scope/secrets/rollback/cancellation; two-process one-winner CAS; injected stop is intent only.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/coordinator.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "43ebcaaebbaf541d50952bfe18a8d5b1bc99294f6328d618e53625686e4ff834",
+      "sourceLines": 213,
+      "sourceTopLevelDeclarations": 14
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Protected compaction and byte/token N-1/N/N+1, source/task/auth/generation currentness, immutable await inputs, hostile input and recursion refusal; injected tokenization.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/context.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "dce8ec648405579ea402e6d3d3d6e64e6d62699c798bd7db72b331d676347c42",
+      "sourceLines": 148,
+      "sourceTopLevelDeclarations": 13
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Isolation/correction/deletion/tombstones/replay, corrupt projection/faults, serialized context boundaries/currentness/supplements; genuine synthetic encrypted store reopen, CAS and crash-cut command causality; zero skips required.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/memory.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "0ea938dd1fbe179922bc3115f75970902ffddbc69366ef4237cee7b0af302d68",
+      "sourceLines": 430,
+      "sourceTopLevelDeclarations": 26
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Immutable scoped body/metadata, relay provenance/parent/generation/hop/byte bounds; accepted/sent/consumed distinctions and held unknown outbox effects with injected callbacks.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/messages.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "0644e40078a1520a8b9209237f09288a578e45c7b0d0037f4f51e189f23c5338",
+      "sourceLines": 146,
+      "sourceTopLevelDeclarations": 11
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "State-specific controls, stale/deduplicated clicks, role/scope refusal, held cancellation and refresh; no factual native stop/release inference.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/control.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "c9ed87ff1af69f2522e4192f51c90b7fbbef50d3caf97fa907324b11bc9da271",
+      "sourceLines": 63,
+      "sourceTopLevelDeclarations": 5
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Report uncertainty, ordinary receipt/recipient bindings, immutable artifacts/independent synthetic review, stale/revoked delivery, held unknown effects, released-failure retry, UTF-8/capacity/rollback.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/results.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "8a9c62fe7fdbf4a883677dc78753561e76428392e801345f241070e6b4ef6cfe",
+      "sourceLines": 149,
+      "sourceTopLevelDeclarations": 12
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Quiet/DST/merge/interval/frequency/policy/dedup/admission/unknown-held/retry/binding boundaries; two process contenders exactly one claim and one frequency refusal; no send.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/notifications.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "b473f780ac370fa61da7dd0771ed9153d5fdf9d6374653d9d65f8a807930843e",
+      "sourceLines": 233,
+      "sourceTopLevelDeclarations": 17
+    },
+    {
+      "assertionCount": "NOT_INSTRUMENTED",
+      "coverage": "Exact material/coverage/policy/currentness, admitted independent review/held release, conflicting reports and bounded charged repair lineage, self-review/cancellation refusal; mode-none synthetic actions.",
+      "disposition": "PASS_SELECTED_ASSERTIONS_SOURCE_ENTAILED_BY_EXACT_COMMAND_AND_AGGREGATE_ZERO_SKIP_FOOTER",
+      "path": "test/audit.test.mjs",
+      "perFileActualTestCount": "NOT_SEPARATELY_RECORDED",
+      "sha256": "e0c24d1b1857565b927e5b731f53567f6ea35ed382ff18a3db528b09b60dc0ec",
+      "sourceLines": 301,
+      "sourceTopLevelDeclarations": 24
+    }
+  ],
+  "status": "CONSUMED_PASS_DO_NOT_REPLAY",
+  "unchangedBudgetsSeconds": {
+    "additive": false,
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflight": 20,
+    "primaryAbsoluteEnd": 85
+  },
+  "verdict": "BOUNDED_ACTUAL_PASS"
+}

@@ -1,0 +1,46 @@
+{
+  "artifacts": [
+    {
+      "bytes": 25527,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py",
+      "sha256": "6c655593d26c027fa9de800334b092f09d0a3b4393d1b64d35d3aeec3db0d45e"
+    },
+    {
+      "bytes": 1528,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution-plan.proposed.json",
+      "sha256": "3c57962edb427a21c4228bd4ee609e9d4cf1fb83571297fcd75cb84fd0c057b3"
+    },
+    {
+      "bytes": 984,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/README.md",
+      "sha256": "0f25a3b09dad93d124eb29bde9d5f5ee40360acd3102c80d97b155e3832bc503"
+    },
+    {
+      "bytes": 91522,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/source-manifest.json",
+      "sha256": "5fa08e3331273deb97d4a31c4255a1b0191c5cc2e2407f73b09f6ab4625ec576"
+    },
+    {
+      "bytes": 10601,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/source-delta.diff",
+      "sha256": "81eab180c60346fd19e2cf690d69f533d988f54d4a3a3340e3e845f6c1f8011e"
+    }
+  ],
+  "findingPairs": [
+    "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-build-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-build-independent-test-design-review.json"
+  ],
+  "futurePinCount": 272,
+  "inputBytes": 6334779,
+  "inputCount": 264,
+  "maximumActualStarts": 156,
+  "nestedSyntaxChildren": 152,
+  "originalUnchanged": true,
+  "reviewPins": {},
+  "rootGo": false,
+  "scope": "Freshclient actualproducerseal and one exactvalidateddescriptor snapshot; originalhelper safeguards conserved; no candidateparse/eval/check/build/test/run/Git/privateinspection.",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "topLevelCommands": 4
+}

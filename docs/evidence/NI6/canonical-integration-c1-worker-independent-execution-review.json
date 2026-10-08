@@ -1,0 +1,265 @@
+{
+  "actualDisposition": "CONSUMED_ONCE_PASS_DO_NOT_REPLAY",
+  "dateUTC": "2026-10-08T07:56:59.639783+00:00",
+  "evidenceAuthority": {
+    "directDriverReturn": {
+      "authority": "Root retained the two original supported tool returns immediately; record PASS alone is insufficient.",
+      "complete": true,
+      "exitCode": 0,
+      "outputBytes": 0
+    },
+    "originalToolReturns": "Root-retained metadata in sealed proof: eb3ab1/session79277 empty followed by9f037c terminal exit0 empty; one supported invocation and same-session completion, not reruns. This reviewer did not independently receive the original root tool returns.",
+    "priorSource": "Final sealed worker CODE source pair, finalized canonical ordinary review and inherited genuine R13 authority; no repeated semantic source/full-host/product audit.",
+    "rootPlan": "Original and public copied plan exactly33,404 bytes /7377e03b6e4b1c31b4bcc4de378bc44b0188b0994bdbab88aad32de93f836a8e."
+  },
+  "executorTerminal": {
+    "directReturnIndependentlyRequired": true,
+    "directSupportedDriverExitCode": 0,
+    "failureCode": null,
+    "finalized": true,
+    "marker": "No private/current invocation marker was opened. Its final successful write is at most source+driver0 entailment, not separate marker-content access.",
+    "result": "PASS"
+  },
+  "finiteMetadataInterpretation": {
+    "execute": "RPC_VALUE_RETURNED/HTTP_200/NONE and idleRETURNED establish the selected acknowledgement observations; no general prior-server latency cause or timeout-extension fix follows.",
+    "finishTrace": "51B is the reviewed three-character closed successful guarded client finish-value code, not response bytes or independent proof of release/stop. Those require their original independent oracles.",
+    "finishWait": "W030000 denotes the retained ordinary W03 stage (native.finishExecution await returned before later permit/response path), clipped client elapsed bucket0. It is not a unique pending await, server cause or full finish/release proof.",
+    "frozenPlanFields": "status SOURCE_ONLY_NOT_RUN/testWorkerStarts0 remain frozen proposal fields; actual commands and counters supersede them for this consumed run, without mutating the plan.",
+    "rootCleanup": "RESTARTED is returned original standalone disposal plus exact retained child/Loader terminal and removal predicates, not full original installed CLI quit.",
+    "snapshotSeconds": {
+      "conservativePreTerminal": 29.76246033399366,
+      "finalEnclosingMonotonicDuration": "NOT_ESTABLISHED",
+      "observedPreTerminal": 24.762459750054404
+    },
+    "terminalWrapper": "Supported driverexit0 under unchanged outside-BaseException wrapper corroborates main normal return0 and original final gates by inference, not added main-return instrumentation."
+  },
+  "gates": {
+    "acceptanceGO": false,
+    "executionGOForFurtherCases": false,
+    "perCriterionAcceptanceReconciledByThisReview": false,
+    "protectedCODE": "BLOCKED_UNCHANGED",
+    "publicationGO": false
+  },
+  "materialFindings": [],
+  "observedCommands": [
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 26410,
+      "durationSeconds": 0.068861,
+      "exitCode": 0,
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "processGroupState": "ABSENT_OBSERVED",
+      "signals": 0,
+      "streamMetadata": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "timedOut": false
+    },
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 26411,
+      "durationSeconds": 12.093146,
+      "exitCode": 0,
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "processGroupState": "ABSENT_OBSERVED",
+      "signals": 0,
+      "streamMetadata": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "767604ebf7fd9447c2f1b7b5412689b2251dc07bb80e87ef061b2941d72828da",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "timedOut": false
+    }
+  ],
+  "observedWorkerDiagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "NONE",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v2",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "finishTrace": "51B",
+    "finishWait": "W030000",
+    "headerCases": 3,
+    "httpRequests": 26,
+    "ownedEntriesRemoved": true,
+    "phase": "COMPLETE",
+    "positivePath": true,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "requests": 1,
+    "reservationReleased": true,
+    "result": "PASS",
+    "resultReturned": true,
+    "rootCleanup": "RESTARTED",
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streamCases": 8,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": true
+  },
+  "privacyAndProcess": {
+    "GitBrowserModelNetworkCloudListenerActions": false,
+    "candidateExecutionByReviewer": false,
+    "candidateSourceChanges": false,
+    "functionalStderr": "169 bytes and SHA767604ebf7fd9447c2f1b7b5412689b2251dc07bb80e87ef061b2941d72828da are original executor metadata ONLY; raw content never opened/hashed/decoded/copied by this reviewer.",
+    "noNewGO": true,
+    "privateContent": "No current/historical private marker/profile/key/db/history/capture/response/error CONTENT or private enumeration. Historical R7B pathname-only enumeration remains correctly qualified.",
+    "shared3080": "untouched"
+  },
+  "remainingDependencies": [
+    "Original CLI packet has an independent high-severity absolute transport deadline blocker and remains NOT_RUN/MUST_NOT_EXECUTE; a fresh reviewed successor is separate.",
+    "Current genuine installed CLI quit/restart/disabled/invalid cases and residual active-worker/crash/existing-session matrices are not covered by W01.",
+    "Interruption/drift/deadline/fault branches of wrapper/currentness/cleanup remain source-only NOT_RUN; no atomic continuous exclusion or immediate cancellation guarantee.",
+    "Current individual C1 acceptance reconciliation, supported browser/UI handoff, protected final semantics and aggregate/product/publication disposition remain separate."
+  ],
+  "reportPair": [
+    "docs/evidence/NI6/canonical-integration-c1-worker-independent-execution-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-worker-independent-execution-review.json"
+  ],
+  "reviewedIdentities": [
+    {
+      "bytes": 5992,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-actual-return.json",
+      "sha256": "e06bd1a17797467963b800746cccd110ce653bda6f9a485d7ae74255bff409b2"
+    },
+    {
+      "bytes": 4620,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/executor-result.json",
+      "sha256": "464389c9abe480fcd845aaa7b5f2f7ab647df6b796a8d2155dfc957d3e1c35e7"
+    },
+    {
+      "bytes": 3015,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/command-results.json",
+      "sha256": "8174a5a62f47b9bf3d4533c5cc5e1886dc5aa4ef64b0975664a224a37f39908d"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/before-after.json",
+      "sha256": "4acd56fd7544c39265c6e1745ceab94e5d0a1666b8098dffce29fa404cd415ff"
+    },
+    {
+      "bytes": 925,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/fixture-result.json",
+      "sha256": "32d47241740e555959c64c5eb2d2f7111ecfd4546e0f9e393940503a1dde442c"
+    },
+    {
+      "bytes": 33404,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-execution/root-plan.json",
+      "sha256": "7377e03b6e4b1c31b4bcc4de378bc44b0188b0994bdbab88aad32de93f836a8e"
+    },
+    {
+      "bytes": 33404,
+      "path": ".runtime/root-ni6-canonical-integration-c1-worker-plan.json",
+      "sha256": "7377e03b6e4b1c31b4bcc4de378bc44b0188b0994bdbab88aad32de93f836a8e"
+    },
+    {
+      "bytes": 6680,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-independent-source-review.md",
+      "sha256": "4acbf06606b71e2504e9c2dbe1fd8797b3b837929a87330db8fadb433bcd9a18"
+    },
+    {
+      "bytes": 9786,
+      "path": "docs/evidence/NI6/canonical-integration-c1-worker-independent-source-review.json",
+      "sha256": "f2892777ec74a4e10ca0d656cc14abf3f072602239115102f1ad30c693bbf97c"
+    }
+  ],
+  "reviewer": {
+    "agent": "r7b_transport_code_review",
+    "effort": "max",
+    "independentOfAuthorAndISTQB": true,
+    "model": "gpt-6.1-sol"
+  },
+  "schema": "df.canonical-c1.worker-independent-execution-review/v1",
+  "sourceEntailment": {
+    "N01": "The same acknowledged action/claim/generation/context/command with current CAS was required to refuse WORKER_EXECUTION_ALREADY_SUBMITTED before capture; successful sequential COMPLETE entails that exact assertion. One request/stream/turn/step and tools0 remain.",
+    "blockedSemanticQualification": "Public source assertions and this bounded genuine interface run do not close opaque native capture/finish bodies or protected final receipt/signature/envelope/revision999 semantics.",
+    "cleanupAssertions": 20,
+    "namedGroups": {
+      "C": 23,
+      "F": 5,
+      "G": 5,
+      "L": 5,
+      "N": 1,
+      "total": 39
+    },
+    "originalIndependentOracles": "Exact synthetic not-reviewed/not-requested returned native result; source/identity/consent/usage/CAS/currentness/persistence/disposition checks; returned finish value; factual stopped worker and original agent/session absence BEFORE cleanup; reservationHeldfalse/release; paired dispositions/preset release; six original verified Loader removals/entry absence; exact post404 and26HTTP; retained terminal direct/Loader children and standalone root restart predicate all remain indispensable.",
+    "qualification": "Frozen unchanged sequential source plus actual COMPLETE/PASS and both child/driverexit0 entails successful source assertions; these counts and the exact N01 refusal are not separate new runtime telemetry."
+  },
+  "verdict": "BOUNDED_CANONICAL_WORKER_PASS_NO_MATERIAL_EVIDENCE_RECORD_BLOCKER",
+  "verification": {
+    "all181CurrentSelectedPublicHashesMatch": true,
+    "allCurrentCandidateAndFinalSourceReviewPinsUnchanged": true,
+    "beforeAfterSameInProofExecutorBoundary": true,
+    "closedFixtureFields": 36,
+    "commandsExactlyMatchSelectedTwoNodeCalls": true,
+    "commandsSameInExecutorAndCommandRecord": true,
+    "completeBeforeAfter": {
+      "originalPublicHostFiles": 27577,
+      "originalPublicHostLinks": 12,
+      "pins": 181,
+      "unchanged": true
+    },
+    "exactPinUnion": 181,
+    "fiveRecordByteShaSealsMatch": true,
+    "fixtureByteCap": 1024,
+    "fixtureEqualsExecutorDiagnosticAndProof": true,
+    "fixturePrettyBytesIncludingLF": 925,
+    "fullSealedProofAndFiveClosedRecordsRead": true,
+    "newRuntimeOrReplay": false,
+    "originalRootPlanByteIdenticalPublicCopy": true,
+    "privateRawReadCopyDecodeHashEnumeration": false,
+    "reportDestinationsAbsentBeforeExclusiveCreation": true,
+    "rootPlanOnlyThreeGOFlagsAndPinsDifferProposal": true,
+    "wholeHostAuthorityQualification": "Original executor before/after reports plus root proof; no new host enumeration or whole-graph audit by reviewer."
+  }
+}

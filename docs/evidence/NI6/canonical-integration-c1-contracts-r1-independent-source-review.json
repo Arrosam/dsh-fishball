@@ -1,0 +1,296 @@
+{
+  "affectedSourceConclusions": [
+    {
+      "evidence": "Original marker, closed plan fields, three root GO booleans, precise union, size/digest, interpreter identity, topology, denied environment and fresh owner TMPDIR precede the one pinned exact five-file command.",
+      "result": "EXACT_ONCE_SELECTION_CONSERVED",
+      "source": "run-contracts.py:457-503"
+    },
+    {
+      "evidence": "Fresh synthetic SQLite/temp stores and fixed keys; no imported local helper; inline verifier/normalizer/attachment/send/query and fake clock/timer callbacks; only own fresh database plaintext-absence reads. No source assertions modified.",
+      "result": "HERMETIC_EFFECT_SELECTION_SOURCE_ONLY",
+      "source": "five exact selected ordinary tests and inline helpers"
+    },
+    {
+      "evidence": "Exact inverse normalizes run_command to sealed build-r2 function; original owned group, denial latch/no retry, leader status, selector EOF, cap/overflow and identity-bound original readback remain. Added stdout retention remains private owner memory; no arbitrary error payload serialization.",
+      "result": "ORIGINAL_PROCESS_CAPTURE_CLEANUP_GUARDS_CONSERVED",
+      "source": "run-contracts.py:225-415"
+    },
+    {
+      "evidence": "Only after original exit0, no command failure, complete EOF/captures and group ABSENT does owner bind bytes/length/SHA/prefix and parse its retained readback once. Unique known totals, exact final positive plan/eight ordered footer lines, strict numeric domain and positive tests/pass equality plus zero fail/cancel/skip/todo are joint required gates.",
+      "result": "CLOSED_FOOTER_BOUND_TO_ORIGINAL_OWNER_STDOUT",
+      "source": "run-contracts.py:417-441,503-510"
+    },
+    {
+      "evidence": "Actual build-r2 proof/generated/closed records/root plan must match exact manifest rows; all selected pins and plan hash rechecked after command and before final record. Public save bound applies. Original evidence identity/exclusive writes and outside-handler main-once terminal return retained; direct supported driver return independently required.",
+      "result": "CURRENT_BUILD_PIN_AND_FINAL_RETURN_GATES_RETAINED",
+      "source": "run-contracts.py:444-454,486-534"
+    }
+  ],
+  "authorization": {
+    "acceptanceGO": false,
+    "actualResult": "NOT_RUN",
+    "candidateChecksOrImports": 0,
+    "candidateCommandsRun": 0,
+    "executionGO": false,
+    "publicationGO": false,
+    "rootPlanCreated": false
+  },
+  "budgetsSeconds": {
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflight": 20,
+    "primaryAbsoluteEnd": 85
+  },
+  "byteCaps": {
+    "aggregateStreams": 262144,
+    "publicRecord": 65536,
+    "stderr": 131072,
+    "stdout": 131072
+  },
+  "finiteVerification": {
+    "actualDestinationsAbsentAtReviewCut": [
+      ".runtime/root-ni6-canonical-integration-c1-contracts-r1-plan.json",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/invocation.json",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/private-capture",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/root-plan.json",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/executor-result.json",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/command-results.json",
+      ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/before-after.json"
+    ],
+    "authorStarts": 0,
+    "canonicalBytes": 1952632,
+    "canonicalBytesConservedFromC1R13": true,
+    "canonicalFiles": 65,
+    "explicitPublicHashRows": 86,
+    "futureActualPins": 91,
+    "futureAffectedReviews": 4,
+    "inputBytes": 2315443,
+    "inputFileCount": 82,
+    "literalDeltaBodyBytes": 27409,
+    "literalDeltaPreambleBytes": 231,
+    "literalRootPlanForecastIncludingLF": 13069,
+    "manifestSelfPinSeparate": true,
+    "ownReportsAbsentBeforeExclusiveCreation": true,
+    "ownedFiles": 4,
+    "proposedGOFlagsFalse": true,
+    "proposedPinsEmpty": true,
+    "publicRecordByteCap": 65536,
+    "remainingPrimitivesConservedExceptPublicSaveCap": true,
+    "runCommandNormalizedOriginalBytes": 10001,
+    "runCommandNormalizedOriginalSHA256": "6dc484b9b9062cc90d3ba7303201e2d1b8419f8a676b58fa33d9c32b0d7a9293",
+    "selectedEnvironmentAbsent": true,
+    "selectedTestBytes": 91089,
+    "selectedTestLines": 1085,
+    "sourceCopies": 0,
+    "topology": 3,
+    "wholeThreeFileDeltaRegeneratedExact": true
+  },
+  "inheritedAuthority": {
+    "actualBuildProof": {
+      "bytes": 4870,
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+      "sha256": "b2648682052fc5b266e7a6d033c7299e5c90d665476daf407062e09ce8fafc4b"
+    },
+    "baselineExecutor": {
+      "bytes": 25527,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py",
+      "sha256": "6c655593d26c027fa9de800334b092f09d0a3b4393d1b64d35d3aeec3db0d45e"
+    },
+    "canonicalConservationAuthority": "docs/evidence/NI6/canonical-integration-c1-author-source.json",
+    "graphReviewRepeated": false,
+    "opaqueCaptureFinishSemanticsReviewed": false,
+    "ordinarySourceReview": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.md",
+    "protectedFinalCODEReviewed": false
+  },
+  "materialFindings": [],
+  "processCounts": {
+    "CLIStarts": 0,
+    "additionalChildHelpers": 0,
+    "countAuthority": "SOURCE_DERIVED_MAXIMUM_NOT_CHILD_INSTRUMENTATION",
+    "externalProviderCalls": 0,
+    "listeners": 0,
+    "maximumInterpretersIncludingPythonOwner": 7,
+    "maximumSequentialNodeFileWorkers": 5,
+    "modelCalls": 0,
+    "topLevelNodeCommands": 1
+  },
+  "remainingQualifications": [
+    "DF010-C02 changed-thread and reordered-event partitions remain missing; changed conversation/pairing and duplicate/control races are not substitutes.",
+    "Current selected regression only; no whole criterion, full installed DSH quit, canonical aggregate acceptance, MVP or publication closure.",
+    "All runtime outcomes and dynamic fault branches remain NOT_RUN; no helper, parser-control, child-count, deadline, capture-replacement or signal experiment was performed by reviewer.",
+    "Seven maximum interpreters and sequential file-worker count derive from selected original source/argv, not added dynamic instrumentation.",
+    "Finite currentness cuts are not atomic workspace exclusion or instantaneous cancellation. Persisted PASS and preterminal bookkeeping duration do not replace direct final driver/EOF evidence.",
+    "Top-level TAP plan and aggregate tests can describe different levels with nested subtests; no equality or actual totals are claimed.",
+    "Inherited graph/source/actual authority is reused; protected final CODE and opaque capture/finish bodies remain excluded.",
+    "No private content inspection/copy/decode/hash or new private enumeration occurred; historical pathname-only privacy qualification remains intact.",
+    "Browser LUA preference is distinct from Luna model selection; supported-browser availability, cloud denials and unrelated drafts remain unchanged."
+  ],
+  "requiredSourceFixes": [],
+  "reviewMethod": {
+    "GitAction": false,
+    "candidateCodeParsedOrEvaluated": false,
+    "delegation": false,
+    "externalFinalSealsRequired": true,
+    "fullReadbackRequired": true,
+    "inertJSONLiteralHashDiffComparison": true,
+    "networkModelBrowserCloudAction": false,
+    "onlyOutputFiles": [
+      "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.json"
+    ],
+    "privateContentAccess": false,
+    "privateEnumeration": false,
+    "protectedSemanticsInspection": false,
+    "publicSourceTextRead": true,
+    "runtimeOrTestAction": false,
+    "writeMode": "O_EXCL|O_NOFOLLOW,0600"
+  },
+  "reviewedArtifacts": [
+    {
+      "bytes": 27495,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/run-contracts.py",
+      "sha256": "6054eb3cae271912c0a7c3f41334bdc3ce4c5403c3dc2c63757b766975dee566"
+    },
+    {
+      "bytes": 2906,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution-plan.proposed.json",
+      "sha256": "2c713e34712c9c65373c00babb08f95586a20200aa52f2796a0d3cbaeec4f40c"
+    },
+    {
+      "bytes": 2796,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/README.md",
+      "sha256": "1185bdc06c455f04e9c64192c841e39e4bf9e267f9e0db989b1a8fd567da00a4"
+    },
+    {
+      "bytes": 27640,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/source-delta.patch",
+      "sha256": "25a879857f0ff59f2a3e34ca02010dcdc676720cc6ac97f000dfe1bd3d886d05"
+    },
+    {
+      "bytes": 20603,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/source-manifest.json",
+      "sha256": "03992bae5ea1e7d4e2bed5a400fbc489e0aafce94ef2030b13bf5069f7212eaa"
+    },
+    {
+      "bytes": 3241,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-author-source.md",
+      "sha256": "5c500a1b8db92a9c817c191b580ae33f6e37cddf575fe5d17a42c65ec93adaa9"
+    },
+    {
+      "bytes": 3744,
+      "path": "docs/evidence/NI6/canonical-integration-c1-contracts-r1-author-source.json",
+      "sha256": "69591507befab3c55a3fbafc9a1222f21e5aba695414a2eceaa7d58c674f4068"
+    }
+  ],
+  "reviewer": {
+    "date": "2026-10-08",
+    "independentOf": [
+      "source author",
+      "ISTQB lane"
+    ],
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "max"
+  },
+  "schema": "df.canonical-c1.contracts-r1-independent-code-source-review/v1",
+  "selectedAuthority": {
+    "bytes": 4116,
+    "path": "docs/ni6-canonical-integration-c1-contracts-r1-selection-2026-10-08.md",
+    "sha256": "a79b3124bde7b612df41d883b361aa1a17a332afd0eb0aff9d66b1c69dd3b766"
+  },
+  "selectedCommand": [
+    "/opt/homebrew/opt/node@22/bin/node",
+    "--test",
+    "--test-concurrency=1",
+    "test/chat.test.mjs",
+    "test/events.test.mjs",
+    "test/scheduler.test.mjs",
+    "test/event-adapters-adversarial.test.mjs",
+    "test/event-clock.test.mjs"
+  ],
+  "selectedTestFiles": [
+    {
+      "assertionsChanged": false,
+      "bytes": 24559,
+      "fullSourceRead": true,
+      "path": "test/chat.test.mjs",
+      "sha256": "5234574e4cc9ee9c0471d014bb85b3890e7e9da36bd0da669b7bb43d115c0620",
+      "sourceLines": 263
+    },
+    {
+      "assertionsChanged": false,
+      "bytes": 12138,
+      "fullSourceRead": true,
+      "path": "test/events.test.mjs",
+      "sha256": "3a0ee1a7c1b60ab174f644d9713302cc5153d1643b9db151b13c544cf34c5320",
+      "sourceLines": 137
+    },
+    {
+      "assertionsChanged": false,
+      "bytes": 15255,
+      "fullSourceRead": true,
+      "path": "test/scheduler.test.mjs",
+      "sha256": "c699f764fce6f96676cec0922b042df15e02342631535b17624021474160a557",
+      "sourceLines": 194
+    },
+    {
+      "assertionsChanged": false,
+      "bytes": 33052,
+      "fullSourceRead": true,
+      "path": "test/event-adapters-adversarial.test.mjs",
+      "sha256": "0193921ffd774d4190bff6fb79c7f89f22c10635d9c712a1da0a651d711f564c",
+      "sourceLines": 403
+    },
+    {
+      "assertionsChanged": false,
+      "bytes": 6085,
+      "fullSourceRead": true,
+      "path": "test/event-clock.test.mjs",
+      "sha256": "61a17da02aa0a05a492eafd1d34e661c62f56d7aa29afb3eb3c8aa9ade58b9a9",
+      "sourceLines": 88
+    }
+  ],
+  "tapFooter": {
+    "actualTotals": "NOT_RUN",
+    "durationMs": "nonnegative decimal with at most16 integer and16 fractional digits",
+    "fields": [
+      "tests",
+      "suites",
+      "pass",
+      "fail",
+      "cancelled",
+      "skipped",
+      "todo",
+      "durationMs"
+    ],
+    "integerTotals": "canonical zero or positive integer of at most16digits",
+    "interiorTestContentPublished": false,
+    "parseAuthority": "ONLY_ORIGINAL_OWNING_EXECUTOR_AFTER_GO_ON_ITS_COMPLETE_IDENTITY_BOUND_STDOUT_READBACK_RETAINED_IN_MEMORY",
+    "passConditions": [
+      "originalNodeExit0",
+      "noCommandFailure",
+      "completeEOFAndCaptures",
+      "ownedGroupAbsenceObserved",
+      "captureLengthDigestPrefixBinding",
+      "positiveTests",
+      "passEqualsTests",
+      "fail0",
+      "cancelled0",
+      "skipped0",
+      "todo0",
+      "currentPinsAndPlan",
+      "finalOwningDriverReturn0SeparatelyRequired"
+    ],
+    "plan": "1..positive integer of at most16 canonical digits",
+    "planEqualsAggregateTestsClaimed": false,
+    "reviewerRawStreamAccess": false,
+    "secondPrivateFileReadForParser": false,
+    "stderrDecoded": false,
+    "uniqueness": "one occurrence per known top-level field; exactly ordered final footer"
+  },
+  "verdict": "NO_MATERIAL_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

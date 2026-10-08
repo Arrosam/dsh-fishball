@@ -1,0 +1,3 @@
+# C1 build-r2 author source
+
+SOURCE_ONLY_NOT_RUN. Fresh successor repairs original independent client drift and descriptor split-read findings. Actual producedclient is latched aftercommand2 and checked before/aftercheck and descriptorproduction plus finalrecord. Descriptor validation/digest use one boundedrawsnapshot; finalcurrentness matches that exact snapshot. No ancestorSHA shortcut or continuous/atomicexclusion claim. All original ownership/once/group/EOF/opaque-stream protections conserved;4commands/152syntaxchildren/156maxstarts;90/60/10s and65536 streams unchanged. Originalbuild/report/finding bytes immutable. AllGO false/pins{},actual/reviewdestinations absent;no execution.

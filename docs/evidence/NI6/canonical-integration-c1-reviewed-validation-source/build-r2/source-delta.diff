@@ -1,0 +1,131 @@
+C1build-r2 complete literal executor/proposal/README delta against immutable source-onlybuild.
+
+--- .runtime/ni6-canonical-integration-c1/validation/build/run-build.py
++++ .runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py
+@@ -1,4 +1,4 @@
+-"""New source-only proposed executor. Exact two Node commands; root GO required."""
++"""Source-only C1build-r2: four fixed canonical commands; root GO required."""
+ import time
+ STARTED = time.monotonic()
+ import datetime
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/build'
++NAME='.runtime/ni6-canonical-integration-c1/validation/build-r2'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-build-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-build-r2-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -414,11 +414,25 @@
+     actual={d:sorted(p.name for p in (ROOT/d).iterdir() if p.suffix in ('.mjs','.cjs')) for d in ('src','scripts','test')}
+     need(actual==expected,'EXECUTOR_SYNTAX_SELECTION_DRIFT')
+ 
++def public_snapshot(name,maximum):
++    path=contained(name);observed=path.lstat()
++    need(stat.S_ISREG(observed.st_mode) and observed.st_uid==os.getuid() and observed.st_size<=maximum,'EXECUTOR_GENERATED_BOUND')
++    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
++    with os.fdopen(fd,'rb') as handle:
++        actual=os.fstat(handle.fileno());need((actual.st_dev,actual.st_ino)==(observed.st_dev,observed.st_ino),'EXECUTOR_GENERATED_IDENTITY')
++        raw=handle.read(maximum+1)
++        need(len(raw)==observed.st_size and len(raw)<=maximum and os.fstat(handle.fileno()).st_size==len(raw),'EXECUTOR_GENERATED_PARTIAL_READ')
++    return raw,{'path':name,'bytes':len(raw),'sha256':sha(raw),'identity':[observed.st_dev,observed.st_ino]}
++
++def output_current(witness,maximum):
++    _,now=public_snapshot(witness['path'],maximum)
++    need(now==witness,'EXECUTOR_GENERATED_OUTPUT_DRIFT')
++
+ def main():
+     global FIRST_REASON
+     end=STARTED+90;work_end=STARTED+80
+     marker=CAPSULE/'invocation.json';private=CAPSULE/'private-capture';evidence=CAPSULE/'execution'
+-    marker_owned=evidence_owned=False;marker_id=evidence_id=None;rows=[];before=after=None;outputs=[];finalized=False
++    marker_owned=evidence_owned=False;marker_id=evidence_id=None;rows=[];before=after=None;outputs=[];finalized=False;client_witness=descriptor_witness=None
+     record={'contractVersion':'df.canonical-c1.build/v1','result':'FAILED_HOLD','failureCode':None,'commands':rows,'generated':outputs,'before':None,'after':None,'directDriverReturnRequired':True}
+     try:
+         need(len(sys.argv)==2 and sys.argv[1]==PLAN_NAME and Path.cwd()==ROOT and Path(__file__).resolve()==CAPSULE/'run-build.py','EXECUTOR_IDENTITY')
+@@ -445,15 +459,20 @@
+         immutable={p:h for p,h in plan['pins'].items() if p not in ('lib/client.js','native-source-manifest.json')}
+         for i,argv in enumerate(commands,1):
+             guard(work_end);need(sha(plan_path.read_bytes())==plan_digest,'EXECUTOR_PLAN_DRIFT');verify(immutable,work_end);syntax_inventory(manifest['syntaxInventory'])
++            if i>=3:output_current(client_witness,1048576)
+             row,_,_,_=run_command(argv,i,private,work_end,60,4);rows.append(row)
+             need(row['failureCode'] is None and row['exitCode']==0 and row['captureComplete'] and row['processGroupState']=='ABSENT_OBSERVED','EXECUTOR_BUILD_COMMAND_FAILED')
++            if i==2:_,client_witness=public_snapshot('lib/client.js',1048576)
++            if i>=3:output_current(client_witness,1048576)
+         after=verify(immutable,work_end);syntax_inventory(manifest['syntaxInventory']);need(sha(plan_path.read_bytes())==plan_digest,'EXECUTOR_PLAN_DRIFT')
+-        generated=read_json(ROOT/'native-source-manifest.json',65536)
++        descriptor_raw,descriptor_witness=public_snapshot('native-source-manifest.json',65536)
++        generated=strict_json(descriptor_raw)
+         need(generated['contractVersion']=='df.native-source/v1' and generated['host']==manifest['expectedDescriptorHost'],'EXECUTOR_DESCRIPTOR_HOST')
+         need(generated['product']['name']=='dsh-fishball' and generated['product']['version']=='0.1.0-preview.1' and [x['path'] for x in generated['product']['files']]==manifest['descriptorProductPaths'],'EXECUTOR_DESCRIPTOR_PRODUCT')
++        output_current(client_witness,1048576)
+         for row in generated['product']['files']:need(set(row)=={'path','digest'} and sha(contained(row['path']).read_bytes())==row['digest'],'EXECUTOR_ACTUAL_PRODUCT_DIGEST')
+-        for p in ('lib/client.js','native-source-manifest.json'):
+-            b=contained(p).read_bytes();outputs.append({'path':p,'bytes':len(b),'sha256':sha(b)})
++        output_current(client_witness,1048576);output_current(descriptor_witness,65536)
++        outputs.extend([{k:v for k,v in witness.items() if k!='identity'} for witness in (client_witness,descriptor_witness)])
+         guard(work_end);finalized=True
+     except Exception:
+         FIRST_REASON=FIRST_REASON or 'EXECUTOR_BUILD_GATE_FAILED';finalized=False
+@@ -462,8 +481,10 @@
+             guard(end,cleanup=True)
+             if evidence_owned:
+                 owned_directory(evidence);need(identity(evidence)==evidence_id,'EXECUTOR_EVIDENCE_REPLACED')
++                if finalized:output_current(client_witness,1048576);output_current(descriptor_witness,65536)
+                 record.update({'result':'PASS' if finalized and not STOP_REQUESTED else 'FAILED_HOLD','failureCode':FIRST_REASON,'before':before,'after':after,'durationSeconds':round(time.monotonic()-STARTED,6),'actualBuildCommands':len(rows),'rawStreamsDecoded':False})
+                 for n,v in [('root-plan.json',plan),('executor-result.json',record),('command-results.json',{'commands':rows}),('before-after.json',{'before':before,'after':after})]:save(evidence/n,v,fresh=True)
++                if finalized:output_current(client_witness,1048576);output_current(descriptor_witness,65536)
+                 guard(end);finalized=finalized and not STOP_REQUESTED
+             else:finalized=False
+             if marker_owned:save(marker,{'state':'PASS' if finalized else 'FAILED_HOLD','failureCode':FIRST_REASON,'finalized':finalized},expected_identity=marker_id)
+--- .runtime/ni6-canonical-integration-c1/validation/build/execution-plan.proposed.json
++++ .runtime/ni6-canonical-integration-c1/validation/build-r2/execution-plan.proposed.json
+@@ -25,18 +25,22 @@
+   ],
+   "contractVersion": "df.canonical-c1.build-plan/v1",
+   "finalReserveSeconds": 10,
++  "generatedOutputCaps": {
++    "lib/client.js": 1048576,
++    "native-source-manifest.json": 65536
++  },
+   "outerSeconds": 90,
+   "pins": {},
+   "privateStreamCap": 65536,
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.json",
+-    "docs/evidence/NI6/canonical-integration-c1-build-independent-test-design-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-build-independent-test-design-review.json"
++    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-test-design-review.json"
+   ],
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-canonical-integration-c1/validation/build/run-build.py"
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py"
+ }
+--- .runtime/ni6-canonical-integration-c1/validation/build/README.md
++++ .runtime/ni6-canonical-integration-c1/validation/build-r2/README.md
+@@ -1,5 +1,5 @@
+-# C1 canonical build source subset
++# C1 build-r2 source-only successor
+ 
+-Source only. Four fixed canonical commands;90s shared deadline,60s maximum per command with original owned process-group/EOF/capture cleanup and10s final reserve. All152 explicit top-level syntax targets are pinned before execution; Node --check parses these files, never executes their test bodies. Syntax target names are checked again before each admission. Two generated canonical outputs may change only through selected original build commands; all other pins must remain unchanged. Actual descriptor content must match all64 current canonical product hashes and original27-module host pins beforePASS. Copied ancestor outputs are not a fresh build.
++Originalbuild was not executed and stays immutable. R2 repairs both independent findings: latch fresh actual client producer bytes/seal aftercommand2; enforce before/aftercommands3and4 and finalrecord. Read descriptor exactly once into a bounded immutable raw snapshot, validate strictJSON from that snapshot, and bind the recorded digest/size to it; enforce current equality at finalrecord. These finite observations do not claim continuous/atomic workspace exclusion.
+ 
+-No candidate/helper parsing, evaluation, imports, check/build/test/run or runtime/network/model/browser/Git operation occurred during authoring. Private opaque streams cap65536 each and131072 aggregate, with owned readback and uncertainty/denial retained. Exclusive once marker and fresh output ownership; sys.exit outside BaseException. AllGO false/pins empty. Root owns later selected approval/execution.
++Same4fixedcommands/90souter/60scommand/10sfinalreserve/65536 privatebytes perstream;4topcommands+152syntaxchildren=156maximumstarts. Nested syntax order mirrors original scripts/check.mjs:src,scripts,test. No test bodies execute. All ownership, once, stop/denial, processgroup/EOF, partialread/drift and opaque capture protections conserved. Generated clientcap1048576;descriptorcap65536. Source-onlyGO=false/pins{},no actualrun/build/check/test/Git/privatecontent operation.

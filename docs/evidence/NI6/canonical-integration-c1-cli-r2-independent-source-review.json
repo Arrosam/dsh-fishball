@@ -1,0 +1,214 @@
+{
+  "addressedFinding": {
+    "concreteFix": "Owning one-shot ITIMER_REAL/SIGALRM spans request/connect/write/status/header/body at min(shared RPC end, monotonic()+2), not merely socket inactivity. Source-owned HTTPDeadline/TimeoutError classify only at real Transport boundary, preserving the original first latch.",
+    "id": "C1-CLI-CODE-01",
+    "originalFindingPair": [
+      {
+        "bytes": 8027,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-independent-source-review.md",
+        "sha256": "de0830da0ec756729d4f6b44c570ec8f54312655a65fa8db6e4b05c2d6df39d4"
+      },
+      {
+        "bytes": 12483,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-independent-source-review.json",
+        "sha256": "62e0d008192a443316452540c53da7492945e0e0fcc64774ef257b2c7a42a4bc"
+      }
+    ],
+    "sourceOnlyDisposition": "ADDRESSED_BY_FRESH_R2_SOURCE; actual mechanism/control/lifecycle not run"
+  },
+  "dateUTC": "2026-10-08T08:05:51.108436+00:00",
+  "gates": {
+    "acceptanceGO": false,
+    "candidateExecutedByReviewer": false,
+    "executionGO": false,
+    "protectedCODE": "BLOCKED_UNCHANGED",
+    "publicationGO": false
+  },
+  "independentLiteralSizing": {
+    "authorRootPlanForecast": 35720,
+    "beforeAfterPrettyIncludingLF": 178,
+    "casePrettyIncludingLF": 532,
+    "commandsPrettyIncludingLF": 2152,
+    "longestStableFailure": "EXECUTOR_ORIGINAL_TEARDOWN_NOT_ESTABLISHED",
+    "method": "Inert stdlib JSON scalar records only; longest source-owned failure string, signed64 PID/exit bounds, longest closed strings, false booleans, two child/two stream rows, final LF. No candidate evaluation.",
+    "qualification": "Root-plan forecast varies with finite monotonic float representation; neither forecast is the exact future root plan. Original <=65536 actual read/check is retained. This two-byte descriptive variation is nonblocking and requires no sealed source mutation.",
+    "representative212PinRootPlanPrettyIncludingLF": 35718,
+    "rootPlanLiteralDeadline": 1234567890.1234567
+  },
+  "inertVerification": {
+    "actualCaseTreePlanAndThreeMarkersAbsentAtReviewCut": true,
+    "allChildAndOtherOrdinaryFunctionsExact": true,
+    "authAndRPCExact": true,
+    "canonical65RecordsExactOriginal": true,
+    "canonicalBytes": 1952632,
+    "caseStartsAndWindowsUnchanged": {
+      "disabled": {
+        "boots": 1,
+        "httpCap": 8,
+        "seconds": 25
+      },
+      "invalid": {
+        "boots": 1,
+        "httpCap": 8,
+        "seconds": 25
+      },
+      "positive": {
+        "boots": 2,
+        "httpCap": 32,
+        "seconds": 120
+      }
+    },
+    "familyDeadlineUnsetInProposal": true,
+    "finalReserveSeconds": 2,
+    "frozenSourceCopies": 0,
+    "futurePinUnion": 212,
+    "httpFamilyCap": 48,
+    "inputBytes": 8643279,
+    "inputRows": 202,
+    "literalDeltaFiles": [
+      "observer.mjs",
+      "lifecycle-driver.py",
+      "execution-plan.proposed.json",
+      "README.md"
+    ],
+    "literalDeltaRegeneratedExactly": true,
+    "literalFourFileDeltaBytes": 20459,
+    "mainExactAfterNamespaceAndSingleControlCallInverse": true,
+    "maximumCLIStarts": 4,
+    "maximumCaseDrivers": 3,
+    "maximumConcurrency": 1,
+    "maximumInterpreterStartsIncludingDrivers": 7,
+    "newDeclaredInputRows": 13,
+    "newRowsExactlyEightOriginalArtifactsFourFindingsOneSelection": true,
+    "observerExactAfterNamespace": true,
+    "original189InputRowsExact": true,
+    "ownPairAbsentBeforeExclusiveCreation": true,
+    "physicalExplicitSelectedPublicRecordsHashed": 207,
+    "pinUnion": "202 selected inputs +5 owned files +current source-manifest self pin +4 future affected reviews; actual build proof already a selected input.",
+    "pinsEmpty": true,
+    "postStopConnectionProbesFamilyTotal": 4,
+    "privateStreamCapsEachAggregate": [
+      65536,
+      131072
+    ],
+    "proposalOnlyNamespaceAndTwoNewFiniteMetadataFields": true,
+    "publicCapsUnchanged": {
+      "beforeAfter": 4096,
+      "caseRead": 4097,
+      "caseResult": 4096,
+      "commandResults": 16384,
+      "plan": 65536
+    },
+    "resultFieldsUnchanged": 16,
+    "rootSelectionSealMatch": true,
+    "sharedRootFamilySeconds": 180,
+    "sixPacketAndTwoAuthorArtifactSealsMatch": true,
+    "stopClampSeconds": 8,
+    "testWorkerStarts": 0,
+    "threeGOFlagsFalse": true,
+    "timerAndRegressionMetadataAgreeManifestProposalAuthor": true,
+    "topologyRows": 3,
+    "transportConstructorExact": true,
+    "workReserveInsideCaseSeconds": 10
+  },
+  "materialFindings": [],
+  "originalPacketDisposition": "IMMUTABLE_NOT_RUN_MUST_NOT_EXECUTE",
+  "qualifications": [
+    "Timer mechanism is supported owning-process interruption on the selected Mac/Python main thread, requiring default/inactive/unblocked state; no universal OS scheduling or instantaneous cancellation guarantee.",
+    "Expected own control timeout leaves FIRST_REASON unchanged; no arbitrary error arguments/message/stack/private raw stream are accessed or serialized. Unexpected control failure fails closed before CLI creation.",
+    "Original5s forced exit0 remains insufficient; genuine retained DF fiber/service admission, observer completion, direct CLI0, complete EOF/owned group/listener absence and no forced cleanup remain jointly required.",
+    "Invalid SETUP_UNAVAILABLE remains source-expected, actual NOT_OBSERVED, with no private stderr recovery or private prefix table.",
+    "Counts/budgets/effect limits are source-derived maxima, not current runtime counters or control success. Finite source/pin/currentness cuts are not atomic continuous workspace exclusion.",
+    "No private case/content inspection or enumeration; historical R7B pathname-only enumeration without CONTENT access remains correctly qualified. Shared3080, browser/cloud blocks and cancelled task remain unaffected."
+  ],
+  "remainingDependencies": [
+    "Root full read/seal of final independent CODE and ISTQB r2 pairs, exact plan/pin binding and trusted once supported family selection.",
+    "The timer/restoration/socketpair contract and genuine positive/disabled/invalid CLI cases remain NOT_RUN. Successful sequential positive source+actual PASS may entail the control later; no added control counter exists.",
+    "Root must retain the identical immutable plan digest/absolute monotonic+180 deadline for three sequential original calls, immediately store direct returns and stop on denial/nonzero/uncertainty. Individual drivers alone do not enforce family call order.",
+    "Original CLI remains unexecuted; consumed W01 worker PASS stays immutable without replay. Current full per-criterion acceptance, residual active-worker/crash/existing-session matrix, supported UI/browser handoff and protected final semantics remain separate."
+  ],
+  "reportPair": [
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.json"
+  ],
+  "reviewedIdentities": [
+    {
+      "bytes": 5920,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/observer.mjs",
+      "sha256": "7559472fac5fed231e5cb24432abbeaf4c0c9a7b98c37f3526f3a67faba93fb8"
+    },
+    {
+      "bytes": 40650,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/lifecycle-driver.py",
+      "sha256": "800c115ba06e81539268408b9aff4db7ed0afac23b1563d74e63aac5ee6c5adc"
+    },
+    {
+      "bytes": 7226,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/execution-plan.proposed.json",
+      "sha256": "f1774bd4d6ddbcb770bdd825ee8fffbbc0a26765c1dcc71c1d8aa1c7fd67f407"
+    },
+    {
+      "bytes": 3903,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/README.md",
+      "sha256": "f7c1d5f02db6b931286673d978fa9efe419a4a09ea4f5f10374ef54abc66d10f"
+    },
+    {
+      "bytes": 20459,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/source-delta.diff",
+      "sha256": "bafbcd2746aa1a74cfbfff09b5c64b650fb0defec8fdbc8204ccb38e79626664"
+    },
+    {
+      "bytes": 66962,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/source-manifest.json",
+      "sha256": "eeefd39c4647d220a563d20dc3ceac58fb037b47ba8093dc49a330bc48ca98ae"
+    },
+    {
+      "bytes": 2988,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-author-source.md",
+      "sha256": "8ee011d41633d2b386ccffa0349def9ff4e29eb5d62e510e20201c1919d98208"
+    },
+    {
+      "bytes": 9903,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-author-source.json",
+      "sha256": "e00c10d113c3155eb519d537c6053a306b11cdbd551ff4f169a547067ccbcb34"
+    },
+    {
+      "bytes": 3330,
+      "path": "docs/ni6-canonical-integration-c1-cli-r2-selection-2026-10-08.md",
+      "sha256": "4a1d8efbc11ce6c33df875e7b82d4d1d6fb5d50dc54f314597bb0669d3132af4"
+    }
+  ],
+  "reviewer": {
+    "agent": "r7b_transport_code_review",
+    "effort": "max",
+    "independentOfAuthorAndISTQB": true,
+    "model": "gpt-6.1-sol"
+  },
+  "schema": "df.canonical-c1.cli-r2-independent-source-review/v1",
+  "scope": {
+    "affectedSource": "Complete current 683-line driver, observer conservation, complete proposal/README/finite metadata, exact four-file literal delta.",
+    "excluded": "No candidate parse/import/evaluation/check/build/test/helper/producer/run, timer/socket/CLI/listener/network/browser/model/Git/cloud action; no private case/profile/key/db/history/capture/response/error CONTENT or enumeration; opaque capture/finish and protected final CODE receipt/signature/envelope/revision999 semantics.",
+    "inheritedAuthority": "Final original CLI CODE finding pair and ordinary lifecycle review, exact C1 canonical65/build/public host input authority; no repeated whole-host/full-graph/product audit.",
+    "regressionAuthority": "Root latest explicit task selects one positive <=0.2s socketpair blocked-body/success restoration regression. The sealed3330-byte r2 selection supplies the unchanged lifecycle/deadline/effect boundaries."
+  },
+  "sourceObservations": [
+    {
+      "finding": "Inactive prior timer/default handler/unblocked SIGALRM are required before modification. The handler raises only source-owned HTTPDeadline, once while enabled, without error payload access. Nested finalization disables/cancels, restores the original handler and inactive timer on success, typed timeout and other exits before connection.close and retained child cleanup. The post-yield monotonic check catches delayed completion.",
+      "source": "lifecycle-driver.py:328-364,428-440"
+    },
+    {
+      "finding": "Once positive control runs after root GO/pins/build proof and before any case/profile/CLI creation, under min(existing work end, now+.2). First owning socketpair gives original HTTPResponse complete literal headers and withholds the declared one-byte body; waiting must be reached and source-owned timeout observed. A second socketpair completes a one-byte body read. Both verify closed sockets, timer/handler equality and FIRST_REASON identity; typed expected timeout neither latches nor resets it. Each exchange slice <=.03s; no listener, network endpoint, thread/process, native request or public field.",
+      "source": "lifecycle-driver.py:365-413,570"
+    },
+    {
+      "finding": "A real retained exchange has one absolute <=2s deadline across all blocking HTTP phases and a remaining-window socket timeout within it. Only HTTPDeadline/TimeoutError are classified as EXECUTOR_HTTP_TOTAL_DEADLINE through need(False), retaining an earlier FIRST_REASON. Other failures remain original gates. Child pumping resumes after complete exchange return or outer cleanup after failure; no retry or extra endpoint.",
+      "source": "lifecycle-driver.py:420-453"
+    },
+    {
+      "finding": "Original main including signal handlers/final guards/outside-BaseException terminal exit is byte-exact after namespace and single positive control-call inversion. Observer is namespace-only exact. All Child/ownership/EOF/signal/cleanup, auth/RPC, physical65 copy/currentness, original Loader/profile and genuine retained DF terminal/service admission gates remain exact.",
+      "source": "lifecycle-driver.py:524-683; observer.mjs:1-45"
+    }
+  ],
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "verdict": "NO_MATERIAL_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

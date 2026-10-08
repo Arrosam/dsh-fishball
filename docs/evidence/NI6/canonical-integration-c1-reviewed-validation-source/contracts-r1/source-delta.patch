@@ -1,0 +1,367 @@
+Source-only literal executor derivative; original build-r2 remains immutable. Unified diffs use splitlines(keepends=True), n=3, default newline, concatenated without synthetic line endings. New proposal/README are whole additions.
+--- .runtime/ni6-canonical-integration-c1/validation/build-r2/run-build.py
++++ .runtime/ni6-canonical-integration-c1/validation/contracts-r1/run-contracts.py
+@@ -1,4 +1,4 @@
+-"""Source-only C1build-r2: four fixed canonical commands; root GO required."""
++"""Source-only C1contracts-r1: one fixed original Node test command; root GO required."""
+ import time
+ STARTED = time.monotonic()
+ import datetime
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/build-r2'
++NAME='.runtime/ni6-canonical-integration-c1/validation/contracts-r1'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,13 +23,14 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-build-r2-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-contracts-r1-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+ COMMAND_BOOKKEEPING=1.0
+-STREAM_CAP=65536
+-AGGREGATE_CAP=131072
++STREAM_CAP=131072
++AGGREGATE_CAP=262144
++PUBLIC_RECORD_CAP=65536
+ sha=lambda b:hashlib.sha256(b).hexdigest()
+ now=lambda:datetime.datetime.now(datetime.timezone.utc).isoformat()
+ 
+@@ -168,6 +169,7 @@
+ 
+ def save(path, value, *, fresh=False, expected_identity=None):
+     raw = (json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + '\n').encode()
++    need(len(raw) <= PUBLIC_RECORD_CAP, 'EXECUTOR_RECORD_BOUND')
+     if fresh:
+         with exclusive(path) as handle:
+             stamp = owned_handle(path,handle)
+@@ -220,7 +222,7 @@
+         return None
+ 
+ 
+-def run_command(argv, index, private, deadline, cap, cleanup_seconds):
++def run_command(argv, index, private, deadline, cap, cleanup_seconds, environment):
+     started = time.monotonic()
+     hard_end = min(started + cap, deadline)
+     cleanup_end = hard_end - COMMAND_BOOKKEEPING
+@@ -238,6 +240,7 @@
+     eof = {'stdout': False, 'stderr': False}
+     prefix_hashes = {name:hashlib.sha256() for name in ('stdout','stderr')}
+     capture_identities = {}
++    verified_stdout = None
+     process, selector = None, selectors.DefaultSelector()
+     signalling_blocked, absence_observed = False, False
+ 
+@@ -320,7 +323,7 @@
+         # Python delivery and OS spawn are separate, not instant/atomic cancel.
+         guard(work_end, 'EXECUTOR_COMMAND_BUDGET')
+         process = subprocess.Popen(argv, cwd=ROOT, stdin=subprocess.DEVNULL,
+-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, start_new_session=True)
++            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, start_new_session=True, env=environment)
+         row['childPid'] = row['ownedProcessGroup'] = process.pid
+         row['processGroupState'] = 'OWNED_NEW_SESSION'
+         for name, pipe in (('stdout', process.stdout), ('stderr', process.stderr)):
+@@ -389,6 +392,7 @@
+                 raw = bounded_owned_bytes(paths[name],stored[name],expected_length=stored[name],
+                                           expected_identity=capture_identities[name])
+                 need(len(raw) == stored[name] and sha(raw) == prefix_hashes[name].hexdigest(), 'EXECUTOR_CAPTURE_READBACK')
++                if name == 'stdout': verified_stdout = raw  # Original identity-bound readback retained only in owner memory.
+                 item.update({'bytes':len(raw),'sha256':sha(raw),'prefixVerified':True,
+                              'complete':eof[name] and received[name] == stored[name]})
+                 guard(cleanup_end, 'EXECUTOR_COMMAND_BOOKKEEPING', cleanup=True)
+@@ -408,91 +412,130 @@
+     row['durationSeconds'] = round(time.monotonic() - started, 6)
+     if time.monotonic() >= cleanup_end:
+         row['failureCode'] = row['failureCode'] or 'EXECUTOR_COMMAND_BOOKKEEPING'
+-    return row, paths, started, hard_end
+-
+-def syntax_inventory(expected):
+-    actual={d:sorted(p.name for p in (ROOT/d).iterdir() if p.suffix in ('.mjs','.cjs')) for d in ('src','scripts','test')}
+-    need(actual==expected,'EXECUTOR_SYNTAX_SELECTION_DRIFT')
+-
+-def public_snapshot(name,maximum):
+-    path=contained(name);observed=path.lstat()
+-    need(stat.S_ISREG(observed.st_mode) and observed.st_uid==os.getuid() and observed.st_size<=maximum,'EXECUTOR_GENERATED_BOUND')
+-    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
+-    with os.fdopen(fd,'rb') as handle:
+-        actual=os.fstat(handle.fileno());need((actual.st_dev,actual.st_ino)==(observed.st_dev,observed.st_ino),'EXECUTOR_GENERATED_IDENTITY')
+-        raw=handle.read(maximum+1)
+-        need(len(raw)==observed.st_size and len(raw)<=maximum and os.fstat(handle.fileno()).st_size==len(raw),'EXECUTOR_GENERATED_PARTIAL_READ')
+-    return raw,{'path':name,'bytes':len(raw),'sha256':sha(raw),'identity':[observed.st_dev,observed.st_ino]}
+-
+-def output_current(witness,maximum):
+-    _,now=public_snapshot(witness['path'],maximum)
+-    need(now==witness,'EXECUTOR_GENERATED_OUTPUT_DRIFT')
++    return row, paths, started, hard_end, verified_stdout
++
++def tap_footer(raw):
++    # Only this owning executor reads its fresh, complete bounded stdout.
++    # Interior test names/errors/payloads remain opaque and never enter records.
++    names = (b'tests', b'suites', b'pass', b'fail', b'cancelled', b'skipped', b'todo', b'duration_ms')
++    observed = {name: [] for name in names}
++    for line in raw.splitlines():
++        for name in names:
++            if line.startswith(b'# ' + name) and (len(line) == len(name) + 2 or line[len(name) + 2:len(name) + 3] in (b' ', b'\t')):
++                observed[name].append(line)
++    need(all(len(observed[name]) == 1 for name in names), 'EXECUTOR_TAP_FOOTER_FIELDS')
++    lines = raw.splitlines()
++    need(len(lines) >= 9 and raw.endswith(b'\n'), 'EXECUTOR_TAP_FOOTER_MISSING')
++    footer = lines[-9:]
++    need(re.fullmatch(rb'1\.\.[1-9][0-9]{0,15}', footer[0]) is not None, 'EXECUTOR_TAP_PLAN')
++    totals = {}
++    for index, name in enumerate(names[:-1], 1):
++        matched = re.fullmatch(rb'# ' + name + rb' (0|[1-9][0-9]{0,15})', footer[index])
++        need(matched is not None and observed[name][0] == footer[index], 'EXECUTOR_TAP_TOTAL')
++        totals[name.decode('ascii')] = int(matched.group(1))
++    duration = re.fullmatch(rb'# duration_ms (0|[1-9][0-9]{0,15})(\.[0-9]{1,16})?', footer[8])
++    need(duration is not None and observed[b'duration_ms'][0] == footer[8], 'EXECUTOR_TAP_DURATION')
++    need(totals['tests'] > 0 and totals['pass'] == totals['tests']
++         and all(totals[name] == 0 for name in ('fail', 'cancelled', 'skipped', 'todo')), 'EXECUTOR_TAP_NOT_PASS')
++    totals['durationMs'] = footer[8][14:].decode('ascii')
++    return totals
++
++
++def build_authority(manifest):
++    proof = read_json(contained(manifest['actualBuildReturn']), 16384)
++    need(proof.get('schema') == 'df.canonical-c1.build-actual-return/v1'
++         and proof.get('result') == 'PASS' and proof.get('actualBuildCommands') == 4,
++         'EXECUTOR_BUILD_AUTHORITY')
++    direct = proof.get('directDriverReturn', {})
++    need(direct.get('exitCode') == 0 and direct.get('outputBytes') == 0 and direct.get('complete') is True
++         and isinstance(direct.get('originalToolReturns'), list) and len(direct['originalToolReturns']) > 0,
++         'EXECUTOR_BUILD_DRIVER_RETURN')
++    need(proof.get('generated') == manifest['buildGenerated'] and proof.get('recordPins') == manifest['buildRecords']
++         and proof.get('rootPlan') == manifest['buildRootPlan'], 'EXECUTOR_BUILD_PIN_SET')
++
+ 
+ def main():
+     global FIRST_REASON
+-    end=STARTED+90;work_end=STARTED+80
+-    marker=CAPSULE/'invocation.json';private=CAPSULE/'private-capture';evidence=CAPSULE/'execution'
+-    marker_owned=evidence_owned=False;marker_id=evidence_id=None;rows=[];before=after=None;outputs=[];finalized=False;client_witness=descriptor_witness=None
+-    record={'contractVersion':'df.canonical-c1.build/v1','result':'FAILED_HOLD','failureCode':None,'commands':rows,'generated':outputs,'before':None,'after':None,'directDriverReturnRequired':True}
++    end = STARTED + 90; work_end = STARTED + 85
++    marker = CAPSULE / 'invocation.json'; private = CAPSULE / 'private-capture'; evidence = CAPSULE / 'execution'
++    marker_owned = evidence_owned = False; marker_id = evidence_id = None
++    rows = []; before = after = footer = None; finalized = False
++    record = {'contractVersion': 'df.canonical-c1.contracts/v1', 'result': 'FAILED_HOLD', 'failureCode': None,
++              'commands': rows, 'tapFooter': None, 'before': None, 'after': None, 'directDriverReturnRequired': True,
++              'rawTestContentPublished': False, 'selectedTestFiles': 5, 'maximumInterpreterProcesses': 7,
++              'interpreterCountAuthority': 'SOURCE_DERIVED_MAXIMUM_NOT_CHILD_INSTRUMENTATION',
++              'fullAcceptance': False, 'DF010C02ChangedThreadReordering': 'NOT_RUN'}
+     try:
+-        need(len(sys.argv)==2 and sys.argv[1]==PLAN_NAME and Path.cwd()==ROOT and Path(__file__).resolve()==CAPSULE/'run-build.py','EXECUTOR_IDENTITY')
+-        owned_directory(CAPSULE);marker_id=save(marker,{'state':'IN_PROGRESS'},fresh=True);marker_owned=True
+-        proposal=read_json(CAPSULE/'execution-plan.proposed.json');manifest=read_json(CAPSULE/'source-manifest.json')
+-        plan_path=contained(PLAN_NAME);owned_file(plan_path);plan_raw=plan_path.read_bytes();plan_digest=sha(plan_raw);plan=strict_json(plan_raw)
+-        need(set(plan)==set(proposal),'EXECUTOR_PLAN_FIELDS')
+-        for k in proposal:
+-            if k not in ('rootReviewedExecutionGO','rootSupportedExecutionApprovalGranted','rootReviewedFinalAffectedReports','pins'):need(plan[k]==proposal[k],'EXECUTOR_PLAN_SELECTION')
+-        need(all(plan[k] is True for k in ('rootReviewedExecutionGO','rootSupportedExecutionApprovalGranted','rootReviewedFinalAffectedReports')),'EXECUTOR_ROOT_GO')
+-        need(plan['runCountAuthorized']==1 and plan['runner']==NAME+'/run-build.py','EXECUTOR_ONCE')
+-        for key in manifest['environmentMustBeAbsent']:need(key not in os.environ,'EXECUTOR_ENVIRONMENT')
+-        need(str(Path(sys.executable).resolve())==PYTHON_REAL and str(Path(NODE).resolve())==NODE_REAL,'EXECUTOR_BINARY')
+-        expected={x['path']:x['sha256'] for x in manifest['inputFiles']+manifest['ownedFiles']}
+-        need(len(expected)==len(manifest['inputFiles'])+len(manifest['ownedFiles']),'EXECUTOR_DUPLICATE_PIN')
+-        expected[NAME+'/source-manifest.json']=sha((CAPSULE/'source-manifest.json').read_bytes())
+-        need(set(plan['pins'])==set(expected)|set(manifest['requiredAffectedReviews']) and all(plan['pins'][p]==h for p,h in expected.items()),'EXECUTOR_PIN_UNION')
+-        for row in manifest['inputFiles']+manifest['ownedFiles']:need(pin_path(row['path']).stat().st_size==row['bytes'],'EXECUTOR_PIN_SIZE')
+-        before=verify(plan['pins'],min(work_end,STARTED+15));syntax_inventory(manifest['syntaxInventory'])
+-        commands=[[NODE,'scripts/check.mjs'],[NODE,'scripts/build-client.mjs'],[NODE,'scripts/build-client.mjs','--check'],[PYTHON,'scripts/build-native-source-manifest.py','--product-root',str(ROOT),'--host-root',str(HOST)]]
+-        need(plan['commands']==commands,'EXECUTOR_EXACT_COMMANDS')
+-        for p in (private,evidence):need(not p.exists() and not p.is_symlink(),'EXECUTOR_NAMESPACE_CONSUMED')
+-        private_directory(private);private_directory(evidence);evidence_id=identity(evidence);evidence_owned=True
+-        immutable={p:h for p,h in plan['pins'].items() if p not in ('lib/client.js','native-source-manifest.json')}
+-        for i,argv in enumerate(commands,1):
+-            guard(work_end);need(sha(plan_path.read_bytes())==plan_digest,'EXECUTOR_PLAN_DRIFT');verify(immutable,work_end);syntax_inventory(manifest['syntaxInventory'])
+-            if i>=3:output_current(client_witness,1048576)
+-            row,_,_,_=run_command(argv,i,private,work_end,60,4);rows.append(row)
+-            need(row['failureCode'] is None and row['exitCode']==0 and row['captureComplete'] and row['processGroupState']=='ABSENT_OBSERVED','EXECUTOR_BUILD_COMMAND_FAILED')
+-            if i==2:_,client_witness=public_snapshot('lib/client.js',1048576)
+-            if i>=3:output_current(client_witness,1048576)
+-        after=verify(immutable,work_end);syntax_inventory(manifest['syntaxInventory']);need(sha(plan_path.read_bytes())==plan_digest,'EXECUTOR_PLAN_DRIFT')
+-        descriptor_raw,descriptor_witness=public_snapshot('native-source-manifest.json',65536)
+-        generated=strict_json(descriptor_raw)
+-        need(generated['contractVersion']=='df.native-source/v1' and generated['host']==manifest['expectedDescriptorHost'],'EXECUTOR_DESCRIPTOR_HOST')
+-        need(generated['product']['name']=='dsh-fishball' and generated['product']['version']=='0.1.0-preview.1' and [x['path'] for x in generated['product']['files']]==manifest['descriptorProductPaths'],'EXECUTOR_DESCRIPTOR_PRODUCT')
+-        output_current(client_witness,1048576)
+-        for row in generated['product']['files']:need(set(row)=={'path','digest'} and sha(contained(row['path']).read_bytes())==row['digest'],'EXECUTOR_ACTUAL_PRODUCT_DIGEST')
+-        output_current(client_witness,1048576);output_current(descriptor_witness,65536)
+-        outputs.extend([{k:v for k,v in witness.items() if k!='identity'} for witness in (client_witness,descriptor_witness)])
+-        guard(work_end);finalized=True
++        need(len(sys.argv) == 2 and sys.argv[1] == PLAN_NAME and Path.cwd() == ROOT
++             and Path(__file__).resolve() == CAPSULE / 'run-contracts.py', 'EXECUTOR_IDENTITY')
++        owned_directory(CAPSULE); marker_id = save(marker, {'state': 'IN_PROGRESS'}, fresh=True); marker_owned = True
++        proposal = read_json(CAPSULE / 'execution-plan.proposed.json'); manifest = read_json(CAPSULE / 'source-manifest.json')
++        plan_path = contained(PLAN_NAME); owned_file(plan_path); plan_raw = plan_path.read_bytes()
++        need(len(plan_raw) <= PUBLIC_RECORD_CAP, 'EXECUTOR_PLAN_BOUND'); plan_digest = sha(plan_raw); plan = strict_json(plan_raw)
++        need(set(plan) == set(proposal), 'EXECUTOR_PLAN_FIELDS')
++        for key in proposal:
++            if key not in ('rootReviewedExecutionGO', 'rootSupportedExecutionApprovalGranted', 'rootReviewedFinalAffectedReports', 'pins'):
++                need(plan[key] == proposal[key], 'EXECUTOR_PLAN_SELECTION')
++        need(all(plan[key] is True for key in ('rootReviewedExecutionGO', 'rootSupportedExecutionApprovalGranted', 'rootReviewedFinalAffectedReports')), 'EXECUTOR_ROOT_GO')
++        need(plan['runCountAuthorized'] == 1 and plan['runner'] == NAME + '/run-contracts.py', 'EXECUTOR_ONCE')
++        for key in manifest['environmentMustBeAbsent']: need(key not in os.environ, 'EXECUTOR_ENVIRONMENT')
++        need(str(Path(sys.executable).resolve()) == PYTHON_REAL and str(Path(NODE).resolve()) == NODE_REAL, 'EXECUTOR_BINARY')
++        for item in manifest['topology']:
++            path = Path(item['path'])
++            need(path.is_symlink() and os.readlink(path) == item['target'] and str(path.resolve()) == item['resolved'], 'EXECUTOR_TOPOLOGY')
++        expected = {item['path']: item['sha256'] for item in manifest['inputFiles'] + manifest['ownedFiles']}
++        need(len(expected) == len(manifest['inputFiles']) + len(manifest['ownedFiles']), 'EXECUTOR_DUPLICATE_PIN')
++        expected[NAME + '/source-manifest.json'] = sha((CAPSULE / 'source-manifest.json').read_bytes())
++        need(set(plan['pins']) == set(expected) | set(manifest['requiredAffectedReviews'])
++             and all(plan['pins'][name] == digest for name, digest in expected.items()), 'EXECUTOR_PIN_UNION')
++        for item in manifest['inputFiles'] + manifest['ownedFiles']:
++            need(pin_path(item['path']).stat().st_size == item['bytes'], 'EXECUTOR_PIN_SIZE')
++        before = verify(plan['pins'], min(work_end, STARTED + 20)); build_authority(manifest)
++        guard(min(work_end, STARTED + 20), 'EXECUTOR_PREFLIGHT_DEADLINE')
++        commands = [[NODE, '--test', '--test-concurrency=1', 'test/chat.test.mjs', 'test/events.test.mjs',
++                     'test/scheduler.test.mjs', 'test/event-adapters-adversarial.test.mjs', 'test/event-clock.test.mjs']]
++        need(plan['commands'] == commands, 'EXECUTOR_EXACT_COMMANDS')
++        for path in (private, evidence): need(not path.exists() and not path.is_symlink(), 'EXECUTOR_NAMESPACE_CONSUMED')
++        private_directory(private); private_directory(evidence); evidence_id = identity(evidence); evidence_owned = True
++        temporary = private / 'tmp'; private_directory(temporary)
++        environment = dict(os.environ); environment['TMPDIR'] = str(temporary)
++        guard(work_end); need(sha(plan_path.read_bytes()) == plan_digest, 'EXECUTOR_PLAN_DRIFT')
++        row, _, _, _, stdout = run_command(commands[0], 1, private, work_end, 60, 5, environment); rows.append(row)
++        need(row['failureCode'] is None and row['exitCode'] == 0 and row['captureComplete']
++             and row['processGroupState'] == 'ABSENT_OBSERVED', 'EXECUTOR_CONTRACT_COMMAND_FAILED')
++        guard(work_end)
++        stream = row['privateStreams']['stdout']
++        need(type(stdout) is bytes and len(stdout) == stream['bytes'] and sha(stdout) == stream['sha256']
++             and stream['prefixVerified'] and stream['complete'], 'EXECUTOR_TAP_CAPTURE_BINDING')
++        footer = tap_footer(stdout)
++        after = verify(plan['pins'], work_end); build_authority(manifest)
++        need(sha(plan_path.read_bytes()) == plan_digest, 'EXECUTOR_PLAN_DRIFT'); guard(work_end); finalized = True
+     except Exception:
+-        FIRST_REASON=FIRST_REASON or 'EXECUTOR_BUILD_GATE_FAILED';finalized=False
++        FIRST_REASON = FIRST_REASON or 'EXECUTOR_CONTRACT_GATE_FAILED'; finalized = False
+     finally:
+         try:
+-            guard(end,cleanup=True)
++            guard(end, cleanup=True)
+             if evidence_owned:
+-                owned_directory(evidence);need(identity(evidence)==evidence_id,'EXECUTOR_EVIDENCE_REPLACED')
+-                if finalized:output_current(client_witness,1048576);output_current(descriptor_witness,65536)
+-                record.update({'result':'PASS' if finalized and not STOP_REQUESTED else 'FAILED_HOLD','failureCode':FIRST_REASON,'before':before,'after':after,'durationSeconds':round(time.monotonic()-STARTED,6),'actualBuildCommands':len(rows),'rawStreamsDecoded':False})
+-                for n,v in [('root-plan.json',plan),('executor-result.json',record),('command-results.json',{'commands':rows}),('before-after.json',{'before':before,'after':after})]:save(evidence/n,v,fresh=True)
+-                if finalized:output_current(client_witness,1048576);output_current(descriptor_witness,65536)
+-                guard(end);finalized=finalized and not STOP_REQUESTED
+-            else:finalized=False
+-            if marker_owned:save(marker,{'state':'PASS' if finalized else 'FAILED_HOLD','failureCode':FIRST_REASON,'finalized':finalized},expected_identity=marker_id)
+-        except Exception:finalized=False
+-    return 0 if finalized and not STOP_REQUESTED and time.monotonic()<end else 1
+-
+-if __name__=='__main__':
+-    signal.signal(signal.SIGTERM,latch_interruption);signal.signal(signal.SIGINT,latch_interruption)
+-    try: terminal_code=main()
+-    except BaseException: terminal_code=1
++                owned_directory(evidence); need(identity(evidence) == evidence_id, 'EXECUTOR_EVIDENCE_REPLACED')
++                if finalized:
++                    verify(plan['pins'], end); need(sha(plan_path.read_bytes()) == plan_digest, 'EXECUTOR_PLAN_DRIFT')
++                record.update({'result': 'PASS' if finalized and not STOP_REQUESTED else 'FAILED_HOLD', 'failureCode': FIRST_REASON,
++                               'tapFooter': footer, 'before': before, 'after': after,
++                               'durationSeconds': round(time.monotonic() - STARTED, 6), 'actualCommands': len(rows),
++                               'privateStdoutFooterOnlyDecoded': footer is not None, 'privateStderrDecoded': False})
++                for name, value in [('root-plan.json', plan), ('executor-result.json', record),
++                                    ('command-results.json', {'commands': rows}), ('before-after.json', {'before': before, 'after': after})]:
++                    guard(end, cleanup=True); save(evidence / name, value, fresh=True)
++                guard(end); finalized = finalized and not STOP_REQUESTED
++            else: finalized = False
++            if marker_owned:
++                save(marker, {'state': 'PASS' if finalized else 'FAILED_HOLD', 'failureCode': FIRST_REASON, 'finalized': finalized}, expected_identity=marker_id)
++        except Exception: finalized = False
++    return 0 if finalized and not STOP_REQUESTED and time.monotonic() < end else 1
++
++
++if __name__ == '__main__':
++    signal.signal(signal.SIGTERM, latch_interruption); signal.signal(signal.SIGINT, latch_interruption)
++    try: terminal_code = main()
++    except BaseException: terminal_code = 1
+     sys.exit(terminal_code)
+--- /dev/null
++++ .runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution-plan.proposed.json
+@@ -0,0 +1,62 @@
++{
++  "actualBuildProof": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
++  "actualDestinations": [
++    ".runtime/root-ni6-canonical-integration-c1-contracts-r1-plan.json",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/invocation.json",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/private-capture",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/root-plan.json",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/executor-result.json",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/command-results.json",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/execution/before-after.json"
++  ],
++  "aggregateStreamByteCap": 262144,
++  "budgetsSeconds": {
++    "bookkeepingInsideCommand": 1,
++    "cleanupInsideCommand": 5,
++    "commandTotal": 60,
++    "finalReserveInsideOuter": 5,
++    "outer": 90,
++    "preflight": 20,
++    "primaryAbsoluteEnd": 85
++  },
++  "commands": [
++    [
++      "/opt/homebrew/opt/node@22/bin/node",
++      "--test",
++      "--test-concurrency=1",
++      "test/chat.test.mjs",
++      "test/events.test.mjs",
++      "test/scheduler.test.mjs",
++      "test/event-adapters-adversarial.test.mjs",
++      "test/event-clock.test.mjs"
++    ]
++  ],
++  "contractVersion": "df.canonical-c1.contracts/v1",
++  "criterionQualification": "Selected current regression only; DF010-C02 changed-thread/reordered-event partitions missing; no full acceptance/MVP claim",
++  "driverArgv": [
++    "/opt/homebrew/bin/python3",
++    ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/run-contracts.py",
++    ".runtime/root-ni6-canonical-integration-c1-contracts-r1-plan.json"
++  ],
++  "maximumInterpreterProcesses": 7,
++  "maximumNodeFileWorkers": 5,
++  "pins": {},
++  "publicRecordByteCap": 65536,
++  "rawTestContentPublished": false,
++  "requiredAffectedReviews": [
++    "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-contracts-r1-independent-test-design-review.json"
++  ],
++  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-contracts-r1-plan.json",
++  "rootReviewedExecutionGO": false,
++  "rootReviewedFinalAffectedReports": false,
++  "rootSupportedExecutionApprovalGranted": false,
++  "runCountAuthorized": 1,
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/contracts-r1/run-contracts.py",
++  "streamByteCap": 131072,
++  "testConcurrency": 1,
++  "testStores": "Fresh synthetic stores created only by original selected tests after GO; TMPDIR is the owning fresh private tmp directory"
++}
+--- /dev/null
++++ .runtime/ni6-canonical-integration-c1/validation/contracts-r1/README.md
+@@ -0,0 +1,11 @@
++# Canonical C1 contracts-r1 source packet
++
++SOURCE_ONLY_NOT_RUN. One original pinned Node22 test-runner command selects exactly the five named current tests, sequential file workers. Canonical product/test/build/worker/CLI bytes remain unchanged. Root alone creates the once plan and obtains supported actual approval after independent final CODE and ISTQB source reviews. GO=false, pins={}, starts=0.
++
++The complete 1085 lines of test sources and their inline helpers were read: chat263, events137, scheduler194, adversarial403, clock88. There are no imported local test helpers. Inputs are fresh synthetic SQLite/temp stores, synthetic identities and fixed keys, injected verification/normalization/attachment/send/query callbacks and fake clocks/timer Maps. Selected tests read only their own newly created synthetic database to check plaintext absence. Ordinary transport receipts and execution-context inputs are included; protected final signed-command receipt/envelope/revision999 cases are excluded. No provider account, paid inference, listener, child-process helper, personal memory or historical profile is selected. Test assertions and callbacks are unchanged.
++
++Outer90/preflight20/primary85/final5 are nested absolute ceilings. One Node command60 includes cleanup5/bookkeeping1; reserves are nonadditive. Python owner + Node parent + five sequential original Node file workers gives source-derived maximum7, not observed child instrumentation. Opaque stdout/stderr each131072, aggregate262144. The original owner enforces EOF, capture prefix/readback, exit0, owned group absence, signal denial latch and no retry. The new private tmp directory is created only after GO and supplied as TMPDIR for original synthetic tests; no private content is read by author/root/reviewers or removed by a replacement disposer.
++
++Only the owning actual executor later parses its original identity-bound complete stdout readback retained in owner memory: exact final top-level TAP plan and known ordered tests/suites/pass/fail/cancelled/skipped/todo/duration_ms fields, one occurrence each, strict numeric grammar, tests>0, pass=tests and all four failure/skip counters0. Interior test names/errors/stacks/payloads and stderr remain unpublished; only closed summary metadata is saved. Original supported root driver return is independently required. Currentness checks are finite cuts, not continuous/atomic workspace exclusion.
++
++The fresh canonical build proof is genuinely executed ancestor authority, not a new build claim. No program was parsed, checked, imported, built or run during authoring. DF010-C02 changed-thread/reordered-event partitions remain missing; no full C02/MVP/acceptance/publication claim. Two unrelated drafts, protected CODE and opaque capture/finish boundaries are conserved.
