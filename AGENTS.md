@@ -1,5 +1,8 @@
 # dsh-fishball development rules
 
+## October8 initial-preview priority
+The owner explicitly requests a local initial preview now and accepts incomplete validation. Deliver the existing canonical implementation with a useful bounded path, reproducible package/run instructions, detailed as-built design, known limitations, work records and a later acceptance checklist in this repository. This supersedes full-MVP acceptance as a prerequisite for this initial local delivery only. It does not grant full acceptance, stable designation, publication, denied cloud-call retry, personal-profile/credential changes or safety bypasses. Use one implementation lane; reuse completed evidence; independent review targets substantive final changes rather than unchanged-source report rounds. See [initial preview](docs/INITIAL-PREVIEW.md) and [work log](docs/INITIAL-PREVIEW-WORKLOG.md).
+
 ## Authorization and product boundary
 - Current project is dsh-fishball (df), MIT by explicit owner decision. Read [the owner amendment](docs/owner-amendment-2026-10-04.md). Historical BUB ticket/AC IDs are retained aliases for same-suffix DF IDs. Intended eventual public target is Arrosam/dsh-fishball; keep all Git local until full agreed acceptance.
 - This phase requires a provider-neutral chat adapter contract, not a selected chat software implementation. Live chat accounts/provider delivery are explicitly out of this phase, not failing prerequisites. No mobile remote-control or Hydrogen server-tools integration is in current scope.

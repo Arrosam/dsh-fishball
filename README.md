@@ -1,40 +1,40 @@
-# dsh-fishball (df)
+# dsh-fishball (DF) — initial preview
 
-A native DeepSeek Harness (DSH) implementation of fishball's memory domain and a bounded personal-assistant workflow. DSH owns tools, models, permissions and agent execution; df owns durable coordination, scoped memory and product state. There is no separate harness or daemon. Full DSH quit stops df.
+A native DeepSeek Harness workbench for durable tasks, scoped memory/context and controlled worker/result flows. DSH owns execution, models, tools and permissions; DF owns coordination and encrypted product state. Full DSH quit stops DF. No separate harness or daemon is introduced.
 
-This is local staged development, not an accepted MVP or release. The intended eventual public repository is **Arrosam/dsh-fishball**; no remote exists and no push/publication is authorized before full agreed preview acceptance. The owner chose [MIT](LICENSE); [source and host notices](THIRD_PARTY_NOTICES.md) record the actual incorporated boundary.
+**Start here: [INITIAL-PREVIEW.md](docs/INITIAL-PREVIEW.md).** It contains the as-built module inventory, persistence/migrations, task and cancellation semantics, security, model/configuration boundaries, decisions, limitations and later acceptance checklist. [The work log](docs/INITIAL-PREVIEW-WORKLOG.md) records chronology, exact delivery identity, checks and recovery instructions.
 
-The [latest owner amendment](docs/owner-amendment-2026-10-04.md) keeps a provider-neutral chat adapter contract in this phase and moves actual chat software/accounts/provider delivery to a future phase. Mobile fishball controlling DSH through Hydrogen tools is a much later ambition, outside current work. Native DSH execution is independent.
+The owner requested this local **0.1.0-preview.1 initial preview** now and accepts incomplete validation. It is not the accepted full MVP or stable release. The default worker uses an existing source-owned deterministic DSH provider: no network/model billing. The requested Ollama cloud path remains blocked/unverified; synthetic results do not establish real inference or model quality.
 
-## Current development
+## Run on this Mac
 
-The owner approved [all three stages](docs/three-stage-development.md), with unit/module tests and separate independent code/ISTQB reviews throughout, followed by consolidated functional/visual regression after Stage3. Reviewed units squash into local main as development integrations while granular branches survive. Main is not an acceptance, stable or release designation.
-
-Foundation covers bounded DF001/003/006 and minimum DF012. Stage2 implements the coordinator, durable task, native worker, scoped messages/context, resource controls and local result/control loop. The exact Stage2 security/module checkpoint is reviewed and retained; full native/functional/visual acceptance remains open. Stage3 implements durable memory/events, chat contracts, results, native panel composition and runtime independent review/repair. Its final code review is HOLD after a reviewer session failure; actual UI and consolidated regression remain open. All applicable full ticket criteria remain required; see [backlog and BUB aliases](docs/tickets/README.md) and [acceptance debt](docs/evidence/acceptance-debt.md).
-
-The memory module translates pinned fishball memory search, TTL, similarity and snapshot/JSONL behavior into ESM. It is not compiled Kotlin/JS or reuse of the whole Kotlin core/application. [Provenance](docs/fishball-provenance.md) identifies exact source bytes, owner contributor history and semantic corrections. Personal fishball files are never inspected or automatically shared/imported. Memory summaries never authorize work; the transactional task/action/approval ledger is authoritative.
-
-## Local workflow and checks
-
-Read [AGENTS.md](AGENTS.md), [development workflow](docs/development-workflow.md), [runtime API](docs/runtime-api.md) and [stage mapping](docs/three-stage-development.md). Ticket files retain BUB names as historical aliases for same-suffix DF IDs; original approved source text stays intact.
-
-The pinned target is **official DSH Web 0.2.1-alpha.1**, verified as the newest published official preview on 2026-10-04. The isolated runtime uses its tracked exact dependency lock with install scripts disabled. Development uses Node22.22.2; the ledger/build use Node built-ins. No new build dependency, SDK runtime, DSH-X launcher, dsh-std, old Desktop shim or Electron acceptance is introduced. [Compatibility](docs/compatibility.md) records exact public API findings and limitations.
+Use the already installed pinned DSH Web0.2.1-alpha.1 flat host and Node22.22.2. From the repository:
 
 ```sh
-npm run check
-npm run host:smoke
-# Complete runnable regression against the existing reviewed public host.
-DF_FISHBALL_CORDIS_REVIEWED=1 node --test --test-concurrency=4 test/*.test.mjs
+/opt/homebrew/opt/node@22/bin/node scripts/initial-preview.mjs \
+  --host-root /Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web
 ```
 
-`host:setup` is the explicit reviewed downloader; launch/test never downloads dependencies. Direct Node development now uses normal peer resolution: after authorized setup, link the ignored `node_modules/@deepseek-ai` namespace to `../.runtime/dsh-web/node_modules/@deepseek-ai`; keep any existing matching link and do not replace an unrelated dependency tree. The actual installed package uses official profile resolution into a separate physical host. Tests use synthetic identities/secrets/stores and explicitly mocked providers. Genuine public Cordis/AgentLoop fixtures are distinguished from real external inference; no paid or external model call is authorized. Native owner operations use DSH's admitted operator peer; effects remain deny by default.
+The maintained native app uses `127.0.0.1:3091`, a new `df-initial-preview` profile and this package's `.runtime/initial-preview` state. Do not precreate that state directory; the launcher creates its ownership marker. It refuses unrelated existing state. Only its own profile is reused on restart. Ctrl+C quits the owned host and retains your tasks.
 
-`host:web` and `host:profile-smoke` operate only on a project-local synthetic Web profile at127.0.0.1:3080. They do not use personal accounts/settings/credentials. Managed approval may be needed for loopback listening; denied actions stop. Current browser automation could not observe the page, and actual native UI/visual/window-close validation remains deferred. No validation host is left running.
+Authentication is private: `.runtime/initial-preview/private/current-launch.json` records the current local access-file path. The authenticated URL stays in that private file and is handed to the supported browser locally; do not paste it into work records. A plain authentication-required page is not connected UI evidence. Port3080 and its old QA profile are untouched.
 
-Package root loads the bounded foundation (`src/index.mjs`). The normal `dsh-fishball/installed` entry now uses original native owner/profile interfaces for explicit local encrypted-storage setup: first load/preview writes nothing,then separate current confirmation can initialize that exact target. Actual physical-package setup,ten reloads,quit/restart and uninstall have [bounded native evidence](docs/evidence/M6/normal-native-lifecycle.md);no personal credentials were configured. The existing `dsh-fishball/runtime` factory retains its trusted advanced identity/key/policy contract and unconfigured refusal.
+For an extracted artifact, run the same script with the absolute existing host root. The archive does not include/install the host or run lifecycle scripts. `BUILD-METADATA.json` carries the exact source commit/member hashes; the adjacent `.sha256` validates the archive.
 
-Normal setup provides encrypted task intake/query/control with effects denied. Connecting its worker/model/policy/preview,memory/reviewer/events and result/notification installers is unfinished integration code,with production choices also pending. Actual browser and independent final CODE remain blocked;this is not a full usable assistant/MVP. See [runtime installation boundaries](docs/runtime-installation.md) and [per-criterion traceability](docs/acceptance-traceability.md).
+## Build a local artifact
 
-The current [normal-installation regression](docs/evidence/M6/normal-followup-regression.md) passes919/919 runnable tests at a91-file freeze. Independent setup49/65 and corrected carrier18/72 pass with first failures retained. These bounded results do not replace the remaining normal feature integration or final CODE/browser acceptance.
+```sh
+/opt/homebrew/bin/python3 -I scripts/package-initial-preview.py \
+  --commit <exact-40-character-source-commit> --date 2026-10-08 \
+  --output /absolute/new-directory/dsh-fishball-initial-preview.tar.gz
+```
 
-The [rename/storage compatibility record](docs/rename-compatibility.md) explains current identifiers, preserved old data paths/contract aliases and any crypto recovery gate. Unsupported or unverifiable records fail closed and remain preserved. Default release channel is preview; stable requires an explicit owner request.
+The output directory must exist and the destination must be fresh. The [delivery record](docs/INITIAL-PREVIEW-WORKLOG.md) has the exact produced package/hash and complete reproducible command including selected public contracts. Packaging is closed and deterministic; private state, dependencies, credentials and historical fixture directories are excluded.
+
+## Project records
+
+[AGENTS.md](AGENTS.md), [workflow](docs/development-workflow.md), [decisions](docs/decisions.md), [three-stage mapping](docs/three-stage-development.md), [tickets/BUB aliases](docs/tickets/README.md), [traceability](docs/acceptance-traceability.md) and [acceptance debt](docs/evidence/acceptance-debt.md) preserve the full agreed scope. Every ticket's development code/test review remains separate from runtime independent audit. Incomplete, failed and unrun checks remain visible; initial delivery does not promote them to PASS.
+
+The owner chose [MIT](LICENSE); [notices](THIRD_PARTY_NOTICES.md) and [fishball provenance](docs/fishball-provenance.md) describe the translated memory subset and separately pinned host. No personal fishball files are automatically imported or shared. The ledger is authoritative; summaries cannot authorize work.
+
+Git remains local. Intended eventual public target is Arrosam/dsh-fishball. No remote, push, publication, stable release, OAuth expansion or denied cloud-call retry is part of this initial delivery. Keep granular working branches and reserved user drafts. The [October8 delivery amendment](docs/owner-initial-preview-2026-10-08.md) supersedes earlier full-acceptance-before-initial-delivery wording only for this local initial preview.
