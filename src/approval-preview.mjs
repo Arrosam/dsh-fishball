@@ -3,6 +3,7 @@ import { exact, ref, integer, canonical, canonicalDigest, hash } from './runtime
 import { contextText } from './context.mjs';
 import { validateAuditInputPair } from './audit-input-pair.mjs';
 import { types } from 'node:util';
+import { resumeHistory, resumeInput, configuration } from './normal-contracts.mjs';
 
 export class PreviewError extends Error {
   constructor(code) { super(code); this.name = 'PreviewError'; this.code = code; }
@@ -19,10 +20,12 @@ const terminal = new Set(['completed', 'failed', 'cancel_requested', 'cancelled'
 // The authoritative store still performs the grant CAS/expiry transaction.
 // Resolver callbacks are trusted installation code, never RPC/model payloads.
 export class ApprovalPreview {
-  #store; #owner; #resolve; #readAuditInput; #clock; #alive; #secrets; #ttl; #entries = new Map(); #active = true; #pending = 0; #lastNow = null;
-  constructor({ store, ownerHandle, resolve, readAuditInput, ttlMs, clock = Date.now, isAlive = () => true, knownSecrets = [] } = {}) {
+  #store; #owner; #resolve; #readAuditInput; #readResumeInput; #describeResume; #clock; #alive; #secrets; #ttl; #entries = new Map(); #active = true; #pending = 0; #lastNow = null;
+  constructor({ store, ownerHandle, resolve, readAuditInput, readResumeInput, describeResume, ttlMs, clock = Date.now, isAlive = () => true, knownSecrets = [] } = {}) {
     if (!store || ['snapshot', 'readData', 'grantAction'].some(name => typeof store[name] !== 'function') || !ownerHandle ||
         typeof resolve !== 'function' || readAuditInput !== undefined && (typeof readAuditInput !== 'function' || types.isProxy(readAuditInput) || types.isAsyncFunction(readAuditInput) || types.isGeneratorFunction(readAuditInput)) || typeof clock !== 'function' || typeof isAlive !== 'function') fail('PREVIEW_UNAVAILABLE');
+    if ((readResumeInput===undefined)!==(describeResume===undefined) || [readResumeInput,describeResume].filter(x=>x!==undefined).some(x=>typeof x!=='function'||types.isProxy(x)||types.isAsyncFunction(x)||types.isGeneratorFunction(x))) fail('PREVIEW_UNAVAILABLE');
+    this.#readResumeInput=readResumeInput;this.#describeResume=describeResume;
     integer(ttlMs, 1, 60000); contextText('', knownSecrets);
     this.#store = store; this.#owner = ownerHandle; this.#resolve = resolve; this.#ttl = ttlMs;
     this.#readAuditInput = readAuditInput; this.#clock = clock; this.#alive = isAlive; this.#secrets = [...knownSecrets];
@@ -50,6 +53,16 @@ export class ApprovalPreview {
   #material(input, current) {
     const spec = current.action.spec;
     const data = this.#store.readData(this.#owner, { taskRef: input.taskRef, recordRef: input.recordRef });
+    if (spec.resumeBinding) {
+      if (!this.#readResumeInput || spec.executionInput) fail('PREVIEW_UNAVAILABLE');
+      const pair=this.#readResumeInput(Object.freeze({taskRef:input.taskRef,resumeRef:spec.resumeBinding.resumeRef}));
+      exact(pair,['association','history','request','configuration']);
+      const a=pair.association,h=JSON.parse(pair.history.content),r=JSON.parse(pair.request.content),c=JSON.parse(pair.configuration.content);
+      resumeHistory(h);resumeInput(r);configuration(c);
+      if(a.resumeRef!==spec.resumeBinding.resumeRef||a.taskRef!==input.taskRef||a.historyDigest!==spec.resumeBinding.historyDigest||a.inputDigest!==spec.resumeBinding.inputDigest||hash(pair.history.content)!==a.historyDigest||hash(pair.request.content)!==a.inputDigest||a.contextRecordRef!==input.recordRef||data.digest!==a.contextDigest||data.digest!==spec.dataDigest||r.contextContent!==data.content||canonical(h.messages)!==canonical(r.historyMessages))fail('PREVIEW_STALE');
+      for(const content of [pair.history.content,pair.request.content,pair.configuration.content])contextText(content,this.#secrets);
+      const description=this.#describeResume(pair,input);return {data,digest:canonicalDigest(pair),resume:description,audit:false};
+    }
     if (!spec.executionInput) {
       if (data.recordRef !== input.recordRef || data.digest !== spec.dataDigest || typeof data.content !== 'string' || hash(data.content) !== spec.dataDigest) fail('PREVIEW_UNAVAILABLE');
       contextText(data.content, this.#secrets);
@@ -112,10 +125,10 @@ export class ApprovalPreview {
           data: { recordRef: input.recordRef, digest: data.digest, kind: data.kind, content: data.content },
           model: { provider: labels.providerLabel, model: labels.modelLabel, reasoning: labels.reasoningLabel, preset: labels.presetLabel },
           toolNames: labels.toolNames, environment: { label: labels.environmentLabel, cwd: labels.cwd, environmentRef: labels.environmentRef },
-          limits: { units: spec.units, attemptIndex: spec.attemptIndex, charges: spec.charges }, evidenceRef: labels.evidenceRef } });
+          limits: { units: spec.units, attemptIndex: spec.attemptIndex, charges: spec.charges }, evidenceRef: labels.evidenceRef, ...(material.resume?{resume:material.resume}:{}) } });
       // Count the actual envelope, labels, refs, escaping and complete content
       // before publishing any usable cache token. 65536 is inclusive.
-      if (material.audit && Buffer.byteLength(JSON.stringify({ ok: true, value })) > 65536) fail('PREVIEW_UNAVAILABLE');
+      if ((material.audit || material.resume) && Buffer.byteLength(JSON.stringify({ ok: true, value })) > 65536) fail('PREVIEW_UNAVAILABLE');
       this.#entries.set(previewRef, { input, spec, labels, originalData, expiresAt, value }); return value;
     } finally { this.#pending--; }
   }

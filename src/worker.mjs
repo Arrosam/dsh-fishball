@@ -5,6 +5,15 @@ import { WorkerError, workerFail, workerDigest, workerRecord, workerRef, workerI
 
 const freezeReceipt = value => { const copy = structuredClone(value); const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; }; return freeze(copy); };
 
+// Extracted original race/clear deadline. This helper neither retries nor
+// settles/cancels an executor; callers retain their original owned semantics.
+export async function workerDeadline(completion, timeoutMs, onDeadline) {
+  workerInteger(timeoutMs,1,60000);
+  let timer;
+  const deadline=new Promise((resolve,reject)=>{timer=setTimeout(()=>{try{resolve(onDeadline());}catch(error){reject(error);}},timeoutMs);});
+  try{return await Promise.race([completion,deadline]);}finally{clearTimeout(timer);}
+}
+
 // Process-private orchestration. The store supplies identity, approval and
 // transaction authority; no payload role/scope/verified field is accepted.
 export class WorkerManager {
@@ -92,9 +101,7 @@ export class WorkerManager {
       return this.#view(entry);
     }).catch(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } return this.#view(entry); });
     entry.completion = completion;
-    let timer;
-    const deadline = new Promise(resolve => { timer = setTimeout(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } resolve(this.#view(entry)); }, timeoutMs); });
-    try { return await Promise.race([completion, deadline]); } finally { clearTimeout(timer); }
+    return workerDeadline(completion,timeoutMs,()=>{try{this.#unknown(entry);}catch{entry.phase='unknown';}return this.#view(entry);});
     // No abort/retry/recreate occurs on timeout. Late completion maps to this
     // exact original claim/generation and original approved action digest.
   }
@@ -161,9 +168,7 @@ export class WorkerManager {
       this.#observation(entry, result.worker);
       return Object.freeze({ ...result, worker: this.#view(entry) });
     }).catch(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } return Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) }); });
-    let timer;
-    const deadline = new Promise(resolve => { timer = setTimeout(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } resolve(Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) })); }, timeoutMs); });
-    try { return await Promise.race([completion, deadline]); } finally { clearTimeout(timer); }
+    return workerDeadline(completion,timeoutMs,()=>{try{this.#unknown(entry);}catch{entry.phase='unknown';}return Object.freeze({executionRef:binding.executionRef,state:'unknown',worker:this.#view(entry)});});
   }
   async executeAuditInput(caller, input) {
     this.#alive();
@@ -194,9 +199,7 @@ export class WorkerManager {
       this.#observation(entry, result.worker);
       return Object.freeze({ ...result, worker: this.#view(entry) });
     }).catch(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } return Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) }); });
-    let timer;
-    const deadline = new Promise(resolve => { timer = setTimeout(() => { try { this.#unknown(entry); } catch { entry.phase = 'unknown'; } resolve(Object.freeze({ executionRef: binding.executionRef, state: 'unknown', worker: this.#view(entry) })); }, timeoutMs); });
-    try { return await Promise.race([completion, deadline]); } finally { clearTimeout(timer); }
+    return workerDeadline(completion,timeoutMs,()=>{try{this.#unknown(entry);}catch{entry.phase='unknown';}return Object.freeze({executionRef:binding.executionRef,state:'unknown',worker:this.#view(entry)});});
   }
   #auditEntry(caller, input) {
     this.#alive();

@@ -12,6 +12,7 @@ import {
 }
 from './runtime-security.mjs';
 import { validateExecutionContext } from './context.mjs';
+import { NATIVE_KINDS,NATIVE_DATA_KINDS,POLICY_FIELDS,stableSource,configuration,canonicalContent,preparationRequest,preparationDigest,ownerFinishRequest,finishDigest,historyObservation,resumeHistory,resumeInput,payload,array,sortedRefs,text,detach,normalInput } from './normal-contracts.mjs';
 export {
   RuntimeError, reference, canonicalDigest
 };
@@ -20,6 +21,10 @@ const DEFAULTS={
 };
 const TERMINAL=new Set(['completed','failed','cancelled','deleted']);
 const DATA_KINDS=['goal','constraints','clarification','branch','context','message','artifact','verification','progress'];
+// Private owner command data is deliberately outside the native/preparation kinds.
+const OWNER_FINISH_INTENT_KIND='owner_finish_intent';
+const OWNER_FINISH_INTENT_OPERATION='ownerNativeFinishIntent';
+const OWNER_FINISH_COMMAND_LIMIT=16,OWNER_FINISH_WIRE_LIMIT=65536;
 const OWNER=['owner','coordinator'], HOST=['host'], DISPATCH=['owner','coordinator','host'];
 const taskRecord=t=>({
   ownerRef:t.owner,workspaceRef:t.workspace,taskRef:t.id,status:t.status,version:t.version,taskVersion:t.version,authEpoch:t.auth_epoch,createdAt:t.created_at,updatedAt:t.updated_at
@@ -50,6 +55,7 @@ function modelPolicy(value) {
   for(const v of value.presetRefs)ref(v);
   return JSON.parse(canonical(value));
 }
+const PREPARATION_SOURCE=Symbol('df.preparation-source/v1');
 export class RuntimeStore {
   #ledger;
   #key;
@@ -60,10 +66,13 @@ export class RuntimeStore {
   #limits;
   #fixture;
   #fault;
+  #preparation=new WeakMap();
+  #native=new WeakMap();
+  #capabilities=new WeakSet();
   #auditBounds=null;
   #auditBindings=new Map();
   constructor(options) {
-    exact(options,['databasePath','encryptionKey','principals','limits','clock','hostPermission','forbiddenSecrets','fixtureMode','fixtureFaults','migrationFault','fixtureMaxPageCount','auditExecutionBounds'],['databasePath','encryptionKey','principals']);
+    exact(options,['databasePath','encryptionKey','principals','limits','clock','hostPermission','forbiddenSecrets','fixtureMode','fixtureFaults','migrationFault','fixtureMaxPageCount','auditExecutionBounds','preparationPrincipals','nativeObservers'],['databasePath','encryptionKey','principals']);
     const {
       databasePath,encryptionKey,principals,clock=Date.now,hostPermission=()=>false,forbiddenSecrets=[],fixtureMode=false,fixtureFaults,migrationFault,fixtureMaxPageCount
     }
@@ -95,12 +104,13 @@ export class RuntimeStore {
       if(!Object.hasOwn(descriptors,String(i)))fail('INVALID_CONFIG');
       this.#bind(principals[i]);
     }
+    this.#bindNormalCapabilities(options);
     if(fixtureMaxPageCount!==undefined)integer(fixtureMaxPageCount,1,1000000);
     try {
       this.#ledger=new Ledger(databasePath,{
         migrationFault,maxPageCount:fixtureMaxPageCount,
         validateMigration:source=>{const original=this.#ledger;this.#ledger=source;try{this.#validateOpen();}finally{this.#ledger=original;}},
-        initializeMigration:(source,version)=>{const original=this.#ledger;this.#ledger=source;try{if(version<4)this.#initializeReceiptPolicies();if(version<6)this.#initializeNormalRegistries();}finally{this.#ledger=original;}},
+        initializeMigration:(source,version)=>{const original=this.#ledger;this.#ledger=source;try{if(version<4)this.#initializeReceiptPolicies();if(version<6)this.#initializeNormalRegistries();if(version<7)this.#initialize7Registries();}finally{this.#ledger=original;}},
         validateSnapshot:snapshot=>{
           const original=this.#ledger;
           this.#ledger=snapshot;
@@ -147,7 +157,7 @@ export class RuntimeStore {
       const t=this.#task(c,c.taskRef);
       if(!binding||binding.principalRef!==c.principalRef||!worker||parse(worker.payload).generationRef!==c.generationRef||parse(worker.payload).terminalEvidenceRef||t.auth_epoch!==c.auditAuthEpoch||TERMINAL.has(t.status)||['cancel_requested','recovery_required'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,c.taskRef))?.control!=='active'||!this.#ledger.one('SELECT 1 FROM reservations WHERE owner=? AND workspace=? AND task=? AND claim_id=?',...this.#keys(c,c.taskRef),binding.claimId))fail('UNAUTHORIZED');
     }
-    if(this.#ledger)this.#validateNormalScope(c);
+    if(this.#ledger){this.#validateNormalScope(c);this.#validate7Scope(c);}
     return c;
   }
   context(handle,taskRef) {
@@ -223,38 +233,47 @@ export class RuntimeStore {
     this.#event(t,reason,protectedEvent);
     return t;
   }
-  #mut(handle,input,roles,operation,fn,protectedOp=false){
+  #mut(handle,input,roles,operation,fn,protectedOp=false,normalAuthority=null){
     exact(input,Object.keys(input));
-    const c=this.#ctx(handle,input.taskRef,roles);
+    const c=normalAuthority||this.#ctx(handle,input.taskRef,roles);
     ref(input.commandRef);
-    const material={...input};let changed=false;
-    for(const key of ['content','goal','constraints'])if(typeof material[key]==='string'){
+    const material=normalAuthority&&operation==='putPreparedContext'?{preparationRequestDigest:preparationDigest(c,input.request)}:{...input};let changed=false;
+    for(const key of ['content','goal','constraints',...(normalAuthority?['configurationContent','resultContent','committedHistoryContent','baselineHistoryContent','historyContent','requestContent']:[])])if(typeof material[key]==='string'){
       if(!material[key].isWellFormed())fail('INVALID_INPUT');
       if(Buffer.byteLength(material[key])>this.#limits.maxDataBytes)fail('INPUT_TOO_LARGE');
       if(this.#secrets.some(s=>material[key].includes(s)))fail('SECRET_REJECTED');
       material[key]={contentDigest:hash(material[key]),byteLength:Buffer.byteLength(material[key])};changed=true;
     }
+    if(normalAuthority&&material.request)material.request={preparationRequestDigest:preparationDigest(c,material.request)};
     const text=this.#check(material),digest=hash(c.principalRef+operation+text);
     let legacyDigest;
-    if(changed){try{legacyDigest=hash(c.principalRef+operation+this.#check(input,Math.max(this.#limits.maxMetadataBytes,this.#limits.maxDataBytes+4096)));}catch(error){if(error.code!=='INPUT_TOO_LARGE')throw error;}}
+    if(changed&&!normalAuthority){try{legacyDigest=hash(c.principalRef+operation+this.#check(input,Math.max(this.#limits.maxMetadataBytes,this.#limits.maxDataBytes+4096)));}catch(error){if(error.code!=='INPUT_TOO_LARGE')throw error;}}
 
     return this.#ledger.transaction(()=>{
-      this.#validateNormalScopes();
+      this.#validateNormalScopes();this.#validate7Scopes();
       if(['chatControl','ingestEvent','ingestLocalOwnerEvent','advanceEventClock','approveEventClock'].includes(operation))this.#eventBinding(c,input);
       const old=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,input.commandRef);
       if(old){
         const receipt=this.#commandReceipt(old);
+        if(operation===OWNER_FINISH_INTENT_OPERATION){
+          if(old.operation!==operation||old.task!==input.taskRef)fail('IDEMPOTENCY_CONFLICT');
+          const intent=this.#ownerFinishIntent(c,input.request);
+          if(!intent||canonical(intent.request)!==canonical(input.request))fail('IDEMPOTENCY_CONFLICT');
+          return intent.receipt;
+        }
         if(old.digest!==digest&&old.digest!==legacyDigest||old.operation!==operation)fail('IDEMPOTENCY_CONFLICT');
         if(['beginContextExecution','beginAuditExecution'].includes(operation))return{...this.#auto(c,'execution',receipt.claimRef),deduplicated:true};
         if(['prepareAuditInput','captureAuditResult'].includes(operation))return{...receipt,deduplicated:true};
         if(['ingestEvent','ingestLocalOwnerEvent'].includes(operation))return{...receipt,deduplicated:true,task:taskRecord(this.#task(c,receipt.taskRef))};
-        return receipt;
+        return operation==='putPreparedContext'?{...receipt,commitDisposition:'historical'}:receipt;
       }
       const count=this.#ledger.one('SELECT count(*) AS n FROM runtime_commands').n,held=this.#ledger.one('SELECT count(*) AS n FROM reservations').n;
       const terminalProgress=protectedOp==='terminal'&&this.#terminalProgress(c,input,operation);
       const invalidationProgress=protectedOp===true&&this.#invalidationProgress(c,input,operation);
       if(count>=this.#limits.maxCommands-(terminalProgress?0:invalidationProgress?4*held+1:12*held+this.#limits.maxControlCommands))fail('COMMAND_LIMIT');
       this.#ensureNormalRegistry(c);
+      this.#ensure7Registries(c);
+      if(!normalAuthority&&['recordArtifact','writeArtifact','captureAuditResult','settleAction'].includes(operation))this.#refuseGenericClaimEffect(c,{...input,claimRef:input.claimRef??input.producerClaimRef},false);
       const result=fn(c);
       this.#ensureReceiptPolicy(c);
       const row={owner:c.ownerRef,workspace:c.workspaceRef,id:input.commandRef,task:input.taskRef||c.workspaceRef,digest,operation};
@@ -263,6 +282,7 @@ export class RuntimeStore {
       this.#cut('before_commit');
       this.#ledger.run('INSERT INTO runtime_commands VALUES(?,?,?,?,?,?,?)',c.ownerRef,c.workspaceRef,input.commandRef,input.taskRef||c.workspaceRef,digest,operation,receipt);
       this.#validateNormalScope(c);
+      this.#validate7Scope(c);
       return result;
     });
   }
@@ -333,6 +353,12 @@ export class RuntimeStore {
     return false;
   }
   #terminalProgress(c,input,operation){
+    if(operation===OWNER_FINISH_INTENT_OPERATION){
+      exact(input,['taskRef','commandRef','request']);const q=ownerFinishRequest(input.request);
+      if(input.taskRef!==q.taskRef||input.commandRef!==this.#ownerFinishIntentId(c,q.taskRef,q.commandRef))fail('INVALID_INPUT');
+      this.#ownerFinishActive(c,q);return !this.#ownerFinishIntent(c,q);
+    }
+    if(['captureNormalNativeResult','captureNormalNativeAuditResult','writeNormalNativeRepairArtifact','finishNormalNativeExecution'].includes(operation))return this.#normalTerminalProgress(c,input,operation);
     if(operation==='reportAudit'||operation==='submitAuditResult'){const req=this.#auto(c,'audit',input.auditRef);return !!req&&!req.reportRef;}
     if(operation==='beginContextExecution'||operation==='beginAuditExecution')return !this.#auto(c,'execution',input.claimRef);
     if(operation==='captureAuditResult')return !this.#auto(c,'audit_result',input.executionRef);
@@ -348,6 +374,34 @@ export class RuntimeStore {
       return !this.#ledger.query("SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind IN ('message','delivery')",...this.#keys(c,input.taskRef)).map(row=>parse(row.payload)).some(record=>record.claimRef===w.claimRef&&!['consumed','rejected','delivered','failed'].includes(record.state));
     }
     return operation==='control'&&input.kind==='confirm_cancel';
+  }
+  #normalTerminalProgress(c,input,operation){
+    if(!c.hostHandle)fail('UNAUTHORIZED');this.#normalTaskAuthority(c,input.taskRef);
+    // The repair public input remains closed: this projection uses its actual
+    // original producerClaimRef solely for the original private claim lookup.
+    const claimInput=operation==='writeNormalNativeRepairArtifact'?{taskRef:input.taskRef,claimRef:ref(input.producerClaimRef),generationRef:ref(input.generationRef)}:{taskRef:input.taskRef,claimRef:ref(input.claimRef),generationRef:ref(input.generationRef)};
+    const {w,a}=this.#claim(c,claimInput);
+    if(!a.spec.nativeOriginBinding&&!a.spec.resumeBinding)fail('UNAUTHORIZED');
+    if(!this.#ledger.one('SELECT 1 FROM reservations WHERE owner=? AND workspace=? AND task=? AND claim_id=? AND action=?',...this.#keys(c,input.taskRef),a.claim_id,a.action))fail('STALE_CLAIM');
+    const execution=this.#auto(c,'execution',w.claimRef);
+    if(!execution||execution.taskRef!==input.taskRef||execution.actionRef!==a.action||execution.actionDigest!==a.digest||execution.claimRef!==w.claimRef||execution.generationRef!==w.generationRef)fail('SPEC_MISMATCH');
+    if(operation==='captureNormalNativeResult'||operation==='captureNormalNativeAuditResult'){
+      const base=this.#captureBase(c,input),producer=operation==='captureNormalNativeResult';
+      if(producer!== (base.intent.purpose==='producer')||input.executionRef!==execution.executionRef||producer&&(input.actionRef!==a.action||input.actionDigest!==a.digest||input.version!==1))fail('SPEC_MISMATCH');
+      const captureRef=canonicalDigest(['df.normal-native.capture/v1',c.ownerRef,c.workspaceRef,input.taskRef,w.claimRef,input.executionRef]);
+      return !this.#auto(c,'normal_native_capture',captureRef)&&(producer||!this.#auto(c,'audit_result',input.executionRef));
+    }
+    if(operation==='writeNormalNativeRepairArtifact'){
+      const output=this.#auto(c,'normal_native_capture',ref(input.outputCaptureRef));ref(input.artifactRef);integer(input.version,1);
+      if(!output||output.phase!=='output'||output.purpose!=='audit_repair'||output.taskRef!==input.taskRef||output.claimRef!==w.claimRef||output.generationRef!==w.generationRef||output.actionRef!==a.action||output.actionDigest!==a.digest||output.executionRef!==execution.executionRef||execution.resultRef!==output.auditBinding.resultRef||output.auditBinding.artifactTarget?.artifactRef!==input.artifactRef||output.auditBinding.artifactTarget?.version!==input.version)fail('AUDIT_BINDING_MISMATCH');
+      if(typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');if(hash(input.content)!==output.resultDigest)fail('SPEC_MISMATCH');
+      const current=this.#artifact(c,input.taskRef,input.artifactRef);if(input.version!==(current?current.version+1:1))fail('STALE_ARTIFACT');
+      const captureRef=canonicalDigest(['df.normal-native.repair-artifact/v1',c.ownerRef,c.workspaceRef,input.taskRef,w.claimRef,execution.executionRef,input.artifactRef,input.version]);
+      return !this.#auto(c,'normal_native_capture',captureRef);
+    }
+    const q=ownerFinishRequest(input.ownerRequest),capture=this.#auto(c,'normal_native_capture',ref(input.captureRef));this.#cas(c,q);exact(input.usage,['state','units']);integer(input.usage.units);
+    if(q.taskRef!==input.taskRef||q.actionRef!==a.action||q.claimRef!==w.claimRef||q.generationRef!==w.generationRef||q.executionRef!==execution.executionRef||input.executionRef!==execution.executionRef||!capture||capture.phase!=='output'||capture.taskRef!==input.taskRef||capture.claimRef!==w.claimRef||capture.generationRef!==w.generationRef||capture.executionRef!==execution.executionRef||capture.actionRef!==a.action||capture.actionDigest!==a.digest||input.usage.state!=='actual'||input.usage.units!==capture.usageUnits||w.phase!=='stopped'||w.terminalEvidenceRef!==ref(input.terminalEvidenceRef))fail('WORKER_FINISH_UNAVAILABLE');
+    return !this.#auto(c,'normal_native_finish',w.claimRef);
   }
   #cut(point){
     if(this.#fixture&&this.#fault){
@@ -405,7 +459,7 @@ export class RuntimeStore {
     }).length;
   }
   #data(c,t,input,protectedWrite=false){
-    if(!DATA_KINDS.includes(input.kind)||typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
+    if(![...DATA_KINDS,...NATIVE_DATA_KINDS,OWNER_FINISH_INTENT_KIND].includes(input.kind)||typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
     ref(input.sourceRef);
     if(Buffer.byteLength(input.content)>this.#limits.maxDataBytes)fail('INPUT_TOO_LARGE');
     if(this.#secrets.some(s=>input.content.includes(s)))fail('SECRET_REJECTED');
@@ -427,6 +481,7 @@ export class RuntimeStore {
   putData(handle,input){
     exact(input,['taskRef','commandRef','kind','content','sourceRef','expectedTaskVersion','expectedAuthEpoch','expectedMemory'],['taskRef','commandRef','kind','content','sourceRef','expectedTaskVersion','expectedAuthEpoch']);
     return this.#mut(handle,input,['owner','coordinator','host','worker','reviewer'],'putData',c=>{
+      if(!DATA_KINDS.includes(input.kind))fail('UNAUTHORIZED');
       const t=this.#cas(c,input);
       if(input.expectedMemory)this.#memoryGuard(c,input.expectedMemory);
       if(c.role==='worker'&&!['message','artifact','progress'].includes(input.kind)||c.role==='reviewer'&&!['verification','progress'].includes(input.kind))fail('UNAUTHORIZED');
@@ -439,6 +494,7 @@ export class RuntimeStore {
     });
   }
   #readAllowed(c,m){
+    if(NATIVE_DATA_KINDS.includes(m.kind)||m.kind===OWNER_FINISH_INTENT_KIND)fail('UNAUTHORIZED');
     if(m.auditInputRef&&!['owner','coordinator','host'].includes(c.role)){
       if(c.role==='reviewer'){
         if(c.auditInputRecordRef!==m.recordRef||!c.auditClaimRef)fail('UNAUTHORIZED');
@@ -469,7 +525,7 @@ export class RuntimeStore {
       integer(metadata.authEpoch);
       integer(metadata.createdAt);
       integer(metadata.byteLength,0,this.#limits.maxDataBytes);
-      if(!DATA_KINDS.includes(metadata.kind)||metadata.recordRef!==row.id||metadata.digest!==row.digest||metadata.kind!==row.kind||row.owner!==c.ownerRef||row.workspace!==c.workspaceRef||row.nonce.length!==12||row.tag.length!==16||row.ciphertext.length!==metadata.byteLength)fail('STORAGE_INVALID');
+      if(![...DATA_KINDS,...NATIVE_DATA_KINDS,OWNER_FINISH_INTENT_KIND].includes(metadata.kind)||metadata.recordRef!==row.id||metadata.digest!==row.digest||metadata.kind!==row.kind||row.owner!==c.ownerRef||row.workspace!==c.workspaceRef||row.nonce.length!==12||row.tag.length!==16||row.ciphertext.length!==metadata.byteLength)fail('STORAGE_INVALID');
       const decipher=createDecipheriv('aes-256-gcm',this.#key,row.nonce);
       decipher.setAAD(Buffer.from(canonical({
         format:'runtime-data/v2',keys:this.#keys(c,row.task),id:row.id,kind:row.kind,digest:row.digest,metadata
@@ -509,6 +565,9 @@ export class RuntimeStore {
   listData(handle,input){
     exact(input,['taskRef','kind'],['taskRef']);
     const c=this.#ctx(handle,input.taskRef);
+    return this.#listData(c,input);
+  }
+  #listData(c,input){
     this.#task(c,input.taskRef);
     if(input.kind!==undefined&&!DATA_KINDS.includes(input.kind))fail('INVALID_INPUT');
     return this.#ledger.query('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=?'+(input.kind?' AND kind=?':''),...this.#keys(c,input.taskRef),...(input.kind?[input.kind]:[])).map(r=>this.#openData(c,r).metadata).filter(m=>{
@@ -580,10 +639,8 @@ export class RuntimeStore {
     if(spec.actionRef!==row.action||spec.units!==row.base_units||spec.kind!==row.base_kind||spec.targetDigest!==row.base_target||spec.dataDigest!==row.base_data||row.digest!==canonicalDigest({ownerRef:row.owner,workspaceRef:row.workspace,taskRef:row.task,taskVersion:metadata.plannedTaskVersion,authEpoch:metadata.plannedAuthEpoch,spec}))fail('STORAGE_INVALID');
     return{...row,spec,metadata};
   }
-  planAction(handle,input){
-    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','spec']);
-    const spec=normalizedSpec(input.spec);
-    return this.#mut(handle,input,OWNER,'planAction',c=>{
+  #planEffect(c,input,spec,normal=false){
+      if(!normal&&(spec.nativeOriginBinding||spec.resumeBinding))fail('UNAUTHORIZED');
       const t=this.#cas(c,input),keys=this.#keys(c,t.id),policy=this.#getPolicy(c);
       if(policy.version!==spec.resourcePolicyVersion||!policy.modelPolicy||policy.modelPolicy.version!==spec.modelPolicyVersion||!policy.modelPolicy.presetRefs.includes(spec.model.presetRef)||policy.modelPolicy.catalogEvidenceRef!==spec.model.catalogEvidenceRef)fail('MODEL_POLICY_UNAVAILABLE');
       if(['cancel_requested','recovery_required'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys)?.control==='paused')fail('TASK_BLOCKED');
@@ -608,7 +665,12 @@ export class RuntimeStore {
       return{
         actionRef:spec.actionRef,actionDigest:digest,taskVersion:t.version,authEpoch:t.auth_epoch
       };
-    });
+  }
+  planAction(handle,input){
+    exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','spec']);
+    const spec=normalizedSpec(input.spec);
+    return this.#mut(handle,input,OWNER,'planAction',c=>this.#planEffect(c,input,spec)
+    );
   }
   grantAction(handle,input){
     exact(input,['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch','expiresAt']);
@@ -656,14 +718,9 @@ export class RuntimeStore {
     exact(input.delivery,['deliveryRef']);
     return this.#claimAction(handle,input,true);
   }
-  #claimAction(handle,input,local){
-    exact(input,['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch','outbox','delivery','auditRepair'],['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch']);
-    if([input.outbox,input.delivery,input.auditRepair].filter(Boolean).length>1)fail('INVALID_INPUT');
-    if(input.outbox)exact(input.outbox,['messageRef']);
-    if(input.delivery)exact(input.delivery,['deliveryRef']);
-    if(input.auditRepair)exact(input.auditRepair,['auditRef','round','previousReportRef','evidenceRef']);
-    const result=this.#mut(handle,input,DISPATCH,local?'claimLocalDelivery':'claimAction',c=>{
+  #claimEffect(c,input,normal=false,local=false){
       const t=this.#cas(c,input),a=this.#action(c,t.id,input.actionRef),keys=this.#keys(c,t.id),at=this.#now(),policy=this.#getPolicy(c);
+      if(!normal&&(a.spec.nativeOriginBinding||a.spec.resumeBinding))fail('UNAUTHORIZED');
       if(a.digest!==ref(input.actionDigest))fail('SPEC_MISMATCH');
       if(!['queued','running','waiting','blocked'].includes(t.status)||this.#ledger.one('SELECT control FROM runtime_tasks WHERE owner=? AND workspace=? AND task=?',...keys)?.control!=='active')fail('TASK_BLOCKED');
       if(a.state!=='requested')fail('ACTION_ALREADY_DISPATCHED');
@@ -757,7 +814,15 @@ export class RuntimeStore {
       return{
         claimRef,reservationRef,actionRef:a.action,actionDigest:a.digest,generationRef:worker.generationRef,sessionRef:worker.sessionRef,task:taskRecord(updated)
       };
-    });
+  }
+  #claimAction(handle,input,local){
+    exact(input,['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch','outbox','delivery','auditRepair'],['taskRef','actionRef','actionDigest','commandRef','expectedTaskVersion','expectedAuthEpoch']);
+    if([input.outbox,input.delivery,input.auditRepair].filter(Boolean).length>1)fail('INVALID_INPUT');
+    if(input.outbox)exact(input.outbox,['messageRef']);
+    if(input.delivery)exact(input.delivery,['deliveryRef']);
+    if(input.auditRepair)exact(input.auditRepair,['auditRef','round','previousReportRef','evidenceRef']);
+    const result=this.#mut(handle,input,DISPATCH,local?'claimLocalDelivery':'claimAction',c=>this.#claimEffect(c,input,false,local)
+    );
     this.#cut('after_claim');
     return result;
   }
@@ -859,18 +924,8 @@ export class RuntimeStore {
     exact(input,['taskRef','claimRef','generationRef','commandRef','handoffRef','state','evidenceRef']);ref(input.handoffRef);ref(input.evidenceRef);if(!['pending','resolved'].includes(input.state))fail('INVALID_INPUT');
     return this.#mut(handle,input,HOST,'markHandoff',c=>{const {w}=this.#claim(c,input);if(w.handoff&&w.handoff.handoffRef!==input.handoffRef)fail('HANDOFF_MISMATCH');if(input.state==='resolved'&&!w.handoff)fail('HANDOFF_MISMATCH');if(w.handoff?.state==='resolved'){if(input.state!=='resolved'||input.evidenceRef!==w.handoff.evidenceRef)fail('STALE_OBSERVATION');return w;}const next={...w,handoff:{handoffRef:input.handoffRef,state:input.state,evidenceRef:input.evidenceRef}};this.#ledger.run('UPDATE runtime_workers SET payload=? WHERE owner=? AND workspace=? AND task=? AND claim=?',this.#check(next),...this.#keys(c,input.taskRef),input.claimRef);return next;},input.state==='resolved'?'terminal':false);
   }
-  settleAction(handle,input){
-    exact(input,['taskRef','claimRef','generationRef','commandRef','outcome','evidenceRef','terminalEvidenceRef','usage'],['taskRef','claimRef','generationRef','commandRef','outcome','evidenceRef']);
-    if(!['completed','failed','unknown','terminated'].includes(input.outcome))fail('INVALID_INPUT');
-    ref(input.evidenceRef);
-    if(input.terminalEvidenceRef)ref(input.terminalEvidenceRef);
-    if(input.usage){
-      exact(input.usage,['state','units'],['state']);
-      if(!['actual','estimated','unknown'].includes(input.usage.state))fail('INVALID_INPUT');
-      if(input.usage.state==='unknown'&&input.usage.units!==undefined||input.usage.state!=='unknown'&&input.usage.units===undefined)fail('INVALID_INPUT');
-      if(input.usage.units!==undefined)integer(input.usage.units);
-    }
-    return this.#mut(handle,input,HOST,'settleAction',c=>{
+  #settleEffect(c,input,normal=false,normalRoleComplete=true){
+      this.#refuseGenericClaimEffect(c,input,normal);
       const {
         w,a,t
       }
@@ -882,7 +937,7 @@ export class RuntimeStore {
       };
       const obligations=this.#ledger.query("SELECT payload FROM runtime_records WHERE owner=? AND workspace=? AND task=? AND kind IN ('message','delivery')",...this.#keys(c,t.id)).map(r=>parse(r.payload)).filter(r=>r.claimRef===w.claimRef&&!['consumed','rejected','delivered','failed'].includes(r.state));
       const execution=this.#auto(c,'execution',w.claimRef);if(execution)this.#saveAuto(c,'execution',w.claimRef,t.id,{...execution,state:input.outcome==='unknown'||!w.terminalEvidenceRef?'unknown':input.outcome,outcomeEvidenceRef:input.evidenceRef,terminalEvidenceRef:w.terminalEvidenceRef});
-      const release=input.outcome!=='unknown'&&!!w.terminalEvidenceRef&&obligations.length===0&&w.handoff?.state!=='pending';
+      const release=input.outcome!=='unknown'&&!!w.terminalEvidenceRef&&obligations.length===0&&w.handoff?.state!=='pending'&&(!normal||normalRoleComplete);
       if(release){
         metadata.terminalEvidenceRef=w.terminalEvidenceRef;
         metadata.releaseEvidenceRef=canonicalDigest({
@@ -899,7 +954,20 @@ export class RuntimeStore {
       return{
         task:taskRecord(updated),claimRef:w.claimRef,reservationRef:w.reservationRef,reservationHeld:!release,outcome:input.outcome,terminalEvidenceRef:metadata.terminalEvidenceRef,releaseEvidenceRef:metadata.releaseEvidenceRef
       };
-    },input.outcome!=='unknown'?'terminal':false);
+  }
+  settleAction(handle,input){
+    exact(input,['taskRef','claimRef','generationRef','commandRef','outcome','evidenceRef','terminalEvidenceRef','usage'],['taskRef','claimRef','generationRef','commandRef','outcome','evidenceRef']);
+    if(!['completed','failed','unknown','terminated'].includes(input.outcome))fail('INVALID_INPUT');
+    ref(input.evidenceRef);
+    if(input.terminalEvidenceRef)ref(input.terminalEvidenceRef);
+    if(input.usage){
+      exact(input.usage,['state','units'],['state']);
+      if(!['actual','estimated','unknown'].includes(input.usage.state))fail('INVALID_INPUT');
+      if(input.usage.state==='unknown'&&input.usage.units!==undefined||input.usage.state!=='unknown'&&input.usage.units===undefined)fail('INVALID_INPUT');
+      if(input.usage.units!==undefined)integer(input.usage.units);
+    }
+    return this.#mut(handle,input,HOST,'settleAction',c=>this.#settleEffect(c,input)
+    ,input.outcome!=='unknown'?'terminal':false);
   }
   control(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','kind','actionRef','actionDigest'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','kind']);
@@ -1040,9 +1108,12 @@ export class RuntimeStore {
       return next;
     },['consumed','rejected'].includes(input.state)?'terminal':false);
   }
+  #artifactEffect(c,input,normal=false){
+      if(input.producerClaimRef)this.#refuseGenericClaimEffect(c,{...input,claimRef:input.producerClaimRef},normal);const task=this.#cas(c,input),current=this.#artifact(c,input.taskRef,input.artifactRef);if(input.version!==(current?current.version+1:1))fail('STALE_ARTIFACT');if(c.role==='worker'&&(input.generationRef!==c.generationRef||!input.producerClaimRef))fail('UNAUTHORIZED');if(input.producerClaimRef)this.#claim(c,{...input,claimRef:input.producerClaimRef});const t=this.#update(task,task.status,'progress');this.#managed(t);const data=this.#data(c,t,{kind:'artifact',content:input.content,sourceRef:input.artifactRef,commandRef:input.commandRef});const result=this.#newRecord(c,t.id,'artifact',canonicalDigest({artifactRef:input.artifactRef,version:input.version}),{artifactRef:input.artifactRef,version:input.version,recordRef:data.recordRef,digest:data.digest,producerClaimRef:input.producerClaimRef||null,generationRef:input.generationRef||null,producerRef:c.principalRef,verification:null});return{...result,task:taskRecord(t)};
+  }
   writeArtifact(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','content','producerClaimRef','generationRef'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','content']);ref(input.artifactRef);integer(input.version,1);
-    return this.#mut(handle,input,['owner','coordinator','worker'],'writeArtifact',c=>{const task=this.#cas(c,input),current=this.#artifact(c,input.taskRef,input.artifactRef);if(input.version!==(current?current.version+1:1))fail('STALE_ARTIFACT');if(c.role==='worker'&&(input.generationRef!==c.generationRef||!input.producerClaimRef))fail('UNAUTHORIZED');if(input.producerClaimRef)this.#claim(c,{...input,claimRef:input.producerClaimRef});const t=this.#update(task,task.status,'progress');this.#managed(t);const data=this.#data(c,t,{kind:'artifact',content:input.content,sourceRef:input.artifactRef,commandRef:input.commandRef});const result=this.#newRecord(c,t.id,'artifact',canonicalDigest({artifactRef:input.artifactRef,version:input.version}),{artifactRef:input.artifactRef,version:input.version,recordRef:data.recordRef,digest:data.digest,producerClaimRef:input.producerClaimRef||null,generationRef:input.generationRef||null,producerRef:c.principalRef,verification:null});return{...result,task:taskRecord(t)};});
+    return this.#mut(handle,input,['owner','coordinator','worker'],'writeArtifact',c=>this.#artifactEffect(c,input));
   }
   recordArtifact(handle,input){
     exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','recordRef','digest','producerClaimRef','generationRef'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','recordRef','digest']);
@@ -1292,7 +1363,7 @@ export class RuntimeStore {
   }
   #snapshot(c,taskRef,handle){
     const input={taskRef};
-      const t=this.#task(c,input.taskRef),keys=this.#keys(c,t.id),data=this.listData(handle,input),actions=this.#ledger.query('SELECT r.action FROM runtime_actions r WHERE owner=? AND workspace=? AND task=?',...keys).map(r=>{
+      const t=this.#task(c,input.taskRef),keys=this.#keys(c,t.id),data=this.#listData(c,input),actions=this.#ledger.query('SELECT r.action FROM runtime_actions r WHERE owner=? AND workspace=? AND task=?',...keys).map(r=>{
         const a=this.#action(c,t.id,r.action);
         return{
           actionRef:a.action,actionDigest:a.digest,spec:a.spec,state:a.state,attempts:a.attempts,...a.metadata
@@ -1522,6 +1593,7 @@ export class RuntimeStore {
     this.#saveAuto(c,'normal_provenance_registry',c.workspaceRef,null,this.#normalIndex(c));
   }
   #validateNormalScopes(){
+    this.#validate7Scopes();
     if(this.#ledger.one('PRAGMA user_version').user_version<6)return;
     for(const c of this.#normalScopes())this.#validateNormalScope(c);
   }
@@ -2369,6 +2441,7 @@ export class RuntimeStore {
     });
   }
   #executionAdmission(c,input){
+    this.#normalExecutionAdmission(c,input);
     const{
       a,w,t
     }=this.#claim(c,input);
@@ -2399,6 +2472,7 @@ export class RuntimeStore {
     if(!row)fail('RECORD_NOT_FOUND');
     const m=this.#openData(c,row).metadata;
     if(m.auditInputRef)fail('AUDIT_INPUT_REQUIRED');
+    if(a.spec.nativeOriginBinding||a.spec.resumeBinding)this.#requirePrepared(c,input.taskRef,input.contextRecordRef,true);
     if(m.kind!=='context'||m.digest!==a.spec.dataDigest||m.semanticRevision!==this.#semantic(c,input.taskRef)||m.sourceTaskVersion>a.metadata.plannedTaskVersion||m.sourceAuthEpoch>a.metadata.plannedAuthEpoch||m.generationRef!==null&&m.generationRef!==input.generationRef)fail('SPEC_MISMATCH');
     if(m.memoryNamespaceRef)this.#memoryGuard(c,{
       namespaceRef:m.memoryNamespaceRef,revision:m.memoryRevision
@@ -2536,14 +2610,8 @@ export class RuntimeStore {
       return{association:value,content:data.content};
     }catch{fail('STORAGE_INVALID');}
   }
-  captureAuditResult(handle,input){
-    exact(input,['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','inputCursor','cursor','content','evidenceRef']);
-    for(const key of ['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','evidenceRef'])ref(input[key]);
-    integer(input.inputCursor);integer(input.cursor,input.inputCursor+1);
-    if(typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
-    const bounds=this.#requireAuditBounds();
-    if(Buffer.byteLength(input.content)>bounds.resultByteLimit)fail('INPUT_TOO_LARGE');
-    return this.#mut(handle,input,HOST,'captureAuditResult',c=>{
+  #auditCaptureEffect(c,input,normal=false){
+      this.#refuseGenericClaimEffect(c,input,normal);
       const {a,w,t}=this.#claim(c,input),execution=this.#auto(c,'execution',input.claimRef);
       if(!execution||execution.kind!=='audit_input'||execution.executionRef!==input.executionRef||execution.actionRef!==a.action||execution.actionDigest!==a.digest||execution.generationRef!==input.generationRef||execution.sessionRef!==input.sessionRef||w.sessionRef!==input.sessionRef||!['dispatch_intent','unknown'].includes(execution.state))fail('SPEC_MISMATCH');
       const material=this.#auditSpec(c,t.id,a.spec,false);
@@ -2563,7 +2631,16 @@ export class RuntimeStore {
       this.#saveAuto(c,'execution',w.claimRef,t.id,{...execution,resultRef:record.resultRef});
       this.#auditResult(c,record.resultRef);
       return{...record,deduplicated:false};
-    },'terminal');
+  }
+  captureAuditResult(handle,input){
+    exact(input,['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','inputCursor','cursor','content','evidenceRef']);
+    for(const key of ['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','evidenceRef'])ref(input[key]);
+    integer(input.inputCursor);integer(input.cursor,input.inputCursor+1);
+    if(typeof input.content!=='string'||!input.content.isWellFormed())fail('INVALID_INPUT');
+    const bounds=this.#requireAuditBounds();
+    if(Buffer.byteLength(input.content)>bounds.resultByteLimit)fail('INPUT_TOO_LARGE');
+    return this.#mut(handle,input,HOST,'captureAuditResult',c=>this.#auditCaptureEffect(c,input)
+    ,'terminal');
   }
   #reportFields(input){
     canonical(input.coverageRefs);canonical(input.unexaminedRefs);canonical(input.findings);
@@ -2766,6 +2843,7 @@ export class RuntimeStore {
     const existing=this.#ledger.one('SELECT key_digest FROM runtime_security WHERE id=1');
     if(existing&&existing.key_digest!==hash(this.#key))fail('KEY_MISMATCH');
     this.#validate();
+    this.#validateOwnerFinishIntentScopes();
   }
   #validateAutomation(row){
     const c={ownerRef:row.owner,workspaceRef:row.workspace};
@@ -2889,6 +2967,7 @@ export class RuntimeStore {
       for(const row of this.#ledger.query("SELECT payload FROM runtime_records WHERE kind='progress'"))if(parse(row.payload).localReportRef!==undefined)fail('SCHEMA_UNSUPPORTED');
     }
     this.#validateNormalScopes();
+    if(version<7){for(const row of this.#ledger.query('SELECT spec FROM runtime_actions')){const spec=parse(row.spec);if(spec.nativeOriginBinding!==undefined||spec.resumeBinding!==undefined)fail('SCHEMA_UNSUPPORTED');}for(const row of this.#ledger.query('SELECT kind FROM runtime_data'))if(NATIVE_DATA_KINDS.includes(row.kind)||row.kind===OWNER_FINISH_INTENT_KIND)fail('SCHEMA_UNSUPPORTED');if(this.#ledger.one('SELECT 1 FROM runtime_commands WHERE operation=? LIMIT 1',OWNER_FINISH_INTENT_OPERATION))fail('SCHEMA_UNSUPPORTED');}
     if(version<5){
       for(const row of this.#ledger.query('SELECT spec FROM runtime_actions'))if(parse(row.spec).executionInput!==undefined)fail('SCHEMA_UNSUPPORTED');
       if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")){
@@ -2973,6 +3052,318 @@ export class RuntimeStore {
       });
     }
   }
+  // Capabilities confer only these normal methods, never generic principal authority.
+  [PREPARATION_SOURCE](capability,handle,namespaceRef,taskRef){if(taskRef!==undefined)ref(taskRef);const c=this.#normalAuthority(capability,false,taskRef),binding=this.#ctx(handle,taskRef,OWNER);if(binding.ownerRef!==c.ownerRef||binding.workspaceRef!==c.workspaceRef||namespaceRef!==undefined&&ref(namespaceRef)!==c.namespaceRef)fail('UNAUTHORIZED');return{ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,namespaceRef:c.namespaceRef};}
+  #bindNormalCapabilities(options){
+    const bind=(entries,native)=>{array(entries,64);for(const entry of entries){exact(entry,native?['capability','ownerHandle','hostHandle','source']:['capability','ownerHandle','namespaceRef']);exact(entry.capability,[]);if(this.#capabilities.has(entry.capability)||this.#principals.has(entry.capability))fail('INVALID_CONFIG');const owner=this.#ctx(entry.ownerHandle,undefined,native?['owner']:OWNER);let binding={...owner,ownerHandle:entry.ownerHandle};if(native){const host=this.#ctx(entry.hostHandle,undefined,HOST);if(host.ownerRef!==owner.ownerRef||host.workspaceRef!==owner.workspaceRef)fail('INVALID_CONFIG');const source=stableSource(entry.source);binding={...binding,role:'host',hostHandle:entry.hostHandle,source,sourceRef:canonicalDigest(source)};binding.principalRef=canonicalDigest(['df.normal-native.observer/v1',owner.ownerRef,owner.workspaceRef,binding.sourceRef]);this.#native.set(entry.capability,Object.freeze(binding));}else{binding.namespaceRef=ref(entry.namespaceRef);binding.principalRef=canonicalDigest(['df.prepared-context.principal/v1',owner.ownerRef,owner.workspaceRef,binding.namespaceRef]);this.#preparation.set(entry.capability,Object.freeze(binding));}this.#capabilities.add(entry.capability);}};
+    try{bind(options.preparationPrincipals??[],false);bind(options.nativeObservers??[],true);}catch{fail('INVALID_CONFIG');}
+  }
+  #normalAuthority(capability,native=false,taskRef){const c=(native?this.#native:this.#preparation).get(capability);if(!c)fail('UNAUTHORIZED');const owner=this.#ctx(c.ownerHandle,taskRef,native?['owner']:OWNER);if(owner.ownerRef!==c.ownerRef||owner.workspaceRef!==c.workspaceRef)fail('UNAUTHORIZED');if(native)this.#ctx(c.hostHandle,taskRef,HOST);this.#validate7Scope(c);return c;}
+  #originalEffectAuthority(c,taskRef,host=false){ref(taskRef);const bound=this.#ctx(host?c.hostHandle:c.ownerHandle,taskRef,host?HOST:['owner']);if(bound.ownerRef!==c.ownerRef||bound.workspaceRef!==c.workspaceRef)fail('UNAUTHORIZED');return bound;}
+  #normalTaskAuthority(c,taskRef){ref(taskRef);const owner=this.#ctx(c.ownerHandle,taskRef,c.hostHandle?['owner']:OWNER);if(owner.ownerRef!==c.ownerRef||owner.workspaceRef!==c.workspaceRef)fail('UNAUTHORIZED');if(c.hostHandle){const host=this.#ctx(c.hostHandle,taskRef,HOST);if(host.ownerRef!==c.ownerRef||host.workspaceRef!==c.workspaceRef)fail('UNAUTHORIZED');}}
+  #normalMut(c,input,operation,fn,protectedOp=false){this.#normalTaskAuthority(c,input.taskRef);return this.#mut(null,input,null,operation,fn,protectedOp,c);}
+  #normalRead(c,fn){return this.#ledger.guarded(()=>{this.#validate7Scope(c);return fn();});}
+  #privateData(c,task,id,kind,digest){const row=this.#ledger.one('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=? AND id=?',...this.#keys(c,task),ref(id));if(!row)fail('STORAGE_INVALID');const opened=this.#openData(c,row);if(kind&&opened.metadata.kind!==kind||digest&&opened.metadata.digest!==digest)fail('STORAGE_INVALID');return {...opened.metadata,content:opened.content};}
+  #nativeRows(c,kind){return this.#ledger.query('SELECT task,id FROM automation_records WHERE owner=? AND workspace=? AND kind=? ORDER BY task,id',c.ownerRef,c.workspaceRef,kind).map(row=>({id:row.id,taskRef:row.task,value:this.#auto(c,kind,row.id)}));}
+  #newNative(c,kind,id,task,value){if(!NATIVE_KINDS.includes(kind)||this.#auto(c,kind,id))fail('IDEMPOTENCY_CONFLICT');const name={normal_native_intent:'NativeIntent',normal_native_origin:'NativeOrigin',normal_native_capture:'NativeCapture',normal_native_finish:'NativeFinish',normal_resume:'NativeResume',normal_resume_claim:'NativeResumeClaim'}[kind];payload(name,value);if(value.taskRef!==task)fail('STORAGE_INVALID');if(this.#ledger.one('SELECT count(*) AS n FROM automation_records WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,task)).n>=this.#limits.maxRecordsPerTask)fail('RECORD_LIMIT');this.#saveAuto(c,kind,id,task,value);this.#refresh7Registry(c,'normal_native_registry');return value;}
+  #index7(c,kind){const members=kind==='prepared_context_registry'?this.#nativeRows(c,'prepared_context_check').map(r=>({taskRef:r.taskRef,contextRecordRef:r.value.contextRecordRef,contextDigest:r.value.contextDigest,checkRef:r.id})):NATIVE_KINDS.flatMap(kind=>this.#nativeRows(c,kind).map(r=>({kind,taskRef:r.taskRef,id:r.id})));members.sort((a,b)=>(a.kind??'').localeCompare(b.kind??'')||a.taskRef.localeCompare(b.taskRef)||(a.id??a.contextRecordRef).localeCompare(b.id??b.contextRecordRef));if(members.length>this.#limits.maxCommands+this.#limits.maxTasks*this.#limits.maxRecordsPerTask)fail('STORAGE_INVALID');return{contractVersion:kind==='prepared_context_registry'?'df.prepared-context-registry/v1':'df.normal-native-registry/v1',recordCount:members.length,recordDigest:hash('['+members.map(value=>canonical(value)).join(',')+']')};}
+  #initialize7Registries(){for(const c of this.#normalScopes())for(const kind of ['prepared_context_registry','normal_native_registry']){if(this.#auto(c,kind,c.workspaceRef))fail('SCHEMA_UNSUPPORTED');const index=this.#index7(c,kind);if(index.recordCount)fail('SCHEMA_UNSUPPORTED');this.#saveAuto(c,kind,c.workspaceRef,null,index);}}
+  #ensure7Registries(c){if(this.#ledger.one('PRAGMA user_version').user_version<7)return;for(const kind of ['prepared_context_registry','normal_native_registry'])if(!this.#auto(c,kind,c.workspaceRef)){const index=this.#index7(c,kind);if(index.recordCount||this.#ledger.one('SELECT 1 FROM runtime_commands WHERE owner=? AND workspace=? LIMIT 1',c.ownerRef,c.workspaceRef))fail('STORAGE_INVALID');this.#saveAuto(c,kind,c.workspaceRef,null,index);}}
+  #refresh7Registry(c,kind){if(!this.#auto(c,kind,c.workspaceRef))fail('STORAGE_INVALID');this.#saveAuto(c,kind,c.workspaceRef,null,this.#index7(c,kind));}
+  #validate7Scopes(){if(this.#ledger.one('PRAGMA user_version').user_version<7){if(this.#ledger.one("SELECT 1 FROM sqlite_schema WHERE name='automation_records'")&&this.#ledger.one("SELECT 1 FROM automation_records WHERE kind IN ('prepared_context_check','prepared_context_registry','normal_native_registry','normal_native_intent','normal_native_origin','normal_native_capture','normal_native_finish','normal_resume','normal_resume_claim') LIMIT 1"))fail('SCHEMA_UNSUPPORTED');return;}for(const c of this.#normalScopes())this.#validate7Scope(c);}
+  #commandFor(c,id,operation,task){const row=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,id);if(!row||row.operation!==operation||row.task!==task)fail('STORAGE_INVALID');return this.#commandReceipt(row);}
+  #validate7Scope(c){
+    if(this.#ledger.one('PRAGMA user_version').user_version<7)return;
+    try{
+      for(const kind of ['prepared_context_registry','normal_native_registry']){const stored=this.#auto(c,kind,c.workspaceRef),index=this.#index7(c,kind);if(!stored){if(this.#normalScopes().some(s=>s.ownerRef===c.ownerRef&&s.workspaceRef===c.workspaceRef))fail('STORAGE_INVALID');return;}exact(stored,['contractVersion','recordCount','recordDigest']);if(canonical(stored)!==canonical(index))fail('STORAGE_INVALID');}
+      for(const r of this.#nativeRows(c,'prepared_context_check')){if(r.value.taskRef!==r.taskRef)fail('STORAGE_INVALID');this.#preparedGraph(c,r.taskRef,r.value.contextRecordRef);}
+      const seenCommands=new Set();
+      for(const kind of NATIVE_KINDS)for(const row of this.#nativeRows(c,kind)){
+        const v=row.value;payload({normal_native_intent:'NativeIntent',normal_native_origin:'NativeOrigin',normal_native_capture:'NativeCapture',normal_native_finish:'NativeFinish',normal_resume:'NativeResume',normal_resume_claim:'NativeResumeClaim'}[kind],v);if(v.taskRef!==row.taskRef)fail('STORAGE_INVALID');
+        const command=this.#nativeCommand(c,kind,row.id);if(!command)fail('STORAGE_INVALID');seenCommands.add(command.id);
+        const out=this.#commandReceipt(command);
+        if(kind==='normal_native_intent'){
+          if(v.intentRef!==row.id||v.claimRef!==row.id)fail('STORAGE_INVALID');const a=this.#action(c,v.taskRef,v.actionRef);if(a.digest!==v.actionDigest||a.metadata.claimRef!==v.claimRef||a.spec.executor.generationRef!==v.generationRef||a.spec.executor.sessionRef!==v.sessionRef||!a.spec.nativeOriginBinding)fail('STORAGE_INVALID');const cfg=canonicalContent(this.#privateData(c,v.taskRef,v.configurationRecordRef,'native_configuration',v.configurationDigest).content,x=>configuration(x,undefined,this.#limits));const identity=canonicalContent(this.#privateData(c,v.taskRef,v.identityRecordRef,'native_identity',v.identityDigest).content,x=>{exact(x,['nativeId']);text(x.nativeId,128);});if(identity.nativeId!=='df-'+v.generationRef||v.sourceRef!==canonicalDigest(cfg.source)||v.backendRef!==canonicalDigest(cfg.backend)||v.createConfigDigest!==v.configurationDigest||canonical(a.spec.nativeOriginBinding)!==canonical({sourceRef:v.sourceRef,createConfigDigest:v.createConfigDigest,backendRef:v.backendRef,sessionRef:v.sessionRef}))fail('STORAGE_INVALID');this.#validateIntentInput(c,v,a);if(out.receipt.claimRef!==v.claimRef||out.sessionRef!==v.sessionRef||out.identityRecordRef!==v.identityRecordRef)fail('STORAGE_INVALID');
+        }else if(kind==='normal_native_origin'){
+          if(v.originRef!==row.id)fail('STORAGE_INVALID');const intent=this.#auto(c,'normal_native_intent',v.intentRef);if(!intent||intent.taskRef!==v.taskRef||intent.claimRef!==v.claimRef||intent.generationRef!==v.generationRef||intent.sessionRef!==v.sessionRef)fail('STORAGE_INVALID');const h=canonicalContent(this.#privateData(c,v.taskRef,v.baselineHistoryRecordRef,'native_history',v.baselineHistoryDigest).content,historyObservation);this.#historyJoin(c,h,intent);if(h.messages.length!==0||out.originRef!==v.originRef||out.baselineHistoryRecordRef!==v.baselineHistoryRecordRef)fail('STORAGE_INVALID');
+        }else if(kind==='normal_native_capture')this.#validateCapture(c,v,row.id,out);
+        else if(kind==='normal_native_finish')this.#validateFinish(c,v,row.id,out,command);
+        else if(kind==='normal_resume')this.#validateResume(c,v,row.id,out);
+        else if(kind==='normal_resume_claim'){
+          const resume=this.#auto(c,'normal_resume',v.resumeRef),a=this.#action(c,v.taskRef,v.actionRef);if(v.claimRef!==row.id||!resume||resume.taskRef!==v.taskRef||resume.originRef!==v.originRef||resume.predecessorClaimRef!==v.predecessorClaimRef||resume.sessionRef!==v.sessionRef||a.metadata.claimRef!==v.claimRef||a.digest!==v.actionDigest||a.metadata.reservationRef!==v.reservationRef||a.spec.resumeBinding?.resumeRef!==v.resumeRef||a.spec.executor.generationRef!==v.generationRef||out.receipt.claimRef!==v.claimRef||out.originRef!==v.originRef)fail('STORAGE_INVALID');
+        }
+      }
+      const normalOps=['claimNormalCreate','recordNormalNativeOrigin','captureNormalNativeResult','captureNormalNativeAuditResult','writeNormalNativeRepairArtifact','finishNormalNativeExecution','planNormalResume','claimNormalResume'];
+      for(const row of this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=?',c.ownerRef,c.workspaceRef)){if(normalOps.includes(row.operation)&&!seenCommands.has(row.id))fail('STORAGE_INVALID');if(row.operation==='putPreparedContext'){const out=this.#commandReceipt(row),b=this.#auto(c,'prepared_context_check',out.checkRef);if(!b||b.commandRef!==row.id||b.taskRef!==row.task||b.contextRecordRef!==out.receipt.recordRef)fail('STORAGE_INVALID');}if(row.operation==='planNormalNativeAction'){const out=this.#commandReceipt(row),a=this.#action(c,row.task,out.actionRef);if(!a.spec.nativeOriginBinding||a.digest!==out.actionDigest)fail('STORAGE_INVALID');}}
+      const privateOwners=new Map();
+      const own=(id,kind,task,commandRef)=>{if(privateOwners.has(id))fail('STORAGE_INVALID');const data=this.#privateData(c,task,id,kind);if(id!==canonicalDigest({commandRef,kind}))fail('STORAGE_INVALID');privateOwners.set(id,{kind,task});};
+      for(const row of this.#nativeRows(c,'prepared_context_check'))own(row.value.checkRecordRef,'context_check',row.taskRef,row.value.commandRef);
+      for(const row of this.#nativeRows(c,'normal_native_intent')){const command=this.#nativeCommand(c,'normal_native_intent',row.id);own(row.value.identityRecordRef,'native_identity',row.taskRef,command.id);own(row.value.configurationRecordRef,'native_configuration',row.taskRef,command.id);}
+      for(const row of this.#nativeRows(c,'normal_native_origin'))own(row.value.baselineHistoryRecordRef,'native_history',row.taskRef,this.#nativeCommand(c,'normal_native_origin',row.id).id);
+      for(const row of this.#nativeRows(c,'normal_native_capture'))if(row.value.phase==='output')own(row.value.committedHistoryRecordRef,'native_history',row.taskRef,this.#nativeCommand(c,'normal_native_capture',row.id).id);
+      for(const row of this.#nativeRows(c,'normal_resume')){const command=this.#nativeCommand(c,'normal_resume',row.id);own(row.value.historyRecordRef,'native_history',row.taskRef,command.id);own(row.value.inputRecordRef,'native_request',row.taskRef,command.id);own(row.value.configurationRecordRef,'native_configuration',row.taskRef,command.id);}
+      for(const row of this.#ledger.query('SELECT id,kind,task FROM runtime_data WHERE owner=? AND workspace=?',c.ownerRef,c.workspaceRef))if(NATIVE_DATA_KINDS.includes(row.kind)&&(!privateOwners.has(row.id)||privateOwners.get(row.id).kind!==row.kind||privateOwners.get(row.id).task!==row.task))fail('STORAGE_INVALID');
+      for(const row of this.#ledger.query('SELECT action,task FROM runtime_actions WHERE owner=? AND workspace=?',c.ownerRef,c.workspaceRef)){const a=this.#action(c,row.task,row.action);if(a.spec.nativeOriginBinding||a.spec.resumeBinding){const planned=this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,row.task)).some(r=>{if(!['planNormalNativeAction','planNormalResume'].includes(r.operation))return false;const out=this.#commandReceipt(r);return(out.action||out).actionRef===a.action;});if(!planned||a.metadata.claimRef&&!this.#auto(c,a.spec.resumeBinding?'normal_resume_claim':'normal_native_intent',a.metadata.claimRef))fail('STORAGE_INVALID');}}
+      this.#validateOwnerFinishIntents(c);
+    }catch{fail('STORAGE_INVALID');}
+  }
+  #nativeCommand(c,kind,id){const field={normal_native_intent:'receipt.claimRef',normal_native_origin:'originRef',normal_native_capture:'captureRef',normal_native_finish:'finishRef',normal_resume:'resumeRef',normal_resume_claim:'receipt.claimRef'}[kind],ops={normal_native_intent:['claimNormalCreate'],normal_native_origin:['recordNormalNativeOrigin'],normal_native_capture:['captureNormalNativeResult','captureNormalNativeAuditResult','writeNormalNativeRepairArtifact'],normal_native_finish:['finishNormalNativeExecution'],normal_resume:['planNormalResume'],normal_resume_claim:['claimNormalResume']}[kind];const rows=this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=?',c.ownerRef,c.workspaceRef).filter(row=>{if(!ops.includes(row.operation))return false;let receipt=this.#commandReceipt(row);for(const key of field.split('.'))receipt=receipt?.[key];return receipt===id;});if(rows.length!==1)return null;return rows[0];}
+  #preparedGraph(c,task,contextRef){
+    const rows=this.#nativeRows(c,'prepared_context_check').filter(r=>r.taskRef===task&&r.value.contextRecordRef===contextRef);
+    if(rows.length!==1)fail('PREPARED_CONTEXT_UNAVAILABLE');
+    const row=rows[0],binding=payload('PreparedBinding',row.value),context=this.#privateData(c,task,contextRef,'context',binding.contextDigest),checkData=this.#privateData(c,task,binding.checkRecordRef,'context_check',binding.checkDigest),check=canonicalContent(checkData.content,v=>payload('PreparedCheck',v)),result=this.#commandFor(c,binding.commandRef,'putPreparedContext',task);
+    const shared=['checkRef','taskRef','contextRecordRef','contextDigest','commandRef','preparationPrincipalRef','preparationRequestDigest','selectionMode','checkedSetDigest','sourceTaskVersion','sourceAuthEpoch','committedTaskVersion','committedAuthEpoch','semanticRevision','generatedAt','method'];
+    if(binding.taskRef!==task||row.taskRef!==task||binding.checkRef!==row.id||binding.contextRecordRef!==contextRef||binding.checkRef!==canonicalDigest(['df.prepared-context.check/v1',c.ownerRef,c.workspaceRef,task,contextRef,context.digest])||binding.preparationPrincipalRef!==canonicalDigest(['df.prepared-context.principal/v1',c.ownerRef,c.workspaceRef,binding.namespaceRef])||shared.some(key=>binding[key]!==check[key])||check.ownerRef!==c.ownerRef||check.workspaceRef!==c.workspaceRef||check.memory.namespaceRef!==binding.namespaceRef||check.memory.revision!==binding.memoryRevision)fail('STORAGE_INVALID');
+    const envelope=parse(context.content);validateExecutionContext(envelope,{scope:{ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:task},maxTaskVersion:binding.sourceTaskVersion,maxAuthEpoch:binding.sourceAuthEpoch,maxGeneratedAt:binding.generatedAt});
+    if(context.generationRef!==null||checkData.generationRef!==null||context.cryptoVersion!==2||checkData.cryptoVersion!==2||context.taskVersion!==binding.committedTaskVersion||context.authEpoch!==binding.committedAuthEpoch||checkData.taskVersion!==binding.committedTaskVersion||checkData.authEpoch!==binding.committedAuthEpoch||context.sourceTaskVersion!==binding.sourceTaskVersion||context.sourceAuthEpoch!==binding.sourceAuthEpoch||context.semanticRevision!==binding.semanticRevision||context.memoryNamespaceRef!==binding.namespaceRef||context.memoryRevision!==binding.memoryRevision||checkData.sourceRef!==binding.checkRef||envelope.sourceTaskVersion!==binding.sourceTaskVersion||envelope.sourceAuthEpoch!==binding.sourceAuthEpoch||envelope.generatedAt!==binding.generatedAt||envelope.memory.namespaceRef!==binding.namespaceRef||envelope.memory.revision!==binding.memoryRevision||envelope.ledgerSnapshotDigest!==check.ledgerSnapshotDigest)fail('STORAGE_INVALID');
+    const receipt=result.receipt;
+    if(result.checkRef!==binding.checkRef||!receipt||Object.keys(context).filter(key=>key!=='content').some(key=>canonical(receipt[key])!==canonical(context[key]))||receipt.task.ownerRef!==c.ownerRef||receipt.task.workspaceRef!==c.workspaceRef||receipt.task.taskRef!==task||receipt.task.version!==binding.committedTaskVersion||receipt.task.authEpoch!==binding.committedAuthEpoch)fail('STORAGE_INVALID');
+    return{binding,check,context};
+  }
+  #preparedSources(c,task,selectionMode,refs){const records=this.#ledger.query('SELECT * FROM runtime_data WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,task)).filter(r=>['goal','constraints','context'].includes(r.kind)).map(r=>({...this.#openData(c,r).metadata,content:this.#openData(c,r).content})).filter(r=>r.generationRef===null&&!r.auditInputRef);const latest=kind=>records.filter(r=>r.kind===kind).sort((a,b)=>b.taskVersion-a.taskVersion||b.createdAt-a.createdAt||a.recordRef.localeCompare(b.recordRef))[0];const goal=latest('goal');if(!goal)fail('GOAL_UNAVAILABLE');const winners=[goal,...(latest('constraints')?[latest('constraints')]:[])].map(r=>({recordRef:r.recordRef,digest:r.digest,kind:r.kind})),summaries=[];for(const r of records.filter(r=>r.kind==='context')){const v=parse(r.content);if(v.materialKind==='current_instruction')winners.push({recordRef:r.recordRef,digest:r.digest,kind:'current_instruction'});if(v.materialKind==='summary'&&(selectionMode==='all_eligible'||refs.includes(r.recordRef)))summaries.push({recordRef:r.recordRef,digest:r.digest,sourceTaskVersion:v.sourceTaskVersion,sourceAuthEpoch:v.sourceAuthEpoch,generatedAt:v.generatedAt,sourceRefs:v.sourceRefs});}winners.sort((a,b)=>a.recordRef.localeCompare(b.recordRef));summaries.sort((a,b)=>a.recordRef.localeCompare(b.recordRef));if(winners.length>64||summaries.length>64)fail('INPUT_TOO_LARGE');return{winners,summaries};}
+  #currentness(c,graph){const b=graph.binding,t=this.#task(c,b.taskRef),reasons=[],sources=this.#preparedSources(c,b.taskRef,b.selectionMode,graph.check.summaryChecks.map(r=>r.recordRef));if(this.#semantic(c,b.taskRef)!==b.semanticRevision)reasons.push('SEMANTIC_CHANGED');if(canonical(sources.winners)!==canonical(graph.check.winningSources))reasons.push('WINNING_SOURCE_CHANGED');if(canonical(sources.summaries.map(r=>r.recordRef))!==canonical(graph.check.summaryChecks.map(r=>r.recordRef)))reasons.push('CHECKED_SET_CHANGED');if(graph.check.summaryChecks.some(s=>!sources.summaries.some(r=>r.recordRef===s.recordRef&&r.digest===s.digest)))reasons.push('SOURCE_UNAVAILABLE');const memory=this.#memory(c,b.namespaceRef);if(memory?.deleted||(memory?.revision??0)!==b.memoryRevision)reasons.push('MEMORY_CHANGED');if(t.version!==b.committedTaskVersion||t.auth_epoch!==b.committedAuthEpoch)reasons.push('TASK_SNAPSHOT_CHANGED');return{instructionsCurrent:!reasons.some(r=>['SEMANTIC_CHANGED','WINNING_SOURCE_CHANGED','CHECKED_SET_CHANGED','SOURCE_UNAVAILABLE'].includes(r)),memoryCurrent:!reasons.includes('MEMORY_CHANGED'),taskSnapshotCurrent:!reasons.includes('TASK_SNAPSHOT_CHANGED'),reasonCodes:[...new Set(reasons)].sort()};}
+  #requirePrepared(c,task,contextRef,current){const graph=this.#preparedGraph(c,task,contextRef);if(current){const status=this.#currentness(c,graph);if(!status.instructionsCurrent||!status.memoryCurrent)fail('CONTEXT_STALE');}return graph;}
+  #preparedReceipt(raw,content){const v=parse(content);return{recordRef:raw.recordRef,digest:raw.digest,kind:'context',byteLength:raw.byteLength,cryptoVersion:2,sourceRef:raw.sourceRef,task:raw.task,sourceTaskVersion:raw.sourceTaskVersion,sourceAuthEpoch:raw.sourceAuthEpoch,memory:{namespaceRef:v.memory.namespaceRef,revision:v.memory.revision},inputCounts:v.inputCounts,retainedRefs:v.retainedRefs,droppedRefs:v.droppedRefs,verification:'module_prepared_execution_context_only'};}
+  preparedContextCommandReceipt(capability,input){exact(input,['request']);const request=preparationRequest(input.request,this.#secrets),c=this.#normalAuthority(capability,false,request.taskRef);return this.#preparedCommandReceipt(c,request);}
+  #preparedCommandReceipt(c,request){this.#normalTaskAuthority(c,request.taskRef);const digest=preparationDigest(c,request);return this.#normalRead(c,()=>{const row=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,request.commandRef);if(!row)return null;const result=this.#commandReceipt(row);if(row.operation!=='putPreparedContext'||row.task!==request.taskRef)fail('IDEMPOTENCY_CONFLICT');const graph=this.#preparedGraph(c,request.taskRef,result.receipt.recordRef);if(graph.binding.preparationPrincipalRef!==c.principalRef||graph.binding.preparationRequestDigest!==digest)fail('IDEMPOTENCY_CONFLICT');return{receipt:this.#preparedReceipt(result.receipt,graph.context.content),checkRef:result.checkRef};});}
+  preparedContextStatus(capability,input){
+    exact(input,[]);const c=this.#normalAuthority(capability);
+    return this.#normalRead(c,()=>{
+      const z='0'.repeat(64),task={ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:z,status:'queued',version:2,taskVersion:2,authEpoch:0,createdAt:0,updatedAt:0};
+      const binding={contractVersion:'df.prepared-context-binding/v1',checkRef:z,taskRef:z,contextRecordRef:z,contextDigest:z,checkRecordRef:z,checkDigest:z,commandRef:z,preparationPrincipalRef:c.principalRef,preparationRequestDigest:z,selectionMode:'all_eligible',checkedSetDigest:z,sourceTaskVersion:1,sourceAuthEpoch:0,committedTaskVersion:2,committedAuthEpoch:0,semanticRevision:2,generatedAt:0,namespaceRef:c.namespaceRef,memoryRevision:0,method:'version-currentness/v1'};
+      const check={contractVersion:'df.prepared-context-check/v1',checkRef:z,taskRef:z,contextRecordRef:z,contextDigest:z,sourceTaskVersion:1,sourceAuthEpoch:0,committedTaskVersion:2,committedAuthEpoch:0,semanticRevision:2,generatedAt:0,ledgerSnapshotDigest:z,memory:{namespaceRef:c.namespaceRef,revision:0},method:'version-currentness/v1',winningSources:[{recordRef:z,digest:z,kind:'goal'}],summaryChecks:[],conflicts:[],ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,commandRef:z,preparationPrincipalRef:c.principalRef,preparationRequestDigest:z,selectionMode:'all_eligible',checkedSetDigest:canonicalDigest([])};
+      const envelope={contractVersion:'df.execution-context/v1',materialKind:'execution_context',sourceScope:{ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:z},sourceTaskVersion:1,sourceAuthEpoch:0,generatedAt:0,sourceRefs:[z],sourceProvenance:[{recordRef:z,digest:z,taskVersion:1,authEpoch:0,createdAt:0}],memory:{namespaceRef:c.namespaceRef,revision:0,provenance:[]},ledgerSnapshotDigest:z,content:'',inputCounts:{bytes:0,tokens:0},retainedRefs:[],droppedRefs:[],verification:'module_prepared_execution_context_only'};
+      const bytes=value=>Buffer.byteLength(canonical(value)),metadata={recordRef:z,digest:z,kind:'context',sourceRef:z,taskVersion:2,authEpoch:0,generationRef:null,createdAt:0,byteLength:bytes(envelope),cryptoVersion:2,sourceTaskVersion:1,sourceAuthEpoch:0,semanticRevision:2,memoryNamespaceRef:c.namespaceRef,memoryRevision:0},raw={...metadata,task},result={receipt:raw,checkRef:z,commitDisposition:'new'},signedBinding={version:1,data:binding,mac:z},wire={check,currentness:{instructionsCurrent:true,memoryCurrent:true,taskSnapshotCurrent:true,reasonCodes:[]}},minBindingBytes=bytes(signedBinding);
+      const bounds={contextByteLimit:Math.min(65536,this.#limits.maxDataBytes),checkByteLimit:Math.min(49152,this.#limits.maxDataBytes),metadataByteLimit:Math.min(4096,this.#limits.maxMetadataBytes),wireByteLimit:65536,minBindingBytes};
+      const ready=minBindingBytes<=bounds.metadataByteLimit&&bytes(metadata)<=this.#limits.maxMetadataBytes&&bytes(result)<=this.#limits.maxMetadataBytes&&bytes({format:'command-receipt/v1',data:result,mac:z})<=this.#limits.maxMetadataBytes+512&&bytes(envelope)<=bounds.contextByteLimit&&bytes(check)<=bounds.checkByteLimit&&bytes({ok:true,value:{...wire,currentness:{instructionsCurrent:false,memoryCurrent:false,taskSnapshotCurrent:false,reasonCodes:['CHECKED_SET_CHANGED','MEMORY_CHANGED','SEMANTIC_CHANGED','SOURCE_UNAVAILABLE','TASK_SNAPSHOT_CHANGED','WINNING_SOURCE_CHANGED']}}})<=bounds.wireByteLimit;
+      return{phase:ready?'ready':'limited',reasonCode:ready?null:'CONTEXT_PREPARATION_LIMIT',configured:true,ready,bounds};
+    });
+  }
+  putPreparedContext(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','expectedMemory','content','sourceRef','summaryChecks','request','observation']);const c=this.#normalAuthority(capability,false,ref(input.taskRef)),request=preparationRequest(input.request,this.#secrets);const historical=this.#preparedCommandReceipt(c,request);if(historical){const graph=this.#preparedGraph(c,request.taskRef,historical.receipt.recordRef),row=this.#commandFor(c,request.commandRef,'putPreparedContext',request.taskRef);return{receipt:row.receipt,checkRef:graph.binding.checkRef,commitDisposition:'historical'};}return this.#normalMut(c,input,'putPreparedContext',c=>{
+      const t=this.#cas(c,input);exact(input.expectedMemory,['namespaceRef','revision']);if(input.expectedMemory.namespaceRef!==c.namespaceRef)fail('UNAUTHORIZED');this.#memoryGuard(c,input.expectedMemory);for(const k of ['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch'])if(input[k]!==request[k])fail('INVALID_INPUT');if(Buffer.byteLength(input.content)>Math.min(65536,this.#limits.maxDataBytes))fail('INPUT_TOO_LARGE');const envelope=parse(input.content);exact(envelope,['contractVersion','materialKind','sourceScope','sourceTaskVersion','sourceAuthEpoch','generatedAt','sourceRefs','sourceProvenance','memory','ledgerSnapshotDigest','content','inputCounts','retainedRefs','droppedRefs','verification']);validateExecutionContext(envelope,{scope:{ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,taskRef:t.id},maxTaskVersion:t.version,maxAuthEpoch:t.auth_epoch,maxGeneratedAt:this.#now(),knownSecrets:this.#secrets});const o=input.observation;exact(o,['contractVersion','sourceScope','sourceTaskVersion','sourceAuthEpoch','generatedAt','ledgerSnapshotDigest','selectionMode','examinedSummaryRefs','winningSourceRefs','retainedRefs','droppedRefs','inputCounts']);if(o.contractVersion!=='df.preparation-observation/v1'||!['all_eligible','explicit_records'].includes(o.selectionMode)||o.selectionMode!==(request.recordRefs===undefined?'all_eligible':'explicit_records'))fail('INVALID_INPUT');for(const k of ['sourceScope','sourceTaskVersion','sourceAuthEpoch','generatedAt','ledgerSnapshotDigest','retainedRefs','droppedRefs','inputCounts'])if(canonical(o[k])!==canonical(envelope[k]))fail('INVALID_INPUT');if(envelope.sourceTaskVersion!==t.version||envelope.sourceAuthEpoch!==t.auth_epoch||envelope.memory.namespaceRef!==c.namespaceRef||envelope.memory.revision!==input.expectedMemory.revision)fail('INVALID_INPUT');sortedRefs(o.examinedSummaryRefs);sortedRefs(o.winningSourceRefs,64,1);const source=this.#preparedSources(c,t.id,o.selectionMode,request.recordRefs??[]);if(canonical(o.examinedSummaryRefs)!==canonical(source.summaries.map(r=>r.recordRef))||canonical(o.winningSourceRefs)!==canonical(source.winners.map(r=>r.recordRef)))fail('SOURCE_UNAVAILABLE');array(input.summaryChecks,64);if(canonical(input.summaryChecks.map(r=>r.recordRef))!==canonical(o.examinedSummaryRefs))fail('INVALID_INPUT');const summaries=source.summaries.map((s,i)=>{const row=input.summaryChecks[i];exact(row,['recordRef','disposition']);if(!['retained_background','dropped_for_budget','excluded_stale_summary'].includes(row.disposition))fail('INVALID_INPUT');const stale=s.sourceTaskVersion!==t.version||s.sourceAuthEpoch!==t.auth_epoch;if(stale!==(row.disposition==='excluded_stale_summary')||!stale&&(row.disposition==='retained_background')!==envelope.retainedRefs.includes(s.recordRef)||row.disposition==='dropped_for_budget'&&!envelope.droppedRefs.includes(s.recordRef))fail('INVALID_INPUT');return{...s,disposition:row.disposition};});const snapshot=this.#snapshot(c,t.id,c.ownerHandle),workFacts={actions:snapshot.actions,workers:snapshot.workers,control:snapshot.control,artifacts:snapshot.artifacts,progress:snapshot.progress,deliveries:snapshot.deliveries,reviews:snapshot.reviews,audits:snapshot.audits,policy:snapshot.policy};if(envelope.ledgerSnapshotDigest!==hash(JSON.stringify({task:taskRecord(t),workFacts})))fail('STALE_VERSION');const expectedSource=hash(JSON.stringify({sourceScope:envelope.sourceScope,sourceTaskVersion:envelope.sourceTaskVersion,sourceAuthEpoch:envelope.sourceAuthEpoch,sourceRefs:envelope.sourceRefs,expectedMemory:input.expectedMemory}));if(ref(input.sourceRef)!==expectedSource)fail('INVALID_INPUT');if(this.#ledger.one('SELECT count(*) AS n FROM automation_records WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,t.id)).n>=this.#limits.maxRecordsPerTask)fail('RECORD_LIMIT');const updated=this.#update(t,t.status,'progress');this.#managed(updated);this.#bumpSemantic(c,t.id);const receipt={...this.#data(c,updated,{...input,kind:'context'}),task:taskRecord(updated)},checkRef=canonicalDigest(['df.prepared-context.check/v1',c.ownerRef,c.workspaceRef,t.id,receipt.recordRef,receipt.digest]),check={contractVersion:'df.prepared-context-check/v1',checkRef,taskRef:t.id,contextRecordRef:receipt.recordRef,contextDigest:receipt.digest,sourceTaskVersion:t.version,sourceAuthEpoch:t.auth_epoch,committedTaskVersion:updated.version,committedAuthEpoch:updated.auth_epoch,semanticRevision:this.#semantic(c,t.id),generatedAt:envelope.generatedAt,ledgerSnapshotDigest:envelope.ledgerSnapshotDigest,memory:detach(input.expectedMemory),method:'version-currentness/v1',winningSources:source.winners,summaryChecks:summaries,conflicts:summaries.filter(s=>s.disposition==='excluded_stale_summary').map(s=>({recordRef:s.recordRef,reason:'stale_summary',winningTaskVersion:t.version,winningAuthEpoch:t.auth_epoch})),ownerRef:c.ownerRef,workspaceRef:c.workspaceRef,commandRef:input.commandRef,preparationPrincipalRef:c.principalRef,preparationRequestDigest:preparationDigest(c,request),selectionMode:o.selectionMode,checkedSetDigest:canonicalDigest(summaries.map(({recordRef,digest})=>({recordRef,digest})))};payload('PreparedCheck',check);this.#check({ok:true,value:{check,currentness:{instructionsCurrent:false,memoryCurrent:false,taskSnapshotCurrent:false,reasonCodes:['CHECKED_SET_CHANGED','MEMORY_CHANGED','SEMANTIC_CHANGED','SOURCE_UNAVAILABLE','TASK_SNAPSHOT_CHANGED','WINNING_SOURCE_CHANGED']}}},65536);this.#check({ok:true,value:this.#preparedReceipt(receipt,input.content)},65536);const checkContent=canonical(check);if(Buffer.byteLength(checkContent)>Math.min(49152,this.#limits.maxDataBytes))fail('INPUT_TOO_LARGE');const checkData=this.#data(c,updated,{commandRef:input.commandRef,kind:'context_check',content:checkContent,sourceRef:checkRef});const binding={contractVersion:'df.prepared-context-binding/v1',checkRef,taskRef:t.id,contextRecordRef:receipt.recordRef,contextDigest:receipt.digest,checkRecordRef:checkData.recordRef,checkDigest:checkData.digest,commandRef:input.commandRef,preparationPrincipalRef:c.principalRef,preparationRequestDigest:check.preparationRequestDigest,selectionMode:o.selectionMode,checkedSetDigest:check.checkedSetDigest,sourceTaskVersion:t.version,sourceAuthEpoch:t.auth_epoch,committedTaskVersion:updated.version,committedAuthEpoch:updated.auth_epoch,semanticRevision:check.semanticRevision,generatedAt:check.generatedAt,namespaceRef:c.namespaceRef,memoryRevision:input.expectedMemory.revision,method:check.method};payload('PreparedBinding',binding);this.#check({version:1,data:binding,mac:this.#seal(c,'prepared_context_check',checkRef,t.id,binding)},Math.min(4096,this.#limits.maxMetadataBytes));this.#saveAuto(c,'prepared_context_check',checkRef,t.id,binding);this.#refresh7Registry(c,'prepared_context_registry');return{receipt,checkRef,commitDisposition:'new'};
+    });}
+  readPreparedContextCheck(handle,input){exact(input,['taskRef','contextRecordRef','expectedTaskVersion','expectedAuthEpoch']);const c=this.#ctx(handle,input.taskRef,['owner']);return this.#normalRead(c,()=>{this.#cas(c,input);const graph=this.#preparedGraph(c,input.taskRef,input.contextRecordRef);const result={check:graph.check,currentness:this.#currentness(c,graph)};this.#check({ok:true,value:result},65536);return result;});}
+  #normalConfiguration(c,content){const cfg=canonicalContent(content,v=>configuration(v,c.source,this.#limits));if(canonical(cfg.configuration.acceptedPolicy)!==canonical(this.#getPolicy(c)))fail('STALE_POLICY');return cfg;}
+  #normalSpecConfiguration(c,spec,cfg,context){const p=cfg.configuration.acceptedPolicy,purpose=spec.executionInput?.purpose??'producer',role=cfg.selection.find(r=>r.purpose===purpose),preset=cfg.preset.find(r=>r.purpose===purpose);if(!role||!preset||purpose==='producer'&&(spec.kind!=='write'||spec.role!=='worker')||spec.units!==1||spec.attemptIndex!==1||spec.resourcePolicyVersion!==p.version||spec.modelPolicyVersion!==p.modelPolicy.version||spec.model.presetRef!==preset.description.presetRef||spec.charges.runtimeMs!==role.charges.runtimeMs||spec.charges.usageUnits!==role.charges.usageUnits||spec.charges.costState!=='estimated'||spec.charges.costEstimateMicros!==0||!spec.charges.costProvenanceRef||spec.executor.toolsDigest!==cfg.tools.toolsDigest||spec.executor.permissionPolicyDigest!==cfg.permission.permissionPolicyDigest||spec.dataDigest!==(spec.executionInput?this.#auditSpec(c,context.binding.taskRef,spec,true).artifactDigest:context.context.digest))fail('SPEC_MISMATCH');const total=p.limits.maxTotalAttempts,required=1+(cfg.configuration.audit?1+cfg.configuration.audit.maxRepairRounds*2:0)+(cfg.configuration.continuation?cfg.configuration.continuation.maxContinuations:0);if(p.limits.maxActive!==1||p.limits.maxAttempts!==1||total<required)fail('ATTEMPT_LIMIT');if(cfg.configuration.audit&&cfg.configuration.audit.maxTotalAttempts!==total||cfg.configuration.continuation&&cfg.configuration.continuation.maxTotalAttempts!==total)fail('STALE_POLICY');return purpose;}
+  planNormalNativeAction(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','contextRecordRef','configurationContent','spec']);const c=this.#normalAuthority(capability,true,ref(input.taskRef)),spec=normalizedSpec(input.spec);return this.#normalMut(c,input,'planNormalNativeAction',c=>{const graph=this.#requirePrepared(c,input.taskRef,input.contextRecordRef,true),cfg=this.#normalConfiguration(c,input.configurationContent);if(!spec.nativeOriginBinding||spec.resumeBinding||spec.executor.mode!=='create')fail('INVALID_INPUT');this.#normalSpecConfiguration(c,spec,cfg,graph);if(canonical(spec.nativeOriginBinding)!==canonical({sourceRef:c.sourceRef,createConfigDigest:hash(input.configurationContent),backendRef:canonicalDigest(cfg.backend),sessionRef:spec.executor.sessionRef}))fail('SPEC_MISMATCH');return this.#planEffect(this.#originalEffectAuthority(c,input.taskRef),input,spec,true);});}
+  #originalInputBinding(c,task,spec,contextRef){if(!spec.executionInput){const graph=this.#requirePrepared(c,task,contextRef,true),b=graph.binding;return{checkRef:b.checkRef,contextRecordRef:b.contextRecordRef,contextDigest:b.contextDigest,preparationPrincipalRef:b.preparationPrincipalRef,preparationRequestDigest:b.preparationRequestDigest};}const input=this.#auditSpec(c,task,spec,true);return{inputRecordRef:input.recordRef,inputDigest:input.digest,auditRef:input.auditRef,bindingDigest:input.bindingDigest,materialDigest:input.materialDigest,previousReportRef:input.previousReportRef??null,artifactTarget:input.purpose==='audit_repair'?{artifactRef:input.artifactRef,version:input.artifactVersion+1}:null};}
+  claimNormalCreate(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','actionRef','actionDigest','nativeId','configurationContent','auditRepair'],['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','actionRef','actionDigest','nativeId','configurationContent']);if(input.auditRepair)exact(input.auditRepair,['auditRef','round','previousReportRef','evidenceRef']);const c=this.#normalAuthority(capability,true,ref(input.taskRef));return this.#normalMut(c,input,'claimNormalCreate',c=>{const cfg=this.#normalConfiguration(c,input.configurationContent),a=this.#action(c,input.taskRef,input.actionRef);if(!a.spec.nativeOriginBinding||a.spec.executor.mode!=='create'||hash(input.configurationContent)!==a.spec.nativeOriginBinding.createConfigDigest||input.nativeId!=='df-'+a.spec.executor.generationRef||a.spec.executor.sessionRef!==reference(input.nativeId))fail('SPEC_MISMATCH');const planRows=this.#ledger.query("SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND task=? AND operation='planNormalNativeAction'",...this.#keys(c,input.taskRef)).filter(r=>this.#commandReceipt(r).actionRef===a.action);if(planRows.length!==1)fail('STORAGE_INVALID');const context=this.#nativeRows(c,'prepared_context_check').find(r=>r.value.contextDigest===a.spec.dataDigest&&r.taskRef===input.taskRef);const contextRef=a.spec.executionInput?this.#auditInput(c,a.spec.executionInput.recordRef).contextRecordRef:context?.value.contextRecordRef;if(!contextRef)fail('PREPARED_CONTEXT_UNAVAILABLE');const graph=this.#requirePrepared(c,input.taskRef,contextRef,true),purpose=this.#normalSpecConfiguration(c,a.spec,cfg,graph),inputBinding=this.#originalInputBinding(c,input.taskRef,a.spec,contextRef);const receipt=this.#claimEffect(this.#originalEffectAuthority(c,input.taskRef),input,true),t=this.#task(c,input.taskRef),identity=this.#data(c,t,{commandRef:input.commandRef,kind:'native_identity',content:canonical({nativeId:input.nativeId}),sourceRef:receipt.claimRef}),configurationData=this.#data(c,t,{commandRef:input.commandRef,kind:'native_configuration',content:input.configurationContent,sourceRef:receipt.claimRef}),originRef=canonicalDigest(['df.normal-native.origin/v1',c.ownerRef,c.workspaceRef,input.taskRef,receipt.claimRef]),intent={contractVersion:'df.normal-native/normal_native_intent/v1',intentRef:receipt.claimRef,taskRef:t.id,actionRef:a.action,actionDigest:a.digest,claimRef:receipt.claimRef,generationRef:receipt.generationRef,sessionRef:receipt.sessionRef,identityRecordRef:identity.recordRef,identityDigest:identity.digest,configurationRecordRef:configurationData.recordRef,configurationDigest:configurationData.digest,sourceRef:c.sourceRef,createConfigDigest:configurationData.digest,backendRef:canonicalDigest(cfg.backend),createdAt:this.#now(),purpose,inputBinding};this.#newNative(c,'normal_native_intent',intent.intentRef,t.id,intent);return{receipt,originRef,sessionRef:receipt.sessionRef,identityRecordRef:identity.recordRef};});}
+  #historyJoin(c,h,intent,claim=null){const expected=claim??intent;for(const k of ['ownerRef','workspaceRef'])if(h[k]!==c[k])fail('SPEC_MISMATCH');for(const k of ['taskRef','claimRef','generationRef','sessionRef'])if(h[k]!==expected[k])fail('SPEC_MISMATCH');const cfg=canonicalContent(this.#privateData(c,intent.taskRef,intent.configurationRecordRef,'native_configuration',intent.configurationDigest).content,x=>configuration(x)),identity=canonicalContent(this.#privateData(c,intent.taskRef,intent.identityRecordRef,'native_identity',intent.identityDigest).content,x=>exact(x,['nativeId']));if(h.header.id!==identity.nativeId||h.header.cwd!==cfg.environment.cwd)fail('SPEC_MISMATCH');const configurationDigest=claim?this.#auto(c,'normal_resume',claim.resumeRef).configurationDigest:intent.configurationDigest;if(h.configurationDigest!==configurationDigest||h.stableSourceRef!==intent.sourceRef)fail('SPEC_MISMATCH');}
+  recordNormalNativeOrigin(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','originRef','creationEvidenceRef','baselineHistoryContent','baselineHistoryDigest']);const c=this.#normalAuthority(capability,true,ref(input.taskRef));return this.#normalMut(c,input,'recordNormalNativeOrigin',c=>{const intent=this.#auto(c,'normal_native_intent',ref(input.claimRef));if(!intent||intent.taskRef!==input.taskRef||intent.actionRef!==input.actionRef||intent.actionDigest!==input.actionDigest||intent.generationRef!==input.generationRef||intent.sessionRef!==input.sessionRef||input.originRef!==canonicalDigest(['df.normal-native.origin/v1',c.ownerRef,c.workspaceRef,input.taskRef,intent.claimRef]))fail('SPEC_MISMATCH');const {w}=this.#claim(c,input);if(!['created','ready'].includes(w.phase)||w.sessionRef!==input.sessionRef||w.terminalEvidenceRef)fail('WORKER_NOT_READY');const h=canonicalContent(input.baselineHistoryContent,historyObservation);this.#historyJoin(c,h,intent);if(h.messages.length||hash(input.baselineHistoryContent)!==ref(input.baselineHistoryDigest))fail('SPEC_MISMATCH');const history=this.#data(c,this.#task(c,input.taskRef),{commandRef:input.commandRef,kind:'native_history',content:input.baselineHistoryContent,sourceRef:input.originRef}),origin={contractVersion:'df.normal-native/normal_native_origin/v1',originRef:input.originRef,intentRef:intent.intentRef,taskRef:intent.taskRef,claimRef:intent.claimRef,generationRef:intent.generationRef,sessionRef:intent.sessionRef,creationEvidenceRef:ref(input.creationEvidenceRef),baselineHistoryRecordRef:history.recordRef,baselineHistoryDigest:history.digest,createdAt:this.#now()};this.#newNative(c,'normal_native_origin',origin.originRef,origin.taskRef,origin);return{originRef:origin.originRef,claimRef:origin.claimRef,generationRef:origin.generationRef,sessionRef:origin.sessionRef,baselineHistoryRecordRef:history.recordRef};});}
+  #validateIntentInput(c,intent,a){const b=intent.inputBinding;if(intent.purpose==='producer'){const prepared=this.#preparedGraph(c,intent.taskRef,b.contextRecordRef);for(const k of ['checkRef','contextRecordRef','contextDigest','preparationPrincipalRef','preparationRequestDigest'])if(prepared.binding[k]!==b[k])fail('STORAGE_INVALID');if(a.spec.dataDigest!==b.contextDigest||a.spec.executionInput)fail('STORAGE_INVALID');}else{const input=this.#auditInput(c,b.inputRecordRef);if(a.spec.executionInput?.recordRef!==b.inputRecordRef||input.digest!==b.inputDigest||input.purpose!==intent.purpose||input.auditRef!==b.auditRef||input.bindingDigest!==b.bindingDigest||input.materialDigest!==b.materialDigest||(input.previousReportRef??null)!==b.previousReportRef)fail('STORAGE_INVALID');if(intent.purpose==='audit_repair'&&(b.artifactTarget.artifactRef!==input.artifactRef||b.artifactTarget.version!==input.artifactVersion+1))fail('STORAGE_INVALID');}}
+  #claimGraph(c,task,claimRef){const intent=this.#auto(c,'normal_native_intent',claimRef),resumed=this.#auto(c,'normal_resume_claim',claimRef);if(intent&&resumed||!intent&&!resumed)fail('NORMAL_NATIVE_ORIGIN_UNAVAILABLE');const origin=intent?this.#nativeRows(c,'normal_native_origin').find(r=>r.value.intentRef===claimRef)?.value:this.#auto(c,'normal_native_origin',resumed.originRef),original=intent??(origin&&this.#auto(c,'normal_native_intent',origin.intentRef)),resume=resumed?this.#auto(c,'normal_resume',resumed.resumeRef):null;if(!origin||!original||original.taskRef!==task||resumed&&(!resume||resume.originRef!==origin.originRef))fail('NORMAL_NATIVE_ORIGIN_UNAVAILABLE');return{intent:original,origin,resume,resumed};}
+  #normalExecutionAdmission(c,input){const worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,input.taskRef),ref(input.claimRef));if(!worker)return;const a=this.#action(c,input.taskRef,parse(worker.payload).actionRef);if(a.spec.nativeOriginBinding||a.spec.resumeBinding){const graph=this.#claimGraph(c,input.taskRef,input.claimRef);if(a.spec.resumeBinding&&graph.resume?.resumeRef!==a.spec.resumeBinding.resumeRef)fail('SPEC_MISMATCH');}}
+  #refuseGenericClaimEffect(c,input,normal){if(normal||!input.claimRef)return;const row=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,input.taskRef),input.claimRef);if(!row)return;const a=this.#action(c,input.taskRef,parse(row.payload).actionRef);if(a.spec.nativeOriginBinding||a.spec.resumeBinding)fail('UNAUTHORIZED');}
+  #captureBase(c,input){const {intent,origin,resume,resumed}=this.#claimGraph(c,input.taskRef,input.claimRef),{a,w,t}=this.#claim(c,input),execution=this.#auto(c,'execution',input.claimRef);if(!execution||execution.executionRef!==input.executionRef||execution.generationRef!==input.generationRef||w.sessionRef!==input.sessionRef||execution.actionRef!==a.action||execution.actionDigest!==a.digest||!['dispatch_intent','unknown'].includes(execution.state)||w.terminalEvidenceRef)fail('SPEC_MISMATCH');const h=canonicalContent(input.committedHistoryContent,historyObservation);this.#historyJoin(c,h,intent,resumed);integer(input.inputCursor,0,h.events.length-1);integer(input.cursor,input.inputCursor+1,h.events.length-1);const inputEvent=h.events[input.inputCursor],outputEvent=h.events[input.cursor],suffix=h.events.slice(input.inputCursor);if(hash(input.committedHistoryContent)!==ref(input.committedHistoryDigest)||inputEvent.type!=='user/message'||inputEvent.data.id!==input.executionRef||inputEvent.data.source.kind!==(intent.purpose==='producer'?'df-context':'df-audit-input')||outputEvent.type!=='assistant/message'||suffix.filter(e=>e.type==='user/message').length!==1||suffix.filter(e=>e.type==='assistant/message').length!==1||!h.events.slice(input.cursor+1).some(e=>e.type==='turn/end'&&e.data.turn===outputEvent.data.turn&&e.data.reason.kind==='completed'))fail('SPEC_MISMATCH');integer(input.usageUnits,0,a.spec.charges.usageUnits);const contextRecordRef=intent.purpose==='producer'?(resume?.contextRecordRef??intent.inputBinding.contextRecordRef):this.#auditInput(c,intent.inputBinding.inputRecordRef).contextRecordRef,context=this.#requirePrepared(c,t.id,contextRecordRef,false);const body=intent.purpose==='producer'?context.context.content:this.#auditResultInputContent(c,intent);const newUsers=h.messages.filter(m=>m.role==='user'&&m.id===input.executionRef);if(newUsers.length!==1||newUsers[0].content[0].text!==body)fail('SPEC_MISMATCH');const baseline=resume?canonicalContent(this.#privateData(c,t.id,resume.historyRecordRef,'native_history',resume.historyDigest).content,resumeHistory):canonicalContent(this.#privateData(c,t.id,origin.baselineHistoryRecordRef,'native_history',origin.baselineHistoryDigest).content,historyObservation);if(canonical(h.events.slice(0,baseline.events.length))!==canonical(baseline.events)||input.inputCursor<baseline.events.length)fail('WORKER_RESUME_HISTORY_STALE');const expectedMessages=resume?resumeHistory(parse(this.#privateData(c,t.id,resume.historyRecordRef,'native_history',resume.historyDigest).content)).messages:[];const messages=h.messages;if(messages.length!==expectedMessages.length+3-(resume?1:0)||resume&&canonical(messages.slice(0,expectedMessages.length))!==canonical(expectedMessages)||messages.at(-1).role!=='assistant')fail('SPEC_MISMATCH');return{intent,origin,resume,resumed,a,w,t,execution,h,context};}
+  #auditResultInputContent(c,intent){return this.#privateData(c,intent.taskRef,intent.inputBinding.inputRecordRef,'context',intent.inputBinding.inputDigest).content;}
+  #captureValue(c,input,base,artifact,auditBinding){const {intent,origin,resume,a,h,context}=base,history=this.#data(c,base.t,{commandRef:input.commandRef,kind:'native_history',content:input.committedHistoryContent,sourceRef:input.executionRef}),captureRef=canonicalDigest(['df.normal-native.capture/v1',c.ownerRef,c.workspaceRef,input.taskRef,input.claimRef,input.executionRef]);return{contractVersion:'df.normal-native/normal_native_capture/v1',captureRef,originRef:origin.originRef,taskRef:input.taskRef,actionRef:a.action,actionDigest:a.digest,claimRef:input.claimRef,generationRef:input.generationRef,sessionRef:input.sessionRef,executionRef:input.executionRef,contextRecordRef:context.context.recordRef,contextDigest:context.context.digest,resumeRef:resume?.resumeRef??null,fullInputDigest:resume?.inputDigest??null,artifactRef:artifact?.artifactRef??null,artifactVersion:artifact?.version??null,artifactDigest:artifact?.digest??null,resultDigest:ref(input.resultDigest??hash(input.content)),cursor:input.cursor,persistenceEvidenceRef:ref(input.persistenceEvidenceRef??input.evidenceRef),committedHistoryRecordRef:history.recordRef,committedHistoryDigest:history.digest,eventCount:h.events.length,headerDigest:canonicalDigest(h.header),messagesDigest:canonicalDigest(h.messages),usageUnits:input.usageUnits,accounting:'df-testing-utf8-byte-units/v1',createdAt:this.#now(),phase:'output',purpose:intent.purpose,inputCursor:input.inputCursor,auditBinding,outputCaptureRef:null};}
+  captureNormalNativeResult(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','actionRef','actionDigest','claimRef','generationRef','sessionRef','executionRef','artifactRef','version','resultContent','resultDigest','inputDigest','inputCursor','cursor','persistenceEvidenceRef','committedHistoryContent','committedHistoryDigest','usageUnits']);const c=this.#normalAuthority(capability,true,ref(input.taskRef));return this.#normalMut(c,input,'captureNormalNativeResult',c=>{const base=this.#captureBase(c,input);if(base.intent.purpose!=='producer'||input.version!==1||input.actionRef!==base.a.action||input.actionDigest!==base.a.digest||input.inputDigest!==base.context.context.digest)fail('SPEC_MISMATCH');const result=parse(input.resultContent);exact(result,['contractVersion','source','content']);exact(result.source,['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','executionRef','inputDigest','cursor','resultDigest']);if(result.contractVersion!=='df.native-result/v1')fail('INVALID_INPUT');for(const k of Object.keys(result.source))if(result.source[k]!==input[k])fail('SPEC_MISMATCH');if(hash(result.content)!==input.resultDigest||base.h.messages.at(-1).content[0].text!==result.content)fail('SPEC_MISMATCH');const receipt=this.#artifactEffect(this.#originalEffectAuthority(c,input.taskRef),{taskRef:input.taskRef,commandRef:input.commandRef,expectedTaskVersion:input.expectedTaskVersion,expectedAuthEpoch:input.expectedAuthEpoch,artifactRef:input.artifactRef,version:1,producerClaimRef:input.claimRef,generationRef:input.generationRef,content:input.resultContent},true),capture=this.#captureValue(c,input,base,receipt,null);this.#newNative(c,'normal_native_capture',capture.captureRef,input.taskRef,capture);return{receipt,captureRef:capture.captureRef};},'terminal');}
+  captureNormalNativeAuditResult(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','inputCursor','cursor','content','evidenceRef','committedHistoryContent','committedHistoryDigest','usageUnits']);const c=this.#normalAuthority(capability,true,ref(input.taskRef)),bounds=this.#requireAuditBounds();integer(input.inputCursor);integer(input.cursor,input.inputCursor+1);if(Buffer.byteLength(input.content)>bounds.resultByteLimit)fail('INPUT_TOO_LARGE');return this.#normalMut(c,input,'captureNormalNativeAuditResult',c=>{const base=this.#captureBase(c,input);if(base.intent.purpose==='producer'||base.h.messages.at(-1).content[0].text!==input.content)fail('SPEC_MISMATCH');const originalInput={};for(const k of ['taskRef','commandRef','claimRef','generationRef','executionRef','sessionRef','inputCursor','cursor','content','evidenceRef'])originalInput[k]=input[k];const receipt=this.#auditCaptureEffect(this.#originalEffectAuthority(c,input.taskRef,true),originalInput,true),binding={resultRef:receipt.resultRef,resultRecordRef:receipt.recordRef,resultDigest:receipt.digest,...base.intent.inputBinding},capture=this.#captureValue(c,input,base,null,binding);this.#newNative(c,'normal_native_capture',capture.captureRef,input.taskRef,capture);return{receipt,captureRef:capture.captureRef};},'terminal');}
+  writeNormalNativeRepairArtifact(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','artifactRef','version','producerClaimRef','generationRef','content','outputCaptureRef']);const c=this.#normalAuthority(capability,true,ref(input.taskRef));return this.#normalMut(c,input,'writeNormalNativeRepairArtifact',c=>{const output=this.#auto(c,'normal_native_capture',ref(input.outputCaptureRef));if(!output||output.purpose!=='audit_repair'||output.phase!=='output'||output.claimRef!==input.producerClaimRef||output.generationRef!==input.generationRef||output.taskRef!==input.taskRef||output.auditBinding.artifactTarget?.artifactRef!==input.artifactRef||output.auditBinding.artifactTarget?.version!==input.version)fail('AUDIT_BINDING_MISMATCH');const result=this.#auditResult(c,output.auditBinding.resultRef);if(result.content!==input.content||hash(input.content)!==output.resultDigest)fail('SPEC_MISMATCH');const {outputCaptureRef,...originalInput}=input,receipt=this.#artifactEffect(this.#originalEffectAuthority(c,input.taskRef),originalInput,true),captureRef=canonicalDigest(['df.normal-native.repair-artifact/v1',c.ownerRef,c.workspaceRef,input.taskRef,input.producerClaimRef,output.executionRef,input.artifactRef,input.version]),capture={...output,captureRef,artifactRef:receipt.artifactRef,artifactVersion:receipt.version,artifactDigest:receipt.digest,phase:'repair_artifact',outputCaptureRef,createdAt:this.#now()};this.#newNative(c,'normal_native_capture',captureRef,input.taskRef,capture);return{receipt,captureRef};},'terminal');}
+  #validateCapture(c,v,id,out){
+    if(v.captureRef!==id||out.captureRef!==id)fail('STORAGE_INVALID');const {intent,origin,resume,resumed}=this.#claimGraph(c,v.taskRef,v.claimRef),a=this.#action(c,v.taskRef,v.actionRef),execution=this.#auto(c,'execution',v.claimRef);if(intent.purpose!==v.purpose||origin.originRef!==v.originRef||a.digest!==v.actionDigest||a.metadata.claimRef!==v.claimRef||a.spec.executor.generationRef!==v.generationRef||a.spec.executor.sessionRef!==v.sessionRef||execution?.executionRef!==v.executionRef||resume?.resumeRef!==(v.resumeRef??undefined)||resume?.inputDigest!==(v.fullInputDigest??undefined))fail('STORAGE_INVALID');const context=this.#privateData(c,v.taskRef,v.contextRecordRef,'context',v.contextDigest);this.#preparedGraph(c,v.taskRef,context.recordRef);const h=canonicalContent(this.#privateData(c,v.taskRef,v.committedHistoryRecordRef,'native_history',v.committedHistoryDigest).content,historyObservation);this.#historyJoin(c,h,intent,resumed);integer(v.inputCursor,0,h.events.length-1);integer(v.cursor,v.inputCursor+1,h.events.length-1);const inputEvent=h.events[v.inputCursor],outputEvent=h.events[v.cursor];if(v.eventCount!==h.events.length||inputEvent.type!=='user/message'||inputEvent.data.id!==v.executionRef||inputEvent.data.source.kind!==(intent.purpose==='producer'?'df-context':'df-audit-input')||outputEvent.type!=='assistant/message'||canonical(outputEvent.data.message)!==canonical(h.messages.at(-1))||!h.events.slice(v.cursor+1).some(e=>e.type==='turn/end'&&e.data.turn===outputEvent.data.turn&&e.data.reason.kind==='completed')||v.headerDigest!==canonicalDigest(h.header)||v.messagesDigest!==canonicalDigest(h.messages)||v.usageUnits>a.spec.charges.usageUnits||h.messages.at(-1)?.content[0].text===undefined||hash(h.messages.at(-1).content[0].text)!==v.resultDigest)fail('STORAGE_INVALID');
+    if(v.artifactRef!==null){const artifact=this.#artifact(c,v.taskRef,v.artifactRef,v.artifactVersion);if(!artifact||artifact.digest!==v.artifactDigest||artifact.producerClaimRef!==v.claimRef||artifact.generationRef!==v.generationRef||out.receipt.digest!==artifact.digest||out.receipt.recordRef!==artifact.recordRef)fail('STORAGE_INVALID');if(v.purpose==='producer'){const raw=parse(this.#privateData(c,v.taskRef,artifact.recordRef,'artifact',artifact.digest).content);if(raw.contractVersion!=='df.native-result/v1'||raw.source.executionRef!==v.executionRef||raw.source.claimRef!==v.claimRef||raw.source.resultDigest!==v.resultDigest||raw.source.inputDigest!==v.contextDigest||hash(raw.content)!==v.resultDigest)fail('STORAGE_INVALID');}}
+    if(v.auditBinding){const r=this.#auditResult(c,v.auditBinding.resultRef).association;if(v.auditBinding.resultRecordRef!==r.recordRef||v.auditBinding.resultDigest!==r.digest||r.executionRef!==v.executionRef||r.claimRef!==v.claimRef||r.inputDigest!==v.auditBinding.inputDigest||r.inputRecordRef!==v.auditBinding.inputRecordRef||r.materialDigest!==v.auditBinding.materialDigest||r.bindingDigest!==v.auditBinding.bindingDigest)fail('STORAGE_INVALID');if(v.phase==='output'&&out.receipt.resultRef!==r.resultRef)fail('STORAGE_INVALID');}
+    if(v.phase==='repair_artifact'){const output=this.#auto(c,'normal_native_capture',v.outputCaptureRef);if(!output||output.phase!=='output'||output.purpose!=='audit_repair'||output.claimRef!==v.claimRef||output.executionRef!==v.executionRef||output.resultDigest!==v.resultDigest||canonical(v.auditBinding)!==canonical(output.auditBinding)||v.artifactRef!==v.auditBinding.artifactTarget.artifactRef||v.artifactVersion!==v.auditBinding.artifactTarget.version)fail('STORAGE_INVALID');}
+  }
+  #validateFinish(c,v,id,out,command){const capture=this.#auto(c,'normal_native_capture',v.captureRef),a=capture&&this.#action(c,v.taskRef,capture.actionRef),worker=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,v.taskRef),v.claimRef);if(v.finishRef!==id||id!==v.claimRef||!capture||capture.phase!=='output'||capture.claimRef!==v.claimRef||capture.generationRef!==v.generationRef||capture.executionRef!==v.executionRef||v.usageUnits!==capture.usageUnits||out.finishRef!==v.finishRef||out.receipt.claimRef!==v.claimRef||out.receipt.reservationHeld!==(v.releaseState==='held')||out.receipt.releaseEvidenceRef!==v.releaseEvidenceRef||v.commandRef!==command.id||!worker||parse(worker.payload).terminalEvidenceRef!==v.terminalEvidenceRef||a.metadata.outcomeEvidenceRef!==v.outcomeEvidenceRef||a.metadata.usageState!=='actual'||a.metadata.usageUnits!==v.usageUnits)fail('STORAGE_INVALID');ref(v.ownerRequestDigest);if(v.artifactCaptureRef!==null){const artifact=this.#auto(c,'normal_native_capture',v.artifactCaptureRef);if(!artifact||artifact.outputCaptureRef!==v.captureRef||artifact.phase!=='repair_artifact'||artifact.claimRef!==v.claimRef)fail('STORAGE_INVALID');}if(v.releaseState==='released'){if(a.metadata.releaseEvidenceRef!==v.releaseEvidenceRef||this.#ledger.one('SELECT 1 FROM reservations WHERE claim_id=?',a.claim_id))fail('STORAGE_INVALID');this.#roleFinished(c,capture,v.artifactCaptureRef);}}
+  #roleFinished(c,capture,artifactCaptureRef){if(capture.purpose==='audit_review'){const execution=this.#auto(c,'execution',capture.claimRef),report=execution?.reportRef&&this.#auto(c,'report',execution.reportRef);if(!report?.native||report.native.resultRef!==capture.auditBinding.resultRef||report.claimRef!==capture.claimRef)fail('AUDIT_RESULT_REQUIRED');}else if(capture.purpose==='audit_repair'){const artifact=artifactCaptureRef&&this.#auto(c,'normal_native_capture',artifactCaptureRef);if(!artifact||artifact.outputCaptureRef!==capture.captureRef)fail('AUDIT_RESULT_REQUIRED');}}
+  finishNormalNativeExecution(capability,input){if(!input||typeof input!=='object'||types.isProxy(input)||Array.isArray(input)||Object.getPrototypeOf(input)!==Object.prototype)fail('INVALID_INPUT');exact(input,Object.keys(Object.getOwnPropertyDescriptors(input)));const q=ownerFinishRequest(input.ownerRequest),c=this.#normalAuthority(capability,true,q.taskRef);this.#ctx(c.ownerHandle,q.taskRef,['owner']);this.#readFinish(c,q);input=normalInput(input);exact(input,['taskRef','commandRef','claimRef','generationRef','executionRef','captureRef','terminalEvidenceRef','outcomeEvidenceRef','usage','ownerRequest','artifactCaptureRef']);for(const k of ['taskRef','commandRef','claimRef','generationRef','executionRef'])if(input[k]!==q[k])fail('INVALID_INPUT');exact(input.usage,['state','units']);if(input.usage.state!=='actual')fail('INVALID_INPUT');integer(input.usage.units);return this.#normalMut(c,input,'finishNormalNativeExecution',c=>{this.#requireOwnerFinishIntent(c,q);this.#cas(c,q);const capture=this.#auto(c,'normal_native_capture',ref(input.captureRef)),{a,w}=this.#claim(c,input);if(!capture||capture.phase!=='output'||capture.taskRef!==input.taskRef||capture.claimRef!==input.claimRef||capture.generationRef!==input.generationRef||capture.executionRef!==input.executionRef||capture.actionRef!==q.actionRef||capture.actionDigest!==a.digest||capture.usageUnits!==input.usage.units||w.terminalEvidenceRef!==ref(input.terminalEvidenceRef)||w.phase!=='stopped')fail('WORKER_FINISH_UNAVAILABLE');if(input.artifactCaptureRef!==null)ref(input.artifactCaptureRef);let roleComplete=true;try{this.#roleFinished(c,capture,input.artifactCaptureRef);}catch(error){if(error.code!=='AUDIT_RESULT_REQUIRED')throw error;roleComplete=false;}const receipt=this.#settleEffect(this.#originalEffectAuthority(c,input.taskRef,true),{taskRef:input.taskRef,commandRef:input.commandRef,claimRef:input.claimRef,generationRef:input.generationRef,outcome:'completed',evidenceRef:ref(input.outcomeEvidenceRef),terminalEvidenceRef:input.terminalEvidenceRef,usage:input.usage},true,roleComplete),finish={contractVersion:'df.normal-native/normal_native_finish/v1',finishRef:input.claimRef,taskRef:input.taskRef,claimRef:input.claimRef,generationRef:input.generationRef,executionRef:input.executionRef,captureRef:input.captureRef,terminalEvidenceRef:input.terminalEvidenceRef,outcomeEvidenceRef:input.outcomeEvidenceRef,releaseEvidenceRef:receipt.releaseEvidenceRef??null,usageState:'actual',usageUnits:input.usage.units,releaseState:receipt.reservationHeld?'held':'released',createdAt:this.#now(),commandRef:q.commandRef,ownerRequestDigest:finishDigest(c,q),artifactCaptureRef:input.artifactCaptureRef};this.#newNative(c,'normal_native_finish',finish.finishRef,input.taskRef,finish);return{receipt,finishRef:finish.finishRef};},'terminal');}
+  readNormalNativeFinish(handle,input){const q=ownerFinishRequest(input),c=this.#ctx(handle,q.taskRef,['owner']);return this.#readFinish(c,q);}
+  #finishCommand(c,q,command){
+    const result=this.#commandReceipt(command),finish=this.#auto(c,'normal_native_finish',q.claimRef);
+    if(command.operation!=='finishNormalNativeExecution'||command.task!==q.taskRef||!finish||finish.commandRef!==q.commandRef||finish.ownerRequestDigest!==finishDigest(c,q))fail('IDEMPOTENCY_CONFLICT');
+    if(result.finishRef!==finish.finishRef||result.receipt.claimRef!==q.claimRef)fail('STORAGE_INVALID');
+    return{receipt:result.receipt,finishRef:result.finishRef};
+  }
+  #readFinish(c,q){return this.#normalRead(c,()=>{const command=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,q.commandRef);if(command)return this.#finishCommand(c,q,command);if(this.#auto(c,'normal_native_finish',q.claimRef))fail('WORKER_FINISH_UNAVAILABLE');return null;});}
+
+  #ownerFinishIntentId(c,taskRef,commandRef){return canonicalDigest(['df.owner-native-finish-intent/v1',c.ownerRef,c.workspaceRef,taskRef,commandRef]);}
+  #ownerFinishWire(value){this.#check({ok:true,value},OWNER_FINISH_WIRE_LIMIT);return detach(value);}
+  #ownerFinishIdentity(c,input){
+    const t=this.#task(c,input.taskRef),a=this.#action(c,input.taskRef,input.actionRef);
+    const row=this.#ledger.one('SELECT payload FROM runtime_workers WHERE owner=? AND workspace=? AND task=? AND claim=?',...this.#keys(c,input.taskRef),input.claimRef);
+    const w=row&&parse(row.payload),execution=this.#auto(c,'execution',input.claimRef);
+    if(!w||!execution||w.claimRef!==input.claimRef||w.actionRef!==input.actionRef||w.actionDigest!==a.digest||w.generationRef!==input.generationRef||a.metadata.claimRef!==input.claimRef||a.spec.executor.generationRef!==input.generationRef||a.metadata.executionRef!==input.executionRef||execution.taskRef!==input.taskRef||execution.actionRef!==input.actionRef||execution.actionDigest!==a.digest||execution.claimRef!==input.claimRef||execution.generationRef!==input.generationRef||execution.executionRef!==input.executionRef)fail('WORKER_FINISH_UNAVAILABLE');
+    return{t,a,w,execution};
+  }
+  #ownerFinishActive(c,q){
+    this.#cas(c,q);
+    if(this.#auto(c,'normal_native_finish',q.claimRef))fail('WORKER_FINISH_UNAVAILABLE');
+    const {t,a,w,execution}=this.#ownerFinishIdentity(c,q),held=this.#claim(c,q);
+    if(held.a.action!==a.action||held.w.claimRef!==w.claimRef||!a.spec.nativeOriginBinding&&!a.spec.resumeBinding)fail('WORKER_FINISH_UNAVAILABLE');
+    const graph=this.#claimGraph(c,q.taskRef,q.claimRef);
+    if(a.spec.resumeBinding&&graph.resume?.resumeRef!==a.spec.resumeBinding.resumeRef)fail('SPEC_MISMATCH');
+    this.#ownerFinishCaptured(c,q,a,execution,graph);
+    if(!this.#ledger.one('SELECT 1 FROM reservations WHERE owner=? AND workspace=? AND task=? AND claim_id=? AND action=?',...this.#keys(c,q.taskRef),a.claim_id,a.action))fail('STALE_CLAIM');
+    return t;
+  }
+  #ownerFinishCaptured(c,q,a,execution,graph){
+    // Only already committed original capture facts may precede owner Q. This
+    // guard never captures, repairs, reports, refreshes Q or predicts future CAS.
+    const captureRef=canonicalDigest(['df.normal-native.capture/v1',c.ownerRef,c.workspaceRef,q.taskRef,q.claimRef,q.executionRef]);
+    const capture=this.#auto(c,'normal_native_capture',captureRef),command=this.#nativeCommand(c,'normal_native_capture',captureRef);
+    const operation=graph.intent.purpose==='producer'?'captureNormalNativeResult':'captureNormalNativeAuditResult';
+    if(!capture||!command||command.operation!==operation||command.task!==q.taskRef||capture.phase!=='output'||capture.taskRef!==q.taskRef||capture.actionRef!==q.actionRef||capture.actionDigest!==a.digest||capture.claimRef!==q.claimRef||capture.generationRef!==q.generationRef||capture.executionRef!==q.executionRef||capture.purpose!==graph.intent.purpose||capture.originRef!==graph.origin.originRef)fail('WORKER_FINISH_UNAVAILABLE');
+    this.#validateCapture(c,capture,captureRef,this.#commandReceipt(command));
+    if(capture.purpose==='audit_review'&&execution.reportRef){
+      this.#roleFinished(c,capture,null);
+      this.#validateNativeReport(c,this.#auto(c,'report',execution.reportRef));
+    }
+    if(capture.purpose==='audit_repair'){
+      const repairs=this.#nativeRows(c,'normal_native_capture').filter(row=>row.value.phase==='repair_artifact'&&row.value.outputCaptureRef===captureRef);
+      if(repairs.length>1)fail('WORKER_FINISH_UNAVAILABLE');
+      if(repairs.length){
+        const row=repairs[0],repair=row.value,repairCommand=this.#nativeCommand(c,'normal_native_capture',row.id);
+        if(!repairCommand||repairCommand.operation!=='writeNormalNativeRepairArtifact'||repairCommand.task!==q.taskRef||row.taskRef!==q.taskRef||repair.taskRef!==q.taskRef||repair.actionRef!==q.actionRef||repair.actionDigest!==a.digest||repair.claimRef!==q.claimRef||repair.generationRef!==q.generationRef||repair.executionRef!==q.executionRef||repair.purpose!==capture.purpose)fail('WORKER_FINISH_UNAVAILABLE');
+        this.#validateCapture(c,repair,row.id,this.#commandReceipt(repairCommand));
+        this.#roleFinished(c,capture,row.id);
+      }
+    }
+    // Absent optional role evidence retains the original truthful held-finish
+    // branch. The original final writer alone computes completion/release.
+  }
+  #ownerFinishIntentRow(c,row){
+    if(row.owner!==c.ownerRef||row.workspace!==c.workspaceRef||row.operation!==OWNER_FINISH_INTENT_OPERATION)fail('STORAGE_INVALID');
+    const receipt=this.#commandReceipt(row);
+    exact(receipt,['contractVersion','recordRef','digest','ownerRequestDigest']);
+    if(receipt.contractVersion!=='df.owner-finish-intent-receipt/v1')fail('STORAGE_INVALID');
+    for(const k of ['recordRef','digest','ownerRequestDigest'])ref(receipt[k]);this.#check(receipt);
+    const data=this.#privateData(c,row.task,receipt.recordRef,OWNER_FINISH_INTENT_KIND,receipt.digest);
+    exact(data,['recordRef','digest','kind','sourceRef','taskVersion','authEpoch','generationRef','createdAt','byteLength','cryptoVersion','content']);
+    const {content,...metadata}=data;this.#check(metadata);
+    const body=canonicalContent(content,value=>{exact(value,['contractVersion','request','ownerRequestDigest']);if(value.contractVersion!=='df.owner-finish-intent/v1')fail('STORAGE_INVALID');ownerFinishRequest(value.request);ref(value.ownerRequestDigest);},this.#limits.maxDataBytes);
+    const q=ownerFinishRequest(body.request),digest=finishDigest(c,q);
+    if(row.task!==q.taskRef||row.id!==this.#ownerFinishIntentId(c,q.taskRef,q.commandRef)||receipt.recordRef!==canonicalDigest({commandRef:row.id,kind:OWNER_FINISH_INTENT_KIND})||receipt.ownerRequestDigest!==digest||body.ownerRequestDigest!==digest||data.sourceRef!==q.commandRef||data.taskVersion!==q.expectedTaskVersion||data.authEpoch!==q.expectedAuthEpoch)fail('STORAGE_INVALID');
+    this.#ownerFinishIdentity(c,q);
+    return{request:q,ownerRequestDigest:digest,receipt};
+  }
+  #ownerFinishIntent(c,q){
+    const row=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,this.#ownerFinishIntentId(c,q.taskRef,q.commandRef));
+    if(!row)return null;
+    const intent=this.#ownerFinishIntentRow(c,row);
+    if(canonical(intent.request)!==canonical(q))fail('IDEMPOTENCY_CONFLICT');
+    return intent;
+  }
+  #requireOwnerFinishIntent(c,q){const intent=this.#ownerFinishIntent(c,q);if(!intent)fail('OWNER_FINISH_INTENT_REQUIRED');return intent;}
+  #ownerFinishHistorical(c,q){
+    const command=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,q.commandRef);
+    return command?this.#finishCommand(c,q,command):null;
+  }
+  #ownerFinishProjection(c,intent,historical=this.#ownerFinishHistorical(c,intent.request)){
+    return this.#ownerFinishWire({state:historical?'finish_committed':'intent_committed',request:intent.request,ownerRequestDigest:intent.ownerRequestDigest,settlement:historical?historical.receipt:null});
+  }
+  #ownerFinishLegacy(){return this.#ownerFinishWire({state:'legacy_unrestorable',request:null,ownerRequestDigest:null,settlement:null});}
+  #ownerFinishEntries(c,input){
+    this.#ownerFinishIdentity(c,input);
+    const commands=new Map();
+    for(const row of this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND task=? AND operation=?',...this.#keys(c,input.taskRef),OWNER_FINISH_INTENT_OPERATION)){
+      const intent=this.#ownerFinishIntentRow(c,row),q=intent.request;
+      if(['actionRef','claimRef','generationRef','executionRef'].some(k=>q[k]!==input[k]))continue;
+      const historical=this.#ownerFinishHistorical(c,q);
+      commands.set(q.commandRef,{commandRef:q.commandRef,state:historical?'finish_committed':'intent_committed'});
+    }
+    // These two original operations expose an authenticated claim association.
+    // No request/CAS is reconstructed for their legacy command projection.
+    for(const row of this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND task=?',...this.#keys(c,input.taskRef))){
+      if(!['finishNormalNativeExecution','settleAction'].includes(row.operation)||commands.has(row.id))continue;
+      const out=this.#commandReceipt(row,false,true);if(out===null)continue;
+      const receipt=row.operation==='finishNormalNativeExecution'?out.receipt:out;
+      if(receipt.claimRef!==input.claimRef)continue;
+      if(row.operation==='finishNormalNativeExecution'){
+        const finish=this.#auto(c,'normal_native_finish',input.claimRef);
+        if(!finish||finish.commandRef!==row.id||finish.taskRef!==input.taskRef||finish.generationRef!==input.generationRef||finish.executionRef!==input.executionRef||out.finishRef!==finish.finishRef)fail('STORAGE_INVALID');
+      }
+      commands.set(row.id,{commandRef:row.id,state:'legacy_unrestorable'});
+    }
+    const result=[...commands.values()].sort((a,b)=>a.commandRef.localeCompare(b.commandRef));
+    if(result.length>OWNER_FINISH_COMMAND_LIMIT)fail('OWNER_COMMAND_LIMIT');
+    return result;
+  }
+  #validateOwnerFinishIntentScopes(){
+    const scopes=new Map();
+    for(const row of this.#ledger.query('SELECT DISTINCT owner,workspace FROM runtime_commands WHERE operation=?',OWNER_FINISH_INTENT_OPERATION))scopes.set(row.owner+row.workspace,{ownerRef:row.owner,workspaceRef:row.workspace});
+    for(const row of this.#ledger.query('SELECT DISTINCT owner,workspace FROM runtime_data WHERE kind=?',OWNER_FINISH_INTENT_KIND))scopes.set(row.owner+row.workspace,{ownerRef:row.owner,workspaceRef:row.workspace});
+    if(scopes.size&&this.#ledger.one('PRAGMA user_version').user_version<7)fail('SCHEMA_UNSUPPORTED');
+    for(const c of scopes.values())this.#validateOwnerFinishIntents(c);
+  }
+  #validateOwnerFinishIntents(c){
+    try{
+      const owned=new Set(),commandRefs=new Set(),executions=new Map();
+      for(const row of this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND operation=?',c.ownerRef,c.workspaceRef,OWNER_FINISH_INTENT_OPERATION)){
+        const intent=this.#ownerFinishIntentRow(c,row),q=intent.request;
+        if(owned.has(intent.receipt.recordRef)||commandRefs.has(q.commandRef))fail('STORAGE_INVALID');
+        owned.add(intent.receipt.recordRef);commandRefs.add(q.commandRef);
+        const key=canonical([q.taskRef,q.actionRef,q.claimRef,q.generationRef,q.executionRef]);
+        const previous=executions.get(key),count=(previous?.count||0)+1;if(count>OWNER_FINISH_COMMAND_LIMIT)fail('STORAGE_INVALID');executions.set(key,{count,request:q});
+        const historical=this.#ownerFinishHistorical(c,q);
+        if(historical){const command=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,q.commandRef),finish=this.#auto(c,'normal_native_finish',q.claimRef);this.#validateFinish(c,finish,finish.finishRef,historical,command);}
+        this.#ownerFinishProjection(c,intent,historical);
+      }
+      for(const entry of executions.values())this.#ownerFinishEntries(c,entry.request);
+      for(const row of this.#ledger.query('SELECT id FROM runtime_data WHERE owner=? AND workspace=? AND kind=?',c.ownerRef,c.workspaceRef,OWNER_FINISH_INTENT_KIND))if(!owned.has(row.id))fail('STORAGE_INVALID');
+    }catch{fail('STORAGE_INVALID');}
+  }
+  recordOwnerNativeFinishIntent(handle,value){
+    const q=ownerFinishRequest(value),c=this.#ctx(handle,q.taskRef,['owner']);this.#task(c,q.taskRef);
+    const prior=this.#normalRead(c,()=>{
+      // Command-specific exact historical lookup precedes current CAS/claim work.
+      const historical=this.#ownerFinishHistorical(c,q),intent=this.#ownerFinishIntent(c,q);
+      if(intent)return this.#ownerFinishProjection(c,intent,historical);
+      return historical?this.#ownerFinishLegacy():null;
+    });
+    if(prior)return prior;
+    const commandRef=this.#ownerFinishIntentId(c,q.taskRef,q.commandRef);
+    this.#mut(handle,{taskRef:q.taskRef,commandRef,request:q},['owner'],OWNER_FINISH_INTENT_OPERATION,c=>{
+      const historical=this.#ownerFinishHistorical(c,q);if(historical)fail('OWNER_COMMAND_CONFLICT');
+      for(const row of this.#ledger.query('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND operation=?',c.ownerRef,c.workspaceRef,OWNER_FINISH_INTENT_OPERATION))if(this.#ownerFinishIntentRow(c,row).request.commandRef===q.commandRef)fail('IDEMPOTENCY_CONFLICT');
+      const t=this.#ownerFinishActive(c,q);
+      const commandCount=this.#ledger.one('SELECT count(*) AS n FROM runtime_commands').n,heldCount=this.#ledger.one('SELECT count(*) AS n FROM reservations').n;
+      if(commandCount+2+12*heldCount+this.#limits.maxControlCommands>this.#limits.maxCommands)fail('COMMAND_LIMIT');
+      if(this.#ownerFinishEntries(c,q).length>=OWNER_FINISH_COMMAND_LIMIT)fail('OWNER_COMMAND_LIMIT');
+      const pending={state:'intent_committed',request:q,ownerRequestDigest:finishDigest(c,q),settlement:null};
+      const pendingBytes=Buffer.byteLength(this.#check({ok:true,value:pending},OWNER_FINISH_WIRE_LIMIT));
+      // An original finish's whole result is limited by maxMetadataBytes. Reserve
+      // that existing bound before recording a command whose later wire can grow.
+      if(pendingBytes+this.#limits.maxMetadataBytes+64>OWNER_FINISH_WIRE_LIMIT)fail('OWNER_COMMAND_LIMIT');
+      const content=canonical({contractVersion:'df.owner-finish-intent/v1',request:q,ownerRequestDigest:pending.ownerRequestDigest});
+      const data=this.#data(c,t,{commandRef,kind:OWNER_FINISH_INTENT_KIND,content,sourceRef:q.commandRef});this.#check(data);
+      return{contractVersion:'df.owner-finish-intent-receipt/v1',recordRef:data.recordRef,digest:data.digest,ownerRequestDigest:pending.ownerRequestDigest};
+    },'terminal');
+    return this.#normalRead(c,()=>this.#ownerFinishProjection(c,this.#requireOwnerFinishIntent(c,q)));
+  }
+  readOwnerNativeFinishCommand(handle,value){
+    const input=detach(exact(value,['taskRef','commandRef']));Object.values(input).forEach(ref);
+    const c=this.#ctx(handle,input.taskRef,['owner']);this.#task(c,input.taskRef);
+    return this.#normalRead(c,()=>{
+      const row=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,this.#ownerFinishIntentId(c,input.taskRef,input.commandRef));
+      if(row)return this.#ownerFinishProjection(c,this.#ownerFinishIntentRow(c,row));
+      const original=this.#ledger.one('SELECT * FROM runtime_commands WHERE owner=? AND workspace=? AND id=?',c.ownerRef,c.workspaceRef,input.commandRef);
+      if(original){if(original.task!==input.taskRef)fail('UNAUTHORIZED');this.#commandReceipt(original,false,true);return this.#ownerFinishLegacy();}
+      return this.#ownerFinishWire({state:'unreceived',request:null,ownerRequestDigest:null,settlement:null});
+    });
+  }
+  listOwnerNativeFinishCommands(handle,value){
+    const input=detach(exact(value,['taskRef','actionRef','claimRef','generationRef','executionRef']));Object.values(input).forEach(ref);
+    const c=this.#ctx(handle,input.taskRef,['owner']);this.#task(c,input.taskRef);
+    return this.#normalRead(c,()=>this.#ownerFinishWire({commands:this.#ownerFinishEntries(c,input)}));
+  }
+  #spent(c,task){let attempts=0,runtimeMs=0,usageUnits=0,costEstimateMicros=0;for(const row of this.#ledger.query('SELECT a.attempts,r.owner,r.workspace,r.task,r.spec,r.metadata FROM runtime_actions r JOIN actions a ON a.owner=r.owner AND a.workspace=r.workspace AND a.task=r.task AND a.id=r.action')){const s=normalizedSpec(parse(row.spec)),m=parse(row.metadata);if(!row.attempts)continue;if(s.charges.costState==='unknown'||m.usageState==='unknown')fail('WORKER_RESUME_PREDECESSOR_UNRESOLVED');if(row.owner===c.ownerRef&&row.workspace===c.workspaceRef&&row.task===task)attempts+=row.attempts;runtimeMs+=s.charges.runtimeMs;usageUnits+=Math.max(s.charges.usageUnits,m.usageState==='actual'?m.usageUnits||0:0);costEstimateMicros+=s.charges.costEstimateMicros;for(const n of [attempts,runtimeMs,usageUnits,costEstimateMicros])integer(n);}const limits=this.#getPolicy(c).limits,spent={attempts,runtimeMs,usageUnits,costEstimateMicros},remaining={attempts:limits.maxTotalAttempts-attempts,runtimeMs:limits.maxRuntimeMs-runtimeMs,usageUnits:limits.maxUsageUnits-usageUnits,costEstimateMicros:limits.maxCostEstimateMicros-costEstimateMicros};for(const k of Object.keys(remaining))if(remaining[k]<0)remaining[k]=null;return{spent,remaining};}
+  #resumeOrigin(c,input,current=true){if(current)this.#cas(c,input);const capture=this.#nativeRows(c,'normal_native_capture').find(r=>r.value.taskRef===input.taskRef&&r.value.claimRef===input.predecessorClaimRef&&r.value.phase==='output')?.value;if(!capture)return null;const finish=this.#auto(c,'normal_native_finish',input.predecessorClaimRef),{intent,origin,resume}=this.#claimGraph(c,input.taskRef,input.predecessorClaimRef);if(intent.purpose!=='producer'||capture.purpose!=='producer'||capture.actionRef!==input.predecessorActionRef||capture.generationRef!==input.predecessorGenerationRef||capture.executionRef!==input.predecessorExecutionRef)fail('WORKER_RESUME_ORIGIN_UNAVAILABLE');if(!finish||finish.releaseState!=='released'||finish.usageState!=='actual'||finish.captureRef!==capture.captureRef)fail('WORKER_RESUME_PREDECESSOR_UNRESOLVED');const a=this.#action(c,input.taskRef,capture.actionRef);if(!a.metadata.releaseEvidenceRef||a.metadata.releaseEvidenceRef!==finish.releaseEvidenceRef||this.#ledger.one('SELECT 1 FROM reservations WHERE claim_id=?',a.claim_id))fail('WORKER_RESUME_PREDECESSOR_UNRESOLVED');const successors=this.#nativeRows(c,'normal_resume_claim').map(r=>r.value).filter(v=>v.predecessorClaimRef===input.predecessorClaimRef);if(successors.length>1)fail('STORAGE_INVALID');const ordinal=(resume?.ordinal??0)+1;if(ordinal>8)fail('WORKER_RESUME_DISABLED');return{intent,origin,capture,finish,predecessorResume:resume,ordinal,successors,...this.#spent(c,input.taskRef)};}
+  readNormalResumeOrigin(handle,input){exact(input,['taskRef','predecessorActionRef','predecessorClaimRef','predecessorGenerationRef','predecessorExecutionRef','expectedTaskVersion','expectedAuthEpoch']);for(const k of ['taskRef','predecessorActionRef','predecessorClaimRef','predecessorGenerationRef','predecessorExecutionRef'])ref(input[k]);const c=this.#ctx(handle,input.taskRef,['owner']);return this.#normalRead(c,()=>this.#resumeOrigin(c,input));}
+  readNormalNativeArtifact(handle,input){exact(input,['taskRef','artifactRef','version','expectedTaskVersion','expectedAuthEpoch']);const c=this.#ctx(handle,input.taskRef,['owner']);return this.#normalRead(c,()=>{this.#cas(c,input);const artifact=this.#artifact(c,input.taskRef,input.artifactRef,integer(input.version,1));if(!artifact)fail('ARTIFACT_NOT_FOUND');const capture=this.#nativeRows(c,'normal_native_capture').find(r=>r.value.taskRef===input.taskRef&&r.value.artifactRef===input.artifactRef&&r.value.artifactVersion===input.version)?.value;if(!capture)fail('NORMAL_NATIVE_ORIGIN_UNAVAILABLE');const graph=this.#claimGraph(c,input.taskRef,capture.claimRef),outputCapture=capture.outputCaptureRef?this.#auto(c,'normal_native_capture',capture.outputCaptureRef):capture;return{artifact,capture,outputCapture,intent:graph.intent,origin:graph.origin,finish:this.#auto(c,'normal_native_finish',capture.claimRef)};});}
+  readNormalNativeAuditResult(handle,input){exact(input,['taskRef','resultRef','expectedTaskVersion','expectedAuthEpoch']);const c=this.#ctx(handle,input.taskRef,['owner']);return this.#normalRead(c,()=>{this.#cas(c,input);const result=this.#auditResult(c,input.resultRef).association,capture=this.#nativeRows(c,'normal_native_capture').find(r=>r.value.taskRef===input.taskRef&&r.value.phase==='output'&&r.value.auditBinding?.resultRef===input.resultRef)?.value;if(!capture)fail('NORMAL_NATIVE_ORIGIN_UNAVAILABLE');const graph=this.#claimGraph(c,input.taskRef,capture.claimRef);return{result,capture,intent:graph.intent,origin:graph.origin,finish:this.#auto(c,'normal_native_finish',capture.claimRef)};});}
+  resolveNormalNativeIdentity(capability,input){exact(input,['taskRef','originRef','sessionRef']);const c=this.#normalAuthority(capability,true,ref(input.taskRef));return this.#normalRead(c,()=>{const origin=this.#auto(c,'normal_native_origin',ref(input.originRef)),intent=origin&&this.#auto(c,'normal_native_intent',origin.intentRef);if(!origin||!intent||origin.taskRef!==input.taskRef||origin.sessionRef!==input.sessionRef||intent.sourceRef!==c.sourceRef)fail('WORKER_RESUME_ORIGIN_UNAVAILABLE');const identity=canonicalContent(this.#privateData(c,input.taskRef,intent.identityRecordRef,'native_identity',intent.identityDigest).content,v=>exact(v,['nativeId']));return{nativeId:identity.nativeId};});}
+  #validateResume(c,v,id,out){if(v.resumeRef!==id||out.resumeRef!==id||out.predecessorClaimRef!==v.predecessorClaimRef||out.predecessorOriginRef!==v.originRef)fail('STORAGE_INVALID');const origin=this.#auto(c,'normal_native_origin',v.originRef),capture=this.#auto(c,'normal_native_capture',v.predecessorCaptureRef),finish=this.#auto(c,'normal_native_finish',v.predecessorFinishRef);if(!origin||!capture||!finish||capture.purpose!=='producer'||capture.claimRef!==v.predecessorClaimRef||capture.originRef!==v.originRef||finish.captureRef!==capture.captureRef||finish.releaseState!=='released'||v.sessionRef!==origin.sessionRef)fail('STORAGE_INVALID');const previous=capture.resumeRef?this.#auto(c,'normal_resume',capture.resumeRef):null;if(v.ordinal!==(previous?.ordinal??0)+1)fail('STORAGE_INVALID');const history=canonicalContent(this.#privateData(c,v.taskRef,v.historyRecordRef,'native_history',v.historyDigest).content,resumeHistory),request=canonicalContent(this.#privateData(c,v.taskRef,v.inputRecordRef,'native_request',v.inputDigest).content,resumeInput),cfg=canonicalContent(this.#privateData(c,v.taskRef,v.configurationRecordRef,'native_configuration',v.configurationDigest).content,x=>configuration(x,undefined,this.#limits));this.#resumePairJoins(c,v,history,request,cfg);const a=this.#action(c,v.taskRef,out.action.actionRef);if(a.digest!==out.action.actionDigest||canonical(a.spec.resumeBinding)!==canonical({resumeRef:v.resumeRef,predecessorOriginRef:v.originRef,predecessorClaimRef:v.predecessorClaimRef,historyDigest:v.historyDigest,inputDigest:v.inputDigest})||a.spec.dataDigest!==v.contextDigest||a.spec.executor.sessionRef!==v.sessionRef)fail('STORAGE_INVALID');}
+  #resumePairJoins(c,v,h,r,cfg){for(const k of ['ownerRef','workspaceRef'])if(h[k]!==c[k]||r[k]!==c[k])fail('SPEC_MISMATCH');for(const k of ['taskRef','originRef','ordinal','sessionRef','contextRecordRef','contextDigest'])if(h[k]!==v[k]||r[k]!==v[k])fail('SPEC_MISMATCH');if(h.predecessor.predecessorClaimRef!==v.predecessorClaimRef||r.historyDigest!==v.historyDigest||canonical(h.messages)!==canonical(r.historyMessages)||h.configurationRef!==v.configurationDigest||h.sourceRef!==canonicalDigest(cfg.source)||canonical(h.persistence)!==canonical(cfg.backend)||h.header.cwd!==cfg.environment.cwd)fail('SPEC_MISMATCH');const context=this.#preparedGraph(c,v.taskRef,v.contextRecordRef);if(context.context.digest!==v.contextDigest||context.context.content!==r.contextContent||context.binding.semanticRevision!==v.semanticRevision||context.binding.sourceTaskVersion!==v.sourceTaskVersion||context.binding.sourceAuthEpoch!==v.sourceAuthEpoch)fail('SPEC_MISMATCH');}
+  readNormalResumeInput(handle,input){exact(input,['taskRef','resumeRef']);const c=this.#ctx(handle,input.taskRef,['owner']);return this.#normalRead(c,()=>{const association=this.#auto(c,'normal_resume',ref(input.resumeRef));if(!association||association.taskRef!==input.taskRef)fail('WORKER_RESUME_ORIGIN_UNAVAILABLE');const history=this.#privateData(c,input.taskRef,association.historyRecordRef,'native_history',association.historyDigest),request=this.#privateData(c,input.taskRef,association.inputRecordRef,'native_request',association.inputDigest),configurationData=this.#privateData(c,input.taskRef,association.configurationRecordRef,'native_configuration',association.configurationDigest);this.#resumePairJoins(c,association,canonicalContent(history.content,resumeHistory),canonicalContent(request.content,resumeInput),canonicalContent(configurationData.content,x=>configuration(x)));this.#requirePrepared(c,input.taskRef,association.contextRecordRef,true);return{association,history,request,configuration:configurationData};});}
+  planNormalResume(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','contextRecordRef','predecessorClaimRef','historyContent','requestContent','configurationContent','spec']);const c=this.#normalAuthority(capability,true,ref(input.taskRef)),spec=normalizedSpec(input.spec);return this.#normalMut(c,input,'planNormalResume',c=>{
+      const cfg=this.#normalConfiguration(c,input.configurationContent),graph=this.#requirePrepared(c,input.taskRef,input.contextRecordRef,true),h=canonicalContent(input.historyContent,resumeHistory),r=canonicalContent(input.requestContent,resumeInput),predecessor=h.predecessor;if(!spec.resumeBinding||spec.nativeOriginBinding||spec.executor.mode!=='resume'||input.predecessorClaimRef!==predecessor.predecessorClaimRef||graph.binding.committedTaskVersion!==input.expectedTaskVersion||graph.binding.committedAuthEpoch!==input.expectedAuthEpoch)fail('SPEC_MISMATCH');const previous=this.#resumeOrigin(c,{taskRef:input.taskRef,expectedTaskVersion:input.expectedTaskVersion,expectedAuthEpoch:input.expectedAuthEpoch,...Object.fromEntries(['predecessorActionRef','predecessorClaimRef','predecessorGenerationRef','predecessorExecutionRef'].map(k=>[k,predecessor[k]]))});if(!previous||previous.successors.length)fail('WORKER_RESUME_LINEAGE_CONFLICT');if(!cfg.configuration.continuation||previous.ordinal>cfg.configuration.continuation.maxContinuations)fail('WORKER_RESUME_DISABLED');const oldCfg=canonicalContent(this.#privateData(c,input.taskRef,previous.intent.configurationRecordRef,'native_configuration',previous.intent.configurationDigest).content,x=>configuration(x));const producerRoute=value=>{const role=value.selection.find(row=>row.purpose==='producer');return{selection:role.selection,systemPrompt:role.systemPrompt,recipeDigest:role.recipeDigest,preset:value.preset.find(row=>row.purpose==='producer'),tools:value.tools};};if(previous.intent.sourceRef!==c.sourceRef||canonical(oldCfg.backend)!==canonical(cfg.backend)||canonical(oldCfg.environment)!==canonical(cfg.environment)||canonical(producerRoute(oldCfg))!==canonical(producerRoute(cfg)))fail('WORKER_RESUME_ORIGIN_UNAVAILABLE');this.#normalSpecConfiguration(c,spec,cfg,graph);const historyLimits=cfg.configuration.continuation.history;if(h.events.length>historyLimits.maxEvents||h.messages.length>historyLimits.maxMessages||Buffer.byteLength(input.historyContent)>historyLimits.maxBytes)fail('WORKER_RESUME_HISTORY_LIMIT');const captured=canonicalContent(this.#privateData(c,input.taskRef,previous.capture.committedHistoryRecordRef,'native_history',previous.capture.committedHistoryDigest).content,historyObservation);if(canonical(h.header)!==canonical(captured.header)||canonical(h.events)!==canonical(captured.events)||canonical(h.surface)!==canonical(captured.surface)||canonical(h.messages)!==canonical(captured.messages))fail('WORKER_RESUME_HISTORY_STALE');if(predecessor.artifactRef!==previous.capture.artifactRef||predecessor.artifactDigest!==previous.capture.artifactDigest||predecessor.artifactVersion!==1||predecessor.releaseEvidenceRef!==previous.finish.releaseEvidenceRef)fail('WORKER_RESUME_LINEAGE_CONFLICT');const resumeRef=canonicalDigest(['df.normal-resume/v1',c.ownerRef,c.workspaceRef,input.taskRef,input.commandRef,input.predecessorClaimRef]),historyDigest=hash(input.historyContent),inputDigest=hash(input.requestContent),binding={resumeRef,predecessorOriginRef:previous.origin.originRef,predecessorClaimRef:input.predecessorClaimRef,historyDigest,inputDigest};if(canonical(spec.resumeBinding)!==canonical(binding)||spec.executor.sessionRef!==previous.origin.sessionRef)fail('SPEC_MISMATCH');const provisional={resumeRef,taskRef:input.taskRef,originRef:previous.origin.originRef,predecessorClaimRef:input.predecessorClaimRef,ordinal:previous.ordinal,sessionRef:previous.origin.sessionRef,contextRecordRef:graph.context.recordRef,contextDigest:graph.context.digest,historyDigest,configurationDigest:hash(input.configurationContent),semanticRevision:graph.binding.semanticRevision,sourceTaskVersion:graph.binding.sourceTaskVersion,sourceAuthEpoch:graph.binding.sourceAuthEpoch};this.#resumePairJoins(c,provisional,h,r,cfg);const action=this.#planEffect(this.#originalEffectAuthority(c,input.taskRef),input,spec,true),t=this.#task(c,input.taskRef),configData=this.#data(c,t,{commandRef:input.commandRef,kind:'native_configuration',content:input.configurationContent,sourceRef:resumeRef}),historyData=this.#data(c,t,{commandRef:input.commandRef,kind:'native_history',content:input.historyContent,sourceRef:resumeRef}),requestData=this.#data(c,t,{commandRef:input.commandRef,kind:'native_request',content:input.requestContent,sourceRef:resumeRef}),resume={contractVersion:'df.normal-native/normal_resume/v1',...provisional,predecessorCaptureRef:previous.capture.captureRef,predecessorFinishRef:previous.finish.finishRef,historyRecordRef:historyData.recordRef,inputRecordRef:requestData.recordRef,inputDigest,configurationRecordRef:configData.recordRef,createdAt:this.#now()};this.#newNative(c,'normal_resume',resumeRef,input.taskRef,resume);return{action,resumeRef,predecessorOriginRef:resume.originRef,predecessorClaimRef:resume.predecessorClaimRef,sessionRef:resume.sessionRef,historyRecordRef:resume.historyRecordRef,historyDigest:resume.historyDigest,inputRecordRef:resume.inputRecordRef,inputDigest:resume.inputDigest,contextRecordRef:resume.contextRecordRef,contextDigest:resume.contextDigest,semanticRevision:resume.semanticRevision,sourceTaskVersion:resume.sourceTaskVersion,sourceAuthEpoch:resume.sourceAuthEpoch};
+    });}
+  claimNormalResume(capability,input){input=normalInput(input);exact(input,['taskRef','commandRef','expectedTaskVersion','expectedAuthEpoch','actionRef','actionDigest','resumeRef']);const c=this.#normalAuthority(capability,true,ref(input.taskRef));return this.#normalMut(c,input,'claimNormalResume',c=>{
+      const resume=this.#auto(c,'normal_resume',ref(input.resumeRef)),a=this.#action(c,input.taskRef,input.actionRef);if(!resume||resume.taskRef!==input.taskRef||a.spec.resumeBinding?.resumeRef!==input.resumeRef||a.spec.executor.mode!=='resume')fail('SPEC_MISMATCH');const graph=this.#requirePrepared(c,input.taskRef,resume.contextRecordRef,true),cfg=this.#normalConfiguration(c,this.#privateData(c,input.taskRef,resume.configurationRecordRef,'native_configuration',resume.configurationDigest).content);this.#normalSpecConfiguration(c,a.spec,cfg,graph);const capture=this.#auto(c,'normal_native_capture',resume.predecessorCaptureRef),previous=this.#resumeOrigin(c,{taskRef:input.taskRef,expectedTaskVersion:input.expectedTaskVersion,expectedAuthEpoch:input.expectedAuthEpoch,predecessorActionRef:capture.actionRef,predecessorClaimRef:capture.claimRef,predecessorGenerationRef:capture.generationRef,predecessorExecutionRef:capture.executionRef});if(previous.successors.length)fail('WORKER_RESUME_LINEAGE_CONFLICT');if(!cfg.configuration.continuation||resume.ordinal>cfg.configuration.continuation.maxContinuations||previous.intent.sourceRef!==c.sourceRef)fail('WORKER_RESUME_ORIGIN_UNAVAILABLE');const receipt=this.#claimEffect(this.#originalEffectAuthority(c,input.taskRef),input,true),claim={contractVersion:'df.normal-native/normal_resume_claim/v1',claimRef:receipt.claimRef,resumeRef:resume.resumeRef,taskRef:input.taskRef,originRef:resume.originRef,predecessorClaimRef:resume.predecessorClaimRef,actionRef:receipt.actionRef,actionDigest:receipt.actionDigest,generationRef:receipt.generationRef,sessionRef:resume.sessionRef,reservationRef:receipt.reservationRef,createdAt:this.#now()};this.#newNative(c,'normal_resume_claim',claim.claimRef,input.taskRef,claim);return{receipt,resumeRef:resume.resumeRef,originRef:resume.originRef,sessionRef:resume.sessionRef,identityRecordRef:previous.intent.identityRecordRef};
+    });}
+
   diagnostics(){
     return{
       schemaVersion:SCHEMA_VERSION,closed:this.#ledger.closed,restricted:this.#ledger.restricted,limits:{
@@ -2985,3 +3376,9 @@ export class RuntimeStore {
     this.#key.fill(0);
   }
 }
+
+const preparationSourceMethod=Object.getOwnPropertyDescriptor(RuntimeStore.prototype,PREPARATION_SOURCE).value;
+export function assertPreparationSourceBinding(store,capability,handle,namespaceRef,taskRef){try{return detach(preparationSourceMethod.call(store,capability,handle,namespaceRef,taskRef));}catch(error){if(error instanceof FoundationError)throw error;fail('UNAUTHORIZED');}}
+
+// Internal import composition: exact original descriptors; no elevated handles.
+export const preparationSourceMethods=Object.freeze(Object.fromEntries(['memoryBinding','getMemory','putMemory','listMemory','deleteMemory','memoryCommandReceipt','snapshot','readData','task','preparedContextCommandReceipt','preparedContextStatus','putPreparedContext'].map(name=>[name,Object.getOwnPropertyDescriptor(RuntimeStore.prototype,name).value])));

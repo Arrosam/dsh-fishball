@@ -276,6 +276,7 @@ export function createInstalledResults(input) {
       try {
         if (!selection.enabled || !live()) return;
         event = fields(event, ['operation', 'input', 'receipt']); const t = event.input.taskRef;
+        if (['memoryRemember', 'memoryCorrect', 'memoryForget', 'memoryImportConfirm', 'memoryDeleteConfirm'].includes(event.operation)) invalidate();
         if (['policy', 'revise', 'control', 'revoke', 'configureLocalNotificationPolicy'].includes(event.operation)) invalidate(t);
         if (event.operation === 'grant') {
           const p = plans.get(event.input.actionRef), r = event.receipt;

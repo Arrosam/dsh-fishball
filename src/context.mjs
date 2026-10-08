@@ -1,3 +1,4 @@
+import { assertPreparationSourceBinding, preparationSourceMethods } from './runtime-store.mjs';
 import { types } from 'node:util';
 import { createHash } from 'node:crypto';
 
@@ -128,23 +129,30 @@ export function validateExecutionContext(value, options = {}) {
 
 // Production assembly resolves only core-authorized encrypted records. The
 // pure compactor above is a utility, not an identity/permission bridge.
+const PREPARATION_ASSEMBLER=Symbol('df.assembler-preparation-source/v1');
 export class ContextAssembler {
-  #store; #tokenize; #secrets; #clock; #queryHost; #policy;
-  constructor({ store, tokenize, knownSecrets = [], clock = Date.now, queryHost, byteLimit = 65536, tokenLimit = 8192, staleAfterMs = 60000 } = {}) {
-    if (!store || !['snapshot', 'task', 'readData'].every(key => typeof store[key] === 'function') || typeof clock !== 'function' || (queryHost !== undefined && typeof queryHost !== 'function')) fail('CONTEXT_CONFIG');
+  #preparationBinding=null; #store; #tokenize; #secrets; #clock; #queryHost; #policy;
+  constructor({ store, tokenize, knownSecrets = [], clock = Date.now, queryHost, byteLimit = 65536, tokenLimit = 8192, staleAfterMs = 60000, preparationBinding } = {}) {
+    if(preparationBinding!==undefined){plain(preparationBinding,['capability','handle']);if(!Object.hasOwn(preparationBinding,'capability')||!Object.hasOwn(preparationBinding,'handle'))fail('CONTEXT_CONFIG');assertPreparationSourceBinding(store,preparationBinding.capability,preparationBinding.handle);}
+    if (!store || preparationBinding===undefined&&!['snapshot', 'task', 'readData'].every(key => typeof store[key] === 'function') || typeof clock !== 'function' || (queryHost !== undefined && typeof queryHost !== 'function')) fail('CONTEXT_CONFIG');
     if (typeof tokenize !== 'function') fail('TOKENIZER_UNAVAILABLE');
     integer(byteLimit, 1, 262144); integer(tokenLimit, 1, 131072); integer(staleAfterMs, 0, 86400000);
     contextText('', knownSecrets);
     this.#store = store; this.#tokenize = tokenize; this.#secrets = [...knownSecrets]; this.#clock = clock; this.#queryHost = queryHost;
     this.#policy = { byteLimit, tokenLimit, staleAfterMs };
+    if(preparationBinding!==undefined){plain(preparationBinding,['capability','handle']);if(!Object.hasOwn(preparationBinding,'capability')||!Object.hasOwn(preparationBinding,'handle'))fail('CONTEXT_CONFIG');assertPreparationSourceBinding(store,preparationBinding.capability,preparationBinding.handle);this.#preparationBinding=Object.freeze({...preparationBinding});}
   }
-  async assemble(handle, input) {
+  [PREPARATION_ASSEMBLER](store,capability,handle){const binding=this.#preparationBinding;if(this.#store!==store||!binding||binding.capability!==capability)fail('CONTEXT_SCOPE');const issued=assertPreparationSourceBinding(store,capability,binding.handle),caller=assertPreparationSourceBinding(store,capability,handle);if(issued.ownerRef!==caller.ownerRef||issued.workspaceRef!==caller.workspaceRef||issued.namespaceRef!==caller.namespaceRef)fail('CONTEXT_SCOPE');}
+  async assemble(handle,input){return this.#assemble(handle,input,false);}
+  async assembleForPreparation(capability,input){const binding=this.#preparationBinding;if(!binding||binding.capability!==capability)fail('CONTEXT_SCOPE');plain(input,['taskRef','expectedTaskVersion','expectedAuthEpoch','recordRefs']);assertPreparationSourceBinding(this.#store,capability,binding.handle,undefined,input.taskRef);const result=await this.#assemble(binding.handle,input,true);assertPreparationSourceBinding(this.#store,capability,binding.handle,undefined,input.taskRef);return result;}
+  #sourceCall(preparation,handle,name,...args){if(!preparation)return this.#store[name](handle,...args);const taskRef=name==='task'?args[0]:args[0].taskRef;assertPreparationSourceBinding(this.#store,this.#preparationBinding.capability,handle,undefined,taskRef);return preparationSourceMethods[name].call(this.#store,handle,...args);}
+  async #assemble(handle, input, preparation) {
     plain(input, ['taskRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'generationRef', 'recordRefs']);
     reference(input.taskRef); integer(input.expectedTaskVersion, 1, Number.MAX_SAFE_INTEGER); integer(input.expectedAuthEpoch, 0, Number.MAX_SAFE_INTEGER);
     if (input.generationRef !== undefined) reference(input.generationRef);
     if (input.recordRefs !== undefined) { list(input.recordRefs, 64); input.recordRefs.forEach(reference); }
     input = Object.freeze({ ...input, ...(input.recordRefs === undefined ? {} : { recordRefs: Object.freeze([...input.recordRefs]) }) });
-    const snapshot = this.#store.snapshot(handle, { taskRef: input.taskRef });
+    const snapshot = this.#sourceCall(preparation,handle,'snapshot', { taskRef: input.taskRef });
     const task = snapshot.task;
     const check = current => {
       if (current.taskRef !== task.taskRef || current.ownerRef !== task.ownerRef || current.workspaceRef !== task.workspaceRef) fail('CONTEXT_SCOPE');
@@ -168,7 +176,7 @@ export class ContextAssembler {
         // An admitted instruction is never optional generation background.
         // Reject an inconsistent binding rather than silently dropping it.
         if (meta.kind === 'context') {
-          const data = this.#store.readData(handle, { taskRef: task.taskRef, recordRef: meta.recordRef });
+          const data = this.#sourceCall(preparation,handle,'readData', { taskRef: task.taskRef, recordRef: meta.recordRef });
           contextText(data.content, this.#secrets);
           if (data.digest !== digest(data.content)) fail('CONTEXT_DIGEST');
           let material; try { material = JSON.parse(data.content); } catch { return false; }
@@ -178,7 +186,7 @@ export class ContextAssembler {
       }
       return true;
     }).map(meta => {
-      const data = this.#store.readData(handle, { taskRef: task.taskRef, recordRef: meta.recordRef });
+      const data = this.#sourceCall(preparation,handle,'readData', { taskRef: task.taskRef, recordRef: meta.recordRef });
       contextText(data.content, this.#secrets);
       if (data.digest !== digest(data.content)) fail('CONTEXT_DIGEST');
       if (data.taskVersion > task.version || data.authEpoch > task.authEpoch) fail('STALE_VERSION');
@@ -194,6 +202,7 @@ export class ContextAssembler {
       `CURRENT GOAL\n${goal.content}`, `CURRENT CONSTRAINTS\n${constraints?.content ?? '(none recorded)'}`,
     ];
     const recordProvenance = data => ({ recordRef: data.recordRef, digest: data.digest, taskVersion: data.taskVersion, authEpoch: data.authEpoch, createdAt: data.createdAt });
+    const examinedSummaryRefs=[],winningSourceRefs=[goal.recordRef,...(constraints?[constraints.recordRef]:[])];
     const conflicts = [], backgrounds = [], provenance = [goal, ...(constraints ? [constraints] : [])].map(recordProvenance);
     const requested = input.recordRefs === undefined ? null : new Set(input.recordRefs);
     if (requested && [...requested].some(recordRef => !records.some(data => data.recordRef === recordRef))) fail('SOURCE_UNAVAILABLE');
@@ -211,6 +220,7 @@ export class ContextAssembler {
         integer(data.sourceTaskVersion, 1, task.version); integer(data.sourceAuthEpoch, 0, task.authEpoch); integer(material.observedAt, 0, Math.min(data.createdAt, now));
         contextText(material.content, this.#secrets, 65536);
         const { content: _content, materialKind: _kind, ...supplement } = material;
+        winningSourceRefs.push(data.recordRef);
         provenance.push({ ...recordProvenance(data), sourceTaskVersion: data.sourceTaskVersion, sourceAuthEpoch: data.sourceAuthEpoch, supplement });
         protectedParts.push(`CURRENT SUPPLEMENTAL INSTRUCTION ${data.recordRef} (admitted content; grants no approval or completion)\n${material.content}`);
         continue;
@@ -230,6 +240,7 @@ export class ContextAssembler {
       if (!material.sourceRefs.length || material.sourceRefs.some(source => !seenSources.has(reference(source)))) fail('SOURCE_UNAVAILABLE');
       if (material.generationRef !== undefined && material.generationRef !== input.generationRef) fail('STALE_GENERATION');
       contextText(material.content, this.#secrets);
+      if(material.materialKind==='summary')examinedSummaryRefs.push(data.recordRef);
       if (material.materialKind === 'summary' && (material.sourceTaskVersion !== task.version || material.sourceAuthEpoch !== task.authEpoch)) {
         conflicts.push({ recordRef: data.recordRef, reason: 'stale_summary', winningTaskVersion: task.version });
         continue;
@@ -271,11 +282,20 @@ export class ContextAssembler {
     const result = compactContext({ protectedText, backgrounds: sorted, byteLimit: this.#policy.byteLimit, tokenLimit: this.#policy.tokenLimit, tokenize: this.#tokenize, knownSecrets: this.#secrets });
     // Revalidate after every asynchronous query and tokenizer call, including a
     // tokenizer callback that itself changes the core. No stale input escapes.
-    check(this.#store.task(handle, task.taskRef));
-    const finalSnapshot = this.#store.snapshot(handle, { taskRef: task.taskRef });
+    check(this.#sourceCall(preparation,handle,'task', task.taskRef));
+    const finalSnapshot = this.#sourceCall(preparation,handle,'snapshot', { taskRef: task.taskRef });
     check(finalSnapshot.task);
     if (input.generationRef !== undefined && !finalSnapshot.workers.some(worker => worker.generationRef === input.generationRef && !['stopped', 'not_created'].includes(worker.phase))) fail('STALE_GENERATION');
     const retainedSources = provenance.filter(source => !result.droppedRefs.includes(source.recordRef));
-    return Object.freeze({ ...result, taskVersion: task.version, authEpoch: task.authEpoch, generationRef: input.generationRef ?? null, conflicts: Object.freeze(conflicts), provenance: Object.freeze(retainedSources), ledgerSnapshotDigest: digest(JSON.stringify({ task, workFacts })), verification: 'module_assembled_input_only' });
+    const context=Object.freeze({ ...result, taskVersion: task.version, authEpoch: task.authEpoch, generationRef: input.generationRef ?? null, conflicts: Object.freeze(conflicts), provenance: Object.freeze(retainedSources), ledgerSnapshotDigest: digest(JSON.stringify({ task, workFacts })), verification: 'module_assembled_input_only' });
+    if(!preparation)return context;
+    const examined=[...new Set(examinedSummaryRefs)].sort(),winners=[...new Set(winningSourceRefs)].sort(),stale=new Set(conflicts.map(row=>row.recordRef));
+    const summaryChecks=examined.map(recordRef=>Object.freeze({recordRef,disposition:stale.has(recordRef)?'excluded_stale_summary':result.droppedRefs.includes(recordRef)?'dropped_for_budget':'retained_background'}));
+    return Object.freeze({context,sourceObservation:Object.freeze({selectionMode:input.recordRefs===undefined?'all_eligible':'explicit_records',examinedSummaryRefs:Object.freeze(examined),winningSourceRefs:Object.freeze(winners),summaryChecks:Object.freeze(summaryChecks)})});
   }
 }
+
+const assemblerBindingMethod=Object.getOwnPropertyDescriptor(ContextAssembler.prototype,PREPARATION_ASSEMBLER).value;
+const assemblerPreparationMethod=Object.getOwnPropertyDescriptor(ContextAssembler.prototype,'assembleForPreparation').value;
+export function assertAssemblerPreparationBinding(assembler,store,capability,handle){try{assemblerBindingMethod.call(assembler,store,capability,handle);}catch{fail('CONTEXT_SCOPE');}}
+export async function assemblePreparedContextFromSource(assembler,store,capability,handle,input){assertAssemblerPreparationBinding(assembler,store,capability,handle);const result=await assemblerPreparationMethod.call(assembler,capability,input);assertAssemblerPreparationBinding(assembler,store,capability,handle);return result;}

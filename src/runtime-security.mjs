@@ -32,7 +32,7 @@ export function canonical(value,depth=0) {
 export const canonicalDigest = value => hash(canonical(value));
 export function normalizedSpec(spec) {
  const required=['actionRef','kind','role','targetDigest','dataDigest','units','charges','attemptGroupRef','attemptIndex','resourcePolicyVersion','modelPolicyVersion','model','executor'];
- exact(spec,[...required,'executionInput'],required);
+ exact(spec,[...required,'executionInput','nativeOriginBinding','resumeBinding'],required);
  for(const k of ['actionRef','targetDigest','dataDigest','attemptGroupRef']) ref(spec[k]);
  if(!['read','write','review','repair'].includes(spec.kind)||!['worker','review','repair'].includes(spec.role)) fail('INVALID_INPUT');
  for(const k of ['units','attemptIndex','resourcePolicyVersion','modelPolicyVersion']) integer(spec[k],1);
@@ -51,5 +51,7 @@ export function normalizedSpec(spec) {
   if(spec.kind!==kind||spec.role!==kind||spec.targetDigest!==input.bindingDigest)fail('INVALID_INPUT');
   if(repair)ref(input.previousReportRef);else if(input.previousReportRef!==undefined)fail('INVALID_INPUT');
  }
+ if(spec.nativeOriginBinding!==undefined){exact(spec.nativeOriginBinding,['sourceRef','createConfigDigest','backendRef','sessionRef']);Object.values(spec.nativeOriginBinding).forEach(ref);if(spec.executor.mode!=='create'||spec.executor.sessionRef!==spec.nativeOriginBinding.sessionRef||spec.resumeBinding!==undefined)fail('INVALID_INPUT');}
+ if(spec.resumeBinding!==undefined){exact(spec.resumeBinding,['resumeRef','predecessorOriginRef','predecessorClaimRef','historyDigest','inputDigest']);Object.values(spec.resumeBinding).forEach(ref);if(spec.executor.mode!=='resume'||spec.executionInput!==undefined||spec.role!=='worker'||spec.kind!=='write')fail('INVALID_INPUT');}
  return JSON.parse(canonical(spec));
 }

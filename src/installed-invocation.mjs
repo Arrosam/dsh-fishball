@@ -57,3 +57,25 @@ export async function runInstalledWorkerInvocation(ctx, assertCurrent, callback)
     }
   });
 }
+import { performance } from 'node:perf_hooks';
+
+// R11 finite ordinary finish wait diagnostic. No carrier or data access.
+export const FINISH_WAIT_STAGES=Object.freeze(["000","W01","W02","W03","N01","N02","N03","N04","N05","A01","A02","A03","A04","A05","A06","A07","A08","H01","H02","H03","H04","H05","H06","H07","H08","H09","H10","H11","H12","H13","H14"]);
+export function decodeFinishWait(value){
+ if(typeof value!=='string'||value.length!==7||!FINISH_WAIT_STAGES.includes(value.slice(0,3))||!/^\d{4}$/.test(value.slice(3))||(value.startsWith('000')&&value!=='0000000'))throw new Error();
+ return value;
+}
+export function createFinishWaitProbe(now=()=>performance.now(),sink=()=>{}){
+ let active=false,frozen=false,stage='000',started=0,last=0,value='0000000';
+ const time=()=>{const n=now();if(typeof n!=='number'||!Number.isFinite(n)||n<0)throw new Error();last=Math.max(last,n);return last;};
+ return Object.freeze({
+  begin(){try{if(active||frozen)return;started=time();active=true;}catch{}},
+  mark(code){try{if(!active||frozen||code==='000'||!FINISH_WAIT_STAGES.includes(code)||code===stage)return;const t=time();stage=code;started=t;}catch{}},
+  freeze(){if(!active||frozen)return value;frozen=true;value=stage==='000'?'0000000':stage+'0000';try{const t=time();value=stage==='000'?'0000000':stage+String(Math.min(9999,Math.max(0,Math.floor(t-started)))).padStart(4,'0');decodeFinishWait(value);}catch{}try{sink(value);}catch{}return value;},
+  read(){return value;}
+ });
+}
+const finishWaitProbe=createFinishWaitProbe();
+export const beginFinishWait=()=>finishWaitProbe.begin();
+export const markFinishWait=code=>finishWaitProbe.mark(code);
+export const freezeFinishWait=()=>finishWaitProbe.freeze();

@@ -1,3 +1,4 @@
+import { markFinishWait } from './installed-invocation.mjs';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -5,6 +6,7 @@ import { DSH_WEB_RUNTIME_ROOT, requireHost, resolveHostSource } from './host-pro
 import { WorkerError, workerFail, workerDigest, workerRef, workerInteger, workerRecord } from './environment.mjs';
 import { normalizedSpec, canonical } from './runtime-security.mjs';
 import { types } from 'node:util';
+import { historyObservation } from './normal-contracts.mjs';
 import { AUDIT_EXECUTION_FIELDS, approvedInputSource } from './audit-input-pair.mjs';
 
 const freezeJson = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freezeJson); Object.freeze(value); } return value; };
@@ -66,6 +68,10 @@ export class NativeAdapter {
       this.#hooks = Object.freeze({ ...nativeHooks });
     }
     this.#ctx = ctx; this.#env = environments; this.#permission = permission; this.#messageAdmission = messageAdmission; this.#toolGuard = toolGuard; this.#resolve = resolveSession;
+    // Observe actual original publication edges through disposal/reobservation.
+    // A same-ID replacement is held even if it disappears before the next read.
+    ctx.on('agent/created',({agent})=>{for(const entry of this.#entries)if(entry.finishing&&agent.id===entry.id)entry.finishIdentityDrift=true;});
+    ctx.on('session/created',session=>{for(const entry of this.#entries)if(entry.finishing&&session.id===entry.id)entry.finishIdentityDrift=true;});
     ctx.on('agent/status', ({ agent }) => this.#event(agent));
     ctx.on('agent/disposed', ({ agent }) => {
       for (const entry of this.#entries) if (entry.handle?.agent === agent) { entry.state = 'stopped'; this.#notify(entry, 'stopped'); }
@@ -272,7 +278,7 @@ export class NativeAdapter {
     } : finishSetup;
     try {
       const options = { agentOptions: entry.options, setup };
-      const handle = await (mode === 'create' ? scopedService(this.#ctx, 'agents').create({ ...options, sessionId: entry.id, meta: { cwd: entry.cwd } }) : scopedService(this.#ctx, 'agents').resume({ ...options, resumeSessionId: entry.id }));
+      const handle = await (mode === 'create' ? scopedService(this.#ctx, 'agents').create({ ...options, sessionId: entry.id, meta: { cwd: entry.cwd, delegationDepth: 0 } }) : scopedService(this.#ctx, 'agents').resume({ ...options, resumeSessionId: entry.id }));
       if (!handle || handle.agent?.id !== entry.id || typeof handle.dispose !== 'function' || typeof handle.agent.cancel !== 'function' || typeof handle.agent.whenIdle !== 'function' || scopedService(this.#ctx, 'agents').get(entry.id) !== handle.agent) workerFail('WORKER_RECEIPT_INVALID');
       entry.handle = handle; entry.state = 'created';
       // Creation alone supplies no evidence of executing work. No message is
@@ -333,6 +339,17 @@ export class NativeAdapter {
     if (!result || result.executionRef !== executionRef || result.claimRef !== entry.claim?.claimRef || result.generationRef !== entry.generationRef || result.actionDigest !== entry.actionDigest || result.sessionRef !== entry.sessionRef) workerFail('WORKER_RESULT_UNAVAILABLE');
     return result;
   }
+  async observeBaselineHistory(ticket) {
+    const entry = this.#get(ticket); this.#permit(entry);
+    if (!entry.spec.nativeOriginBinding || !this.#hooks || entry.spec.executor.mode !== 'create' || !entry.handle || entry.execution || entry.handle.agent.status !== 'idle' || scopedService(this.#ctx,'agents').get(entry.id) !== entry.handle.agent) workerFail('WORKER_RESULT_UNAVAILABLE');
+    const input = Object.freeze({phase:'baseline',taskRef:entry.taskRef,claimRef:entry.claim.claimRef,generationRef:entry.generationRef,sessionRef:entry.sessionRef});
+    const actual = await this.#hooks.validateResult(entry.handle.agent,input);
+    this.#get(ticket); this.#permit(entry);
+    if (scopedService(this.#ctx,'agents').get(entry.id) !== entry.handle.agent || scopedService(this.#ctx,'sessions').get(entry.id) !== entry.handle.agent.session) workerFail('WORKER_RESULT_UNAVAILABLE');
+    workerRecord(actual,['historyObservation']); historyObservation(actual.historyObservation);
+    if (actual.historyObservation.messages.length || actual.historyObservation.claimRef!==entry.claim.claimRef || actual.historyObservation.generationRef!==entry.generationRef || actual.historyObservation.sessionRef!==entry.sessionRef) workerFail('WORKER_RESULT_UNAVAILABLE');
+    return freezeJson(structuredClone(actual.historyObservation));
+  }
   async validateResult(ticket, executionRef) {
     const entry = this.#get(ticket), result = this.readResult(ticket, executionRef);
     if (!this.#hooks || !entry.handle || entry.state === 'stopped') workerFail('WORKER_RESULT_UNAVAILABLE');
@@ -342,23 +359,40 @@ export class NativeAdapter {
     this.#get(ticket);
     if (entry.committedResult !== result || scopedService(this.#ctx, 'agents').get(entry.id) !== entry.handle.agent || scopedService(this.#ctx, 'sessions').get(entry.id) !== entry.handle.agent.session) workerFail('WORKER_RESULT_UNAVAILABLE');
     const audit = Boolean(entry.spec.executionInput);
-    workerRecord(facts, audit ? ['usageUnits', 'evidenceRef', 'resultDigest', 'inputCursor'] : ['usageUnits', 'evidenceRef', 'resultDigest']);
+    const normal=Boolean(entry.spec.nativeOriginBinding||entry.spec.resumeBinding);
+    workerRecord(facts,[...['usageUnits','evidenceRef','resultDigest'],...(audit?['inputCursor']:[]),...(normal?['historyObservation']:[])]);
+    if(normal)historyObservation(facts.historyObservation);
     if (audit && (workerInteger(facts.inputCursor) !== result.inputCursor || facts.inputCursor >= result.cursor)) workerFail('WORKER_RESULT_UNAVAILABLE');
     workerInteger(facts.usageUnits, 0, 100000000); workerRef(facts.evidenceRef); workerRef(facts.resultDigest);
     if (facts.resultDigest !== result.digest || facts.usageUnits > entry.spec.charges.usageUnits) workerFail('WORKER_RESULT_UNAVAILABLE');
     entry.validatedResult = Object.freeze({ ...facts, executionRef });
     return entry.validatedResult;
   }
-  async finishExecution(ticket, executionRef) {
+  async finishExecution(ticket, executionRef) {markFinishWait('A01');
     const entry = this.#get(ticket), result = this.readResult(ticket, executionRef);
     const facts = entry.validatedResult;
     if (!this.#hooks || !facts || facts.executionRef !== executionRef || facts.resultDigest !== result.digest || !entry.handle) workerFail('WORKER_FINISH_UNAVAILABLE');
+    const normal=Boolean(entry.spec.nativeOriginBinding||entry.spec.resumeBinding),agent=entry.handle.agent,session=agent.session;
+    let beforeStop;
+    if(normal){
+      // Revalidate actual original source/class/preset/tools and whole persisted
+      // result under current owner invocation BEFORE disposing its child scope.
+      markFinishWait('A02');beforeStop=await this.#hooks.validateResult(agent,result,Object.freeze({phase:'before_stop'}));markFinishWait('A03');this.#get(ticket);
+      const{executionRef:ignored,...captured}=facts;if(canonical(beforeStop)!==canonical(captured)||entry.handle.agent!==agent||agent.session!==session||scopedService(this.#ctx,'agents').get(entry.id)!==agent||scopedService(this.#ctx,'sessions').get(entry.id)!==session)workerFail('WORKER_FINISH_UNAVAILABLE');
+    }
     // Seal this exact owned worker before awaiting its factual stop. Cleanup
     // does not borrow or revalidate a revoked dispatch grant.
     entry.finishing = true;
-    const receipt = await this.dispose(ticket);
+    markFinishWait('A04');const receipt = await this.dispose(ticket);markFinishWait('A05');
     if (receipt.phase !== 'stopped' || scopedService(this.#ctx, 'agents').get(entry.id) === entry.handle.agent || scopedService(this.#ctx, 'sessions').get(entry.id) === entry.handle.agent.session) workerFail('WORKER_FINISH_UNAVAILABLE');
-    return Object.freeze({ worker: receipt, usageUnits: facts.usageUnits, evidenceRef: workerDigest('native-finish', facts.evidenceRef, result.digest, receipt.evidenceRef) });
+    let finalFacts=facts;
+    if(normal){
+      // Existing trusted fourth hook only. This checkpoint is process-private,
+      // never a wire assertion. It cannot wake/flush a detached original session.
+      markFinishWait('A06');finalFacts=await this.#hooks.validateResult(agent,result,Object.freeze({phase:'stopped',terminalEvidenceRef:receipt.evidenceRef}));markFinishWait('A07');this.#get(ticket);
+      if(entry.handle.agent!==agent||agent.session!==session||entry.state!=='stopped'||entry.finishIdentityDrift||scopedService(this.#ctx,'agents').get(entry.id)||scopedService(this.#ctx,'sessions').get(entry.id)||canonical(finalFacts)!==canonical(beforeStop))workerFail('WORKER_FINISH_UNAVAILABLE');
+    }
+    markFinishWait('A08');return Object.freeze({ worker: receipt, usageUnits: finalFacts.usageUnits, evidenceRef: workerDigest('native-finish', finalFacts.evidenceRef, result.digest, receipt.evidenceRef) });
   }
   sessionLink(ticket) {
     const entry = this.#get(ticket), agent = scopedService(this.#ctx, 'agents').get(entry.id);
@@ -377,7 +411,7 @@ export class NativeAdapter {
   }
   query(ticket) {
     const entry = this.#get(ticket);
-    if (entry.state === 'stopped') return this.#receipt(entry, 'stopped');
+    if (entry.state === 'stopped') {if(entry.finishing&&(entry.spec.nativeOriginBinding||entry.spec.resumeBinding)&&(entry.finishIdentityDrift||scopedService(this.#ctx,'agents').get(entry.id)||scopedService(this.#ctx,'sessions').get(entry.id)))workerFail('WORKER_FINISH_UNAVAILABLE');return this.#receipt(entry, 'stopped');}
     const agent = scopedService(this.#ctx, 'agents').get(entry.id);
     if (!entry.handle || agent !== entry.handle.agent || ['unknown', 'awaiting_commit'].includes(entry.stream.state)) return this.#receipt(entry, 'unknown');
     return this.#receipt(entry, agent.status === 'running' ? 'running' : 'ready');

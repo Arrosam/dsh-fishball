@@ -8,6 +8,7 @@ import { canonical, canonicalDigest, hash, exact } from './runtime-security.mjs'
 import { resolveHostSource, DSH_WEB_RUNTIME_ROOT } from './host-probe.mjs';
 const fail=code=>{throw new BootstrapError(code);};
 const pins=Object.freeze({
+ "dsh-scope": {"version": "0.2.1-alpha.1", "source": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca", "metadata": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c", "types": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e"},
   "cordis": {
     "version": "4.0.5-alpha.1",
     "source": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
@@ -92,6 +93,8 @@ const declarationPins=Object.freeze({
 export const installedRef=(tag,...parts)=>canonicalDigest([tag,...parts]);
 export function immutable(value){const copy=JSON.parse(canonical(value));const freeze=item=>{if(item&&typeof item==='object'){Object.values(item).forEach(freeze);Object.freeze(item);}return item;};return freeze(copy);}
 const lifetimes=new WeakMap();
+// Source-issued opaque state for one current original backend/profile directory.
+const directoryBindings=new WeakMap();
 function lifetime(value){let nonce=lifetimes.get(value);if(!nonce){nonce=hash(randomUUID());lifetimes.set(value,nonce);}return nonce;}
 async function originalModules(){
  assertSources();
@@ -138,7 +141,7 @@ function locate(loader,Entry,plugin,serviceName,service,original){
 }
 // No services are registered, resolved or files allocated at installation.
 // This function is called only by an explicit active owner preparation.
-export async function resolveInstalledWorkerFacts({ctx,choice,profile,isAlive,previous,assertInvocation=()=>true}){
+export async function resolveInstalledWorkerFacts({ctx,choice,profile,isAlive,previous,directoryBinding,assertInvocation=()=>true}){
  try{
   const checkpoint=()=>{if(assertInvocation()!==true||isAlive()!==true)fail('SERVICE_DISPOSED');};checkpoint();
   if(isAlive()!==true||ctx.fiber.state!==2)fail('SERVICE_DISPOSED');
@@ -173,7 +176,7 @@ export async function resolveInstalledWorkerFacts({ctx,choice,profile,isAlive,pr
   const declared=inventory.filter(row=>row.id===choice.selection.agentPreset);if(preset.id!==choice.selection.agentPreset||preset.broken||document.agentPreset!==preset.id||declared.length!==1||declared[0].broken||!Array.isArray(declared[0].rows)||declared[0].rows.length!==0)fail('WORKER_PRESET_UNAVAILABLE');
   const inspections=services.agentPresets.inspectCompositions().filter(row=>row.id===preset.id);if(inspections.length<1||inspections.some(row=>row.modules.length!==0||row.leakedServices.length!==0))fail('WORKER_PRESET_UNAVAILABLE');
   let providerBinding=null,providerSource=null;
-  if(choice.selection.provider==='df-testing-local'&&choice.selection.model==='df-testing-worker-v1'){
+  if(choice.selection.provider==='df-testing-local'&&['df-testing-worker-v1','df-testing-review-v1','df-testing-repair-v1'].includes(choice.selection.model)){
    const own=await import('./testing-provider.mjs');checkpoint();
    const providerEntry=locate(services.loader,Entry,own.default,'llm',services.llm,original);
    // Its actual original entry has its declared llm injection. Keep all
@@ -184,9 +187,17 @@ export async function resolveInstalledWorkerFacts({ctx,choice,profile,isAlive,pr
   const supplied=[loopEntry,persistenceEntry].map(entry=>Object.freeze({entry,fiber:entry.fiber,namespace:entry.moduleNamespace}));
   const sourceRef=installedRef('df.installed-worker-source/v1',Object.fromEntries(Object.entries(services).map(([key,value])=>[key,lifetime(original(value))])),lifetime(loopEntry.fiber),lifetime(persistenceEntry.fiber),providerSource,providerBinding?lifetime(providerBinding.entry.fiber):null);
   const modelRef=installedRef('df.installed-worker-model/v1',model.provider,model.id,JSON.parse(JSON.stringify(selected))),presetRef=installedRef('df.installed-worker-preset/v1',preset.id,document,declared[0]),reasoningRef=installedRef('df.installed-worker-reasoning/v1',effort,choice.selection.maxOutputTokens),catalogEvidenceRef=installedRef('df.installed-worker-catalog/v1',modelRef,presetRef,reasoningRef,sourceRef);
-  let allocation=previous?.allocation??null;
-  if(allocation&&!same(allocation.currentLeaf,leaf))fail('WORKER_SOURCE_UNAVAILABLE');
-  const approvedLeaf=allocation?allocation.approvedLeaf:leaf;
+  let directoryToken=directoryBinding===undefined?previous?.directoryBinding:directoryBinding,directoryState;
+  if(previous!==undefined&&(!previous.directoryBinding||directoryBinding!==undefined&&directoryBinding!==previous.directoryBinding))fail('WORKER_SOURCE_UNAVAILABLE');
+  const directoryIdentity=immutable({directory:choice.persistence.directory,persistence:choice.persistence,profile,paths:{parent,root,cwd,profile:profileFact}});
+  if(directoryToken===undefined){
+   directoryToken=Object.freeze({});directoryState={ctx,backend:original(services.sessionPersistence),sourceRef,identity:directoryIdentity,approvedLeaf:leaf,allocation:null};directoryBindings.set(directoryToken,directoryState);
+  }else{
+   directoryState=directoryBindings.get(directoryToken);
+   if(!directoryState||directoryState.ctx!==ctx||directoryState.backend!==original(services.sessionPersistence)||directoryState.sourceRef!==sourceRef||!same(directoryState.identity,directoryIdentity))fail('WORKER_SOURCE_UNAVAILABLE');
+  }
+  if(!same(directoryState.allocation?.currentLeaf??directoryState.approvedLeaf,leaf))fail('WORKER_SOURCE_UNAVAILABLE');
+  const approvedLeaf=directoryState.approvedLeaf;
   const paths=immutable({parent,root,cwd,profile:profileFact,leaf:approvedLeaf});
   const environmentRef=installedRef('df.installed-worker-environment/v1',choice.environment,choice.persistence,paths);
   const assertCurrent=()=>{
@@ -194,16 +205,16 @@ export async function resolveInstalledWorkerFacts({ctx,choice,profile,isAlive,pr
    if(isAlive()!==true||ctx.fiber.state!==2||ctx.fiber.uid===null)fail('SERVICE_DISPOSED');
    for(const[key,value]of Object.entries(services))if(original(get(key))!==original(value))fail('WORKER_SOURCE_UNAVAILABLE');
    for(const {entry,fiber,namespace} of supplied)if(entry.disabled||entry.fiber!==fiber||entry.moduleNamespace!==namespace||fiber.state!==2||fiber.uid===null)fail('WORKER_SOURCE_UNAVAILABLE');
-   if(!same(fsFact(dirname(choice.persistence.directory),{privateMode:true}),parent)||!same(fsFact(choice.environment.root),root)||!same(fsFact(choice.environment.cwd),cwd)||!same(fsFact(profile.dir),profileFact)||!same(fsFact(choice.persistence.directory,{privateMode:true,absent:true}),allocation?.currentLeaf??leaf))fail('WORKER_SOURCE_UNAVAILABLE');
+   if(!same(fsFact(dirname(choice.persistence.directory),{privateMode:true}),parent)||!same(fsFact(choice.environment.root),root)||!same(fsFact(choice.environment.cwd),cwd)||!same(fsFact(profile.dir),profileFact)||!same(fsFact(choice.persistence.directory,{privateMode:true,absent:true}),directoryState.allocation?.currentLeaf??directoryState.approvedLeaf))fail('WORKER_SOURCE_UNAVAILABLE');
    if(services.sessionPersistence.config.root!==choice.persistence.directory||(services.sessionPersistence.config.compression??'zstd')!==choice.persistence.compression)fail('WORKER_PERSISTENCE_UNSUPPORTED');
    const activeProfile=get('profileContext');if(!activeProfile||activeProfile.dir!==profile.dir||activeProfile.name!==profile.name)fail('WORKER_SOURCE_UNAVAILABLE');
    providerBinding?.assertCurrent();return true;
   };
   if(isAlive()!==true)fail('SERVICE_DISPOSED');assertCurrent();
-  return Object.freeze({services:Object.freeze(services),modules:Object.freeze(m),sourceRef,modelRef,presetRef,reasoningRef,catalogEvidenceRef,environmentRef,effort,providerBinding,pricing:providerBinding?'source_zero':'unknown',accounting:providerBinding?.accounting??null,catalog:immutable({providers:providerRows,models,presets:[{id:preset.id,name:boundedText(preset.name??preset.id),available:true}]}),labels:immutable({provider:providerRows.find(row=>row.id===model.provider).name,model:model.name,reasoning:effort??'Native default',preset:boundedText(preset.name??preset.id)}),assertCurrent,get allocation(){return allocation;},claimDirectory(binding){
+  return Object.freeze({services:Object.freeze(services),modules:Object.freeze(m),sourceRef,modelRef,presetRef,reasoningRef,catalogEvidenceRef,environmentRef,effort,providerBinding,pricing:providerBinding?'source_zero':'unknown',accounting:providerBinding?.accounting??null,catalog:immutable({providers:providerRows,models,presets:[{id:preset.id,name:boundedText(preset.name??preset.id),available:true}]}),labels:immutable({provider:providerRows.find(row=>row.id===model.provider).name,model:model.name,reasoning:effort??'Native default',preset:boundedText(preset.name??preset.id)}),assertCurrent,directoryBinding:directoryToken,get allocation(){return directoryState.allocation;},claimDirectory(binding){
    exact(binding,['taskRef','actionRef','claimRef','generationRef']);
    for(const key of ['taskRef','actionRef','claimRef','generationRef'])if(typeof binding[key]!=='string'||!/^[a-f0-9]{64}$/.test(binding[key]))fail('WORKER_SOURCE_UNAVAILABLE');
-   assertCurrent();if(leaf===null&&!allocation){try{mkdirSync(choice.persistence.directory,{mode:0o700});}catch{fail('WORKER_SOURCE_UNAVAILABLE');}allocation=Object.freeze({approvedLeaf:null,currentLeaf:fsFact(choice.persistence.directory,{privateMode:true}),claim:Object.freeze({taskRef:binding.taskRef,actionRef:binding.actionRef,claimRef:binding.claimRef,generationRef:binding.generationRef})});}assertCurrent();return true;
+   assertCurrent();if(directoryState.approvedLeaf===null&&!directoryState.allocation){try{mkdirSync(choice.persistence.directory,{mode:0o700});}catch{fail('WORKER_SOURCE_UNAVAILABLE');}directoryState.allocation=Object.freeze({approvedLeaf:null,currentLeaf:fsFact(choice.persistence.directory,{privateMode:true}),claim:Object.freeze({taskRef:binding.taskRef,actionRef:binding.actionRef,claimRef:binding.claimRef,generationRef:binding.generationRef})});}assertCurrent();return true;
   }});
  }catch(error){const d=error&&!types.isProxy(error)?Object.getOwnPropertyDescriptor(error,'code'):null;const code=d?.value;throw new BootstrapError(['SERVICE_DISPOSED','OPERATOR_REQUIRED','REQUEST_ABORTED','WORKER_CATALOG_UNAVAILABLE','WORKER_PRESET_UNAVAILABLE','WORKER_PERSISTENCE_UNSUPPORTED','WORKER_SOURCE_UNAVAILABLE'].includes(code)?code:'WORKER_SOURCE_UNAVAILABLE');}
 }

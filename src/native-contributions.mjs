@@ -139,7 +139,7 @@ export class NativeContributions {
     },
     commitAgent: (agentCtx, agent, binding) => { this.#current(); const owned = this.#agents.get(agent); if (!owned || !same(owned.binding, binding)) deny(); return owned.row.contribution.nativeHooks.commitAgent(agentCtx, agent, binding) === true; },
     bindExecution: (agent, execution, body) => { this.#current(); const owned = this.#agents.get(agent); if (!owned || this.#row(execution.taskRef, execution.generationRef) !== owned.row || execution.claimRef !== owned.row.claim?.claimRef || execution.actionDigest !== owned.row.actionDigest) deny(); return owned.row.contribution.nativeHooks.bindExecution(agent, execution, body) === true; },
-    validateResult: async (agent, result) => { this.#current(); const owned = this.#agents.get(agent); if (!owned || this.#row(result.taskRef, result.generationRef) !== owned.row || result.claimRef !== owned.row.claim?.claimRef) deny(); const out = await owned.row.contribution.nativeHooks.validateResult(agent, result); this.#current(); this.#row(result.taskRef, result.generationRef); return out; },
+    validateResult: async (agent, result, checkpoint) => { this.#current(); const owned = this.#agents.get(agent); if (!owned || this.#row(result.taskRef, result.generationRef) !== owned.row || result.claimRef !== owned.row.claim?.claimRef) deny(); const out = await owned.row.contribution.nativeHooks.validateResult(agent, result, ...(checkpoint === undefined ? [] : [checkpoint])); this.#current(); this.#row(result.taskRef, result.generationRef); return out; },
   });
   seal() { this.#active = false; this.#rows.clear(); this.#contributions.clear(); }
 }

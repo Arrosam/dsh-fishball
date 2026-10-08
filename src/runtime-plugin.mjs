@@ -18,7 +18,21 @@ import { EventRouter } from './events.mjs';
 import { ScheduleDriver } from './scheduler.mjs';
 import { ChatAdapter } from './chat.mjs';
 import { assertInstalledWorkerInvocation, runInstalledWorkerInvocation } from './installed-invocation.mjs';
+import { NativeContributions } from './native-contributions.mjs';
+import { createAuditNativeSource } from './installed-audit-native-source.mjs';
+import { createAuditPhases } from './installed-audit-phases.mjs';
+import { createInstalledMemoryContinuity } from './installed-memory-continuity.mjs';
+import { createNormalAutomation, createNormalResults, localActionFacts } from './installed-normal-services.mjs';
+import { canonical, hash, reference as scopeReference } from './runtime-security.mjs';
 import { workerDigest } from './environment.mjs';
+import { createSchema7Root } from './schema7-runtime-composition.mjs';
+import { createNormalSourceSelection } from './normal-native-selection.mjs';
+import { createNormalNativeOperations } from './normal-native-operations.mjs';
+import { createNormalNativePlanner } from './normal-native-planning.mjs';
+import { createNormalSourcePlanningBinding } from './normal-source-planning-binding.mjs';
+import { createNormalResumeControls } from './normal-resume-controls.mjs';
+import { createOwnerNativeCommandControls } from './owner-native-command-controls.mjs';
+import { createNormalNativeRpc } from './normal-native-rpc.mjs';
 
 const { HostConnectionService } = await import(pathToFileURL(
   resolveHostSource('@deepseek-ai/dsh-client-connection')).href);
@@ -27,7 +41,7 @@ const { HostConnectionService } = await import(pathToFileURL(
 // RPC JSON never contain the key, raw identity or authority-bearing handles.
 export function createRuntimePlugin({ identity, encryptionKey, hostPermission = () => false,
   runtimeLimits = {}, forbiddenSecrets = [], previewResolver, previewTtlMs,
-  memory, worker, installedWorkerInstaller, reviewerInstaller, results, automationInstaller, notifications } = {}) {
+  memory, worker, installedWorkerInstaller, installedAuditInstaller, installedAuditSelection, installedWorkerSelection, installedContinuationSelection, nativeSource, installedAutomationInstaller, installedResultsInstaller, reviewerInstaller, results, automationInstaller, notifications } = {}) {
   if (identity !== undefined && typeof identity !== 'function' ||
       encryptionKey !== undefined && typeof encryptionKey !== 'function' || typeof hostPermission !== 'function') {
     throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
@@ -47,6 +61,9 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
   }
   if (results !== undefined) { record(results, ['recipientAdapter', 'progressPolicy'], 'RUNTIME_ADAPTER_INVALID'); results = Object.freeze({ ...results }); }
   if (automationInstaller !== undefined && typeof automationInstaller !== 'function') throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+  if (installedAutomationInstaller !== undefined && typeof installedAutomationInstaller !== 'function' || installedResultsInstaller !== undefined && typeof installedResultsInstaller !== 'function') throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+  if (installedResultsInstaller && (!installedWorkerInstaller || !installedAuditInstaller || !installedAuditSelection?.enabled)) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+  if (memory && (installedWorkerInstaller || installedAuditInstaller || installedAutomationInstaller || installedResultsInstaller) && memory.byteLimit > 65536) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
   if (notifications !== undefined) {
     record(notifications, ['policyRef', 'recipientRef', 'channelRef', 'mergeKeyRef'], 'RUNTIME_ADAPTER_INVALID');
     if (!results) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
@@ -70,31 +87,60 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
     } catch { throw new BootstrapError('RUNTIME_ADAPTER_UNAVAILABLE'); }
     ctx.effect(function* () {
       const owner = Object.freeze({}), coordinatorHandle = Object.freeze({}), hostHandle = Object.freeze({});
-      let store, installed, installedSealed = false;
+      let normalCore, normalSelection, normalNative, normalResume, ownerCommands, normalApi, store, installed, auditInstalled, contributions, roleSource, phases, normalAutomation, normalResults, continuity, installedSealed = false;
       const effectivePermission = value => {
+        if (normalResults && !installedSealed && originalPlans.get(`${value.taskRef}:${value.actionRef}`)?.origin === 'local') return normalResults.permission(value) === true;
         if (!installedWorkerInstaller) return hostPermission(value);
         if (!installed || installedSealed) return false;
-        try { return installed.hostPermission(value) === true; } catch { installedSealed = true; return false; }
+        try { return contributions ? contributions.hostPermission(value) === true : installed.hostPermission(value) === true; } catch { installedSealed = true; return false; }
       };
       try {
-        store = new RuntimeStore({ databasePath: config.databasePath, encryptionKey: key,
+        const storeOptions = { databasePath: config.databasePath, encryptionKey: key,
           principals: [{ handle: owner, role: 'owner', scope },
             { handle: coordinatorHandle, role: 'coordinator', scope }, { handle: hostHandle, role: 'host', scope }],
-          limits: { ...config.limits, ...runtimeLimits }, hostPermission: effectivePermission, forbiddenSecrets });
+          ...(installedAuditSelection?.enabled ? {auditExecutionBounds:{inputByteLimit:installedAuditSelection.inputByteLimit,resultByteLimit:installedAuditSelection.resultByteLimit}} : {}), limits: { ...config.limits, ...runtimeLimits }, hostPermission: effectivePermission, forbiddenSecrets };
+        if(nativeSource){
+          if(!installedWorkerInstaller||!memory||!nativeSource.descriptor||typeof nativeSource.assertCurrent!=='function')throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+          nativeSource.assertCurrent();
+          normalCore=createSchema7Root({storeOptions,ownerHandle:owner,coordinatorHandle,hostHandle,memory,source:nativeSource,check:()=>checkOwner(),onPreparedNew:actual=>{
+            checkOwner();if(actual.commitDisposition!=='new')throw new BootstrapError('CONTEXT_UNCERTAIN');
+            protectedContexts.set(`${actual.input.taskRef}:${actual.receipt.recordRef}`,frozenCopy(actual.receipt));
+            for(const listener of preparedListeners){const out=listener(frozenCopy(actual));if(types.isPromise(out)){out.catch(()=>{});throw new BootstrapError('CONTEXT_UNCERTAIN');}}
+            checkOwner();
+          }});store=normalCore.store;
+        }else store=new RuntimeStore(storeOptions);
       } finally { key.fill(0); }
       let active = true, bridge, manager, installedManager, preview, reviewerDisposer, automationDisposer, router, schedules;
       const chats = new Set(), scheduleTokens = new Map();
       const alive = () => active && ctx.fiber.state === 2 && ctx.fiber.uid !== null;
       const assertAlive = () => { if (!alive()) throw new BootstrapError('SERVICE_DISPOSED'); };
-      let receiptListener, receiptSubscriptionUsed = false, nativeCompositionAttempted = false;
+      const preparedListeners=new Set(), receiptListeners = new Set(), originalPlans = new Map(), contributionTokens = new WeakMap(), protectedContexts = new Map(), producerCaptures = new Map();
+      let nativeCompositionAttempted = false, registrationOpen = false;
+      const checkOwner = () => { assertAlive(); if (!installedAlive()) throw new BootstrapError('SERVICE_DISPOSED'); return assertInstalledWorkerInvocation(ctx); };
+      const planFor = (taskRef,actionRef) => { checkOwner();const row=originalPlans.get(`${taskRef}:${actionRef}`);if(!row)throw new BootstrapError('WORKER_MAPPING_MISMATCH');return row; };
+      const subscriberNames = new Set();
+      const subscribeOnce = name => listener => {
+        if (!['producer', 'audit', 'results'].includes(name) || subscriberNames.has(name) || typeof listener !== 'function' || receiptListeners.has(listener) || receiptListeners.size >= 3) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+        subscriberNames.add(name); receiptListeners.add(listener); let open = true;
+        return () => { if (open) { open = false; receiptListeners.delete(listener); } };
+      };
+      const producerSubscribe=subscribeOnce('producer'),auditSubscribe=subscribeOnce('audit'),resultsSubscribe=subscribeOnce('results');
       const frozenCopy = value => { const copy = structuredClone(value); const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; }; return freeze(copy); };
-      const observe = (operation, input, invoke) => {
-        const captured = frozenCopy(input);
+      const observe = (operation, input, invoke, origin) => {
+        checkOwner();const captured = frozenCopy(input);
         const publish = receipt => {
-          if (receiptListener) {
-            try { const result = receiptListener(frozenCopy({ operation, input: captured, receipt })); if (types.isPromise(result)) { result.catch(() => {}); throw new Error(); } }
-            catch { installedSealed = true; throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); }
+          checkOwner();
+          if (operation === 'plan' && origin) {
+            const pair = origin === 'audit' ? frozenCopy(store.readAuditInput(hostHandle,{taskRef:captured.taskRef,inputRecordRef:captured.spec.executionInput.recordRef})) : null;
+            originalPlans.set(`${captured.taskRef}:${captured.spec.actionRef}`,{origin,spec:frozenCopy(captured.spec),actionDigest:receipt.actionDigest,pair});
           }
+          if(['control','revise'].includes(operation))for(const[key,value]of protectedContexts)if(value.task.taskRef===captured.taskRef)protectedContexts.delete(key);
+          if (['memoryRemember', 'memoryCorrect', 'memoryForget', 'memoryImportConfirm', 'memoryDeleteConfirm'].includes(operation)) protectedContexts.clear();
+          if(operation === 'prepareContext'&&!normalCore) protectedContexts.set(`${captured.taskRef}:${receipt.recordRef}`,frozenCopy(receipt));
+          if(operation === 'captureResult') producerCaptures.set(`${captured.taskRef}:${captured.artifactRef}:${captured.version}`,frozenCopy({input:captured,receipt}));
+          try { for(const listener of receiptListeners) { const result=listener(frozenCopy({operation,input:captured,receipt}));if(types.isPromise(result)){result.catch(()=>{});throw new Error();} } }
+          catch { installedSealed=true;contributions?.seal();roleSource?.seal();phases?.seal();throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); }
+          checkOwner();
           return receipt;
         };
         const receipt = invoke();
@@ -102,8 +148,11 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
       };
       const installedAlive = () => alive() && !installedSealed;
       yield async () => {
-        active = false; installedSealed = true; receiptListener = undefined; bridge?.deactivate(); preview?.dispose();
+        active = false; installedSealed = true; receiptListeners.clear(); preparedListeners.clear(); normalResume?.dispose(); contributions?.seal(); roleSource?.seal(); phases?.seal(); bridge?.deactivate(); preview?.dispose();
         let failed = false;
+        try { continuity?.dispose(); } catch { failed = true; }
+        try { normalResults?.dispose(); } catch { failed = true; }
+        try { normalAutomation?.dispose(); } catch { failed = true; }
         try { schedules?.dispose(); } catch { failed = true; }
         scheduleTokens.clear();
         for (const chat of chats) { try { chat.dispose(); } catch { failed = true; } }
@@ -111,7 +160,9 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         try { router?.dispose(); } catch { failed = true; }
         try { await automationDisposer?.(); } catch { failed = true; }
         try { await reviewerDisposer?.(); } catch { failed = true; }
+        try { await auditInstalled?.dispose(); } catch { failed = true; }
         try { await installed?.dispose(); } catch { failed = true; }
+        try { await normalNative?.close(); } catch { failed = true; }
         try { await manager?.close(); } catch { failed = true; }
         finally { installedManager?.seal(); }
         try { await bridge?.dispose(); } catch { failed = true; }
@@ -120,45 +171,87 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
       };
       const coordinator = new Coordinator({ store, knownSecrets: forbiddenSecrets });
       const audit = new RuntimeAudit(store);
-      const projection = memory && new MemoryAdapter({ ...memory, store, handle: coordinatorHandle,
-        contextAssembler: new ContextAssembler({ store, tokenize: memory.tokenize, byteLimit: memory.byteLimit, tokenLimit: memory.tokenLimit, knownSecrets: forbiddenSecrets }), knownSecrets: forbiddenSecrets });
+      const preparing = new AsyncLocalStorage(), projectionStore = {};
+      let constructingProjection = false, initialBindingRead = false;
+      for(const method of ['memoryBinding','getMemory','memoryCommandReceipt','putMemory','listMemory','deleteMemory','snapshot','readData','task','putData'])projectionStore[method]=(...args)=>{
+        // One original principal-metadata read while the original fiber loads.
+        if(constructingProjection&&method==='memoryBinding'&&ctx.fiber.state===1){
+          if(!active||ctx.fiber.uid===null||initialBindingRead||args.length!==1||args[0]!==coordinatorHandle)throw new BootstrapError('SERVICE_DISPOSED');
+          initialBindingRead=true;
+          const out=Reflect.apply(store[method],store,args);
+          if(!active||ctx.fiber.state!==1||ctx.fiber.uid===null)throw new BootstrapError('SERVICE_DISPOSED');
+          return out;
+        }
+        if(preparing.getStore()){checkOwner();}else assertAlive();const out=Reflect.apply(store[method],store,args);if(preparing.getStore())checkOwner();return out;
+      };
+      Object.freeze(projectionStore);
+      const contextAssembler = normalCore?.contextAssembler ?? (memory && new ContextAssembler({ store:projectionStore, tokenize: memory.tokenize, byteLimit: memory.byteLimit, tokenLimit: memory.tokenLimit, knownSecrets: forbiddenSecrets }));
+      let projection=normalCore?.memoryAdapter;
+      if(memory&&!normalCore){
+        constructingProjection=true;
+        try { projection = new MemoryAdapter({ ...memory, store:projectionStore, handle: coordinatorHandle, contextAssembler, knownSecrets: forbiddenSecrets }); }
+        finally { constructingProjection=false; }
+      }
+      if (memory && (installedWorkerInstaller || installedAuditInstaller || installedAutomationInstaller || installedResultsInstaller)) continuity = createInstalledMemoryContinuity({ ctx, store, ownerHandle: owner, coordinatorProjection: projection, memory, contextAssembler, knownSecrets: forbiddenSecrets, clock: Date.now,
+        onMutation: event => { checkOwner(); protectedContexts.clear(); return observe(event.operation, event.input, () => event.receipt); } });
       if (worker) {
         const adapter = new NativeAdapter(ctx, { ...worker, messageAdmission: (message, recipient) => {
           assertAlive(); store.assertMessageCurrent(hostHandle, message); store.assertWorkerOwned(hostHandle, recipient); return true;
         } });
         manager = new WorkerManager({ store, hostHandle, adapter });
       }
+      if(normalCore){
+        normalSelection=createNormalSourceSelection({ctx,workerSelection:installedWorkerSelection,auditSelection:installedAuditSelection,continuationSelection:installedContinuationSelection,profile:{dir:ctx.profileContext.dir,name:ctx.profileContext.name},source:nativeSource,core:normalCore,check:checkOwner,isAlive:installedAlive,readCurrentFacts:purpose=>installed.normalSupport.readFacts(purpose)});
+        const publish=(operation,input,receipt,origin)=>observe(operation,input,()=>receipt,origin);
+        normalNative=createNormalNativeOperations({core:normalCore,check:checkOwner,publish});
+        const planner=createNormalNativePlanner({core:normalCore,selection:normalSelection,nativeOperations:normalNative,check:checkOwner,readAuditInput:input=>store.readAuditInput(hostHandle,input),publish});
+        const binding=createNormalSourcePlanningBinding({selection:normalSelection,planner,check:checkOwner});
+        const refreshConfiguration=async()=>{checkOwner();await installed.normalSupport.refresh();checkOwner();return normalSelection.refresh();};
+        normalApi=Object.freeze({...binding,refreshConfiguration,readConfiguration:purpose=>normalSelection.readConfiguration(purpose),readPrepared:input=>normalCore.readPrepared(input),readResumeInput:input=>normalCore.readResumeInput(input),
+          async observeHistory(agent,binding,purpose,phase){checkOwner();const facts=normalSelection.readFacts(purpose),configuration=normalSelection.readConfiguration(purpose),task=normalCore.snapshot({taskRef:binding.taskRef}).task,closed={ownerRef:task.ownerRef,workspaceRef:task.workspaceRef,...Object.fromEntries(['taskRef','claimRef','generationRef','sessionRef'].map(k=>[k,binding[k]]))},h=await (phase==='stopped'?facts.collector.observeStopped(agent,closed,hash(canonical(configuration))):facts.collector.observeLive(agent,closed,hash(canonical(configuration)),phase));checkOwner();facts.assertCurrent();return h;},
+          validateHistory:(observation,result,usage,purpose,body,priorMessages,phase)=>{const collector=normalSelection.readFacts(purpose).collector,actual=phase==='stopped'?collector.readPersistedUsage(observation,result):usage;if(phase==='stopped'&&canonical(actual)!==canonical(usage))throw new BootstrapError('WORKER_RESULT_UNAVAILABLE');return collector.validateCommitted(observation,result,actual,purpose,body,priorMessages);},
+          subscribePrepared(listener){if(typeof listener!=='function'||preparedListeners.size)throw new BootstrapError('RUNTIME_ADAPTER_INVALID');preparedListeners.add(listener);return()=>preparedListeners.delete(listener);},
+          readFinishFirst:input=>normalCore.readFinishFirst(input)});
+        ownerCommands=createOwnerNativeCommandControls({store,ownerHandle:owner,check:checkOwner,readFinishFirst:input=>normalCore.readFinishFirst(input),assertFinishReady:input=>normalNative.assertFinishReady(input),finish:input=>observe('finishExecution',input,()=>normalNative.finish(input))});
+        normalResume=createNormalResumeControls({core:normalCore,nativeOperations:normalNative,check:checkOwner,source:nativeSource,readConfiguration:()=>normalSelection.readConfiguration(),readFacts:purpose=>normalSelection.readFacts(purpose),approvalPreview:()=>preview,refreshConfiguration,ensureAdapter:()=>ensureManager(),
+          adoptSignedPlan:value=>{installed.normalSupport.adoptSignedResumePlan(value);originalPlans.set(`${value.taskRef}:${value.spec.actionRef}`,{origin:'producer',spec:frozenCopy(value.spec),actionDigest:value.actionDigest,pair:null});},expectGrant:value=>installed.normalSupport.expectGrant(value)});
+      }
+      let producerNative, auditNative;
+      const validateContribution = value => {
+        assertAlive();if(!installedAlive())throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');
+        record(value,['worker','nativeHooks'],'RUNTIME_ADAPTER_INVALID');
+        record(value.worker,['environments','permission','toolGuard','resolveSession'],'RUNTIME_ADAPTER_INVALID');
+        record(value.nativeHooks,['setupAgent','commitAgent','bindExecution','validateResult'],'RUNTIME_ADAPTER_INVALID');
+        if(!value.worker.environments||typeof value.worker.toolGuard!=='function'||Object.values(value.nativeHooks).some(v=>typeof v!=='function'))throw new BootstrapError('RUNTIME_ADAPTER_INVALID');return value;
+      };
+      const ensureManager = () => {
+        checkOwner();if(manager)return manager;if(nativeCompositionAttempted)throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');nativeCompositionAttempted=true;
+        const adapter=new NativeAdapter(ctx,{...contributions.worker,nativeHooks:contributions.nativeHooks,claimBinding:contributions.claimBinding,...(normalNative?{resolveSession:value=>normalNative.resolveSession(value)}:{}),messageAdmission:()=>false});
+        normalNative?.bindAdapter(adapter);installedManager=installedManagerBinding(ctx,store,adapter,(input,invoke)=>observe('captureAuditResult',input,invoke));manager=new WorkerManager({store:installedManager.store,hostHandle,adapter:installedManager.adapter});return manager;
+      };
+      const managerCall = (name,input,operation) => { checkOwner();if(name==='finishExecution'&&normalCore){const historical=normalCore.readFinishFirst(input);if(historical!==null)return historical.receipt;}const row=planFor(input.taskRef,input.actionRef),marked=Boolean(row.spec.nativeOriginBinding||row.spec.resumeBinding);
+        if(marked){ensureManager();const names={dispatch:'dispatch',executeContext:'executeContext',executeAuditInput:'executeAuditInput',query:'query',sessionLink:'sessionLink',captureValidatedResult:'captureResult',validateAuditResult:'validateAuditResult',captureValidatedAuditResult:'captureAuditResult'};
+          if(name==='finishExecution')return ownerCommands.finishNew(input);if(!normalNative||!names[name])throw new BootstrapError('WORKER_REQUEST_DENIED');return normalNative[names[name]](input);}
+        const actual=name==='dispatch'?ensureManager():manager;if(!actual)throw new BootstrapError('WORKER_SESSION_UNAVAILABLE');return installedManager.run(()=>operation?observe(operation,input,()=>actual[name](owner,input)):actual[name](owner,input)); };
       const composeNativeWorker = value => {
-        assertAlive();
-        if (!installedAlive() || nativeCompositionAttempted || manager) throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');
-        record(value, ['worker', 'nativeHooks'], 'RUNTIME_ADAPTER_INVALID');
-        if (!value.worker || !value.nativeHooks) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
-        record(value.worker, ['environments', 'permission', 'toolGuard', 'resolveSession'], 'RUNTIME_ADAPTER_INVALID');
-        record(value.nativeHooks, ['setupAgent', 'commitAgent', 'bindExecution', 'validateResult'], 'RUNTIME_ADAPTER_INVALID');
-        if (!value.worker.environments || typeof value.worker.permission !== 'function' || typeof value.worker.toolGuard !== 'function' || value.worker.resolveSession !== undefined && typeof value.worker.resolveSession !== 'function' || ['setupAgent', 'commitAgent', 'bindExecution', 'validateResult'].some(key => typeof value.nativeHooks[key] !== 'function')) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
-        nativeCompositionAttempted = true;
-        try {
-          const adapter = new NativeAdapter(ctx, { ...value.worker, nativeHooks: value.nativeHooks, messageAdmission: () => false });
-          installedManager = installedManagerBinding(ctx, store, adapter);
-          manager = new WorkerManager({ store: installedManager.store, hostHandle, adapter: installedManager.adapter });
-          return Object.freeze({
-            dispatch: input => installedManager.run(() => observe('dispatch', input, () => manager.dispatch(owner, input))),
-            executeContext: input => installedManager.run(() => observe('execute', input, () => manager.executeContext(owner, input))),
-            query: input => installedManager.run(() => manager.query(owner, input)),
-            sessionLink: input => installedManager.run(() => manager.sessionLink(owner, input)),
-            captureResult: input => installedManager.run(() => observe('captureResult', input, () => manager.captureValidatedResult(owner, input))),
-            finishExecution: input => installedManager.run(() => observe('finishExecution', input, () => manager.finishExecution(owner, input))),
-          });
-        } catch { installedSealed = true; throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); }
+        checkOwner();if(producerNative)throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');producerNative=validateContribution(value);
+        return Object.freeze({dispatch:input=>managerCall('dispatch',input,'dispatch'),executeContext:input=>managerCall('executeContext',input,'execute'),query:input=>managerCall('query',input),sessionLink:input=>managerCall('sessionLink',input),captureResult:input=>managerCall('captureValidatedResult',input,'captureResult'),finishExecution:input=>managerCall('finishExecution',input,'finishExecution')});
+      };
+      const composeNativeAudit = value => {
+        checkOwner();if(auditNative)throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');auditNative=validateContribution(value);
+        return Object.freeze({
+          async dispatch(input){const out=await managerCall('dispatch',input,'dispatch');checkOwner();phases.afterDispatch(input,out);return out;},
+          executeApprovedInput:input=>managerCall('executeAuditInput',input,'executeAudit'),query:input=>managerCall('query',input),sessionLink:input=>managerCall('sessionLink',input),collectAuditResult:(input,privateInput)=>phases.collect(input,privateInput),finishExecution:input=>{checkOwner();if(!normalNative)roleSource.sealExecution(input);return managerCall('finishExecution',input,'finishExecution');},dispose(){roleSource?.seal();phases?.seal();},
+        });
       };
       const prepareOwnerPreview = input => {
         if (!preview) throw new BootstrapError('PREVIEW_UNAVAILABLE');
-        assertAlive(); if (!installedAlive()) throw new BootstrapError('PREVIEW_UNAVAILABLE');
+        checkOwner(); if (!installedAlive()) throw new BootstrapError('PREVIEW_UNAVAILABLE');
         return preview.prepare(input);
       };
       const grantOwnerPreview = input => {
         if (!preview) throw new BootstrapError('PREVIEW_UNAVAILABLE');
-        assertAlive(); if (!installedAlive()) throw new BootstrapError('PREVIEW_UNAVAILABLE');
+        checkOwner(); if (!installedAlive()) throw new BootstrapError('PREVIEW_UNAVAILABLE');
         return preview.grant(input);
       };
       if (installedWorkerInstaller) {
@@ -168,29 +261,80 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
             readOwnerData: value => { assertAlive(); return store.readData(owner, value); },
             currentPolicy: () => { assertAlive(); return store.getPolicy(owner); },
             installOwnerPolicy: value => { assertAlive(); return observe('policy', value, () => store.policy(owner, value)); },
-            planOwnerAction: value => { assertAlive(); return observe('plan', value, () => store.planAction(owner, value)); },
+            planOwnerAction: value => { checkOwner(); return observe('plan', value, () => store.planAction(owner, value),'producer'); },
             assertNativeRequestCurrent: value => { assertAlive(); if (!installedAlive()) throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); return store.assertNativeRequestCurrent(hostHandle, value); },
             composeNativeWorker, prepareOwnerPreview, grantOwnerPreview,
-            subscribeRuntimeReceipts: listener => {
-              if (typeof listener !== 'function' || receiptSubscriptionUsed) throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
-              receiptSubscriptionUsed = true; receiptListener = listener;
-              return () => { if (receiptListener === listener) receiptListener = undefined; };
-            }, isAlive: installedAlive,
+            ...(normalApi?{normalNative:normalApi}:{}), subscribeRuntimeReceipts: producerSubscribe, isAlive: installedAlive,
           }));
-          record(installed, ['hostPermission', 'previewResolver', 'previewTtlMs', 'operations', 'status', 'dispose'], 'RUNTIME_ADAPTER_INVALID');
+          record(installed, ['hostPermission', 'previewResolver', 'previewTtlMs', 'operations', 'status', 'dispose','auditSupport','normalSupport'], 'RUNTIME_ADAPTER_INVALID');
           if (['hostPermission', 'previewResolver', 'status', 'dispose'].some(key => typeof installed[key] !== 'function') || !Number.isSafeInteger(installed.previewTtlMs) || installed.previewTtlMs < 1 || installed.previewTtlMs > 60000) throw new Error();
           const names = ['workerCatalog','workerPolicyPreview','workerPolicyConfirm','workerPlan','workerPreview','workerGrant','workerCreate','workerExecute','workerQuery','workerCapture','workerResult','workerFinish'];
           record(installed.operations, names, 'RUNTIME_ADAPTER_INVALID');
           if (names.some(key => typeof installed.operations[key] !== 'function')) throw new Error();
+          if(installedAuditInstaller){
+            if(typeof installedAuditInstaller!=='function')throw new BootstrapError('RUNTIME_ADAPTER_INVALID');
+            const ownerRef=scopeReference(scope.ownerId),workspaceRef=scopeReference(scope.workspaceId);
+            const auditInput=input=>{checkOwner();return store.readAuditInput(hostHandle,input);};
+            if(installedAuditSelection?.enabled){
+              if(!installed.auditSupport)throw new BootstrapError('AUDIT_UNAVAILABLE');
+              roleSource=createAuditNativeSource({ctx,choice:installedAuditSelection,worker:installedWorkerSelection,readFacts:role=>installed.auditSupport.nativeFacts(role),check:checkOwner,assertRequest:input=>store.assertNativeRequestCurrent(hostHandle,input),readInput:auditInput,...(normalApi?{normalNative:normalApi}:{})});
+              phases=createAuditPhases({ownerRef,workspaceRef,check:checkOwner,planFor,manager:()=>Object.freeze({validateAuditResult:input=>managerCall('validateAuditResult',input),captureValidatedAuditResult:input=>managerCall('captureValidatedAuditResult',input)}),bindReviewer:(handle,input)=>{checkOwner();return store.bindAuditReviewer(hostHandle,handle,input);},submit:(handle,input)=>{checkOwner();return observe('submitAuditResult',input,()=>store.submitAuditResult(handle,input));},writeArtifact:input=>{checkOwner();return normalNative?normalNative.repairArtifact(input):observe('writeArtifact',input,()=>store.writeArtifact(owner,input));}});
+            }
+            auditInstalled=installedAuditInstaller(Object.freeze({ctx,snapshotOwner:input=>{checkOwner();return store.snapshot(owner,input);},readOwnerData:input=>{checkOwner();return store.readData(owner,input);},currentPolicy:()=>{checkOwner();return store.getPolicy(owner);},planOwnerAction:input=>{checkOwner();return observe('plan',input,()=>store.planAction(owner,input),'audit');},prepareOwnerPreview,grantOwnerPreview,
+              readProtectedContextFacts:input=>{
+                checkOwner();const snap=store.snapshot(owner,{taskRef:input.taskRef}),data=store.readData(owner,{taskRef:input.taskRef,recordRef:input.contextRecordRef});
+                const prepared=normalCore?normalCore.readPrepared({taskRef:input.taskRef,contextRecordRef:input.contextRecordRef,expectedTaskVersion:snap.task.version,expectedAuthEpoch:snap.task.authEpoch}):null;
+                const source=prepared?{digest:prepared.check.contextDigest,sourceRef:data.sourceRef,sourceTaskVersion:prepared.check.sourceTaskVersion,sourceAuthEpoch:prepared.check.sourceAuthEpoch,memory:prepared.check.memory,verification:'module_prepared_execution_context_only'}:protectedContexts.get(`${input.taskRef}:${input.contextRecordRef}`);
+                if(!source||source.verification!=='module_prepared_execution_context_only'||prepared&&(!prepared.currentness.instructionsCurrent||!prepared.currentness.memoryCurrent))throw new BootstrapError('AUDIT_CONTEXT_REQUIRED');
+                if(data.digest!==source.digest||hash(data.content)!==source.digest||data.sourceRef!==source.sourceRef||data.cryptoVersion!==2||data.sourceTaskVersion!==source.sourceTaskVersion||data.sourceAuthEpoch!==source.sourceAuthEpoch||data.semanticRevision!==snap.semanticRevision)throw new BootstrapError('AUDIT_CONTEXT_REQUIRED');
+                const f=installed.auditSupport.readFacts('review');return frozenCopy({recordRef:data.recordRef,digest:data.digest,kind:data.kind,byteLength:Buffer.byteLength(data.content),cryptoVersion:2,originSourceRef:source.sourceRef,sourceTaskVersion:source.sourceTaskVersion,sourceAuthEpoch:source.sourceAuthEpoch,memory:source.memory,taskRef:input.taskRef,taskVersion:snap.task.version,authEpoch:snap.task.authEpoch,semanticRevision:snap.semanticRevision,configurationRef:f.configurationRef,nativeSourceRef:f.nativeSourceRef});
+              },
+              readCapturedProducerFacts:input=>{
+                checkOwner();const captured=producerCaptures.get(`${input.taskRef}:${input.artifactRef}:${input.artifactVersion}`);if(!captured){const f=installed.auditSupport.readFacts('review'),source=phases.capturedRepairFacts(input),data=store.readData(owner,{taskRef:input.taskRef,recordRef:source.recordRef});if(data.kind!=='artifact'||hash(data.content)!==source.digest)throw new BootstrapError('AUDIT_PRODUCER_REQUIRED');return frozenCopy({...source,configurationRef:f.configurationRef,nativeSourceRef:f.nativeSourceRef});}if(captured.receipt.digest!==input.digest)throw new BootstrapError('AUDIT_PRODUCER_REQUIRED');
+                const data=store.readData(owner,{taskRef:input.taskRef,recordRef:captured.receipt.recordRef}),body=JSON.parse(data.content),f=installed.auditSupport.readFacts('review');
+                if(body.contractVersion!=='df.native-result/v1'||hash(data.content)!==input.digest||body.source.claimRef!==captured.input.claimRef||body.source.executionRef!==captured.input.executionRef||hash(body.content)!==body.source.resultDigest)throw new BootstrapError('AUDIT_PRODUCER_REQUIRED');
+                return frozenCopy({taskRef:input.taskRef,artifactRef:input.artifactRef,artifactVersion:input.artifactVersion,recordRef:data.recordRef,digest:data.digest,producerClaimRef:body.source.claimRef,generationRef:body.source.generationRef,sessionRef:body.source.sessionRef,executionRef:body.source.executionRef,inputDigest:body.source.inputDigest,cursor:body.source.cursor,resultDigest:body.source.resultDigest,configurationRef:f.configurationRef,nativeSourceRef:f.nativeSourceRef});
+              },
+              readAuditActionFacts:input=>{checkOwner();return installed.auditSupport.readFacts(input.purpose);},readAuditInput:auditInput,configureOwnerAudit:input=>{checkOwner();return observe('configureAudit',input,()=>store.configureAudit(owner,input));},prepareOwnerAuditInput:input=>{checkOwner();return observe('prepareAuditInput',input,()=>store.prepareAuditInput(owner,input));},assertNativeRequestCurrent:input=>{checkOwner();return store.assertNativeRequestCurrent(hostHandle,input);},composeNativeAudit,subscribeRuntimeReceipts:auditSubscribe,isAlive:installedAlive,nativeToolGuard:record=>roleSource?.toolGuard(record)===true,...(normalApi?{normalNative:normalApi}:{}),
+            }));
+            record(auditInstalled,['hostPermission','previewResolver','previewTtlMs','operations','status','dispose'],'RUNTIME_ADAPTER_INVALID');
+          }
+          registrationOpen=true;
+          contributions=new NativeContributions({readCurrentTask:taskRef=>{checkOwner();return store.task(owner,taskRef);},assertOwnerCurrent:()=>{if(registrationOpen){if(!active||installedSealed||ctx.fiber.state!==1||ctx.fiber.uid===null)throw new BootstrapError('SERVICE_DISPOSED');return true;}return checkOwner();},verifyClaimBinding:binding=>{
+            checkOwner();const actual=store.assertClaimCurrent(hostHandle,{taskRef:binding.taskRef,claimRef:binding.claimRef,generationRef:binding.generationRef,actionDigest:binding.actionDigest}),snap=store.snapshot(owner,{taskRef:binding.taskRef}),a=snap.actions.find(a=>a.actionRef===binding.actionRef),w=snap.workers.find(w=>w.claimRef===binding.claimRef);
+            return Boolean(actual.claimRef===binding.claimRef&&actual.generationRef===binding.generationRef&&actual.actionDigest===binding.actionDigest&&a&&w&&a.claimRef===binding.claimRef&&a.actionDigest===binding.actionDigest&&canonical(a.spec)===canonical(binding.spec)&&w.reservationRef===binding.reservationRef&&w.generationRef===binding.generationRef&&w.sessionRef===binding.sessionRef&&snap.control==='active');
+          }});
+          for(const origin of ['producer',...(installedAuditSelection?.enabled?['audit']:[])]){
+            const target=()=>origin==='producer'?producerNative:auditNative;
+            const source=()=>origin==='producer'?installed:auditInstalled;
+            contributions.register({matchesSpec:(spec,taskRef)=>{const row=originalPlans.get(`${taskRef}:${spec.actionRef}`);return Boolean(row&&row.origin===origin&&canonical(row.spec)===canonical(spec));},matchesFull:(full,witness)=>{checkOwner();if(!witness||Object.keys(witness).length!==2||!Object.isFrozen(witness))return false;const token=contributionTokens.get(witness.environment);const planned=originalPlans.get(`${full.taskRef}:${full.actionRef}`);if(!planned||planned.origin!==origin||planned.actionDigest!==full.actionDigest||!token||token.origin!==origin||token.taskRef!==full.taskRef||token.actionRef!==full.actionRef||token.actionDigest!==full.actionDigest||canonical(token.spec)!==canonical(full.spec)||token.sourceRef!==witness.sourceRef)return false;const currentSource=origin==='producer'?target().worker.environments.assertCurrent(token.original):installed.auditSupport.assertFactsCurrent(full.spec.role);return currentSource===witness.sourceRef&&full.spec.charges.costProvenanceRef===witness.sourceRef&&source().hostPermission(full)===true;},
+              environments:{bind:(spec,task,actionDigest)=>{const t=target();if(!t)throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');const planned=originalPlans.get(`${task.taskRef}:${spec.actionRef}`);if(!planned||planned.origin!==origin||planned.actionDigest!==actionDigest)throw new BootstrapError('WORKER_MAPPING_MISMATCH');const original=t.worker.environments.bind(spec,task,actionDigest);const sourceRef=origin==='producer'?t.worker.environments.assertCurrent(original):installed.auditSupport.assertFactsCurrent(spec.role);const token=Object.freeze({});contributionTokens.set(token,{original,origin,taskRef:task.taskRef,actionRef:spec.actionRef,spec,sourceRef,actionDigest});return token;},inspect:(token,callback)=>{const held=contributionTokens.get(token);if(!held||held.origin!==origin)throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');return target().worker.environments.inspect(held.original,callback);},assertCurrent:token=>{checkOwner();const held=contributionTokens.get(token),row=held&&originalPlans.get(`${held.taskRef}:${held.actionRef}`);if(!held||held.origin!==origin||!row||row.origin!==origin||canonical(row.spec)!==canonical(held.spec))throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');const current=origin==='producer'?target().worker.environments.assertCurrent(held.original):installed.auditSupport.assertFactsCurrent(row.spec.role);if(current!==held.sourceRef)throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE');return current;}},
+              toolGuard:record=>target().worker.toolGuard(record)===true,
+              nativeHooks:{async setupAgent(...args){await target().nativeHooks.setupAgent(...args);checkOwner();if(origin==='audit'){await roleSource.hooks.setupAgent(...args);checkOwner();}},commitAgent(...args){if(target().nativeHooks.commitAgent(...args)!==true)return false;return origin==='producer'||roleSource.hooks.commitAgent(...args)===true;},bindExecution(...args){if(target().nativeHooks.bindExecution(...args)!==true)return false;return origin==='producer'||roleSource.hooks.bindExecution(...args)===true;},async validateResult(...args){if(origin==='producer')return target().nativeHooks.validateResult(...args);const facts=await roleSource.hooks.validateResult(...args);checkOwner();if(await target().nativeHooks.validateResult(...args)!==true)throw new BootstrapError('AUDIT_COLLECTION_UNAVAILABLE');checkOwner();return facts;}},
+            });
+          }
+          registrationOpen=false;
           // This facade forwards to the one original authoritative store. Only
           // the actual original grantAction success creates an observer event.
-          const previewStore = Object.freeze({ snapshot: (...args) => store.snapshot(...args), readData: (...args) => store.readData(...args), grantAction: (handle, input) => observe('grant', input, () => store.grantAction(handle, input)) });
-          preview = new ApprovalPreview({ store: previewStore, ownerHandle: owner, resolve: installed.previewResolver, ttlMs: installed.previewTtlMs, isAlive: installedAlive, knownSecrets: forbiddenSecrets });
-        } catch { installedSealed = true; throw new BootstrapError('RUNTIME_ADAPTER_INVALID'); }
+          const previewStore = Object.freeze({ snapshot: (...args) => store.snapshot(...args), readData: (...args) => store.readData(...args), grantAction: (handle, input) => {
+            if (originalPlans.get(`${input.taskRef}:${input.actionRef}`)?.origin === 'local' && input.expiresAt > Date.now() + installedWorkerSelection.grantTtlMs) throw new BootstrapError('APPROVAL_INVALID');
+            return observe('grant', input, () => store.grantAction(handle, input));
+          } });
+          preview = new ApprovalPreview({ store: previewStore, ownerHandle: owner, ...(normalResume?{readResumeInput:input=>normalCore.readResumeInput(input),describeResume:(...args)=>normalResume.describeResume(...args)}:{}), readAuditInput: installedAuditSelection?.enabled ? input=>{checkOwner();const out=store.readAuditInput(hostHandle,input);checkOwner();return out;} : undefined, resolve: (spec,task)=>spec.resumeBinding?normalResume.resolvePreview(spec,task):originalPlans.get(`${task.taskRef}:${spec.actionRef}`)?.origin === 'local' ? normalResults.resolve(spec,task) : spec.executionInput ? auditInstalled.previewResolver(spec,task) : installed.previewResolver(spec,task), ttlMs: installed.previewTtlMs, isAlive: installedAlive, knownSecrets: forbiddenSecrets });
+        } catch { registrationOpen = false; installedSealed = true; throw new BootstrapError('RUNTIME_ADAPTER_INVALID'); }
       } else if (previewResolver) preview = new ApprovalPreview({ store, ownerHandle: owner, resolve: previewResolver, ttlMs: previewTtlMs, isAlive: alive, knownSecrets: forbiddenSecrets });
+      if(installedAuditInstaller&&!installedWorkerInstaller){
+        const unavailableAudit=()=>{throw new BootstrapError('AUDIT_DISABLED');};
+        auditInstalled=installedAuditInstaller(Object.freeze({ctx,snapshotOwner:unavailableAudit,readOwnerData:unavailableAudit,currentPolicy:unavailableAudit,planOwnerAction:unavailableAudit,prepareOwnerPreview:unavailableAudit,grantOwnerPreview:unavailableAudit,readProtectedContextFacts:unavailableAudit,readCapturedProducerFacts:unavailableAudit,readAuditActionFacts:unavailableAudit,readAuditInput:unavailableAudit,configureOwnerAudit:unavailableAudit,prepareOwnerAuditInput:unavailableAudit,assertNativeRequestCurrent:unavailableAudit,composeNativeAudit:unavailableAudit,subscribeRuntimeReceipts:auditSubscribe,isAlive:installedAlive}));
+      }
       const pipeline = results && new ResultPipeline(store, { ...results, hostHandle });
       const notifier = notifications && new NotificationService(store, { ...notifications, resultPipeline: pipeline });
       const unavailable = () => { throw new BootstrapError('CAPABILITY_UNAVAILABLE'); };
+      if (installedAutomationInstaller) normalAutomation = createNormalAutomation({ ctx, store, ownerHandle: owner, hostHandle, installer: installedAutomationInstaller, isAlive: installedAlive, check: checkOwner, knownSecrets: forbiddenSecrets });
+      if (installedResultsInstaller) normalResults = createNormalResults({ ctx, store, ownerHandle: owner, hostHandle, identity: scope, profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name }, installer: installedResultsInstaller, isAlive: installedAlive, check: checkOwner, observe, subscribeRuntimeReceipts: resultsSubscribe,
+        readLocalActionFacts: input => localActionFacts({ ctx, installed, workerSelection: installedWorkerSelection, store, ownerHandle: owner, check: checkOwner }, input),
+        checkLocalAction: input => { const row = planFor(input.taskRef, input.actionRef); if (row.origin !== 'local' || row.actionDigest !== input.actionDigest) throw new BootstrapError('LOCAL_PLAN_MISMATCH'); },
+        grantTtlMs: installedWorkerSelection.grantTtlMs, preparePreview: prepareOwnerPreview, grantPreview: grantOwnerPreview });
       if (reviewerInstaller) {
         const reviewer = Object.freeze({});
         // The installation owns this separately admitted identity. None of
@@ -236,7 +380,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
               status: input => { assertAlive(); return chat.status(input); },
               control: async input => {
                 assertAlive(); const receipt = await chat.control(input); assertAlive();
-                const workers = manager && ['pause', 'cancel'].includes(input.kind) ? await manager.cancelAfterControl(receipt.task.taskRef) : [];
+                const workers = ['pause','cancel'].includes(input.kind)?[...(manager?await manager.cancelAfterControl(receipt.task.taskRef):[]),...(normalNative?await normalNative.cancelAfterControl(receipt.task.taskRef):[])]:[];
                 return Object.freeze({ receipt, workers });
               },
               readAttachment: input => { assertAlive(); return chat.readAttachment(input); },
@@ -260,7 +404,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         answer: value => coordinator.answer(owner, value),
         control: async value => {
           const receipt = store.control(owner, value);
-          const workers = manager && ['pause', 'cancel'].includes(value.kind) ? await manager.cancelAfterControl(value.taskRef) : [];
+          const workers = ['pause','cancel'].includes(value.kind)?[...(manager?await manager.cancelAfterControl(value.taskRef):[]),...(normalNative?await normalNative.cancelAfterControl(value.taskRef):[])]:[];
           return Object.freeze({ receipt, workers });
         },
         configureSource: value => router ? sourceOperations.configureSource(value) : unavailable(),
@@ -291,7 +435,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         grant: value => preview ? preview.grant(value) : unavailable(),
         revoke: value => store.revokeAction(owner, value),
         policy: value => store.policy(owner, value),
-        prepareContext: value => projection ? projection.prepareExecutionContext(value) : unavailable(),
+        prepareContext: value => projection ? preparing.run(true,()=>projection.prepareExecutionContext(value)) : unavailable(),
         memoryRead: value => { record(value, [], 'INPUT_INVALID'); return projection ? projection.state() : unavailable(); },
         memoryRemember: value => projection ? projection.remember(value) : unavailable(),
         dispatch: value => manager ? manager.dispatch(owner, value) : unavailable(),
@@ -328,7 +472,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         // Grant already observes its actual store mutation inside Preview.
         for (const name of ['prepareContext','policy','plan','revoke','revise']) {
           const original = operations[name];
-          operations[name] = input => observe(name, input, () => original(input));
+          operations[name] = (input,context) => { record(context,['assertCurrent'],'SERVICE_DISPOSED');return runInstalledWorkerInvocation(ctx,context.assertCurrent,()=>{checkOwner();return observe(name,input,()=>original(input),name==='plan'?'unowned':undefined);}); };
         }
         const originalControl = operations.control;
         operations.control = (input, context) => {
@@ -344,7 +488,21 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
           operations[name] = () => { throw new BootstrapError('WORKER_REQUEST_DENIED'); };
         }
         Object.assign(operations, installed.operations);
+        if(auditInstalled){operations.auditQuery=(input,context)=>{record(context,['assertCurrent'],'SERVICE_DISPOSED');return runInstalledWorkerInvocation(ctx,context.assertCurrent,()=>{const row=planFor(input.taskRef,input.actionRef);if(row.origin!=='audit')throw new BootstrapError('AUDIT_BINDING_MISMATCH');return managerCall('query',input);});};operations.auditSessionLink=(input,context)=>{record(context,['assertCurrent'],'SERVICE_DISPOSED');return runInstalledWorkerInvocation(ctx,context.assertCurrent,()=>{const row=planFor(input.taskRef,input.actionRef);if(row.origin!=='audit')throw new BootstrapError('AUDIT_BINDING_MISMATCH');return managerCall('sessionLink',input);});};for(const[name,method]of Object.entries(auditInstalled.operations))operations[name==='workerFinish'?'auditFinish':name]=installedAuditSelection?.enabled&&['configureAudit','prepareAuditInput','planAuditAction','auditPreview','auditGrant','dispatchAudit','executeAudit'].includes(name)?(input,context)=>{record(context,['assertCurrent'],'SERVICE_DISPOSED');return runInstalledWorkerInvocation(ctx,context.assertCurrent,async()=>{await installed.auditSupport.refresh();checkOwner();return method(input,context);});}:method;}
       }
+      if(auditInstalled&&!installed)for(const[name,method]of Object.entries(auditInstalled.operations))operations[name==='workerFinish'?'auditFinish':name]=method;
+      if(normalResume)Object.assign(operations,createNormalNativeRpc({ctx,controls:normalResume,ownerCommands,check:checkOwner}));
+      const normalOperations = { ...(continuity?.operations ?? {}), ...(normalAutomation?.operations ?? {}), ...(normalResults?.operations ?? {}) };
+      if (continuity) {
+        normalOperations.memoryRead = value => { record(value, [], 'INPUT_INVALID'); return projection.state(); };
+        normalOperations.memoryRemember = value => observe('memoryRemember', value, () => projection.remember(value));
+      }
+      if (normalAutomation) normalOperations.approveSchedule = normalAutomation.approveSchedule;
+      for (const [name, method] of Object.entries(normalOperations)) operations[name] = (input, context) => {
+        record(context, ['assertCurrent'], 'SERVICE_DISPOSED');
+        if (typeof context.assertCurrent !== 'function') throw new BootstrapError('SERVICE_DISPOSED');
+        return runInstalledWorkerInvocation(ctx, context.assertCurrent, async () => { checkOwner(); const out = await method(input); checkOwner(); return out; });
+      };
       bridge = installOperatorBridge({ connection: ctx.connection, operations, isAlive: alive });
       // Trusted Cordis consumers see diagnostics only. Neither a worker nor a
       // model-facing tool can borrow an owner command closure from the service.
@@ -352,13 +510,13 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         if (!alive()) throw new BootstrapError('SERVICE_DISPOSED');
         return Object.freeze({ target: host.target, supported: host.supported,
           schemaVersion: store.diagnostics().schemaVersion, channel: '/df-rpc',
-          ...(installed ? { installedWorkerStatus: frozenCopy(installed.status()) } : {}),
+          ...(installed ? {installedWorkerStatus:frozenCopy(installed.status())}: {}), ...(auditInstalled ? {installedAuditStatus:frozenCopy(auditInstalled.status())}: {}),
           identityBridge: 'connection-operator', permissionBridge: 'trusted-policy-required',
-          automationBridge: router ? 'private-installed-adapters' : 'unavailable',
-          scheduleBridge: schedules ? 'owner-approved-ingress-only' : 'unavailable',
+          automationBridge: router || normalAutomation ? 'private-installed-adapters' : 'unavailable',
+          scheduleBridge: schedules || normalAutomation ? 'owner-approved-ingress-only' : 'unavailable',
           chatBridge: router ? 'provider-neutral-contract' : 'unavailable',
-          notificationBridge: notifier ? 'explicit-policy-review-grant' : 'unavailable',
-          capabilities: Object.freeze({ memory: !!projection, preview: !!preview, worker: !!manager, delivery: !!pipeline, reviewer: !!reviewerInstaller, automation: !!router, notifications: !!notifier }) });
+          notificationBridge: notifier || normalResults?.notificationsEnabled ? 'explicit-policy-review-grant' : 'unavailable',
+          capabilities: Object.freeze({ memory: !!projection, memoryContinuity: !!continuity, preview: !!preview, worker: !!manager, delivery: !!pipeline || !!normalResults, reviewer: !!reviewerInstaller, automation: !!router || !!normalAutomation, notifications: !!notifier || !!normalResults?.notificationsEnabled }) });
       } }));
       yield () => { active = false; installedSealed = true; bridge?.deactivate(); };
     }, 'df.runtime.lifecycle');
@@ -368,7 +526,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
 
 // Private normal-manager binding. It forwards to the same original store and
 // adapter; no owner JSON, digest or copied observation establishes provenance.
-function installedManagerBinding(ctx, originalStore, originalAdapter) {
+function installedManagerBinding(ctx, originalStore, originalAdapter, publishAuditCapture) {
   const observations = new AsyncLocalStorage();
   const invocations = new AsyncLocalStorage();
   const claims = new WeakSet(), tickets = new WeakMap(), retained = new Set();
@@ -410,19 +568,20 @@ function installedManagerBinding(ctx, originalStore, originalAdapter) {
     }
   }
   function returned(method, args, receiptOf = value => value) {
-    const result = invoke(method, args);
-    const capture = value => { publish(args[0], receiptOf(value)); return value; };
+    assertOwner();const result = invoke(method, args);
+    const capture = value => { publish(args[0], receiptOf(value));assertOwner();return value; };
     return types.isPromise(result) ? result.then(capture) : capture(result);
   }
   const store = {};
-  for (const method of ['snapshot', 'readData', 'assertClaimCurrent']) {
-    store[method] = (...args) => forward(method, args);
+  for (const method of ['snapshot', 'readData', 'readAuditInput', 'assertClaimCurrent']) {
+    store[method] = (...args) => {assertOwner();const receipt=forward(method,args);assertOwner();return receipt;};
   }
-  for (const method of ['claimAction', 'beginContextExecution', 'assertExecutionCurrent',
+  for (const method of ['claimAction', 'beginContextExecution', 'beginAuditExecution', 'captureAuditResult', 'assertExecutionCurrent',
     'writeArtifact', 'settleAction', 'control', 'putHandoff']) {
     store[method] = (...args) => {
       assertOwner();
-      const receipt = forward(method, args);
+      const receipt = method==='captureAuditResult' ? publishAuditCapture(args[1],()=>forward(method,args)) : forward(method,args);
+      assertOwner();
       if (method === 'claimAction') claims.add(receipt);
       return receipt;
     };
@@ -448,7 +607,7 @@ function installedManagerBinding(ctx, originalStore, originalAdapter) {
   };
   const adapter = {
     async prepare(...args) {
-      const ticket = await invoke('prepare', args);
+      assertOwner();const ticket = await invoke('prepare', args);assertOwner();
       if (!observationOpen || tickets.has(ticket)) denied();
       const [spec, task, actionDigest] = args;
       const value = { taskRef: task.taskRef, actionRef: spec.actionRef, actionDigest,
@@ -474,14 +633,15 @@ function installedManagerBinding(ctx, originalStore, originalAdapter) {
       return invoke('observe', [ticket, receipt => publish(ticket, receipt)]);
     },
   };
-  for (const method of ['create', 'resume', 'query', 'cancel', 'dispose', 'shutdown']) {
+  for (const method of ['create', 'resume', 'query', 'cancel', 'dispose']) {
     adapter[method] = (...args) => returned(method, args);
   }
-  for (const method of ['executeContext', 'finishExecution']) {
+  adapter.shutdown=(...args)=>{ticketRecord(args[0]);const result=invoke('shutdown',args);const captured=value=>{publish(args[0],value);return value;};return types.isPromise(result)?result.then(captured):captured(result);};
+  for (const method of ['executeContext', 'executeAuditInput', 'finishExecution']) {
     adapter[method] = (...args) => returned(method, args, value => value.worker);
   }
   for (const method of ['readResult', 'validateResult', 'sessionLink', 'handoff']) {
-    adapter[method] = (...args) => invoke(method, args);
+    adapter[method] = (...args) => { assertOwner();const out=invoke(method,args);if(types.isPromise(out))return out.then(value=>{assertOwner();return value;},error=>{assertOwner();throw error;});assertOwner();return out; };
   }
   return Object.freeze({ store: Object.freeze(store), adapter: Object.freeze(adapter),
     run(callback) {

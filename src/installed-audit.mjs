@@ -75,7 +75,8 @@ export function createInstalledAudit(value) {
     for (const selected of [choice.review, choice.repair].filter(Boolean)) if (selected.charges.runtimeMs > worker.policy.maxRuntimeMs || selected.charges.usageUnits > worker.policy.maxUsageUnits || selected.charges.usageUnits < worker.bounds.requestBytes + selected.selection.maxOutputTokens) fail('CONFIG_INVALID');
   }
   function installedAuditInstaller(api) {
-    exact(api, [...API, 'nativeToolGuard'], API);
+    exact(api, [...API, 'nativeToolGuard','normalNative'], API);
+    if(api.normalNative){exact(api.normalNative,['markSpec','plan','refreshConfiguration','readConfiguration','readPrepared','readResumeInput','observeHistory','validateHistory','subscribePrepared','readFinishFirst']);if(Object.values(api.normalNative).some(f=>typeof f!=='function'||types.isProxy(f)))fail('RUNTIME_ADAPTER_INVALID');}
     for (const key of API.filter(k => k !== 'ctx')) if (typeof api[key] !== 'function') fail('AUDIT_UNAVAILABLE');
     const nativeToolGuard = Object.getOwnPropertyDescriptor(api, 'nativeToolGuard')?.value;
     if (Object.hasOwn(api, 'nativeToolGuard') && (typeof nativeToolGuard !== 'function' || types.isProxy(nativeToolGuard) || types.isAsyncFunction(nativeToolGuard) || types.isGeneratorFunction(nativeToolGuard))) fail('AUDIT_UNAVAILABLE');
@@ -228,6 +229,7 @@ export function createInstalledAudit(value) {
       if (!active || !choice.enabled) return;
       try {
         exact(event, ['operation', 'input', 'receipt']); const { operation, input: v, receipt } = immutable(event);
+        if (['memoryRemember', 'memoryCorrect', 'memoryForget', 'memoryImportConfirm', 'memoryDeleteConfirm'].includes(operation)) { for (const row of plans.values()) row.grant = null; previews.clear(); cached = statusValue('setup_required'); return; }
         if (['revoke', 'control', 'revise', 'policy'].includes(operation)) {
           for (const row of plans.values()) if (operation === 'policy' || row.taskRef === v.taskRef) row.grant = null;
           previews.clear(); cached = statusValue(operation === 'policy' ? 'policy_unavailable' : 'setup_required'); return;
@@ -284,7 +286,21 @@ export function createInstalledAudit(value) {
         setupAgent(agentCtx, agent, binding) { check(); const { row } = planCurrent(binding.taskRef, binding.actionRef, binding.actionDigest); if (!row.slot || !row.grant || agents.has(agent)) fail('AUDIT_BINDING_MISMATCH'); if (!agent || types.isProxy(agent) || agent.id !== 'df-' + row.spec.executor.generationRef || binding.generationRef !== row.spec.executor.generationRef) fail('AUDIT_BINDING_MISMATCH'); agents.set(agent, { row, binding: immutable(binding), execution: null, guard: null }); },
         commitAgent(agentCtx, agent, binding) { check(); const a = agents.get(agent); if (!a || !SAME(a.binding, binding)) fail('AUDIT_BINDING_MISMATCH'); return true; },
         bindExecution(agent, execution, body) { check(); const a = agents.get(agent); if (!a || a.execution || execution.inputDigest !== a.row.spec.executionInput.digest || execution.dataDigest !== a.row.spec.dataDigest || body.digest !== execution.inputDigest || hash(body.content) !== execution.inputDigest) fail('AUDIT_BINDING_MISMATCH'); a.execution = immutable(execution); a.guard = captureInstalledWorkerInvocation(ctx); return true; },
-        validateResult(agent, result) { const a = agents.get(agent); if (!a?.execution || !a.guard) fail('AUDIT_COLLECTION_UNAVAILABLE'); return withInstalledWorkerInvocation(ctx, a.guard, () => { check(); if (result.executionRef !== a.execution.executionRef || result.claimRef !== a.binding.claimRef || result.generationRef !== a.binding.generationRef || typeof result.content !== 'string' || hash(result.content) !== result.digest || Buffer.byteLength(result.content) > choice.resultByteLimit) fail('AUDIT_RECEIPT_INVALID'); api.assertNativeRequestCurrent({ taskRef: a.execution.taskRef, claimRef: a.execution.claimRef, generationRef: a.execution.generationRef, actionDigest: a.execution.actionDigest, executionRef: a.execution.executionRef }); return true; }); },
+        validateResult(agent, result, checkpoint) { const a = agents.get(agent);
+          if(checkpoint?.phase==='before_stop'){
+            exact(checkpoint,['phase']);check();const w=a?.finalWitness;
+            if(!w||w.agent!==agent||w.session!==agent.session||w.binding!==a.binding||w.execution!==a.execution||!SAME(result,w.result)||!a.binding.spec.nativeOriginBinding)fail('AUDIT_COLLECTION_UNAVAILABLE');
+            const snap=snapshot(a.binding.taskRef),b=a.binding,e=a.execution;
+            const actions=snap.actions.filter(v=>v.actionRef===b.actionRef&&v.actionDigest===b.actionDigest&&v.claimRef===b.claimRef&&SAME(v.spec,b.spec));
+            const workers=snap.workers.filter(v=>v.actionRef===b.actionRef&&v.actionDigest===b.actionDigest&&v.claimRef===b.claimRef&&v.generationRef===b.generationRef&&v.sessionRef===b.sessionRef&&['created','ready','running'].includes(v.phase));
+            const executions=snap.executions.filter(v=>['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','executionRef','inputRecordRef','inputDigest','dataDigest','auditRef','bindingDigest','materialDigest','purpose'].every(k=>v[k]===e[k]));
+            if(actions.length!==1||workers.length!==1||executions.length!==1||executions[0].resultRef!==result.executionRef)fail('AUDIT_COLLECTION_UNAVAILABLE');
+            // Captured associations are readonly facts. Completed review/repair
+            // must not borrow old dispatch admission after original role writes.
+            if(executions[0].reportRef){const reports=snap.reviews.filter(v=>v.reportRef===executions[0].reportRef&&v.resultRef===executions[0].resultRef&&v.generationRef===b.generationRef);if(reports.length!==1)fail('AUDIT_COLLECTION_UNAVAILABLE');}
+            check();return true;
+          }
+          if(checkpoint!==undefined){exact(checkpoint,['phase','terminalEvidenceRef']);ref(checkpoint.terminalEvidenceRef);if(checkpoint.phase!=='stopped'||!a?.finalWitness||a.finalWitness.session!==agent.session||!SAME(result,a.finalWitness.result))fail('AUDIT_COLLECTION_UNAVAILABLE');check();const workers=snapshot(a.binding.taskRef).workers.filter(v=>v.claimRef===a.binding.claimRef&&v.generationRef===a.binding.generationRef&&v.sessionRef===a.binding.sessionRef&&v.phase==='stopped'&&v.terminalEvidenceRef===checkpoint.terminalEvidenceRef);if(workers.length!==1)fail('AUDIT_COLLECTION_UNAVAILABLE');return true;}if(result.phase==='baseline'){if(!a||!a.binding.spec.nativeOriginBinding||a.execution||result.claimRef!==a.binding.claimRef||result.generationRef!==a.binding.generationRef||result.sessionRef!==a.binding.sessionRef)fail('AUDIT_COLLECTION_UNAVAILABLE');check();return true;} if (!a?.execution || !a.guard) fail('AUDIT_COLLECTION_UNAVAILABLE'); return withInstalledWorkerInvocation(ctx, a.guard, () => { check(); if (result.executionRef !== a.execution.executionRef || result.claimRef !== a.binding.claimRef || result.generationRef !== a.binding.generationRef || typeof result.content !== 'string' || hash(result.content) !== result.digest || Buffer.byteLength(result.content) > choice.resultByteLimit) fail('AUDIT_RECEIPT_INVALID'); api.assertNativeRequestCurrent({ taskRef: a.execution.taskRef, claimRef: a.execution.claimRef, generationRef: a.execution.generationRef, actionDigest: a.execution.actionDigest, executionRef: a.execution.executionRef }); if(a.binding.spec.nativeOriginBinding)a.finalWitness=Object.freeze({agent,session:agent.session,binding:a.binding,execution:a.execution,result});return true; }); },
       };
       try {
         native = api.composeNativeAudit({ worker: Object.freeze({ environments, permission: record => hostPermission(record), toolGuard: hostToolGuard, resolveSession: undefined }), nativeHooks: Object.freeze(nativeHooks) });
@@ -341,15 +357,16 @@ export function createInstalledAudit(value) {
         const snap = cas(v), req = snap.audits.find(r => r.auditRef === v.auditRef); if (!req || req.auditRevision !== v.expectedAuditRevision) fail('AUDIT_STALE');
         protectedFacts(v.taskRef, req.contextRecordRef, snap); producer(v.taskRef, req.artifactRef, req.artifactVersion, req.digest, snap); facts(v.taskRef, v.purpose === 'audit_review' ? 'review' : 'repair'); check(); return immutable(api.prepareOwnerAuditInput(v));
       },
-      planAuditAction(v) {
-        v = input(v, [...taskCAS, 'auditRef', 'inputRecordRef', 'purpose']); enabled(); const snap = cas(v), p = pair(v.taskRef, v.inputRecordRef), a = p.association;
+      async planAuditAction(v) {
+        v = input(v, [...taskCAS, 'auditRef', 'inputRecordRef', 'purpose']); enabled();if(api.normalNative){await api.normalNative.refreshConfiguration();enabled();} const snap = cas(v), p = pair(v.taskRef, v.inputRecordRef), a = p.association;
         if (v.auditRef !== a.auditRef || v.purpose !== a.purpose) fail('AUDIT_BINDING_MISMATCH'); currentPair(v.taskRef, p, snap); const kind = a.purpose === 'audit_review' ? 'review' : 'repair', f = facts(v.taskRef, kind);
         const seed = { ownerRef, workspaceRef, taskRef: v.taskRef, auditRef: a.auditRef, round: a.round, inputDigest: a.digest, configurationRef, commandRef: v.commandRef }, actionRef = R('df.installed-audit.action/v1', seed), generationRef = R('df.installed-audit.generation/v1', seed);
-        const spec = normalizedSpec({ actionRef, kind, role: kind, targetDigest: a.bindingDigest, dataDigest: a.artifactDigest, units: 1, charges: { ...choice[kind].charges, costState: 'estimated', costEstimateMicros: 0, costProvenanceRef: f.value.costProvenanceRef }, attemptGroupRef: R('df.installed-audit.attempt/v1', seed), attemptIndex: 1, resourcePolicyVersion: f.value.resourcePolicyVersion, modelPolicyVersion: f.value.modelPolicyVersion, model: Object.fromEntries(['presetRef', 'modelRef', 'reasoningRef', 'catalogEvidenceRef'].map(k => [k, f.value[k]])), executor: { mode: 'create', generationRef, sessionRef: reference('df-' + generationRef), ...Object.fromEntries(['environmentRef', 'bindingDigest', 'toolsDigest', 'permissionPolicyDigest'].map(k => [k, f.value[k]])) }, executionInput: { recordRef: a.recordRef, digest: a.digest, purpose: a.purpose, auditRef: a.auditRef, bindingDigest: a.bindingDigest, materialDigest: a.materialDigest, ...(kind === 'repair' ? { previousReportRef: a.previousReportRef } : {}) } });
+        let spec = normalizedSpec({ actionRef, kind, role: kind, targetDigest: a.bindingDigest, dataDigest: a.artifactDigest, units: 1, charges: { ...choice[kind].charges, costState: 'estimated', costEstimateMicros: 0, costProvenanceRef: f.value.costProvenanceRef }, attemptGroupRef: R('df.installed-audit.attempt/v1', seed), attemptIndex: 1, resourcePolicyVersion: f.value.resourcePolicyVersion, modelPolicyVersion: f.value.modelPolicyVersion, model: Object.fromEntries(['presetRef', 'modelRef', 'reasoningRef', 'catalogEvidenceRef'].map(k => [k, f.value[k]])), executor: { mode: 'create', generationRef, sessionRef: reference('df-' + generationRef), ...Object.fromEntries(['environmentRef', 'bindingDigest', 'toolsDigest', 'permissionPolicyDigest'].map(k => [k, f.value[k]])) }, executionInput: { recordRef: a.recordRef, digest: a.digest, purpose: a.purpose, auditRef: a.auditRef, bindingDigest: a.bindingDigest, materialDigest: a.materialDigest, ...(kind === 'repair' ? { previousReportRef: a.previousReportRef } : {}) } });
+        if(api.normalNative)spec=api.normalNative.markSpec(spec);
         const existing = plans.get(`${v.taskRef}:${actionRef}`);
         if (!existing && plans.size >= choice.maxTotalAttempts) fail('AUDIT_COLLECT_CAPACITY');
         const { auditRef, inputRecordRef, purpose, ...core } = v;
-        check(); const receipt = immutable(api.planOwnerAction({ ...core, spec }));
+        check(); const receipt = immutable(api.normalNative?api.normalNative.plan({ ...core, spec },a.contextRecordRef):api.planOwnerAction({ ...core, spec }));
         ref(receipt.actionDigest);
         const planned = snapshot(v.taskRef).actions.find(item => item.actionRef === actionRef);
         if (receipt.actionRef !== actionRef || !planned || planned.actionDigest !== receipt.actionDigest || !SAME(planned.spec, spec)) fail('AUDIT_RECEIPT_INVALID');
@@ -413,7 +430,7 @@ export function createInstalledAudit(value) {
         } finally { outer.busy = false; }
       },
       async workerFinish(v) {
-        v = input(v, executionCAS); enabled(); cas(v); const { row } = planCurrent(v.taskRef, v.actionRef, undefined, true), s = row.slot;
+        v = input(v, executionCAS); if(api.normalNative){const ack=api.normalNative.readFinishFirst(v);if(ack!==null)return ack.receipt;} enabled(); cas(v); const { row } = planCurrent(v.taskRef, v.actionRef, undefined, true), s = row.slot;
         if (!s || s.claimRef !== v.claimRef || s.generationRef !== v.generationRef || s.executionRef !== v.executionRef || !s.capture) fail('AUDIT_COLLECTION_UNAVAILABLE');
         if (s.finishInput) {
           if (!SAME(s.finishInput, v)) fail('IDEMPOTENCY_CONFLICT');

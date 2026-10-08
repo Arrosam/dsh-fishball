@@ -3,13 +3,17 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { types } from 'node:util';
 import { BootstrapError } from './config.mjs';
+import { message as nativeMessage } from './normal-contracts.mjs';
 import { workerChoiceRecord } from './installed-worker-config.mjs';
 import { canonical, exact, ref, integer } from './runtime-security.mjs';
+import { ROLE_PROMPTS, ROLE_MODELS, roleRecipe } from './installed-role-recipes.mjs';
 import { DSH_WEB_RUNTIME_ROOT, resolveHostSource } from './host-probe.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const denied = () => { throw new BootstrapError('WORKER_REQUEST_DENIED'); };
 const modulePath = realpathSync(fileURLToPath(import.meta.url)), loadedSource = hash(readFileSync(modulePath));
+const recipePath=realpathSync(fileURLToPath(new URL('./installed-role-recipes.mjs',import.meta.url))),loadedRecipeSource=hash(readFileSync(recipePath));
+const providerRecipeSourceRef=hash(canonical([loadedSource,loadedRecipeSource]));
 const sourcePins = Object.freeze({
   'cordis':['4.0.5-alpha.1','6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e'],
   'dsh-llm':['0.2.1-alpha.1','a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e'],
@@ -40,8 +44,8 @@ export const name = 'dsh-fishball-testing-provider';
 export const inject = Object.freeze(['llm','agents','sessions']);
 function validConfig(value) { try { workerChoiceRecord(value, []); return Object.freeze({}); } catch { throw new BootstrapError('CONFIG_INVALID'); } }
 export const Config = Object.freeze({ '~standard': Object.freeze({ version: 1, vendor: 'df', validate(value) { try { return { value: validConfig(value) }; } catch { return { issues: [{ message: 'CONFIG_INVALID' }] }; } } }) });
-function modelInfo() {
-  return { provider: 'df-testing-local', id: 'df-testing-worker-v1', name: 'Synthetic local worker (no model quality)', description: 'Source-owned deterministic text; synthetic UTF-8 byte accounting', inputModalities: ['text'], context: { contextWindow: 135168 }, defaultMaxTokens: 128, reasoning: { efforts: [{ id: 'deterministic', name: 'Synthetic deterministic' }], defaultEffort: 'deterministic' } };
+function modelInfo(role = 'worker') {
+  return { provider: 'df-testing-local', id: role === 'worker' ? 'df-testing-worker-v1' : ROLE_MODELS[role], name: `Synthetic local ${role} (no model quality)`, description: 'Source-owned deterministic text; synthetic UTF-8 byte accounting', inputModalities: ['text'], context: { contextWindow: 135168 }, defaultMaxTokens: 128, reasoning: { efforts: [{ id: 'deterministic', name: 'Synthetic deterministic' }], defaultEffort: 'deterministic' } };
 }
 function checkHost(ctx) {
   try {
@@ -54,7 +58,7 @@ function boundCurrent(binding) {
   try {
     checkHost(binding.ctx);
     const { ctx, entry } = binding;
-    if (!binding.active || binding.invalidated || ctx.fiber.state !== 2 || ctx.fiber.uid === null || binding.epoch !== binding.registeredEpoch || original(ctx.llm) !== binding.llm || !(entry instanceof Entry) || ctx.fiber.entry !== entry || entry.fiber !== ctx.fiber || entry.disabled || entry.moduleNamespace?.default !== plugin || entry.options.name !== 'dsh-fishball/testing-provider' || hash(readFileSync(modulePath)) !== loadedSource || realpathSync(fileURLToPath(import.meta.resolve('dsh-fishball/testing-provider'))) !== modulePath) denied();
+    if (!binding.active || binding.invalidated || ctx.fiber.state !== 2 || ctx.fiber.uid === null || binding.epoch !== binding.registeredEpoch || original(ctx.llm) !== binding.llm || !(entry instanceof Entry) || ctx.fiber.entry !== entry || entry.fiber !== ctx.fiber || entry.disabled || entry.moduleNamespace?.default !== plugin || entry.options.name !== 'dsh-fishball/testing-provider' || hash(readFileSync(modulePath)) !== loadedSource || hash(readFileSync(recipePath))!==loadedRecipeSource || realpathSync(fileURLToPath(new URL('./installed-role-recipes.mjs',import.meta.url)))!==recipePath || realpathSync(fileURLToPath(import.meta.resolve('dsh-fishball/testing-provider'))) !== modulePath) denied();
     if (binding.adapter.constructor !== TestingAdapter || bindings.get(binding.llm) !== binding || typeof binding.registration !== 'function') denied();
     return true;
   } catch { denied(); }
@@ -72,16 +76,20 @@ function requestFacts(binding, permit, options) {
   const read = key => descriptors[key]?.value;
   const signal=read('signal');
   if(signal!==undefined&&(!(signal instanceof AbortSignal)||types.isProxy(signal)||Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get.call(signal)))denied();
-  if (read('provider') !== 'df-testing-local' || read('model') !== 'df-testing-worker-v1' || read('reasoningEffort') !== 'deterministic' || read('maxTokens') !== permit.maxOutputTokens || read('sessionId') !== permit.agent.id || read('system') !== undefined || read('temperature') !== undefined || read('stop') !== undefined || read('purpose') !== undefined) denied();
+  if (read('provider') !== 'df-testing-local' || read('model') !== permit.model || read('reasoningEffort') !== 'deterministic' || read('maxTokens') !== permit.maxOutputTokens || read('sessionId') !== permit.agent.id || read('system') !== undefined || read('temperature') !== undefined || read('stop') !== undefined || read('purpose') !== undefined) denied();
   const tools = read('tools'); if (tools !== undefined && canonical(tools) !== '[]') denied();
   const history = read('toolHistory'); if (history !== undefined && canonical(history) !== canonical({ tools: [], updates: [] })) denied();
   const rawMessages = read('messages'), messages = JSON.parse(canonical(rawMessages));
-  if (messages.length !== 2) denied();
-  const [system,user] = messages;
+  const resumed = permit.mode === 'resume';
+  if (resumed) {
+    if (permit.role !== 'worker' || permit.historyMessages.length < 3 || permit.historyMessages.length > 17 || messages.length !== permit.historyMessages.length + 1 || canonical(messages.slice(0,-1)) !== canonical(permit.historyMessages) || hash(canonical(permit.historyMessages)) !== permit.historyMessagesDigest) denied();
+    permit.historyMessages.forEach(nativeMessage); messages.forEach(nativeMessage);
+  } else if (messages.length !== 2) denied();
+  const system = messages[0], user = messages.at(-1);
   exact(system,['id','role','content','source']); exact(system.source,['kind']);
   exact(user,['id','role','content','source']); exact(user.source,['kind','form']);
-  if (typeof system.id !== 'string' || !system.id.length || Buffer.byteLength(system.id)>128 || system.role !== 'system' || system.source.kind !== 'system-prompt' || canonical(system.content) !== canonical([{type:'text',text:TESTING_SYSTEM_PROMPT}]) || user.role !== 'user' || user.id !== permit.executionRef || user.source.kind !== 'df-context' || user.source.form !== 'local' || canonical(user.content) !== canonical([{type:'text',text:permit.content}])) denied();
-  const inputUnits = Buffer.byteLength(JSON.stringify(rawMessages)), response = `Synthetic local result; approved input SHA-256: ${hash(permit.content)}.`, outputUnits = Buffer.byteLength(response);
+  if (typeof system.id !== 'string' || !system.id.length || Buffer.byteLength(system.id)>128 || system.role !== 'system' || system.source.kind !== 'system-prompt' || canonical(system.content) !== canonical([{type:'text',text:permit.systemPrompt}]) || user.role !== 'user' || user.id !== permit.executionRef || user.source.kind !== permit.sourceKind || user.source.form !== 'local' || canonical(user.content) !== canonical([{type:'text',text:permit.content}])) denied();
+  const inputUnits = Buffer.byteLength(JSON.stringify(rawMessages)), response = permit.mode === 'resume' ? `Synthetic local continuation; approved history SHA-256: ${permit.historyMessagesDigest}; approved input SHA-256: ${hash(permit.content)}.` : permit.role === 'worker' ? `Synthetic local result; approved input SHA-256: ${hash(permit.content)}.` : roleRecipe(permit.role, permit.content), outputUnits = Buffer.byteLength(response);
   if (inputUnits > permit.requestBytes || outputUnits > permit.resultBytes || outputUnits > permit.maxOutputTokens || inputUnits + outputUnits > 135168 || inputUnits + outputUnits > permit.usageUnits) denied();
   return { inputUnits, outputUnits, response };
 }
@@ -90,8 +98,8 @@ class TestingAdapter extends llmModule.LlmAdapter {
   constructor(binding) { super(); this.#binding = binding; }
   providerInfo(provider) { if(provider !== 'df-testing-local') denied(); return { id: provider, name: 'Synthetic local DF provider (no network)' }; }
   providerRetryPolicy(provider) { if(provider !== 'df-testing-local') denied(); return { mode:'normal',maxRetries:0,retryableCodes:[],initialDelayMs:500,maxDelayMs:10000,jitterRatio:0 }; }
-  async listModels(provider) { if(provider !== 'df-testing-local') denied(); return [modelInfo()]; }
-  async resolveModel(provider,model,signal) { if(provider !== 'df-testing-local'||model !== 'df-testing-worker-v1'||signal?.aborted) denied(); return modelInfo(); }
+  async listModels(provider) { if(provider !== 'df-testing-local') denied(); return ['worker','review','repair'].map(role => modelInfo(role)); }
+  async resolveModel(provider,model,signal) { const role = model === 'df-testing-worker-v1' ? 'worker' : Object.keys(ROLE_MODELS).find(role => ROLE_MODELS[role] === model); if(provider !== 'df-testing-local'||!role||signal?.aborted) denied(); return modelInfo(role); }
   async *stream(options) {
     const binding = this.#binding;
     boundCurrent(binding);
@@ -109,8 +117,11 @@ class TestingAdapter extends llmModule.LlmAdapter {
     permit.state = 'consumed';
     permit.usage = Object.freeze({ accounting: TESTING_ACCOUNTING, inputUnits:facts.inputUnits, outputUnits:facts.outputUnits, totalUnits:facts.inputUnits+facts.outputUnits, resultDigest:hash(facts.response) });
     yield {type:'text-delta',index:0,text:facts.response};
+    boundCurrent(binding);ownedAgent(binding,agent);if(permit.assertCurrent(options)!==true)denied();
     yield {type:'usage',usage:{inputTokens:facts.inputUnits,outputTokens:facts.outputUnits,totalTokens:facts.inputUnits+facts.outputUnits}};
+    boundCurrent(binding);ownedAgent(binding,agent);if(permit.assertCurrent(options)!==true)denied();
     yield {type:'finish',reason:{kind:'stop'}};
+    boundCurrent(binding);ownedAgent(binding,agent);if(permit.assertCurrent(options)!==true)denied();
   }
 }
 export function apply(ctx,input) {
@@ -134,13 +145,22 @@ export default plugin;
 export function getTestingProviderBinding(ctx) {
   const binding = bindings.get(original(ctx.llm)); if(!binding) denied();
   boundCurrent(binding); if(!(ctx instanceof Context)||original(ctx.llm)!==binding.llm)denied();
-  return Object.freeze({entry:binding.entry,sourceRef:loadedSource,accounting:TESTING_ACCOUNTING,assertCurrent:()=>boundCurrent(binding),issue(input){
-    exact(input,['agent','executionRef','content','maxOutputTokens','requestBytes','resultBytes','usageUnits','assertCurrent']);
+  return Object.freeze({entry:binding.entry,sourceRef:providerRecipeSourceRef,accounting:TESTING_ACCOUNTING,assertCurrent:()=>boundCurrent(binding),issue(input){
+    exact(input,['agent','executionRef','content','maxOutputTokens','requestBytes','resultBytes','usageUnits','assertCurrent','role','mode','historyMessages','historyMessagesDigest','historyPrefixDigest','resumeRef'],['agent','executionRef','content','maxOutputTokens','requestBytes','resultBytes','usageUnits','assertCurrent']);
+    const role = input.role ?? 'worker'; if (!['worker','review','repair'].includes(role)) denied();
+    const extra = ['mode','historyMessages','historyMessagesDigest','historyPrefixDigest','resumeRef'];
+    if (input.mode === 'resume') {
+      if (role !== 'worker' || extra.some(k => !Object.hasOwn(input,k)) || !Array.isArray(input.historyMessages) || input.historyMessages.length < 3 || input.historyMessages.length > 17) denied();
+      input.historyMessages.forEach(nativeMessage); for(const k of extra.filter(k=>k.endsWith('Ref')||k.endsWith('Digest')))ref(input[k]);
+      if(hash(canonical(input.historyMessages)) !== input.historyMessagesDigest)denied();
+      input = {...input,historyMessages:JSON.parse(canonical(input.historyMessages))};
+    } else if (extra.some(k=>Object.hasOwn(input,k))) denied();
+    if (role !== 'worker') roleRecipe(role,input.content);
     boundCurrent(binding); ownedAgent(binding,input.agent); ref(input.executionRef);
     const agent=original(input.agent);
     if(typeof input.content!=='string'||!input.content.isWellFormed()||Buffer.byteLength(input.content)>65536||typeof input.assertCurrent!=='function'||binding.permits.has(agent)||binding.issued>=128)denied();
     integer(input.maxOutputTokens,128,4096);integer(input.requestBytes,512,131072);integer(input.resultBytes,128,16384);integer(input.usageUnits,1,100000000);
-    const permit={...input,agent,state:'prepared',usage:null}; binding.issued++; binding.permits.set(agent,permit);
+    const permit={...input,agent,role,model:role==='worker'?'df-testing-worker-v1':ROLE_MODELS[role],systemPrompt:role==='worker'?TESTING_SYSTEM_PROMPT:ROLE_PROMPTS[role],sourceKind:role==='worker'?'df-context':'df-audit-input',state:'prepared',usage:null}; binding.issued++; binding.permits.set(agent,permit);
     return Object.freeze({seal(){permit.state='sealed';},usage(){return permit.usage;}});
   }});
 }

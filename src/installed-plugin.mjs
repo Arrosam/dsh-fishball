@@ -1,7 +1,14 @@
 import { pathToFileURL } from 'node:url';
+import { readFileSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { splitNormalWorkerSelection } from './normal-native-selection.mjs';
+import { readAuthenticNativeSource } from './native-source-descriptor.mjs';
 import { Config, validateInstalledConfig } from './installed-config.mjs';
 import { MEMORY_ACCOUNTING, prepareInstalledMemory } from './installed-memory.mjs';
+import { createInstalledAudit } from './installed-audit.mjs';
 import { createInstalledWorker } from './installed-worker.mjs';
+import { createInstalledEvents } from './installed-events.mjs';
+import { createInstalledResults } from './installed-results.mjs';
 import { canonicalDigest } from './runtime-security.mjs';
 import { requireHost, resolveHostSource } from './host-probe.mjs';
 import { createRuntimePlugin } from './runtime-plugin.mjs';
@@ -16,7 +23,8 @@ export { Config };
 export const inject = Object.freeze(['connection', 'sessions', 'approval', 'webServer', 'profileContext']);
 export async function apply(ctx, input) {
   const installed = validateInstalledConfig(input);
-  const { memory, worker, ...base } = installed, config = Object.freeze(base); requireHost(ctx);
+  const { memory, worker:configuredWorker, audit, automation, results, ...base } = installed, config = Object.freeze(base);
+  const {worker,continuation}=splitNormalWorkerSelection(configuredWorker,memory.enabled);requireHost(ctx);
   const bindMemory = memory.enabled ? await prepareInstalledMemory(memory) : undefined;
   if (![1, 2].includes(ctx.fiber.state) || ctx.fiber.uid === null) throw new SetupError('SERVICE_DISPOSED');
   if (!(ctx.connection instanceof HostConnectionService)) throw new SetupError('SETUP_UNAVAILABLE');
@@ -31,7 +39,11 @@ export async function apply(ctx, input) {
     activate: async ({ identity, encryptionKey }) => {
       if (!alive()) throw new SetupError('SERVICE_DISPOSED');
       const options = { identity: () => identity, encryptionKey: () => encryptionKey, hostPermission: () => false,
-        ...createInstalledWorker({ selection: worker, identity, profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name } }),
+        ...(automation.enabled ? createInstalledEvents({ selection: automation, identity, profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name } }) : {}),
+        ...(results.enabled ? createInstalledResults({ selection: results, identity, profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name } }) : {}),
+        ...createInstalledWorker({ selection: worker, auditSelection: audit, continuationSelection: continuation, identity, profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name } }),
+        ...createInstalledAudit({selection:audit,worker,identity,profile:{dir:ctx.profileContext.dir,name:ctx.profileContext.name}}), installedAuditSelection:audit, installedWorkerSelection:worker, installedContinuationSelection:continuation,
+        ...(worker.enabled ? {nativeSource:readAuthenticNativeSource(JSON.parse(readFileSync(new URL('../native-source-manifest.json',import.meta.url),'utf8')),realpathSync(fileURLToPath(new URL('../',import.meta.url))))} : {}),
         ...(bindMemory ? { memory: bindMemory(identity, { dir: ctx.profileContext.dir, name: ctx.profileContext.name }) } : {}) };
       const current = ctx.plugin(createRuntimePlugin(options), config); child = current;
       try { await current; if (!alive()) throw new SetupError('SERVICE_DISPOSED'); current.ctx.df.diagnostics(); }
@@ -55,11 +67,14 @@ export async function apply(ctx, input) {
     if (admittedPeer !== peer) return rejected('OPERATOR_REQUIRED');
     if (signal?.aborted) return rejected('REQUEST_ABORTED');
     try {
-      if (!['v1/status', 'v1/prepare', 'v1/confirm', 'v1/features', 'v1/workerStatus'].includes(endpoint)) return rejected('ENDPOINT_NOT_FOUND');
+      if (!['v1/status', 'v1/prepare', 'v1/confirm', 'v1/features', 'v1/workerStatus','v1/auditStatus'].includes(endpoint)) return rejected('ENDPOINT_NOT_FOUND');
       record(payload, endpoint === 'v1/confirm' ? ['previewRef', 'planDigest', 'accept'] : [], 'SETUP_INVALID_INPUT');
       if (Buffer.byteLength(JSON.stringify(payload)) > SETUP_BOUNDS.inputBytes) throw new SetupError('SETUP_INVALID_INPUT');
       let value;
-      if (endpoint === 'v1/workerStatus') {
+      if(endpoint==='v1/auditStatus'){
+        value=Object.freeze({enabled:audit.enabled,ready:false,reason:audit.enabled?'setup_required':null,bounds:audit.enabled?{inputByteLimit:audit.inputByteLimit,resultByteLimit:audit.resultByteLimit,maxPrivateReviewers:audit.maxPrivateReviewers,maxRepairRounds:audit.maxRepairRounds}:null});
+        if(state.status({}).phase==='ready'&&child?.state===2&&child.uid!==null){try{value=child.ctx.df.diagnostics().installedAuditStatus;}catch{value=Object.freeze({...value,ready:false,reason:audit.enabled?'unavailable':null});}}
+      } else if (endpoint === 'v1/workerStatus') {
         value = worker.enabled ? Object.freeze({ enabled: true, phase: 'setup_required', reasonCode: 'SETUP_REQUIRED',
           configurationRef: canonicalDigest(['df.installed-worker-config/v1', worker]), policyVersion: null, selection: worker.selection, environment: worker.environment,
           persistence: Object.freeze({ ...worker.persistence, encrypted: false }), bounds: worker.bounds,
@@ -75,7 +90,12 @@ export async function apply(ctx, input) {
         if (memory.enabled && state.status({}).phase === 'ready' && child?.state === 2 && child.uid !== null) {
           try { ready = child.ctx.df.diagnostics().capabilities.memory === true; } catch { /* Closed/unavailable child is never ready. */ }
         }
-        value = Object.freeze({ memory: Object.freeze({ enabled: memory.enabled, ready,
+        let capabilities = {};
+        if (state.status({}).phase === 'ready' && child?.state === 2 && child.uid !== null) { try { capabilities = child.ctx.df.diagnostics().capabilities; } catch {} }
+        value = Object.freeze({ automation: Object.freeze({ enabled: automation.enabled, ready: automation.enabled && capabilities.automation === true, automaticStart: false,
+            choices: Object.freeze([...(automation.ownerIngress ?? []).map(item => Object.freeze({ key: item.key, kind: 'owner', route: item.route })), ...(automation.schedules ?? []).map(item => Object.freeze({ key: item.key, kind: 'schedule', route: item.route }))]) }),
+          results: Object.freeze({ enabled: results.enabled, ready: results.enabled && capabilities.delivery === true, route: results.enabled ? 'local_dsh' : null, requires: results.enabled ? Object.freeze(['worker', 'audit']) : Object.freeze([]), notificationsEnabled: results.enabled && results.notifications.enabled, opening: 'unknown' }),
+          memory: Object.freeze({ enabled: memory.enabled, ready, continuityReady: memory.enabled && capabilities.memoryContinuity === true,
           accounting: memory.enabled ? MEMORY_ACCOUNTING : null,
           bounds: memory.enabled ? Object.freeze({ byteLimit: memory.byteLimit, tokenLimit: memory.tokenLimit }) : null }) });
       } else value = endpoint === 'v1/status' ? state.status(payload) : endpoint === 'v1/prepare' ? state.prepare(payload) : await state.confirm(payload, { signal });
