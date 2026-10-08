@@ -1,0 +1,35 @@
+{
+  "commands": [
+    {
+      "boot": 1,
+      "captureComplete": true,
+      "childPid": 54092,
+      "eof": true,
+      "exitCode": 1,
+      "failureCode": null,
+      "forcedCleanup": false,
+      "overflow": false,
+      "ownedProcessGroup": 54092,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 1094,
+          "complete": true,
+          "eofObserved": true,
+          "sha256": "fa0f6a4261e8de34e90334903e18f4d5422ac1ad9a05ec92a6576a303cb23a75",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": []
+    }
+  ],
+  "rawDecodedOrCopied": false
+}

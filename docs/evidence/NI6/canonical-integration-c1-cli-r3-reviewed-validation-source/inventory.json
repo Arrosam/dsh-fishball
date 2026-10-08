@@ -1,0 +1,107 @@
+{
+  "copies": [
+    {
+      "archived": {
+        "bytes": 6662,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/observer.mjs",
+        "sha256": "d6d44db51338d8454fafc72fda7b2bc8b7bf0a7f13285a78df2e49e92932dcd1"
+      },
+      "source": {
+        "bytes": 6662,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/observer.mjs",
+        "sha256": "d6d44db51338d8454fafc72fda7b2bc8b7bf0a7f13285a78df2e49e92932dcd1"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 41372,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/lifecycle-driver.py",
+        "sha256": "f34d6de6b31ab4fa2a435e956a230ee7edf52771c1e4f095aa30f60116afd6cb"
+      },
+      "source": {
+        "bytes": 41372,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+        "sha256": "f34d6de6b31ab4fa2a435e956a230ee7edf52771c1e4f095aa30f60116afd6cb"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 10361,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/execution-plan.proposed.json",
+        "sha256": "cce53904fb8f410e2ae82a128ee8c20f8c46459a34dda8ae594688509e94a7ec"
+      },
+      "source": {
+        "bytes": 10361,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/execution-plan.proposed.json",
+        "sha256": "cce53904fb8f410e2ae82a128ee8c20f8c46459a34dda8ae594688509e94a7ec"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 7619,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/README.md",
+        "sha256": "8275aae3a6c0124868edc6a063909bd3182219baed89315fd11dc56f70b3b76d"
+      },
+      "source": {
+        "bytes": 7619,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/README.md",
+        "sha256": "8275aae3a6c0124868edc6a063909bd3182219baed89315fd11dc56f70b3b76d"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 25349,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/root-publication.py",
+        "sha256": "4ebefa11283e70f30c3b7b0289d4e1dd094a628980bee11ee00788c9407c468d"
+      },
+      "source": {
+        "bytes": 25349,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
+        "sha256": "4ebefa11283e70f30c3b7b0289d4e1dd094a628980bee11ee00788c9407c468d"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 4743,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/root-controller-recipe.mjs",
+        "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802"
+      },
+      "source": {
+        "bytes": 4743,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+        "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 56106,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/source-delta.diff",
+        "sha256": "96a9a0fa84ce69d1b71f0509394d3b306b1dbef5569bfbd47cd7aab94f91b19f"
+      },
+      "source": {
+        "bytes": 56106,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-delta.diff",
+        "sha256": "96a9a0fa84ce69d1b71f0509394d3b306b1dbef5569bfbd47cd7aab94f91b19f"
+      }
+    },
+    {
+      "archived": {
+        "bytes": 75041,
+        "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-reviewed-validation-source/packet/source-manifest.json",
+        "sha256": "19ab113b07735761dc3198a0e7d26aee52fb7f38f7abdf19a57a1d274bedab1a"
+      },
+      "source": {
+        "bytes": 75041,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-manifest.json",
+        "sha256": "19ab113b07735761dc3198a0e7d26aee52fb7f38f7abdf19a57a1d274bedab1a"
+      }
+    }
+  ],
+  "originalsModified": false,
+  "packet": "cli-r3",
+  "privateContentsCopied": false,
+  "schema": "df.canonical-c1.consumed-public-source-archive/v1",
+  "sourceBytes": 227253,
+  "sourceCount": 8,
+  "status": "NOT_EXECUTABLE_CONSUMED_FAILED_HOLD_DO_NOT_REPLAY"
+}

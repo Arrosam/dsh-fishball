@@ -1,0 +1,306 @@
+{
+  "schema": "df.canonical-c1.cli-r3-independent-actual-test-assessment/v1",
+  "language": "English",
+  "reviewRole": "Independent ISTQB actual evidence assessment",
+  "scope": "One consumed CLI-r3 controller cut; named public closed evidence and narrow controller source only",
+  "verdict": "FAILED_HOLD_CONTROLLER_FAILURE_BEFORE_CASE_ADMISSION",
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "acceptance": false,
+  "fullAcceptance": false,
+  "executionGO": false,
+  "overallAcceptance": "HOLD",
+  "originalToolReturnAccess": "ROOT_SEALED_PUBLIC_METADATA_ONLY_NOT_INDEPENDENT_ORIGINAL_OBJECT_ACCESS",
+  "originalSupportedReturns": [
+    {
+      "case": "prepare",
+      "chunkId": "986ad2",
+      "sessionId": null,
+      "exitCode": 0,
+      "outputBytes": 185,
+      "outputQualification": "Bounded public ASCII preparation metadata",
+      "wallTimeSeconds": 2.0059e-05
+    },
+    {
+      "case": "publish",
+      "chunkId": "bf1465",
+      "sessionId": null,
+      "exitCode": 1,
+      "outputBytes": 0,
+      "wallTimeSeconds": 2.2719e-05
+    }
+  ],
+  "preparation": {
+    "status": "PASS_ADMINISTRATIVE_BOUNDARY_ONLY",
+    "prepared": true,
+    "planPath": ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
+    "planBytes": 40781,
+    "planSHA256": "e38f312d1447d4f31e2edad510fbfbfe830f5a40dad11c7b31e746ee106bb4f9",
+    "planPins": 224,
+    "planThreeRootGOFlags": true,
+    "futureGOInferred": false,
+    "familyDeadlineMonotonic": 1467786.723689041,
+    "familyRemainingSecondsSnapshot": 179.9591548331082,
+    "reviewerPlanSealAndPinCountMatched": true,
+    "reviewerRecheckedAllPhysicalPins": false
+  },
+  "controller": {
+    "originalObjectRetainedBeforeProcessing": true,
+    "publicSourceRetentionLine": 13,
+    "unsupportedDependencyLine": 16,
+    "toolAndProcessingCatchLines": "23-24",
+    "actualOrigin": "FUNCTIONS_TEXT_ENCODER_UNAVAILABLE",
+    "publisherControllerCode": "TOOL_UNAVAILABLE",
+    "publisherLabelProvesToolDenial": false,
+    "finiteMetadataDerivation": "FAILED_BEFORE_SUCCESSFUL_ENTRY",
+    "preparedDigestDeadlineLatch": "NOT_REACHED",
+    "outerDiagnosticFailure": "Repeated unsupported TextEncoder use after returned controller object was stored; original objects remain retained"
+  },
+  "publication": {
+    "status": "FAILED_HOLD_UNBOUND_FAILURE_ONLY",
+    "directFinalExitCode": 1,
+    "outputBytes": 0,
+    "closedArchiveComplete": false,
+    "originalPlanDigestBound": false,
+    "withinOriginalFamilyAtStart": false,
+    "withinOriginalFamilyBeforeProof": false,
+    "physicallyLatePublication": "NOT_ESTABLISHED",
+    "rootPlanPhysicallyExists": true,
+    "publisherRootPlanAbsentOrUncertainMeaning": "Unavailable retained digest/deadline binding, not proof of file absence",
+    "rootFinalProofWriteTiming": "NOT_ESTABLISHED",
+    "finalEnclosingDuration": "NOT_ESTABLISHED",
+    "nullFailureCodeMeaning": "No finite lifecycle reason established in publisher; not absence of controller failure"
+  },
+  "actualPartitions": [
+    {
+      "id": "A01",
+      "partition": "Supported public preparation",
+      "result": "PASS_ADMINISTRATIVE_BOUNDARY_ONLY",
+      "oracle": "Original EXIT0 and exact prepared plan identity"
+    },
+    {
+      "id": "A02",
+      "partition": "Original-object retention",
+      "result": "PRESERVED_ROOT_RECORDED_AND_SOURCE_CORROBORATED",
+      "oracle": "Original push precedes metadata constructor"
+    },
+    {
+      "id": "A03",
+      "partition": "Functions-host metadata derivation",
+      "result": "FAIL",
+      "oracle": "Root supplement records unsupported TextEncoder; catch mislabeled processing error"
+    },
+    {
+      "id": "A04",
+      "partition": "Digest/deadline binding",
+      "result": "NOT_REACHED",
+      "oracle": "Null publication arguments after early controller failure"
+    },
+    {
+      "id": "A05",
+      "partition": "Finally failure publication",
+      "result": "FAIL_UNBOUND_PROOF",
+      "oracle": "Original publication EXIT1 and immutable FAILED_HOLD proof"
+    },
+    {
+      "id": "Q01",
+      "partition": "Positive installed CLI lifecycle",
+      "result": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE"
+    },
+    {
+      "id": "Q02",
+      "partition": "Disabled profile",
+      "result": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE"
+    },
+    {
+      "id": "Q03",
+      "partition": "Invalid profile",
+      "result": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE"
+    },
+    {
+      "id": "H01",
+      "partition": "Positive body timeout and timer restoration control",
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "LIFECYCLE",
+      "partition": "Readiness/authentication/task persistence/full quit and same-store restart",
+      "result": "NOT_RUN"
+    }
+  ],
+  "actualStarts": {
+    "caseDrivers": 0,
+    "cliProcesses": 0,
+    "nativeHTTPRequests": 0,
+    "workerProviderModelAttempts": 0,
+    "twoAdministrativeSupportedCallsReturned": true,
+    "sourceRuntimeInterpreterMaximum": 7,
+    "sourceAdministrativeInterpreterMaximum": 2,
+    "maximaAreActualInstrumentation": false
+  },
+  "materialFindings": [
+    {
+      "id": "CLI-R3-A01",
+      "severity": "HIGH",
+      "title": "Unsupported functions-host metadata dependency blocks family and masks controller origin",
+      "status": "NEW_ACTUAL_EVIDENCE_REQUIRES_FRESH_SUCCESSOR",
+      "sourcePath": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "sourceLines": [
+        13,
+        16,
+        23,
+        24,
+        50
+      ],
+      "evidence": "Preparation actually returned EXIT0 and was retained. Unsupported TextEncoder failed metadata processing before digest/deadline latch. Catch emitted TOOL_UNAVAILABLE; finally returned original publication EXIT1 with an unbound failure proof.",
+      "effect": "No selected lifecycle case or positive transport control executed. No actual tool denial or installed CLI failure established.",
+      "requiredCorrection": "Use only supported functions-host globals for bounded public metadata; separate controller-processing failure from genuine tool throw; preserve originals, stop admission and retain bounded finally publication.",
+      "historicalReviewQualification": "Historical source design review found no blocker but did not establish functions-host compatibility; preserve historical report bytes.",
+      "fixRequiredBeforeFreshSuccessorExecution": true
+    }
+  ],
+  "evidenceRecordQualifications": [
+    {
+      "record": "publisher controllerCode/originalToolReturns kind TOOL_UNAVAILABLE",
+      "correction": "Synthetic catch label is not the original preparation EXIT0 or evidence of denied/unavailable tool.",
+      "appendOnlySupplementAlreadySuppliesCorrection": true
+    },
+    {
+      "record": "publisher family root-plan ABSENT_OR_UNCERTAIN",
+      "correction": "Named plan exists and exact seal matches; publication could not bind retained digest/deadline.",
+      "appendOnlySupplementAlreadySuppliesCorrection": true
+    },
+    {
+      "record": "false within-family fields",
+      "correction": "Binding failure does not establish physically late publication or final proof-write timing.",
+      "appendOnlySupplementAlreadySuppliesCorrection": true
+    },
+    {
+      "record": "failureCode null",
+      "correction": "Not a no-failure proof; controller-origin failure is separately established.",
+      "appendOnlySupplementAlreadySuppliesCorrection": true
+    }
+  ],
+  "additionalEvidenceRecordMutationRequired": false,
+  "futureControllerRegressionRequirements": [
+    {
+      "id": "CR01",
+      "status": "DESIGN_ONLY_NOT_RUN",
+      "environment": "Supported functions host with bounded literal public tool-return stubs, no real tools",
+      "oracle": "Valid ASCII preparation plus empty successful case returns retain originals, bind exact digest/deadline, select only declared order and finally publication without browser/Node codec assumptions."
+    },
+    {
+      "id": "CR02",
+      "status": "DESIGN_ONLY_NOT_RUN",
+      "environment": "Same stubbed controller",
+      "oracle": "Metadata-processing failure after object retention and separate genuine tool throw yield distinct closed origins, preserve available originals, admit no later case and attempt bounded failure publication."
+    },
+    {
+      "id": "CR03",
+      "status": "DESIGN_ONLY_NOT_RUN",
+      "environment": "Same stubbed controller with finite negative return/session/binding/time partitions",
+      "oracle": "Known original sessions only; unknown ownership/nonzero/nonempty/malformed binding/expired reserve stops fail closed without retry/reset; retain original publication return and qualify final timing."
+    }
+  ],
+  "futureRequirementsLimits": {
+    "noRegressionExecuted": true,
+    "noNewExecutionAuthority": true,
+    "noArbitraryOutputDecoding": true,
+    "noRealCLIListenerModelOrNetwork": true,
+    "controllerStubSuccessIsLifecycleSuccess": false,
+    "retainedFamilySeconds": 180,
+    "retainedCaseSeconds": [
+      120,
+      25,
+      25
+    ],
+    "retainedMaximumCLIStarts": 4,
+    "retainedMaximumHTTPRequests": 48,
+    "retainedMaximumStopProbes": 4,
+    "freshNamespaceAndAffectedReviewsRequired": true,
+    "oldR3ReplayPermitted": false
+  },
+  "notEstablished": [
+    "Actual installed readiness predicate or peer-resolution/product cause",
+    "Authentication/route/task/storage currentness or no-replay lifecycle assertions for this family",
+    "Factual CLI stop, original service/Loader teardown, process EOF/group absence, listener absence or same-store restart",
+    "Disabled/invalid no-write/refusal assertions",
+    "After-family pin/currentness proof",
+    "Final proof-write timing or final enclosing duration",
+    "Full installed application quit, complete product journey or canonical acceptance",
+    "Genuine tool denial, other controller exception/session/timing branches or atomic OS cancellation"
+  ],
+  "constraints": {
+    "reviewerCandidateExecutions": 0,
+    "reviewerRuntimeActions": 0,
+    "reviewerPrivateContentReads": 0,
+    "reviewerPrivateEnumeration": false,
+    "reviewerCaseOrMarkerLeafProbes": false,
+    "leafAbsenceAccess": "Root-reported public metadata only",
+    "protectedSemanticsInspected": false,
+    "sourceOrGitChanges": false,
+    "sharedQA3080Touched": false,
+    "browserCloudActions": false,
+    "historicalEvidenceChanged": false,
+    "individual87CriterionReconciliation": "SEPARATE_EXACT_EVIDENCE_TASK_NOT_UNIVERSAL_ROW_DISPOSITION",
+    "overallAcceptance": "HOLD",
+    "blockedCODEBrowserCloudLanesChanged": false,
+    "cancelled4da34a6d": "NEVER_EXECUTE"
+  },
+  "publicSources": [
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json",
+      "bytes": 1199,
+      "sha256": "fe0528fb99e80dc2bac20881676987cbea541d49fb8913b47378d33ec7aa5c86",
+      "readQualification": "FULL_PUBLIC_READ",
+      "seal": "MATCH"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.md",
+      "bytes": 1769,
+      "sha256": "35b6b12ff55a7d727137bd253c0132b838c2a0db835a870423474b1cf44960de",
+      "readQualification": "FULL_PUBLIC_READ",
+      "seal": "MATCH"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.json",
+      "bytes": 3127,
+      "sha256": "dbcfb31701022fbd71ba756fbe25743811646d6ed651075c3c9f94d118c2d0cf",
+      "readQualification": "FULL_PUBLIC_READ",
+      "seal": "MATCH"
+    },
+    {
+      "path": ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
+      "bytes": 40781,
+      "sha256": "e38f312d1447d4f31e2edad510fbfbfe830f5a40dad11c7b31e746ee106bb4f9",
+      "readQualification": "INERT_SEAL_AND_BOUNDED_JSON_METADATA",
+      "seal": "MATCH"
+    },
+    {
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "bytes": 4743,
+      "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802",
+      "readQualification": "FULL_PUBLIC_SOURCE_READ_NO_EVALUATION",
+      "seal": "MATCH"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.md",
+      "bytes": 11448,
+      "sha256": "b1eb4f36471131e318c61985ca73a3ebf1df42a72ff871ce6e910d6cad9e32f0",
+      "readQualification": "REUSED_FINAL_SOURCE_AUTHORITY_SEAL_MATCH",
+      "seal": "MATCH"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.json",
+      "bytes": 16127,
+      "sha256": "df27402ffcb43b0fdcdd3d97d5d15b0ed7f67e06852f9cde97c899953c93335a",
+      "readQualification": "REUSED_FINAL_SOURCE_AUTHORITY_SEAL_MATCH",
+      "seal": "MATCH"
+    }
+  ],
+  "markdownReport": {
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-actual-test-assessment.md",
+    "bytes": 8117,
+    "sha256": "79d8cd63a6523a9cbba5284913dff4c5a9ad32387d4cb10a6f66a4b42e8a9967"
+  },
+  "reportCreation": "FRESH_EXCLUSIVE_ONLY_ASSIGNED_PAIR_FULL_READBACK_EXTERNAL_SEAL_REQUIRED"
+}

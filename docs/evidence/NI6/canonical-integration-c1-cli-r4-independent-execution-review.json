@@ -1,0 +1,382 @@
+{
+  "authority": {
+    "archivedPlan": "COMPLETE_PUBLIC_BYTES_READ_SHA_VERIFIED_CLOSED_METADATA_COMPARED",
+    "completeActualProofSupplementsAndClosedPositiveRecords": "FULL_TEXT_READ_BYTE_SHA_VERIFIED",
+    "currentPublicPinAudit": "EXPLICIT_224_PIN_MAP_ONLY_NOT_FULL_HOST_PRODUCT_GRAPH",
+    "finalSourceReview": "FINALIZED_IMMUTABLE_PAIR_REUSED_HASH_BOUND_BY_PLAN",
+    "privateRawRecords": "EXCLUDED",
+    "rootOriginalSupportedReturns": "SEALED_PUBLIC_METADATA_NOT_INDEPENDENT_ORIGINAL_ROOT_OBJECT_ACCESS",
+    "rootRecipeWasExactOnceOwningBody": "ROOT_ATTESTATION_CORROBORATED_BY_EXACT_SOURCE_PINS_AND_RESULT_ORDER",
+    "sourceSemanticRead": "NARROW_ORDINARY_CONTROLLER_PUBLISHER_WAIT_MAIN_FINAL_ORACLES_ONLY"
+  },
+  "closedBoundary": {
+    "after": null,
+    "before": {
+      "complete": true,
+      "inputCount": 224,
+      "unchanged": true
+    }
+  },
+  "closedCase": {
+    "case": "positive",
+    "contractVersion": "df.canonical-c1.cli-case/v1",
+    "directDriverReturnRequired": true,
+    "duplicateIntake": false,
+    "durationSeconds": 0.639552,
+    "failureCode": "EXECUTOR_CLI_EARLY_EXIT",
+    "httpRequests": 0,
+    "listenerAbsent": false,
+    "originalTeardown": false,
+    "pausedDurableTask": false,
+    "refusalCode": "NOT_OBSERVED",
+    "result": "FAILED_HOLD",
+    "sameStoreReconciled": false,
+    "sourceExpectedRefusalCode": "NONE",
+    "starts": 1,
+    "zeroAttempts": false
+  },
+  "closedChild": {
+    "boot": 1,
+    "captureComplete": true,
+    "childPid": 54092,
+    "eof": true,
+    "exitCode": 1,
+    "failureCode": null,
+    "forcedCleanup": false,
+    "overflow": false,
+    "ownedProcessGroup": 54092,
+    "privateStreams": {
+      "stderr": {
+        "bytes": 1094,
+        "complete": true,
+        "eofObserved": true,
+        "sha256": "fa0f6a4261e8de34e90334903e18f4d5422ac1ad9a05ec92a6576a303cb23a75",
+        "truncated": false
+      },
+      "stdout": {
+        "bytes": 0,
+        "complete": true,
+        "eofObserved": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "truncated": false
+      }
+    },
+    "processGroupState": "ABSENT_OBSERVED",
+    "signalAttempts": [],
+    "signalOutcomes": []
+  },
+  "closedInvocationMarker": {
+    "failureCode": "EXECUTOR_CLI_EARLY_EXIT",
+    "state": "FAILED_HOLD"
+  },
+  "controllerControlEvidence": {
+    "broaderFaultBranches": "NOT_RUN",
+    "controlValues": [
+      0,
+      2,
+      4,
+      6,
+      4,
+      3,
+      3,
+      17
+    ],
+    "eightLiteralChecks": "PREPARATION_REACHED_AFTER_REVIEWED_SEQUENTIAL_EQUALITY_CHECKS_SOURCE_CORROBORATED",
+    "perVectorTelemetry": false,
+    "prefixDriverLine": 578,
+    "preservedPositiveHTTPDeadlineSocketpairPrefix": "ORIGINAL_CHILD_REACHED_AFTER_PREFIX_SOURCE_ENTAILMENT_NOT_SEPARATE_CONTROL_TELEMETRY",
+    "universalTimingGuarantee": false
+  },
+  "descriptiveRecordQualifications": [
+    {
+      "closedZeroAttempts": false,
+      "id": "C1-CLI-R4-ACT-SCOPE-01",
+      "qualification": "LIMITED_TO_UNENTERED_SELECTED_DRIVER_DISPATCH_PATH; HTTP0_DOES_NOT_PROVE_INSTALLED_REGISTRY_PROVIDER_ZERO_ATTEMPTS",
+      "rootAgreedToCarryIntoLaterCheckpoint": true,
+      "sealedSupplementRewriteRequested": false,
+      "severity": "DESCRIPTIVE_QUALIFICATION_NONBLOCKING_AFTER_ROOT_AGREEMENT",
+      "source": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.md",
+      "statement": "No model/native request/task dispatch was admitted."
+    }
+  ],
+  "durations": {
+    "casePreTerminalSeconds": 0.639552,
+    "finalEnclosing": "NOT_ESTABLISHED",
+    "positiveToolWallTimeSeconds": 0.590513998,
+    "relation": "SEPARATE_SOURCE_SNAPSHOTS_TOOL_WAIT_METADATA_NOT_FINAL_ENCLOSING_ELAPSED"
+  },
+  "exactUnreachedMarkerMetadata": {
+    "disabledAbsent": true,
+    "invalidAbsent": true,
+    "privateDirectoryEnumeration": false
+  },
+  "failureInterpretation": {
+    "actualOpaqueErrorOrInternalCause": "NOT_ESTABLISHED_NOT_INSPECTED",
+    "actualRefusal": "NOT_OBSERVED",
+    "childExit1IsNotLifecycleSuccess": true,
+    "childFailureCodeNullVsCaseEarlyExit": "SEPARATE_CHILD_RETURN_RECORD_AND_ENCLOSING_FIRST_FAILURE_LATCH_CONSISTENT",
+    "exactPrivatePublicationStateOrStartupStep": "NOT_ESTABLISHED",
+    "falseMilestones": "UNESTABLISHED_NOT_PROOFS_OF_ABSENCE",
+    "finiteReadinessStage": "NOT_ESTABLISHED",
+    "firstClientObservation": "wait_owned at driver319 detects returned child during original wait and latches EXECUTOR_CLI_EARLY_EXIT",
+    "forcedCleanupOrSignalsRecorded": false,
+    "guardedReadiness": "NOT_ESTABLISHED",
+    "processGroupAbsenceAndEOF": "BOUNDED_ORIGINAL_FAILED_PATH_CLEANUP_OBSERVATIONS",
+    "sourceExpectedRefusal": "NONE_SOURCE_EXPECTATION_ONLY"
+  },
+  "fullReadback": {
+    "externalSeals": "RETURNED_AFTER_FINAL_READBACK_NO_RECURSIVE_HASH",
+    "method": "COMPLETE_FINAL_MD_JSON_READBACK_AND_INDEPENDENT_WC_SHASUM",
+    "required": true
+  },
+  "installAttemptScopeQualification": {
+    "closedZeroAttempts": false,
+    "id": "C1-CLI-R4-ACT-SCOPE-01",
+    "qualification": "LIMITED_TO_UNENTERED_SELECTED_DRIVER_DISPATCH_PATH; HTTP0_DOES_NOT_PROVE_INSTALLED_REGISTRY_PROVIDER_ZERO_ATTEMPTS",
+    "rootAgreedToCarryIntoLaterCheckpoint": true,
+    "sealedSupplementRewriteRequested": false,
+    "severity": "DESCRIPTIVE_QUALIFICATION_NONBLOCKING_AFTER_ROOT_AGREEMENT",
+    "source": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.md",
+    "statement": "No model/native request/task dispatch was admitted."
+  },
+  "materialFindings": [],
+  "milestones": {
+    "authentication": "NOT_ESTABLISHED",
+    "disabledInvalid": "NOT_RUN",
+    "fullInstalledDSHQuit": "NOT_ESTABLISHED",
+    "installedRegistryProviderZeroAttempts": "NOT_INDEPENDENTLY_OBSERVED",
+    "originalSuccessfulReadiness": "NOT_ESTABLISHED",
+    "originalTeardownListenerAbsent": "NOT_ESTABLISHED",
+    "originalZeroAttempts": "NOT_ESTABLISHED",
+    "pausedTaskDuplicateSameStore": "NOT_ESTABLISHED",
+    "selectedCLIStarts": 1,
+    "selectedDriverHTTPRequests": 0
+  },
+  "opaqueStreamMetadata": {
+    "authority": "ORIGINAL_EXECUTOR_PUBLIC_LENGTH_DIGEST_ONLY_NO_PRIVATE_CONTENT_REHASH",
+    "internalCauseInference": false,
+    "rawReadCopyDecodeHashEnumeration": false,
+    "stderr": {
+      "bytes": 1094,
+      "complete": true,
+      "eofObserved": true,
+      "sha256": "fa0f6a4261e8de34e90334903e18f4d5422ac1ad9a05ec92a6576a303cb23a75",
+      "truncated": false
+    },
+    "stdout": {
+      "bytes": 0,
+      "complete": true,
+      "eofObserved": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "truncated": false
+    }
+  },
+  "originalSupportedReturns": {
+    "allSessions": null,
+    "callCounts": {
+      "disabled": 0,
+      "finallyPublication": 1,
+      "invalid": 0,
+      "polls": 0,
+      "positive": 1,
+      "prepare": 1
+    },
+    "metadataExceptionRecorded": false,
+    "objectsRetainedImmediately": "ROOT_PUBLIC_SUPPLEMENT",
+    "positive": {
+      "case": "positive",
+      "chunkId": "cbd35a",
+      "exitCode": 1,
+      "kind": "RETURN",
+      "outputBytes": 0,
+      "sessionId": null,
+      "wallTimeSeconds": 0.590513998
+    },
+    "prepare": {
+      "case": "prepare",
+      "chunkId": "874cc7",
+      "exitCode": 0,
+      "kind": "RETURN",
+      "outputBytes": 186,
+      "sessionId": null,
+      "wallTimeSeconds": 2.3182e-05
+    },
+    "publication": {
+      "case": "publication",
+      "chunkId": "388455",
+      "exitCode": 1,
+      "outputBytes": 0,
+      "sessionId": null
+    },
+    "toolUnavailableRecorded": false,
+    "unsupportedEncoderFailureRecurred": false
+  },
+  "outcome": {
+    "acceptanceGO": false,
+    "controller": "STOPPED",
+    "disabled": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+    "executionGO": false,
+    "firstFailure": "EXECUTOR_CLI_EARLY_EXIT",
+    "fullAcceptance": false,
+    "invalid": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+    "overall": "FAILED_HOLD",
+    "positive": "FAILED_HOLD",
+    "prepared": true,
+    "publicationGO": false,
+    "replay": false
+  },
+  "planAndCurrentness": {
+    "atomicThroughoutRuntimeDriftGuarantee": false,
+    "bytes": 42209,
+    "changedFieldsFromProposal": [
+      "pins",
+      "rootFamilyDeadlineMonotonic",
+      "rootReviewedExecutionGO",
+      "rootReviewedFinalAffectedReports",
+      "rootSupportedExecutionApprovalGranted"
+    ],
+    "currentCanonicalOpaquePinsConserved": true,
+    "deadlineMonotonic": 1470038.388947041,
+    "historicalThreeGOFlags": "ROOT_ORIGINAL_SELECTION_NOT_REVIEWER_GO",
+    "laterChecksRetrofitAfter": false,
+    "originalAfter": null,
+    "originalBefore": {
+      "complete": true,
+      "inputCount": 224,
+      "unchanged": true
+    },
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/root-plan.json",
+    "pins": 224,
+    "proposalStatusField": "SOURCE_ONLY_NOT_RUN_PRESERVED_NOT_ACTUAL_ADMIN_COUNTER",
+    "reviewerLater224Exact": true,
+    "rootLater224Exact": true,
+    "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+  },
+  "process": {
+    "allEarlierSourcesReportsEvidenceDraftsShared3080CancelledTasksImmutable": true,
+    "candidateSyntaxASTParseImportEvaluationCheckBuildTestRun": false,
+    "creation": "O_EXCL_O_NOFOLLOW_0600_AFTER_BOTH_ABSENT",
+    "helperControllerProducerEvaluation": false,
+    "inertNamedPublicJSONTextHashAndExactMetadataOnly": true,
+    "onlyFreshPairWritten": true,
+    "opaqueCaptureFinishProtectedCODEReceiptSignatureEnvelopeRevision999SemanticsRead": false,
+    "priorScopeIncidentsPreserved": true,
+    "pristineExposureOrCleanHistoryClaim": false,
+    "privateProfileKeyDbHistoryReadinessAccessCaptureResponseErrorContentReadCopyDecodeHashEnumeration": false,
+    "runtimeGitBrowserListenerNetworkModelCloudDelegation": false
+  },
+  "publication": {
+    "aggregatePass": false,
+    "closedArchiveComplete": true,
+    "directPublicationExit": 1,
+    "finalEnclosingDuration": "NOT_ESTABLISHED",
+    "finalProofWriteTiming": "NOT_ESTABLISHED",
+    "firstCaseFailurePreserved": true,
+    "fivePublicCopySealsAllExact": true,
+    "missingOrUncertain": [],
+    "originalPlanDigestBound": true,
+    "preProofSnapshotsNotFinalOracle": true,
+    "privateContentReadClaim": "OWNING_PUBLIC_HELPER_RECORD_QUALIFICATION_NO_PRIVATE_CONTENT_INSPECTION_BY_REVIEWER",
+    "reasonExit1DoesNotProveFinalTiming": "passed false short-circuits final time comparison at publisher337.",
+    "withinOriginalFamilyAtStart": true,
+    "withinOriginalFamilyBeforeProof": true
+  },
+  "remainingDependencies": [
+    "Functional CLI early exit cause remains unestablished within this metadata-only assessment.",
+    "Original guarded readiness, listener/lifecycle/restart/zero-attempt and negative cases are not closed by group absence or current pin equality.",
+    "Broader dynamic controller/fault branches remain NOT_RUN; final publication write timing and enclosing duration remain NOT_ESTABLISHED.",
+    "Any successor requires fresh separate source review/root selection; CLI-r4 and earlier consumed packets must not be replayed.",
+    "C02 and broader lifecycle/browser/UI/protected final review, full acceptance and publication remain outside this bounded evidence."
+  ],
+  "requiredExistingRecordRewrite": false,
+  "reviewedPublicIdentities": [
+    {
+      "bytes": 2372,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json",
+      "sha256": "3bf5a20a520fd03a5c4ce1d63e5c796553d1a7b5dbe4c4c5b161456a4323e6fb"
+    },
+    {
+      "bytes": 2981,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.md",
+      "sha256": "3ab433280574600ff0d8d323389381802823d7634cce2764d3ff52e39b0a15b6"
+    },
+    {
+      "bytes": 3421,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.json",
+      "sha256": "1f4ed78da347c7d6c096b6764a2fb80c8582a9591c7fa29cfc56762596d7d89d"
+    },
+    {
+      "bytes": 496,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/case-result.json",
+      "sha256": "4ac959888a0ed06fb822d5af46749cfd447e38001f343f53870a41b28ea69a70"
+    },
+    {
+      "bytes": 892,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/command-results.json",
+      "sha256": "40e3c581ec4dd2680f68a8c8a9864992da0fbcffb41184f7d18be020f2ee4b43"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/before-after.json",
+      "sha256": "554b00ef0215f4cfb303331da4287093e31fe4c25b95951c77f7985b1a7d65a5"
+    },
+    {
+      "bytes": 73,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/invocation-result.json",
+      "sha256": "a8e83a9ae529bde9851ce58fff417f60fe27f6b7daee7065123c189bb13fd3de"
+    },
+    {
+      "bytes": 42209,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/root-plan.json",
+      "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+    },
+    {
+      "bytes": 12654,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.md",
+      "sha256": "15bc508e9022ef92eacec0f12080957fc23a87480702b11715d4bf055b6506ac"
+    },
+    {
+      "bytes": 27871,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.json",
+      "sha256": "e1bfd63999e09547b57c173bb693f7d90b905f0b7b7368009c6ab28f3ae87cea"
+    },
+    {
+      "bytes": 6497,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs",
+      "sha256": "6c36de603c420c332d5e80e082fadcb31e351fb08f932410fe3e3e7aeba5308b"
+    },
+    {
+      "bytes": 25477,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
+      "sha256": "5afac3df4be8148ab86b29285c89161c72737881aeda07f89418fcf8e1900aea"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+      "sha256": "4d94bd07f15ff12897aea177a13a8b3d0f4aa697020796c45d7b4ee89339f783"
+    },
+    {
+      "bytes": 11818,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/execution-plan.proposed.json",
+      "sha256": "8cee63bf44ad8c8106e84af404d9a4c23ec6fce695cb4f919abfab37f199024c"
+    },
+    {
+      "bytes": 80062,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/source-manifest.json",
+      "sha256": "54aeb250b69473eb407e315ac7d8f3334da9d022963678110a5255c02728be9e"
+    }
+  ],
+  "reviewer": {
+    "delegation": false,
+    "independentOf": [
+      "author",
+      "ISTQB lane"
+    ],
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max"
+  },
+  "schema": "df.canonical-c1.cli-r4-independent-execution-review/v1",
+  "status": "ACTUAL_FAILED_HOLD_CONSUMED_DO_NOT_REPLAY",
+  "verdict": "NO_NEW_MATERIAL_EVIDENCE_RECORD_BLOCKER_WITH_SCOPE_QUALIFICATION_FUNCTIONAL_FAILED_HOLD"
+}

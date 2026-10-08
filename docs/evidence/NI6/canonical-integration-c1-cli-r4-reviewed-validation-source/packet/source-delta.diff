@@ -1,0 +1,374 @@
+Source-only CLI-r4 complete six affected source literal differences versus CLI-r3. splitlines(keepends=True), unified_diff n=3/default newline, concatenation. Closure manifest metadata separately records complete provenance; no canonical/protected body diff.
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r3/observer.mjs
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r4/observer.mjs
+@@ -8,7 +8,7 @@
+ function write(p,value,cap){const b=Buffer.from(JSON.stringify(value)+'\n');need(b.length<=cap);directory(resolve(p,'..'));const fd=openSync(p,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);try{const s=fstatSync(fd);need(s.isFile()&&s.uid===process.getuid()&&(s.mode&0o777)===0o600);writeFileSync(fd,b);fsyncSync(fd);const t=lstatSync(p);need(t.dev===s.dev&&t.ino===s.ino);}finally{closeSync(fd);}}
+ export function apply(ctx,{caseRoot,caseName,boot}){
+  need(['positive','disabled','invalid'].includes(caseName)&&[1,2].includes(boot));directory(caseRoot);directory(resolve(caseRoot,'private'));
+- const expected=resolve('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball','.runtime/ni6-canonical-integration-c1/validation/cli-r3/cases',caseName);need(caseRoot===expected);
++ const expected=resolve('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball','.runtime/ni6-canonical-integration-c1/validation/cli-r4/cases',caseName);need(caseRoot===expected);
+  const descendants=new Set(),counts={agents:0,sessions:0,requests:0,streams:0,tools:0};let entry,setupFiber,setupService,runtimeService,ready=false,failed=false;
+  ctx.provide('dfC1Observer',Object.freeze({readOnly:true}));
+  const belongs=f=>{let p=f?.parent?.fiber;for(let n=0;p&&n<32;n++){if(p===setupFiber)return true;p=p.parent?.fiber;}return false;};
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r3'
++NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r4'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r3/execution-plan.proposed.json
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r4/execution-plan.proposed.json
+@@ -40,47 +40,96 @@
+     "disabled": {
+       "actualRefusalCode": "NOT_OBSERVED",
+       "database": "home/profiles/web/df-data/runtime.sqlite",
+-      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-disabled.json",
+-      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/cases/disabled",
++      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/invocation-disabled.json",
++      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/cases/disabled",
+       "sourceExpectedRefusalCode": "NONE"
+     },
+     "invalid": {
+       "actualRefusalCode": "NOT_OBSERVED",
+       "database": "home/profiles/web/df-invalid.sqlite",
+-      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-invalid.json",
+-      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/cases/invalid",
++      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/invocation-invalid.json",
++      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/cases/invalid",
+       "sourceExpectedRefusalCode": "SETUP_UNAVAILABLE"
+     },
+     "positive": {
+       "actualRefusalCode": "NOT_OBSERVED",
+       "database": "home/profiles/web/df-data/runtime.sqlite",
+-      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-positive.json",
+-      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/cases/positive",
++      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/invocation-positive.json",
++      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/cases/positive",
+       "sourceExpectedRefusalCode": "NONE"
+     }
+   },
+   "commands": [
+     [
+       "/opt/homebrew/bin/python3",
+-      ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+-      ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
++      ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
++      ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
+       "positive"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+-      ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
++      ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
++      ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
+       "disabled"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+-      ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
++      ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
++      ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
+       "invalid"
+     ]
+   ],
+   "concurrency": 1,
+   "contractVersion": "df.canonical-c1.cli-plan/v1",
++  "controllerMetadataRegression": {
++    "authenticationRequests": 0,
++    "failureCode": "CONTROLLER_METADATA_FAILED",
++    "failureTreatment": "Stops before preparation; same finally publication accepts zero return rows only for this closed failure code; failure-only HOLD, no replay or error payload",
++    "listeners": 0,
++    "method": "Standard ECMAScript charCodeAt/length/number operations; no TextEncoder, Buffer or host encoder",
++    "modelCalls": 0,
++    "newOSProcesses": 0,
++    "newToolCalls": 0,
++    "position": "Future root-approved owning functions invocation, before preparation",
++    "privateInputs": 0,
++    "runsMaximum": 1,
++    "status": "SOURCE_ONLY_NOT_RUN",
++    "vectorCount": 8,
++    "vectors": [
++      {
++        "expectedUTF8Bytes": 0,
++        "literalEscaped": ""
++      },
++      {
++        "expectedUTF8Bytes": 2,
++        "literalEscaped": "A\\u007f"
++      },
++      {
++        "expectedUTF8Bytes": 4,
++        "literalEscaped": "\\u0080\\u07ff"
++      },
++      {
++        "expectedUTF8Bytes": 6,
++        "literalEscaped": "\\u0800\\uffff"
++      },
++      {
++        "expectedUTF8Bytes": 4,
++        "literalEscaped": "\\ud800\\udc00"
++      },
++      {
++        "expectedUTF8Bytes": 3,
++        "literalEscaped": "\\ud800"
++      },
++      {
++        "expectedUTF8Bytes": 3,
++        "literalEscaped": "\\udc00"
++      },
++      {
++        "expectedUTF8Bytes": 17,
++        "literalEscaped": "A\\u00e9\\u4e2d\\ud83d\\ude00\\ud800Z\\udc00"
++      }
++    ]
++  },
+   "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+   "effects": "One paused task and complete-identity intake duplicate; same-store restart reconciliation. Zero agent/session/worker/provider/model/tool/external attempts. Original Loader disabled and depth1 invalid-target negatives. Four family-total retained endpoint absence probes, separate unsuccessful connection attempts inside stop/case/family ceilings.",
+   "familyController": "Exact bound root-controller-recipe.mjs: one prepare, sequential supported original case calls retaining returns immediately; finally one named closed-record publication before model yield. Same monotonic180 family end; case end is additionally capped at family end minus original10-second publication reserve. Date admission estimate is advisory only. Never retry/new session or signal after uncertainty; no full payload serialization.",
+@@ -187,28 +236,28 @@
+     "successFieldsUnchanged": 11
+   },
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.json",
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.json"
++    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.json"
+   ],
+   "rootAdministrativeInterpreterStartsMaximum": 2,
+-  "rootAdministrativeSource": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
+-  "rootControllerRecipe": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
++  "rootAdministrativeSource": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
++  "rootControllerRecipe": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs",
+   "rootFamilyDeadlineMonotonic": null,
+-  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
++  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
+   "rootPublication": {
+-    "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r3-execution",
++    "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution",
+     "binding": "Retained original prepare return plan digest+monotonic deadline; no reset if current plan drifts",
+     "commands": [
+       [
+         "/opt/homebrew/bin/python3",
+-        ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
++        ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
+         "prepare"
+       ],
+       [
+         "/opt/homebrew/bin/python3",
+-        ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
++        ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
+         "publish"
+       ]
+     ],
+@@ -219,7 +268,7 @@
+     "onEveryControllerExitBeforeModelYield": true,
+     "originalReturnsMaximum": 192,
+     "prepareSecondsMaximumInsideFamily": 10,
+-    "proof": "docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json",
++    "proof": "docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json",
+     "publishSecondsMaximumInsideFamily": 10,
+     "qualification": "Supported-tool denial/unavailability or late/missing record remains FAILED_HOLD/uncertain; final publication original return and proof-write timing still require root retention.",
+     "recordFilesPerReachedCase": [
+@@ -234,7 +283,7 @@
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "runCountAuthorizedPerCase": 1,
+-  "runner": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+   "testWorkerStarts": 0
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r3/README.md
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r4/README.md
+@@ -18,4 +18,10 @@
+ 
+ Preparation/publication each have a nonadditive10-second cap inside the same180-second family. Public proof/input cap65536 and at most192 finite return metadata rows are independent from existing4096/16384/4096 case records and65536 plan. A publication or tool failure may prevent complete evidence; root must retain the original publication returns and establish final proof-write timing. A pre-proof PASS snapshot never establishes the final publication return or whole lifecycle alone. No raw returned output or caught exception is published; the root recipe's retained original objects stay in owning memory and must not be blindly text/JSON-published. No universal OS scheduling/atomic-file/instant-cancellation guarantee is made.
+ 
+-Closure uses current canonical65/pinned original host, genuine build proof and named build records, exact consumed R2 source/final source+actual pairs/proof/five public records, and the root R3 selection containing the source diagnosis. No diagnosis report was invented, no ancestor source/history tree copied, and original CLI ancestry is represented by its already bound consumed successor authority. All actual destinations absent at source seal, GO=false/pins{}, actual starts0. C02 changed-thread/reordering and residual acceptance remain unclaimed.
++Closure uses current canonical65/pinned original host, genuine build proof and named build records, the complete exact consumed R3 capsule/author/final source+actual review pairs, immutable publisher proof/root supplement and the root R4 selection containing the controller diagnosis. No diagnosis report was invented, no ancestor source/history tree copied, and original CLI ancestry is represented by its already bound consumed successor authority. All actual destinations absent at source seal, GO=false/pins{}, actual starts0. C02 changed-thread/reordering and residual acceptance remain unclaimed.
++
++R4 corrects only the owning functions controller metadata dependency. Its UTF-8 byte counter uses standard ECMAScript string/number operations: ASCII1, two-byte BMP2, other BMP3, valid surrogate pairs4 and each unpaired surrogate standard replacement3. It creates no encoded byte buffer and never decodes or publishes arbitrary returned output. Original supported return objects remain immediately retained before interpretation. Only the bounded public preparation JSON is parsed as before. Narrow catches enclose only direct supported tool calls; metadata/regression exceptions select CONTROLLER_METADATA_FAILED without caught-error serialization. Publication-return objects are retained before metadata interpretation and survive a later controller exception; publicationUnavailable means a supported call actually threw. Root still owns final original publication return and proof-write timing.
++
++Eight public literal controls run once only in the future root-approved owning functions invocation, before preparation: empty=>0; A\u007f=>2; \u0080\u07ff=>4; \u0800\uffff=>6; \ud800\udc00=>4; unpaired \ud800=>3; unpaired \udc00=>3; A\u00e9\u4e2d\ud83d\ude00\ud800Z\udc00=>17. This checks both UTF-8 classes and BMP range boundaries with zero new tool calls, OS processes, listeners, authentication requests, model calls or private inputs. Source preparation never evaluates the controller or vectors. A mismatch/metadata exception stops the family with CONTROLLER_METADATA_FAILED. The publisher accepts zero metadata rows only with that code, archives failure-only HOLD without a prepared binding and never grants PASS; no runtime deadline is created or reset. No new case-result fields or product readiness cause are selected.
++
++CLI-r3 preparation EXIT0 succeeded, but TextEncoder was unavailable after the original return had been retained; its broad catch misclassified that controller error as TOOL_UNAVAILABLE. Its finally publisher EXIT1 emitted an unbound failure-only proof. The immutable root supplement distinguishes this binding failure from a physically late archive; final proof-write timing remains NOT_ESTABLISHED. No CLI case/HTTP/model started. R3 stays consumed FAILED_HOLD/DO_NOT_REPLAY. R4 preserves the complete driver byte-for-byte after namespace-only normalization, all nineteen/five-field failure and eleven-field success/terminal protocols, 7,206-byte HTTP control and 1,600-byte terminal observer, same monotonic180 and120/25/25 ceilings, runtime7/admin2/overall9 source maxima,48HTTP/four probes and original byte caps. Source only; all GO=false/pins{}; actual starts0. Full87 individual-criterion acceptance, MVP and publication remain HOLD.
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r3'
++NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r4'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -202,8 +202,8 @@
+ 
+ 
+ FAILURE_CODES=('ADMIN_ARGUMENTS', 'ADMIN_BOOT', 'ADMIN_BOUNDARY_FIELDS', 'ADMIN_BOUNDARY_VALUE', 'ADMIN_CASE_BOOLEAN', 'ADMIN_CASE_CONSUMED', 'ADMIN_CASE_FIELDS', 'ADMIN_CASE_REFUSAL', 'ADMIN_CASE_TIME', 'ADMIN_CASE_VALUE', 'ADMIN_CHILD_BOOLEAN', 'ADMIN_CHILD_EXIT', 'ADMIN_CHILD_FIELDS', 'ADMIN_CHILD_ID', 'ADMIN_CHILD_STATE', 'ADMIN_COMMAND_FIELDS', 'ADMIN_DESTINATION_EXISTS', 'ADMIN_ENVIRONMENT', 'ADMIN_FAMILY_DEADLINE', 'ADMIN_IDENTITY', 'ADMIN_MARKER_FIELDS', 'ADMIN_PIN_DRIFT', 'ADMIN_PIN_UNION', 'ADMIN_PLAN_DIGEST', 'ADMIN_PLAN_DRIFT', 'ADMIN_PUBLICATION_INPUT', 'ADMIN_PUBLIC_BOUND', 'ADMIN_READBACK', 'ADMIN_RECORD_TYPE', 'ADMIN_RETURN_CHUNK', 'ADMIN_RETURN_COUNT', 'ADMIN_RETURN_EXIT', 'ADMIN_RETURN_FIELDS', 'ADMIN_RETURN_KIND', 'ADMIN_RETURN_OUTPUT', 'ADMIN_RETURN_SESSION', 'ADMIN_RETURN_TIME', 'ADMIN_ROOT_SELECTION', 'ADMIN_SIGNAL', 'ADMIN_SIGNAL_OUTCOME', 'ADMIN_STDIN_BOUND', 'ADMIN_STREAM_BOOLEAN', 'ADMIN_STREAM_FIELDS', 'ADMIN_STREAM_VALUE', 'ADMIN_TOPOLOGY', 'EXECUTOR_ACCESS_FIELDS', 'EXECUTOR_AGGREGATE_DEADLINE', 'EXECUTOR_ARGUMENTS', 'EXECUTOR_AUTH_COOKIE', 'EXECUTOR_AUTH_EXCHANGE', 'EXECUTOR_AUTH_ORDER', 'EXECUTOR_BEFORE_CONSENT', 'EXECUTOR_BINARY_FILE', 'EXECUTOR_BUILD_PIN', 'EXECUTOR_BUILD_PROOF', 'EXECUTOR_BUILD_PROOF_SHAPE', 'EXECUTOR_CAPTURE_CLOSE_UNKNOWN', 'EXECUTOR_CAPTURE_READBACK', 'EXECUTOR_CAPTURE_READBACK_UNKNOWN', 'EXECUTOR_CASE_CONSUMED', 'EXECUTOR_CASE_HTTP_BOUND', 'EXECUTOR_CASE_REPLACED', 'EXECUTOR_CLEANUP_UNKNOWN', 'EXECUTOR_CLI_EARLY_EXIT', 'EXECUTOR_CLI_GATE_FAILED', 'EXECUTOR_CLI_NOT_ALIVE_BEFORE_STOP', 'EXECUTOR_CLI_SPAWN', 'EXECUTOR_CLI_STOP_NOT_ESTABLISHED', 'EXECUTOR_CONTAINMENT', 'EXECUTOR_COPY_CONTAINMENT', 'EXECUTOR_COPY_PIN', 'EXECUTOR_COPY_READBACK', 'EXECUTOR_DIGEST', 'EXECUTOR_DUPLICATE_INTAKE', 'EXECUTOR_DUPLICATE_JSON_MEMBER', 'EXECUTOR_ENVIRONMENT', 'EXECUTOR_EOF_NOT_ESTABLISHED', 'EXECUTOR_FAMILY_DEADLINE', 'EXECUTOR_FILE_IDENTITY', 'EXECUTOR_FIRST_INTAKE', 'EXECUTOR_FORCED_CLEANUP', 'EXECUTOR_FOREIGN_ORIGIN', 'EXECUTOR_HTTP_BOUND', 'EXECUTOR_HTTP_CONTROL_BOUND', 'EXECUTOR_HTTP_CONTROL_HEADER', 'EXECUTOR_HTTP_CONTROL_RESTORATION', 'EXECUTOR_HTTP_CONTROL_SOCKET_CLEANUP', 'EXECUTOR_HTTP_CONTROL_SUCCESS', 'EXECUTOR_HTTP_CONTROL_TIMEOUT', 'EXECUTOR_HTTP_TIMER_NOT_AVAILABLE', 'EXECUTOR_HTTP_TOTAL_DEADLINE', 'EXECUTOR_IDENTITY', 'EXECUTOR_INITIAL_TASKS', 'EXECUTOR_INTERRUPTED', 'EXECUTOR_JSON_BOUND', 'EXECUTOR_JSON_CONSTANT', 'EXECUTOR_LISTENER_NOT_ABSENT', 'EXECUTOR_NEGATIVE_LEAVES', 'EXECUTOR_NEGATIVE_NATIVE_FALLBACK', 'EXECUTOR_NEGATIVE_NO_WRITES', 'EXECUTOR_NEGATIVE_ORIGINAL_ENTRY', 'EXECUTOR_OBSERVER_READY', 'EXECUTOR_ORIGINAL_RETURN_NOT_ESTABLISHED', 'EXECUTOR_ORIGINAL_TEARDOWN_NOT_ESTABLISHED', 'EXECUTOR_OUTPUT_BOUND', 'EXECUTOR_OWNED_READ_BOUND', 'EXECUTOR_OWNED_RECORD', 'EXECUTOR_PATH', 'EXECUTOR_PAUSED_STATE', 'EXECUTOR_PAUSE_WORKERS', 'EXECUTOR_PHYSICAL_PRODUCT_DRIFT', 'EXECUTOR_PIN_DRIFT', 'EXECUTOR_PIN_UNION', 'EXECUTOR_PLAN_BOUND', 'EXECUTOR_PLAN_DRIFT', 'EXECUTOR_PLAN_FIELDS', 'EXECUTOR_PLAN_SELECTION', 'EXECUTOR_PREVIEW_NO_WRITES', 'EXECUTOR_PRIVATE_DIRECTORY', 'EXECUTOR_PRIVATE_ENDPOINT', 'EXECUTOR_PRIVATE_FILE', 'EXECUTOR_PUBLIC_BOUND', 'EXECUTOR_READY_FAILURE_PROTOCOL', 'EXECUTOR_READY_FIELDS', 'EXECUTOR_READY_STAGE_ABS', 'EXECUTOR_READY_STAGE_AGR', 'EXECUTOR_READY_STAGE_ATT', 'EXECUTOR_READY_STAGE_AUT', 'EXECUTOR_READY_STAGE_DIS', 'EXECUTOR_READY_STAGE_ENA', 'EXECUTOR_READY_STAGE_ENT', 'EXECUTOR_READY_STAGE_FIB', 'EXECUTOR_READY_STAGE_HST', 'EXECUTOR_READY_STAGE_INV', 'EXECUTOR_READY_STAGE_LAF', 'EXECUTOR_READY_STAGE_LPR', 'EXECUTOR_READY_STAGE_PHA', 'EXECUTOR_READY_STAGE_PRT', 'EXECUTOR_READY_STAGE_PUB', 'EXECUTOR_READY_STAGE_REP', 'EXECUTOR_READY_STAGE_SRV', 'EXECUTOR_READY_STAGE_SSR', 'EXECUTOR_READY_STAGE_WRT', 'EXECUTOR_READY_TYPES', 'EXECUTOR_RECONCILED_NO_REPLAY', 'EXECUTOR_REGULAR_FILE', 'EXECUTOR_REQUEST_BOUND', 'EXECUTOR_RESPONSE_BOUND', 'EXECUTOR_RESTART_DEDUP', 'EXECUTOR_RESTART_TASK', 'EXECUTOR_ROOT_GO', 'EXECUTOR_RPC_REFUSAL', 'EXECUTOR_RPC_STATUS', 'EXECUTOR_SAME_STORE_METADATA', 'EXECUTOR_SELECTED_SIGTERM_NOT_SUBMITTED', 'EXECUTOR_SETUP_CONFIRM', 'EXECUTOR_SETUP_METADATA', 'EXECUTOR_SETUP_PHASE', 'EXECUTOR_SETUP_READY', 'EXECUTOR_SIGNAL_BLOCKED', 'EXECUTOR_SIGNAL_DENIED_UNKNOWN', 'EXECUTOR_SIGNAL_OWNERSHIP_UNKNOWN', 'EXECUTOR_SIGNAL_REPEAT', 'EXECUTOR_SINGLE_TASK', 'EXECUTOR_SPAWN_OR_CAPTURE_FAILED', 'EXECUTOR_TERMINATION_COUNTS', 'EXECUTOR_TERMINATION_FIELDS', 'EXECUTOR_TOPOLOGY', 'EXECUTOR_UNAUTHENTICATED_ADMISSION')
+-ARCHIVE=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r3-execution'
+-PROOF=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json'
++ARCHIVE=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r4-execution'
++PROOF=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json'
+ CASE_NAMES=('positive','disabled','invalid')
+ GO=('rootReviewedExecutionGO','rootSupportedExecutionApprovalGranted','rootReviewedFinalAffectedReports')
+ RECORD_NAMES=('case-result.json','command-results.json','before-after.json')
+@@ -282,8 +282,8 @@
+     return 0
+ 
+ def publish(value):
+-    need(type(value) is dict and set(value)=={'originalToolReturns','controllerCode','expectedPlanSha256','familyDeadlineMonotonic'} and value['controllerCode'] in ('COMPLETE','STOPPED','TOOL_UNAVAILABLE','PREPARE_FAILED'),'ADMIN_PUBLICATION_INPUT')
+-    need(type(value['originalToolReturns']) is list and 1<=len(value['originalToolReturns'])<=192,'ADMIN_RETURN_COUNT')
++    need(type(value) is dict and set(value)=={'originalToolReturns','controllerCode','expectedPlanSha256','familyDeadlineMonotonic'} and value['controllerCode'] in ('COMPLETE','STOPPED','TOOL_UNAVAILABLE','PREPARE_FAILED','CONTROLLER_METADATA_FAILED'),'ADMIN_PUBLICATION_INPUT')
++    need(type(value['originalToolReturns']) is list and 0<=len(value['originalToolReturns'])<=192 and (len(value['originalToolReturns'])>0 or value['controllerCode']=='CONTROLLER_METADATA_FAILED'),'ADMIN_RETURN_COUNT')
+     returns=[metadata(x) for x in value['originalToolReturns']]
+     plan_path=ROOT/PLAN_NAME;plan_raw=None;plan=None;deadline=value['familyDeadlineMonotonic'];plan_bound=False
+     need(deadline is None or type(deadline) in (int,float) and deadline>0,'ADMIN_FAMILY_DEADLINE')
+@@ -327,7 +327,7 @@
+     else:archive_complete=False;missing.append({'case':'family','record':'root-plan.json','status':'ABSENT_OR_UNCERTAIN'})
+     within_final=within_start and time.monotonic()<publication_end
+     passed=value['controllerCode']=='COMPLETE' and archive_complete and within_final and all(case_outcomes.get(c)=='PASS' for c in CASE_NAMES)
+-    proof={'schema':'df.canonical-c1.cli-r3-actual-return/v1','result':'PASS' if passed else 'FAILED_HOLD','disposition':'CONSUMED_DO_NOT_REPLAY',
++    proof={'schema':'df.canonical-c1.cli-r4-actual-return/v1','result':'PASS' if passed else 'FAILED_HOLD','disposition':'CONSUMED_DO_NOT_REPLAY',
+         'controllerCode':value['controllerCode'],'failureCode':first_failure,'originalToolReturns':returns,'cases':case_outcomes,'recordPins':records,'missingOrUncertain':missing,
+         'publication':{'withinOriginalFamilyAtStart':within_start,'withinOriginalFamilyBeforeProof':within_final,'closedArchiveComplete':archive_complete,'originalPlanDigestBound':plan_bound,'secondsCap':10,'noPrivateContentRead':True},
+         'runtimeInterpreterStartsMaximum':7,'administrativeInterpreterStartsMaximum':2,'fullAcceptance':False,
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs
+@@ -3,27 +3,52 @@
+ // No candidate starts occur by reading this file. Paste the reviewed body into one owning functions call.
+ export async function runSelectedFamily(tools, approvedSelection) {
+  const cwd='/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+- const base='.runtime/ni6-canonical-integration-c1/validation/cli-r3';
++ const base='.runtime/ni6-canonical-integration-c1/validation/cli-r4';
+  const python='/opt/homebrew/bin/python3';
+  const originalReturns=[];const retained=[];
+  // Date is an advisory early-admission cut only; actual case/publication deadlines use the ONE Python monotonic plan.
+  let controllerCode='PREPARE_FAILED',prepared=false,remaining=0,preparedAt=0,expectedPlanSha256=null,familyDeadlineMonotonic=null;
+  const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
++ // Metadata only: ECMAScript code-unit counting; no encoder/global host API.
++ function utf8ByteCount(s) {
++  let bytes=0;
++  for(let i=0;i<s.length;i++){
++   const c=s.charCodeAt(i);
++   if(c<0x80)bytes++;
++   else if(c<0x800)bytes+=2;
++   else if(c>=0xd800&&c<=0xdbff&&i+1<s.length&&s.charCodeAt(i+1)>=0xdc00&&s.charCodeAt(i+1)<=0xdfff){bytes+=4;i++;}
++   else bytes+=3; // BMP or standard replacement for an unpaired surrogate.
++  }
++  return bytes;
++ }
++ function metadataRegression(){
++  // Eight fixed public literals only; future owning invocation, before prepare.
++  const vectors=[['',0],['A\u007f',2],['\u0080\u07ff',4],['\u0800\uffff',6],
++   ['\ud800\udc00',4],['\ud800',3],['\udc00',3],['A\u00e9\u4e2d\ud83d\ude00\ud800Z\udc00',17]];
++  for(const[s,bytes]of vectors)if(utf8ByteCount(s)!==bytes)throw new Error();
++ }
+  function retain(caseName,r) {
+   retained.push(r); // Retain original return immediately before interpretation.
+   originalReturns.push({case:caseName,kind:'RETURN',chunkId:typeof r.chunk_id==='string'?r.chunk_id:null,
+    sessionId:Number.isInteger(r.session_id)?r.session_id:null,exitCode:Number.isInteger(r.exit_code)?r.exit_code:null,
+-   outputBytes:new TextEncoder().encode(typeof r.output==='string'?r.output:'').length,
++   outputBytes:utf8ByteCount(typeof r.output==='string'?r.output:''),
+    wallTimeSeconds:typeof r.wall_time_seconds==='number'?r.wall_time_seconds:0});
+  }
+  function unavailable(caseName){originalReturns.push({case:caseName,kind:'TOOL_UNAVAILABLE',chunkId:null,sessionId:null,exitCode:null,outputBytes:0,wallTimeSeconds:0});}
+  const command=(action,value)=>'printf %s '+quote(JSON.stringify(value))+' | '+python+' '+base+'/root-publication.py '+action;
+  try {
++  metadataRegression(); // Failure is CONTROLLER_METADATA_FAILED; zero new tools/private inputs.
+   let r;
+-  try {r=await tools.exec_command({cmd:command('prepare',approvedSelection),workdir:cwd,yield_time_ms:1000,max_output_tokens:1000});retain('prepare',r);}
++  const prepareArgs={cmd:command('prepare',approvedSelection),workdir:cwd,yield_time_ms:1000,max_output_tokens:1000};
++  try {r=await tools.exec_command(prepareArgs);}
+   catch {unavailable('prepare');controllerCode='TOOL_UNAVAILABLE';return;}
++  retain('prepare',r);
+   // Preparation is bounded to10s; bounded administrative stdout contains only public deadline metadata.
+-  for(let n=0;r.session_id&&n<8;n++){r=await tools.write_stdin({session_id:r.session_id,chars:'',yield_time_ms:1000,max_output_tokens:1000});retain('prepare',r);}
++  for(let n=0;r.session_id&&n<8;n++){
++   const pollArgs={session_id:r.session_id,chars:'',yield_time_ms:1000,max_output_tokens:1000};
++   try{r=await tools.write_stdin(pollArgs);}catch{unavailable('prepare');controllerCode='TOOL_UNAVAILABLE';return;}
++   retain('prepare',r);
++  }
+   if(r.exit_code!==0||r.session_id)return;
+   const prep=JSON.parse(retained.filter((_,i)=>originalReturns[i].case==='prepare').map(x=>x.output||'').join(''));
+   if(prep.prepared!==true||typeof prep.familyRemainingSeconds!=='number'||prep.familyRemainingSeconds<=10||prep.familyRemainingSeconds>180)return;
+@@ -32,27 +57,35 @@
+   prepared=true;remaining=prep.familyRemainingSeconds;preparedAt=Date.now();controllerCode='COMPLETE';
+   for(const caseName of ['positive','disabled','invalid']){
+    if(remaining-(Date.now()-preparedAt)/1000<=10){controllerCode='STOPPED';break;}
+-   try {
+-    r=await tools.exec_command({cmd:python+' '+base+'/lifecycle-driver.py .runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json '+caseName,workdir:cwd,yield_time_ms:1000,max_output_tokens:1000});retain(caseName,r);
+-    // Poll the SAME original session. No retry/new process/signal after uncertain ownership.
+-    for(let n=0;r.session_id&&n<60;n++){
+-     r=await tools.write_stdin({session_id:r.session_id,chars:'',yield_time_ms:2000,max_output_tokens:1000});retain(caseName,r);
+-    }
+-   }catch{unavailable(caseName);controllerCode='TOOL_UNAVAILABLE';break;}
++   const caseArgs={cmd:python+' '+base+'/lifecycle-driver.py .runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json '+caseName,workdir:cwd,yield_time_ms:1000,max_output_tokens:1000};
++   try{r=await tools.exec_command(caseArgs);}catch{unavailable(caseName);controllerCode='TOOL_UNAVAILABLE';break;}
++   retain(caseName,r);
++   // Poll the SAME original session. No retry/new process/signal after uncertain ownership.
++   for(let n=0;r.session_id&&n<60;n++){
++    const pollArgs={session_id:r.session_id,chars:'',yield_time_ms:2000,max_output_tokens:1000};
++    try{r=await tools.write_stdin(pollArgs);}catch{unavailable(caseName);controllerCode='TOOL_UNAVAILABLE';break;}
++    retain(caseName,r);
++   }
++   if(controllerCode==='TOOL_UNAVAILABLE')break;
+    if(r.exit_code!==0||r.session_id||originalReturns.filter(x=>x.case===caseName).some(x=>x.outputBytes!==0)){controllerCode='STOPPED';break;}
+   }
+- }catch{controllerCode='STOPPED';}
++ }catch{controllerCode='CONTROLLER_METADATA_FAILED';} // Never serialize caught error payloads.
+  finally {
+   // Same owning script, before yielding to the model, including every failed path.
+   // Publication itself creates no runtime child, listener, auth access or signal.
+-  let p;
++  let p;const publicationOriginalReturns=[];
+   try{
+-   p=await tools.exec_command({cmd:command('publish',{originalToolReturns:originalReturns,controllerCode,expectedPlanSha256,familyDeadlineMonotonic}),workdir:cwd,yield_time_ms:1000,max_output_tokens:1000});
+-   const publicationOriginalReturns=[p];
+-   for(let n=0;p.session_id&&n<8;n++){p=await tools.write_stdin({session_id:p.session_id,chars:'',yield_time_ms:1000,max_output_tokens:1000});publicationOriginalReturns.push(p);}
++   const publishArgs={cmd:command('publish',{originalToolReturns:originalReturns,controllerCode,expectedPlanSha256,familyDeadlineMonotonic}),workdir:cwd,yield_time_ms:1000,max_output_tokens:1000};
++   try{p=await tools.exec_command(publishArgs);}catch{return {controllerCode,prepared,originalReturns:retained,publicationOriginalReturns,publicationUnavailable:true};}
++   publicationOriginalReturns.push(p); // Retain before interpreting publication metadata.
++   for(let n=0;p.session_id&&n<8;n++){
++    const pollArgs={session_id:p.session_id,chars:'',yield_time_ms:1000,max_output_tokens:1000};
++    try{p=await tools.write_stdin(pollArgs);}catch{return {controllerCode,prepared,originalReturns:retained,publicationOriginalReturns,publicationUnavailable:true};}
++    publicationOriginalReturns.push(p);
++   }
+    // Root retains these original returns and final proof seal/timing; no lifecycle promotion.
+    return {controllerCode,prepared,originalReturns:retained,publicationOriginalReturns,
+-    publicProof:'docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json'};
+-  }catch{return {controllerCode,prepared,originalReturns:retained,publicationUnavailable:true};}
++    publicProof:'docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json'};
++  }catch{return {controllerCode:'CONTROLLER_METADATA_FAILED',prepared,originalReturns:retained,publicationOriginalReturns,publicationControllerFailed:true};}
+  }
+ }

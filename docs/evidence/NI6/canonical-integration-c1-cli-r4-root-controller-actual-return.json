@@ -1,0 +1,104 @@
+{
+  "CLIStarts": 1,
+  "HTTPRequests": 0,
+  "acceptanceGO": false,
+  "beforeProofWithinOriginalFamily": true,
+  "controllerCode": "STOPPED",
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "driverAfter": null,
+  "finalEnclosingElapsed": "NOT_ESTABLISHED",
+  "finalProofWriteTiming": "NOT_ESTABLISHED",
+  "firstCaseFailure": "EXECUTOR_CLI_EARLY_EXIT",
+  "fullAcceptance": false,
+  "laterCases": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+  "originalChild": {
+    "captureComplete": true,
+    "eof": true,
+    "exitCode": 1,
+    "forcedCleanup": false,
+    "group": 54092,
+    "groupState": "ABSENT_OBSERVED",
+    "opaqueStderrBytes": 1094,
+    "pid": 54092,
+    "privateContentReadCopiedDecoded": false,
+    "signalAttempts": 0
+  },
+  "originalPlan": {
+    "bytes": 42209,
+    "rootFamilyDeadlineMonotonic": 1470038.388947041,
+    "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+  },
+  "originalSupportedReturns": [
+    {
+      "case": "prepare",
+      "chunkId": "874cc7",
+      "exitCode": 0,
+      "outputBytes": 186,
+      "sessionId": null
+    },
+    {
+      "case": "positive",
+      "chunkId": "cbd35a",
+      "exitCode": 1,
+      "outputBytes": 0,
+      "sessionId": null
+    },
+    {
+      "case": "publication",
+      "chunkId": "388455",
+      "exitCode": 1,
+      "outputBytes": 0,
+      "sessionId": null
+    }
+  ],
+  "prepared": true,
+  "privateRuntimeProfilesKeysDbHistoryCapturesResponsesErrorsContentReadCopiedHashedEnumerated": false,
+  "protectedSemanticInvestigation": false,
+  "publicClosedRecords": [
+    {
+      "bytes": 496,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/case-result.json",
+      "sha256": "4ac959888a0ed06fb822d5af46749cfd447e38001f343f53870a41b28ea69a70"
+    },
+    {
+      "bytes": 892,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/command-results.json",
+      "sha256": "40e3c581ec4dd2680f68a8c8a9864992da0fbcffb41184f7d18be020f2ee4b43"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/before-after.json",
+      "sha256": "554b00ef0215f4cfb303331da4287093e31fe4c25b95951c77f7985b1a7d65a5"
+    },
+    {
+      "bytes": 73,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/invocation-result.json",
+      "sha256": "a8e83a9ae529bde9851ce58fff417f60fe27f6b7daee7065123c189bb13fd3de"
+    },
+    {
+      "bytes": 42209,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/root-plan.json",
+      "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+    }
+  ],
+  "publicProof": {
+    "bytes": 2372,
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json",
+    "sha256": "3bf5a20a520fd03a5c4ce1d63e5c796553d1a7b5dbe4c4c5b161456a4323e6fb"
+  },
+  "publicationGO": false,
+  "result": "FAILED_HOLD",
+  "rootLaterPublicPinCheck": {
+    "allExact": true,
+    "count": 224,
+    "qualification": "FINITE_LATER_ROOT_CHECK_NOT_RETROACTIVE_DRIVER_AFTER_RECORD"
+  },
+  "schema": "df.canonical-c1.cli-r4-root-controller-actual-return/v1",
+  "sharedQA3080Changed": false,
+  "sourceControllerControls": {
+    "broaderFaultBranches": "NOT_RUN",
+    "eightVectors": "PREPARATION_REACHED_AFTER_SELECTED_EQUALITY_CHECKS_SOURCE_CORROBORATED",
+    "perVectorRuntimeTelemetry": false,
+    "unsupportedEncoderFailureRecurred": false
+  }
+}

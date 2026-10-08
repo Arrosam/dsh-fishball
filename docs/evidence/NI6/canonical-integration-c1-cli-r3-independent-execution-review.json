@@ -1,0 +1,335 @@
+{
+  "actualEffectScope": {
+    "administrativeStarts": 2,
+    "caseResult": {
+      "disabled": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE",
+      "invalid": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE",
+      "positive": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE"
+    },
+    "countsAuthority": "ROOT_SUPPLEMENT_CORROBORATED_BY_SOURCE_ORDER_AND_EXACT_ABSENT_LEAVES_NOT_NEW_COUNTER_INSTRUMENTATION",
+    "fullLifecycleRestartCleanup": "NOT_ESTABLISHED",
+    "listenerAdmissionTermination": "NOT_ESTABLISHED",
+    "nativeHTTPRequestStarts": 0,
+    "originalHTTPDeadlineControlCompletion": "NOT_ESTABLISHED_CASE_DRIVER_NEVER_STARTED",
+    "publicCaseCommandsBoundariesRead": "ABSENT_CASE_ROOT_NO_CASE_RECORDS",
+    "readinessStage": "NOT_ESTABLISHED",
+    "selectedRuntimeCLIStarts": 0,
+    "selectedRuntimeCaseStarts": 0,
+    "sourceAdministrativeInterpreterStartsMaximum": 2,
+    "sourceRuntimeInterpreterStartsMaximum": 7,
+    "workerProviderModelAttempts": 0,
+    "workerResultStopRelease": "NOT_ESTABLISHED"
+  },
+  "authority": {
+    "ordinaryAffectedSources": "COMPLETE_CONTROLLER_RECIPE_AND_NARROW_PUBLISHER_FAILURE_BINDING_RANGES_251_348",
+    "privateRawContents": "EXCLUDED",
+    "publicPlan": "COMPLETE_BYTES_READ_AND_SEAL_VERIFIED_JSON_METADATA_COMPARED_NO_FULL_PIN_GRAPH_REAUDIT",
+    "publicProofAndSupplement": "FULL_TEXT_READ_AND_EXACT_BYTE_SHA_VERIFIED",
+    "rootOriginalToolAccess": "SEALED_PUBLIC_METADATA_ONLY_NOT_INDEPENDENT_ACCESS_TO_ROOT_ORIGINAL_MEMORY",
+    "rootRetainedOriginalObjects": "ROOT_SUPPLEMENT_ATTESTATION",
+    "sourceAuthority": "FINAL_SOURCE_PAIR_REUSED; COMPLETE_MD_READ_AND_JSON_IDENTITY_METADATA_READ; NO_REPEATED_GRAPH_AUDIT"
+  },
+  "controllerFailure": {
+    "catchSyntheticToolUnavailable": true,
+    "closedPreparationParseAndLatchReached": false,
+    "exactFunctionsErrorContentsRead": false,
+    "originalMetadataRowNeverCompleted": true,
+    "originalObjectPushBeforeFailure": true,
+    "rootCode": "FUNCTIONS_TEXT_ENCODER_UNAVAILABLE",
+    "sameFinallyPublicationReached": true,
+    "secondOuterDiagnosticEncodingFailure": "AFTER_ROOT_CONTROLLER_RESULT_STORE; ROOT_ATTESTATION; NO_ORIGINAL_RETURN_LOSS_INFERRED",
+    "unsupportedDependency": "new TextEncoder at recipe line16"
+  },
+  "evidenceRecordCorrections": {
+    "additionalCorrectionRequiredToExistingRootSupplement": false,
+    "archivePlanAbsence": "UNBOUND_ARCHIVE_RECORD_NOT_ABSENT_ORIGINAL_PREPARED_PLAN",
+    "falseTimingFlags": "BINDING_FAILURE_NOT_LATENESS",
+    "nullFailureCode": "NO_CASE_FAILURE_OBSERVATION_NOT_SUCCESS",
+    "publisherToolUnavailableLabel": "INCORRECT_AS_ORIGINAL_TOOL_AVAILABILITY; ROOT_SUPPLEMENT_CORRECTS_APPEND_ONLY",
+    "sealedHistoricalRecordsRewriteRequested": false
+  },
+  "exactAbsentLeafMetadataProbes": [
+    {
+      "absentIncludingSymlink": true,
+      "contentRead": false,
+      "enumeration": false,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/cases"
+    },
+    {
+      "absentIncludingSymlink": true,
+      "contentRead": false,
+      "enumeration": false,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-positive.json"
+    },
+    {
+      "absentIncludingSymlink": true,
+      "contentRead": false,
+      "enumeration": false,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-disabled.json"
+    },
+    {
+      "absentIncludingSymlink": true,
+      "contentRead": false,
+      "enumeration": false,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-invalid.json"
+    }
+  ],
+  "fullReadback": {
+    "method": "COMPLETE_FINAL_MD_AND_JSON_TEXT_READBACK_PLUS_INDEPENDENT_WC_AND_SHASUM_SEALS",
+    "required": true,
+    "selfSeals": "RETURNED_EXTERNALLY_AFTER_FINAL_READBACK_NOT_EMBEDDED_RECURSIVELY"
+  },
+  "materialFindings": [
+    {
+      "evidence": [
+        "Root supplement reports FUNCTIONS_TEXT_ENCODER_UNAVAILABLE after original prepare EXIT0.",
+        "retain pushes original object at line13 before metadata encoding at line16.",
+        "No case invocation reached."
+      ],
+      "id": "C1-CLI-R3-ACT-01",
+      "lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "requiredFreshRemedy": [
+        "Use functions-host-supported bounded output byte accounting; explicitly validate ASCII if selecting that narrower contract, otherwise preserve correct UTF-8 counting.",
+        "Retain original return before interpretation without depending on unavailable globals.",
+        "Remove the same environment dependency from root diagnostic metadata.",
+        "Fresh successor namespace, independent affected reviews and root-owned selection; do not replay CLI-r3."
+      ],
+      "severity": "HIGH",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "status": "CONFIRMED_ACTUAL_CONTROLLER_BLOCKER",
+      "title": "Unsupported TextEncoder dependency after successful original preparation return"
+    },
+    {
+      "evidence": [
+        "The original tool returned EXIT0, but the same catch writes a synthetic TOOL_UNAVAILABLE row.",
+        "Preparation digest/deadline latch occurs after failing metadata construction.",
+        "Publisher receives null binding, emits unbound FAILED_HOLD and no plan copy."
+      ],
+      "id": "C1-CLI-R3-ACT-02",
+      "lines": [
+        23,
+        24,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35,
+        36,
+        38,
+        39,
+        40,
+        41
+      ],
+      "requiredFreshRemedy": [
+        "Separate supported-call failure from retention, metadata and closed preparation interpretation failures.",
+        "Preserve truthful original return metadata and distinct finite local processing failure classification.",
+        "Latch original validated digest/deadline and preserve it on subsequent failures; never reset the runtime deadline.",
+        "Align any new controller failure enum across recipe/publisher/validators and preserve all original lifecycle/deadline/ownership gates."
+      ],
+      "severity": "MEDIUM",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "status": "CONFIRMED_EVIDENCE_CLASSIFICATION_AND_BINDING_DEFECT",
+      "title": "Local processing exceptions misclassified as TOOL_UNAVAILABLE and prepared binding lost"
+    }
+  ],
+  "originalSupportedReturns": {
+    "invocations": {
+      "cases": 0,
+      "preparation": 1,
+      "publication": 1,
+      "runtimePolls": 0
+    },
+    "noReplay": true,
+    "prepare": {
+      "access": "ROOT_SUPPLEMENT",
+      "chunkId": "986ad2",
+      "exitCode": 0,
+      "outputBytes": 185,
+      "outputContract": "CLOSED_PUBLIC_PREPARATION_ASCII",
+      "sessionId": null,
+      "wallTimeSeconds": 2.0059e-05
+    },
+    "publish": [
+      {
+        "access": "ROOT_SUPPLEMENT",
+        "chunkId": "bf1465",
+        "exitCode": 1,
+        "outputBytes": 0,
+        "sessionId": null,
+        "wallTimeSeconds": 2.2719e-05
+      }
+    ]
+  },
+  "outcome": {
+    "acceptanceGO": false,
+    "executionGO": false,
+    "fullAcceptance": false,
+    "overall": "FAILED_HOLD",
+    "preparationOriginalToolExitCode": 0,
+    "publicationGO": false,
+    "publicationOriginalToolExitCode": 1,
+    "runtimeCases": "NOT_RUN_STOP_AFTER_CONTROLLER_FAILURE"
+  },
+  "preparedPlan": {
+    "allThreeRootGOFlagsTrueHistoricalSelectionOnly": true,
+    "bytes": 40781,
+    "changedFieldsFromProposal": [
+      "pins",
+      "rootFamilyDeadlineMonotonic",
+      "rootReviewedExecutionGO",
+      "rootReviewedFinalAffectedReports",
+      "rootSupportedExecutionApprovalGranted"
+    ],
+    "controllerRetainedDigestDeadline": false,
+    "currentPlanSealVerified": true,
+    "deadlineMonotonic": 1467786.723689041,
+    "full224PinCurrentnessReauditPerformed": false,
+    "path": ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
+    "pins": 224,
+    "planPresent": true,
+    "publisherOriginalPlanDigestBound": false,
+    "qualifiedStatus": "PROPOSAL_FIELD_PRESERVED; ADMINISTRATIVE_PREPARATION_ACTUALLY_RAN; SELECTED_CASES_NOT_RUN",
+    "remainingSecondsFromOriginalPublicOutput": 179.9591548331082,
+    "sha256": "e38f312d1447d4f31e2edad510fbfbfe830f5a40dad11c7b31e746ee106bb4f9",
+    "statusField": "SOURCE_ONLY_NOT_RUN",
+    "testWorkerStartsField": 0
+  },
+  "priorSourceVerdictQualification": {
+    "actualFindingSupersedesAnyInferenceOfCurrentControllerClosure": true,
+    "historicalVerdict": "NO_MATERIAL_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+    "missedEnvironmentDependencyAcknowledged": true,
+    "preservedImmutable": true,
+    "sourceOnlyNeverGrantedExecutionOrAcceptance": true
+  },
+  "process": {
+    "GitRuntimeListenerBrowserNetworkModelCloudActions": false,
+    "allExistingSourcesReportsEvidenceDraftsUnchanged": true,
+    "candidateParseImportEvaluationCheckBuildTestRun": false,
+    "destinationCreation": "BOTH_ABSENT_THEN_O_EXCL_O_NOFOLLOW_0600",
+    "firstAggregateRead": "Contained truncated plan display; not claimed full model display. Full plan bytes seal and bounded corrected metadata comparison used; source MD re-read completely without truncation.",
+    "helperControllerProducerEvaluation": false,
+    "historicalR7BQualification": "PATHNAME_ENUMERATION_ONLY_NO_CONTENT; NO_PRIVATE_PATHS_REPEATED",
+    "inertComparisonCorrection": "Wrong pin-key name stopped first metadata comparison; corrected metadata-only comparison passed. No candidate invocation.",
+    "onlyNewReviewPairWritten": true,
+    "privateContentReadCopyDecodeHashEnumeration": false,
+    "protectedOrOpaqueImplementationSemanticsRead": false,
+    "publicInertTextJSONHashMetadataOnly": true
+  },
+  "publisherEvidenceInterpretation": {
+    "closedArchiveComplete": false,
+    "correctedByRootSupplement": true,
+    "directPublicationReturn": 1,
+    "failureCode": null,
+    "failureCodeQualification": "NO_CLOSED_CASE_FAILURE_OBSERVED; DOES_NOT_MEAN_NO_CONTROLLER_FAILURE",
+    "fallbackAdministrativeSecondsCap": 10,
+    "fallbackDoesNotRenewRuntimeFamily": true,
+    "falseWithinFamilyQualification": "SHORT_CIRCUIT_FROM_MISSING_ORIGINAL_DEADLINE; NOT_PHYSICAL_LATENESS_PROOF",
+    "finalEnclosingDuration": "NOT_ESTABLISHED",
+    "finalProofWriteTiming": "NOT_ESTABLISHED",
+    "missingRootPlanArchiveQualification": "PREPARED_PUBLIC_PLAN_PRESENT_BUT_UNBOUND_PLAN_NOT_COPIED_TO_ARCHIVE",
+    "noAggregatePass": true,
+    "originalPlanDigestBound": false,
+    "persistedControllerCode": "TOOL_UNAVAILABLE",
+    "persistedOriginalPrepareRow": "SYNTHETIC_TOOL_UNAVAILABLE_NOT_FAITHFUL_TO_SUCCESSFUL_ORIGINAL_TOOL_RETURN",
+    "persistedResult": "FAILED_HOLD",
+    "recordPins": [],
+    "withinOriginalFamilyAtStart": false,
+    "withinOriginalFamilyBeforeProof": false
+  },
+  "remainingDependencies": [
+    "Fresh corrected controller/source packet, independent CODE and ISTQB affected review and root selection.",
+    "Genuine CLI positive/disabled/invalid readiness and lifecycle actual evidence remains NOT_RUN.",
+    "Final proof timing/enclosing duration remains NOT_ESTABLISHED at this consumed cut.",
+    "Broader C02 changed-thread/reordering, active-worker/existing-session lifecycle and full installed DSH quit remain unestablished.",
+    "Protected final CODE and opaque native capture/finish semantic review remain excluded; UI/browser/cloud and publication prerequisites unchanged."
+  ],
+  "remediationBoundaries": {
+    "currentPacketConsumedNoReplay": true,
+    "existingPlanCannotBeReusedForNewBudget": true,
+    "freshSuccessorRequired": true,
+    "noRuntimeReproductionSelected": true,
+    "preserve": [
+      "nineteen finite public readiness stages and successful readiness gates",
+      "original lifecycle/authentication/zero effects/currentness assertions",
+      "totalHTTPdeadline and once bounded socketpair controls",
+      "first-failure latch",
+      "same original family deadline and publication reserve",
+      "once ownership/group/EOF/capture byte caps and no uncertain retarget",
+      "private/raw content exclusions and protected semantic boundary"
+    ],
+    "rootOwnsSelectionAndRuntime": true
+  },
+  "reviewedPublicIdentities": [
+    {
+      "bytes": 1199,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json",
+      "sha256": "fe0528fb99e80dc2bac20881676987cbea541d49fb8913b47378d33ec7aa5c86"
+    },
+    {
+      "bytes": 1769,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.md",
+      "sha256": "35b6b12ff55a7d727137bd253c0132b838c2a0db835a870423474b1cf44960de"
+    },
+    {
+      "bytes": 3127,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.json",
+      "sha256": "dbcfb31701022fbd71ba756fbe25743811646d6ed651075c3c9f94d118c2d0cf"
+    },
+    {
+      "bytes": 40781,
+      "path": ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
+      "sha256": "e38f312d1447d4f31e2edad510fbfbfe830f5a40dad11c7b31e746ee106bb4f9"
+    },
+    {
+      "bytes": 11876,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.md",
+      "sha256": "ebc34f3138550ab6e4f9761fe53f6ea7561b40ad113d25582f4671fd6180f70a"
+    },
+    {
+      "bytes": 29846,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.json",
+      "sha256": "59ec2167e43f86af3038d9358ce36139cb155106d0f53655b6ba8534ae6f2a2a"
+    },
+    {
+      "bytes": 4743,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802"
+    },
+    {
+      "bytes": 25349,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
+      "sha256": "4ebefa11283e70f30c3b7b0289d4e1dd094a628980bee11ee00788c9407c468d"
+    },
+    {
+      "bytes": 10361,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/execution-plan.proposed.json",
+      "sha256": "cce53904fb8f410e2ae82a128ee8c20f8c46459a34dda8ae594688509e94a7ec"
+    },
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    }
+  ],
+  "reviewer": {
+    "delegation": false,
+    "independentOf": [
+      "source author",
+      "ISTQB lane"
+    ],
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max"
+  },
+  "schema": "df.canonical-c1.cli-r3-independent-execution-review/v1",
+  "status": "ACTUAL_FAILED_HOLD_CONSUMED_DO_NOT_REPLAY",
+  "verdict": "MATERIAL_CONTROLLER_BLOCKER_CONFIRMED_RUNTIME_CASES_NOT_RUN"
+}

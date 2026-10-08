@@ -1,0 +1,104 @@
+{
+  "GO": false,
+  "HTTPMaximum": 48,
+  "actualAndReviewDestinationsAbsent": [
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r3/cases",
+    ".runtime/root-ni6-canonical-integration-c1-cli-r3-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-positive.json",
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-disabled.json",
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r3/invocation-invalid.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r3-execution",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.json"
+  ],
+  "actualStarts": 0,
+  "administrativeInterpreterStartsMaximum": 2,
+  "all65CanonicalPinsExact": true,
+  "allInterpreterStartsMaximum": 9,
+  "artifacts": [
+    {
+      "bytes": 6662,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/observer.mjs",
+      "sha256": "d6d44db51338d8454fafc72fda7b2bc8b7bf0a7f13285a78df2e49e92932dcd1"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+      "sha256": "f34d6de6b31ab4fa2a435e956a230ee7edf52771c1e4f095aa30f60116afd6cb"
+    },
+    {
+      "bytes": 10361,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/execution-plan.proposed.json",
+      "sha256": "cce53904fb8f410e2ae82a128ee8c20f8c46459a34dda8ae594688509e94a7ec"
+    },
+    {
+      "bytes": 7619,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/README.md",
+      "sha256": "8275aae3a6c0124868edc6a063909bd3182219baed89315fd11dc56f70b3b76d"
+    },
+    {
+      "bytes": 25349,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
+      "sha256": "4ebefa11283e70f30c3b7b0289d4e1dd094a628980bee11ee00788c9407c468d"
+    },
+    {
+      "bytes": 4743,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802"
+    },
+    {
+      "bytes": 56106,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-delta.diff",
+      "sha256": "96a9a0fa84ce69d1b71f0509394d3b306b1dbef5569bfbd47cd7aab94f91b19f"
+    },
+    {
+      "bytes": 75041,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-manifest.json",
+      "sha256": "19ab113b07735761dc3198a0e7d26aee52fb7f38f7abdf19a57a1d274bedab1a"
+    }
+  ],
+  "authorModel": "gpt-6.1-sol",
+  "canonicalBytes": 1952632,
+  "canonicalFileCount": 65,
+  "caseResultFieldsUnchanged": 16,
+  "executionEvaluationChecksTestsBuildNetworkCLIPrivateReads": 0,
+  "futurePinCount": 224,
+  "inputBytes": 8723691,
+  "inputCount": 212,
+  "language": "English",
+  "literalDeltaConvention": "splitlines(keepends=True), difflib.unified_diff n=3/default newline concatenation; complete six affected source differences",
+  "materialAuthoringBlockers": [],
+  "noAncestorCopies": true,
+  "originalHTTPDeadlineTransportAndControlByteIdentical": true,
+  "originalHTTPDeadlineTransportAndControlSegment": {
+    "bytes": 7206,
+    "sha256": "773616d73cfee4befb3950a0651123027ee23e79b78abe196196bd286cf26bac"
+  },
+  "originalMainExactAfterNamespaceAndPublicationReserveClamp": true,
+  "originalObserverTerminalBlockByteIdentical": true,
+  "pins": {},
+  "qualifications": [
+    "CLI-r2 consumed FAILED_HOLD READY_FIELDS/oneCLI/zeroHTTP; late archive accurately remains historical.",
+    "Readiness stage identifies first unfinished public observation; no product/internal cause or private error is recovered. Publication may prevent any stage.",
+    "No success oracle, authentication, runtime authority, budget or canonical/test bytes is replaced. Existing family publication reserve is enforced by a stricter cap, never increased.",
+    "Only named closed public records are validated/copied by future administrative source; original tool objects remain in owning memory and are not blindly published.",
+    "Prepare/publication2 starts separate from runtime7; actual original publication return/final proof timing remain required. Any missed deadline/uncertainty remains HOLD.",
+    "A pre-proof PASS snapshot is provisional relative to final publication return; no universal OS/atomic/instant cancellation guarantee.",
+    "Protected CODE and opaque capture/finish excluded; no browser/cloud/sharedQA/profile operations; C02 and full acceptance unclaimed."
+  ],
+  "readinessFailureStageBytes": 3,
+  "readinessFailureStageCount": 19,
+  "readySuccessFields": 11,
+  "reasoningEffort": "high",
+  "result": "SOURCE_ONLY_NOT_RUN",
+  "rootPlanCap": 65536,
+  "rootPlanLiteralForecastBytes": 40782,
+  "runtimeInterpreterStartsMaximum": 7,
+  "schema": "df.canonical-c1.cli-r3-author-source/v1",
+  "sourceCopyCount": 0,
+  "stopProbeMaximumFamilyTotal": 4,
+  "topologyCount": 3
+}
