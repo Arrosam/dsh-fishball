@@ -62,6 +62,8 @@ Actual corrected executable source9f23122eed4ff63e0208944cd35d9c83e31b0865 was p
 
 The corrected result still displays not-reviewed/not-requested. Only this basic read defect is resolved; rendered UI, native worker continuation, real inference, full protected CODE and other acceptance debts remain open. Final documentation packaging preserves the checked9f23122 executable bytes. The same Library item is replaced only with the retained version0 guard; its actual new identity/version/checksum are recorded in the external package receipt after success.
 
+Guarded Library replacement succeeded: same `libfile_8ea2bcadbba88191bfbafb7bb5023913`, version1, filename `dsh-fishball-0.1.0-preview.1-reopen-f538ff4.tar.gz`, returned file_id `file_000000000778820b9ecad56cfc371a0f`; local identity metadata persisted. Archive sourcef538ff416ac5c60c202877973af98e02a3b42a53,624139bytes/120 public files, SHA256 `7bea1f0332ac535e6c6f6f156b536ea200053d85be93f726cab8db47ae4d588b`. [The external receipt](INITIAL-PREVIEW-PACKAGE-RECEIPT.md) records the exact build command and current owned handoff. This closes only the practical result-reopening follow-up; no further inference, fixture/review round or publication is part of it.
+
 ## Resume without repeating the failed workflow
 
 Start with README, INITIAL-PREVIEW.md, this file, AGENTS and `git status`. Preserve both reserved tracked drafts: `docs/evidence/UI/manual-web-qa-running-handoff-2026-10-07.md` and `docs/evidence/normal-entry-remaining-work.md`. Root owns Git/runtime; stage only exact selected paths. Keep granular branch history and use squash merges for reviewed development integrations; no destructive rewrite or public push.
