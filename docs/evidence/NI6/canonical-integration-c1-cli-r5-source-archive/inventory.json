@@ -1,0 +1,63 @@
+{
+  "candidateStartsByArchiving": 0,
+  "disposition": "NONEXECUTABLE_CONSUMED_DO_NOT_REPLAY",
+  "files": [
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/observer.mjs.txt",
+      "bytes": 6662,
+      "sha256": "ea4ba3ddc3fd8c11be946eb75f255f5ba9a04cc021c81d53b7392c51991ec427",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/observer.mjs"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/lifecycle-driver.py.txt",
+      "bytes": 41372,
+      "sha256": "4040b95a33de701f709ce8a89299af284b2b0e7ac9a569c74f23f38478204c40",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/execution-plan.proposed.json.txt",
+      "bytes": 11818,
+      "sha256": "8af5c39df025295dc077ed37ff55d75aaa48efbc3ea614dc89c7667b3aff9589",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/execution-plan.proposed.json"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/README.md.txt",
+      "bytes": 10426,
+      "sha256": "e5820fdf21cc563ef4d0794469d1426a5ea0fc0cc2c02ecd0b70be4b91f3945a",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/README.md"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/root-publication.py.txt",
+      "bytes": 25477,
+      "sha256": "43a4045614e7cd165642d3d952d08b9e7d9a6f8ff870db334b3f8044393ae4e3",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/root-controller-recipe.mjs.txt",
+      "bytes": 6748,
+      "sha256": "fc0c0cebe0fcda67ae0b6c8b63dee85bf585e45eef92016b199ab8b3d7cfdce1",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-controller-recipe.mjs"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/source-delta.diff.txt",
+      "bytes": 39976,
+      "sha256": "6f090b19b58800223e8934f963b0509ed95b7b9cf24ffdbfcdc35ce5d56bb90b",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/source-delta.diff"
+    },
+    {
+      "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/source-manifest.json.txt",
+      "bytes": 101773,
+      "sha256": "3cc92fa83f4c90681f66014c75c939dd273ba9b1d74798192a399bf61cec7d86",
+      "source": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/source-manifest.json"
+    }
+  ],
+  "privateStateIncluded": false,
+  "readme": {
+    "bytes": 570,
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive/README.md",
+    "sha256": "95db496d7262a8c485f6444199a87e4491d36a4ec0b99128db7920bd39ade1af"
+  },
+  "schema": "df.consumed-source-archive/v1",
+  "sourceBytes": 244252,
+  "sourceCount": 8
+}

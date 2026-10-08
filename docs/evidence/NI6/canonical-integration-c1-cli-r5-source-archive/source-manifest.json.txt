@@ -1,0 +1,2600 @@
+{
+  "absentBeforeActual": [
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r5/cases",
+    ".runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r5/invocation-positive.json",
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r5/invocation-disabled.json",
+    ".runtime/ni6-canonical-integration-c1/validation/cli-r5/invocation-invalid.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-execution",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-test-design-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-execution-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-execution-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-actual-test-assessment.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-actual-test-assessment.json"
+  ],
+  "actualBuildProof": {
+    "bytes": 4870,
+    "path": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+    "sha256": "b2648682052fc5b266e7a6d033c7299e5c90d665476daf407062e09ce8fafc4b"
+  },
+  "actualBuildReturn": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+  "actualCLIStarts": 0,
+  "addedInputRows": 38,
+  "administrativeInterpreterStartsMaximum": 2,
+  "apiAuthority": {
+    "appReady": "Original AppReady.onReady after committed startup",
+    "connection": "Original authenticatedUrl/authentication; private URL/port/cookie not public",
+    "cordis": "Published internal/plugin(fiber), internal/status(fiber,oldState), Fiber.parent/ctx/name/uid/state/await and Context.get/provide/on/effect; no private registry or wrapping",
+    "loader": "Published EntryOptions.inject/disabled, Entry.options/fiber/disabled and EntryTree.entries(); fixture ordering only",
+    "webServer": "Published host/assigned port; route absence uses native HTTP fallback, never private prefixes"
+  },
+  "broaderControllerStubControls": "CR01/CR02/CR03 from r3 ISTQB actual pair remain NOT_RUN; root r4 selection chooses only eight byte vectors, no controller-stub execution scaffolding added.",
+  "bundlePublicInputs": [
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-base/package.json",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-base/cordis.patch.yml",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/package.json",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/standard.patch.yml",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/ptc.patch.yml",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/minimal.patch.yml",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/cordis.patch.yml"
+  ],
+  "canonicalBytes": 1952632,
+  "canonicalFileCount": 65,
+  "canonicalRecords": [
+    {
+      "bytes": 151584,
+      "path": "lib/client.js",
+      "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+    },
+    {
+      "bytes": 18440,
+      "path": "native-source-manifest.json",
+      "sha256": "fdfdc09f672fbd584deff350b43a322dd4d1371a3680ce7c140cc8303dbdb2a5"
+    },
+    {
+      "bytes": 2691,
+      "path": "package.json",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "bytes": 1166,
+      "path": "scripts/build-client.mjs",
+      "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+    },
+    {
+      "bytes": 5583,
+      "path": "scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    },
+    {
+      "bytes": 388886,
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "bytes": 13904,
+      "path": "src/approval-preview.mjs",
+      "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+    },
+    {
+      "bytes": 7647,
+      "path": "src/audit-input-pair.mjs",
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+    },
+    {
+      "bytes": 6184,
+      "path": "src/audit.mjs",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+    },
+    {
+      "bytes": 15251,
+      "path": "src/chat.mjs",
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+    },
+    {
+      "bytes": 151616,
+      "path": "src/client-entry.cjs",
+      "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+    },
+    {
+      "bytes": 2918,
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "bytes": 28297,
+      "path": "src/context.mjs",
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+    },
+    {
+      "bytes": 2926,
+      "path": "src/control.mjs",
+      "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+    },
+    {
+      "bytes": 13403,
+      "path": "src/coordinator.mjs",
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "bytes": 9792,
+      "path": "src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+    },
+    {
+      "bytes": 7432,
+      "path": "src/event-clock.mjs",
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+    },
+    {
+      "bytes": 10602,
+      "path": "src/events.mjs",
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+    },
+    {
+      "bytes": 21009,
+      "path": "src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+    },
+    {
+      "bytes": 22111,
+      "path": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+    },
+    {
+      "bytes": 6739,
+      "path": "src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "bytes": 4354,
+      "path": "src/index.mjs",
+      "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+    },
+    {
+      "bytes": 13615,
+      "path": "src/installed-audit-native-source.mjs",
+      "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+    },
+    {
+      "bytes": 6835,
+      "path": "src/installed-audit-phases.mjs",
+      "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+    },
+    {
+      "bytes": 56388,
+      "path": "src/installed-audit.mjs",
+      "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+    },
+    {
+      "bytes": 4122,
+      "path": "src/installed-config.mjs",
+      "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+    },
+    {
+      "bytes": 23241,
+      "path": "src/installed-events.mjs",
+      "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+    },
+    {
+      "bytes": 4050,
+      "path": "src/installed-invocation.mjs",
+      "sha256": "47c17544c35c6c5c7866b15f5223b8963db2696d67fd66d70b9a8c081203eb6f"
+    },
+    {
+      "bytes": 22246,
+      "path": "src/installed-memory-continuity.mjs",
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+    },
+    {
+      "bytes": 3538,
+      "path": "src/installed-memory.mjs",
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "bytes": 14134,
+      "path": "src/installed-normal-services.mjs",
+      "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+    },
+    {
+      "bytes": 1071,
+      "path": "src/installed-owned-stream.mjs",
+      "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+    },
+    {
+      "bytes": 10275,
+      "path": "src/installed-plugin.mjs",
+      "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+    },
+    {
+      "bytes": 48343,
+      "path": "src/installed-results.mjs",
+      "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+    },
+    {
+      "bytes": 2127,
+      "path": "src/installed-role-recipes.mjs",
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+    },
+    {
+      "bytes": 5018,
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+    },
+    {
+      "bytes": 21961,
+      "path": "src/installed-worker-facts.mjs",
+      "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+    },
+    {
+      "bytes": 47428,
+      "path": "src/installed-worker.mjs",
+      "sha256": "5a60c989df978ecc2d51ff936cda33065f164189478e0bf73d35dc8caa8c84d2"
+    },
+    {
+      "bytes": 21799,
+      "path": "src/ledger.mjs",
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+    },
+    {
+      "bytes": 36680,
+      "path": "src/memory.mjs",
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+    },
+    {
+      "bytes": 15586,
+      "path": "src/messages.mjs",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+    },
+    {
+      "bytes": 41015,
+      "path": "src/native-adapter.mjs",
+      "sha256": "3a996cc4953f318000c14457f512b05c7c47c2af5a68b50405edd5eb44f149b7"
+    },
+    {
+      "bytes": 10953,
+      "path": "src/native-contributions.mjs",
+      "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+    },
+    {
+      "bytes": 13351,
+      "path": "src/native-history-collector.mjs",
+      "sha256": "6751f38d21bbcba7633495f9be84a9844032166caeea8bdd800bff84964c9efd"
+    },
+    {
+      "bytes": 2328,
+      "path": "src/native-source-descriptor.mjs",
+      "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+    },
+    {
+      "bytes": 32057,
+      "path": "src/normal-contracts.mjs",
+      "sha256": "82da87ecf5468f4f028b419193bc4b79153b62c22abe4b877b0f293d9b8c6a1a"
+    },
+    {
+      "bytes": 20496,
+      "path": "src/normal-native-operations.mjs",
+      "sha256": "c6c2b7c4ec7aa7d8a6d7e00d9c078484e3797aa8fcbc9d953d82ffd3803cdfa7"
+    },
+    {
+      "bytes": 2860,
+      "path": "src/normal-native-planning.mjs",
+      "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+    },
+    {
+      "bytes": 2675,
+      "path": "src/normal-native-request.mjs",
+      "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+    },
+    {
+      "bytes": 1473,
+      "path": "src/normal-native-rpc.mjs",
+      "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+    },
+    {
+      "bytes": 6689,
+      "path": "src/normal-native-selection.mjs",
+      "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+    },
+    {
+      "bytes": 15595,
+      "path": "src/normal-resume-controls.mjs",
+      "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+    },
+    {
+      "bytes": 1541,
+      "path": "src/normal-source-planning-binding.mjs",
+      "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+    },
+    {
+      "bytes": 11442,
+      "path": "src/notifications.mjs",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+    },
+    {
+      "bytes": 9944,
+      "path": "src/operator-bridge.mjs",
+      "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+    },
+    {
+      "bytes": 3908,
+      "path": "src/owner-native-command-controls.mjs",
+      "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+    },
+    {
+      "bytes": 13766,
+      "path": "src/results.mjs",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+    },
+    {
+      "bytes": 67362,
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+    },
+    {
+      "bytes": 6033,
+      "path": "src/runtime-security.mjs",
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+    },
+    {
+      "bytes": 347241,
+      "path": "src/runtime-store.mjs",
+      "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+    },
+    {
+      "bytes": 11509,
+      "path": "src/scheduler.mjs",
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+    },
+    {
+      "bytes": 6085,
+      "path": "src/schema7-runtime-composition.mjs",
+      "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+    },
+    {
+      "bytes": 20740,
+      "path": "src/setup-state.mjs",
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+    },
+    {
+      "bytes": 15937,
+      "path": "src/testing-provider.mjs",
+      "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+    },
+    {
+      "bytes": 36640,
+      "path": "src/worker.mjs",
+      "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+    }
+  ],
+  "caseResultFields": [
+    "contractVersion",
+    "case",
+    "result",
+    "failureCode",
+    "starts",
+    "httpRequests",
+    "zeroAttempts",
+    "pausedDurableTask",
+    "duplicateIntake",
+    "sameStoreReconciled",
+    "originalTeardown",
+    "listenerAbsent",
+    "refusalCode",
+    "sourceExpectedRefusalCode",
+    "directDriverReturnRequired",
+    "durationSeconds"
+  ],
+  "consumedR3Authority": [
+    {
+      "bytes": 6662,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/observer.mjs",
+      "sha256": "d6d44db51338d8454fafc72fda7b2bc8b7bf0a7f13285a78df2e49e92932dcd1"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+      "sha256": "f34d6de6b31ab4fa2a435e956a230ee7edf52771c1e4f095aa30f60116afd6cb"
+    },
+    {
+      "bytes": 10361,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/execution-plan.proposed.json",
+      "sha256": "cce53904fb8f410e2ae82a128ee8c20f8c46459a34dda8ae594688509e94a7ec"
+    },
+    {
+      "bytes": 7619,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/README.md",
+      "sha256": "8275aae3a6c0124868edc6a063909bd3182219baed89315fd11dc56f70b3b76d"
+    },
+    {
+      "bytes": 25349,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
+      "sha256": "4ebefa11283e70f30c3b7b0289d4e1dd094a628980bee11ee00788c9407c468d"
+    },
+    {
+      "bytes": 4743,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802"
+    },
+    {
+      "bytes": 56106,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-delta.diff",
+      "sha256": "96a9a0fa84ce69d1b71f0509394d3b306b1dbef5569bfbd47cd7aab94f91b19f"
+    },
+    {
+      "bytes": 75041,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-manifest.json",
+      "sha256": "19ab113b07735761dc3198a0e7d26aee52fb7f38f7abdf19a57a1d274bedab1a"
+    },
+    {
+      "bytes": 3458,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-author-source.md",
+      "sha256": "740fb0de1e530fdb8134f299e87e99ad48c771f716fbf3719965ddcbcb951a99"
+    },
+    {
+      "bytes": 5210,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-author-source.json",
+      "sha256": "b06eef644a7776599f5b329adb3675048d67bc15a8e308ca0c1c9f88c97551e2"
+    },
+    {
+      "bytes": 11876,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.md",
+      "sha256": "ebc34f3138550ab6e4f9761fe53f6ea7561b40ad113d25582f4671fd6180f70a"
+    },
+    {
+      "bytes": 29846,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.json",
+      "sha256": "59ec2167e43f86af3038d9358ce36139cb155106d0f53655b6ba8534ae6f2a2a"
+    },
+    {
+      "bytes": 11448,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.md",
+      "sha256": "b1eb4f36471131e318c61985ca73a3ebf1df42a72ff871ce6e910d6cad9e32f0"
+    },
+    {
+      "bytes": 16127,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.json",
+      "sha256": "df27402ffcb43b0fdcdd3d97d5d15b0ed7f67e06852f9cde97c899953c93335a"
+    },
+    {
+      "bytes": 9022,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-execution-review.md",
+      "sha256": "a5886824c88bac6f10a5f74e72fc92f1bf6808f34afcb17412baa305d020c34b"
+    },
+    {
+      "bytes": 14595,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-execution-review.json",
+      "sha256": "74c4bd4d4dd02f047f7d2247f4cea6b1ee81dd97976986723b2e22cfcc604f45"
+    },
+    {
+      "bytes": 8117,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-actual-test-assessment.md",
+      "sha256": "79d8cd63a6523a9cbba5284913dff4c5a9ad32387d4cb10a6f66a4b42e8a9967"
+    },
+    {
+      "bytes": 12952,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-actual-test-assessment.json",
+      "sha256": "e854ffc12b6498c7ff2b437e2cc15ddda6e096b472ff1f49ae9b43bcd5290a64"
+    },
+    {
+      "bytes": 1199,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json",
+      "sha256": "fe0528fb99e80dc2bac20881676987cbea541d49fb8913b47378d33ec7aa5c86"
+    },
+    {
+      "bytes": 1769,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.md",
+      "sha256": "35b6b12ff55a7d727137bd253c0132b838c2a0db835a870423474b1cf44960de"
+    },
+    {
+      "bytes": 3127,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.json",
+      "sha256": "dbcfb31701022fbd71ba756fbe25743811646d6ed651075c3c9f94d118c2d0cf"
+    }
+  ],
+  "consumedR4Authority": [
+    {
+      "bytes": 6662,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/observer.mjs",
+      "sha256": "a4041eae573c23bb8a33cb56102f39a3075aa013977f7bf3be0a0d0d1d2383a2"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+      "sha256": "4d94bd07f15ff12897aea177a13a8b3d0f4aa697020796c45d7b4ee89339f783"
+    },
+    {
+      "bytes": 11818,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/execution-plan.proposed.json",
+      "sha256": "8cee63bf44ad8c8106e84af404d9a4c23ec6fce695cb4f919abfab37f199024c"
+    },
+    {
+      "bytes": 10340,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/README.md",
+      "sha256": "f026dbae96317b48621672873c8774e64245d56964cf814c02db74d793c2d0de"
+    },
+    {
+      "bytes": 25477,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
+      "sha256": "5afac3df4be8148ab86b29285c89161c72737881aeda07f89418fcf8e1900aea"
+    },
+    {
+      "bytes": 6497,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs",
+      "sha256": "6c36de603c420c332d5e80e082fadcb31e351fb08f932410fe3e3e7aeba5308b"
+    },
+    {
+      "bytes": 33079,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/source-delta.diff",
+      "sha256": "cffcfe741cc5169d00247a7a97d8d5edcd868a33a6f497cdcb133d11972a414b"
+    },
+    {
+      "bytes": 80062,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/source-manifest.json",
+      "sha256": "54aeb250b69473eb407e315ac7d8f3334da9d022963678110a5255c02728be9e"
+    },
+    {
+      "bytes": 5459,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-author-source.md",
+      "sha256": "a4639b9f106fe34827e0b25fd3d075949e313f71b4e5a7b982cb023764bdd28d"
+    },
+    {
+      "bytes": 18222,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-author-source.json",
+      "sha256": "9eb1cfd3e271b199af3b175fc2064c345ee732390486eb70d2eb569cb2686b23"
+    },
+    {
+      "bytes": 12654,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.md",
+      "sha256": "15bc508e9022ef92eacec0f12080957fc23a87480702b11715d4bf055b6506ac"
+    },
+    {
+      "bytes": 27871,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.json",
+      "sha256": "e1bfd63999e09547b57c173bb693f7d90b905f0b7b7368009c6ab28f3ae87cea"
+    },
+    {
+      "bytes": 11034,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.md",
+      "sha256": "98b2a88814f7683d101062ded6ff01454dc23b6610950ec1706d34d114dfb723"
+    },
+    {
+      "bytes": 17343,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.json",
+      "sha256": "5f3d5534ec263635b822a1d2aff7d6f6fa93bc2b9f4a575fa420f314b6044acb"
+    },
+    {
+      "bytes": 9692,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-execution-review.md",
+      "sha256": "a443c248a78ef7c93db96286e302baf46cb504ebcd0e7843807ac8ec1477ffea"
+    },
+    {
+      "bytes": 14910,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-execution-review.json",
+      "sha256": "21d4e59165dd27b407385ed3b11706c0176751736131188dc3c1dd4895619cba"
+    },
+    {
+      "bytes": 7685,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-actual-test-assessment.md",
+      "sha256": "829043a3c2af9429bac594ee1d1390ef68f26a46d5fa845eeb2ae871c2de7f17"
+    },
+    {
+      "bytes": 13858,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-actual-test-assessment.json",
+      "sha256": "fc3ad91f4093ca388ecbcacda7ba3c405e40f540fbbdbf5443b935ef5e356f42"
+    },
+    {
+      "bytes": 2981,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.md",
+      "sha256": "3ab433280574600ff0d8d323389381802823d7634cce2764d3ff52e39b0a15b6"
+    },
+    {
+      "bytes": 3421,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.json",
+      "sha256": "1f4ed78da347c7d6c096b6764a2fb80c8582a9591c7fa29cfc56762596d7d89d"
+    },
+    {
+      "bytes": 10678,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-public-source-diagnosis.md",
+      "sha256": "6e9bc1143118bdefee8e488ebe1b678414e888613530d7db90b1bee530d29baf"
+    },
+    {
+      "bytes": 20195,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-public-source-diagnosis.json",
+      "sha256": "c29dee0b691b0fd35147d04df960f861a6e3cc40937458e90588f23a17cef154"
+    },
+    {
+      "bytes": 2372,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json",
+      "sha256": "3bf5a20a520fd03a5c4ce1d63e5c796553d1a7b5dbe4c4c5b161456a4323e6fb"
+    },
+    {
+      "bytes": 496,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/case-result.json",
+      "sha256": "4ac959888a0ed06fb822d5af46749cfd447e38001f343f53870a41b28ea69a70"
+    },
+    {
+      "bytes": 892,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/command-results.json",
+      "sha256": "40e3c581ec4dd2680f68a8c8a9864992da0fbcffb41184f7d18be020f2ee4b43"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/before-after.json",
+      "sha256": "554b00ef0215f4cfb303331da4287093e31fe4c25b95951c77f7985b1a7d65a5"
+    },
+    {
+      "bytes": 73,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/invocation-result.json",
+      "sha256": "a8e83a9ae529bde9851ce58fff417f60fe27f6b7daee7065123c189bb13fd3de"
+    },
+    {
+      "bytes": 42209,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/root-plan.json",
+      "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+    },
+    {
+      "bytes": 42209,
+      "path": ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
+      "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+    }
+  ],
+  "contractVersion": "df.canonical-c1.cli-r5-source/v1",
+  "controllerFailureCode": "CONTROLLER_METADATA_FAILED",
+  "controllerMetadataRegression": {
+    "authenticationRequests": 0,
+    "failureCode": "CONTROLLER_METADATA_FAILED",
+    "failureTreatment": "Stops before preparation; same finally publication accepts zero return rows only for this closed failure code; failure-only HOLD, no replay or error payload",
+    "listeners": 0,
+    "method": "Standard ECMAScript charCodeAt/length/number operations; no TextEncoder, Buffer or host encoder",
+    "modelCalls": 0,
+    "newOSProcesses": 0,
+    "newToolCalls": 0,
+    "position": "Future root-approved owning functions invocation, before preparation",
+    "privateInputs": 0,
+    "runsMaximum": 1,
+    "status": "SOURCE_ONLY_NOT_RUN",
+    "vectorCount": 8,
+    "vectors": [
+      {
+        "expectedUTF8Bytes": 0,
+        "literalEscaped": ""
+      },
+      {
+        "expectedUTF8Bytes": 2,
+        "literalEscaped": "A\\u007f"
+      },
+      {
+        "expectedUTF8Bytes": 4,
+        "literalEscaped": "\\u0080\\u07ff"
+      },
+      {
+        "expectedUTF8Bytes": 6,
+        "literalEscaped": "\\u0800\\uffff"
+      },
+      {
+        "expectedUTF8Bytes": 4,
+        "literalEscaped": "\\ud800\\udc00"
+      },
+      {
+        "expectedUTF8Bytes": 3,
+        "literalEscaped": "\\ud800"
+      },
+      {
+        "expectedUTF8Bytes": 3,
+        "literalEscaped": "\\udc00"
+      },
+      {
+        "expectedUTF8Bytes": 17,
+        "literalEscaped": "A\\u00e9\\u4e2d\\ud83d\\ude00\\ud800Z\\udc00"
+      }
+    ]
+  },
+  "countAuthority": "SOURCE_DERIVED_MAXIMA_NOT_ACTUAL_PROCESS_INSTRUMENTATION",
+  "currentRedactedDiagnosisAuthority": [
+    {
+      "bytes": 2651,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-owned-stderr-diagnosis.md",
+      "sha256": "9f5e3ade710d9427173b0a5df912eaa6cb94207b1e07e4008ef2fdf816dd5ed4"
+    },
+    {
+      "bytes": 2195,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-owned-stderr-diagnosis.json",
+      "sha256": "3ec8db050e6e7b07571861ec2d4cde4ca7424a464c6e7fbb8bcd65104f6e7424"
+    },
+    {
+      "bytes": 2272,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-diagnostic-root-adoption.md",
+      "sha256": "7f51f86b9562bc3f2c1927c9a2afe12c5a741fc926ab0e0a4d13ee7cb4844cd9"
+    },
+    {
+      "bytes": 2478,
+      "path": "docs/evidence/NI6/canonical-integration-c1-owned-stderr-diagnosis-selection-2026-10-08.md",
+      "sha256": "c7e654f0381a815e31f316af2cd2cad8c903a7ebacc664415c6f4df12604ccea"
+    }
+  ],
+  "diagnosisQualification": "Current root-owned sanitized return33d951 exit0 establishes pre-readiness listener binding denied: listen EPERM. Exact enforcement mechanism/missing dependency/DF product defect remain NOT_ESTABLISHED. Original r4 opaque-capture/default-mode-hypothesis records are historical immutable cuts. No r4 auto-review denial established. Later success cannot prove precise past enforcement mechanism. HTTP0/source flow does not establish installed registry/provider/model zero attempts. Final enclosing/proof-write timing NOT_ESTABLISHED.",
+  "disabledOriginalEntryIds": [
+    "tool-plugin-manager",
+    "plugin-manager",
+    "timer",
+    "hmr",
+    "deepseek-llm-api-extensions",
+    "session-log-deepseek",
+    "typert",
+    "typert-loader",
+    "typert-gateway",
+    "session-title",
+    "session-title-llm",
+    "user-questions",
+    "plugin-package-inventory-deepseek",
+    "agent-default-model",
+    "jobs",
+    "llm-retry",
+    "config-editor",
+    "settings",
+    "authorization",
+    "deepseek-account",
+    "llm-pi-ai",
+    "attachment-local",
+    "session-query-sqlite",
+    "storage",
+    "storage-json",
+    "storage-domain",
+    "session-projection-cache",
+    "otel",
+    "session-telemetry-otel",
+    "subprocess",
+    "sandbox",
+    "sandbox-policy",
+    "bash-sandbox",
+    "pwsh-sandbox",
+    "permission",
+    "shell-env",
+    "tool-bash",
+    "tool-pwsh",
+    "tool-jobs",
+    "fs-observation-policy",
+    "tool-fs",
+    "tool-fs-search",
+    "agent-instructions",
+    "skill",
+    "skill-filesystem",
+    "skill-badge",
+    "tool-skill",
+    "commands",
+    "command-feedback",
+    "goal",
+    "goal-round-driver",
+    "command-goal",
+    "plan-mode",
+    "token-meter",
+    "compaction-basic",
+    "command-compact",
+    "subagent",
+    "subagent-spawn-in-process",
+    "subagent-fork-in-process",
+    "tool-subagent-control",
+    "tool-subagent-list-agents",
+    "tool-subagent",
+    "tool-subagent-fork",
+    "ptc-runtime",
+    "workflow-ptc",
+    "tool-workflow",
+    "timeout-policy",
+    "spill-local",
+    "spill-policy",
+    "session-checkpoint-policy",
+    "tool-result-pruner",
+    "image-offload",
+    "tool-todo",
+    "tool-goal",
+    "tool-ralph",
+    "repeat-tool-reminder",
+    "web",
+    "web-search-deepseek",
+    "web-fetch-http",
+    "tool-web",
+    "mcp-resources",
+    "fs-sandbox",
+    "llm-deepseek",
+    "llm-deepseek-account",
+    "desktop-product-telemetry",
+    "product-analytics",
+    "subagent-model-selection-settings",
+    "message-feedback",
+    "session-log-download",
+    "open-in-app",
+    "ui-open-in-app",
+    "workspace",
+    "session-reference",
+    "file-reference-local",
+    "session-stats",
+    "session-turn-outline",
+    "directory-picker",
+    "plugin-inventory",
+    "session-controller",
+    "job-controller",
+    "terminal-controller",
+    "workspace-files",
+    "schedule",
+    "ui-settings-account",
+    "account-controller",
+    "settings-controller",
+    "workspace-controller",
+    "cordis-host-runner",
+    "cordis-inspect-providers",
+    "client-hmr",
+    "modules",
+    "file-upload",
+    "api-remotes",
+    "cordis-client-runner",
+    "ui-theme",
+    "locale",
+    "shortcuts",
+    "ui-shortcuts",
+    "ui-layout",
+    "ui-renderer",
+    "ui-session",
+    "resources",
+    "ui-sidebar",
+    "ui-sidebar-right",
+    "office-to-pdf",
+    "ui-sidebar-documentpreview",
+    "ui-sidebar-browser",
+    "ui-sidebar-terminal",
+    "ui-sidebar-files",
+    "ui-settings",
+    "ui-settings-general",
+    "ui-settings-models",
+    "ui-plugin-manager",
+    "ui-settings-plugin-inventory",
+    "ui-conversation",
+    "ui-approval",
+    "ui-chat",
+    "ui-brand-official",
+    "ui-attachment",
+    "ui-tool",
+    "ui-cordis",
+    "ui-deliverables",
+    "workspace-changes",
+    "ui-workspace",
+    "ui-workflow-run",
+    "ui-input-trigger",
+    "ui-commands",
+    "ui-skill",
+    "ui-subagent",
+    "ui-reference",
+    "ui-jobs",
+    "ui-schedule",
+    "ui-goal",
+    "ui-message-feedback",
+    "ui-model-selection",
+    "ui-permission",
+    "ui-agent-preset",
+    "ui-settings-session-log",
+    "ui-settings-plugins",
+    "ui-settings-shell",
+    "ui-settings-agent-loop",
+    "ui-settings-subagent",
+    "ui-settings-web-search",
+    "ui-plan",
+    "ui-user-questions",
+    "ui-trajectory",
+    "agent-preset-registry",
+    "preset-standard",
+    "preset-ptc",
+    "preset-minimal",
+    "preset-cordis"
+  ],
+  "environmentMustBeAbsent": [
+    "NODE_OPTIONS",
+    "NODE_PATH",
+    "NODE_TEST_CONTEXT",
+    "PYTHONPATH",
+    "PYTHONHOME",
+    "DYLD_INSERT_LIBRARIES",
+    "DYLD_LIBRARY_PATH",
+    "DYLD_FRAMEWORK_PATH"
+  ],
+  "fullReadbackRequired": true,
+  "futureActualPinCount": 262,
+  "historicalScopeIncidents": "REMAIN_DISCLOSED_NO_PRISTINE_HISTORY_CLAIM",
+  "httpDeadlineRegression": {
+    "case": "positive",
+    "controls": [
+      "Original HTTPResponse complete headers with withheld declared one-byte body must raise source-owned timeout",
+      "Followed by successful original HTTPResponse one-byte body read",
+      "Timer/handler and first-failure identity preserved after both; original sockets closed"
+    ],
+    "listeners": 0,
+    "literalHeaderBytesMaximum": 128,
+    "nativeHTTPRequests": 0,
+    "networkEndpoints": 0,
+    "position": "After root GO/public pins/build proof, before case setup/CLI start",
+    "processes": 0,
+    "publicResultFieldsAdded": 0,
+    "qualification": "Source-only until selected once positive driver; no slow-host/network reproduction or universal OS timing guarantee.",
+    "runsMaximum": 1,
+    "secondsMaximumInsideExistingCaseAndFamily": 0.2,
+    "socketPairsMaximum": 2,
+    "successSliceSecondsMaximum": 0.03,
+    "syntheticBodyBytesMaximum": 1,
+    "threads": 0,
+    "timeoutSliceSecondsMaximum": 0.03
+  },
+  "httpTotalDeadline": {
+    "absoluteEnd": "min(original shared RPC deadline, monotonic()+2); consumes existing case/family deadlines",
+    "cleanupReserveUnchanged": true,
+    "mechanism": "Owning main-process one-shot ITIMER_REAL/SIGALRM around one retained exchange; no thread/process/second endpoint",
+    "perExchangeSecondsMaximum": 2,
+    "priorHandlerRequiredDefault": true,
+    "priorSIGALRMRequiredUnblocked": true,
+    "priorTimerRequiredInactive": true,
+    "qualification": "Timely supported process-local interruption; no instant cancellation or universal OS timing guarantee.",
+    "restoreEveryExit": true,
+    "stableFailureLatch": "Source-owned HTTPDeadline without error payload; only real Transport timeout boundary latches first failure. Expected probe timeout never resets or alters first failure.",
+    "stableTimeoutCode": "EXECUTOR_HTTP_TOTAL_DEADLINE"
+  },
+  "initialUnfinalizedDraftCut": {
+    "artifacts": [
+      {
+        "bytes": 6662,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/observer.mjs",
+        "sha256": "ea4ba3ddc3fd8c11be946eb75f255f5ba9a04cc021c81d53b7392c51991ec427"
+      },
+      {
+        "bytes": 41372,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py",
+        "sha256": "4040b95a33de701f709ce8a89299af284b2b0e7ac9a569c74f23f38478204c40"
+      },
+      {
+        "bytes": 11818,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/execution-plan.proposed.json",
+        "sha256": "8af5c39df025295dc077ed37ff55d75aaa48efbc3ea614dc89c7667b3aff9589"
+      },
+      {
+        "bytes": 9308,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/README.md",
+        "sha256": "6d302fb830cee70d21c0a19bfbb9194a9a11cb3c72103794bc5bc31ad1cb9d17"
+      },
+      {
+        "bytes": 25477,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
+        "sha256": "43a4045614e7cd165642d3d952d08b9e7d9a6f8ff870db334b3f8044393ae4e3"
+      },
+      {
+        "bytes": 6748,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-controller-recipe.mjs",
+        "sha256": "fc0c0cebe0fcda67ae0b6c8b63dee85bf585e45eef92016b199ab8b3d7cfdce1"
+      },
+      {
+        "bytes": 38856,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/source-delta.diff",
+        "sha256": "d98945cc11430080c9ad63f56de3843fe78150f0a205b60477fbbcb53026b6b2"
+      },
+      {
+        "bytes": 96396,
+        "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/source-manifest.json",
+        "sha256": "2b2d4588103c3c31b5037a5903477a8469f0dd53be2bee80e7dec578f524c692"
+      }
+    ],
+    "authorPairCreatedAtCut": false,
+    "initialDiagnosisQualification": "R4 EXECUTOR_CLI_EARLY_EXIT establishes external observation only; no internal cause or auto-review denial established. HTTP0/source flow does not establish installed registry/provider/model zero attempts. Default-mode hypothesis UNCONFIRMED; fresh success cannot retrodiagnose r4. Final enclosing/proof-write timing NOT_ESTABLISHED.",
+    "qualification": "Immutable metadata snapshot of eight pre-amendment drafts; their previous files were mutable unpublished drafts. Selected unchanged executable drafts retained exactly; only documentary closure/README/delta/manifest are amended before author sealing.",
+    "state": "SOURCE_ONLY_NOT_RUN_PAUSED_UNFINALIZED",
+    "totalBytes": 236637
+  },
+  "inputBytes": 9315765,
+  "inputFileCount": 250,
+  "inputFiles": [
+    {
+      "bytes": 151584,
+      "path": "lib/client.js",
+      "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+    },
+    {
+      "bytes": 18440,
+      "path": "native-source-manifest.json",
+      "sha256": "fdfdc09f672fbd584deff350b43a322dd4d1371a3680ce7c140cc8303dbdb2a5"
+    },
+    {
+      "bytes": 2691,
+      "path": "package.json",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "bytes": 1166,
+      "path": "scripts/build-client.mjs",
+      "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+    },
+    {
+      "bytes": 5583,
+      "path": "scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    },
+    {
+      "bytes": 388886,
+      "path": "scripts/dsh-web-runtime-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "bytes": 13904,
+      "path": "src/approval-preview.mjs",
+      "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+    },
+    {
+      "bytes": 7647,
+      "path": "src/audit-input-pair.mjs",
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+    },
+    {
+      "bytes": 6184,
+      "path": "src/audit.mjs",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+    },
+    {
+      "bytes": 15251,
+      "path": "src/chat.mjs",
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+    },
+    {
+      "bytes": 151616,
+      "path": "src/client-entry.cjs",
+      "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+    },
+    {
+      "bytes": 2918,
+      "path": "src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "bytes": 28297,
+      "path": "src/context.mjs",
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+    },
+    {
+      "bytes": 2926,
+      "path": "src/control.mjs",
+      "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+    },
+    {
+      "bytes": 13403,
+      "path": "src/coordinator.mjs",
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "bytes": 9792,
+      "path": "src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+    },
+    {
+      "bytes": 7432,
+      "path": "src/event-clock.mjs",
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+    },
+    {
+      "bytes": 10602,
+      "path": "src/events.mjs",
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+    },
+    {
+      "bytes": 21009,
+      "path": "src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+    },
+    {
+      "bytes": 22111,
+      "path": "src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+    },
+    {
+      "bytes": 6739,
+      "path": "src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "bytes": 4354,
+      "path": "src/index.mjs",
+      "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+    },
+    {
+      "bytes": 13615,
+      "path": "src/installed-audit-native-source.mjs",
+      "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+    },
+    {
+      "bytes": 6835,
+      "path": "src/installed-audit-phases.mjs",
+      "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+    },
+    {
+      "bytes": 56388,
+      "path": "src/installed-audit.mjs",
+      "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+    },
+    {
+      "bytes": 4122,
+      "path": "src/installed-config.mjs",
+      "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+    },
+    {
+      "bytes": 23241,
+      "path": "src/installed-events.mjs",
+      "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+    },
+    {
+      "bytes": 4050,
+      "path": "src/installed-invocation.mjs",
+      "sha256": "47c17544c35c6c5c7866b15f5223b8963db2696d67fd66d70b9a8c081203eb6f"
+    },
+    {
+      "bytes": 22246,
+      "path": "src/installed-memory-continuity.mjs",
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+    },
+    {
+      "bytes": 3538,
+      "path": "src/installed-memory.mjs",
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "bytes": 14134,
+      "path": "src/installed-normal-services.mjs",
+      "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+    },
+    {
+      "bytes": 1071,
+      "path": "src/installed-owned-stream.mjs",
+      "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+    },
+    {
+      "bytes": 10275,
+      "path": "src/installed-plugin.mjs",
+      "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+    },
+    {
+      "bytes": 48343,
+      "path": "src/installed-results.mjs",
+      "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+    },
+    {
+      "bytes": 2127,
+      "path": "src/installed-role-recipes.mjs",
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+    },
+    {
+      "bytes": 5018,
+      "path": "src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+    },
+    {
+      "bytes": 21961,
+      "path": "src/installed-worker-facts.mjs",
+      "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+    },
+    {
+      "bytes": 47428,
+      "path": "src/installed-worker.mjs",
+      "sha256": "5a60c989df978ecc2d51ff936cda33065f164189478e0bf73d35dc8caa8c84d2"
+    },
+    {
+      "bytes": 21799,
+      "path": "src/ledger.mjs",
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+    },
+    {
+      "bytes": 36680,
+      "path": "src/memory.mjs",
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+    },
+    {
+      "bytes": 15586,
+      "path": "src/messages.mjs",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+    },
+    {
+      "bytes": 41015,
+      "path": "src/native-adapter.mjs",
+      "sha256": "3a996cc4953f318000c14457f512b05c7c47c2af5a68b50405edd5eb44f149b7"
+    },
+    {
+      "bytes": 10953,
+      "path": "src/native-contributions.mjs",
+      "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+    },
+    {
+      "bytes": 13351,
+      "path": "src/native-history-collector.mjs",
+      "sha256": "6751f38d21bbcba7633495f9be84a9844032166caeea8bdd800bff84964c9efd"
+    },
+    {
+      "bytes": 2328,
+      "path": "src/native-source-descriptor.mjs",
+      "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+    },
+    {
+      "bytes": 32057,
+      "path": "src/normal-contracts.mjs",
+      "sha256": "82da87ecf5468f4f028b419193bc4b79153b62c22abe4b877b0f293d9b8c6a1a"
+    },
+    {
+      "bytes": 20496,
+      "path": "src/normal-native-operations.mjs",
+      "sha256": "c6c2b7c4ec7aa7d8a6d7e00d9c078484e3797aa8fcbc9d953d82ffd3803cdfa7"
+    },
+    {
+      "bytes": 2860,
+      "path": "src/normal-native-planning.mjs",
+      "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+    },
+    {
+      "bytes": 2675,
+      "path": "src/normal-native-request.mjs",
+      "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+    },
+    {
+      "bytes": 1473,
+      "path": "src/normal-native-rpc.mjs",
+      "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+    },
+    {
+      "bytes": 6689,
+      "path": "src/normal-native-selection.mjs",
+      "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+    },
+    {
+      "bytes": 15595,
+      "path": "src/normal-resume-controls.mjs",
+      "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+    },
+    {
+      "bytes": 1541,
+      "path": "src/normal-source-planning-binding.mjs",
+      "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+    },
+    {
+      "bytes": 11442,
+      "path": "src/notifications.mjs",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+    },
+    {
+      "bytes": 9944,
+      "path": "src/operator-bridge.mjs",
+      "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+    },
+    {
+      "bytes": 3908,
+      "path": "src/owner-native-command-controls.mjs",
+      "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+    },
+    {
+      "bytes": 13766,
+      "path": "src/results.mjs",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+    },
+    {
+      "bytes": 67362,
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+    },
+    {
+      "bytes": 6033,
+      "path": "src/runtime-security.mjs",
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+    },
+    {
+      "bytes": 347241,
+      "path": "src/runtime-store.mjs",
+      "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+    },
+    {
+      "bytes": 11509,
+      "path": "src/scheduler.mjs",
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+    },
+    {
+      "bytes": 6085,
+      "path": "src/schema7-runtime-composition.mjs",
+      "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+    },
+    {
+      "bytes": 20740,
+      "path": "src/setup-state.mjs",
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+    },
+    {
+      "bytes": 15937,
+      "path": "src/testing-provider.mjs",
+      "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+    },
+    {
+      "bytes": 36640,
+      "path": "src/worker.mjs",
+      "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+    },
+    {
+      "bytes": 60361,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+    },
+    {
+      "bytes": 858,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts",
+      "sha256": "51237bf92ef225c92c897c5fb0aa8e4482267a5ae6ff1cf768726a40c9a7db86"
+    },
+    {
+      "bytes": 8327,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts",
+      "sha256": "84a46d00b1a6528add43e0f27c1f27bab158f1454d8d05c7ea120a0907a6dc7b"
+    },
+    {
+      "bytes": 1274,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/package.json",
+      "sha256": "37ac1aefbfc2a8d601bd061cec506159a1ca47aabf116f9682e4253fce1ead27"
+    },
+    {
+      "bytes": 24077,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js",
+      "sha256": "638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72"
+    },
+    {
+      "bytes": 3345,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/index.d.ts",
+      "sha256": "0440e9d9724ca3ba99205924c1d464a9062d1ac94ccb20b49dea854aeb8155a4"
+    },
+    {
+      "bytes": 1086,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/package.json",
+      "sha256": "1b2ce10f17c6606bca88440f3a09d46b4c2add768e5cfa0e430187afd8edb683"
+    },
+    {
+      "bytes": 11697,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/bin.js",
+      "sha256": "1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f"
+    },
+    {
+      "bytes": 7779,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/package.json",
+      "sha256": "dbb4a7c1d88c412278fc8baccac7553f6d2310e85f5ffea1470a30106e99c688"
+    },
+    {
+      "bytes": 28207,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    {
+      "bytes": 20779,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1"
+    },
+    {
+      "bytes": 22283,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.js",
+      "sha256": "7e7c47fc0b82f0718b73e1705c07ad9496cfdbc21598db94de858f718cd23490"
+    },
+    {
+      "bytes": 1985,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/package.json",
+      "sha256": "0d342b74618bc8942f899bd922850216567fc1d8b08d0214cf7a47c66ba345e9"
+    },
+    {
+      "bytes": 72994,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "bytes": 8901,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "sha256": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e"
+    },
+    {
+      "bytes": 2014,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/package.json",
+      "sha256": "5acd0a47642f9a75b69c92ab83c8cba0d420f4f3a93ef3eb436fca0e05b9fca2"
+    },
+    {
+      "bytes": 31345,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/index.js",
+      "sha256": "7e23c01514303b2dfa1b69a95929cb19e43ba761d3478a3104d0f565ca537be7"
+    },
+    {
+      "bytes": 6378,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/index.d.ts",
+      "sha256": "47e6ec0952cfd9bffb30d1a0092c8303aa03800836cdd6d242fccc3e0770e6a9"
+    },
+    {
+      "bytes": 3203,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/package.json",
+      "sha256": "81eccf1abe20b6cfb419fe7b530069c0ca6887da42bd1a15b10f309b2e25370e"
+    },
+    {
+      "bytes": 1161,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/index.js",
+      "sha256": "14feb59256b891982b2017d73ed03ee65e2a7365f48e4902a856acb0e52d5eb0"
+    },
+    {
+      "bytes": 1544,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/types/index.d.ts",
+      "sha256": "55dbaa2e2b48b966d62bf10872e15d0deed4a6d72216a9bae05fd17d9791eb94"
+    },
+    {
+      "bytes": 835,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/package.json",
+      "sha256": "6bf63c0d783e25fe2a0f8ca402924a22e4047c313101c863879453a2aeb82d4c"
+    },
+    {
+      "bytes": 35140,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js",
+      "sha256": "3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d"
+    },
+    {
+      "bytes": 3474,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/index.d.ts",
+      "sha256": "d83649e8d3f48e7e28fe930df033632ae303843d5512ddd1b81a2098d4e33d78"
+    },
+    {
+      "bytes": 1635,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/package.json",
+      "sha256": "3b79f63804d8b2ed51143d83644833bcd4d24d48b24b8d1f73ea64969e9b8ab4"
+    },
+    {
+      "bytes": 180,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-layout/lib/index.js",
+      "sha256": "c62669c2bcf72075724aa3d4c90bb6064f8b5952322c7950640cc8ca95389859"
+    },
+    {
+      "bytes": 174,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-layout/lib/types/index.d.ts",
+      "sha256": "914a7b10536df8b153e849b43a9496ddbab6f19e419a78a4e25c0a5e52280d33"
+    },
+    {
+      "bytes": 1920,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-layout/package.json",
+      "sha256": "15ad9a0c26058b667cdbae90af35e2c9256163660f04942fc8337e776b9ff009"
+    },
+    {
+      "bytes": 178,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-renderer/lib/index.js",
+      "sha256": "a2a4d657f9500da5a8b2aef06f54fbb1251fbc7d31ddc5ba25720b60445c30b6"
+    },
+    {
+      "bytes": 172,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-renderer/lib/types/index.d.ts",
+      "sha256": "f5adbe3c87cb58ed62cb85aac1aa4f693a8c0bb8212e1879416a9b3b5ee3086c"
+    },
+    {
+      "bytes": 1506,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-renderer/package.json",
+      "sha256": "0a532cfce0a8cf00595b456dc21d3d8c02b9aaadb462a44907d9f1b7728a9e86"
+    },
+    {
+      "bytes": 181,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-sidebar/lib/index.js",
+      "sha256": "be323c589cda4dbb7714df563ebb66f581a3d37ed2ab6859fed85fcebf970aea"
+    },
+    {
+      "bytes": 175,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-sidebar/lib/types/index.d.ts",
+      "sha256": "c907d47c2d72978e204e064d407b4a25a5d5d5ff768d1a1b00af8d5338c1580f"
+    },
+    {
+      "bytes": 2277,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-sidebar/package.json",
+      "sha256": "69cd5b2d1ee59b7e0b3e1b1f90409ae238d6194e0cd617b131520504d7c6af3d"
+    },
+    {
+      "bytes": 453,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/index.js",
+      "sha256": "e6cdc4b725585354102a5c4598c9d8c79d6abac62d7979c09919821716370438"
+    },
+    {
+      "bytes": 452,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/types/index.d.ts",
+      "sha256": "e8a5b090f2ea3c5f1c1c0cd4cc4e6625f8229d746330f4ab42d3f60842ca002b"
+    },
+    {
+      "bytes": 3152,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-ui-workspace/package.json",
+      "sha256": "5b6db78b342ccbfce56a2aea15506d0ad760cbf9f461c86292d3e4a7c843a544"
+    },
+    {
+      "bytes": 13284,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js",
+      "sha256": "6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5"
+    },
+    {
+      "bytes": 6473,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/types/index.d.ts",
+      "sha256": "342d45c37bfa5f17197cc2692057b112b795924d40f3b0d337d8fe156867641d"
+    },
+    {
+      "bytes": 1122,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/package.json",
+      "sha256": "244a65cf447e0a0b8160fcc8942787b181f7a440fabb720656b7bf71210a8edb"
+    },
+    {
+      "bytes": 103333,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    {
+      "bytes": 22871,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts",
+      "sha256": "c5e3c6d92c7c2cf1529ff34eeaf0af92ccee56f2e5ae0f06c36f8548736f9c55"
+    },
+    {
+      "bytes": 51559,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/types/index.js",
+      "sha256": "825553a8446c9721ba5189f5aa2506c8dd8e0c9d04a1a28fb03751dfec59c411"
+    },
+    {
+      "bytes": 2082,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/package.json",
+      "sha256": "8a116e03c629ba2bbbaad960ad30dcc18f00f4482085e52598ad2f7e355502bc"
+    },
+    {
+      "bytes": 12151,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca"
+    },
+    {
+      "bytes": 5168,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/index.d.ts",
+      "sha256": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e"
+    },
+    {
+      "bytes": 883,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/package.json",
+      "sha256": "349fbf80c9e286f251983d804f13640dde284c21023ccea6330bb485e0f8718c"
+    },
+    {
+      "bytes": 89972,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "bytes": 27461,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts",
+      "sha256": "0d7bec761fd4917f4641d6aa38bb64b322e6a4a5ca86bf7d2baf62c8b4521a7f"
+    },
+    {
+      "bytes": 2850,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.js",
+      "sha256": "8f38e6fc9439bb4e47f2bd3aa21c86d5141ef9679f41181c9d9a48765c67d3be"
+    },
+    {
+      "bytes": 9616,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.d.ts",
+      "sha256": "bdeda5e930c9e5f839089aaed2bbe23296a8d06523b6e8300e21e5ca9259ef8b"
+    },
+    {
+      "bytes": 26100,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+      "sha256": "ebe8920a22fca8d987cbacab94c9db92f71df44863f58370a1be559155be734e"
+    },
+    {
+      "bytes": 2749,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.js",
+      "sha256": "a03acad09eec657b94441109af0da31b5b29668feae35d1b9e72fd99beca505f"
+    },
+    {
+      "bytes": 1553,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c"
+    },
+    {
+      "bytes": 12920,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/index.js",
+      "sha256": "cc0b6d3a224133af611b428d5a49020e300f86c3b4ba28037aeb219029bde3eb"
+    },
+    {
+      "bytes": 8419,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/types/index.d.ts",
+      "sha256": "405eed914b242e16a07c8343004e134669b8948b26d1067e300fb222baf10b96"
+    },
+    {
+      "bytes": 1313,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/package.json",
+      "sha256": "ba6bd5ccbf6bb722de342973294bf4a9e1d0c68e7977fe7e7a53e118a04b0c32"
+    },
+    {
+      "bytes": 142847,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    },
+    {
+      "bytes": 14575,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts",
+      "sha256": "806dfa610c3ed3ce80ffac89900993288d7013d4278ab21e2b55b193c542f79a"
+    },
+    {
+      "bytes": 1568,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/package.json",
+      "sha256": "ca8d23f5f34bbb9014047af1390e9e2ccd929e9903e7bf31919301f4832c9f1f"
+    },
+    {
+      "bytes": 20021,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+      "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8"
+    },
+    {
+      "bytes": 17075,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/types/index.d.ts",
+      "sha256": "f29f3512b31036e12c5adf45f5ea7ef7dac319cf3a110f12ea2ac56de494fe16"
+    },
+    {
+      "bytes": 1272,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/package.json",
+      "sha256": "dbe3c9e75519708e2d9e661da825a9a1b27c4602cf02a92bfc4ff1aa54ee1742"
+    },
+    {
+      "bytes": 17395,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+      "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57"
+    },
+    {
+      "bytes": 13719,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts",
+      "sha256": "954717f76586dc0e824f74bb51378529cf4963aff4582e3d25a7bc3c8142727d"
+    },
+    {
+      "bytes": 1108,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/package.json",
+      "sha256": "e8ededbd4fb2f5c754f2f980d7d2c767a074a59bede849d54d534b4f8320c656"
+    },
+    {
+      "bytes": 31507,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/index.js",
+      "sha256": "39ed60a470b240f8bbc82befdb0bbbad1f409732e8ba8d12d41a1059de0dde05"
+    },
+    {
+      "bytes": 4200,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/estimate.js",
+      "sha256": "1ec049c1e11f8014c84c6ce0568417227177ad7166f5520c00568e9b6e92589f"
+    },
+    {
+      "bytes": 3418,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/lib/types/index.d.ts",
+      "sha256": "23c9c226b748abbdeb96e849fe0dd7a37ec5bda473aa3d837227673cb69f224f"
+    },
+    {
+      "bytes": 1910,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-token-meter/package.json",
+      "sha256": "2c28b0db84463a5d5b2242eeb326135b5e831da272d5bf539e01ac77067dfc60"
+    },
+    {
+      "bytes": 158002,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js",
+      "sha256": "2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7"
+    },
+    {
+      "bytes": 44449,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts",
+      "sha256": "3536b173ec22361dcda85c05281921fc850db49984813b138d05395c4fe4510f"
+    },
+    {
+      "bytes": 2241,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-tools/package.json",
+      "sha256": "ce999c619acafd8dea49050553b125f6cb45c610d9bafb1a047a9664c18ba5ee"
+    },
+    {
+      "bytes": 8478,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js",
+      "sha256": "6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b"
+    },
+    {
+      "bytes": 7437,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/types/index.d.ts",
+      "sha256": "64176292d685552b826f37213219d99e853b64dbf4ecfb784815a99e61f384b2"
+    },
+    {
+      "bytes": 1767,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-user-approval/package.json",
+      "sha256": "f18e487b31f9c92300be732674defca4ba3e1556fe94bf6b696aa71d0fbb4d7e"
+    },
+    {
+      "bytes": 29627,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/index.js",
+      "sha256": "4322a2aacdfe38476d2bbc62338120beea1e1660346d7db5b6c1e1f927a26b7c"
+    },
+    {
+      "bytes": 3258,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/types/index.d.ts",
+      "sha256": "76f14f1093bcea3a76e05ca8b8337894184617af5fae01530718b620dc3dc20a"
+    },
+    {
+      "bytes": 848,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/package.json",
+      "sha256": "1b99fe57ce64671654386aff410e881156b9231fc7be8b5d3b437f153e7141f1"
+    },
+    {
+      "bytes": 10774,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/index.js",
+      "sha256": "c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85"
+    },
+    {
+      "bytes": 3699,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/types/index.d.ts",
+      "sha256": "0e53c01dacb4bb838d3ee321e8a7d2ab764f18aff33a826f882b9177cfa87b0b"
+    },
+    {
+      "bytes": 10230,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/package.json",
+      "sha256": "b502f63a057b1e388439c2a592ac16091d3c67fb9e76727b893f0d7a1325f8f5"
+    },
+    {
+      "bytes": 2263,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/flock.js",
+      "sha256": "e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646"
+    },
+    {
+      "bytes": 5132,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/lib/index.js",
+      "sha256": "a0f04e2990b6fff091d6776c41e56dac8c630a37b944632e743fa8f2ee9c4813"
+    },
+    {
+      "bytes": 1169,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system/package.json",
+      "sha256": "e8aebe0548e3fd3e733b03476a0a6531076ba40678137421ecd7fb191792d50a"
+    },
+    {
+      "bytes": 52232,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/bin/system.node",
+      "sha256": "9534cde445a865250eb7bc8cfe5e231f3f91d0fda3f4aaa694e81f3531ad1130"
+    },
+    {
+      "bytes": 652,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/node-addon-system-darwin-arm64/package.json",
+      "sha256": "29ebc197a0f0f5e6f7ffe80f686941239cf2a36c8d5385139a201a44417bed75"
+    },
+    {
+      "bytes": 32699,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js",
+      "sha256": "e7f003723ccbe5b0e84a0ad57d64ca12a0e10c23cc8e36e1ec8b7e5681cdc6ea"
+    },
+    {
+      "bytes": 2991,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js",
+      "sha256": "6aab33b43d6caa4ee483f7d796a17afb400fca02b7a259fb55d486626e6bb7f0"
+    },
+    {
+      "bytes": 388886,
+      "path": ".runtime/dsh-web/package-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "bytes": 4028913,
+      "path": ".runtime/ni3-native-runtime/public-graph-pins.json",
+      "sha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd"
+    },
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 8806,
+      "path": "docs/ni6-canonical-integration-c1-freeze-2026-10-08.md",
+      "sha256": "86d0ad4608efedaded09a66fd1cd34d7e39a288e7e09c7551463ed2d49c6608f"
+    },
+    {
+      "bytes": 8412,
+      "path": "docs/ni6-canonical-integration-c1-validation-freeze-2026-10-08.md",
+      "sha256": "22c58bfc7a9af511394ddcb8dd6d2bd04c3223e39b147540559ecf4f2d1c777e"
+    },
+    {
+      "bytes": 17324,
+      "path": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.md",
+      "sha256": "7bca4bd76bddb98f5fea70ab17acf3f0478ea9342e97dcff8ba42501c97e4683"
+    },
+    {
+      "bytes": 24471,
+      "path": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.json",
+      "sha256": "57935a74b14b8024f2a4cd086faa487a802289b1b36e587305f7e7b758748889"
+    },
+    {
+      "bytes": 10872,
+      "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.md",
+      "sha256": "0fdf5c4cf88cea9084c009669ac1b2766addc1c59607249fec37510df267f12a"
+    },
+    {
+      "bytes": 21859,
+      "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.json",
+      "sha256": "9169dbbcadf0e2a354afb2b15b3204ac1b4ae5ff0fbbed1da59e822db5f7acba"
+    },
+    {
+      "bytes": 84640,
+      "path": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de"
+    },
+    {
+      "bytes": 52448,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "sha256": "2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12"
+    },
+    {
+      "bytes": 4870,
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+      "sha256": "b2648682052fc5b266e7a6d033c7299e5c90d665476daf407062e09ce8fafc4b"
+    },
+    {
+      "bytes": 35174,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/root-plan.json",
+      "sha256": "077ddcd76d69c3111b53dc69a56bfe25958449d591791f132571d30f6c411966"
+    },
+    {
+      "bytes": 6613,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/executor-result.json",
+      "sha256": "7aaffb19ebf3667207c26ee76e1335fa95c088addc8216dace5adbe4e15b044f"
+    },
+    {
+      "bytes": 5888,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/command-results.json",
+      "sha256": "c40a2755947fd0bd1bc1a014bf8bf6dd7150e10e916cd679280c112511dc88c8"
+    },
+    {
+      "bytes": 174,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build-r2/execution/before-after.json",
+      "sha256": "58ec91502ee49751704c853d1fc7d738db98bae8572522a6ecd8ef34026caba3"
+    },
+    {
+      "bytes": 35174,
+      "path": ".runtime/root-ni6-canonical-integration-c1-build-r2-plan.json",
+      "sha256": "077ddcd76d69c3111b53dc69a56bfe25958449d591791f132571d30f6c411966"
+    },
+    {
+      "bytes": 6301,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-base/package.json",
+      "sha256": "6dff361f0de656ae2ff72ce0e68b940e355fb38b2f1618027d849f34070a7667"
+    },
+    {
+      "bytes": 20780,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-base/cordis.patch.yml",
+      "sha256": "9c2be64f46a193eff3cca190c26e697e8e8eee25c9b40149dfdb56f8142c252d"
+    },
+    {
+      "bytes": 22549,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml",
+      "sha256": "3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192"
+    },
+    {
+      "bytes": 8099,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/standard.patch.yml",
+      "sha256": "961d18e0c2481e926374ca5a14a7be63c023f9c44e6cd300889991738f579390"
+    },
+    {
+      "bytes": 8285,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/ptc.patch.yml",
+      "sha256": "9287485b993c3a7ad47785614bf9239f68467f59e5742c670ff63624b16c9535"
+    },
+    {
+      "bytes": 3184,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/minimal.patch.yml",
+      "sha256": "71ef887f43d8a37931ba3b014e5b116f79018af873d06625fb22e280a23c1dfc"
+    },
+    {
+      "bytes": 8677,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/presets/cordis.patch.yml",
+      "sha256": "459c0a97f36df0519a5a621bb8c7fa9d249cc84e587743dc8f4c2fb79cfcf859"
+    },
+    {
+      "bytes": 12204,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts",
+      "sha256": "f72cc0e13b57c436817ab8199268bc7defc609c7121f8fda49018ca919bf84c9"
+    },
+    {
+      "bytes": 8430,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+      "sha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4"
+    },
+    {
+      "bytes": 2465,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/entry.d.ts",
+      "sha256": "047a95a352588e566336593969e4a3a7164b3a6ef1bd0ca16a1eb6b766b1c6a5"
+    },
+    {
+      "bytes": 1773,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/types/config/tree.d.ts",
+      "sha256": "82c2812f98f18b377d7ffffe1c8576a54fde3b1704d79761b3e58961d430c520"
+    },
+    {
+      "bytes": 310,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/profile-boot.js",
+      "sha256": "c53d4e2caf21428e263b525e657dafaf63fd183f7ef016aabda56af7998b6c4f"
+    },
+    {
+      "bytes": 12593,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/profile-boot-BZ2ZjNWi.js",
+      "sha256": "c394b2aa2ce08a3b1fcc8c544257c7d689dd4d0b1cfaf8602687e65eeaba5aa1"
+    },
+    {
+      "bytes": 186357,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js",
+      "sha256": "619d80619320e953e5ddcee7c71e4b97e90e722a7d17da8819f3bb47e00587be"
+    },
+    {
+      "bytes": 6973,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-cmdline/lib/index.js",
+      "sha256": "7253190611566485f8b6f836fae6e0f2a7abbc59bb807c42e874844016e6d3a0"
+    },
+    {
+      "bytes": 5905,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-cmdline/lib/types/index.d.ts",
+      "sha256": "136135da4d83f55dae0c7de783ef17501eb60e0fd12017f6393cb3fb6048d0c0"
+    },
+    {
+      "bytes": 3456,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/startup.js",
+      "sha256": "4568ec210759973d102a07402e9dfe42eb448543d49e4a701f4861a8bb3a6694"
+    },
+    {
+      "bytes": 3899,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-host-frontend-static/lib/index.js",
+      "sha256": "19bb095c5175bd5dc6532aa97512e2013a132e5073558ba4b059b8ad5b0f19a2"
+    },
+    {
+      "bytes": 5139,
+      "path": "docs/ni6-canonical-integration-c1-cli-r3-selection-2026-10-08.md",
+      "sha256": "6d372ebc4a39403409d618674809691f8ed0642faabe1fcad60cbb67cc438b27"
+    },
+    {
+      "bytes": 6662,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/observer.mjs",
+      "sha256": "d6d44db51338d8454fafc72fda7b2bc8b7bf0a7f13285a78df2e49e92932dcd1"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/lifecycle-driver.py",
+      "sha256": "f34d6de6b31ab4fa2a435e956a230ee7edf52771c1e4f095aa30f60116afd6cb"
+    },
+    {
+      "bytes": 10361,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/execution-plan.proposed.json",
+      "sha256": "cce53904fb8f410e2ae82a128ee8c20f8c46459a34dda8ae594688509e94a7ec"
+    },
+    {
+      "bytes": 7619,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/README.md",
+      "sha256": "8275aae3a6c0124868edc6a063909bd3182219baed89315fd11dc56f70b3b76d"
+    },
+    {
+      "bytes": 25349,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-publication.py",
+      "sha256": "4ebefa11283e70f30c3b7b0289d4e1dd094a628980bee11ee00788c9407c468d"
+    },
+    {
+      "bytes": 4743,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/root-controller-recipe.mjs",
+      "sha256": "e4cd55fb70e223f36038da3f9f7e5be121e8cae4772c12414cfd09aab42f7802"
+    },
+    {
+      "bytes": 56106,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-delta.diff",
+      "sha256": "96a9a0fa84ce69d1b71f0509394d3b306b1dbef5569bfbd47cd7aab94f91b19f"
+    },
+    {
+      "bytes": 75041,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r3/source-manifest.json",
+      "sha256": "19ab113b07735761dc3198a0e7d26aee52fb7f38f7abdf19a57a1d274bedab1a"
+    },
+    {
+      "bytes": 3458,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-author-source.md",
+      "sha256": "740fb0de1e530fdb8134f299e87e99ad48c771f716fbf3719965ddcbcb951a99"
+    },
+    {
+      "bytes": 5210,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-author-source.json",
+      "sha256": "b06eef644a7776599f5b329adb3675048d67bc15a8e308ca0c1c9f88c97551e2"
+    },
+    {
+      "bytes": 11876,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.md",
+      "sha256": "ebc34f3138550ab6e4f9761fe53f6ea7561b40ad113d25582f4671fd6180f70a"
+    },
+    {
+      "bytes": 29846,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-source-review.json",
+      "sha256": "59ec2167e43f86af3038d9358ce36139cb155106d0f53655b6ba8534ae6f2a2a"
+    },
+    {
+      "bytes": 11448,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.md",
+      "sha256": "b1eb4f36471131e318c61985ca73a3ebf1df42a72ff871ce6e910d6cad9e32f0"
+    },
+    {
+      "bytes": 16127,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-test-design-review.json",
+      "sha256": "df27402ffcb43b0fdcdd3d97d5d15b0ed7f67e06852f9cde97c899953c93335a"
+    },
+    {
+      "bytes": 9022,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-execution-review.md",
+      "sha256": "a5886824c88bac6f10a5f74e72fc92f1bf6808f34afcb17412baa305d020c34b"
+    },
+    {
+      "bytes": 14595,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-execution-review.json",
+      "sha256": "74c4bd4d4dd02f047f7d2247f4cea6b1ee81dd97976986723b2e22cfcc604f45"
+    },
+    {
+      "bytes": 8117,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-actual-test-assessment.md",
+      "sha256": "79d8cd63a6523a9cbba5284913dff4c5a9ad32387d4cb10a6f66a4b42e8a9967"
+    },
+    {
+      "bytes": 12952,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-independent-actual-test-assessment.json",
+      "sha256": "e854ffc12b6498c7ff2b437e2cc15ddda6e096b472ff1f49ae9b43bcd5290a64"
+    },
+    {
+      "bytes": 1199,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-actual-return.json",
+      "sha256": "fe0528fb99e80dc2bac20881676987cbea541d49fb8913b47378d33ec7aa5c86"
+    },
+    {
+      "bytes": 1769,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.md",
+      "sha256": "35b6b12ff55a7d727137bd253c0132b838c2a0db835a870423474b1cf44960de"
+    },
+    {
+      "bytes": 3127,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r3-root-controller-actual-return.json",
+      "sha256": "dbcfb31701022fbd71ba756fbe25743811646d6ed651075c3c9f94d118c2d0cf"
+    },
+    {
+      "bytes": 5301,
+      "path": "docs/ni6-canonical-integration-c1-cli-r4-selection-2026-10-08.md",
+      "sha256": "38f1947db47c6d79cabc6a0e10c7581a01bef01851fb871f75449d806a17e0de"
+    },
+    {
+      "bytes": 6662,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/observer.mjs",
+      "sha256": "a4041eae573c23bb8a33cb56102f39a3075aa013977f7bf3be0a0d0d1d2383a2"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+      "sha256": "4d94bd07f15ff12897aea177a13a8b3d0f4aa697020796c45d7b4ee89339f783"
+    },
+    {
+      "bytes": 11818,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/execution-plan.proposed.json",
+      "sha256": "8cee63bf44ad8c8106e84af404d9a4c23ec6fce695cb4f919abfab37f199024c"
+    },
+    {
+      "bytes": 10340,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/README.md",
+      "sha256": "f026dbae96317b48621672873c8774e64245d56964cf814c02db74d793c2d0de"
+    },
+    {
+      "bytes": 25477,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
+      "sha256": "5afac3df4be8148ab86b29285c89161c72737881aeda07f89418fcf8e1900aea"
+    },
+    {
+      "bytes": 6497,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs",
+      "sha256": "6c36de603c420c332d5e80e082fadcb31e351fb08f932410fe3e3e7aeba5308b"
+    },
+    {
+      "bytes": 33079,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/source-delta.diff",
+      "sha256": "cffcfe741cc5169d00247a7a97d8d5edcd868a33a6f497cdcb133d11972a414b"
+    },
+    {
+      "bytes": 80062,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/source-manifest.json",
+      "sha256": "54aeb250b69473eb407e315ac7d8f3334da9d022963678110a5255c02728be9e"
+    },
+    {
+      "bytes": 5459,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-author-source.md",
+      "sha256": "a4639b9f106fe34827e0b25fd3d075949e313f71b4e5a7b982cb023764bdd28d"
+    },
+    {
+      "bytes": 18222,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-author-source.json",
+      "sha256": "9eb1cfd3e271b199af3b175fc2064c345ee732390486eb70d2eb569cb2686b23"
+    },
+    {
+      "bytes": 12654,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.md",
+      "sha256": "15bc508e9022ef92eacec0f12080957fc23a87480702b11715d4bf055b6506ac"
+    },
+    {
+      "bytes": 27871,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.json",
+      "sha256": "e1bfd63999e09547b57c173bb693f7d90b905f0b7b7368009c6ab28f3ae87cea"
+    },
+    {
+      "bytes": 11034,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.md",
+      "sha256": "98b2a88814f7683d101062ded6ff01454dc23b6610950ec1706d34d114dfb723"
+    },
+    {
+      "bytes": 17343,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.json",
+      "sha256": "5f3d5534ec263635b822a1d2aff7d6f6fa93bc2b9f4a575fa420f314b6044acb"
+    },
+    {
+      "bytes": 9692,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-execution-review.md",
+      "sha256": "a443c248a78ef7c93db96286e302baf46cb504ebcd0e7843807ac8ec1477ffea"
+    },
+    {
+      "bytes": 14910,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-execution-review.json",
+      "sha256": "21d4e59165dd27b407385ed3b11706c0176751736131188dc3c1dd4895619cba"
+    },
+    {
+      "bytes": 7685,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-actual-test-assessment.md",
+      "sha256": "829043a3c2af9429bac594ee1d1390ef68f26a46d5fa845eeb2ae871c2de7f17"
+    },
+    {
+      "bytes": 13858,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-actual-test-assessment.json",
+      "sha256": "fc3ad91f4093ca388ecbcacda7ba3c405e40f540fbbdbf5443b935ef5e356f42"
+    },
+    {
+      "bytes": 2981,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.md",
+      "sha256": "3ab433280574600ff0d8d323389381802823d7634cce2764d3ff52e39b0a15b6"
+    },
+    {
+      "bytes": 3421,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-root-controller-actual-return.json",
+      "sha256": "1f4ed78da347c7d6c096b6764a2fb80c8582a9591c7fa29cfc56762596d7d89d"
+    },
+    {
+      "bytes": 10678,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-public-source-diagnosis.md",
+      "sha256": "6e9bc1143118bdefee8e488ebe1b678414e888613530d7db90b1bee530d29baf"
+    },
+    {
+      "bytes": 20195,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-public-source-diagnosis.json",
+      "sha256": "c29dee0b691b0fd35147d04df960f861a6e3cc40937458e90588f23a17cef154"
+    },
+    {
+      "bytes": 2372,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json",
+      "sha256": "3bf5a20a520fd03a5c4ce1d63e5c796553d1a7b5dbe4c4c5b161456a4323e6fb"
+    },
+    {
+      "bytes": 496,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/case-result.json",
+      "sha256": "4ac959888a0ed06fb822d5af46749cfd447e38001f343f53870a41b28ea69a70"
+    },
+    {
+      "bytes": 892,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/command-results.json",
+      "sha256": "40e3c581ec4dd2680f68a8c8a9864992da0fbcffb41184f7d18be020f2ee4b43"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/before-after.json",
+      "sha256": "554b00ef0215f4cfb303331da4287093e31fe4c25b95951c77f7985b1a7d65a5"
+    },
+    {
+      "bytes": 73,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/positive/invocation-result.json",
+      "sha256": "a8e83a9ae529bde9851ce58fff417f60fe27f6b7daee7065123c189bb13fd3de"
+    },
+    {
+      "bytes": 42209,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution/root-plan.json",
+      "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+    },
+    {
+      "bytes": 42209,
+      "path": ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
+      "sha256": "dc1aa419db7c6e0e889aedac0eca45d13b94be7a87350d30e95207468a0e1aee"
+    },
+    {
+      "bytes": 5388,
+      "path": "docs/ni6-canonical-integration-c1-cli-r5-mode-selection-2026-10-08.md",
+      "sha256": "e415042ffaf5668b18571adb5eb6ea259e0354e702316a837a83392af6b96bbe"
+    },
+    {
+      "bytes": 5304,
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+    },
+    {
+      "bytes": 2185,
+      "path": "docs/owner-amendment-2026-10-07-ollama.md",
+      "sha256": "fb5a5178e165a1e40427bae17953baa6cac46f3446035d22a24e1510da3be4cb"
+    },
+    {
+      "bytes": 4700,
+      "path": "docs/development-workflow.md",
+      "sha256": "7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7"
+    },
+    {
+      "bytes": 2854,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-supported-mode-amendment-2026-10-08.md",
+      "sha256": "97441dc74b1ed00ab180cb5325c84e58e4658955b33dd48cd677d11015892d52"
+    },
+    {
+      "bytes": 2651,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-owned-stderr-diagnosis.md",
+      "sha256": "9f5e3ade710d9427173b0a5df912eaa6cb94207b1e07e4008ef2fdf816dd5ed4"
+    },
+    {
+      "bytes": 2195,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-owned-stderr-diagnosis.json",
+      "sha256": "3ec8db050e6e7b07571861ec2d4cde4ca7424a464c6e7fbb8bcd65104f6e7424"
+    },
+    {
+      "bytes": 2272,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r4-diagnostic-root-adoption.md",
+      "sha256": "7f51f86b9562bc3f2c1927c9a2afe12c5a741fc926ab0e0a4d13ee7cb4844cd9"
+    },
+    {
+      "bytes": 2478,
+      "path": "docs/evidence/NI6/canonical-integration-c1-owned-stderr-diagnosis-selection-2026-10-08.md",
+      "sha256": "c7e654f0381a815e31f316af2cd2cad8c903a7ebacc664415c6f4df12604ccea"
+    }
+  ],
+  "inverseDescription": {
+    "deltaBodyBytes": 39724,
+    "deltaFiles": [
+      "observer.mjs",
+      "lifecycle-driver.py",
+      "execution-plan.proposed.json",
+      "README.md",
+      "root-publication.py",
+      "root-controller-recipe.mjs"
+    ],
+    "deltaPreambleBytes": 252,
+    "deltaTotalBytes": 39976,
+    "method": "Literal UTF-8 bytes only, never parse/import/evaluate candidate code. For observer/driver/proposal/publisher replace cli-r5 with cli-r4 and compare full bytes. For recipe first replace the one exact changed caseArgs line with its namespace-only predecessor, then inverse namespace and compare full bytes. README is documentary: full original bytes are independently pinned and the complete literal diff binds both directions. Source delta itself is generated evidence, not copied ancestor source.",
+    "namespaceFrom": "cli-r4",
+    "namespaceOccurrences": {
+      "README.md": 0,
+      "execution-plan.proposed.json": 24,
+      "lifecycle-driver.py": 2,
+      "observer.mjs": 1,
+      "root-controller-recipe.mjs": 3,
+      "root-publication.py": 5
+    },
+    "namespaceOnlyInverseMatches": {
+      "execution-plan.proposed.json": true,
+      "lifecycle-driver.py": true,
+      "observer.mjs": true,
+      "root-publication.py": true
+    },
+    "namespaceTo": "cli-r5",
+    "recipeAddedFieldsExactly": 2,
+    "recipeInverseMatches": true,
+    "recipeNewLine": "   const caseArgs={cmd:python+' '+base+'/lifecycle-driver.py .runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json '+caseName,workdir:cwd,yield_time_ms:1000,max_output_tokens:1000,sandbox_permissions:'require_escalated',justification:'Execute the reviewed fresh once-only isolated DSH Web CLI case on 127.0.0.1 with OS-assigned port 0 and its synthetic profile, retaining the original owned child and bounded cleanup/publication.'};",
+    "recipeOldNamespaceLine": "   const caseArgs={cmd:python+' '+base+'/lifecycle-driver.py .runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json '+caseName,workdir:cwd,yield_time_ms:1000,max_output_tokens:1000};"
+  },
+  "keptOriginalEntryIds": [
+    "agent",
+    "agent-loop",
+    "approval",
+    "connection",
+    "credentials",
+    "llm",
+    "session",
+    "session-persistence-jsonl",
+    "session-projection",
+    "system-prompt",
+    "tools",
+    "web-runtime",
+    "web-startup",
+    "webserver"
+  ],
+  "manifestSelfSeparatelyPinned": true,
+  "maximumCLIStarts": 4,
+  "maximumCaseDriverStarts": 3,
+  "maximumChildStartsIncludingCaseDrivers": 7,
+  "maximumHTTPRequests": 48,
+  "maximumInterpreterStartsIncludingAdministration": 9,
+  "maximumMetadataReturnRows": 192,
+  "maximumPublicationOriginalReturns": 9,
+  "opaqueBoundary": "No canonical changes, protected CODE/capture/finish semantic inspection or private content exposure.",
+  "originalPacketDisposition": "CLI_R4_CONSUMED_FAILED_HOLD_DO_NOT_REPLAY",
+  "ownedFiles": [
+    {
+      "bytes": 6662,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/observer.mjs",
+      "sha256": "ea4ba3ddc3fd8c11be946eb75f255f5ba9a04cc021c81d53b7392c51991ec427"
+    },
+    {
+      "bytes": 41372,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py",
+      "sha256": "4040b95a33de701f709ce8a89299af284b2b0e7ac9a569c74f23f38478204c40"
+    },
+    {
+      "bytes": 11818,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/execution-plan.proposed.json",
+      "sha256": "8af5c39df025295dc077ed37ff55d75aaa48efbc3ea614dc89c7667b3aff9589"
+    },
+    {
+      "bytes": 10426,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/README.md",
+      "sha256": "e5820fdf21cc563ef4d0794469d1426a5ea0fc0cc2c02ecd0b70be4b91f3945a"
+    },
+    {
+      "bytes": 25477,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
+      "sha256": "43a4045614e7cd165642d3d952d08b9e7d9a6f8ff870db334b3f8044393ae4e3"
+    },
+    {
+      "bytes": 6748,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-controller-recipe.mjs",
+      "sha256": "fc0c0cebe0fcda67ae0b6c8b63dee85bf585e45eef92016b199ab8b3d7cfdce1"
+    },
+    {
+      "bytes": 39976,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/source-delta.diff",
+      "sha256": "6f090b19b58800223e8934f963b0509ed95b7b9cf24ffdbfcdc35ce5d56bb90b"
+    }
+  ],
+  "pins": {},
+  "postStopConnectionAttemptsMaximumFamilyTotal": 4,
+  "privateRawCaptureReadByAuthor": false,
+  "publicCaps": {
+    "beforeAfter": 4096,
+    "caseRead": 4097,
+    "caseResult": 4096,
+    "commandResults": 16384,
+    "plan": 65536
+  },
+  "r3HistoricalDiagnosisQualification": "R3 successful preparation EXIT0 retained before unsupported functions TextEncoder metadata failure; broad catch misclassified TOOL_UNAVAILABLE. Finally publisher EXIT1 unbound failure-only; false timing fields do not prove physically late archive. No CLI case/HTTP/model started. No product readiness cause established.",
+  "readinessFailureProtocol": {
+    "contractVersion": "df.c1.cli-ready/v1",
+    "fields": [
+      "contractVersion",
+      "caseName",
+      "boot",
+      "ready",
+      "readinessStage"
+    ],
+    "publicMapping": "EXECUTOR_READY_STAGE_<explicit stage> in the existing failureCode field; no new public case-result field",
+    "qualification": "First unfinished original public check only; publication can fail and no installed-product cause is proved.",
+    "ready": false,
+    "stageASCIIBytes": 3,
+    "stages": {
+      "ABS": "Original DF/setup services absent",
+      "AGR": "Original agent registry empty",
+      "ATT": "Zero original event attempt counters",
+      "AUT": "Original authenticated-access construction",
+      "DIS": "Disabled entry flag",
+      "ENA": "Positive entry enabled",
+      "ENT": "Original Loader entry lookup and package name",
+      "FIB": "Original branch-specific Fiber presence/state/UID",
+      "HST": "Original assigned host",
+      "INV": "Invalid entry enabled branch",
+      "LAF": "Exact selected new database/setup leaves absent",
+      "LPR": "Original provider registry empty",
+      "PHA": "Original setup diagnostics phase",
+      "PRT": "Original assigned port integer/range/not3080",
+      "PUB": "Owned private readiness publication",
+      "REP": "Readiness has not previously been published",
+      "SRV": "Original setup-service presence",
+      "SSR": "Original session registry empty",
+      "WRT": "Owned private access publication"
+    },
+    "successFieldsUnchanged": 11
+  },
+  "removedAncestorOnlyInputRecords": [
+    {
+      "bytes": 5920,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/observer.mjs",
+      "sha256": "7559472fac5fed231e5cb24432abbeaf4c0c9a7b98c37f3526f3a67faba93fb8"
+    },
+    {
+      "bytes": 40650,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/lifecycle-driver.py",
+      "sha256": "800c115ba06e81539268408b9aff4db7ed0afac23b1563d74e63aac5ee6c5adc"
+    },
+    {
+      "bytes": 7226,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/execution-plan.proposed.json",
+      "sha256": "f1774bd4d6ddbcb770bdd825ee8fffbbc0a26765c1dcc71c1d8aa1c7fd67f407"
+    },
+    {
+      "bytes": 3903,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/README.md",
+      "sha256": "f7c1d5f02db6b931286673d978fa9efe419a4a09ea4f5f10374ef54abc66d10f"
+    },
+    {
+      "bytes": 20459,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/source-delta.diff",
+      "sha256": "bafbcd2746aa1a74cfbfff09b5c64b650fb0defec8fdbc8204ccb38e79626664"
+    },
+    {
+      "bytes": 66962,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli-r2/source-manifest.json",
+      "sha256": "eeefd39c4647d220a563d20dc3ceac58fb037b47ba8093dc49a330bc48ca98ae"
+    },
+    {
+      "bytes": 2988,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-author-source.md",
+      "sha256": "8ee011d41633d2b386ccffa0349def9ff4e29eb5d62e510e20201c1919d98208"
+    },
+    {
+      "bytes": 9903,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-author-source.json",
+      "sha256": "e00c10d113c3155eb519d537c6053a306b11cdbd551ff4f169a547067ccbcb34"
+    },
+    {
+      "bytes": 8119,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.md",
+      "sha256": "5d92735f143002acf352008b838f0b8260d849e9e538c06e846d51609c7f5022"
+    },
+    {
+      "bytes": 12294,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-source-review.json",
+      "sha256": "e783e0569c7ab83557b5149284b549cee27297dabfb29fda99dacde2570bc387"
+    },
+    {
+      "bytes": 10261,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-test-design-review.md",
+      "sha256": "c5745859b044aaba7c1cdc69a8614b7b182bbf0ebc9a5b143b488b402e527115"
+    },
+    {
+      "bytes": 13788,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-test-design-review.json",
+      "sha256": "8a40ac2ddebb7ca94db138ae3c8dee8f5e79cf93bfa357e61f867c41ddfb2947"
+    },
+    {
+      "bytes": 8661,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-execution-review.md",
+      "sha256": "1eee942e9486a981da4adb04be7dac1f5cf0c5a9567bdc19e19d1635a87b60aa"
+    },
+    {
+      "bytes": 10504,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-execution-review.json",
+      "sha256": "1525f65aac0f1c9b462ab1d1078c6df5f016d5e8c8979e5de8ad13befeee0d47"
+    },
+    {
+      "bytes": 7735,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-actual-test-assessment.md",
+      "sha256": "be6c52b384e6bdd211187cdab24a186c57802cc57c853b0698bee05a65fce0c9"
+    },
+    {
+      "bytes": 8505,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-independent-actual-test-assessment.json",
+      "sha256": "7171b37731b048e77ce9b59fb6ec70fa4f7406926361a32e19e4668006d5b78a"
+    },
+    {
+      "bytes": 3690,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-actual-return.json",
+      "sha256": "a5e236ed5478185095af00461be477729aa2c3dc56d13846c6697fb715881d92"
+    },
+    {
+      "bytes": 494,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/positive/case-result.json",
+      "sha256": "706429ba818b988c885091bfe0c53c93b523e13cac935674f70782c223db5c9f"
+    },
+    {
+      "bytes": 964,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/positive/command-results.json",
+      "sha256": "de5af0dd34cda219f41dec1906634bff54409e3ec05d6af9aec1420916c2b9dd"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/positive/before-after.json",
+      "sha256": "482a755141febcd774638637627084b3f79bfc0e13ffb62461dcaede92870bac"
+    },
+    {
+      "bytes": 71,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/invocation-result.json",
+      "sha256": "ee9bd71978a733a61580cba544490bd7cba86fcee411c54d55db2dcd8b726565"
+    },
+    {
+      "bytes": 35717,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r2-execution/root-plan.json",
+      "sha256": "15aec8f3424a10f14ecee669e17c4f7ecd7ba4f69a4da04eaa01e5e5f3a1f9d3"
+    }
+  ],
+  "removedAncestorOnlyProvenance": "These exact22 CLI-r2 rows occurred in CLI-r3 inputFiles/consumedR2Authority. The entire exact CLI-r3 capsule/author/final source+actual pairs/proof/root supplement is bound as the consumed successor authority instead. No ancestor history tree copied; originals untouched.190 existing input rows retained byte-for-byte,22 selected CLI-r3/r4 rows added.",
+  "removedInputRows": 0,
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-test-design-review.json"
+  ],
+  "retainedR4InputRows": 212,
+  "rootAdministrativeInterpreterStartsMaximum": 2,
+  "rootGo": false,
+  "rootPlanForecast": {
+    "actualPlanOrGO": false,
+    "bytes": 47946,
+    "cap": 65536,
+    "deadlineLiteral": "100000000.12345679",
+    "deadlineWidth": 18,
+    "method": "Inert JSON width forecast only; manifest-self and four future review hashes use fixed64-character placeholders.",
+    "placeholderHashes": 5
+  },
+  "rootPublication": {
+    "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-execution",
+    "binding": "Retained original prepare return plan digest+monotonic deadline; no reset if current plan drifts",
+    "commands": [
+      [
+        "/opt/homebrew/bin/python3",
+        ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
+        "prepare"
+      ],
+      [
+        "/opt/homebrew/bin/python3",
+        ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
+        "publish"
+      ]
+    ],
+    "copyOriginalPlan": true,
+    "familyReserveSeconds": 10,
+    "inputByteCap": 65536,
+    "noPrivateContentRead": true,
+    "onEveryControllerExitBeforeModelYield": true,
+    "originalReturnsMaximum": 192,
+    "prepareSecondsMaximumInsideFamily": 10,
+    "proof": "docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json",
+    "publishSecondsMaximumInsideFamily": 10,
+    "qualification": "Supported-tool denial/unavailability or late/missing record remains FAILED_HOLD/uncertain; final publication original return and proof-write timing still require root retention.",
+    "recordFilesPerReachedCase": [
+      "case-result.json",
+      "command-results.json",
+      "before-after.json",
+      "invocation-result.json"
+    ],
+    "returnProofByteCap": 65536
+  },
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSelection": {
+    "bytes": 5388,
+    "path": "docs/ni6-canonical-integration-c1-cli-r5-mode-selection-2026-10-08.md",
+    "sha256": "e415042ffaf5668b18571adb5eb6ea259e0354e702316a837a83392af6b96bbe"
+  },
+  "rootSupportedExecutionApprovalGranted": false,
+  "runtimeInterpreterStartsMaximum": 7,
+  "selectedExecutionMode": {
+    "additionalStartupObserver": "UNSELECTED_NOT_RUN",
+    "caseArgs": {
+      "justification": "Execute the reviewed fresh once-only isolated DSH Web CLI case on 127.0.0.1 with OS-assigned port 0 and its synthetic profile, retaining the original owned child and bounded cleanup/publication.",
+      "sandbox_permissions": "require_escalated"
+    },
+    "denial": "STOP_RETAIN_ORIGINAL_USE_SELECTED_FINALLY_PUBLICATION_NO_RETRY_OR_ALTERNATE_ROUTE",
+    "prefix_rule": "OMITTED_NO_REUSABLE_PREFIX",
+    "preparePublication": "UNCHANGED_DEFAULT_TOOL_MODE"
+  },
+  "sourceCopies": [],
+  "sourceOnly": true,
+  "sourceReportClosure": "Fresh author pair externally sealed; final independent affected source reports bind author and complete manifest. Root supplies exact inputFiles+ownedFiles+manifest-self+four-final-review-slot generic union only after full reads.",
+  "supportedModeAmendment": {
+    "bytes": 2854,
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-supported-mode-amendment-2026-10-08.md",
+    "sha256": "97441dc74b1ed00ab180cb5325c84e58e4658955b33dd48cd677d11015892d52"
+  },
+  "topology": [
+    {
+      "path": "/opt/homebrew/opt/node@22",
+      "resolved": "/opt/homebrew/Cellar/node@22/22.22.2_1",
+      "target": "../Cellar/node@22/22.22.2_1"
+    },
+    {
+      "path": "/opt/homebrew/bin/python3",
+      "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "target": "../Cellar/python@3.14/3.14.5/bin/python3"
+    },
+    {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.5/bin/python3",
+      "resolved": "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "target": "../Frameworks/Python.framework/Versions/3.14/bin/python3"
+    }
+  ]
+}

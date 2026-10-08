@@ -1,0 +1,46 @@
+{
+  "schema": "ni6.canonical-integration.c1.cli-r5.independent-execution-review/v1",
+  "date": "2026-10-08",
+  "language": "English",
+  "reviewer": "/root/c02_r1_code_review",
+  "requestedIdentity": "gpt-6.1-sol/max",
+  "reviewKind": "INDEPENDENT_ACTUAL_CODE",
+  "verdict": "ACTUAL_FAILED_HOLD_PREPARE_INPUT_CONTRACT",
+  "result": "FAILED_HOLD",
+  "integrityBlockers": [],
+  "reviewerCandidateStarts": 0,
+  "additionalExecutionGO": false,
+  "replayGO": false,
+  "fullCriterionPASS": false,
+  "MVPAcceptance": false,
+  "publicationGO": false,
+  "protectedCODE": "BLOCKED_UNCHANGED",
+  "publicRecords": [
+    {"name":"canonical-integration-c1-cli-r5-actual-return.json","path":"docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json","bytes":1197,"sha256":"3b0b6ebc62601521701970563e7d4f97371136da18d6f1e4acaecaf6ebaee1b5","readChunk":"a00b40"},
+    {"name":"canonical-integration-c1-cli-r5-root-original-return.json","path":"docs/evidence/NI6/canonical-integration-c1-cli-r5-root-original-return.json","bytes":2104,"sha256":"4589195a227c78b0d119ba8a1f7f9e88a970460ba72caf0b9a11f660217f8273","readChunk":"f8f382"}
+  ],
+  "publicSourceIdentities": [
+    {"role":"publisher","path":".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py","bytes":25477,"sha256":"43a4045614e7cd165642d3d952d08b9e7d9a6f8ff870db334b3f8044393ae4e3"},
+    {"role":"recipe","path":".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-controller-recipe.mjs","bytes":6748,"sha256":"fc0c0cebe0fcda67ae0b6c8b63dee85bf585e45eef92016b199ab8b3d7cfdce1"}
+  ],
+  "selectedSourceRanges": [
+    {"source":"publisher","range":"264-280","readChunk":"ddd515"},
+    {"source":"publisher","range":"339-350","readChunk":"c77924"},
+    {"source":"recipe","range":"37-58","readChunk":"9692ec"},
+    {"source":"recipe","range":"78-101","readChunk":"362492"},
+    {"source":"recipe","range":"59-78","readChunk":"45e7d7"}
+  ],
+  "recordIntegrity": {"publicRecords":2,"publicBytes":3301,"regularFiles":true,"uid":501,"mode":"0600","sealsExact":true,"shaChunk":"61a455","bytesChunk":"360985","statChunk":"ff5cbd","sourceSHAChunk":"858f42","sourceBytesChunk":"4f8dac"},
+  "jointChecks": {"failedOutcome":true,"originalPrepare":true,"originalPublish":true,"noCases":true,"planAbsentQualified":true,"archiveIncomplete":true,"publicProofSeal":true,"envelope":true,"scope":true,"privacy":true,"cutTiming":true,"sourceGuardOrder":true,"sourceEmptyErrorReturn":true,"sourceCaseGate":true,"sourceFinally":true},
+  "finding": {"type":"ADMINISTRATIVE_INPUT_CONTRACT_FAILURE","controllerCode":"PREPARE_FAILED","publicFailureCode":null,"exactSelectionEnvelope":["rootReviewedExecutionGO","rootReviewedFinalAffectedReports","rootSupportedExecutionApprovalGranted","pins"],"GOValuesRequired":true,"rootReportedInput":"Complete proposed plan with extra keys","submittedPayloadIndependentlyReopened":false,"sourcePredicateFailure":"ADMIN_ROOT_SELECTION","sourceCodeObservedInPrivateError":false,"causationQualification":"Given the sealed root account of extra keys, the exact-key predicate fails before proposal/pin reads and plan write; exact terminal exception unrecorded","publisherProductionBugEstablished":false},
+  "originalReturns": {"prepare":{"case":"prepare","chunkId":"c7c9e9","exitCode":1,"kind":"RETURN","outputBytes":0,"sessionId":null,"wallTimeSeconds":0.000026513,"rootOriginalCopy":{"chunk_id":"c7c9e9","exit_code":1,"original_token_count":0,"output":"","wall_time_seconds":0.000026513}},"publication":{"chunk_id":"541cd5","exit_code":1,"original_token_count":0,"output":"","wall_time_seconds":0.000017882},"directPublicationReturnRequired":true,"publisherDispatch":"BaseException -> terminal_code1 -> sys.exit; no caught payload serialization","publicationFinallyDoesNotCreateSuccess":true},
+  "controllerFlow": {"retainPrepareBeforeInterpretation":true,"nonzeroPrepareReturnsBeforeCaseLoop":true,"enclosingFinallyPublicationAttempted":true,"runtimeCaseCallsRootReported":0,"caseCallsAdmittedByReviewedSource":0,"cases":{"disabled":"NOT_RUN_STOP_AFTER_FIRST_FAILURE","invalid":"NOT_RUN_STOP_AFTER_FIRST_FAILURE","positive":"NOT_RUN_STOP_AFTER_FIRST_FAILURE"},"automaticCaseApprovalReview":"NOT_REACHED","CLIOutcome":"NOT_ESTABLISHED_NOT_RUN","listenerOutcome":"NOT_ESTABLISHED_NOT_RUN","OSPolicyDenial":"NOT_ESTABLISHED","automaticApprovalDenial":"NOT_ESTABLISHED","globalProcessInstrumentation":false,"administrativeInterpreterStartsMaximum":2,"runtimeInterpreterStartsMaximum":7,"maximaAreNotActualCounts":true},
+  "archive": {"rootPlanControllerStatus":"ABSENT_OR_UNCERTAIN","rootPlanPresentRootReported":false,"rootPlanPublishedRootReported":false,"recordPins":[],"originalPlanDigestBound":false,"closedArchiveComplete":false,"withinOriginalFamilyAtStart":false,"withinOriginalFamilyBeforeProof":false,"successfulAdmissionOrClosedArchive":false,"rootPublicProofPin":{"bytes":1197,"path":"docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json","sha256":"3b0b6ebc62601521701970563e7d4f97371136da18d6f1e4acaecaf6ebaee1b5"}},
+  "timing": {"publicationSourceCapSeconds":10,"finalEnclosingAndProofWriteDuration":"NOT_ESTABLISHED","exactElapsedBound":false,"originalPrepareToolWallSeconds":0.000026513,"originalPublicationToolWallSeconds":0.000017882,"toolWaitsAreNotEnclosingDuration":true},
+  "selectionCurrentness": {"rootReported":{"aliases":3,"allMatched":true,"environmentAbsent":8,"freshPaths":11,"pins":262},"authority":"ROOT_SELECTION_CUT_ONLY_NOT_REPLAYED_BY_REVIEWER","reviewerWholeGraphRehash":false,"proofOfPlanCreation":false},
+  "authority": {"rootPending":"PENDING_AT_ROOT_PROOF_CUT","thisAssessment":"LATER_APPEND_ONLY_INDEPENDENT_REVIEW","rootProofRewritten":false,"actualProofRewritten":false,"disposition":"CONSUMED_DO_NOT_REPLAY","DF010C02":"ADOPTED_FULL_PASS_CONSERVED","O01":"BOUNDED_PASS54_CONSERVED","criterionTableChanged":false,"rootPublicationGOField":"NOT_PRESENT_NOT_INFERRED"},
+  "correctionLimits": {"strictPublisherSchemaPreserved":true,"required":"Fresh namespace and separately reviewed source successor; pass only exact three GO keys + pins","R5Replay":false,"R6":"SOURCE_AUTHOR_WORK_SEPARATE_NO_REVIEW_OR_GO_HERE"},
+  "boundaries": {"onlyTwoPublicActualRecordsAndExactSuppliedPublicSourceRead":true,"noCandidateParseImportEvalCheckTestBuildExecution":true,"noPrivateProfileCaptureMarkerHistoryKeyDBContentReadCopyHashEnumeration":true,"noRuntimeStoreProtectedFinalReceiptSignatureEnvelopeRevision999SemanticRead":true,"noRuntimeHelperReplayGitNetworkBrowserModelCloudDelegation":true},
+  "remaining": ["CLI positive/disabled/invalid cases remain not run","No closed archive, timing completion or CLI/OS/automatic-denial result established","Fresh successor source/reviews and root-authorized invocation are separate work; protected/full criterion/MVP acceptance remains open"],
+  "reportIntegrity": {"exclusiveMode":"0600","freshPairAbsentChunk":"f5e573","fullGaplessAuthoredReadbackRequired":true,"externalByteSHA256SealsRequired":true}
+}

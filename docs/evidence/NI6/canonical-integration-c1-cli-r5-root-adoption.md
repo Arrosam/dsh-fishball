@@ -1,0 +1,9 @@
+# Root CLI-r5 failed-run adoption
+
+2026-10-08. Adopt FAILED_HOLD/PREPARE_FAILED for the consumed R5 packet. Root fully read final independent Sol6.1/max actual CODE and ISTQB pairs and verified their four seals. No record-integrity blocker was found. Both assessments agree the root-supplied complete plan violates prepare's exact threeGO+pins envelope. Given that shape,the source rejects ADMIN_ROOT_SELECTION before plan creation. The exact caught exception is unrecorded and the public failureCode remains null; this is no CLI/OS/automatic-denial conclusion.
+
+Original prepare c7c9e9 and enclosing-finally publisher541cd5 returned EXIT1/empty with no sessions. The controller retained preparation before interpretation and admitted zero case calls through its source gate. Three lifecycle cases are NOT_RUN; normal action-time case review was not reached. Root plan is absent/unpublished,record pins empty,archive incomplete and original digest/deadline unbound. Family timing flags false do not prove physically late publication; final enclosing/proof-write duration remains NOT_ESTABLISHED. No intentional negative-input test PASS is credited.
+
+The root input mistake is corrected only in a separately reviewed fresh R6 selection; publisher schema/controller semantics remain strict and R5 is not replayed. Original PENDING_AT_ROOT_PROOF_CUT is unchanged; this is a later append-only adoption. Root prior262-pin currentness is selection evidence,not preparation success or global process instrumentation. R4's historical listenEPERM observation and precise-mechanism limitation stay separate.
+
+C02/BUB010-02 full PASS,O01 selected54 PASS and other individual87 evidence remain unchanged. No new full criterion,protected CODE,MVP,main merge,remote,stable or publication acceptance. Eight exact public source files are conserved as non-executable archive text; no private content is included.

@@ -1,0 +1,64 @@
+// Read-only original CLI observation. No lifecycle replacement or extra disposal.
+import {openSync,writeFileSync,closeSync,fsyncSync,fstatSync,lstatSync,realpathSync,constants,existsSync} from 'node:fs';
+import {resolve,sep} from 'node:path';
+export const name='df-c1-cli-observer';
+export const inject=['loader','connection','webServer','sessions','agents','llm','appReady'];
+const need=c=>{if(!c)throw new Error();};
+function directory(p){const s=lstatSync(p);need(s.isDirectory()&&!s.isSymbolicLink()&&realpathSync(p)===p&&s.uid===process.getuid()&&(s.mode&0o777)===0o700);}
+function write(p,value,cap){const b=Buffer.from(JSON.stringify(value)+'\n');need(b.length<=cap);directory(resolve(p,'..'));const fd=openSync(p,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);try{const s=fstatSync(fd);need(s.isFile()&&s.uid===process.getuid()&&(s.mode&0o777)===0o600);writeFileSync(fd,b);fsyncSync(fd);const t=lstatSync(p);need(t.dev===s.dev&&t.ino===s.ino);}finally{closeSync(fd);}}
+export function apply(ctx,{caseRoot,caseName,boot}){
+ need(['positive','disabled','invalid'].includes(caseName)&&[1,2].includes(boot));directory(caseRoot);directory(resolve(caseRoot,'private'));
+ const expected=resolve('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball','.runtime/ni6-canonical-integration-c1/validation/cli-r5/cases',caseName);need(caseRoot===expected);
+ const descendants=new Set(),counts={agents:0,sessions:0,requests:0,streams:0,tools:0};let entry,setupFiber,setupService,runtimeService,ready=false,failed=false;
+ ctx.provide('dfC1Observer',Object.freeze({readOnly:true}));
+ const belongs=f=>{let p=f?.parent?.fiber;for(let n=0;p&&n<32;n++){if(p===setupFiber)return true;p=p.parent?.fiber;}return false;};
+ const observe=f=>{try{if(f?.name==='dsh-fishball-installed')setupFiber=f;if(setupFiber&&f!==setupFiber&&belongs(f)){descendants.add(f);if(f.name==='dsh-fishball'&&f.state===2)runtimeService=f.ctx.get('df');}}catch{failed=true;}};
+ ctx.on('internal/plugin',observe,{global:true});ctx.on('internal/status',observe,{global:true});
+ for(const[event,key]of[['agent/created','agents'],['session/created','sessions'],['agent/request','requests'],['llm/stream','streams'],['tools/execute','tools']])ctx.on(event,()=>{counts[key]++;failed=true;throw new Error();},{global:true});
+ const noServices=()=>ctx.get('dfSetup')===undefined&&ctx.get('df')===undefined;
+ const leavesAbsent=()=>{const db=resolve(caseRoot,'home/profiles/web',caseName==='invalid'?'df-invalid.sqlite':'df-data/runtime.sqlite');return [db,db+'-wal',db+'-shm',db+'-journal',db+'.df-setup'].every(p=>!existsSync(p));};
+ // The first unfinished public check is selected before it runs; no error is inspected.
+ let readinessStage='REP';
+ ctx.effect(()=>ctx.appReady.onReady(()=>{try{
+  readinessStage='REP';need(!ready);
+  readinessStage='ENT';entry=Array.from(ctx.loader.entries()).find(e=>e.options.id==='df-c1-installed');need(entry&&entry.options.name==='dsh-fishball/installed');setupFiber=entry.fiber;
+  if(caseName==='positive'){
+   readinessStage='ENA';need(!entry.disabled);
+   readinessStage='FIB';need(setupFiber&&setupFiber.state===2&&setupFiber.uid!==null);
+   readinessStage='SRV';setupService=setupFiber.ctx.get('dfSetup');need(setupService);
+   readinessStage='PHA';need(setupService.diagnostics().phase===(boot===1?'setup_required':'ready'));
+  }else if(caseName==='disabled'){
+   readinessStage='DIS';need(entry.disabled);
+   readinessStage='FIB';need(setupFiber===undefined);
+   readinessStage='ABS';need(noServices());readinessStage='LAF';need(leavesAbsent());
+  }else{
+   readinessStage='INV';need(!entry.disabled);
+   readinessStage='FIB';need(setupFiber&&setupFiber.state===3&&setupFiber.uid!==null);
+   readinessStage='ABS';need(noServices());readinessStage='LAF';need(leavesAbsent());
+  }
+  readinessStage='HST';need(ctx.webServer.host==='127.0.0.1');
+  readinessStage='PRT';need(Number.isInteger(ctx.webServer.port)&&ctx.webServer.port>0&&ctx.webServer.port!==3080);
+  readinessStage='ATT';need(Object.values(counts).every(n=>n===0));
+  readinessStage='AGR';need(ctx.agents.list().length===0);
+  readinessStage='SSR';need(ctx.sessions.list().length===0);
+  readinessStage='LPR';need(ctx.llm.listProviders().length===0);
+  readinessStage='AUT';const access={url:ctx.connection.authenticatedUrl(`http://127.0.0.1:${ctx.webServer.port}/`),port:ctx.webServer.port};
+  readinessStage='WRT';write(resolve(caseRoot,`private/access-${boot}.json`),access,8192);
+  readinessStage='PUB';ready=true;write(resolve(caseRoot,`private/ready-${boot}.json`),{contractVersion:'df.c1.cli-ready/v1',caseName,boot,ready:true,disabled:entry.disabled,entryState:setupFiber?.state??'ABSENT',servicesAbsent:caseName!=='positive',routesAbsent:false,leavesAbsent:caseName!=='positive'||boot===1,zeroAttempts:true,refusalCode:'NOT_OBSERVED'},4096);
+ }catch{failed=true;try{write(resolve(caseRoot,`private/ready-${boot}.json`),{contractVersion:'df.c1.cli-ready/v1',caseName,boot,ready:false,readinessStage},4096);}catch{}}}), 'df.c1.cli.ready-observer');
+ // This awaits existing original work only. The CLI owns all actual disposal.
+ ctx.effect(()=>async()=>{let complete=false,admissionFenced=false,serviceAbsent=false,terminal=false;
+  try{
+   need(ready&&!failed);if(caseName==='positive'){
+    // Retained original ancestry identifies the actual native child.
+    need(descendants.size===1&&runtimeService&&setupService);const native=[...descendants][0];need(native.name==='dsh-fishball');
+   }
+   const fibers=setupFiber?[setupFiber,...descendants]:[];
+   for(const f of fibers){try{await f.await();}catch{}need(f.uid===null&&f.state===4);}
+   if(caseName==='positive'){for(const svc of [setupService,runtimeService]){let refused=false;try{svc.diagnostics();}catch(error){const d=error&&Object.getOwnPropertyDescriptor(error,'code');refused=!!d&&Object.hasOwn(d,'value')&&d.value==='SERVICE_DISPOSED';}need(refused);}admissionFenced=true;}else admissionFenced=noServices();
+   terminal=caseName==='disabled'?setupFiber===undefined:fibers.length===(caseName==='positive'?2:1)&&fibers.every(f=>f.uid===null&&f.state===4);
+   serviceAbsent=noServices();need(terminal&&serviceAbsent&&admissionFenced&&Object.values(counts).every(n=>n===0));complete=true;
+  }catch{}
+  write(resolve(caseRoot,`private/termination-${boot}.json`),{contractVersion:'df.c1.cli-termination/v1',caseName,boot,observerComplete:complete,originalDfTerminal:terminal,originalDfServicesAbsent:serviceAbsent,admissionFenced,zeroAttempts:Object.values(counts).every(n=>n===0),ownedNativeChildren:descendants.size,refusalCode:'NOT_OBSERVED'},4096);
+ },'df.c1.cli.terminal-observer');
+}

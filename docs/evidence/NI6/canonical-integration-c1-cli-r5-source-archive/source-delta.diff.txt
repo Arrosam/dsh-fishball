@@ -1,0 +1,265 @@
+# Complete literal CLI-r4 to CLI-r5 public six-file source delta. Manifest provenance is separately sealed to avoid recursive identity. No candidate execution/parsing or protected/private source diff. UTF-8 splitlines(keepends=True), unified_diff n=3.
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r4/observer.mjs
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r5/observer.mjs
+@@ -8,7 +8,7 @@
+ function write(p,value,cap){const b=Buffer.from(JSON.stringify(value)+'\n');need(b.length<=cap);directory(resolve(p,'..'));const fd=openSync(p,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);try{const s=fstatSync(fd);need(s.isFile()&&s.uid===process.getuid()&&(s.mode&0o777)===0o600);writeFileSync(fd,b);fsyncSync(fd);const t=lstatSync(p);need(t.dev===s.dev&&t.ino===s.ino);}finally{closeSync(fd);}}
+ export function apply(ctx,{caseRoot,caseName,boot}){
+  need(['positive','disabled','invalid'].includes(caseName)&&[1,2].includes(boot));directory(caseRoot);directory(resolve(caseRoot,'private'));
+- const expected=resolve('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball','.runtime/ni6-canonical-integration-c1/validation/cli-r4/cases',caseName);need(caseRoot===expected);
++ const expected=resolve('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball','.runtime/ni6-canonical-integration-c1/validation/cli-r5/cases',caseName);need(caseRoot===expected);
+  const descendants=new Set(),counts={agents:0,sessions:0,requests:0,streams:0,tools:0};let entry,setupFiber,setupService,runtimeService,ready=false,failed=false;
+  ctx.provide('dfC1Observer',Object.freeze({readOnly:true}));
+  const belongs=f=>{let p=f?.parent?.fiber;for(let n=0;p&&n<32;n++){if(p===setupFiber)return true;p=p.parent?.fiber;}return false;};
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r4'
++NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r5'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r4/execution-plan.proposed.json
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r5/execution-plan.proposed.json
+@@ -40,42 +40,42 @@
+     "disabled": {
+       "actualRefusalCode": "NOT_OBSERVED",
+       "database": "home/profiles/web/df-data/runtime.sqlite",
+-      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/invocation-disabled.json",
+-      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/cases/disabled",
++      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/invocation-disabled.json",
++      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/cases/disabled",
+       "sourceExpectedRefusalCode": "NONE"
+     },
+     "invalid": {
+       "actualRefusalCode": "NOT_OBSERVED",
+       "database": "home/profiles/web/df-invalid.sqlite",
+-      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/invocation-invalid.json",
+-      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/cases/invalid",
++      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/invocation-invalid.json",
++      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/cases/invalid",
+       "sourceExpectedRefusalCode": "SETUP_UNAVAILABLE"
+     },
+     "positive": {
+       "actualRefusalCode": "NOT_OBSERVED",
+       "database": "home/profiles/web/df-data/runtime.sqlite",
+-      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/invocation-positive.json",
+-      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/cases/positive",
++      "marker": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/invocation-positive.json",
++      "root": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/cases/positive",
+       "sourceExpectedRefusalCode": "NONE"
+     }
+   },
+   "commands": [
+     [
+       "/opt/homebrew/bin/python3",
+-      ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+-      ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
++      ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py",
++      ".runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json",
+       "positive"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+-      ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
++      ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py",
++      ".runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json",
+       "disabled"
+     ],
+     [
+       "/opt/homebrew/bin/python3",
+-      ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
+-      ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
++      ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py",
++      ".runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json",
+       "invalid"
+     ]
+   ],
+@@ -236,28 +236,28 @@
+     "successFieldsUnchanged": 11
+   },
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-source-review.json",
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-cli-r4-independent-test-design-review.json"
++    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-test-design-review.json"
+   ],
+   "rootAdministrativeInterpreterStartsMaximum": 2,
+-  "rootAdministrativeSource": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
+-  "rootControllerRecipe": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs",
++  "rootAdministrativeSource": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
++  "rootControllerRecipe": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-controller-recipe.mjs",
+   "rootFamilyDeadlineMonotonic": null,
+-  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json",
++  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json",
+   "rootPublication": {
+-    "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r4-execution",
++    "archive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-execution",
+     "binding": "Retained original prepare return plan digest+monotonic deadline; no reset if current plan drifts",
+     "commands": [
+       [
+         "/opt/homebrew/bin/python3",
+-        ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
++        ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
+         "prepare"
+       ],
+       [
+         "/opt/homebrew/bin/python3",
+-        ".runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py",
++        ".runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py",
+         "publish"
+       ]
+     ],
+@@ -268,7 +268,7 @@
+     "onEveryControllerExitBeforeModelYield": true,
+     "originalReturnsMaximum": 192,
+     "prepareSecondsMaximumInsideFamily": 10,
+-    "proof": "docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json",
++    "proof": "docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json",
+     "publishSecondsMaximumInsideFamily": 10,
+     "qualification": "Supported-tool denial/unavailability or late/missing record remains FAILED_HOLD/uncertain; final publication original return and proof-write timing still require root retention.",
+     "recordFilesPerReachedCase": [
+@@ -283,7 +283,7 @@
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "runCountAuthorizedPerCase": 1,
+-  "runner": ".runtime/ni6-canonical-integration-c1/validation/cli-r4/lifecycle-driver.py",
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/cli-r5/lifecycle-driver.py",
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+   "testWorkerStarts": 0
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r4/README.md
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r5/README.md
+@@ -1,27 +1,33 @@
+-# Original installed CLI lifecycle source
++# Canonical C1 CLI-r5 explicit runtime mode source
+ 
+-SOURCE_ONLY_NOT_RUN. Three separately selected once case drivers share the one root plan digest and absolute monotonic+180 deadline. Positive120 seconds: two sequential original CLI starts, same physically copied canonical65/store, one paused task and complete-identity duplicate, public same-store reconciliation without replay. Disabled25/invalid25 each start once; disabled uses the original Loader entry flag, invalid is the owned constructor-rejected depth1 path. Four CLI starts/three Python case drivers/seven interpreter starts maximum, no concurrent CLI; HTTP32/8/8=48 and exactly four family-total retained endpoint connection-failure probes after stop, separate unsuccessful attempts. Original --port0/--no-open; no readiness polling/scan/browser/auth retry.
++SOURCE_ONLY_NOT_RUN. The original root selector and newer supported-mode amendment grant source preparation only. The original eight-file draft cut is retained by exact byte/hash identities in the manifest. CLI-r4 is consumed FAILED_HOLD/DO_NOT_REPLAY; its source, plans, original records, supplements and final independent reports remain immutable.
+ 
+-Readonly observer ordering is test instrumentation through published EntryOptions.inject and Context.provide; no host/plugin wrapping or substitute lifecycle authority. Retained original setup/runtime/native child objects, original terminal UID-null/state4, disposed-service admission refusal, observer completion, original CLIexit0, owned group/listener absence and EOF all gate success. Native forced exit0 alone is insufficient. Published Loader/Cordis event/fiber, AppReady, Connection and WebServer host/port declarations are exact manifest-selected inputs. Route absence uses original POST405 fallback; WebServer private tables are not read. Invalid source expected SETUP_UNAVAILABLE remains actual NOT_OBSERVED; no error recovery.
++The sole selected execution semantic change is in root-controller-recipe.mjs: the case-driver exec_command arguments add sandbox_permissions='require_escalated' and the scoped justification below. No prefix_rule is supplied. Preparation and finally publication retain their original default tool mode. The additional startup observer proposed in the public-source diagnosis is UNSELECTED/NOT_RUN; no diagnostic slots, classification, injection, streams, host changes or new telemetry are present.
+ 
+-Public case4096/read4097, commands16384, before/after4096, plan65536; original stdout/stderr owning captures65536 each/131072 aggregate, never decoded. Named DB/vault leaf metadata only. Profiles/cases/private files are created only by actual root-selected drivers. Root owns original supported calls/direct returns, stops on any denial/nonzero/uncertainty, and performs final records/cleanup inside the same remaining deadline with at most10s family reserve. GO false/pins empty, no author CLI/provider/model/worker execution. Residual active-worker crash/matrix/existing-session/browser and full AC acceptance remain unclaimed.
++Scoped justification: Execute the reviewed fresh once-only isolated DSH Web CLI case on 127.0.0.1 with OS-assigned port 0 and its synthetic profile, retaining the original owned child and bounded cleanup/publication.
+ 
+-R2 replaces only HTTP total-deadline enforcement and the fresh namespace. One owning Python main-process one-shot ITIMER_REAL/SIGALRM covers the retained connection's complete request/headers/body exchange with end=min(original shared RPC deadline, monotonic()+2). A stable EXECUTOR_HTTP_TOTAL_DEADLINE refusal returns to original cleanup; timer/default handler restored on every exit before connection close, with one-shot latch and nested cancellation. Prior timer must be inactive and SIGALRM unblocked. No detached worker, retry, extra request, endpoint or host authority. Ordinary inactivity timeout is retained inside the stricter complete-exchange deadline. No universal OS timing/instant-cancellation guarantee. Original CLI packet is immutable NOT_RUN/MUST_NOT_EXECUTE; worker source is unaffected. Final closure binds both sealed original independent finding pairs and the exact root r2 selection.
++Observer, lifecycle driver and root publisher are exactly byte-equivalent to r4 after replacing only the literal cli-r4 with cli-r5. The recipe has exactly that namespace substitution plus the two case-driver fields. The proposal changes only namespace literals. The original installed CLI, binary, argv, cwd, scrubbed environment construction, synthetic profile ownership, public configuration, original object/lifecycle/cleanup semantics and failure grammars are conserved. No product source, test or installed host is changed. Whole literal six-file source differences and a mechanically verifiable inverse are sealed separately from manifest self identity.
+ 
+-Root additionally selected one meaningful in-process HTTP_DEADLINE_CONTRACT regression after positive GO and before first CLI creation, <=0.2s inside the original case/family budget. Two owning socketpairs, no listener/network endpoint/thread/process: literal complete headers declare one withheld byte; original HTTPResponse.read must raise the source-owned timeout, then a successful one-byte read must observe restored/disarmed timer/default handler, unchanged first-failure identity and closed sockets after both. Each guarded slice<=0.03s; header<=128/body1 byte. Expected timeout is handled without resetting first failure; real Transport alone latches timeout failure. No extra native HTTP request, CLI start, public result field or fault suite. All actual controls remain NOT_RUN until root selection.
++Three sequential once-only case drivers share one bound root plan and one absolute monotonic 180-second family. Positive120 seconds permits two sequential original CLI boots, one paused task and complete-identity duplicate with same-store restart reconciliation. Disabled25/invalid25 permit one boot each using original Loader disabled/depth1 invalid-target branches. Maximum four CLI plus three Python case drivers gives runtime seven interpreter starts; one preparation and one publication add administration two, overall nine. These are source-derived maxima, not instrumentation of every OS/tool/shell process. HTTP32/8/8 is at most48; four retained post-stop endpoint absence probes remain separate unsuccessful connection attempts inside existing ceilings. Original --profile web --host 127.0.0.1 --port 0 --no-open and public native HTTP fallback remain.
+ 
+-R3 adds nineteen fixed three-ASCII readiness stages in an exact five-field failure record. The consumer recognizes only matching version/case/integer boot, ready=false and an explicitly enumerated stage, then refuses with the existing failureCode. Malformed failure forms remain closed protocol refusal. The exact eleven-field success and terminal grammar/oracles are unchanged. Splitting the original zero predicate preserves its event counters and all three original registry checks. No errors are inspected; markers identify the first unfinished public observation, not a protected internal cause. Publication failure may yield no diagnostic. Consumed R2 remains FAILED_HOLD/DO_NOT_REPLAY; its previously late archive is historical, unchanged.
++All original gates remain: nineteen three-ASCII readiness stages and exact five-field failure, eleven-field success, terminal and sixteen-field case-result protocols; original readiness/authentication/profile/physical-copy/task/dedup/same-store/quit/disabled/invalid observations; event counters and three registry checks; retained setup/runtime/native child objects; original terminal UID-null/state4, disposed-service admission refusal, observer completion, native CLI exit0, group/listener absence and EOF/readback. A forced exit0 alone does not establish original teardown. Private readiness/access/profile/database/key/history/raw capture/response/error contents remain excluded from preparation evidence.
+ 
+-The bound inert root-controller-recipe.mjs is read/reviewed source for one owning functions call; it is never imported or run during preparation. Root supplies exact final pins and all three already approved GO flags. root-publication.py prepare verifies named public pins/topology/environment and exclusively creates one root plan with STARTED+180. Runtime remains three Python case drivers/four original CLI starts=seven; prepare/publication add two separately counted administrative Python starts, nine maximum total. No extra CLI, thread, helper process, model, endpoint or signal. The unchanged original case timers and total HTTP deadline/control remain. Each driver additionally clamps its end to family_end-10, retaining the original family publication reserve, with no reset.
++The owning Python total HTTP deadline, one-shot ITIMER_REAL/SIGALRM handling, default/unblocked/inactive preconditions, first-failure latch, nested cancellation and restoration are conserved. Complete request/header/body exchanges remain capped by min(original shared RPC deadline, monotonic()+2). The original positive in-process HTTP_DEADLINE_CONTRACT uses two socketpairs, complete literal headers <=128 bytes, one-byte body and guarded slices <=0.03 seconds inside <=0.2 seconds of the existing family; no listener/network endpoint/thread/process or extra native HTTP request. Its withheld-body timeout then successful one-byte read, restoration/latch and closed-socket gates remain. The inherited7206-byte HTTP segment and1600-byte observer terminal segment are conserved through full-file normalization, with no new source segment assumptions. No universal OS timing or instant-cancellation guarantee is made.
+ 
+-The recipe stores each original supported return in memory immediately, before inspecting finite metadata. It stops on denial/unavailability/nonzero/nonempty/uncertain and polls only the original retained session, with finite loop ceilings. Date-based admission is advisory; original Python monotonic plan is authoritative. Its finally publication pass runs before the model handoff, on success and failure, within remaining original deadline. Publication uses the retained prepare-return digest/deadline and refuses aggregate PASS on drift. It validates and copies ONLY the exact named closed case/command/boundary/marker/plan records; no private readiness/access/profile/database/key/history/response/error/raw-stream read. Finite absent/uncertain statuses and original first failure are preserved. O_EXCL owner0600 files and exact raw validated snapshot readback bind published seals.
++Private stdout/stderr caps remain65536 each/131072 aggregate, opaque. Public case/boundary4096, case read4097, command16384 and plan/proof/input65536 remain. The original wall/monotonic guards, group ownership, EOF/readback, once-only admission and publication reserve remain. Each case is additionally clamped to family_end minus10 seconds. Preparation/publication each have a nonadditive10-second ceiling within the same180-second family; no reset extends it.
+ 
+-Preparation/publication each have a nonadditive10-second cap inside the same180-second family. Public proof/input cap65536 and at most192 finite return metadata rows are independent from existing4096/16384/4096 case records and65536 plan. A publication or tool failure may prevent complete evidence; root must retain the original publication returns and establish final proof-write timing. A pre-proof PASS snapshot never establishes the final publication return or whole lifecycle alone. No raw returned output or caught exception is published; the root recipe's retained original objects stay in owning memory and must not be blindly text/JSON-published. No universal OS scheduling/atomic-file/instant-cancellation guarantee is made.
++Eight fixed public UTF-8 vectors remain byte-identical in the recipe: empty=>0; A\u007f=>2; \u0080\u07ff=>4; \u0800\uffff=>6; \ud800\udc00=>4; unpaired \ud800=>3; unpaired \udc00=>3; mixed A\u00e9\u4e2d\ud83d\ude00\ud800Z\udc00=>17. Their standard ECMAScript string/number counter introduces no host encoder, byte buffer, tool/process/listener/authentication/model/private input. They remain NOT_RUN for r5 source preparation and run only before preparation in a future root-approved owning invocation. Broader controller-stub controls CR01/CR02/CR03 remain NOT_RUN without added scaffolding.
+ 
+-Closure uses current canonical65/pinned original host, genuine build proof and named build records, the complete exact consumed R3 capsule/author/final source+actual review pairs, immutable publisher proof/root supplement and the root R4 selection containing the controller diagnosis. No diagnosis report was invented, no ancestor source/history tree copied, and original CLI ancestry is represented by its already bound consumed successor authority. All actual destinations absent at source seal, GO=false/pins{}, actual starts0. C02 changed-thread/reordering and residual acceptance remain unclaimed.
++Every original supported prepare/case/publication return remains retained immediately in the same owning session before finite metadata interpretation. Narrow catches enclose only supported calls. Binding digest/deadline latches, metadata failure CONTROLLER_METADATA_FAILED, zero-row failure-only HOLD treatment, finite metadata rows<=192, original publication returns<=9 and enclosing finally publication are conserved. Polling targets only the original retained session. Original returns stay in root memory and are not blindly serialized. Final original publication return and root-established final proof-write timing remain separate requirements. A failure short-circuiting the final post-write clock cannot establish that window from exit1. A pre-proof PASS snapshot remains provisional.
+ 
+-R4 corrects only the owning functions controller metadata dependency. Its UTF-8 byte counter uses standard ECMAScript string/number operations: ASCII1, two-byte BMP2, other BMP3, valid surrogate pairs4 and each unpaired surrogate standard replacement3. It creates no encoded byte buffer and never decodes or publishes arbitrary returned output. Original supported return objects remain immediately retained before interpretation. Only the bounded public preparation JSON is parsed as before. Narrow catches enclose only direct supported tool calls; metadata/regression exceptions select CONTROLLER_METADATA_FAILED without caught-error serialization. Publication-return objects are retained before metadata interpretation and survive a later controller exception; publicationUnavailable means a supported call actually threw. Root still owns final original publication return and proof-write timing.
++If automatic approval review denies or does not establish case authorization, stop selected cases, retain the original returned object and use only the selected same-owning finally publication. No retry, alternate permission mode, runtime route, signal retarget, network workaround, permission expansion or cleanup promotion. Record the exact rejected action and reason through root's permitted closed evidence; do not expose caught/raw payloads.
+ 
+-Eight public literal controls run once only in the future root-approved owning functions invocation, before preparation: empty=>0; A\u007f=>2; \u0080\u07ff=>4; \u0800\uffff=>6; \ud800\udc00=>4; unpaired \ud800=>3; unpaired \udc00=>3; A\u00e9\u4e2d\ud83d\ude00\ud800Z\udc00=>17. This checks both UTF-8 classes and BMP range boundaries with zero new tool calls, OS processes, listeners, authentication requests, model calls or private inputs. Source preparation never evaluates the controller or vectors. A mismatch/metadata exception stops the family with CONTROLLER_METADATA_FAILED. The publisher accepts zero metadata rows only with that code, archives failure-only HOLD without a prepared binding and never grants PASS; no runtime deadline is created or reset. No new case-result fields or product readiness cause are selected.
++Historical cut: R4 preparation874cc7 exited0; positive driver cbd35a exited1; publisher388455 exited1. Original child/group54092 exited1 before usable readiness, with EOF/readback and absent-group observation, no signal/forced cleanup and HTTP0. Its original closed records and the initial r5 draft treated1094 opaque stderr bytes as unread and the default-mode cause as an UNCONFIRMED_HYPOTHESIS. Those exact cut-time records remain immutable.
+ 
+-CLI-r3 preparation EXIT0 succeeded, but TextEncoder was unavailable after the original return had been retained; its broad catch misclassified that controller error as TOOL_UNAVAILABLE. Its finally publisher EXIT1 emitted an unbound failure-only proof. The immutable root supplement distinguishes this binding failure from a physically late archive; final proof-write timing remains NOT_ESTABLISHED. No CLI case/HTTP/model started. R3 stays consumed FAILED_HOLD/DO_NOT_REPLAY. R4 preserves the complete driver byte-for-byte after namespace-only normalization, all nineteen/five-field failure and eleven-field success/terminal protocols, 7,206-byte HTTP control and 1,600-byte terminal observer, same monotonic180 and120/25/25 ceilings, runtime7/admin2/overall9 source maxima,48HTTP/four probes and original byte caps. Source only; all GO=false/pins{}; actual starts0. Full87 individual-criterion acceptance, MVP and publication remain HOLD.
++Current root-owned redacted diagnosis, adopted after the original cut, establishes listener binding failed before readiness: listen EPERM. Root's bounded owned-capture inspection returned sanitized33d951 exit0; its fixed public observations are the only diagnosis source read by this author. Root privately decoded one owned synthetic stderr capture under the newer scoped parent instruction; no raw log/path/URL/credential was published. This author read no private capture. The previous private-consumer restriction was root's convention, resolved by the newer scoped selection; no new access permission is inferred for this author. The exact permission-enforcement mechanism, a missing dependency or a DF product defect remain NOT_ESTABLISHED. The supported-mode amendment authorizes preparation of the same isolated action's normal approval request, without another observer or a host/port/tool/runtime substitution. No r4 automatic approval denial is established. Source flow with no selected driver task dispatch does not establish installed registry/provider/model zero attempts. Later success cannot retroactively prove the precise enforcement mechanism. R4 remains consumed FAILED_HOLD/DO_NOT_REPLAY and its original final enclosing duration/proof-write timing remain NOT_ESTABLISHED. R3's earlier retained preparation, unavailable TextEncoder/misclassification and unbound failure-only publication remain disclosed in immutable records. Prior boundary incidents remain disclosed; no pristine history claim is made.
++
++The manifest retains every r4 input row verbatim and adds explicit immutable r4 capsule, author/source/design/actual pairs, original proof/controller supplements, declared closed public execution records, historical public-source diagnosis, later redacted owned-stderr diagnosis/adoption/scoped selection, supported-mode amendment and current root/owner/workflow authority. Canonical65 conservation uses exact opaque wholefile hashes only; RuntimeStore and protected final CODE/receipt/signature/envelope/revision999/capture/finish semantics remain BLOCKED_UNCHANGED. No private directory walk or ancestor source copy is used. Author evidence seals the fresh manifest separately; final independent affected Sol6.1/max CODE and ISTQB pairs bind it and the author pair. Root alone supplies the generic input+owned+manifest-self+four-review union, environment exclusions and fresh actual absence checks before any once execution selection.
++
++All GO flags=false, pins={}, deadline=null, actual r5 starts0. Fresh cases/markers/root plan/archive/proof and eight independent source/actual report destinations are absent at source seal. Root alone owns Git/runtime. Shared .runtime/ui-qa-a58c522/ and port3080 remain untouched; cancelled4da34a6d is NEVER_EXECUTE. Browser route remains blocked; twice-denied cloud route is not retried. No model/provider/cloud/chat/webhook/account/credential/host install/browser/native fallback, network, Git, remote/push/main merge or publication is selected.
++
++Independent affected source CODE/ISTQB pairs, root-owned once execution, original return/timing retention and independent actual assessments remain pending. Individual87 reconciliation, DF010-C02 changed-thread/reordering, native continuation/CLI quit-restart/resource-load/browser/UI/protected final review, full MVP and publication remain HOLD. There is no material source-authoring blocker.
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r4/root-publication.py
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r5/root-publication.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r4'
++NAME='.runtime/ni6-canonical-integration-c1/validation/cli-r5'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -202,8 +202,8 @@
+ 
+ 
+ FAILURE_CODES=('ADMIN_ARGUMENTS', 'ADMIN_BOOT', 'ADMIN_BOUNDARY_FIELDS', 'ADMIN_BOUNDARY_VALUE', 'ADMIN_CASE_BOOLEAN', 'ADMIN_CASE_CONSUMED', 'ADMIN_CASE_FIELDS', 'ADMIN_CASE_REFUSAL', 'ADMIN_CASE_TIME', 'ADMIN_CASE_VALUE', 'ADMIN_CHILD_BOOLEAN', 'ADMIN_CHILD_EXIT', 'ADMIN_CHILD_FIELDS', 'ADMIN_CHILD_ID', 'ADMIN_CHILD_STATE', 'ADMIN_COMMAND_FIELDS', 'ADMIN_DESTINATION_EXISTS', 'ADMIN_ENVIRONMENT', 'ADMIN_FAMILY_DEADLINE', 'ADMIN_IDENTITY', 'ADMIN_MARKER_FIELDS', 'ADMIN_PIN_DRIFT', 'ADMIN_PIN_UNION', 'ADMIN_PLAN_DIGEST', 'ADMIN_PLAN_DRIFT', 'ADMIN_PUBLICATION_INPUT', 'ADMIN_PUBLIC_BOUND', 'ADMIN_READBACK', 'ADMIN_RECORD_TYPE', 'ADMIN_RETURN_CHUNK', 'ADMIN_RETURN_COUNT', 'ADMIN_RETURN_EXIT', 'ADMIN_RETURN_FIELDS', 'ADMIN_RETURN_KIND', 'ADMIN_RETURN_OUTPUT', 'ADMIN_RETURN_SESSION', 'ADMIN_RETURN_TIME', 'ADMIN_ROOT_SELECTION', 'ADMIN_SIGNAL', 'ADMIN_SIGNAL_OUTCOME', 'ADMIN_STDIN_BOUND', 'ADMIN_STREAM_BOOLEAN', 'ADMIN_STREAM_FIELDS', 'ADMIN_STREAM_VALUE', 'ADMIN_TOPOLOGY', 'EXECUTOR_ACCESS_FIELDS', 'EXECUTOR_AGGREGATE_DEADLINE', 'EXECUTOR_ARGUMENTS', 'EXECUTOR_AUTH_COOKIE', 'EXECUTOR_AUTH_EXCHANGE', 'EXECUTOR_AUTH_ORDER', 'EXECUTOR_BEFORE_CONSENT', 'EXECUTOR_BINARY_FILE', 'EXECUTOR_BUILD_PIN', 'EXECUTOR_BUILD_PROOF', 'EXECUTOR_BUILD_PROOF_SHAPE', 'EXECUTOR_CAPTURE_CLOSE_UNKNOWN', 'EXECUTOR_CAPTURE_READBACK', 'EXECUTOR_CAPTURE_READBACK_UNKNOWN', 'EXECUTOR_CASE_CONSUMED', 'EXECUTOR_CASE_HTTP_BOUND', 'EXECUTOR_CASE_REPLACED', 'EXECUTOR_CLEANUP_UNKNOWN', 'EXECUTOR_CLI_EARLY_EXIT', 'EXECUTOR_CLI_GATE_FAILED', 'EXECUTOR_CLI_NOT_ALIVE_BEFORE_STOP', 'EXECUTOR_CLI_SPAWN', 'EXECUTOR_CLI_STOP_NOT_ESTABLISHED', 'EXECUTOR_CONTAINMENT', 'EXECUTOR_COPY_CONTAINMENT', 'EXECUTOR_COPY_PIN', 'EXECUTOR_COPY_READBACK', 'EXECUTOR_DIGEST', 'EXECUTOR_DUPLICATE_INTAKE', 'EXECUTOR_DUPLICATE_JSON_MEMBER', 'EXECUTOR_ENVIRONMENT', 'EXECUTOR_EOF_NOT_ESTABLISHED', 'EXECUTOR_FAMILY_DEADLINE', 'EXECUTOR_FILE_IDENTITY', 'EXECUTOR_FIRST_INTAKE', 'EXECUTOR_FORCED_CLEANUP', 'EXECUTOR_FOREIGN_ORIGIN', 'EXECUTOR_HTTP_BOUND', 'EXECUTOR_HTTP_CONTROL_BOUND', 'EXECUTOR_HTTP_CONTROL_HEADER', 'EXECUTOR_HTTP_CONTROL_RESTORATION', 'EXECUTOR_HTTP_CONTROL_SOCKET_CLEANUP', 'EXECUTOR_HTTP_CONTROL_SUCCESS', 'EXECUTOR_HTTP_CONTROL_TIMEOUT', 'EXECUTOR_HTTP_TIMER_NOT_AVAILABLE', 'EXECUTOR_HTTP_TOTAL_DEADLINE', 'EXECUTOR_IDENTITY', 'EXECUTOR_INITIAL_TASKS', 'EXECUTOR_INTERRUPTED', 'EXECUTOR_JSON_BOUND', 'EXECUTOR_JSON_CONSTANT', 'EXECUTOR_LISTENER_NOT_ABSENT', 'EXECUTOR_NEGATIVE_LEAVES', 'EXECUTOR_NEGATIVE_NATIVE_FALLBACK', 'EXECUTOR_NEGATIVE_NO_WRITES', 'EXECUTOR_NEGATIVE_ORIGINAL_ENTRY', 'EXECUTOR_OBSERVER_READY', 'EXECUTOR_ORIGINAL_RETURN_NOT_ESTABLISHED', 'EXECUTOR_ORIGINAL_TEARDOWN_NOT_ESTABLISHED', 'EXECUTOR_OUTPUT_BOUND', 'EXECUTOR_OWNED_READ_BOUND', 'EXECUTOR_OWNED_RECORD', 'EXECUTOR_PATH', 'EXECUTOR_PAUSED_STATE', 'EXECUTOR_PAUSE_WORKERS', 'EXECUTOR_PHYSICAL_PRODUCT_DRIFT', 'EXECUTOR_PIN_DRIFT', 'EXECUTOR_PIN_UNION', 'EXECUTOR_PLAN_BOUND', 'EXECUTOR_PLAN_DRIFT', 'EXECUTOR_PLAN_FIELDS', 'EXECUTOR_PLAN_SELECTION', 'EXECUTOR_PREVIEW_NO_WRITES', 'EXECUTOR_PRIVATE_DIRECTORY', 'EXECUTOR_PRIVATE_ENDPOINT', 'EXECUTOR_PRIVATE_FILE', 'EXECUTOR_PUBLIC_BOUND', 'EXECUTOR_READY_FAILURE_PROTOCOL', 'EXECUTOR_READY_FIELDS', 'EXECUTOR_READY_STAGE_ABS', 'EXECUTOR_READY_STAGE_AGR', 'EXECUTOR_READY_STAGE_ATT', 'EXECUTOR_READY_STAGE_AUT', 'EXECUTOR_READY_STAGE_DIS', 'EXECUTOR_READY_STAGE_ENA', 'EXECUTOR_READY_STAGE_ENT', 'EXECUTOR_READY_STAGE_FIB', 'EXECUTOR_READY_STAGE_HST', 'EXECUTOR_READY_STAGE_INV', 'EXECUTOR_READY_STAGE_LAF', 'EXECUTOR_READY_STAGE_LPR', 'EXECUTOR_READY_STAGE_PHA', 'EXECUTOR_READY_STAGE_PRT', 'EXECUTOR_READY_STAGE_PUB', 'EXECUTOR_READY_STAGE_REP', 'EXECUTOR_READY_STAGE_SRV', 'EXECUTOR_READY_STAGE_SSR', 'EXECUTOR_READY_STAGE_WRT', 'EXECUTOR_READY_TYPES', 'EXECUTOR_RECONCILED_NO_REPLAY', 'EXECUTOR_REGULAR_FILE', 'EXECUTOR_REQUEST_BOUND', 'EXECUTOR_RESPONSE_BOUND', 'EXECUTOR_RESTART_DEDUP', 'EXECUTOR_RESTART_TASK', 'EXECUTOR_ROOT_GO', 'EXECUTOR_RPC_REFUSAL', 'EXECUTOR_RPC_STATUS', 'EXECUTOR_SAME_STORE_METADATA', 'EXECUTOR_SELECTED_SIGTERM_NOT_SUBMITTED', 'EXECUTOR_SETUP_CONFIRM', 'EXECUTOR_SETUP_METADATA', 'EXECUTOR_SETUP_PHASE', 'EXECUTOR_SETUP_READY', 'EXECUTOR_SIGNAL_BLOCKED', 'EXECUTOR_SIGNAL_DENIED_UNKNOWN', 'EXECUTOR_SIGNAL_OWNERSHIP_UNKNOWN', 'EXECUTOR_SIGNAL_REPEAT', 'EXECUTOR_SINGLE_TASK', 'EXECUTOR_SPAWN_OR_CAPTURE_FAILED', 'EXECUTOR_TERMINATION_COUNTS', 'EXECUTOR_TERMINATION_FIELDS', 'EXECUTOR_TOPOLOGY', 'EXECUTOR_UNAUTHENTICATED_ADMISSION')
+-ARCHIVE=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r4-execution'
+-PROOF=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json'
++ARCHIVE=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r5-execution'
++PROOF=ROOT/'docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json'
+ CASE_NAMES=('positive','disabled','invalid')
+ GO=('rootReviewedExecutionGO','rootSupportedExecutionApprovalGranted','rootReviewedFinalAffectedReports')
+ RECORD_NAMES=('case-result.json','command-results.json','before-after.json')
+@@ -327,7 +327,7 @@
+     else:archive_complete=False;missing.append({'case':'family','record':'root-plan.json','status':'ABSENT_OR_UNCERTAIN'})
+     within_final=within_start and time.monotonic()<publication_end
+     passed=value['controllerCode']=='COMPLETE' and archive_complete and within_final and all(case_outcomes.get(c)=='PASS' for c in CASE_NAMES)
+-    proof={'schema':'df.canonical-c1.cli-r4-actual-return/v1','result':'PASS' if passed else 'FAILED_HOLD','disposition':'CONSUMED_DO_NOT_REPLAY',
++    proof={'schema':'df.canonical-c1.cli-r5-actual-return/v1','result':'PASS' if passed else 'FAILED_HOLD','disposition':'CONSUMED_DO_NOT_REPLAY',
+         'controllerCode':value['controllerCode'],'failureCode':first_failure,'originalToolReturns':returns,'cases':case_outcomes,'recordPins':records,'missingOrUncertain':missing,
+         'publication':{'withinOriginalFamilyAtStart':within_start,'withinOriginalFamilyBeforeProof':within_final,'closedArchiveComplete':archive_complete,'originalPlanDigestBound':plan_bound,'secondsCap':10,'noPrivateContentRead':True},
+         'runtimeInterpreterStartsMaximum':7,'administrativeInterpreterStartsMaximum':2,'fullAcceptance':False,
+--- .runtime/ni6-canonical-integration-c1/validation/cli-r4/root-controller-recipe.mjs
++++ .runtime/ni6-canonical-integration-c1/validation/cli-r5/root-controller-recipe.mjs
+@@ -3,7 +3,7 @@
+ // No candidate starts occur by reading this file. Paste the reviewed body into one owning functions call.
+ export async function runSelectedFamily(tools, approvedSelection) {
+  const cwd='/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+- const base='.runtime/ni6-canonical-integration-c1/validation/cli-r4';
++ const base='.runtime/ni6-canonical-integration-c1/validation/cli-r5';
+  const python='/opt/homebrew/bin/python3';
+  const originalReturns=[];const retained=[];
+  // Date is an advisory early-admission cut only; actual case/publication deadlines use the ONE Python monotonic plan.
+@@ -57,7 +57,7 @@
+   prepared=true;remaining=prep.familyRemainingSeconds;preparedAt=Date.now();controllerCode='COMPLETE';
+   for(const caseName of ['positive','disabled','invalid']){
+    if(remaining-(Date.now()-preparedAt)/1000<=10){controllerCode='STOPPED';break;}
+-   const caseArgs={cmd:python+' '+base+'/lifecycle-driver.py .runtime/root-ni6-canonical-integration-c1-cli-r4-plan.json '+caseName,workdir:cwd,yield_time_ms:1000,max_output_tokens:1000};
++   const caseArgs={cmd:python+' '+base+'/lifecycle-driver.py .runtime/root-ni6-canonical-integration-c1-cli-r5-plan.json '+caseName,workdir:cwd,yield_time_ms:1000,max_output_tokens:1000,sandbox_permissions:'require_escalated',justification:'Execute the reviewed fresh once-only isolated DSH Web CLI case on 127.0.0.1 with OS-assigned port 0 and its synthetic profile, retaining the original owned child and bounded cleanup/publication.'};
+    try{r=await tools.exec_command(caseArgs);}catch{unavailable(caseName);controllerCode='TOOL_UNAVAILABLE';break;}
+    retain(caseName,r);
+    // Poll the SAME original session. No retry/new process/signal after uncertain ownership.
+@@ -85,7 +85,7 @@
+    }
+    // Root retains these original returns and final proof seal/timing; no lifecycle promotion.
+    return {controllerCode,prepared,originalReturns:retained,publicationOriginalReturns,
+-    publicProof:'docs/evidence/NI6/canonical-integration-c1-cli-r4-actual-return.json'};
++    publicProof:'docs/evidence/NI6/canonical-integration-c1-cli-r5-actual-return.json'};
+   }catch{return {controllerCode:'CONTROLLER_METADATA_FAILED',prepared,originalReturns:retained,publicationOriginalReturns,publicationControllerFailed:true};}
+  }
+ }

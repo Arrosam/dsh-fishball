@@ -1,0 +1,61 @@
+{
+  "CLIListenerOSDenialInference": false,
+  "MVPAcceptance": false,
+  "actualReviews": [
+    {
+      "bytes": 3910,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-execution-review.md",
+      "sha256": "3dfc73040c406640da491919c743da3f4fb471b81575a01ff9fef3f357339f41"
+    },
+    {
+      "bytes": 6985,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-execution-review.json",
+      "sha256": "04ea74bebad907383aa1faf465f051de16004083ee8390a430e2ec926cc6dc82"
+    },
+    {
+      "bytes": 3991,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-actual-test-assessment.md",
+      "sha256": "9484c09da477479e8e258d387f959db9dd80ac9a2c147a92f142bb13b1c1b1e1"
+    },
+    {
+      "bytes": 6968,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-independent-actual-test-assessment.json",
+      "sha256": "fdea0530b8c7f3dbdd8e59d0420299fe80a85a4a1fba8dfee29c74970f9582f5"
+    }
+  ],
+  "admittedCases": 0,
+  "caseAutomaticReview": "NOT_REACHED",
+  "controllerCode": "PREPARE_FAILED",
+  "date": "2026-10-08",
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "finalEnclosingAndProofWriteTiming": "NOT_ESTABLISHED",
+  "mainMerge": false,
+  "markdown": {
+    "bytes": 1896,
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-r5-root-adoption.md",
+    "sha256": "c235b148d0abff5a4d23d8bb943b8a332bcd430daa98f422fd5b8b1d110e6ef9"
+  },
+  "noNewFullCriterionPASS": true,
+  "originalPendingCut": "IMMUTABLE_UNCHANGED",
+  "originalReturns": [
+    "c7c9e9 EXIT1 empty",
+    "541cd5 EXIT1 empty"
+  ],
+  "preserved": [
+    "C02/BUB010-02 full PASS shared credit",
+    "O01 selected54 PASS",
+    "individual87 evidence",
+    "R4 consumedfailure and scopedlistenEPERM diagnosis"
+  ],
+  "protectedCODE": "BLOCKED_UNCHANGED",
+  "publicFailureCode": null,
+  "publication": false,
+  "publisherSchemaWeakened": false,
+  "remote": false,
+  "result": "FAILED_HOLD",
+  "rootFullReadFinalActualPairs": true,
+  "schema": "df.canonical-c1.cli-r5-root-adoption/v1",
+  "sourceArchive": "docs/evidence/NI6/canonical-integration-c1-cli-r5-source-archive",
+  "sourceDerivedDiagnosis": "Given supplied full-plan object,exact keys fail ADMIN_ROOT_SELECTION before root plan creation; actual caught exception unrecorded",
+  "successor": "CLI-r6 source/reviews/once admission separate"
+}

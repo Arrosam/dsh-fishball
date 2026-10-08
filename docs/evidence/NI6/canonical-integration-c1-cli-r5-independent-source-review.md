@@ -1,0 +1,29 @@
+# CLI-r5 independent affected CODE source review
+
+2026-10-08; independent Sol6.1/max source review. PASS for the affected source with the qualifications below; material execution-source findings: none. This grants no runtime/replay/publication GO or full acceptance. Aggregate all87 remains HOLD; prior valid individual PASS evidence is preserved.
+
+All eight exact manifest files were fully read, including root-controller-recipe.mjs and root-publication.py (the task's abbreviated filenames were pointers only). AGENTS, owner/workflow authority, selection/amendment, author pair and public redacted R4 diagnosis/adoption were read. No candidate parser/import/evaluation/check/test/build/helper/runtime, network/model/browser/Git, private content or directory enumeration was used. Protected final bodies, receipts/signature/envelope/revision999 and RuntimeStore semantics remain excluded. Historical incidents remain disclosed; no pristine exposure-history claim.
+
+The sole execution semantic delta is the two scoped case-call fields: sandbox_permissions require_escalated and the exact amendment justification, without prefix_rule. Preparation/publication retain default mode. Original pinned Node/DSH CLI --profile web --host127.0.0.1 --port0 --no-open, controller argv, cwd, scrubbed synthetic environment, public config, profile ownership and lifecycle/cleanup remain. This requests normal action-time approval for the same isolated action; source review does not establish that approval. Returned rejection or uncertainty is retained before interpretation and stops cases; a thrown supported call marks TOOL_UNAVAILABLE and stops. The same finally publication runs, with no retry/alternate/permission expansion. Root retains/reports the original approval record and stated reason rather than inferring it from closed metadata.
+
+Independent whole-file evidence:
+
+| File | Namespace replacements | Inverse equals sealed R4 |
+| --- | ---: | --- |
+| observer.mjs |1|true|
+| lifecycle-driver.py |2|true|
+| execution-plan.proposed.json |24|true|
+| root-publication.py |5|true|
+| root-controller-recipe.mjs |3|true after removing exactly the two fields|
+
+The changed caseArgs line matches the scoped fields exactly once; permission/justification each occur once and prefix_rule never occurs. Independent six-file host text diff matches all 39724 body bytes; preamble 252, total 39976. All eight sources are ASCII and externally sealed. The full recipe inverse preserves the portable UTF-8 counter/eight fixed vectors, immediate original retention, narrow tool catches, digest/deadline latches, original-session polling and enclosing finally. Vectors remain NOT_RUN for R5. Metadata<=192 and publication originals<=9; zero rows allow only failure-only CONTROLLER_METADATA_FAILED HOLD. Readiness 19 stages, five/eleven-field ready protocols, terminal/case16 grammar, opaque/public caps and teardown/EOF/readback guards are conserved.
+
+The public closure independently matches 250 inputs/9315765 bytes: all 212 R4 rows exact,38 added, 0 removed; 65 canonical records/1952632 bytes exactly conserved as public metadata. No protected file was opened for that comparison; inherited root opaque conservation is distinct from new live-file rehash. The union is 262=250+7 owned+manifest-self+4 final review slots. Source copies are empty. Initial eight-draft 236637-byte metadata is preserved; five executable/proposal identities remain exact while documentary closure was amended before sealing. Three declared interpreter symlink targets match. Inert public JSON width calculation independently gives 47946/65536 with 18-character deadline/five fixed64-character placeholders; no plan was written. GO flags=false, pins{}, deadline=null. Fifteen destination absences describe the author cut; root must recheck currentness/environment/fresh actual destinations and bind final reviews/author seals before selection.
+
+Family 180, cases 120/25/25, runtime 7 plus administration 2, CLI 4/drivers 3, HTTP 48 and post-stop probes 4 remain source maxima. Preparation/publication each consume their existing nonadditive 10-second bounds. No timer reset, extra observer or route change is introduced. Approval/poll overhead is not guaranteed by these maxima. Final original publication return and root-established final proof-write timing remain separate requirements; exit1 or provisional pre-proof PASS cannot establish that window.
+
+Current public R4 evidence establishes listener listen EPERM before readiness. Exact enforcement mechanism, missing dependency, DF defect and a prior automatic approval denial remain unestablished. Original opaque-cut proofs stay immutable and R4 remains consumed FAILED_HOLD/DO_NOT_REPLAY. Later success cannot retrospectively prove enforcement; HTTP0/selected-dispatch flow does not prove installed registry/provider/model zero attempts. The amendment supersedes the former pause only for source preparation.
+
+Nonblocking qualifications: README's closing C02/individual87 HOLD phrase is stale boilerplate. Newest root steering preserves prior C02 full PASS and all 87-row evidence; root will qualify adoption rather than mutate sealed artifacts. Browser-blocked wording is also its source cut: parent reports a working supported route elsewhere, with no DF handoff/actual visual acceptance established here. Neither changes CLI execution authority. Full native/CLI quit-restart/resource-load/UI/protected/MVP acceptance and fresh actual assessment remain open.
+
+The paired JSON records 28 exact public identities, including manifest 101773/3cc92fa83f4c90681f66014c75c939dd273ba9b1d74798192a399bf61cec7d86 and separately sealed author MD 5451/8297e24feab12525c1d6e9fdb164450a9c100130c87eae7c2362024df613741b, JSON 13392/64add543a34943b8131494a9ee24d8cd9cd387f8c2cd4d08c985c0d70afd9370. Exclusive0600 creation, full gapless literal readback and external byte/SHA256 seals accompany delivery.
