@@ -1,0 +1,211 @@
+{
+  "acceptance": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "accepted": 0,
+    "all87": "HOLD",
+    "cloudAction": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+    "lockedUI": "PAUSED",
+    "rootCleanup": "HOLD",
+    "taskCompletionReviewDeliveryOrAggregateAcceptance": "NOT_ESTABLISHED"
+  },
+  "additionalExecutionGO": false,
+  "cases": [
+    {
+      "case": "D01",
+      "oracle": "Syntax child exit 0; no runtime success implication.",
+      "status": "PASS"
+    },
+    {
+      "cases": "C01-C03",
+      "oracle": "All 3 selected local header cases completed.",
+      "status": "PASS"
+    },
+    {
+      "cases": "C04-C15",
+      "oracle": "All 12 selected pure stored-projection cases completed.",
+      "status": "PASS"
+    },
+    {
+      "case": "D02",
+      "category": "REJECTION",
+      "firstReportedFailedCheckpoint": "WORKER_EXECUTE",
+      "oracle": "Full genuine positive path did not complete; functional child exit 1.",
+      "refusalCode": "NONE",
+      "status": "FAIL"
+    }
+  ],
+  "commandAndExecutorResults": {
+    "actualSupportedDriverExitCode": 1,
+    "actualSupportedDriverOutputEmpty": true,
+    "actualSupportedDriverReturnObserved": true,
+    "childExitCodes": [
+      0,
+      1
+    ],
+    "consumedMarkerFailureCode": "EXECUTOR_COMMAND_NONZERO",
+    "consumedMarkerFinalized": false,
+    "consumedMarkerState": "FAILED_HOLD",
+    "executorFinalized": false,
+    "executorFirstReason": "EXECUTOR_COMMAND_NONZERO",
+    "executorResult": "FAILED_HOLD",
+    "finalChunk": "565f24",
+    "initialChunk": "4afdae",
+    "intermediatePollChunk": "fd1dfb",
+    "qualification": "Child projection, child return, executor state, consumed marker and directly captured supported driver return remain separate.",
+    "replayOrResetAuthorized": false,
+    "sessionId": 36981
+  },
+  "completionBlockers": [
+    "D02 execute acknowledgement failed at WORKER_EXECUTE/REJECTION.",
+    "Mandatory settlement, result, finish/release and complete positive-path oracles not established.",
+    "Mandatory strict root closure remains HOLD."
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-independent-actual-test-assessment/v1",
+  "date": "2026-10-08",
+  "evidenceConsistency": {
+    "commandsAndBeforeAfterAgree": true,
+    "finiteProjectionWithin1024ByteCap": true,
+    "fixtureEqualsExecutorAndRootProof": true,
+    "fixtureFieldCount": 29,
+    "graphClaimsComparedOnly": "PUBLIC_RECORDS_ONLY_NOT_REHASHED",
+    "plannedCommandsMatchObservedCommands": true,
+    "sixExpectedSizesAndHashesMatch": true
+  },
+  "falseMilestoneQualifications": {
+    "executionCommittedAndResultReturned": "Not established, not evidence of absent ledger activity or absent remote effects.",
+    "ownedEntriesRemoved": "Full positive-path milestone not reached; does not show every cleanup attempt failed.",
+    "refusalCodeNONE": "No serialized allowlisted refusal code; does not establish host acceptance or reveal private cause.",
+    "rootClosed": "False retains strict independent root cleanup HOLD.",
+    "workerStoppedAndReservationReleased": "Not established; no held balance, zero balance or remaining worker state inferred."
+  },
+  "jsonSelfSeal": "External SHA256 after exclusive write and complete readback; not embedded recursively.",
+  "limits": {
+    "Git": false,
+    "browserListenerNetworkCloudModel": false,
+    "candidateParseCheckCompileImportBuildTestRun": false,
+    "helperDelegation": false,
+    "privateProfileAuthDatabaseHistoryKeyOrCaptureRead": false,
+    "producerEvaluation": false,
+    "protectedCODEReceiptEnvelopeRevision999Work": false,
+    "responseOrErrorPayloadRead": false,
+    "runtimeReplayReset": false,
+    "sourceCauseProbe": false,
+    "sourceEdit": false,
+    "writes": "Fresh exclusive assessment MD/JSON pair only."
+  },
+  "markdownRecord": {
+    "bytes": 4930,
+    "path": "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.md",
+    "sha256": "6618224ef6513d057642a1801267d4ec41f3c4c58c6b2f0415ea9a844ecc641e"
+  },
+  "notEstablished": [
+    "Successful execute acknowledgement",
+    "Execution commitment and exact acknowledged usage settlement",
+    "Returned result and full capture/result oracles",
+    "Factual worker stop and reservation release",
+    "Full owned-entry removal milestone",
+    "Full 25-request positive path and post-disposal 404",
+    "Actual first private exception, response details or underlying cause",
+    "Ledger-entry absence, held or zero balance, or remaining worker state",
+    "Final enclosing driver duration"
+  ],
+  "notReachedNormalPath": [
+    "WORKER_QUERY",
+    "WORKER_CAPTURE",
+    "WORKER_RESULT",
+    "WORKER_FINISH",
+    "FINAL_STATUS",
+    "POST_DISPOSAL"
+  ],
+  "observedMilestones": {
+    "actualCreatePhase": "ready",
+    "completedPlugins": 11,
+    "httpRequests": 19,
+    "qualification": "Creation/readiness and event-count oracles passed; these do not establish settlement, result delivery or full host acceptance.",
+    "requests": 1,
+    "selectedEntryRemoved": true,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true
+  },
+  "observedProcessAndSourceBoundaries": {
+    "beforeAndAfterCompleteUnchanged": true,
+    "bothCapturesComplete": true,
+    "bothOwnedGroups": "ABSENT_OBSERVED",
+    "bothStreamEOFComplete": true,
+    "interruptions": 0,
+    "overflows": 0,
+    "pins": 742,
+    "qualification": "Published boundary evidence only; no graph rehash, private stream read or broader cleanup/release implication.",
+    "signals": 0,
+    "timeouts": 0,
+    "truncations": 0,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "preservedQualifications": {
+    "r2AndR4": "CONSUMED_IMMUTABLE",
+    "r3AndR5": "UNRUN",
+    "r4FirstActualException": "NOT_ESTABLISHED",
+    "r4SupportedDriverReturn": "NOT_CAPTURED",
+    "rootPlanStatusAndEffects": "PROSPECTIVE_AUTHORIZATION_NOT_ACTUAL_COMPLETION_EVIDENCE"
+  },
+  "reasoningEffort": "max",
+  "reviewModel": "gpt-6.1-sol",
+  "reviewScope": "ONE_ACTUAL_PUBLIC_EVIDENCE_ASSESSMENT",
+  "reviewedPublicRecords": [
+    {
+      "bytes": 9979,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-actual-return.json",
+      "sha256": "b6eee11a50cf1570123b1c8bf6ed7d621c721d6f7510ba199b62218ae7281541"
+    },
+    {
+      "bytes": 721,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/fixture-result.json",
+      "sha256": "36f1c1a1699eb44eeecedb4f96520db812f6d0141999c6a3718312fc964c3118"
+    },
+    {
+      "bytes": 4412,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/executor-result.json",
+      "sha256": "af8bf392e23f389147cadd3031a805d521670541c3b5bbc182bea3af42b1369a"
+    },
+    {
+      "bytes": 2995,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/command-results.json",
+      "sha256": "81b8a3606bb7891bf58e5449ef336bf57e2643e8863d7cacda4f858c6e914b66"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/before-after.json",
+      "sha256": "709d0fcf8565e77656946761137424fd9d8f581f0b8db8afa6cac6fd779372c2"
+    },
+    {
+      "bytes": 134397,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/root-plan.json",
+      "sha256": "d0d75d6eacd3c47e44a89490ff2615902af1dc41f3c5e07c07a72f692433cef3"
+    }
+  ],
+  "reviewer": "independent ISTQB test-design reviewer",
+  "revision": "r6",
+  "sourceDesignPairChanged": false,
+  "sourceDesignReverified": false,
+  "status": "D02_FAIL_CONSUMED_FAILED_HOLD",
+  "timing": {
+    "actualSupportedReturnObservedUTC": "2026-10-08 00:02:04 UTC",
+    "childDurationsSeconds": [
+      0.06526,
+      8.841962
+    ],
+    "executorConservativeActiveSecondsPreterminal": 25.79219741700217,
+    "executorObservedSecondsPreterminal": 20.792196749942377,
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "markerFinishedAt": "2026-10-08T00:02:03.417773+00:00",
+    "markerStartedAt": "2026-10-08T00:01:42.446055+00:00",
+    "qualification": "Child durations, executor preterminal scalars, marker timestamps and request/poll observation intervals are distinct. Final-poll wall time is not driver execution duration."
+  }
+}
