@@ -1,0 +1,296 @@
+{
+  "schema": "NI6_CANONICAL_C1_O01_R1_INDEPENDENT_AFFECTED_CODE_SOURCE_REVIEW_V1",
+  "date": "2026-10-08",
+  "reviewer": "Independent gpt-6.1-sol maximum reasoning; English",
+  "verdict": "NO_MATERIAL_AFFECTED_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "materialFindings": [],
+  "executionGO": false,
+  "acceptanceGO": false,
+  "publicationGO": false,
+  "candidateStarts": 0,
+  "sourceOrTestChanges": 0,
+  "sourceAuthority": [
+    {
+      "bytes": 41585,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/source-manifest.json",
+      "sha256": "f5d10dadf7939d5490c937844af3552ed285715a88328b16dbac3fa85c1b4ee8"
+    },
+    {
+      "bytes": 6025,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-author-source.md",
+      "sha256": "983babd9937a328bc96bc983b13bac04836b32e598e0d43f9813a060e9810630"
+    },
+    {
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-author-source.json",
+      "bytes": 24535,
+      "sha256": "82e748e549674ee9a2ccc7ca1906738357dfcde6c342c90e430f6415a78ab417"
+    },
+    {
+      "path": "docs/ni6-canonical-integration-c1-ordinary-worker-suite-o01-selection-2026-10-08.md",
+      "bytes": 6011,
+      "sha256": "f52f89d6196cc47d4807793d9e4027ea6993170454f0100c873ec8da23c0bea4"
+    }
+  ],
+  "packetReference": "Exact owned artifact identities are source-manifest.ownedFiles and sealed author.artifacts; tests are manifest.testPreflight/author.testConservation. All 100 current explicit seals/sizes matched.",
+  "method": {
+    "reads": "Current AGENTS/selector, author pair, four complete tests/inline helpers, O01 runner/README/delta and inert proposal/manifest; exact direct ordinary import declarations.",
+    "reuse": "Current core-r2 owner review and root-completed ordinary/public import authority; no unchanged whole-graph semantic audit.",
+    "boundary": "RuntimeStore opaque whole-file hash only; no imports/body search/read, two normal-final bodies or protected CODE/receipt/signature/envelope/revision999 investigation.",
+    "activity": "Literal text/JSON/hash/admin operations only; no candidate parse/import/eval/check/test/build/helper/runtime/Git/network/browser/model/cloud.",
+    "history": "Prior incidents qualified; no excluded/private snippets or pathnames reproduced, no pristine-history claim."
+  },
+  "literalProof": {
+    "baseline": {
+      "bytes": 27666,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+      "sha256": "0da613c8f2f5727d29416f4deef61b04db041a838cd4b7170cc3c599006d3d6e"
+    },
+    "inverseSubstitutions": 8,
+    "forwardOccurrences": [
+      4,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "reverseOccurrences": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      2,
+      4
+    ],
+    "wholeCoreR2DriverExact": true,
+    "delta": {
+      "bytes": 28129,
+      "lines": 414,
+      "files": 3,
+      "hunks": 11,
+      "added": 256,
+      "removed": 56,
+      "wholeReconstructionExact": true,
+      "allTextConsumed": true
+    },
+    "owningRunCommandExact": true,
+    "tapFooterParserExact": true,
+    "terminalWrapperExact": true,
+    "affectedChanges": "Namespace/docstring/filename, source process metadata/prior C02 qualification, four-file argv, exact footer counts and declared host verify loops only",
+    "noPatchOrCandidateEvaluation": true,
+    "noAuthorDiffHelperRun": true
+  },
+  "tests": {
+    "command": [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      "test/installed-worker-config.test.mjs",
+      "test/environment.test.mjs",
+      "test/worker.test.mjs",
+      "test/native-request-current.test.mjs"
+    ],
+    "bytes": 43821,
+    "lines": 439,
+    "top": 29,
+    "nested": 25,
+    "total": 54,
+    "inlineHelpersOnly": true,
+    "originalImports": true,
+    "imports": "node:test/assert/fs/os/path and installed-config/installed-worker-config/environment/worker/opaque RuntimeStore. Four nonopaque direct import declarations match original proposal; transitive ordinary authority root supplied.",
+    "assertions": "Detached bounded config/descriptors/paths; trusted environment/stale-copied handoff; submitted-before-create/held unknown/control-before-stop/scoped identity/nonreplay/one-use context; late native-current fences and unchanged snapshots.",
+    "exclusions": "Mixed results-adversarial excluded; configuration 999 is a budget scalar, signed-execution wording is snapshot conservation, not signature validation.",
+    "caseColumns": [
+      "top",
+      "nested",
+      "total"
+    ],
+    "caseRows": {
+      "installed-worker-config": [
+        6,
+        20,
+        26
+      ],
+      "environment": [
+        2,
+        0,
+        2
+      ],
+      "worker": [
+        14,
+        0,
+        14
+      ],
+      "native-request-current": [
+        7,
+        5,
+        12
+      ]
+    }
+  },
+  "runner": {
+    "admission": "Original exclusive once marker, cwd/script/plan/GO/interpreter/topology/environment/duplicate-free pins and genuine build-return gates retained.",
+    "selected": "One exact Node --test --test-concurrency=1 command, no glob/filter/probe/check/build; shell:false, owned new session and fresh owner TMPDIR.",
+    "capture": "Original bounded complete EOF, identity/prefix/full-length owning readback, exit0 and owned-group absence precede footer.",
+    "footer": {
+      "cancelled": 0,
+      "fail": 0,
+      "pass": 54,
+      "plan": "1..29",
+      "skipped": 0,
+      "suites": 0,
+      "tests": 54,
+      "todo": 0
+    },
+    "durationGrammar": "Canonical 0 or nonzero-leading 1..16 integer digits, optional dot+1..16 fractional digits; LF and nine terminal lines/eight unique ordered fields.",
+    "addedGate": "After original capture binding: exact 1..29/tests=pass 54/suites 0; original fail/cancelled/skipped/todo 0 enforced.",
+    "opacity": "Only original owner decodes footer; no names/errors/stacks/payloads/stderr published or privately read by reviewer.",
+    "failure": "First failure, interruption, denial, drift, cap/footer mismatch and uncertain cleanup prevent PASS; no replay/reset.",
+    "cleanup": "Same retained actually-owned group: at most one SIGTERM then one SIGKILL if still owned/alive, within shared window; denial/unknown ownership stops signaling; observed absence number never reused.",
+    "publication": "Original plan/evidence identity and before/after/final gates, bounded four records, final marker/return and outside-handler sys.exit retained; saved PASS alone insufficient."
+  },
+  "host": {
+    "graph": {
+      "bytes": 4028913,
+      "path": ".runtime/ni3-native-runtime/public-graph-pins.json",
+      "sha256": "25997e5fec269353eef5bab481ac3e81888c015eaf0f6954dfae274189379ebd"
+    },
+    "declaredFiles": 27577,
+    "declaredLinks": 12,
+    "declaredLoopCharactersExact": 635,
+    "lockAndW01SealsMatch": true,
+    "beforeAfterFinalChecks": true,
+    "deadlineCutsSeconds": [
+      20,
+      85,
+      90
+    ],
+    "scope": "Declared node_modules regular files/exact link target-resolution; strict graph JSON/root/count. Original selected W01 loop bytes conserved.",
+    "inventoryWalk": false,
+    "reviewerHostEnumeration": false,
+    "privateWalk": false,
+    "authority": "Root completed ordinary product/public import authority reused; selected cases invoke no native composition/collector/provider registration/inference.",
+    "limit": "Finite declared cuts, not continuous atomic exclusion or detection of every undeclared additional file; opaque RuntimeStore transitive semantics not re-established here."
+  },
+  "closure": {
+    "inputs": 93,
+    "inputBytes": 6915722,
+    "currentRecords": 100,
+    "composition": "93 inputs + 4 owned + manifest self + 2 author provenance",
+    "pathsUnique": true,
+    "canonical65Bytes": 1952632,
+    "sealsAndSizesMatch": true,
+    "final100HashesUnchanged": true,
+    "futurePins": 102,
+    "futureUnion": "93 inputs + 4 owned + manifest self + 4 final independent reviews; author pair separately sealed",
+    "sourceCopies": 0,
+    "topologyLinks": 3,
+    "exactTargetsAndResolutions": true,
+    "capsuleUID": 501,
+    "capsuleMode": "0700",
+    "forbiddenEnvironmentKeys": 10,
+    "allAbsent": true,
+    "valuesExposed": false,
+    "actualDestinationsAbsent": 8,
+    "futureTMPDIRAbsent": true,
+    "fourReviewSlotsAbsentAtCut": true,
+    "sourceFlagsFalse": true,
+    "pinsEmpty": true,
+    "rootPlanForecast": {
+      "bytes": 20995,
+      "cap": 65536,
+      "pins": 102,
+      "LF": true,
+      "written": false,
+      "prospectiveFlagsGrantNoGO": true
+    },
+    "auxiliaryBaselineREADMESealMatched": true,
+    "currentChunks": [
+      "d68946",
+      "c6d7ba",
+      "347319"
+    ],
+    "freshnessChunk": "abce07",
+    "topologyChunk": "92cdf0",
+    "environmentChunk": "42fdd3",
+    "unrelatedDrafts": "Untouched; author conservation preserved, no independent rehash.",
+    "resumeCurrentnessChunk": "281428",
+    "resumeCurrentnessUnchanged": true
+  },
+  "effects": {
+    "sourceMaximaNotActualInstrumentation": true,
+    "interpreters": {
+      "pythonOwner": 1,
+      "nodeParent": 1,
+      "serialFileWorkers": 4,
+      "total": 6,
+      "live": 3,
+      "nested": 0
+    },
+    "nativeProcesses": 0,
+    "nestedRealChildren": 0,
+    "originalChildKillCallbacks": 0,
+    "HTTP": 0,
+    "listeners": 0,
+    "modelProviderToolCalls": 0,
+    "noCLIbrowserWebhookScheduleAccountInstallSettingsMutation": true,
+    "synthetic": {
+      "create": 14,
+      "resume": 0,
+      "executeAttempts": 4,
+      "sendEffects": 2,
+      "cancel": 4,
+      "dispose": 4
+    },
+    "callbacks": "Prepare/bind/observe/query and deferred resolvers/Set detach/setImmediate stay in-process; original one-active deadline timer cleared, manager.close not selected.",
+    "syntheticRoots": {
+      "config": 6,
+      "environment": 2,
+      "workerSQLite": 3,
+      "nativeCurrentSQLite": 10,
+      "totalSequential": 21,
+      "activeMaximum": 1,
+      "openSQLiteMaximum": 1
+    },
+    "ownership": "Fresh 0700 owner TMPDIR after GO; original registered t.after/finally closes/removes retained fresh stores/roots. Same-process reopen is not separate-process recovery/native resume.",
+    "budgetsSeconds": {
+      "bookkeepingInsideCommand": 1,
+      "cleanupInsideCommand": 5,
+      "commandTotal": 60,
+      "finalReserveInsideOuter": 5,
+      "outer": 90,
+      "preflight": 20,
+      "primaryAbsoluteEnd": 85
+    },
+    "commandWorkMaximumSeconds": 54,
+    "nonadditive": true,
+    "capsBytes": {
+      "eachStream": 131072,
+      "aggregate": 262144,
+      "publicRecord": 65536
+    },
+    "actualBudgetCleanupNegativeBranches": "NOT_RUN"
+  },
+  "qualification": {
+    "priorPASS": "Build/W01/core/contracts/C02/full DF010-C02 conserved without reruns; no criterion status change or blanket 87 disposition.",
+    "gaps": "Actual O01 footer/EOF/timing/negative executor paths; installed recovery/active-worker crash/native resume, real catalog/model/usage/transport/UI/load/resource visibility, protected final and broader ordinary suites.",
+    "D01": "Failed consumed r2 and later public supplements remain separate immutable authority; no reconstruction here.",
+    "routes": "Cancelled 4da34a6d/shared 3080/cloud/browser/CLIretry untouched.",
+    "next": "Root alone fully reads/seals both final affected pairs and selects a fresh pinned plan before any supported once execution; no reviewer GO."
+  },
+  "publication": {
+    "files": [
+      "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-source-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-source-review.json"
+    ],
+    "exclusive": true,
+    "mode": "0600",
+    "fullAuthoredReadbackRequired": true,
+    "externalByteSHA256SealsReturnedSeparately": true,
+    "selfHashEmbedded": false
+  }
+}

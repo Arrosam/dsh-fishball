@@ -1,0 +1,115 @@
+{
+  "MVPAcceptance": false,
+  "actualCommands": 1,
+  "all87": "INDIVIDUAL_RECONCILIATION_PENDING_NO_BLANKET_STATUS",
+  "closedTap": {
+    "cancelled": 0,
+    "durationMs": "1235.622125",
+    "fail": 0,
+    "pass": 54,
+    "plan": "1..29",
+    "skipped": 0,
+    "suites": 0,
+    "tests": 54,
+    "todo": 0
+  },
+  "command": {
+    "bothEOFObserved": true,
+    "captureComplete": true,
+    "durationSeconds": 1.320693,
+    "exitCode": 0,
+    "groupState": "ABSENT_OBSERVED",
+    "ownedProcessGroup": 82543,
+    "signalAttempts": [],
+    "stderrBytes": 0,
+    "stdoutBytes": 12091
+  },
+  "currentness": {
+    "beforeAfterAndFinalComplete": true,
+    "continuousAtomicCurrentnessClaimed": false,
+    "declaredHostFiles": 27577,
+    "declaredHostLinks": 12,
+    "distinctPins": 102,
+    "extraUndeclaredFilesChecked": false
+  },
+  "date": "2026-10-08",
+  "directDriverReturn": {
+    "authority": "Retained original supported exec_command and write_stdin terminal return; no replay",
+    "complete": true,
+    "exitCode": 0,
+    "outputBytes": 0,
+    "sessionId": 41754,
+    "sessionTerminated": true
+  },
+  "driverCommand": "/opt/homebrew/bin/python3 -I .runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/run-once.py .runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json",
+  "executionMode": "Normal explicitly reviewed require_escalated; scoped synthetic fixtures, no listener or inference",
+  "fullCriterionPASS": false,
+  "independentActualReviews": "PENDING_AT_ROOT_PROOF_CUT",
+  "originalToolReturns": [
+    {
+      "chunk_id": "871da1",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 41754,
+      "wall_time_seconds": 10.00139992
+    },
+    {
+      "chunk_id": "c53b9b",
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "wall_time_seconds": 1.9154e-05
+    }
+  ],
+  "protectedCODE": "BLOCKED_UNCHANGED",
+  "publicationGO": false,
+  "qualifications": [
+    "Source forecast is six interpreter starts/three live, not independent child instrumentation",
+    "Fake callback counts are source-derived, not independently instrumented effects",
+    "Worker case9 does not inject the forged reply described in its title",
+    "Owned synthetic fixture initialization failure can precede cleanup registration; no all-path temporary-file absence proof",
+    "Same-process SQLite reopen does not prove native session resume or separate-process recovery",
+    "No live provider, actual inference, native worker, HTTP, browser, credential or account action in this suite",
+    "Existing DF010-C02 full PASS remains conserved; consumed D01-r2 FAILED_HOLD remains immutable"
+  ],
+  "rawCapturesReadByRoot": false,
+  "rawTestContentPublished": false,
+  "recordPins": [
+    {
+      "bytes": 20995,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/root-plan.json",
+      "sha256": "6e5f21a433b54d416121542efe9e60f8602b4c30cb38949526c5fbcc492fb32f"
+    },
+    {
+      "bytes": 2754,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/executor-result.json",
+      "sha256": "561d0307ba3bb3644e986647b619c78f43dce233edc19ced46d3b9b9cac9f00f"
+    },
+    {
+      "bytes": 1620,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/command-results.json",
+      "sha256": "aa1419b192b818cc422dd551d93cc6ea346e878d962af747e5cf75ff7f47ffbc"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/before-after.json",
+      "sha256": "7f458fb90621c2d5fe1eb07d31abefc816a7bc07b1b490110ed93846bb99c84d"
+    }
+  ],
+  "replayGO": false,
+  "result": "PASS",
+  "rootPlan": {
+    "bytes": 20995,
+    "path": ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json",
+    "sha256": "6e5f21a433b54d416121542efe9e60f8602b4c30cb38949526c5fbcc492fb32f"
+  },
+  "schema": "df.canonical-c1.ordinary-worker-suite-o01-r1-actual-return/v1",
+  "scope": "Four unchanged ordinary configuration/environment/worker/native-current test files; no full criterion or MVP acceptance",
+  "timing": {
+    "deadlineSLAClaimed": false,
+    "driverRecordedSeconds": 11.642825,
+    "finalEnclosingDuration": "NOT_ESTABLISHED",
+    "originalTerminalReturnSuccessful": true,
+    "recordCut": "PRE_TERMINAL"
+  }
+}

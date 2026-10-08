@@ -1,0 +1,94 @@
+{
+  "MVPAcceptance": false,
+  "actualReviews": [
+    {
+      "bytes": 5852,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-execution-review.md",
+      "sha256": "112630fc1da9ac314240fa67abe1f4c36326a9d6c1c803bdec7f1fbca1de5a37"
+    },
+    {
+      "bytes": 11256,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-execution-review.json",
+      "sha256": "b57de906713ecf29e4d7da933f33d140633a2c2adc4a9f82a1579371ba5e47ab"
+    },
+    {
+      "bytes": 5977,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-actual-test-assessment.md",
+      "sha256": "ba1c25a5a863057637f0624afc1bf018c5b68a7f4fb9b417aa0f5d9fc7ae0e7a"
+    },
+    {
+      "bytes": 11108,
+      "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-actual-test-assessment.json",
+      "sha256": "642fed26479fc7528f3288e85219c64496a9e98eb6c0cb9603e0724cb8c9be20"
+    }
+  ],
+  "adoptionMarkdown": {
+    "bytes": 2020,
+    "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-root-adoption.md",
+    "sha256": "37f2991fcf1c6a8873a8d0f313add189de0924ce239c4280b552025447e07c85"
+  },
+  "currentness": {
+    "beforeAfterFinalCompleteUnchanged": true,
+    "continuousAtomic": false,
+    "hostFiles": 27577,
+    "hostLinks": 12,
+    "pins": 102,
+    "undeclaredExtrasChecked": false
+  },
+  "date": "2026-10-08",
+  "footer": {
+    "cancelled": 0,
+    "durationMs": "1235.622125",
+    "fail": 0,
+    "pass": 54,
+    "plan": "1..29",
+    "skipped": 0,
+    "suites": 0,
+    "tests": 54,
+    "todo": 0
+  },
+  "fullCriterionPASS": false,
+  "furtherGO": false,
+  "limitations": [
+    "Case9 forged-reply title lacks injection",
+    "Initialization-fault/all-path temp absence unproved",
+    "Source counts are not instrumentation",
+    "SQLite reopen same-process only",
+    "No actual native resume/model/provider/HTTP/browser",
+    "No full criterion/MVP acceptance",
+    "Protected final CODE BLOCKED_UNCHANGED"
+  ],
+  "mainMerge": false,
+  "node": {
+    "bothEOF": true,
+    "exitCode": 0,
+    "group": 82543,
+    "ownedGroupAbsent": true,
+    "privateRawDecodedByRoot": false,
+    "seconds": 1.320693,
+    "signals": []
+  },
+  "originalPendingRecords": "IMMUTABLE_HISTORICAL_CUT",
+  "originalReturns": [
+    "871da1 original session41754",
+    "c53b9b original EXIT0 empty"
+  ],
+  "priorEvidence": {
+    "BUB010-02": "SAME_EVIDENCE_ALIAS_NO_DOUBLE_CREDIT",
+    "CLI-r5": "CONSUMED_PREPARE_FAILED_HOLD",
+    "D01-r2": "CONSUMED_FAILED_HOLD",
+    "D01-r3": "CONSUMED_FAILED_HOLD",
+    "DF010-C02": "ADOPTED_FULL_PASS_UNCHANGED"
+  },
+  "publication": false,
+  "rootFullReadFinalActualPairs": true,
+  "schema": "df.canonical-c1.ordinary-worker-suite-o01-r1-root-adoption/v1",
+  "sourceArchive": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-source-archive",
+  "status": "PASS_SELECTED_54_ORDINARY_REGRESSION_CASES",
+  "timing": {
+    "calibratedSLA": false,
+    "cut": "PRE_TERMINAL",
+    "driverSeconds": 11.642825,
+    "finalEnclosing": "NOT_ESTABLISHED"
+  }
+}

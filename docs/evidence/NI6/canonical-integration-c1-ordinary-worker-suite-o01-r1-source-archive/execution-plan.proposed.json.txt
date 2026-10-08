@@ -1,0 +1,252 @@
+{
+  "actualBuildProof": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+  "actualDestinations": [
+    ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/invocation.json",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/private-capture",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/root-plan.json",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/executor-result.json",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/command-results.json",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/before-after.json"
+  ],
+  "aggregateStreamByteCap": 262144,
+  "budgetsSeconds": {
+    "bookkeepingInsideCommand": 1,
+    "cleanupInsideCommand": 5,
+    "commandTotal": 60,
+    "finalReserveInsideOuter": 5,
+    "outer": 90,
+    "preflight": 20,
+    "primaryAbsoluteEnd": 85
+  },
+  "callbackCensus": [
+    {
+      "authoredOrApproved": false,
+      "authoredOrSelected": true,
+      "kind": "FUTURE_EXECUTOR",
+      "startsMax": 1
+    },
+    {
+      "argvRole": "original Node22 --test --test-concurrency=1",
+      "kind": "FUTURE_NODE_TEST_COORDINATOR",
+      "startsMax": 1
+    },
+    {
+      "concurrentMax": 1,
+      "kind": "FUTURE_NODE_FILE_WORKERS",
+      "nestedRealChildren": 0,
+      "qualification": "Conditional original host closure and opaque product current-conservation/review gates",
+      "startsMax": 4
+    },
+    {
+      "declarations": [
+        "prepare",
+        "bindClaim",
+        "observe",
+        "create",
+        "resume",
+        "query",
+        "executeContext",
+        "cancel",
+        "dispose"
+      ],
+      "kind": "INLINE_WORKER_ADAPTER",
+      "nativeOrProviderCalls": 0,
+      "realProcessKills": 0,
+      "realProcessStarts": 0,
+      "syntheticCancelCallsMax": 4,
+      "syntheticCreateCallsMax": 14,
+      "syntheticDisposeCallsMax": 4,
+      "syntheticExecuteAttemptsMax": 4,
+      "syntheticResumeCallsMax": 0,
+      "syntheticSendEffectsMax": 2
+    },
+    {
+      "declarations": [
+        "workerDeadline",
+        "setTimeout",
+        "onDeadline",
+        "clearTimeout"
+      ],
+      "effect": "Timeout yields typed unknown; no abort/retry/recreate/settlement",
+      "kind": "WORKER_DEADLINE",
+      "maximumConcurrentTimers": 1
+    },
+    {
+      "declarations": [
+        "pendingResolve",
+        "proceed",
+        "finish",
+        "setImmediate"
+      ],
+      "kind": "INLINE_DEFERRED_WORK",
+      "maximumConcurrentPendingAdapterWork": 1,
+      "realChildren": 0
+    },
+    {
+      "declarations": [
+        "observe listener",
+        "Set registration",
+        "detach closure"
+      ],
+      "detachInvokedBySelectedManagerClose": false,
+      "kind": "OBSERVATION",
+      "maximumPerTicket": 1,
+      "networkListeners": 0
+    },
+    {
+      "declarations": [
+        "adapter.cancel",
+        "adapter.dispose"
+      ],
+      "effect": "Only in-memory fixture callbacks after exact original stopRequested/retired lifetime; no real signal",
+      "kind": "LATE_CREATE_STOP"
+    },
+    {
+      "declarations": [
+        "WorkerManager.close",
+        "entry.detach",
+        "adapter.shutdown or adapter.dispose"
+      ],
+      "kind": "PRODUCT_CLOSE_NOT_SELECTED",
+      "selectedTestsCallIt": false
+    },
+    {
+      "declarations": [
+        "t.after",
+        "finally",
+        "RuntimeStore.close",
+        "rmSync"
+      ],
+      "effect": "Only retained fresh synthetic fixture roots; no historical or unrelated deletion",
+      "kind": "FIXTURE_REMOVAL"
+    },
+    {
+      "authoredOrApproved": false,
+      "authoredOrSelected": true,
+      "declarations": [
+        "retained actually-created owned process/group SIGTERM",
+        "same still-owned/alive process/group SIGKILL"
+      ],
+      "kind": "FUTURE_EXECUTOR_STOP_RECOMMENDATION",
+      "onDeniedOrUnknownOwnership": "STOP_AT_BOUNDARY_NO_REROUTE_NO_SCAN",
+      "requestsMaxEach": 1,
+      "sharedCleanupSeconds": 5
+    }
+  ],
+  "closedTapExpected": {
+    "cancelled": 0,
+    "fail": 0,
+    "pass": 54,
+    "plan": "1..29",
+    "skipped": 0,
+    "suites": 0,
+    "tests": 54,
+    "todo": 0
+  },
+  "commands": [
+    [
+      "/opt/homebrew/opt/node@22/bin/node",
+      "--test",
+      "--test-concurrency=1",
+      "test/installed-worker-config.test.mjs",
+      "test/environment.test.mjs",
+      "test/worker.test.mjs",
+      "test/native-request-current.test.mjs"
+    ]
+  ],
+  "contractVersion": "df.canonical-c1.ordinary-worker-suite-o01-r1/v1",
+  "criterionQualification": "Exact four unchanged O01 ordinary worker regressions only; prior completed criteria conserved, no new full criterion/MVP/acceptance claim",
+  "driverArgv": [
+    "/opt/homebrew/bin/python3",
+    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/run-once.py",
+    ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json"
+  ],
+  "effects": {
+    "CLIStarts": 0,
+    "HTTPRequests": 0,
+    "actualModelCalls": 0,
+    "browserStarts": 0,
+    "builds": 0,
+    "chatAccountOperations": 0,
+    "credentialOrSettingsChanges": 0,
+    "externalProviderCalls": 0,
+    "listeners": 0,
+    "nativeWorkerStarts": 0,
+    "newTestOrCodeWrites": 0,
+    "packageInstalls": 0,
+    "toolDispatches": 0,
+    "webhooks": 0
+  },
+  "fixtureOwnership": [
+    {
+      "cleanup": "original t.after recursive forced rm of retained fresh root",
+      "maximumConcurrentRoots": 1,
+      "prefix": "df-ni2-config-",
+      "privateLeaves": "workspace, workspace/child and one owned workspace alias; vault/database/session targets remain absent",
+      "sequentialRoots": 6,
+      "test": "test/installed-worker-config.test.mjs"
+    },
+    {
+      "cleanup": "original finally recursive rm of retained fresh root",
+      "maximumConcurrentRoots": 1,
+      "prefix": "df-env-",
+      "privateLeaves": "fresh empty environment directory",
+      "sequentialRoots": 2,
+      "test": "test/environment.test.mjs"
+    },
+    {
+      "cleanup": "original store.close and finally recursive forced rm of retained fresh root",
+      "maximumConcurrentRoots": 1,
+      "maximumOpenStores": 1,
+      "prefix": "df-worker-ledger-",
+      "privateLeaves": "fresh synthetic SQLite ledger and its original implementation-owned companion leaves",
+      "reopen": "same Node process; closed original store then one reopened store",
+      "sequentialRoots": 3,
+      "test": "test/worker.test.mjs"
+    },
+    {
+      "cleanup": "original t.after currentStore.close then recursive forced rm of retained fresh root",
+      "maximumConcurrentRoots": 1,
+      "maximumOpenStores": 1,
+      "prefix": "df-ni2-current-",
+      "privateLeaves": "fresh synthetic SQLite runtime and original implementation-owned companion leaves",
+      "reopen": "same Node process; original store closed before one replacement store",
+      "sequentialRoots": 10,
+      "test": "test/native-request-current.test.mjs"
+    }
+  ],
+  "maximumConcurrentInterpreters": 3,
+  "maximumConcurrentNestedChildren": 0,
+  "maximumInterpreterStarts": 6,
+  "maximumNestedInterpreterStarts": 0,
+  "maximumNodeFileWorkers": 4,
+  "maximumOriginalRetainedChildKillCalls": 0,
+  "nestedStreamQualification": "No nested children; original owner stdout/stderr caps only",
+  "pins": {},
+  "publicHostCurrentness": {
+    "arbitraryInventoryScan": false,
+    "cuts": "Before/after command and final selected currentness check",
+    "declaredFiles": 27577,
+    "declaredLinks": 12,
+    "graph": ".runtime/ni3-native-runtime/public-graph-pins.json"
+  },
+  "publicRecordByteCap": 65536,
+  "rawTestContentPublished": false,
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-source-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-source-review.json",
+    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-test-design-review.json"
+  ],
+  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json",
+  "rootReviewedExecutionGO": false,
+  "rootReviewedFinalAffectedReports": false,
+  "rootSupportedExecutionApprovalGranted": false,
+  "runCountAuthorized": 1,
+  "runner": ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/run-once.py",
+  "streamByteCap": 131072,
+  "testConcurrency": 1,
+  "testStores": "Fresh synthetic stores created only by original selected tests after GO; TMPDIR is the owning fresh private tmp directory"
+}

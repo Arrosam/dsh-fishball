@@ -1,0 +1,414 @@
+--- .runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py
++++ .runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/run-once.py
+@@ -1,4 +1,4 @@
+-"""Source-only C1core-r2: one fixed original Node test command; root GO required."""
++"""Source-only C1 O01 ordinary-worker-suite-o01-r1: one fixed original Node test command; root GO required."""
+ import time
+ STARTED = time.monotonic()
+ import datetime
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-canonical-integration-c1/validation/core-r2'
++NAME='.runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-core-r2-plan.json'
++PLAN_NAME='.runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -209,7 +209,22 @@
+         need(type(digest) is str and re.fullmatch('[a-f0-9]{64}',digest),'EXECUTOR_DIGEST')
+         need(sha(pin_path(name).read_bytes())==digest,'EXECUTOR_PIN_DRIFT')
+         guard(deadline)
+-    return {'inputCount':len(pins),'complete':True,'unchanged':True}
++    graph=read_json(contained(GRAPH_NAME))
++    need(graph['root'] == str(HOST) and len(graph['files']) == 27577 and len(graph['links']) == 12,
++         'EXECUTOR_HOST_GRAPH')
++    for name,digest in graph['files'].items():
++        guard(deadline)
++        need(name.startswith('node_modules/'), 'EXECUTOR_HOST_SCOPE')
++        need(sha(contained('.runtime/dsh-web/' + name).read_bytes()) == digest, 'EXECUTOR_HOST_DRIFT')
++        guard(deadline)
++    for name,row in graph['links'].items():
++        guard(deadline)
++        path=HOST/name
++        need(name.startswith('node_modules/') and all(p not in ('','.','..') for p in name.split('/'))
++             and path.is_symlink() and os.readlink(path)==row['target'] and str(path.resolve())==row['resolved'],
++             'EXECUTOR_HOST_LINK')
++        guard(deadline)
++    return {'inputCount':len(pins),'wholeHostFiles':27577,'wholeHostLinks':12,'complete':True,'unchanged':True}
+ 
+ 
+ def group_exists(pgid):
+@@ -460,15 +475,15 @@
+     marker = CAPSULE / 'invocation.json'; private = CAPSULE / 'private-capture'; evidence = CAPSULE / 'execution'
+     marker_owned = evidence_owned = False; marker_id = evidence_id = None
+     rows = []; before = after = footer = None; finalized = False
+-    record = {'contractVersion': 'df.canonical-c1.core-r2/v1', 'result': 'FAILED_HOLD', 'failureCode': None,
++    record = {'contractVersion': 'df.canonical-c1.ordinary-worker-suite-o01-r1/v1', 'result': 'FAILED_HOLD', 'failureCode': None,
+               'commands': rows, 'tapFooter': None, 'before': None, 'after': None, 'directDriverReturnRequired': True,
+-              'rawTestContentPublished': False, 'selectedTestFiles': 8, 'maximumInterpreterStarts': 18,
+-              'maximumConcurrentInterpreters': 5, 'maximumConcurrentNestedChildren': 2, 'maximumNestedInterpreterStarts': 8,
++              'rawTestContentPublished': False, 'selectedTestFiles': 4, 'maximumInterpreterStarts': 6,
++              'maximumConcurrentInterpreters': 3, 'maximumConcurrentNestedChildren': 0, 'maximumNestedInterpreterStarts': 0,
+               'interpreterCountAuthority': 'SOURCE_DERIVED_MAXIMUM_NOT_CHILD_INSTRUMENTATION',
+-              'fullAcceptance': False, 'DF010C02ChangedThreadReordering': 'NOT_RUN'}
++              'fullAcceptance': False, 'DF010C02ChangedThreadReordering': 'NOT_RUN_BY_O01_PRIOR_PASS_CONSERVED'}
+     try:
+         need(len(sys.argv) == 2 and sys.argv[1] == PLAN_NAME and Path.cwd() == ROOT
+-             and Path(__file__).resolve() == CAPSULE / 'run-core.py', 'EXECUTOR_IDENTITY')
++             and Path(__file__).resolve() == CAPSULE / 'run-once.py', 'EXECUTOR_IDENTITY')
+         owned_directory(CAPSULE); marker_id = save(marker, {'state': 'IN_PROGRESS'}, fresh=True); marker_owned = True
+         proposal = read_json(CAPSULE / 'execution-plan.proposed.json'); manifest = read_json(CAPSULE / 'source-manifest.json')
+         plan_path = contained(PLAN_NAME); owned_file(plan_path); plan_raw = plan_path.read_bytes()
+@@ -478,7 +493,7 @@
+             if key not in ('rootReviewedExecutionGO', 'rootSupportedExecutionApprovalGranted', 'rootReviewedFinalAffectedReports', 'pins'):
+                 need(plan[key] == proposal[key], 'EXECUTOR_PLAN_SELECTION')
+         need(all(plan[key] is True for key in ('rootReviewedExecutionGO', 'rootSupportedExecutionApprovalGranted', 'rootReviewedFinalAffectedReports')), 'EXECUTOR_ROOT_GO')
+-        need(plan['runCountAuthorized'] == 1 and plan['runner'] == NAME + '/run-core.py', 'EXECUTOR_ONCE')
++        need(plan['runCountAuthorized'] == 1 and plan['runner'] == NAME + '/run-once.py', 'EXECUTOR_ONCE')
+         for key in manifest['environmentMustBeAbsent']: need(key not in os.environ, 'EXECUTOR_ENVIRONMENT')
+         need(str(Path(sys.executable).resolve()) == PYTHON_REAL and str(Path(NODE).resolve()) == NODE_REAL, 'EXECUTOR_BINARY')
+         for item in manifest['topology']:
+@@ -493,9 +508,8 @@
+             need(pin_path(item['path']).stat().st_size == item['bytes'], 'EXECUTOR_PIN_SIZE')
+         before = verify(plan['pins'], min(work_end, STARTED + 20)); build_authority(manifest)
+         guard(min(work_end, STARTED + 20), 'EXECUTOR_PREFLIGHT_DEADLINE')
+-        commands = [[NODE, '--test', '--test-concurrency=1', 'test/coordinator.test.mjs', 'test/context.test.mjs',
+-                     'test/memory.test.mjs', 'test/messages.test.mjs', 'test/control.test.mjs', 'test/results.test.mjs',
+-                     'test/notifications.test.mjs', 'test/audit.test.mjs']]
++        commands = [[NODE, '--test', '--test-concurrency=1', 'test/installed-worker-config.test.mjs',
++                     'test/environment.test.mjs', 'test/worker.test.mjs', 'test/native-request-current.test.mjs']]
+         need(plan['commands'] == commands, 'EXECUTOR_EXACT_COMMANDS')
+         for path in (private, evidence): need(not path.exists() and not path.is_symlink(), 'EXECUTOR_NAMESPACE_CONSUMED')
+         private_directory(private); private_directory(evidence); evidence_id = identity(evidence); evidence_owned = True
+@@ -510,6 +524,8 @@
+         need(type(stdout) is bytes and len(stdout) == stream['bytes'] and sha(stdout) == stream['sha256']
+              and stream['prefixVerified'] and stream['complete'], 'EXECUTOR_TAP_CAPTURE_BINDING')
+         footer = tap_footer(stdout)
++        need(stdout.splitlines()[-9] == b'1..29' and footer['tests'] == footer['pass'] == 54
++             and footer['suites'] == 0, 'EXECUTOR_O01_TAP_COUNTS')
+         after = verify(plan['pins'], work_end); build_authority(manifest)
+         need(sha(plan_path.read_bytes()) == plan_digest, 'EXECUTOR_PLAN_DRIFT'); guard(work_end); finalized = True
+     except Exception:
+--- .runtime/ni6-canonical-integration-c1/validation/core-r2/execution-plan.proposed.json
++++ .runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution-plan.proposed.json
+@@ -1,14 +1,14 @@
+ {
+   "actualBuildProof": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+   "actualDestinations": [
+-    ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/invocation.json",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/private-capture",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/root-plan.json",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/executor-result.json",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/command-results.json",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/execution/before-after.json"
++    ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/invocation.json",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/private-capture",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/root-plan.json",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/executor-result.json",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/command-results.json",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/execution/before-after.json"
+   ],
+   "aggregateStreamByteCap": 262144,
+   "budgetsSeconds": {
+@@ -20,50 +20,232 @@
+     "preflight": 20,
+     "primaryAbsoluteEnd": 85
+   },
++  "callbackCensus": [
++    {
++      "authoredOrApproved": false,
++      "authoredOrSelected": true,
++      "kind": "FUTURE_EXECUTOR",
++      "startsMax": 1
++    },
++    {
++      "argvRole": "original Node22 --test --test-concurrency=1",
++      "kind": "FUTURE_NODE_TEST_COORDINATOR",
++      "startsMax": 1
++    },
++    {
++      "concurrentMax": 1,
++      "kind": "FUTURE_NODE_FILE_WORKERS",
++      "nestedRealChildren": 0,
++      "qualification": "Conditional original host closure and opaque product current-conservation/review gates",
++      "startsMax": 4
++    },
++    {
++      "declarations": [
++        "prepare",
++        "bindClaim",
++        "observe",
++        "create",
++        "resume",
++        "query",
++        "executeContext",
++        "cancel",
++        "dispose"
++      ],
++      "kind": "INLINE_WORKER_ADAPTER",
++      "nativeOrProviderCalls": 0,
++      "realProcessKills": 0,
++      "realProcessStarts": 0,
++      "syntheticCancelCallsMax": 4,
++      "syntheticCreateCallsMax": 14,
++      "syntheticDisposeCallsMax": 4,
++      "syntheticExecuteAttemptsMax": 4,
++      "syntheticResumeCallsMax": 0,
++      "syntheticSendEffectsMax": 2
++    },
++    {
++      "declarations": [
++        "workerDeadline",
++        "setTimeout",
++        "onDeadline",
++        "clearTimeout"
++      ],
++      "effect": "Timeout yields typed unknown; no abort/retry/recreate/settlement",
++      "kind": "WORKER_DEADLINE",
++      "maximumConcurrentTimers": 1
++    },
++    {
++      "declarations": [
++        "pendingResolve",
++        "proceed",
++        "finish",
++        "setImmediate"
++      ],
++      "kind": "INLINE_DEFERRED_WORK",
++      "maximumConcurrentPendingAdapterWork": 1,
++      "realChildren": 0
++    },
++    {
++      "declarations": [
++        "observe listener",
++        "Set registration",
++        "detach closure"
++      ],
++      "detachInvokedBySelectedManagerClose": false,
++      "kind": "OBSERVATION",
++      "maximumPerTicket": 1,
++      "networkListeners": 0
++    },
++    {
++      "declarations": [
++        "adapter.cancel",
++        "adapter.dispose"
++      ],
++      "effect": "Only in-memory fixture callbacks after exact original stopRequested/retired lifetime; no real signal",
++      "kind": "LATE_CREATE_STOP"
++    },
++    {
++      "declarations": [
++        "WorkerManager.close",
++        "entry.detach",
++        "adapter.shutdown or adapter.dispose"
++      ],
++      "kind": "PRODUCT_CLOSE_NOT_SELECTED",
++      "selectedTestsCallIt": false
++    },
++    {
++      "declarations": [
++        "t.after",
++        "finally",
++        "RuntimeStore.close",
++        "rmSync"
++      ],
++      "effect": "Only retained fresh synthetic fixture roots; no historical or unrelated deletion",
++      "kind": "FIXTURE_REMOVAL"
++    },
++    {
++      "authoredOrApproved": false,
++      "authoredOrSelected": true,
++      "declarations": [
++        "retained actually-created owned process/group SIGTERM",
++        "same still-owned/alive process/group SIGKILL"
++      ],
++      "kind": "FUTURE_EXECUTOR_STOP_RECOMMENDATION",
++      "onDeniedOrUnknownOwnership": "STOP_AT_BOUNDARY_NO_REROUTE_NO_SCAN",
++      "requestsMaxEach": 1,
++      "sharedCleanupSeconds": 5
++    }
++  ],
++  "closedTapExpected": {
++    "cancelled": 0,
++    "fail": 0,
++    "pass": 54,
++    "plan": "1..29",
++    "skipped": 0,
++    "suites": 0,
++    "tests": 54,
++    "todo": 0
++  },
+   "commands": [
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--test",
+       "--test-concurrency=1",
+-      "test/coordinator.test.mjs",
+-      "test/context.test.mjs",
+-      "test/memory.test.mjs",
+-      "test/messages.test.mjs",
+-      "test/control.test.mjs",
+-      "test/results.test.mjs",
+-      "test/notifications.test.mjs",
+-      "test/audit.test.mjs"
++      "test/installed-worker-config.test.mjs",
++      "test/environment.test.mjs",
++      "test/worker.test.mjs",
++      "test/native-request-current.test.mjs"
+     ]
+   ],
+-  "contractVersion": "df.canonical-c1.core-r2/v1",
+-  "criterionQualification": "Exact selected current core regression only; source counts are not actual TAP totals; no aggregate journey/MVP/acceptance claim",
++  "contractVersion": "df.canonical-c1.ordinary-worker-suite-o01-r1/v1",
++  "criterionQualification": "Exact four unchanged O01 ordinary worker regressions only; prior completed criteria conserved, no new full criterion/MVP/acceptance claim",
+   "driverArgv": [
+     "/opt/homebrew/bin/python3",
+-    ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
+-    ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json"
+-  ],
+-  "maximumConcurrentInterpreters": 5,
+-  "maximumConcurrentNestedChildren": 2,
+-  "maximumInterpreterStarts": 18,
+-  "maximumNestedInterpreterStarts": 8,
+-  "maximumNodeFileWorkers": 8,
+-  "maximumOriginalRetainedChildKillCalls": 6,
+-  "nestedStreamQualification": "Outer131072/262144 caps do not bound every original nested helper in-memory buffer",
++    ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/run-once.py",
++    ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json"
++  ],
++  "effects": {
++    "CLIStarts": 0,
++    "HTTPRequests": 0,
++    "actualModelCalls": 0,
++    "browserStarts": 0,
++    "builds": 0,
++    "chatAccountOperations": 0,
++    "credentialOrSettingsChanges": 0,
++    "externalProviderCalls": 0,
++    "listeners": 0,
++    "nativeWorkerStarts": 0,
++    "newTestOrCodeWrites": 0,
++    "packageInstalls": 0,
++    "toolDispatches": 0,
++    "webhooks": 0
++  },
++  "fixtureOwnership": [
++    {
++      "cleanup": "original t.after recursive forced rm of retained fresh root",
++      "maximumConcurrentRoots": 1,
++      "prefix": "df-ni2-config-",
++      "privateLeaves": "workspace, workspace/child and one owned workspace alias; vault/database/session targets remain absent",
++      "sequentialRoots": 6,
++      "test": "test/installed-worker-config.test.mjs"
++    },
++    {
++      "cleanup": "original finally recursive rm of retained fresh root",
++      "maximumConcurrentRoots": 1,
++      "prefix": "df-env-",
++      "privateLeaves": "fresh empty environment directory",
++      "sequentialRoots": 2,
++      "test": "test/environment.test.mjs"
++    },
++    {
++      "cleanup": "original store.close and finally recursive forced rm of retained fresh root",
++      "maximumConcurrentRoots": 1,
++      "maximumOpenStores": 1,
++      "prefix": "df-worker-ledger-",
++      "privateLeaves": "fresh synthetic SQLite ledger and its original implementation-owned companion leaves",
++      "reopen": "same Node process; closed original store then one reopened store",
++      "sequentialRoots": 3,
++      "test": "test/worker.test.mjs"
++    },
++    {
++      "cleanup": "original t.after currentStore.close then recursive forced rm of retained fresh root",
++      "maximumConcurrentRoots": 1,
++      "maximumOpenStores": 1,
++      "prefix": "df-ni2-current-",
++      "privateLeaves": "fresh synthetic SQLite runtime and original implementation-owned companion leaves",
++      "reopen": "same Node process; original store closed before one replacement store",
++      "sequentialRoots": 10,
++      "test": "test/native-request-current.test.mjs"
++    }
++  ],
++  "maximumConcurrentInterpreters": 3,
++  "maximumConcurrentNestedChildren": 0,
++  "maximumInterpreterStarts": 6,
++  "maximumNestedInterpreterStarts": 0,
++  "maximumNodeFileWorkers": 4,
++  "maximumOriginalRetainedChildKillCalls": 0,
++  "nestedStreamQualification": "No nested children; original owner stdout/stderr caps only",
+   "pins": {},
++  "publicHostCurrentness": {
++    "arbitraryInventoryScan": false,
++    "cuts": "Before/after command and final selected currentness check",
++    "declaredFiles": 27577,
++    "declaredLinks": 12,
++    "graph": ".runtime/ni3-native-runtime/public-graph-pins.json"
++  },
+   "publicRecordByteCap": 65536,
+   "rawTestContentPublished": false,
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-source-review.json",
+-    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.md",
+-    "docs/evidence/NI6/canonical-integration-c1-core-r2-independent-test-design-review.json"
+-  ],
+-  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-core-r2-plan.json",
++    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-source-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-source-review.json",
++    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-test-design-review.md",
++    "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-test-design-review.json"
++  ],
++  "rootPlan": ".runtime/root-ni6-canonical-integration-c1-ordinary-worker-suite-o01-r1-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-canonical-integration-c1/validation/core-r2/run-core.py",
++  "runner": ".runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/run-once.py",
+   "streamByteCap": 131072,
+   "testConcurrency": 1,
+   "testStores": "Fresh synthetic stores created only by original selected tests after GO; TMPDIR is the owning fresh private tmp directory"
+--- .runtime/ni6-canonical-integration-c1/validation/core-r2/README.md
++++ .runtime/ni6-canonical-integration-c1/validation/ordinary-worker-suite-o01-r1/README.md
+@@ -1,15 +1,17 @@
+-# Canonical C1 core-r2 source packet
++# O01 ordinary-worker-suite source packet
+ 
+-SOURCE_ONLY_NOT_RUN. Core-r1 remains MUST_NOT_EXECUTE with its namespace/root plan absent. Root selected this correction to account for legitimate original nested race/crash children. No canonical source, test assertion or prior packet is modified. GO=false, pins={}, starts0; root alone owns Git, actual once plan/approval and execution after final independent CODE and ISTQB source reviews.
++SOURCE_ONLY_NOT_RUN. Root owns final affected reviews, exclusive plan, supported once execution and Git. All three GO flags false, pins{}, candidate starts0. Canonical65, all four tests, consumed packets/control matrices and both unrelated drafts remain unchanged. Product revision4fea280 and evidence head e7c48ef are root-supplied selection context, not an author Git query.
+ 
+-All eight ordinary tests and their inline helpers/scripts were completely read: coordinator213, context148, memory430, messages146, control63, results149, notifications233, audit301; 1683 lines/195374 bytes. No separately imported local test helper exists. Only fresh synthetic SQLite/temp stores, synthetic keys/identities, injected callbacks and pure normalization/context controls are selected. Original tests read only their own newly created databases for plaintext-absence checks. Ordinary transport receipts and df.execution-context inputs are included; protected final signed-command receipt/signature/envelope/revision999 and opaque capture/finish semantics are excluded. No live account/provider/model, listener, CLI, browser, personal profile or historical data is selected.
++One exact original Node22 --test --test-concurrency=1 command selects installed-worker-config, environment, worker and native-request-current tests. The54 source cases are29 top-level plus25 nested; expected original footer1..29/tests54/pass54/suites0/fail0/cancelled0/skipped0/todo0 with bounded duration. The generic core-r2 owning executor, process/once/EOF/group/capture readback and footer parser remain byte-identical. Added selected exact count gate uses only original complete identity-bound stdout retained in owner memory; no test names/errors/stacks/payloads or stderr are published. Literal inverse records restore the entire core-r2 source exactly; the affected unified delta is complete.
+ 
+-One fixed pinned Node22 --test --test-concurrency=1 command selects exactly eight files. Source-derived maximum18 interpreter starts is Python1+Nodeparent1+sequentialfileworkers8+coordinatorCAS2+memoryCAS2+memorycrash2+notificationclaims2. At most two nested children coexist, giving at most five simultaneous selected interpreters under sequential file/top-level test execution. These bounds are not actual child instrumentation. Four original spawn sites use process.execPath --input-type=module -e with pinned inline scripts; notification adds its fresh DB path and synthetic JSON input. They inherit environment/cwd/process group, with original pipes and no shell/detached/new-session selection. Original retained-child kill callbacks remain at most6. Coordinator/memory race/crash tests retain their original10s timeouts; notification waits original close without local timeout and requires enclosing bounded group cleanup. Nested helper string buffers have no independent outer-stream cap; the enclosing131072each/262144aggregate guarantee concerns the Python owner's original captures only.
++Source-derived maximum6 interpreter starts: Python owner1, Node parent1, four serial Node fileworkers4; at most3 live. Nested real children0; no original test child-kill callback. Only retained original owning group cleanup may submit SIGTERM once and then SIGKILL once if still owned/alive within the original shared cleanup window. Denial/unknown ownership stops that boundary; no scan/retry/substitution. Original parent creates one fresh0700 TMPDIR only after GO. Existing tests own21 sequential synthetic roots (configuration6/environment2/workerSQLite3/native-currentSQLite10), at most one active fixture root/open store. Same-process close/reopen is not separate-process recovery or successful native session resume.
+ 
+-Outer90/preflight20/primary85/final5 are nested absolute ceilings; command60 includes cleanup5/bookkeeping1 and at most54 work seconds. Reserves are nonadditive. Original owning group/denial/uncertain-ownership, EOF/prefix/identity-bound readback/exit0, first failure, public65536cap, currentness and outside-handler sys.exit gates remain exact. A fresh private TMPDIR is created only after GO for original synthetic fixtures. No test disposer or host method is replaced, and no new nested child/helper/control is added.
++All local helpers are inline. Fake worker adapters have bounded suite maxima create14/resume0/executeContext attempts4/synthetic send effects2/cancel4/dispose4. Bind/observe/query/prepare and in-process deferred resolvers, Set detach closures, setImmediate and original timeout/clearTimeout callbacks remain synthetic. Selected tests never call manager.close; no native composition, collector, provider registration/inference, HTTP/listener/CLI/browser/webhook/schedule/account/tool operation occurs. Original t.after/finally closes only retained fresh synthetic stores and removes their own roots. Fixed synthetic key buffers and private future SQLite contents remain inaccessible to root/author.
+ 
+-The reviewed footer and primitive functions are byte-identical to contracts-r1. Only the original fresh owner later parses its retained complete identity-bound stdout readback. Known top-level unique final plan/eight ordered numeric fields, tests>0/pass=tests and fail/cancelled/skipped/todo0 accompany original Node success. Raw test names/errors/stacks/payloads and stderr stay unpublished. Root independently retains the supported original driver return; saved PASS/footer alone is insufficient. Finite pin cuts are not continuous/atomic exclusion. Current build proof is genuine consumed build authority, not a new build run. Both final contracts review pairs are explicitly bound.
++Exact original public graph metadata and W01 lock/authority are pinned. Existing W01 declared file/link loops are reused at before/after/final cuts for27577 public files/12 links; no inventory walk or arbitrary runtime enumeration is introduced. The author hashes only explicit public input files and does not execute these loops or independently repeat full host semantic review. Canonical RuntimeStore is opaque whole-file conservation only, and normal-final/protected receipt/envelope/signature/revision999 bodies are not read or investigated. Finite currentness cuts do not establish continuous atomic exclusion or detect every undeclared additional host file.
+ 
+-The immutable contracts CODE Markdown's phrase four additions/inverses means five literal inverse substitutions; exact normalized source/hash result and companion JSON unchanged.
++Outer90/preflight20/command60/primary85/final5 remain absolute nested shared ceilings. Command cleanup5 and bookkeeping1 are nonadditive, yielding at most54 command-work seconds. Private streams131072 each/262144 total; closed public records65536. Original once-only owner identity, environmental exclusions, source/build/currentness, interruption, private full readback, first failure, final driver return and outside-handler sys.exit gates remain. Any nonzero exit, timeout, cap overflow, footer mismatch, drift, denied action or uncertain cleanup prevents PASS; consumed runs never replay.
+ 
+-No candidate program was parsed, imported, checked, built, tested or run during preparation. Exact current regression only; no full criterion, complete journey, MVP, acceptance, publication, denied cloud retry or browser handoff is claimed. CLI-r2 and contracts-r1 remain immutable; their actual state is independently root-owned and is not replaced by this source packet.
++Configuration validates detached bounded choices/canonical paths without vault creation; environment rejects forged/stale authority and copied/expired handoff; worker asserts submitted-before-create, held uncertainty, control-before-stop, scoped identities and one-use execution; native-current tests late admission fences and immutable snapshot conservation. The configuration literal999 is an ordinary runtime-budget scalar. The native-current signed-execution test name does not select signature validation. Prior completed build/W01/core/contracts/C02/full DF010-C02 facts remain conserved without rerun; no new full criterion or aggregate87/MVP/acceptance status is assigned. Successful existing-session resume, separate-process installed recovery, real native model/catalog/usage/transport/UI/load/calibrated responsiveness, protected final review and broader ordinary suites remain open.
++
++No candidate parse/import/check/build/test/evaluation, runtime/listener/network/model/browser/cloud/Git action or private-content read occurs during authorship. Four final affected source-review paths and all actual destinations must remain absent at seal. Independent CODE/ISTQB reviewers and this author issue no GO.

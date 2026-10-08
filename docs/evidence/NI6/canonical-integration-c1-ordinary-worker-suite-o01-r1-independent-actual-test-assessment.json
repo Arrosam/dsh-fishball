@@ -1,0 +1,236 @@
+{
+ "MVPAcceptance": false,
+ "accessBoundary": "Only five named closed public records, prior review memory and exclusive outputs. No candidate runtime/replay/check/import/build/helper, source-body/protected semantics/private capture/profile/key/DB/history/readiness/marker access/hash/inventory, Git/network/model/browser/delegation. Published capture metadata cross-bound without private capture read/hash. Historical exposure qualifications retained without reproduction.",
+ "actualSuitePassSupported": true,
+ "conclusion": "Joint public evidence supports actual selected-suite PASS with explicit source/cleanup/currentness/timing/criterion limits; no material execution inconsistency identified and no new GO.",
+ "countQualification": "54 passed aggregate and plan1..29 corroborate unchanged source54/29/25. Per-file distribution/callback/resource totals derive from source, not new child instrumentation or private test-name inspection.",
+ "criterionDisposition": {
+  "C02": "Existing full PASS conserved; O01 did not replay it",
+  "D01-r2": "Consumed FAILED_HOLD immutable, no promotion",
+  "all87": "Individual reconciliation pending; no blanket HOLD/PASS assignment",
+  "newFullCriterionPASS": false,
+  "partialSupport": {
+   "BUB-004": "Ordinary ownership/association, uncertain creation and cancellation/settlement",
+   "BUB-008": "Ordinary context identity/currentness/isolation",
+   "BUB-012": "Ordinary configuration/resource admission and unknown-held policy"
+  },
+  "remaining": "Actual resume/separate-process recovery, calibrated responsiveness/load, budget-status visibility, corrected subsequent work, native UI and full exact clauses outside this suite. No protected CODE/signing/browser/MVP acceptance.",
+  "suite": "PASS for selected54 ordinary regression cases only"
+ },
+ "date": "2026-10-08",
+ "executedPartitionEvidence": {
+  "configuration": "Disabled/enabled, closed detached choices, numeric endpoints/eight invalid classes, resource/request minus-one/equal constraints, exact UTF-8 caps, descriptor/proxy/unknown authority rejection without callbacks and workspace/persistence isolation. Usage minima1 deliberately rejected by cross-constraints;20 endpoint labels are not all positive acceptance.",
+  "environment": "Original identity versus copies/JSON/forgery, workspace/tool digest mismatch, stale state/task/version and expired bounded handoff; no successful resume.",
+  "nativeCurrent": "Durable consumption/dispatch intent and immutable late binding; repeated assertion without reconsumption or caller-mutation adoption; exact expiry/revoke/pause/cancel/policy/permission/memory/currentness rejection with snapshot conservation; same-process reopen invalidates late authority. Ordinary snapshots, no signing/final-result semantics.",
+  "worker": "Durable claim/intent before inline fake effects; duplicate create suppression; uncertain creation holds claim/reservation, late original creation reconciliation without replay; mapping/owner isolation; cancellation distinct from settlement; same-process SQLite reopen. Duplicate/denial/foreign completion/late consumption and wrong generation/claim/principal/digest have effect/conservation assertions."
+ },
+ "fullCriterionPASS": false,
+ "furtherExecutionGO": false,
+ "immutability": "Original root proof PENDING_AT_ROOT_PROOF_CUT is a historical cut, retained exactly. This assessment supplies later evidence without retrofitting originals.",
+ "inputs": [
+  {
+   "bytes": 20995,
+   "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/root-plan.json",
+   "sha256": "6e5f21a433b54d416121542efe9e60f8602b4c30cb38949526c5fbcc492fb32f"
+  },
+  {
+   "bytes": 2754,
+   "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/executor-result.json",
+   "sha256": "561d0307ba3bb3644e986647b619c78f43dce233edc19ced46d3b9b9cac9f00f"
+  },
+  {
+   "bytes": 1620,
+   "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/command-results.json",
+   "sha256": "aa1419b192b818cc422dd551d93cc6ea346e878d962af747e5cf75ff7f47ffbc"
+  },
+  {
+   "bytes": 284,
+   "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/before-after.json",
+   "sha256": "7f458fb90621c2d5fe1eb07d31abefc816a7bc07b1b490110ed93846bb99c84d"
+  },
+  {
+   "bytes": 4398,
+   "path": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-execution/root-original-return.json",
+   "sha256": "5c67010f9ef2015e6c4fb5c54746271379a9ba11700a52bef7b010563b79c59a"
+  }
+ ],
+ "jointActualOracles": {
+  "capture": {
+   "bothEOF": true,
+   "complete": true,
+   "limitsEachAggregate": [
+    131072,
+    262144
+   ],
+   "originalOwnerFooterOnlyDecoded": true,
+   "prefixVerified": true,
+   "privateRawReadByRootOrReviewer": false,
+   "rawTestContentPublished": false,
+   "reason": "EOF_OBSERVED",
+   "stderrBytes": 0,
+   "stderrDecoded": false,
+   "stdoutBytes": 12091,
+   "truncated": false
+  },
+  "command": {
+   "PID": 82543,
+   "durationSeconds": 1.320693,
+   "exitCode": 0,
+   "failureCode": null,
+   "groupState": "ABSENT_OBSERVED",
+   "interrupted": false,
+   "overflow": false,
+   "ownedGroup": 82543,
+   "signalAttempts": [],
+   "timedOut": false
+  },
+  "currentness": {
+   "after": {
+    "complete": true,
+    "unchanged": true
+   },
+   "before": {
+    "complete": true,
+    "unchanged": true
+   },
+   "continuousAtomicClaimed": false,
+   "declaredHostFiles": 27577,
+   "declaredHostLinks": 12,
+   "distinctPins": 102,
+   "finalCompleteInRootProof": true,
+   "finalQualification": "Root final observation plus original terminal/source-final-guard corroboration, not fresh reviewer runtime verification",
+   "reviewerRehashedSourcesOrWalkedHost": false,
+   "undeclaredExtrasChecked": false
+  },
+  "footer": {
+   "authority": "Original conserved closed parser and source-pinned expected literals, cross-bound executor/root proof; raw TAP not independently reread",
+   "cancelled": 0,
+   "durationMs": "1235.622125",
+   "fail": 0,
+   "pass": 54,
+   "plan": "1..29",
+   "skipped": 0,
+   "suites": 0,
+   "tests": 54,
+   "todo": 0
+  },
+  "necessity": "Approved exact command/once-plan/source identity, original terminal return, complete capture/bothEOF/owned group absence, closed footer and cut currentness jointly support selected-suite PASS. Any missing conjunct would limit acceptance; no standalone summary or exit-label promotion."
+ },
+ "provenance": {
+  "actualCommands": 1,
+  "allFiveSealsMatch": true,
+  "approvedOnceGates": 3,
+  "command": "Pinned Node22 --test --test-concurrency=1 with exact four unchanged files",
+  "directOriginalReturnComplete": true,
+  "driver": "Original supported Python -I, reviewed require_escalated; reviewer did not invoke it",
+  "gatesTrue": true,
+  "originalInitialToolChunk": "871da1",
+  "originalSessionId": 41754,
+  "originalTerminalChunk": "c53b9b",
+  "originalTerminalExitCode": 0,
+  "originalTerminalOutputBytes": 0,
+  "rootPlanBinding": "All four record pins/root-plan digest in root return match independently read public files; plan includes exact source review seals",
+  "runCountAuthorized": 1,
+  "sessionTerminated": true,
+  "strictDocumentParsingCrossBinding": true
+ },
+ "publicationGO": false,
+ "replayGO": false,
+ "resourceInterpretation": {
+  "deadlineSeconds": {
+   "bookkeepingInsideCommand": 1,
+   "cleanupInsideCommand": 5,
+   "command": 60,
+   "finalReserve": 5,
+   "outer": 90,
+   "preflight": 20,
+   "primaryEnd": 85
+  },
+  "fakeCallbackMaxima": {
+   "cancel": 4,
+   "create": 14,
+   "dispose": 4,
+   "executeAttempts": 4,
+   "resume": 0,
+   "send": 2
+  },
+  "instrumentation": "SOURCE_DERIVED_MAXIMUM_NOT_CHILD_INSTRUMENTATION; do not turn maxima into observed system counts",
+  "nonadditive": "Cleanup/bookkeeping consume original command budget; no added timeout/retry/replay",
+  "remoteTermination": "NOT_CLAIMED",
+  "reservationRelease": "NOT_CLAIMED",
+  "selectedEffects": "Inline workers/send/cancel/dispose and synthetic stores only; no selected actual inference/provider/native worker/HTTP/listener/browser/account/credential/build/install action",
+  "sourceBounds": {
+   "maximumLive": 3,
+   "maximumStarts": 6,
+   "nested": 0,
+   "sequentialTempRoots": 21,
+   "serialFileWorkers": 4
+  }
+ },
+ "result": "PASS_SELECTED_ORDINARY_SUITE_WITH_LIMITS",
+ "retainedGaps": [
+  {
+   "actual": "Input mutation during pending preparation/original-binding assertions passed.",
+   "gap": "Worker case9 did not inject forged reply",
+   "id": "O01-ACT-Q1",
+   "limit": "Do not credit forged cross-action reply rejection from title or total54."
+  },
+  {
+   "actual": "Selected ordinary suite completed; process EOF/group absence observed.",
+   "gap": "Initialization may precede cleanup registration",
+   "id": "O01-ACT-Q2",
+   "limit": "No initialization fault injection, all-path temp absence, physical DB closure or independent private census. Registered hooks/process closure are not universal cleanup proof."
+  },
+  {
+   "actual": "One Node coordinator command observed.",
+   "gap": "Source census and same-process fake execution",
+   "id": "O01-ACT-Q3",
+   "limit": "Six starts/three live/21 roots/fake callback totals remain source-derived. No native worker/session resume, separate-process store recovery or actual provider/model/HTTP/browser proof."
+  }
+ ],
+ "reviewCut": "Later independent assessment appended; original five public records and PENDING_AT_ROOT_PROOF_CUT unchanged",
+ "role": "Independent actual ISTQB assessment; prior source coverage reused, separate from author/CODE",
+ "schema": "df.canonical-c1.ordinary-worker-suite-o01-r1-independent-actual-test-assessment/v1",
+ "selectedSourceDistribution": [
+  {
+   "file": "test/installed-worker-config.test.mjs",
+   "nested": 20,
+   "topLevel": 6,
+   "total": 26
+  },
+  {
+   "file": "test/environment.test.mjs",
+   "nested": 0,
+   "topLevel": 2,
+   "total": 2
+  },
+  {
+   "file": "test/worker.test.mjs",
+   "nested": 0,
+   "topLevel": 14,
+   "total": 14
+  },
+  {
+   "file": "test/native-request-current.test.mjs",
+   "nested": 5,
+   "topLevel": 7,
+   "total": 12
+  }
+ ],
+ "sourceCoverageAuthority": {
+  "json": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-test-design-review.json",
+  "jsonSHA256": "4241dfb9ee181547a5e1a83d3f49834e09e2697615a5467189b59b70f063cfc8",
+  "md": "docs/evidence/NI6/canonical-integration-c1-ordinary-worker-suite-o01-r1-independent-test-design-review.md",
+  "mdSHA256": "a82eaba0ba5d85b9c15bd747ab871d02daa550f01c190ea099bf0901c22068b5",
+  "method": "Reuse prior full reads; exact source-review digests in actual root plan. No source body or additional input reopened."
+ },
+ "timing": {
+  "TAPDurationMs": "1235.622125",
+  "driverRecordCut": "PRE_TERMINAL",
+  "driverRecordedSeconds": 11.642825,
+  "finalEnclosingDuration": "NOT_ESTABLISHED",
+  "interpretation": "Original return corroborates conserved deadline/final guards. No measured enclosing interval, calibrated SLA or benchmark; these three measurements are not interchangeable or additive.",
+  "nodeCommandSeconds": 1.320693,
+  "originalTerminalReturnSuccessful": true
+ }
+}
