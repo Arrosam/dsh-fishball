@@ -1,0 +1,17 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "actualCommandsExitZero": 4,
+  "actualDriverExitCode": 0,
+  "all87": "HOLD",
+  "buildLedgerFinalized": true,
+  "buildMarkerFinalized": true,
+  "commandResultsSha256": "1ddf07983aed85f306df1cbe3b4ba7bf684e818009bcc27b600b608e6a808826",
+  "contractVersion": "df.ni6-prep01-observed-build-driver-return/v1",
+  "fixtureManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "generatedClientSha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+  "generatedDescriptorSha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382",
+  "observedAt": "2026-10-07T16:48:04.944249+00:00",
+  "privateStreamsDecoded": false,
+  "toolSessionId": 31815
+}

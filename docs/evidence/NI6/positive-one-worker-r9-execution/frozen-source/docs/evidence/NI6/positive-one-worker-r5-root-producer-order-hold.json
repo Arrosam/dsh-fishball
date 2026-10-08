@@ -1,0 +1,72 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "UI": "PAUSED_MAC_LOCKED",
+  "accepted": 0,
+  "actualPlanCreated": false,
+  "all87": "HOLD",
+  "allProposalGOFlagsFalse": true,
+  "candidate": "positive-one-worker-r5",
+  "candidateOrProducerEvaluated": false,
+  "candidateSyntaxCasesOrRuntimeExecuted": false,
+  "cloud": "BLOCKED_NO_THIRD_ATTEMPT",
+  "contractVersion": "df.ni6-root-source-gate-hold/v1",
+  "createdUTC": "2026-10-07T23:37:51.989985+00:00",
+  "date": "2026-10-07",
+  "disposition": "HOLD_NO_ACTUAL_PLAN_OR_EXECUTION",
+  "findingId": "PRODUCER_DESCRIPTOR_ORDER_DIVERGENCE",
+  "freshActualDestinationsAbsentAtReadback": true,
+  "generationPrediction": "Unchanged generate emits HOST_FILES list order directly; that order differs from the sealed derivative descriptor and violates the unchanged consumer strict ascending path guard. This is static source reasoning, not an observed producer run.",
+  "invocationOrRuntimeDirectoriesCreated": false,
+  "nextSelection": "Preserve sealed R5 source-only; after both affected reviews complete, freeze a fresh successor changing only the producer session inventory order and its product/descriptor digests plus namespace metadata. No replay or weakening.",
+  "originalValidatorStrictOrderPreserved": true,
+  "owner": "/root",
+  "privateDataRead": false,
+  "producerSessionFileOrder": [
+    "lib/index.js",
+    "lib/types/index.d.ts",
+    "package.json",
+    "lib/types/surface.js",
+    "lib/types/surface.d.ts",
+    "lib/types/types.js",
+    "lib/types/known-event-types.js"
+  ],
+  "proposalPinsEmpty": true,
+  "samePathDigestSetDoesNotProveOrderedEquality": true,
+  "sealedDescriptorSessionFileOrder": [
+    "lib/index.js",
+    "lib/types/index.d.ts",
+    "lib/types/known-event-types.js",
+    "lib/types/surface.d.ts",
+    "lib/types/surface.js",
+    "lib/types/types.js",
+    "package.json"
+  ],
+  "severity": "HIGH_SOURCE_GATE",
+  "sourceRecords": [
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/scripts/build-native-source-manifest.py",
+      "sha256": "2edf6875ea27a264f305d7c20dead521da39db89f259abfaf88cbf6d6cbc9d4e"
+    },
+    {
+      "bytes": 18440,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/native-source-manifest.json",
+      "sha256": "28e530f394ad80911a5003fbe91e4ecdd2cad133bb33821e4cc4d4e357c85af5"
+    },
+    {
+      "bytes": 32057,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/src/normal-contracts.mjs",
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    },
+    {
+      "bytes": 187667,
+      "path": ".runtime/ni6-positive-one-worker-r5/source-manifest.json",
+      "sha256": "a72499349b3b303409e30f299644ea489830115a96487108fe0a49b18f6e06d2"
+    },
+    {
+      "bytes": 23767,
+      "path": ".runtime/ni6-positive-one-worker-r5/execution-plan.proposed.json",
+      "sha256": "5b974fee9967bd9a9392301682e9ae693ce1088f110db69f479e8bb118bf1967"
+    }
+  ]
+}

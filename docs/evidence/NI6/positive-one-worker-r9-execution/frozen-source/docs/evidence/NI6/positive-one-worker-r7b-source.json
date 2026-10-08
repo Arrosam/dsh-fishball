@@ -1,0 +1,1721 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GitMutations": false,
+  "LIVE02": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "UI": "PAUSED_MAC_LOCKED",
+  "accepted": 0,
+  "actualBuildReturn": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+  "additionalInputCount": 89,
+  "additionalInputRecords": [
+    {
+      "bytes": 5245,
+      "path": ".runtime/ni6-positive-one-worker-r6/README.md",
+      "sha256": "d4a0c44adc1ebda9b86086a55f7012a47a475ccc2604226c7eb05c87d0f9fe57"
+    },
+    {
+      "bytes": 29656,
+      "path": ".runtime/ni6-positive-one-worker-r6/execution-plan.proposed.json",
+      "sha256": "40bad86dc09d908cb5bb4c65de7e95bff5d825fbdc1d4aefefeec18992fff796"
+    },
+    {
+      "bytes": 36351,
+      "path": ".runtime/ni6-positive-one-worker-r6/fixture.mjs",
+      "sha256": "01b2217c78402949cc63f3967d07b94fbbdea914a292922e28b33de7794c961e"
+    },
+    {
+      "bytes": 32328,
+      "path": ".runtime/ni6-positive-one-worker-r6/run-once.py",
+      "sha256": "b90363c35c78b2d2d26e4d7a4288c616f1ec5bf3b68dc64aa085379ad3161cc1"
+    },
+    {
+      "bytes": 73596,
+      "path": ".runtime/ni6-positive-one-worker-r6/source-delta.diff",
+      "sha256": "7c0d5161772dec1f04ca95330a0092e7c64ff37eefeb74fcae7f43e1bfd5122a"
+    },
+    {
+      "bytes": 210135,
+      "path": ".runtime/ni6-positive-one-worker-r6/source-manifest.json",
+      "sha256": "37ac9b883b0a9973f4b319ae3340334565e89d0eb8c2c966dcd32e9b0171dc15"
+    },
+    {
+      "bytes": 3581,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-source.md",
+      "sha256": "cfd634cc60a43ea73df8b9e13391ba562b09fd373785f1854109719656c78b6c"
+    },
+    {
+      "bytes": 54708,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-source.json",
+      "sha256": "e300824f1001f9c57215a60cc94f443c712ef0c839d97b5e447cc4fe8dc69bdb"
+    },
+    {
+      "bytes": 4681,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-source-review.md",
+      "sha256": "b498e66a3cd34cf72dd79ccbe3719af26452012c890b5b10b4875815eca074d3"
+    },
+    {
+      "bytes": 11905,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-source-review.json",
+      "sha256": "7e24ddfde1677b485f42924729b3d6a80d1f18a60b83075e322e38ad332cad07"
+    },
+    {
+      "bytes": 8076,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.md",
+      "sha256": "f6d295f9432f3df5441e0a18d217fab50cbfab58e994aa59ce7f0931851b1173"
+    },
+    {
+      "bytes": 13103,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.json",
+      "sha256": "75350881e646c428a1609d5dbb4937abde37717ca9002f95aaf444289f947ef1"
+    },
+    {
+      "bytes": 721,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/fixture-result.json",
+      "sha256": "36f1c1a1699eb44eeecedb4f96520db812f6d0141999c6a3718312fc964c3118"
+    },
+    {
+      "bytes": 4412,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/executor-result.json",
+      "sha256": "af8bf392e23f389147cadd3031a805d521670541c3b5bbc182bea3af42b1369a"
+    },
+    {
+      "bytes": 2995,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/command-results.json",
+      "sha256": "81b8a3606bb7891bf58e5449ef336bf57e2643e8863d7cacda4f858c6e914b66"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/before-after.json",
+      "sha256": "709d0fcf8565e77656946761137424fd9d8f581f0b8db8afa6cac6fd779372c2"
+    },
+    {
+      "bytes": 134397,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/root-plan.json",
+      "sha256": "d0d75d6eacd3c47e44a89490ff2615902af1dc41f3c5e07c07a72f692433cef3"
+    },
+    {
+      "bytes": 9979,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-actual-return.json",
+      "sha256": "b6eee11a50cf1570123b1c8bf6ed7d621c721d6f7510ba199b62218ae7281541"
+    },
+    {
+      "bytes": 2914,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.md",
+      "sha256": "c8ca692e0689968e897034abbd63a1a34ad3afb4455cabe8efcfa9293ec6de2c"
+    },
+    {
+      "bytes": 7813,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.json",
+      "sha256": "311ec862ddb92cd6a9b04629f84e96e53af0ed49757c5840241966a8f6d73ee2"
+    },
+    {
+      "bytes": 4930,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.md",
+      "sha256": "6618224ef6513d057642a1801267d4ec41f3c4c58c6b2f0415ea9a844ecc641e"
+    },
+    {
+      "bytes": 8165,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.json",
+      "sha256": "e24d2b1c1ebdaa3b15c18af57500c53da54686ec97e61c0fe41a5114e84abb4f"
+    },
+    {
+      "bytes": 7220,
+      "path": "docs/ni6-positive-one-worker-r7-transport-observation-freeze-2026-10-08.md",
+      "sha256": "2cf6147f518a0578d0044c6ddf5647fcd69188f0aa6f8a684476bc0718dd5712"
+    },
+    {
+      "bytes": 2466,
+      "path": "docs/ni6-positive-one-worker-r7b-author-namespace-freeze-2026-10-08.md",
+      "sha256": "244400e61a52f85a8be3a85e5c9992fd56cc86b8ba7e852504f04fb8637bf6c6"
+    },
+    {
+      "bytes": 151584,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/lib/client.js",
+      "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+    },
+    {
+      "bytes": 18440,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/native-source-manifest.json",
+      "sha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9"
+    },
+    {
+      "bytes": 2691,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/package.json",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "bytes": 1166,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-client.mjs",
+      "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+    },
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    },
+    {
+      "bytes": 388886,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/dsh-web-runtime-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "bytes": 13904,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/approval-preview.mjs",
+      "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+    },
+    {
+      "bytes": 7647,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/audit-input-pair.mjs",
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+    },
+    {
+      "bytes": 6184,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/audit.mjs",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+    },
+    {
+      "bytes": 15251,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/chat.mjs",
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+    },
+    {
+      "bytes": 151616,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/client-entry.cjs",
+      "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+    },
+    {
+      "bytes": 2918,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "bytes": 28297,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/context.mjs",
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+    },
+    {
+      "bytes": 2926,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/control.mjs",
+      "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+    },
+    {
+      "bytes": 13403,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/coordinator.mjs",
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "bytes": 9792,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+    },
+    {
+      "bytes": 7432,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/event-clock.mjs",
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+    },
+    {
+      "bytes": 10602,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/events.mjs",
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+    },
+    {
+      "bytes": 21009,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+    },
+    {
+      "bytes": 22111,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+    },
+    {
+      "bytes": 6739,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "bytes": 4354,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/index.mjs",
+      "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+    },
+    {
+      "bytes": 13615,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-native-source.mjs",
+      "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+    },
+    {
+      "bytes": 6835,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-phases.mjs",
+      "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+    },
+    {
+      "bytes": 56388,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit.mjs",
+      "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+    },
+    {
+      "bytes": 4122,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-config.mjs",
+      "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+    },
+    {
+      "bytes": 23241,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-events.mjs",
+      "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+    },
+    {
+      "bytes": 2341,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+    },
+    {
+      "bytes": 22246,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory-continuity.mjs",
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+    },
+    {
+      "bytes": 3538,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory.mjs",
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "bytes": 14134,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-normal-services.mjs",
+      "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+    },
+    {
+      "bytes": 1071,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-owned-stream.mjs",
+      "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+    },
+    {
+      "bytes": 10275,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-plugin.mjs",
+      "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+    },
+    {
+      "bytes": 48343,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-results.mjs",
+      "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+    },
+    {
+      "bytes": 2127,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-role-recipes.mjs",
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+    },
+    {
+      "bytes": 5018,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+    },
+    {
+      "bytes": 21961,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-facts.mjs",
+      "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+    },
+    {
+      "bytes": 47301,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker.mjs",
+      "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+    },
+    {
+      "bytes": 21799,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/ledger.mjs",
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+    },
+    {
+      "bytes": 36680,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/memory.mjs",
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+    },
+    {
+      "bytes": 15586,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/messages.mjs",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+    },
+    {
+      "bytes": 40778,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
+      "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c"
+    },
+    {
+      "bytes": 10953,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-contributions.mjs",
+      "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+    },
+    {
+      "bytes": 12958,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-history-collector.mjs",
+      "sha256": "5473de8f79f8b4aec13ba56f212ef8ee7a32e68e7dee9ce8ce61ed8be1704149"
+    },
+    {
+      "bytes": 2328,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-source-descriptor.mjs",
+      "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+    },
+    {
+      "bytes": 32057,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-contracts.mjs",
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    },
+    {
+      "bytes": 20325,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
+      "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+    },
+    {
+      "bytes": 2860,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-planning.mjs",
+      "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+    },
+    {
+      "bytes": 2675,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-request.mjs",
+      "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+    },
+    {
+      "bytes": 1473,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-rpc.mjs",
+      "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+    },
+    {
+      "bytes": 6689,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-selection.mjs",
+      "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+    },
+    {
+      "bytes": 15595,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-resume-controls.mjs",
+      "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+    },
+    {
+      "bytes": 1541,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-source-planning-binding.mjs",
+      "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+    },
+    {
+      "bytes": 11442,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/notifications.mjs",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+    },
+    {
+      "bytes": 9944,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
+      "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+    },
+    {
+      "bytes": 3908,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/owner-native-command-controls.mjs",
+      "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+    },
+    {
+      "bytes": 13766,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/results.mjs",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+    },
+    {
+      "bytes": 67362,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
+      "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+    },
+    {
+      "bytes": 6033,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-security.mjs",
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+    },
+    {
+      "bytes": 347241,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-store.mjs",
+      "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+    },
+    {
+      "bytes": 11509,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/scheduler.mjs",
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+    },
+    {
+      "bytes": 6085,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/schema7-runtime-composition.mjs",
+      "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+    },
+    {
+      "bytes": 20740,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/setup-state.mjs",
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+    },
+    {
+      "bytes": 15937,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/testing-provider.mjs",
+      "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+    },
+    {
+      "bytes": 36640,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs",
+      "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+    }
+  ],
+  "affectedLiteralDeltaFiles": [
+    "fixture.mjs",
+    "run-once.py",
+    "execution-plan.proposed.json",
+    "README.md"
+  ],
+  "all87": "HOLD",
+  "ancestorSourceManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "author": "/root/r7b_transport_observer_author",
+  "authorProcessScope": {
+    "allSubsequentReadsExplicitPublicFiles": true,
+    "candidateOrProducerEvaluation": false,
+    "initialCapsuleFileEnumerationListedPrivatePathnames": true,
+    "privateContentInspection": false,
+    "runtimeOrGitAction": false
+  },
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidateParseCompileImportBuildCheckTestRuntime": false,
+  "conservedRootHeaderModuleRecords": [
+    {
+      "bytes": 40778,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
+      "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c"
+    },
+    {
+      "bytes": 32057,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-contracts.mjs",
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    }
+  ],
+  "constructorGuardSource": {
+    "lines": [
+      1144,
+      1154,
+      1173,
+      1177,
+      1218,
+      1222
+    ],
+    "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js"
+  },
+  "contractVersion": "df.ni6-positive-one-worker-source/v1",
+  "correctedDescriptorRecord": {
+    "bytes": 18440,
+    "path": ".runtime/ni6-positive-one-worker-r7b/package/native-source-manifest.json",
+    "sha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9"
+  },
+  "correctedPeer": {
+    "path": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-positive-one-worker-r7b/package/node_modules",
+    "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules",
+    "target": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web/node_modules"
+  },
+  "correctedSourceModuleRecords": [
+    {
+      "bytes": 12958,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-history-collector.mjs",
+      "sha256": "5473de8f79f8b4aec13ba56f212ef8ee7a32e68e7dee9ce8ce61ed8be1704149"
+    },
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    }
+  ],
+  "createPhases": [
+    "NOT_RETURNED",
+    "created",
+    "ready",
+    "running",
+    "unknown",
+    "cancel_requested",
+    "stopped",
+    "not_created"
+  ],
+  "creationStageInstrumentation": false,
+  "date": "2026-10-08",
+  "derivativeAncestor": ".runtime/ni6-positive-one-worker-r6/package",
+  "descriptorProducerEvaluated": false,
+  "exactUsageOracle": {
+    "actualUsageEqualsInputPlusExpectedOutputBytes": true,
+    "actualUsageMaximum": 32768,
+    "internalInputUtf8JsonBytesMaximum": 16384,
+    "internalInputUtf8JsonBytesPositiveSafeInteger": true,
+    "nextUnchanged": true,
+    "optionsMutation": false,
+    "publicPayloadOrByteCountAdded": false,
+    "publicStreamCount": 1
+  },
+  "faultOrProtectedCODEInvestigation": false,
+  "futureActualPinUnionCountIncludingSelfAndReviews": 831,
+  "headerCasesConserved": 3,
+  "inherited730RowsPreservedExactly": true,
+  "inheritedActualBuiltClientSha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+  "inheritedInputCount": 730,
+  "inputBytes": 27599346,
+  "inputFileCount": 819,
+  "metadataSelfHashes": "ROOT_EXTERNAL_SEAL_REQUIRED; no recursive report or manifest self-pin",
+  "nativeDescriptorHostFiles": 87,
+  "nativeDescriptorHostModules": 27,
+  "nativeDescriptorProductFiles": 64,
+  "newClientBuild": false,
+  "originalActualBuiltDescriptorSha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382",
+  "originalActualBuiltProduct": ".runtime/ni6-public-preparation-r3/package",
+  "ownedCoreRecords": [
+    {
+      "bytes": 38353,
+      "path": ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
+      "sha256": "12ceb405f7929f3c405cb39b2c66486ead98f505431d272842d04cfb5a00d6dd"
+    },
+    {
+      "bytes": 33035,
+      "path": ".runtime/ni6-positive-one-worker-r7b/run-once.py",
+      "sha256": "cfd06f7c990e778b6372911ca784cfbad3ddbe48ee6de73bb6c22bf746bea3bb"
+    },
+    {
+      "bytes": 36886,
+      "path": ".runtime/ni6-positive-one-worker-r7b/execution-plan.proposed.json",
+      "sha256": "8855802f78dc3c1e611b3c7cf967a26274a6d3af991207839ef79fed0412842d"
+    },
+    {
+      "bytes": 42031,
+      "path": ".runtime/ni6-positive-one-worker-r7b/source-delta.diff",
+      "sha256": "24cfdbf4eaf7c11ec5dfbc35b788dea1e3434ffa35464c7c8c36597b3f9aef60"
+    },
+    {
+      "bytes": 5763,
+      "path": ".runtime/ni6-positive-one-worker-r7b/README.md",
+      "sha256": "4863ed32ba9a4244ea4528247188dfa1985fda479e83e7cb9afc8b8ca8eb34a7"
+    }
+  ],
+  "packageRecords": [
+    {
+      "bytes": 151584,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/lib/client.js",
+      "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+    },
+    {
+      "bytes": 18440,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/native-source-manifest.json",
+      "sha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9"
+    },
+    {
+      "bytes": 2691,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/package.json",
+      "sha256": "a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58"
+    },
+    {
+      "bytes": 1166,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-client.mjs",
+      "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+    },
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    },
+    {
+      "bytes": 388886,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/scripts/dsh-web-runtime-lock.json",
+      "sha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3"
+    },
+    {
+      "bytes": 13904,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/approval-preview.mjs",
+      "sha256": "4ebad9ef83002817e28dd294e507f12cedc26e3c96272ce2ffcb501ff18364eb"
+    },
+    {
+      "bytes": 7647,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/audit-input-pair.mjs",
+      "sha256": "0bc3c61bc03700191f7f3c148ce04b4d6150964d6b68055e7546e204fcfef8fc"
+    },
+    {
+      "bytes": 6184,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/audit.mjs",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb"
+    },
+    {
+      "bytes": 15251,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/chat.mjs",
+      "sha256": "2962af9aaa94ec4d4ce8e0549352aedae5d64fe3ef547de48787e289f34dc556"
+    },
+    {
+      "bytes": 151616,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/client-entry.cjs",
+      "sha256": "9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1"
+    },
+    {
+      "bytes": 2918,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/config.mjs",
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "bytes": 28297,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/context.mjs",
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9"
+    },
+    {
+      "bytes": 2926,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/control.mjs",
+      "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f"
+    },
+    {
+      "bytes": 13403,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/coordinator.mjs",
+      "sha256": "b9d519a696694263398014b8546fb412f9af16d8f2a8c034d1c37e7c1466e365"
+    },
+    {
+      "bytes": 9792,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/environment.mjs",
+      "sha256": "ee110abe5bbc485249da4f945962aa59f319c87c3d88a8dc4a050279b5ba3a63"
+    },
+    {
+      "bytes": 7432,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/event-clock.mjs",
+      "sha256": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5"
+    },
+    {
+      "bytes": 10602,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/events.mjs",
+      "sha256": "a0db19616284d7132e5e1b9e17a626fe9086adce81f08f6e7a4483a52bc9f18f"
+    },
+    {
+      "bytes": 21009,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc"
+    },
+    {
+      "bytes": 22111,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/foundation.mjs",
+      "sha256": "d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154"
+    },
+    {
+      "bytes": 6739,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "bytes": 4354,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/index.mjs",
+      "sha256": "0ead82c329366f6df7922f09910df47ca4c405773efaeca09cc2a300c4f34929"
+    },
+    {
+      "bytes": 13615,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-native-source.mjs",
+      "sha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925"
+    },
+    {
+      "bytes": 6835,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-phases.mjs",
+      "sha256": "b2393302db5fbc651a302484a3bccc687805bf5c06f13003a09bed760dda1792"
+    },
+    {
+      "bytes": 56388,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit.mjs",
+      "sha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece"
+    },
+    {
+      "bytes": 4122,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-config.mjs",
+      "sha256": "816898abf352f0e02f37d25b2cb070082a685d3bd5cd8fe064ce76801f812b88"
+    },
+    {
+      "bytes": 23241,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-events.mjs",
+      "sha256": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a"
+    },
+    {
+      "bytes": 2341,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+    },
+    {
+      "bytes": 22246,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory-continuity.mjs",
+      "sha256": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382"
+    },
+    {
+      "bytes": 3538,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory.mjs",
+      "sha256": "0a7d22f728dbc202a54d483146e042d0ea4a8f50c9c95dd279ba6b4b0f8a2320"
+    },
+    {
+      "bytes": 14134,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-normal-services.mjs",
+      "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+    },
+    {
+      "bytes": 1071,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-owned-stream.mjs",
+      "sha256": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6"
+    },
+    {
+      "bytes": 10275,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-plugin.mjs",
+      "sha256": "e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5"
+    },
+    {
+      "bytes": 48343,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-results.mjs",
+      "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+    },
+    {
+      "bytes": 2127,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-role-recipes.mjs",
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+    },
+    {
+      "bytes": 5018,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-config.mjs",
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+    },
+    {
+      "bytes": 21961,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-facts.mjs",
+      "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7"
+    },
+    {
+      "bytes": 47301,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker.mjs",
+      "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4"
+    },
+    {
+      "bytes": 21799,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/ledger.mjs",
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+    },
+    {
+      "bytes": 36680,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/memory.mjs",
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9"
+    },
+    {
+      "bytes": 15586,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/messages.mjs",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d"
+    },
+    {
+      "bytes": 40778,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
+      "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c"
+    },
+    {
+      "bytes": 10953,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-contributions.mjs",
+      "sha256": "b811f3a7155a99b3361e8aa2d19df3a3a2783e1d9334c48cb6b77ca7731e1c01"
+    },
+    {
+      "bytes": 12958,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-history-collector.mjs",
+      "sha256": "5473de8f79f8b4aec13ba56f212ef8ee7a32e68e7dee9ce8ce61ed8be1704149"
+    },
+    {
+      "bytes": 2328,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/native-source-descriptor.mjs",
+      "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+    },
+    {
+      "bytes": 32057,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-contracts.mjs",
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    },
+    {
+      "bytes": 20325,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
+      "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe"
+    },
+    {
+      "bytes": 2860,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-planning.mjs",
+      "sha256": "155e7f29ebd688d3e18f649a03ad7e1640aa8419b64704b2d2e671a152720934"
+    },
+    {
+      "bytes": 2675,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-request.mjs",
+      "sha256": "2118b8775d7b31d8cd8d5213bb515b6fc07834ea1139b0f6cb831b968c937039"
+    },
+    {
+      "bytes": 1473,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-rpc.mjs",
+      "sha256": "3f38c5811c076adba5caa42a3985863b05c22abfc3e2eebb1560c519469ce917"
+    },
+    {
+      "bytes": 6689,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-selection.mjs",
+      "sha256": "65c694d8e7c5264e9f53d8527b67343775d994c85ac80350a0aada518e79c71d"
+    },
+    {
+      "bytes": 15595,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-resume-controls.mjs",
+      "sha256": "b22e14c19e3274b25b54f75567098166f85a0833a33595c4f651edb6c097d9e3"
+    },
+    {
+      "bytes": 1541,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/normal-source-planning-binding.mjs",
+      "sha256": "372495d5e4a2f7f431dd9a0863b82020ee63c6ac6322938f83efe1e388a09a79"
+    },
+    {
+      "bytes": 11442,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/notifications.mjs",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0"
+    },
+    {
+      "bytes": 9944,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
+      "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+    },
+    {
+      "bytes": 3908,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/owner-native-command-controls.mjs",
+      "sha256": "a3902a3d27f4e61b03aacf0cc566319dcf85e1198bbe4932ffecceeb0d865fa8"
+    },
+    {
+      "bytes": 13766,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/results.mjs",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077"
+    },
+    {
+      "bytes": 67362,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
+      "sha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095"
+    },
+    {
+      "bytes": 6033,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-security.mjs",
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+    },
+    {
+      "bytes": 347241,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-store.mjs",
+      "sha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7"
+    },
+    {
+      "bytes": 11509,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/scheduler.mjs",
+      "sha256": "af61bd963ad09daf588bd192436790a39b5adcfc837e05fc01f23d0ab4c4e8c2"
+    },
+    {
+      "bytes": 6085,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/schema7-runtime-composition.mjs",
+      "sha256": "cdbd4a658dc3d83aebf7ab7e0e847bdde930c471bed972b85991f86c070b0c9c"
+    },
+    {
+      "bytes": 20740,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/setup-state.mjs",
+      "sha256": "bf1c41529c69c5e8f38c20baaa8a017033e4800551a8d7df70ee47b65c09f312"
+    },
+    {
+      "bytes": 15937,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/testing-provider.mjs",
+      "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+    },
+    {
+      "bytes": 36640,
+      "path": ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs",
+      "sha256": "cfe51d3fa2cc9ed1a5bc584b830c50959d7929dc1866252a7ab5dcac61723e8a"
+    }
+  ],
+  "packageRegularFileChanges": [],
+  "packageRegularFiles": 65,
+  "phases": [
+    "PREFLIGHT",
+    "HEADER_CONTRACT",
+    "STORED_PROJECTION_CONTRACT",
+    "IMPORTS",
+    "NAMESPACE",
+    "CONTEXT",
+    "PLUGIN_LOADER",
+    "PLUGIN_PROJECTIONS",
+    "PLUGIN_SESSIONS",
+    "PLUGIN_APPROVAL",
+    "PLUGIN_AGENTS",
+    "PLUGIN_LLM",
+    "PLUGIN_SYSTEM_PROMPT",
+    "PLUGIN_TOOLS",
+    "PLUGIN_CREDENTIALS",
+    "PLUGIN_WEB_SERVER",
+    "PLUGIN_CONNECTION",
+    "LISTENER_FENCE",
+    "INDEX_ROUTE",
+    "PUBLIC_SERVICES",
+    "PRESET",
+    "ENTRY_START",
+    "AUTH",
+    "SETUP_STATUS",
+    "SETUP_PREPARE",
+    "SETUP_CONFIRM",
+    "SETUP_READY",
+    "LIST",
+    "INTAKE",
+    "STATUS",
+    "CONTEXT_PREPARE",
+    "CONTEXT_DETAIL",
+    "CATALOG",
+    "POLICY_PREVIEW",
+    "POLICY_CONFIRM",
+    "WORKER_PLAN",
+    "WORKER_PREVIEW",
+    "WORKER_GRANT",
+    "WORKER_CREATE",
+    "WORKER_IDLE",
+    "WORKER_EXECUTE",
+    "WORKER_QUERY",
+    "WORKER_CAPTURE",
+    "WORKER_RESULT",
+    "WORKER_FINISH",
+    "FINAL_STATUS",
+    "PRESET_RELEASE",
+    "ENTRY_REMOVE",
+    "POST_DISPOSAL",
+    "ROOT_CLEANUP",
+    "COMPLETE"
+  ],
+  "positiveAndPassExecuteObservationRequired": {
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeTransportFailure": "NONE"
+  },
+  "priorR7": "EXCLUDED_UNTOUCHED; revoked authority; no adoption/deletion",
+  "privateContentInspection": false,
+  "projectionCases": [
+    {
+      "expected": "same references/full inputs; one event/no marker; empty nodes/messages; measured generations0",
+      "id": "C04",
+      "input": "one seq0/time1 approval/policy never event, v4/unseeded/depth0 header"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C05",
+      "input": "first seq1"
+    },
+    {
+      "expected": "REJECT_UNCHANGED; Object.is(seq,-0)",
+      "id": "C06",
+      "input": "seq negative-zero"
+    },
+    {
+      "expected": "REJECT_UNCHANGED; own optional field retained",
+      "id": "C07",
+      "input": "explicit ignorable undefined"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C08",
+      "input": "unsupported-required event/data empty"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C09",
+      "input": "seeded header"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C10",
+      "input": "parentSession extra header field"
+    },
+    {
+      "expected": "ACCEPT_UNCHANGED; same references; one event/no marker; empty nodes/messages; measured generations0",
+      "id": "C11",
+      "input": "nonempty synthetic provider/model; deterministic reasoning/maxTokens128; both true matching defaults"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C12",
+      "input": "only provider empty"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C13",
+      "input": "only model empty"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C14",
+      "input": "only config reasoningEffort absent; true marker retained"
+    },
+    {
+      "expected": "REJECT_UNCHANGED",
+      "id": "C15",
+      "input": "only config maxTokens absent; true marker retained"
+    }
+  ],
+  "projectionCasesMaximum": 12,
+  "projectionCasesPositiveAndPassRequired": 12,
+  "prospectiveEffects": {
+    "actionGrantsMaximum": 1,
+    "actualStepsMaximum": 1,
+    "actualTurnsMaximum": 1,
+    "authGetMaximum": 1,
+    "connectionLoaderEntry": 1,
+    "contextPreparationsMaximum": 1,
+    "directInterpreterStartsMaximum": 3,
+    "directRootHostPluginInvocations": 10,
+    "domainPostsMaximum": 23,
+    "durableStorage": "Explicit original setup SQLite/vault plus one original plaintext JSONL session; private contents never inspected by fixture/driver",
+    "ephemeralLoopbackListenersMaximum": 1,
+    "externalModelCallsMaximum": 0,
+    "freshDirectRuntimeDirectories": 5,
+    "httpRequestBytesMaximum": 2048,
+    "httpRequestsMaximum": 25,
+    "httpResponseBytesMaximum": 65536,
+    "memoryWritesMaximum": 0,
+    "nativeAgentsMaximum": 1,
+    "nativeEventObservationMaximum": 128,
+    "nativeProviderRequestsMaximum": 1,
+    "nativeSessionsMaximum": 1,
+    "nativeStreamsMaximum": 1,
+    "nativeToolsMaximum": 0,
+    "ordinaryCredentialFile": "Original private LocalCredentialProvider only",
+    "ownedLoaderEntriesMaximum": 6,
+    "policyConfirmsMaximum": 1,
+    "postDisposalPostsMaximum": 1,
+    "presetRegistrationDisposalMaximum": 1,
+    "presetRegistrationMaximum": 1,
+    "profileName": "ni6-positive01",
+    "publicLoaderAwaitMaximum": 12,
+    "publicLoaderCreateMaximum": 6,
+    "publicLoaderRemoveAttemptsMaximum": 6,
+    "rawEntryFiberAwaitMaximum": 12,
+    "resultQualification": "Synthetic local not-reviewed/not-requested; no task completion or acceptance",
+    "rootPublicDisposeMaximum": 1,
+    "sequentialNodeCommands": 2,
+    "taskIntakesMaximum": 1,
+    "temporaryHttpSocketsMaximum": 25,
+    "testWorkers": 0,
+    "unknownOutcome": "FAILED_HOLD; no retry/replay/reset/adoption",
+    "workerCapturesMaximum": 1,
+    "workerCreatesMaximum": 1,
+    "workerExecutesMaximum": 1,
+    "workerFinishesMaximum": 1,
+    "workerResultReadsMaximum": 1
+  },
+  "publicResultByteCap": 1024,
+  "publicResultFields": [
+    "contractVersion",
+    "result",
+    "phase",
+    "category",
+    "refusalCode",
+    "createPhase",
+    "executeHttpPhase",
+    "executeTransportFailure",
+    "executeHttpStatus",
+    "headerCases",
+    "projectionCases",
+    "positivePath",
+    "taskCreated",
+    "workerCreated",
+    "executionCommitted",
+    "resultReturned",
+    "workerStopped",
+    "reservationReleased",
+    "entryRemoved",
+    "ownedEntriesRemoved",
+    "rootClosed",
+    "completedPlugins",
+    "httpRequests",
+    "requests",
+    "streams",
+    "tools",
+    "stepStarts",
+    "stepEnds",
+    "turnStarts",
+    "turnEnds",
+    "all87",
+    "CODE"
+  ],
+  "publicResultReadMaximum": 1025,
+  "pureCasesAloneProveHostCompatibility": false,
+  "pureCasesRuntimeExecutedByAuthor": 0,
+  "pureCasesSameFutureChildBeforeContext": true,
+  "qualifications": [
+    "R6 consumed FAILED_HOLD with captured driver1; private response/cause NOT_ESTABLISHED",
+    "R3/R5 remain UNRUN; R4 return NOT_CAPTURED",
+    "attempted request does not prove transmission or remote admission",
+    "transport observation cannot prove receipt/settlement/delivery/release/cleanup",
+    "all inherited factual and strict root-HOLD guards remain",
+    "no task completion/review/delivery/acceptance"
+  ],
+  "r4ActualSupportedDriverReturn": "NOT_CAPTURED; no replay",
+  "r6ActualAuthority": [
+    {
+      "bytes": 721,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/fixture-result.json",
+      "sha256": "36f1c1a1699eb44eeecedb4f96520db812f6d0141999c6a3718312fc964c3118"
+    },
+    {
+      "bytes": 4412,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/executor-result.json",
+      "sha256": "af8bf392e23f389147cadd3031a805d521670541c3b5bbc182bea3af42b1369a"
+    },
+    {
+      "bytes": 2995,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/command-results.json",
+      "sha256": "81b8a3606bb7891bf58e5449ef336bf57e2643e8863d7cacda4f858c6e914b66"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/before-after.json",
+      "sha256": "709d0fcf8565e77656946761137424fd9d8f581f0b8db8afa6cac6fd779372c2"
+    },
+    {
+      "bytes": 134397,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/root-plan.json",
+      "sha256": "d0d75d6eacd3c47e44a89490ff2615902af1dc41f3c5e07c07a72f692433cef3"
+    },
+    {
+      "bytes": 9979,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-actual-return.json",
+      "sha256": "b6eee11a50cf1570123b1c8bf6ed7d621c721d6f7510ba199b62218ae7281541"
+    },
+    {
+      "bytes": 2914,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.md",
+      "sha256": "c8ca692e0689968e897034abbd63a1a34ad3afb4455cabe8efcfa9293ec6de2c"
+    },
+    {
+      "bytes": 7813,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.json",
+      "sha256": "311ec862ddb92cd6a9b04629f84e96e53af0ed49757c5840241966a8f6d73ee2"
+    },
+    {
+      "bytes": 4930,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.md",
+      "sha256": "6618224ef6513d057642a1801267d4ec41f3c4c58c6b2f0415ea9a844ecc641e"
+    },
+    {
+      "bytes": 8165,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.json",
+      "sha256": "e24d2b1c1ebdaa3b15c18af57500c53da54686ec97e61c0fe41a5114e84abb4f"
+    }
+  ],
+  "r6ActualSupportedDriverReturn": "CAPTURED_EXIT_1; consumed FAILED_HOLD; no replay",
+  "refusalCodes": [
+    "NONE",
+    "STALE_VERSION",
+    "WORKER_POLICY_REQUIRED",
+    "WORKER_POLICY_STALE",
+    "WORKER_PREVIEW_STALE",
+    "WORKER_CONFIRMATION_REQUIRED",
+    "WORKER_CONTEXT_INVALID",
+    "WORKER_MAPPING_MISMATCH",
+    "WORKER_RESULT_UNAVAILABLE",
+    "WORKER_FINISH_UNAVAILABLE",
+    "WORKER_SOURCE_UNAVAILABLE",
+    "WORKER_PERSISTENCE_UNSUPPORTED",
+    "WORKER_PRESET_UNAVAILABLE",
+    "WORKER_REQUEST_DENIED",
+    "WORKER_SESSION_UNAVAILABLE",
+    "WORKER_CATALOG_UNAVAILABLE",
+    "WORKER_NOT_CONFIGURED",
+    "COST_UNKNOWN",
+    "CONFIG_INVALID",
+    "INPUT_INVALID",
+    "OUTPUT_TOO_LARGE",
+    "SERVICE_DISPOSED",
+    "CONTEXT_LIMIT",
+    "STORAGE_INVALID",
+    "WORKER_EXECUTION_ALREADY_SUBMITTED",
+    "INVALID_INPUT",
+    "STALE_AUTHORITY",
+    "HOST_PERMISSION_DENIED",
+    "STALE_MEMORY",
+    "HOST_DENIED",
+    "APPROVAL_INVALID",
+    "CLAIM_REVOKED",
+    "SPEC_MISMATCH",
+    "STALE_POLICY",
+    "ACTIVE_FULL",
+    "OPERATION_REJECTED",
+    "OTHER_REFUSAL"
+  ],
+  "remaining": [
+    "four final affected code/test review reports",
+    "root exact closed plan pins and GO",
+    "root supported once invocation and direct actual-return capture"
+  ],
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json"
+  ],
+  "resultSizeBounds": {
+    "byteCap": 1024,
+    "compactFormat": "JSON.stringify plus newline; existing fixture format",
+    "compactMaximumIncludingNewline": 778,
+    "fieldCount": 32,
+    "maximumMethod": "Independent per-field longest closed ASCII enum, maximum digit-width counters, false booleans (five bytes); conservative Cartesian scalar bound, no candidate evaluation",
+    "prettyFormat": "Python json.dumps indent=2 sort_keys=True allow_nan=False plus newline; existing executor public save format",
+    "prettyMaximumIncludingNewline": 907,
+    "readMaximum": 1025
+  },
+  "retainedProjectionCases": 12,
+  "revision": "positive-one-worker-r7b",
+  "rootFreezes": [
+    {
+      "bytes": 7220,
+      "path": "docs/ni6-positive-one-worker-r7-transport-observation-freeze-2026-10-08.md",
+      "sha256": "2cf6147f518a0578d0044c6ddf5647fcd69188f0aa6f8a684476bc0718dd5712"
+    },
+    {
+      "bytes": 2466,
+      "path": "docs/ni6-positive-one-worker-r7b-author-namespace-freeze-2026-10-08.md",
+      "sha256": "244400e61a52f85a8be3a85e5c9992fd56cc86b8ba7e852504f04fb8637bf6c6"
+    }
+  ],
+  "rootGO": false,
+  "sealed": true,
+  "selectedCorrectedProduct": ".runtime/ni6-positive-one-worker-r7b/package",
+  "sourceCopies": [
+    ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/run-once.py",
+    ".runtime/ni6-positive-one-worker-r7b/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r7b/source-delta.diff",
+    ".runtime/ni6-positive-one-worker-r7b/README.md",
+    ".runtime/ni6-positive-one-worker-r7b/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r7b-source.md",
+    "docs/evidence/NI6/positive-one-worker-r7b-source.json",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json",
+    ".runtime/ni6-positive-one-worker-r6/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r6/run-once.py",
+    ".runtime/ni6-positive-one-worker-r6/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r6/source-delta.diff",
+    ".runtime/ni6-positive-one-worker-r6/README.md",
+    ".runtime/ni6-positive-one-worker-r6/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r6-source.md",
+    "docs/evidence/NI6/positive-one-worker-r6-source.json",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.json",
+    "docs/ni6-positive-one-worker-r1-freeze-2026-10-07.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-actual-return.json",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json",
+    ".runtime/ni6-public-preparation-r3/source-manifest.json",
+    ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+    ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+    ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+    ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+    ".runtime/ni6-public-preparation-r3/build-readback.json",
+    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json",
+    ".runtime/ni6-positive-one-worker-r1/README.md",
+    ".runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r1/run-once.py",
+    ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
+    "docs/evidence/NI6/positive-one-worker-r1-source.json",
+    "docs/evidence/NI6/positive-one-worker-r1-source.md",
+    ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json",
+    "docs/ni6-positive-one-worker-r2-usage-fix-2026-10-07.md",
+    ".runtime/ni6-positive-one-worker-r2/README.md",
+    ".runtime/ni6-positive-one-worker-r2/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r2/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r2/run-once.py",
+    ".runtime/ni6-positive-one-worker-r2/source-delta.diff",
+    "docs/evidence/NI6/positive-one-worker-r2-source.json",
+    "docs/evidence/NI6/positive-one-worker-r2-source.md",
+    ".runtime/ni6-positive-one-worker-r2/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.json",
+    "docs/evidence/NI6/positive-one-worker-r2-actual-return.json",
+    "docs/evidence/NI6/positive-one-worker-r2-execution/fixture-result.json",
+    "docs/evidence/NI6/positive-one-worker-r2-execution/executor-result.json",
+    "docs/evidence/NI6/positive-one-worker-r2-execution/command-results.json",
+    "docs/evidence/NI6/positive-one-worker-r2-execution/before-after.json",
+    "docs/evidence/NI6/positive-one-worker-r2-execution/root-plan.json",
+    "docs/evidence/NI6/positive-one-worker-checkpoint-2026-10-07.md",
+    "docs/ni6-positive-one-worker-r3-create-phase-freeze-2026-10-07.md",
+    ".runtime/ni6-positive-one-worker-r3/README.md",
+    ".runtime/ni6-positive-one-worker-r3/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r3/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r3/run-once.py",
+    ".runtime/ni6-positive-one-worker-r3/source-delta.diff",
+    "docs/evidence/NI6/positive-one-worker-r3-source.json",
+    "docs/evidence/NI6/positive-one-worker-r3-source.md",
+    ".runtime/ni6-positive-one-worker-r3/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r3-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r3-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r3-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r3-independent-test-design-review.json",
+    "docs/ni6-positive-one-worker-r4-native-header-fix-freeze-2026-10-07.md",
+    ".runtime/ni6-positive-one-worker-r4/package/lib/client.js",
+    ".runtime/ni6-positive-one-worker-r4/package/native-source-manifest.json",
+    ".runtime/ni6-positive-one-worker-r4/package/package.json",
+    ".runtime/ni6-positive-one-worker-r4/package/scripts/build-client.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/scripts/build-native-source-manifest.py",
+    ".runtime/ni6-positive-one-worker-r4/package/scripts/dsh-web-runtime-lock.json",
+    ".runtime/ni6-positive-one-worker-r4/package/src/approval-preview.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/audit-input-pair.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/audit.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/chat.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/client-entry.cjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/config.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/context.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/control.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/coordinator.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/environment.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/event-clock.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/events.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/fishball-memory-core.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/foundation.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/host-probe.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/index.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-audit-native-source.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-audit-phases.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-audit.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-config.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-events.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-invocation.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-memory-continuity.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-memory.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-normal-services.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-owned-stream.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-results.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-role-recipes.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-worker-config.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-worker-facts.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/installed-worker.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/ledger.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/memory.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/messages.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/native-adapter.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/native-contributions.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/native-history-collector.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/native-source-descriptor.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-contracts.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-native-operations.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-native-planning.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-native-request.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-native-rpc.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-native-selection.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-resume-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/normal-source-planning-binding.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/notifications.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/operator-bridge.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/owner-native-command-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/results.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/runtime-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/runtime-security.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/runtime-store.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/scheduler.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/schema7-runtime-composition.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/setup-state.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/testing-provider.mjs",
+    ".runtime/ni6-positive-one-worker-r4/package/src/worker.mjs",
+    "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.md",
+    "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.json",
+    ".runtime/ni6-positive-one-worker-r4/README.md",
+    ".runtime/ni6-positive-one-worker-r4/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r4/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r4/run-once.py",
+    ".runtime/ni6-positive-one-worker-r4/source-delta.diff",
+    "docs/evidence/NI6/positive-one-worker-r4-source.json",
+    "docs/evidence/NI6/positive-one-worker-r4-source.md",
+    ".runtime/ni6-positive-one-worker-r4/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-test-design-review.json",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-execution-evidence-review.md",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-execution-evidence-review.json",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-actual-test-assessment.md",
+    "docs/evidence/NI6/positive-one-worker-r4-independent-actual-test-assessment.json",
+    "docs/evidence/NI6/positive-one-worker-r4-actual-return.json",
+    "docs/evidence/NI6/positive-one-worker-r4-execution/fixture-result.json",
+    "docs/evidence/NI6/positive-one-worker-r4-execution/executor-result.json",
+    "docs/evidence/NI6/positive-one-worker-r4-execution/command-results.json",
+    "docs/evidence/NI6/positive-one-worker-r4-execution/before-after.json",
+    "docs/evidence/NI6/positive-one-worker-r4-execution/root-plan.json",
+    "docs/evidence/NI6/ordinary-create-r4-static-diagnosis.md",
+    "docs/evidence/NI6/ordinary-create-r4-static-diagnosis.json",
+    "docs/ni6-positive-one-worker-r5-stored-projection-freeze-2026-10-07.md",
+    ".runtime/ni6-positive-one-worker-r5/package/lib/client.js",
+    ".runtime/ni6-positive-one-worker-r5/package/native-source-manifest.json",
+    ".runtime/ni6-positive-one-worker-r5/package/package.json",
+    ".runtime/ni6-positive-one-worker-r5/package/scripts/build-client.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/scripts/build-native-source-manifest.py",
+    ".runtime/ni6-positive-one-worker-r5/package/scripts/dsh-web-runtime-lock.json",
+    ".runtime/ni6-positive-one-worker-r5/package/src/approval-preview.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/audit-input-pair.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/audit.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/chat.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/client-entry.cjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/config.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/context.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/control.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/coordinator.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/environment.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/event-clock.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/events.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/fishball-memory-core.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/foundation.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/host-probe.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/index.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-audit-native-source.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-audit-phases.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-audit.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-config.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-events.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-invocation.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-memory-continuity.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-memory.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-normal-services.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-owned-stream.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-results.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-role-recipes.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-worker-config.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-worker-facts.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/installed-worker.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/ledger.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/memory.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/messages.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/native-adapter.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/native-contributions.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/native-history-collector.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/native-source-descriptor.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-contracts.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-native-operations.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-native-planning.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-native-request.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-native-rpc.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-native-selection.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-resume-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/normal-source-planning-binding.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/notifications.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/operator-bridge.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/owner-native-command-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/results.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/runtime-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/runtime-security.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/runtime-store.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/scheduler.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/schema7-runtime-composition.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/setup-state.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/testing-provider.mjs",
+    ".runtime/ni6-positive-one-worker-r5/package/src/worker.mjs",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.d.ts",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.js",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.js",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/index.js",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/types/index.d.ts",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/package.json",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/index.js",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/types/index.d.ts",
+    ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/package.json",
+    ".runtime/ni6-positive-one-worker-r5/README.md",
+    ".runtime/ni6-positive-one-worker-r5/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r5/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r5/run-once.py",
+    ".runtime/ni6-positive-one-worker-r5/source-delta.diff",
+    "docs/evidence/NI6/positive-one-worker-r5-source.json",
+    "docs/evidence/NI6/positive-one-worker-r5-source.md",
+    ".runtime/ni6-positive-one-worker-r5/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r5-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r5-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r5-independent-test-design-review.json",
+    "docs/evidence/NI6/positive-one-worker-r5-root-producer-order-hold.json",
+    "docs/ni6-positive-one-worker-r6-conservation-fix-freeze-2026-10-07.md",
+    ".runtime/ni6-positive-one-worker-r6/package/lib/client.js",
+    ".runtime/ni6-positive-one-worker-r6/package/native-source-manifest.json",
+    ".runtime/ni6-positive-one-worker-r6/package/package.json",
+    ".runtime/ni6-positive-one-worker-r6/package/scripts/build-client.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/scripts/build-native-source-manifest.py",
+    ".runtime/ni6-positive-one-worker-r6/package/scripts/dsh-web-runtime-lock.json",
+    ".runtime/ni6-positive-one-worker-r6/package/src/approval-preview.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/audit-input-pair.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/audit.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/chat.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/client-entry.cjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/config.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/context.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/control.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/coordinator.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/environment.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/event-clock.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/events.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/fishball-memory-core.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/foundation.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/host-probe.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/index.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-audit-native-source.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-audit-phases.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-audit.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-config.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-events.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-invocation.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-memory-continuity.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-memory.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-normal-services.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-owned-stream.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-results.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-role-recipes.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-worker-config.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-worker-facts.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/installed-worker.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/ledger.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/memory.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/messages.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/native-adapter.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/native-contributions.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/native-history-collector.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/native-source-descriptor.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-contracts.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-native-operations.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-native-planning.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-native-request.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-native-rpc.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-native-selection.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-resume-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/normal-source-planning-binding.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/notifications.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/operator-bridge.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/owner-native-command-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/results.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/runtime-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/runtime-security.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/runtime-store.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/scheduler.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/schema7-runtime-composition.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/setup-state.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/testing-provider.mjs",
+    ".runtime/ni6-positive-one-worker-r6/package/src/worker.mjs",
+    "docs/evidence/NI6/positive-one-worker-r6-execution/fixture-result.json",
+    "docs/evidence/NI6/positive-one-worker-r6-execution/executor-result.json",
+    "docs/evidence/NI6/positive-one-worker-r6-execution/command-results.json",
+    "docs/evidence/NI6/positive-one-worker-r6-execution/before-after.json",
+    "docs/evidence/NI6/positive-one-worker-r6-execution/root-plan.json",
+    "docs/evidence/NI6/positive-one-worker-r6-actual-return.json",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.md",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.json",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.md",
+    "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.json",
+    "docs/ni6-positive-one-worker-r7-transport-observation-freeze-2026-10-08.md",
+    "docs/ni6-positive-one-worker-r7b-author-namespace-freeze-2026-10-08.md",
+    ".runtime/ni6-positive-one-worker-r7b/package/lib/client.js",
+    ".runtime/ni6-positive-one-worker-r7b/package/native-source-manifest.json",
+    ".runtime/ni6-positive-one-worker-r7b/package/package.json",
+    ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-client.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-native-source-manifest.py",
+    ".runtime/ni6-positive-one-worker-r7b/package/scripts/dsh-web-runtime-lock.json",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/approval-preview.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/audit-input-pair.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/audit.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/chat.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/client-entry.cjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/config.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/context.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/control.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/coordinator.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/environment.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/event-clock.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/events.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/fishball-memory-core.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/foundation.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/host-probe.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/index.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-native-source.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-phases.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-config.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-events.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory-continuity.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-normal-services.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-owned-stream.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-results.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-role-recipes.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-config.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-facts.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/ledger.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/memory.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/messages.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/native-contributions.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/native-history-collector.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/native-source-descriptor.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-contracts.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-planning.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-request.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-rpc.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-selection.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-resume-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-source-planning-binding.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/notifications.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/owner-native-command-controls.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/results.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-security.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-store.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/scheduler.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/schema7-runtime-composition.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/setup-state.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/testing-provider.mjs",
+    ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs"
+  ],
+  "sourceDelta": ".runtime/ni6-positive-one-worker-r7b/source-delta.diff",
+  "sourceIdentityGuardBypass": false,
+  "sourceManifest": ".runtime/ni6-positive-one-worker-r7b/source-manifest.json",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "transportObservationEnums": {
+    "executeHttpPhases": [
+      "NOT_SENT",
+      "REQUEST_STARTED",
+      "HEADERS_OBSERVED",
+      "BODY_COMPLETE",
+      "RPC_VALUE_RETURNED"
+    ],
+    "executeHttpStatuses": [
+      "NOT_RETURNED",
+      "HTTP_200",
+      "OTHER_STATUS"
+    ],
+    "executeTransportFailures": [
+      "NONE",
+      "REQUEST_ERROR",
+      "RESPONSE_ERROR",
+      "RESPONSE_LIMIT",
+      "TIMER_EXPIRED"
+    ]
+  },
+  "transportObservationOnly": true,
+  "transportTimerMillisecondsUnchanged": 2000,
+  "unchangedPackageRegularFiles": 65,
+  "wholeGraphReaudited": false,
+  "wholeOrderedProducerDescriptorBytesEqual": true
+}

@@ -1,0 +1,408 @@
+--- .runtime/ni6-positive-one-worker-r6/fixture.mjs
++++ .runtime/ni6-positive-one-worker-r7b/fixture.mjs
+@@ -11,10 +11,10 @@
+ const STARTED = performance.now();
+ const WORK_END = STARTED + 24000, FINAL_END = STARTED + 30000;
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const NAME = '.runtime/ni6-positive-one-worker-r6';
++const NAME = '.runtime/ni6-positive-one-worker-r7b';
+ const CAPSULE = resolve(ROOT, NAME), HOST = resolve(ROOT, '.runtime/dsh-web');
+ const PRODUCT = resolve(CAPSULE, 'package');
+-const PLAN_NAME = '.runtime/root-ni6-positive-one-worker-r6-execution-plan.json';
++const PLAN_NAME = '.runtime/root-ni6-positive-one-worker-r7b-execution-plan.json';
+ const RESULT = resolve(CAPSULE, 'fixture-result.json');
+ const GRAPH_NAME = '.runtime/ni3-native-runtime/public-graph-pins.json';
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+@@ -82,6 +82,10 @@
+     if (!['rootReviewedExecutionGO','rootSupportedExecutionApprovalGranted','rootReviewedFinalAffectedReports','pins'].includes(key)) equal(plan[key],proposal[key]);
+   }
+   equal(manifest.phases,PHASES); equal(manifest.categories,CATEGORIES); equal(manifest.createPhases,CREATE_PHASES);
++  equal(manifest.executeHttpPhases,EXECUTE_HTTP_PHASES); equal(manifest.executeTransportFailures,EXECUTE_TRANSPORT_FAILURES);
++  equal(manifest.executeHttpStatuses,EXECUTE_HTTP_STATUSES); equal(manifest.diagnosticFields,RESULT_FIELDS);
++  equal(proposal.executeHttpPhases,EXECUTE_HTTP_PHASES); equal(proposal.executeTransportFailures,EXECUTE_TRANSPORT_FAILURES);
++  equal(proposal.executeHttpStatuses,EXECUTE_HTTP_STATUSES); equal(proposal.diagnosticFields,RESULT_FIELDS);
+   const expected = new Map([...manifest.ownedFiles,...manifest.inputFiles].map(row => [row.path,row.sha256]));
+   expected.set(NAME + '/source-manifest.json',sha(bytes(manifestPath)));
+   equal(Object.keys(plan.pins).sort(),[...expected.keys(),...manifest.requiredAffectedReviews].sort());
+@@ -145,8 +149,12 @@
+  ...['workerCatalog','workerPolicyPreview','workerPolicyConfirm','workerPlan','workerPreview','workerGrant','workerCreate','workerQuery','workerExecute','workerQuery','workerCapture','workerResult','workerFinish','status'].map(n=>['/df-rpc',n])]);
+ const REFUSALS = Object.freeze(["NONE", "STALE_VERSION", "WORKER_POLICY_REQUIRED", "WORKER_POLICY_STALE", "WORKER_PREVIEW_STALE", "WORKER_CONFIRMATION_REQUIRED", "WORKER_CONTEXT_INVALID", "WORKER_MAPPING_MISMATCH", "WORKER_RESULT_UNAVAILABLE", "WORKER_FINISH_UNAVAILABLE", "WORKER_SOURCE_UNAVAILABLE", "WORKER_PERSISTENCE_UNSUPPORTED", "WORKER_PRESET_UNAVAILABLE", "WORKER_REQUEST_DENIED", "WORKER_SESSION_UNAVAILABLE", "WORKER_CATALOG_UNAVAILABLE", "WORKER_NOT_CONFIGURED", "COST_UNKNOWN", "CONFIG_INVALID", "INPUT_INVALID", "OUTPUT_TOO_LARGE", "SERVICE_DISPOSED", "CONTEXT_LIMIT", "STORAGE_INVALID", "WORKER_EXECUTION_ALREADY_SUBMITTED", "INVALID_INPUT", "STALE_AUTHORITY", "HOST_PERMISSION_DENIED", "STALE_MEMORY", "HOST_DENIED", "APPROVAL_INVALID", "CLAIM_REVOKED", "SPEC_MISMATCH", "STALE_POLICY", "ACTIVE_FULL", "OPERATION_REJECTED", "OTHER_REFUSAL"]);
+ const CREATE_PHASES = Object.freeze(["NOT_RETURNED", "created", "ready", "running", "unknown", "cancel_requested", "stopped", "not_created"]);
++const EXECUTE_HTTP_PHASES = Object.freeze(["NOT_SENT","REQUEST_STARTED","HEADERS_OBSERVED","BODY_COMPLETE","RPC_VALUE_RETURNED"]);
++const EXECUTE_TRANSPORT_FAILURES = Object.freeze(["NONE","REQUEST_ERROR","RESPONSE_ERROR","RESPONSE_LIMIT","TIMER_EXPIRED"]);
++const EXECUTE_HTTP_STATUSES = Object.freeze(["NOT_RETURNED","HTTP_200","OTHER_STATUS"]);
++let executeHttpPhase='NOT_SENT',executeTransportFailure='NONE',executeHttpStatus='NOT_RETURNED';
+ let refusalCode='NONE',createPhase='NOT_RETURNED',headerCases=0,projectionCases=0;
+-const RESULT_FIELDS = Object.freeze(['contractVersion','result','phase','category','refusalCode','createPhase','headerCases','projectionCases','positivePath','taskCreated','workerCreated',
++const RESULT_FIELDS = Object.freeze(['contractVersion','result','phase','category','refusalCode','createPhase','executeHttpPhase','executeTransportFailure','executeHttpStatus','headerCases','projectionCases','positivePath','taskCreated','workerCreated',
+  'executionCommitted','resultReturned','workerStopped','reservationReleased','entryRemoved','ownedEntriesRemoved','rootClosed',
+  'completedPlugins','httpRequests','requests','streams','tools','stepStarts','stepEnds','turnStarts','turnEnds','all87','CODE']);
+ function ref(value) { invariant(typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)); return value; }
+@@ -160,24 +168,27 @@
+ function transport(connection,port) {
+  invariant(Number.isSafeInteger(port)&&port>0&&port<=65535&&port!==3080);
+  const authority=`127.0.0.1:${port}`; let cookie,posts=0,total=0,exchanges=0,active=true;
+- async function send(method,path,body,auth) {
++ async function send(method,path,body,auth,observeExecute=false) {
+   clock(); invariant(active&&++total<=25&&path.startsWith('/')&&!/[\r\n]/.test(path));
+   const data=body===undefined?undefined:Buffer.from(JSON.stringify(body));invariant(!data||data.length<=2048);
+   const headers={Host:authority,Origin:`http://${authority}`};if(auth){invariant(typeof cookie==='string');headers.Cookie=cookie;}
+   if(data){headers['Content-Type']='application/json';headers['Content-Length']=data.length;}
+   return new Promise((done,reject)=>{
+    let settled=false,timer;const fail=()=>{if(settled)return;settled=true;clearTimeout(timer);reject(new Error());};
++   const observeFailure=origin=>{if(observeExecute&&!settled&&executeTransportFailure==='NONE')executeTransportFailure=origin;};
++   if(observeExecute)executeHttpPhase='REQUEST_STARTED';
+    const req=request({hostname:'127.0.0.1',port,method,path,headers,agent:false},res=>{
+-    let size=0;const chunks=[];res.on('data',chunk=>{size+=chunk.length;if(size>65536){res.destroy();req.destroy();fail();}else chunks.push(chunk);});
+-    res.on('error',fail);res.on('end',()=>{if(settled)return;settled=true;clearTimeout(timer);done({status:res.statusCode,headers:res.headers,bytes:Buffer.concat(chunks)});});
+-   });req.on('error',fail);timer=setTimeout(()=>{req.destroy();fail();},Math.max(1,Math.min(2000,WORK_END-performance.now())));req.end(data);
++    if(observeExecute&&!settled){executeHttpPhase='HEADERS_OBSERVED';executeHttpStatus=res.statusCode===200?'HTTP_200':'OTHER_STATUS';}
++    let size=0;const chunks=[];res.on('data',chunk=>{size+=chunk.length;if(size>65536){observeFailure('RESPONSE_LIMIT');res.destroy();req.destroy();fail();}else chunks.push(chunk);});
++    res.on('error',()=>{observeFailure('RESPONSE_ERROR');fail();});res.on('end',()=>{if(settled)return;if(observeExecute)executeHttpPhase='BODY_COMPLETE';settled=true;clearTimeout(timer);done({status:res.statusCode,headers:res.headers,bytes:Buffer.concat(chunks)});});
++   });req.on('error',()=>{observeFailure('REQUEST_ERROR');fail();});timer=setTimeout(()=>{observeFailure('TIMER_EXPIRED');req.destroy();fail();},Math.max(1,Math.min(2000,WORK_END-performance.now())));req.end(data);
+   });
+  }
+  return {async authenticate(){invariant(++exchanges===1&&posts===0);const u=new URL(connection.authenticatedUrl(`http://${authority}/`));invariant(u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.port===String(port)&&u.pathname==='/');
+    const r=await send('GET',u.pathname+u.search,undefined,false);invariant(r.status===303&&r.headers.location==='./'&&r.bytes.length===0);const c=r.headers['set-cookie'];invariant(Array.isArray(c)&&c.length===1);cookie=c[0].split(';',1)[0];invariant(cookie.length>0&&Buffer.byteLength(cookie)<=4096&&!/[\r\n]/.test(cookie));clock();},
+-  async call(channel,name,payload){clock();invariant(exchanges===1&&posts<23);equal([channel,name],ROUTES[posts]);const rpcId=`ni6-positive01-${++posts}`;
+-   const r=await send('POST',`${channel}/v1/${name}`,{type:'client-request',rpcId,method:`v1/${name}`,payload},true);clock();invariant(r.status===200&&r.headers['content-type']?.split(';')[0]==='application/json');
+-   const m=JSON.parse(r.bytes.toString('utf8'));keys(m,['type','rpcId','result']);invariant(m.type==='server-response'&&m.rpcId===rpcId);invariant(typeof m.result.ok==='boolean');if(!m.result.ok){keys(m.result,['ok','error']);keys(m.result.error,['code','message','details']);const code=m.result.error.code;invariant(typeof code==='string'&&Buffer.byteLength(code)<=128);refusalCode=REFUSALS.includes(code)&&code!=='NONE'?code:'OTHER_REFUSAL';failure('REJECTION');throw new Error();}keys(m.result,['ok','value']);return m.result.value;},
++  async call(channel,name,payload,observeExecute=false){clock();invariant(exchanges===1&&posts<23);equal([channel,name],ROUTES[posts]);const rpcId=`ni6-positive01-${++posts}`;
++   const r=await send('POST',`${channel}/v1/${name}`,{type:'client-request',rpcId,method:`v1/${name}`,payload},true,observeExecute);clock();invariant(r.status===200&&r.headers['content-type']?.split(';')[0]==='application/json');
++   const m=JSON.parse(r.bytes.toString('utf8'));keys(m,['type','rpcId','result']);invariant(m.type==='server-response'&&m.rpcId===rpcId);invariant(typeof m.result.ok==='boolean');if(!m.result.ok){keys(m.result,['ok','error']);keys(m.result.error,['code','message','details']);const code=m.result.error.code;invariant(typeof code==='string'&&Buffer.byteLength(code)<=128);refusalCode=REFUSALS.includes(code)&&code!=='NONE'?code:'OTHER_REFUSAL';failure('REJECTION');throw new Error();}keys(m.result,['ok','value']);if(observeExecute)executeHttpPhase='RPC_VALUE_RETURNED';return m.result.value;},
+   async removed(payload){invariant(posts===23&&exchanges===1);const r=await send('POST','/df-rpc/v1/status',{type:'client-request',rpcId:'ni6-positive01-24',method:'v1/status',payload},true);invariant(r.status===404&&r.bytes.length===0);},
+   total:()=>total,close(){active=false;cookie=undefined;}};
+ }
+@@ -204,7 +215,7 @@
+   else if(value&&Number.isSafeInteger(value.taskVersion)&&Number.isSafeInteger(value.authEpoch))currentTask={...currentTask,version:value.taskVersion,authEpoch:value.authEpoch};
+   return value;
+  };
+- async function rpc(p,channel,name,payload){const v=await step(p,()=>http.call(channel,name,payload),2500);clock();return update(v);}
++ async function rpc(p,channel,name,payload,observeExecute=false){const v=await step(p,()=>http.call(channel,name,payload,observeExecute),2500);clock();return update(v);}
+  try {
+   preflight();
+   await step('HEADER_CONTRACT',async()=>{
+@@ -301,7 +312,7 @@
+   const ids=ctx.agents.list();invariant(ids.length===1);workerAgent=ids[0];invariant(workerAgent&&ctx.agents.get(workerAgent.id)===workerAgent&&sha(Buffer.from(workerAgent.id))===worker.sessionRef&&ctx.sessions.get(workerAgent.id)===workerAgent.session&&counts.agentCreated===1&&counts.sessionCreated===1&&counts.streams===0);facts.workerCreated=true;
+   const query={taskRef:currentTask.taskRef,actionRef:action.actionRef,claimRef:worker.claimRef,generationRef:worker.generationRef};
+   const idle=await rpc('WORKER_IDLE','/df-rpc','workerQuery',query);invariant(idle.worker.phase==='ready'&&counts.streams===0);
+-  const executed=await rpc('WORKER_EXECUTE','/df-rpc','workerExecute',{...binding(),claimRef:worker.claimRef,generationRef:worker.generationRef,contextRecordRef:prepared.recordRef,commandRef:synthetic('execute')});const execution=executed.execution;ref(execution.executionRef);ref(execution.resultDigest);
++  const executed=await rpc('WORKER_EXECUTE','/df-rpc','workerExecute',{...binding(),claimRef:worker.claimRef,generationRef:worker.generationRef,contextRecordRef:prepared.recordRef,commandRef:synthetic('execute')},true);const execution=executed.execution;ref(execution.executionRef);ref(execution.resultDigest);
+   invariant(execution.state==='committed'&&execution.usage.state==='actual'&&execution.usage.accounting==='df-testing-utf8-byte-units/v1'&&uint(execution.usage.units)<=32768&&execution.usage.units===inputMessageBytes+Buffer.byteLength(expected,'utf8')&&execution.resultDigest===sha(Buffer.from(expected))&&counts.streams===1&&requests===1&&counts.tools===0&&stepStarts===1&&stepEnds===1&&turnStarts===1&&turnEnds===1);facts.executionCommitted=true;
+   await rpc('WORKER_QUERY','/df-rpc','workerQuery',query);
+   const finish=()=>({...cas(),actionRef:action.actionRef,claimRef:worker.claimRef,generationRef:worker.generationRef,executionRef:execution.executionRef});
+@@ -315,7 +326,7 @@
+   invariant(facts.reservationReleased&&counts.streams===1&&counts.tools===0);
+   await step('PRESET_RELEASE',async()=>{presetReleased=true;await presetDisposer();});
+   for(const row of [...entries].reverse())if(!row.removed)await remove(row,WORK_END);
+-  facts.ownedEntriesRemoved=true;await step('POST_DISPOSAL',()=>http.removed(addressed),2500);invariant(http.total()===25);empty();positivePath=true;
++  facts.ownedEntriesRemoved=true;await step('POST_DISPOSAL',()=>http.removed(addressed),2500);invariant(http.total()===25);empty();invariant(executeHttpPhase==='RPC_VALUE_RETURNED'&&executeHttpStatus==='HTTP_200'&&executeTransportFailure==='NONE');positivePath=true;
+  } catch {failure('REJECTION');}
+  finally {
+   if(ctx){const end=Math.min(performance.now()+5000,FINAL_END-500);
+@@ -325,8 +336,8 @@
+   }http?.close();
+  }
+  if(!admitted){process.exitCode=1;return;}
+- const result={contractVersion:'df.ni6-positive-one-worker/v1',result:firstFailure?'FAILED_HOLD':'PASS',phase:firstFailure?.phase??'COMPLETE',category:firstFailure?.category??'NONE',refusalCode,createPhase,headerCases,projectionCases,positivePath,...facts,entryRemoved,rootClosed,completedPlugins,httpRequests:http?.total()??0,requests,streams:counts.streams,tools:counts.tools,stepStarts,stepEnds,turnStarts,turnEnds,all87:'HOLD',CODE:'BLOCKED_UNCHANGED'};
+- keys(result,RESULT_FIELDS);invariant(Object.values(result).every(v=>['string','boolean','number'].includes(typeof v)));clock(FINAL_END);directory(CAPSULE);
++ const result={contractVersion:'df.ni6-positive-one-worker/v1',result:firstFailure?'FAILED_HOLD':'PASS',phase:firstFailure?.phase??'COMPLETE',category:firstFailure?.category??'NONE',refusalCode,createPhase,executeHttpPhase,executeTransportFailure,executeHttpStatus,headerCases,projectionCases,positivePath,...facts,entryRemoved,rootClosed,completedPlugins,httpRequests:http?.total()??0,requests,streams:counts.streams,tools:counts.tools,stepStarts,stepEnds,turnStarts,turnEnds,all87:'HOLD',CODE:'BLOCKED_UNCHANGED'};
++ keys(result,RESULT_FIELDS);invariant(EXECUTE_HTTP_PHASES.includes(executeHttpPhase)&&EXECUTE_TRANSPORT_FAILURES.includes(executeTransportFailure)&&EXECUTE_HTTP_STATUSES.includes(executeHttpStatus));invariant(Object.values(result).every(v=>['string','boolean','number'].includes(typeof v)));clock(FINAL_END);directory(CAPSULE);
+  const output=Buffer.from(JSON.stringify(result)+'\n');invariant(output.length<=1024);
+  const fd=openSync(RESULT,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);
+  try{fchmodSync(fd,0o600);const created=fstatSync(fd);invariant(created.isFile()&&created.uid===process.getuid()&&(created.mode&0o777)===0o600);writeFileSync(fd,output);fsyncSync(fd);const final=regular(RESULT,0o600);invariant(final.ino===created.ino&&final.dev===created.dev);clock(FINAL_END);}finally{closeSync(fd);}
+--- .runtime/ni6-positive-one-worker-r6/run-once.py
++++ .runtime/ni6-positive-one-worker-r7b/run-once.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-positive-one-worker-r6'
++NAME='.runtime/ni6-positive-one-worker-r7b'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-positive-one-worker-r6-execution-plan.json'
++PLAN_NAME='.runtime/root-ni6-positive-one-worker-r7b-execution-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -452,7 +452,10 @@
+          and value['CODE']=='BLOCKED_UNCHANGED' and value['result'] in ('PASS','FAILED_HOLD')
+          and value['phase'] in manifest['phases'] and value['category'] in manifest['categories']
+          and value['refusalCode'] in manifest['refusalCodes']
+-         and type(value['createPhase']) is str and value['createPhase'] in manifest['createPhases'],
++         and type(value['createPhase']) is str and value['createPhase'] in manifest['createPhases']
++         and type(value['executeHttpPhase']) is str and value['executeHttpPhase'] in manifest['executeHttpPhases']
++         and type(value['executeTransportFailure']) is str and value['executeTransportFailure'] in manifest['executeTransportFailures']
++         and type(value['executeHttpStatus']) is str and value['executeHttpStatus'] in manifest['executeHttpStatuses'],
+          'EXECUTOR_DIAGNOSTIC_ENUM')
+     booleans=('positivePath','taskCreated','workerCreated','executionCommitted','resultReturned','workerStopped',
+               'reservationReleased','entryRemoved','ownedEntriesRemoved','rootClosed')
+@@ -463,11 +466,15 @@
+     if value['positivePath']:
+         need(all(value[k] for k in ('taskCreated','workerCreated','executionCommitted','resultReturned','workerStopped','reservationReleased'))
+              and all(value[k]==1 for k in ('requests','streams','stepStarts','stepEnds','turnStarts','turnEnds'))
+-              and value['createPhase']=='ready' and value['headerCases']==3 and value['projectionCases']==12,
++              and value['createPhase']=='ready' and value['headerCases']==3 and value['projectionCases']==12
++              and value['executeHttpPhase']=='RPC_VALUE_RETURNED' and value['executeHttpStatus']=='HTTP_200'
++              and value['executeTransportFailure']=='NONE',
+              'EXECUTOR_POSITIVE_ORACLES')
+     if value['result']=='PASS':
+         need(value['phase']=='COMPLETE' and value['category']=='NONE' and value['completedPlugins']==11
+-             and all(value[k] for k in booleans) and value['httpRequests']==25 and value['createPhase']=='ready' and value['headerCases']==3 and value['projectionCases']==12,'EXECUTOR_DIAGNOSTIC_PASS')
++             and all(value[k] for k in booleans) and value['httpRequests']==25 and value['createPhase']=='ready' and value['headerCases']==3 and value['projectionCases']==12
++             and value['executeHttpPhase']=='RPC_VALUE_RETURNED' and value['executeHttpStatus']=='HTTP_200'
++             and value['executeTransportFailure']=='NONE','EXECUTOR_DIAGNOSTIC_PASS')
+     else:
+         need(value['phase']!='COMPLETE' and value['category']!='NONE','EXECUTOR_DIAGNOSTIC_FAILURE')
+     return value,raw
+@@ -481,7 +488,7 @@
+     marker_owned=evidence_owned=private_owned=False
+     marker_id=evidence_id=private_id=None
+     marker=CAPSULE/'invocation.json'
+-    evidence=ROOT/'docs/evidence/NI6/positive-one-worker-r6-execution'
++    evidence=ROOT/'docs/evidence/NI6/positive-one-worker-r7b-execution'
+     private=CAPSULE/'private-capture'
+     result_path=CAPSULE/'fixture-result.json'
+     rows=[]; before=after=None; selected=None; finalized=False; plan_digest=None
+--- .runtime/ni6-positive-one-worker-r6/execution-plan.proposed.json
++++ .runtime/ni6-positive-one-worker-r7b/execution-plan.proposed.json
+@@ -26,11 +26,11 @@
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-positive-one-worker-r6/fixture.mjs"
++      ".runtime/ni6-positive-one-worker-r7b/fixture.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      ".runtime/ni6-positive-one-worker-r6/fixture.mjs"
++      ".runtime/ni6-positive-one-worker-r7b/fixture.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -54,6 +54,9 @@
+     "category",
+     "refusalCode",
+     "createPhase",
++    "executeHttpPhase",
++    "executeTransportFailure",
++    "executeHttpStatus",
+     "headerCases",
+     "projectionCases",
+     "positivePath",
+@@ -78,11 +81,30 @@
+     "all87",
+     "CODE"
+   ],
+-  "diagnosticResult": ".runtime/ni6-positive-one-worker-r6/fixture-result.json",
++  "diagnosticResult": ".runtime/ni6-positive-one-worker-r7b/fixture-result.json",
+   "effects": "One synthetic task/worker/execution/returned result and factual finish using actual owner HTTP; original credentials/SQLite/JSONL, one ephemeral loopback listener, no external inference/tools/memory writes. Strict original root cleanup remains HOLD.",
+-  "evidenceDirectory": "docs/evidence/NI6/positive-one-worker-r6-execution",
+-  "freshInvocationMarker": ".runtime/ni6-positive-one-worker-r6/invocation.json",
+-  "freshRuntimeDirectory": ".runtime/ni6-positive-one-worker-r6/private-runtime",
++  "evidenceDirectory": "docs/evidence/NI6/positive-one-worker-r7b-execution",
++  "executeHttpPhases": [
++    "NOT_SENT",
++    "REQUEST_STARTED",
++    "HEADERS_OBSERVED",
++    "BODY_COMPLETE",
++    "RPC_VALUE_RETURNED"
++  ],
++  "executeHttpStatuses": [
++    "NOT_RETURNED",
++    "HTTP_200",
++    "OTHER_STATUS"
++  ],
++  "executeTransportFailures": [
++    "NONE",
++    "REQUEST_ERROR",
++    "RESPONSE_ERROR",
++    "RESPONSE_LIMIT",
++    "TIMER_EXPIRED"
++  ],
++  "freshInvocationMarker": ".runtime/ni6-positive-one-worker-r7b/invocation.json",
++  "freshRuntimeDirectory": ".runtime/ni6-positive-one-worker-r7b/private-runtime",
+   "httpLimits": {
+     "authGets": 1,
+     "domainPosts": 23,
+@@ -149,7 +171,7 @@
+     "COMPLETE"
+   ],
+   "pins": {},
+-  "privateCaptureDirectory": ".runtime/ni6-positive-one-worker-r6/private-capture",
++  "privateCaptureDirectory": ".runtime/ni6-positive-one-worker-r7b/private-capture",
+   "privateStreamAggregateByteCap": 262144,
+   "privateStreamByteCap": 131072,
+   "privateStreamsDecodedOrPublished": false,
+@@ -193,19 +215,31 @@
+     "OTHER_REFUSAL"
+   ],
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/positive-one-worker-r6-independent-source-review.md",
+-    "docs/evidence/NI6/positive-one-worker-r6-independent-source-review.json",
+-    "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.md",
+-    "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.json"
+-  ],
+-  "rootPlan": ".runtime/root-ni6-positive-one-worker-r6-execution-plan.json",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.md",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.json",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json"
++  ],
++  "rootPlan": ".runtime/root-ni6-positive-one-worker-r7b-execution-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "rootTerminalQualification": "Public root dispose is restart in the original standalone Context. Keep original terminal observation; active UID0 means rootClosed=false/FAILED_HOLD. No preparation acceptance.",
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-positive-one-worker-r6/run-once.py",
++  "runner": ".runtime/ni6-positive-one-worker-r7b/run-once.py",
+   "sourceCopies": [
++    ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/run-once.py",
++    ".runtime/ni6-positive-one-worker-r7b/execution-plan.proposed.json",
++    ".runtime/ni6-positive-one-worker-r7b/source-delta.diff",
++    ".runtime/ni6-positive-one-worker-r7b/README.md",
++    ".runtime/ni6-positive-one-worker-r7b/source-manifest.json",
++    "docs/evidence/NI6/positive-one-worker-r7b-source.md",
++    "docs/evidence/NI6/positive-one-worker-r7b-source.json",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.md",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.json",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
++    "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json",
+     ".runtime/ni6-positive-one-worker-r6/fixture.mjs",
+     ".runtime/ni6-positive-one-worker-r6/run-once.py",
+     ".runtime/ni6-positive-one-worker-r6/execution-plan.proposed.json",
+@@ -526,7 +560,84 @@
+     ".runtime/ni6-positive-one-worker-r6/package/src/schema7-runtime-composition.mjs",
+     ".runtime/ni6-positive-one-worker-r6/package/src/setup-state.mjs",
+     ".runtime/ni6-positive-one-worker-r6/package/src/testing-provider.mjs",
+-    ".runtime/ni6-positive-one-worker-r6/package/src/worker.mjs"
++    ".runtime/ni6-positive-one-worker-r6/package/src/worker.mjs",
++    "docs/evidence/NI6/positive-one-worker-r6-execution/fixture-result.json",
++    "docs/evidence/NI6/positive-one-worker-r6-execution/executor-result.json",
++    "docs/evidence/NI6/positive-one-worker-r6-execution/command-results.json",
++    "docs/evidence/NI6/positive-one-worker-r6-execution/before-after.json",
++    "docs/evidence/NI6/positive-one-worker-r6-execution/root-plan.json",
++    "docs/evidence/NI6/positive-one-worker-r6-actual-return.json",
++    "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.md",
++    "docs/evidence/NI6/positive-one-worker-r6-independent-execution-evidence-review.json",
++    "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.md",
++    "docs/evidence/NI6/positive-one-worker-r6-independent-actual-test-assessment.json",
++    "docs/ni6-positive-one-worker-r7-transport-observation-freeze-2026-10-08.md",
++    "docs/ni6-positive-one-worker-r7b-author-namespace-freeze-2026-10-08.md",
++    ".runtime/ni6-positive-one-worker-r7b/package/lib/client.js",
++    ".runtime/ni6-positive-one-worker-r7b/package/native-source-manifest.json",
++    ".runtime/ni6-positive-one-worker-r7b/package/package.json",
++    ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-client.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/scripts/build-native-source-manifest.py",
++    ".runtime/ni6-positive-one-worker-r7b/package/scripts/dsh-web-runtime-lock.json",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/approval-preview.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/audit-input-pair.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/audit.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/chat.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/client-entry.cjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/config.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/context.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/control.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/coordinator.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/environment.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/event-clock.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/events.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/fishball-memory-core.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/foundation.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/host-probe.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/index.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-native-source.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit-phases.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-audit.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-config.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-events.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-invocation.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory-continuity.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-memory.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-normal-services.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-owned-stream.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-plugin.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-results.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-role-recipes.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-config.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker-facts.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/installed-worker.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/ledger.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/memory.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/messages.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/native-adapter.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/native-contributions.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/native-history-collector.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/native-source-descriptor.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-contracts.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-operations.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-planning.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-request.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-rpc.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-native-selection.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-resume-controls.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/normal-source-planning-binding.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/notifications.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/operator-bridge.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/owner-native-command-controls.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/results.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-plugin.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-security.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/runtime-store.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/scheduler.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/schema7-runtime-composition.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/setup-state.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/testing-provider.mjs",
++    ".runtime/ni6-positive-one-worker-r7b/package/src/worker.mjs"
+   ],
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+--- .runtime/ni6-positive-one-worker-r6/README.md
++++ .runtime/ni6-positive-one-worker-r7b/README.md
+@@ -1,22 +1,26 @@
+-# NI6 positive one-worker r6 — SOURCE_ONLY_NOT_RUN
++# NI6 positive one-worker r7b — SOURCE_ONLY_NOT_RUN
+ 
+-Root alone owns Git, actual closed pins/plan and supported once-only invocation. All three proposal GO flags are false; pins empty. R5 stays sealed, blocked and UNRUN with final F01/F02 review history. R3 stays UNRUN; consumed r2/r4 are immutable. R4 supported driver return remains NOT_CAPTURED and its first private exception NOT_ESTABLISHED; no retry/replay/reset/adoption repairs that gap.
++Fresh successor of consumed R6 FAILED_HOLD. R6 directly captured supported driver exit1; its actual public assessment pairs are root-read/sealed prerequisites. HeaderCases3/projectionCases12 and workerCreate ready passed; HTTP19 reached WORKER_EXECUTE/REJECTION/refusalNONE after one deterministic request/stream/turn/step, tools0. Settlement, returned result, factual stop/release and underlying caught cause remain NOT_ESTABLISHED. R6 is preserved; R3/R5 remain UNRUN; R4 supported return remains NOT_CAPTURED. The revoked prior R7 namespace is excluded and untouched.
+ 
+-The fresh package derives from sealed r5. Only collector and descriptor producer code change, plus their two derivative descriptor product digest leaves. The other 62 regular files, both depth-zero header fixes and original actual-built client stay byte-identical. All descriptor host metadata/order/27 modules/87 rows and 64 product row identities remain exact. No new build or unchanged-original-product claim. One normal peer resolves to the pinned official node_modules.
++All65 package regular files, complete descriptor, original built client, producer/collector fixes and both root-header corrections are byte-identical to R6. One new normal peer resolves to the same pinned official node_modules. No product change, new build or dependency. Only fixture/executor closed transport observation and exact proposal/manifest validators change beyond fresh namespace and provenance.
+ 
+-F01 orders only the producer session HOST_FILES list: lib/index.js, lib/types/index.d.ts, lib/types/known-event-types.js, lib/types/surface.d.ts, lib/types/surface.js, lib/types/types.js, package.json. The entire descriptor is reconstructed inertly from this closed literal inventory and measured product/host bytes, including complete metadata and ordered digest arrays. Its serialized bytes equal the selected descriptor. Neither producer nor candidate is evaluated; strict consumer order/currentness remains.
++The literal true selection follows the existing rpc/call/send parameters only for the selected /df-rpc workerExecute. Inside the original promise, REQUEST_STARTED records immediately before the existing request attempt; HEADERS_OBSERVED records the original response callback and classifies only HTTP_200/OTHER_STATUS; BODY_COMPLETE records the bounded end callback after its settled guard; RPC_VALUE_RETURNED records after every unchanged status/content-type/JSON/RPC/result guard immediately before returning the existing value. Earlier/later/auth/removal calls retain false selection. An attempted request does not prove transmission or admission. No additional value, header, body or error field is inspected or exported.
+ 
+-F02 adds only missing original request/header implications inside projectStoredRootHistory's existing event loop: nonempty provider/model, and each true reasoningEffort/maxTokens default marker requires its config value present. Existing nativeEvents establishes types/keys/true-only markers first; failure uses fixed INVALID_INPUT without exception inspection. Original source pointers are dsh-session/lib/index.js:1144–1154,1173–1177,1218–1222. Original lossless/header/absolute cwd/sequence/snapshot/SurfaceManager guards, supplied projections and exact input references remain. No Session/event/context/persistence/capability is created. All original flush/stat/id/unseeded/inherited/bounds/inbox/interrupted-turn/currentness and full live/stored header/log/seq/surface/messages equality remain.
++executeHttpPhase is closed to NOT_SENT/REQUEST_STARTED/HEADERS_OBSERVED/BODY_COMPLETE/RPC_VALUE_RETURNED; executeTransportFailure to NONE/REQUEST_ERROR/RESPONSE_ERROR/RESPONSE_LIMIT/TIMER_EXPIRED; executeHttpStatus to NOT_RETURNED/HTTP_200/OTHER_STATUS. Initial values are NOT_SENT/NONE/NOT_RETURNED. Phase is monotonic within the single call. Failure origin latches at the first still-unsettled event. Request/response error callbacks ignore their arguments; response-limit/timer origin latches before unchanged destroy/fail, so induced/late errors cannot replace it. Existing settlement, cap, cookie, JSON/RPC guards, clock/deadline, first phase/category/refusal and call order remain exact.
+ 
+-Same future functional child: preserve headerCases 3 and C04–C10. Add C11 valid nonempty synthetic request/header with deterministic reasoningEffort/maxTokens128 and both matching true defaults, accepting without mutation/new marker and deriving empty nodes/messages/zero measured generations. C12 empty provider, C13 empty model, C14 absent reasoning with true marker and C15 absent maxTokens with true marker reject with inputs/projections unchanged. Expected event type parameter defaults to approval/policy so C04 is conserved. No exception fields are inspected. projectionCases bound and positive/PASS requirement become 12; counters advance only after complete oracles. Pure cases alone cannot prove host compatibility.
++PositivePath/PASS additionally require RPC_VALUE_RETURNED/HTTP_200/NONE alongside every inherited readiness, refs/CAS/context/consent/catalog/policy, exact input-plus-known-output UTF-8 usage, capture/result/factual finish/stopped-session absence/release, six once-owned Loader removals/preset disposal/post-removal404 oracle. The three fields observe only an event boundary, never private cause, receipt, settlement, delivery, cleanup or balance proof. Existing strict rootClosed observation remains mandatory; active original root restart remains FAILED_HOLD separately from positive evidence.
+ 
+-Result stays 29 fields / 51 phases / eight create labels / 37 refusals under 1024 bytes, with 1025-byte bounded read. Actual returned createPhase ready BEFORE native inventory/query/execute, exact synthetic input/output usage, genuine provider/public service identities, actual refs/CAS/goal/capture/result/factual finish/stopped-session absence/release and all cleanup/404 guards remain. Maximum 25 HTTP calls, one task/worker/request/stream/turn/step and zero tools/external inference/memory writes remain. No creation-stage instrumentation.
++All15 contract cases,51 phases/eight create phases/37 refusal labels and counters remain. Result becomes32 fields: conservative compact maximum including newline 778 bytes; existing pretty public format maximum including newline 907 bytes. The1024-byte cap and1025-byte bounded read remain. This measurement serializes only closed literal synthetic metadata and evaluates no candidate.
+ 
+-Budgets remain outer 90 / primary 85; setup 20 + syntax 5 + functional 35 + post 25 + terminal 5; Node 24 work / 5 cleanup / 30 final with 0.5 reserve. HTTP 2048 request / 65536 response bytes and individual 2-second timeout stay inside the shared deadline. Once/inode/first-reason/full pinned graph/source drift/EOF/group/128KiB per-stream/256KiB aggregate capture and original actual build ancestry remain. Root must store actual supported return directly before optional processing.
++All730 inherited input rows remain exact. 89 measured additions explicitly bind predecessor eight artifacts/four source reviews/five closed execution JSONs/root proof/four actual assessment reports/both freezes and65 new package rows. Total 819 inputs/27599346 bytes, 410 future source copies, 831 future pins including manifest self/four final affected reports, 10 topology records. Exact source delta covers fixture/executor/proposal/README; package delta is empty. Root seals report/manifest self-identities externally.
+ 
+-All 651 inherited records remain exact. Add 79 public rows: r5 seven owned artifacts/manifest, four final reviews, root order hold/r6 freeze and 65 fresh package records. Total 730 inputs, 321 source copies, 742 future pins and nine topology records. Seven owned artifacts, manifest self and four final affected reports close future authority; root seals self-identities externally. No broad graph audit or descriptor producer execution is selected.
++Budgets remain outer90/primary85, setup20+syntax5+functional35+post25+terminal5, Node24 work/5 cleanup/30 final/0.5 reserve. Original each-HTTP min2000ms/shared-work timer, request2048/response65536,25 HTTP maximum, one task/worker/execute/request/stream/turn/step and zero tools/external inference/memory writes remain. Once/inode/ownership/source-drift/full official graph/EOF/group/capped capture/first-reason/stop guards are inherited without broad audit.
+ 
+-After independent reviews and exact supported approval, root alone may select:
+-/opt/homebrew/bin/python3 -I .runtime/ni6-positive-one-worker-r6/run-once.py .runtime/root-ni6-positive-one-worker-r6-execution-plan.json
++All three GO flags false/pins empty; fresh actual root plan/marker/result/private directories/evidence absent. Authoring is inert public source/text/JSON/byte/hash/copy only. No candidate parse/check/import/compile/build/test/run, producer evaluation, private profile/keys/database/history/capture/response/error content inspection, protected receipt/signature/envelope/revision999/CODE, Git, runtime/listener/browser/network/model/cloud or helper delegation occurred. Root owns final separate Sol6.1 max affected code and ISTQB pairs, actual closed pins/plan and exact supported once call/direct return capture.
+ 
+-Strict original root restart still requires rootClosed=false/FAILED_HOLD if active, separate from positive evidence. Sentinel/readiness/reservation flags do not establish absence or release; no task completion/review/delivery/aggregate acceptance follows. Authoring is inert public text/JSON/byte/hash/copy only: no candidate parse/check/compile/import/build/test/runtime, producer evaluation, private profile/history/capture, protected CODE, browser/listener/cloud/model, helper delegation or Git. All 87 HOLD/accepted 0; CODE blocked; UI locked/paused; cloud blocked.
++Process qualification: the initial capsule file enumeration listed private pathnames. No private CONTENT was inspected. Every subsequent read used an explicit selected public source or metadata path; no additional private pathnames are reproduced here.
++
++Future root-owned selection only after prerequisites:
++/opt/homebrew/bin/python3 -I .runtime/ni6-positive-one-worker-r7b/run-once.py .runtime/root-ni6-positive-one-worker-r7b-execution-plan.json
++
++All87 HOLD/accepted0, rootHOLD, CODE BLOCKED_UNCHANGED, UI PAUSED_MAC_LOCKED and cloud BLOCKED_AFTER_SECOND_REVIEWER_REJECTION persist. Existing UI profile/cancelled task untouched; no publication/remote/OAuth expansion or task completion/review/delivery/acceptance claim.

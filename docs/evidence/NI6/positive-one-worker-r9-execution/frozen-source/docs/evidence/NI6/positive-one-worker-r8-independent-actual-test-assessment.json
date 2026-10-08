@@ -1,0 +1,415 @@
+{
+  "acceptance": false,
+  "acceptanceGranted": false,
+  "actualSupportedDriverReturn": {
+    "allSupportedToolOutputsEmpty": true,
+    "captured": true,
+    "doesNotRepairR4HistoricalMissingReturn": true,
+    "exitCode": 1,
+    "optionalProcessingBeforeStoredReturns": false,
+    "toolReceipts": [
+      {
+        "actualExitCode": null,
+        "chunkId": "99aac0",
+        "outputIsEmpty": true,
+        "receivedAtMilliseconds": 1791423519338,
+        "sessionId": 63120,
+        "stage": "initial",
+        "toolWallSeconds": 1.001225709
+      },
+      {
+        "actualExitCode": null,
+        "chunkId": "e48faf",
+        "outputIsEmpty": true,
+        "receivedAtMilliseconds": 1791423531612,
+        "sessionId": 63120,
+        "stage": "poll0",
+        "toolWallSeconds": 5.001404025
+      },
+      {
+        "actualExitCode": 1,
+        "chunkId": "7597b6",
+        "outputIsEmpty": true,
+        "receivedAtMilliseconds": 1791423540504,
+        "sessionId": null,
+        "stage": "poll1",
+        "toolWallSeconds": 0.852964802
+      }
+    ]
+  },
+  "assessmentActions": {
+    "privateProfileKeyDatabaseHistoryCaptureResponseErrorContentReadCopiedHashedDecoded": false,
+    "protectedFinalCodeReceiptSignatureEnvelopeRevision999Inspection": false,
+    "runtimeImportCheckTestRerunGitSourceEditListenerBrowserModelNetworkHelperDelegation": false,
+    "scope": "Full applicable AGENTS/browser authority and prior own source assessment; six explicitly named closed public actual records; fixture319-340 text only to interpret already reviewed oracle ordering.",
+    "sourceAssessmentMutation": false,
+    "sourceFullHostAudit": false,
+    "writtenPaths": [
+      "docs/evidence/NI6/positive-one-worker-r8-independent-actual-test-assessment.md",
+      "docs/evidence/NI6/positive-one-worker-r8-independent-actual-test-assessment.json"
+    ]
+  },
+  "authorityRecords": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 1166,
+      "path": "docs/browser-entry-preference-2026-10-08.md",
+      "sha256": "78b616baa630a1bae0c1e6f12b56edfdafced5a35fe7ac90bda14bdd0d128687"
+    }
+  ],
+  "caseAssessments": [
+    {
+      "basis": "Syntax child exit0.",
+      "id": "D01",
+      "result": "PASS"
+    },
+    {
+      "basis": "headerCases3; all selected unchanged header assertions completed.",
+      "id": "C01-C03",
+      "result": "PASS"
+    },
+    {
+      "basis": "projectionCases12; all selected unchanged projection assertions completed.",
+      "id": "C04-C15",
+      "result": "PASS"
+    },
+    {
+      "basis": "taskCreated/workerCreated true, createPhase ready, completedPlugins11.",
+      "id": "Genuine creation/readiness",
+      "result": "PASS"
+    },
+    {
+      "basis": "One request/stream/step/turn with starts/ends, tools0; original execution conjunction passed.",
+      "id": "Native counts",
+      "result": "PASS"
+    },
+    {
+      "basis": "Idle RETURNED at frozen RPC_VALUE_RETURNED/HTTP_200/NONE boundary.",
+      "id": "Selected idle/window discriminator",
+      "result": "PASS_SELECTED_SUCCESS_PATH"
+    },
+    {
+      "basis": "executionCommitted true after original committed/actual accounting, exact input-plus-known-output UTF-8 usage <=32768, known-output digest and native-counter assertions.",
+      "id": "Original execute commitment/exact usage",
+      "result": "PASS"
+    },
+    {
+      "basis": "Returned before selected WORKER_CAPTURE; no additional queried worker-state claim.",
+      "id": "Post-execute WORKER_QUERY",
+      "result": "PASS_EXISTING_CALLER_GUARDS"
+    },
+    {
+      "basis": "Reached; finite refusal WORKER_RESULT_UNAVAILABLE. No private contents or precise cause established.",
+      "id": "WORKER_CAPTURE",
+      "result": "FAIL"
+    },
+    {
+      "basis": "Capture refusal ended the normal positive path.",
+      "id": "WORKER_RESULT/WORKER_FINISH/FINAL_STATUS/POST_DISPOSAL404",
+      "result": "NOT_REACHED"
+    },
+    {
+      "basis": "Functional child exit1; WORKER_CAPTURE/REJECTION/refusal WORKER_RESULT_UNAVAILABLE/HTTP21; positivePath false.",
+      "id": "D02",
+      "result": "FAIL"
+    }
+  ],
+  "cleanupAndReleaseAssessment": {
+    "entryRemoved": "SELECTED_REMOVAL_OBSERVED",
+    "exactStoppedAgentSessionAbsence": "NOT_ESTABLISHED",
+    "factualWorkerStop": "NOT_ESTABLISHED",
+    "heldOrZeroBalanceInferred": false,
+    "ownedEntriesRemovedFalseMeansAllCleanupFailed": false,
+    "ownedGroupEOFProveStopReleaseServiceDisposalOrRootClosure": false,
+    "reservationHeldFalse": "NOT_ESTABLISHED",
+    "strictRootCleanup": "HOLD",
+    "strictRootClosed": false
+  },
+  "closedActualFixture": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "headerCases": 3,
+    "httpRequests": 21,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_CAPTURE",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "WORKER_RESULT_UNAVAILABLE",
+    "requests": 1,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "commandTerminationMetadata": [
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "durationSeconds": 0.067368,
+      "exitCode": 0,
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": [],
+      "timedOut": false
+    },
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "durationSeconds": 9.214725,
+      "exitCode": 1,
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": [],
+      "timedOut": false
+    }
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-r8-independent-actual-test-assessment/v1",
+  "date": "2026-10-08",
+  "evidenceInconsistencies": [],
+  "executionAndResultAssessment": {
+    "captureCall": "REACHED_REFUSED",
+    "captureResultSourceBinding": "NOT_ESTABLISHED",
+    "exactActualUtf8UsageOracle": "PASS",
+    "executionCommitment": "ESTABLISHED_BY_ORIGINAL_GUARDED_ACKNOWLEDGEMENT_ORACLE",
+    "falseFlagsProveDurableResultOrLedgerAbsence": false,
+    "full25RequestPositivePath": "NOT_PASSED",
+    "numericActualUsageValuePublishedByAssessor": false,
+    "postExecuteQuery": "PASSED_EXISTING_CALLER_GUARDS",
+    "privateUsageOrInputPayloadRead": false,
+    "receiptFinalCodeProtectedDomainClosed": false,
+    "returnedResult": "NOT_ESTABLISHED",
+    "workerResultFinishFinalStatusPost404": "NOT_REACHED"
+  },
+  "executionGO": false,
+  "executorAndConsumption": {
+    "R8ConsumedImmutable": true,
+    "finalized": false,
+    "firstReason": "EXECUTOR_COMMAND_NONZERO",
+    "markerStateFromPublicProof": "FAILED_HOLD",
+    "resetReplayAdoptionAuthorized": false,
+    "result": "FAILED_HOLD",
+    "runtimeMarkerRead": false,
+    "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+  },
+  "fullReadbackRequired": true,
+  "futureBrowserConstraint": {
+    "allowedEntries": [
+      "Codex built-in browser",
+      "Chrome extension"
+    ],
+    "browserActionByAssessor": false,
+    "nativeAppFallback": false
+  },
+  "idleWindowAssessment": {
+    "actualSelectedRequestLatency": "NOT_ESTABLISHED",
+    "commitmentBasis": "Separate original guarded execution oracle passed, not idle phase alone.",
+    "earlierR7BPreciseLatencyOrServerCause": "NOT_ESTABLISHED",
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "generalBranchCoverageClaimed": false,
+    "generalTimerOnlyFixEstablished": false,
+    "guardedAcknowledgementEstablishedForR8": true,
+    "idleAloneProvesOperationReturnCommitmentResultStopRelease": false,
+    "otherIdleTransportErrorRefusalLateCallbackPartitions": "NOT_RUN_AS_DEDICATED_OBSERVER_CASES",
+    "selectedHttpMaximumMillisecondsInsideSharedWork": 10000,
+    "selectedRpcMaximumMillisecondsInsideSharedWork": 10500,
+    "stableOriginalIdleWitnessedAtSelectedSnapshot": true
+  },
+  "jsonSelfSeal": "Exact bytes/SHA256 returned externally after complete report readback; no recursive self-pin.",
+  "markdownRecord": {
+    "bytes": 7038,
+    "path": "docs/evidence/NI6/positive-one-worker-r8-independent-actual-test-assessment.md",
+    "sha256": "787f78e4dcd42b65714aa62206469f5f2b5829783627b05ebcf35f895919d88e"
+  },
+  "materialFindings": [
+    {
+      "category": "REJECTION",
+      "consequence": "Capture oracle failed after guarded committed execute and post-execute query; later exact result/finish/stop/release path not reached.",
+      "httpRequests": 21,
+      "id": "A01",
+      "kind": "ACTUAL_FUNCTIONAL_GATE_FAILURE",
+      "phase": "WORKER_CAPTURE",
+      "refusalCode": "WORKER_RESULT_UNAVAILABLE",
+      "sourceFixInferred": false,
+      "underlyingCause": "NOT_ESTABLISHED"
+    },
+    {
+      "consequence": "Strict root closure remains unsatisfied, independent of capture failure; does not replace first fixture reason.",
+      "id": "A02",
+      "kind": "RETAINED_INDEPENDENT_ROOT_HOLD",
+      "rootClosed": false
+    }
+  ],
+  "narrowOracleTextRead": {
+    "lineRange": "319-340",
+    "path": ".runtime/ni6-positive-one-worker-r8/fixture.mjs",
+    "purpose": "Interpret actual execute commitment/usage, query/capture order and unreached result/finish/stop/release oracles; no source audit."
+  },
+  "oneFinalActualAssessment": true,
+  "publishedPreservationAndPlanQualification": {
+    "actualRuntimeCountersSupersedeHistoricalProposalForThisInvocation": true,
+    "assessorFullGraphProductCopyAuditRepeated": false,
+    "beforeAfter": {
+      "after": {
+        "complete": true,
+        "inputCount": 925,
+        "unchanged": true,
+        "wholeHostFiles": 27577,
+        "wholeHostLinks": 12
+      },
+      "before": {
+        "complete": true,
+        "inputCount": 925,
+        "unchanged": true,
+        "wholeHostFiles": 27577,
+        "wholeHostLinks": 12
+      }
+    },
+    "capturedReturnIsSeparateActualExecutionEvidence": true,
+    "historicalPlanStatus": "SOURCE_ONLY_NOT_RUN",
+    "historicalTestWorkerStarts": 0,
+    "planPins": 925,
+    "planSourceCopies": 502,
+    "rootVerifiedPublicCopies": {
+      "allExpectedSha256Matched": true,
+      "bytes": 14257973,
+      "count": 502,
+      "privateContentRead": false,
+      "sourceCopyListAgreesWithExactPlan": true
+    },
+    "selectionFlagsProveActualExecutionByThemselves": false
+  },
+  "reasoningEffort": "max",
+  "recordConsistency": {
+    "actualCompactIncludingNewline": 758,
+    "actualPrettyIncludingNewline": 891,
+    "allSixSuppliedSealsMatch": true,
+    "beforeAfterExact": true,
+    "byteCap": 1024,
+    "commandRowsExact": true,
+    "exact33FieldsAndFiniteEnumsMatchPlanAndPriorSourceDesign": true,
+    "fixtureProofExecutorExact": true,
+    "fullHostGraphOrSourceCopiesRehashedByAssessor": false,
+    "ownSourceAssessmentPairUnchangedAndMatchesPlanPins": true
+  },
+  "retainedGates": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "R3_R5": "UNRUN",
+    "R4SupportedReturn": "NOT_CAPTURED_NO_RETROACTIVE_REPAIR",
+    "R6_R7B": "CONSUMED_IMMUTABLE_NO_REPLAY",
+    "UI": "PAUSED_MAC_LOCKED_NO_NEW_CORRECTED_FIXTURE_HANDOFF",
+    "accepted": 0,
+    "all87": "HOLD",
+    "cloud": "TWICE_DENIED_NO_THIRD_ATTEMPT",
+    "publication": "LOCAL_ONLY_GATED",
+    "root": "HOLD",
+    "taskCompletionReviewDeliveryAcceptanceReleaseEstablished": false
+  },
+  "reviewModel": "gpt-6.1-sol",
+  "reviewedPublicEvidenceRecords": [
+    {
+      "bytes": 16510,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-actual-return.json",
+      "sha256": "676e95f50e8b0223fb68e1edd6f8821cd5586728974aca73ade6a5f955a2bb2f"
+    },
+    {
+      "bytes": 891,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/fixture-result.json",
+      "sha256": "51fac626be5b4d24a149e50c77b8e7c52645957f205326b8916f5eebb1483dd4"
+    },
+    {
+      "bytes": 4590,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/executor-result.json",
+      "sha256": "56e6cde8154d8c730239d7be568257684c9d937573fc86db13e5c1f13c052a01"
+    },
+    {
+      "bytes": 2996,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/command-results.json",
+      "sha256": "449aada0af9f0df065a07dff6201ee7d03895371a38b1e47c19b0fb09ea1f020"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/before-after.json",
+      "sha256": "42ff2de90d5ae9ab8e300e663a378cdce47512463ae6c37fd275fa0145a3a213"
+    },
+    {
+      "bytes": 175646,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-execution/root-plan.json",
+      "sha256": "6e89d064796fcde8ff7a522f28887a31d767a63b93b7ccb50952c0f78084c98b"
+    }
+  ],
+  "reviewer": "independent ISTQB final actual test assessor",
+  "revision": "R8",
+  "rootSuppliedCheckoutContext": {
+    "HEAD": "57d4c1a",
+    "branch": "feat/S3-integrations",
+    "verifiedViaGitByAssessor": false
+  },
+  "status": "D02_FAIL_CONSUMED_FAILED_HOLD_WORKER_CAPTURE",
+  "streamMetadataLimits": {
+    "bothChildrenCompleteEOF": true,
+    "bothChildrenOwnedGroupsAbsentObserved": true,
+    "noPublishedTruncation": true,
+    "proofScope": "Owned processes/streams only; no factual worker stop, reservation release, full service disposal or root closure.",
+    "rawPrivateStreamsReadCopiedHashedDecoded": false,
+    "supportedToolOutputDistinctFromPrivateStreamContents": true
+  },
+  "timing": {
+    "childDurationsSeconds": [
+      0.067368,
+      9.214725
+    ],
+    "childOrToolWallTimesSummedIntoDriverDuration": false,
+    "directFinalReturnReceivedMilliseconds": 1791423540504,
+    "executorConservativeActiveSecondsBeforeTerminalPublication": 26.92505987500772,
+    "executorObservedSecondsBeforeTerminalPublication": 21.92505916696973,
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "markerFinishedAtFromProof": "2026-10-08T01:39:00.447315+00:00",
+    "markerStartedAtFromProof": "2026-10-08T01:38:38.216940+00:00",
+    "subsequentClockIsCompletionTime": false,
+    "subsequentClockReadUTC": "2026-10-08 01:39:21 UTC"
+  },
+  "unchangedOwnSourceAssessmentRecords": [
+    {
+      "bytes": 7562,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-independent-test-design-review.md",
+      "sha256": "6ebd2affdde4a94af3c50b413394a115f419b2fac28669b522d08308648d9df1"
+    },
+    {
+      "bytes": 15108,
+      "path": "docs/evidence/NI6/positive-one-worker-r8-independent-test-design-review.json",
+      "sha256": "68a5d156ed23ae5b1f172efb46993667cffe2487189ebee2130c92c98225545a"
+    }
+  ]
+}
