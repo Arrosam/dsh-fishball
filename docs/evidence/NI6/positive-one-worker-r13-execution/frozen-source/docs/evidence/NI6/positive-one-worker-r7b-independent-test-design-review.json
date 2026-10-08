@@ -1,0 +1,406 @@
+{
+  "absentBeforeReportCreation": {
+    "authorSealAbsenceReported": true,
+    "onlyOwnTwoReportsCreatedAfterward": true,
+    "reviewerMetadataObservation": {
+      "fourAffectedReportPathsAbsent": true,
+      "sixActualPathsAbsent": true
+    }
+  },
+  "acceptance": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "UI": "PAUSED_MAC_LOCKED",
+    "accepted": 0,
+    "all87": "HOLD",
+    "cloud": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+    "publication": "LOCAL_ONLY_GATED",
+    "rootCleanup": "HOLD",
+    "taskCompletionReviewDeliveryAcceptanceReleaseClaimed": false
+  },
+  "authorProcessQualification": {
+    "noEnumerationClaimMade": false,
+    "privatePathnamesReproducedInReports": false,
+    "reportedInitialBroadFileEnumerationListedPrivatePathnames": true,
+    "reportedPrivateContentInspection": false,
+    "reportedSubsequentReadsNarrowedToExplicitPublicSourcesAndMetadata": true
+  },
+  "contractVersion": "df.ni6-positive-one-worker-r7b-independent-test-design-review/v1",
+  "coverageLimits": [
+    "No candidate syntax check/import/build/test/run or producer evaluation; all R7B runtime cases remain unrun.",
+    "Unchanged pure contract cases do not exercise new transport callback branches.",
+    "The finite observer gives a reached event boundary; it does not establish private cause, transmission/admission, receipt, settlement, delivery, cleanup or balance.",
+    "NONE can coexist with synchronous request setup, protocol/JSON/RPC rejection or shared step/deadline failure; it is not a success oracle.",
+    "Future root-owned once execution establishes only the actual reached subset; there is no new fault-family or branch-coverage claim.",
+    "Full official graph and protected receipt/signature/envelope/revision999/CODE domain were not re-audited."
+  ],
+  "date": "2026-10-08",
+  "executionGO": false,
+  "fullReadbackRequired": true,
+  "immutableAuthorityRecords": [
+    {
+      "bytes": 7220,
+      "path": "docs/ni6-positive-one-worker-r7-transport-observation-freeze-2026-10-08.md",
+      "sha256": "2cf6147f518a0578d0044c6ddf5647fcd69188f0aa6f8a684476bc0718dd5712"
+    },
+    {
+      "bytes": 2466,
+      "path": "docs/ni6-positive-one-worker-r7b-author-namespace-freeze-2026-10-08.md",
+      "sha256": "244400e61a52f85a8be3a85e5c9992fd56cc86b8ba7e852504f04fb8637bf6c6"
+    }
+  ],
+  "inertVerification": {
+    "affectedDeltaFiles": [
+      "fixture.mjs",
+      "run-once.py",
+      "execution-plan.proposed.json",
+      "README.md"
+    ],
+    "all65PackageFilesByteEqualR6": true,
+    "all65PackageSealsMatch": true,
+    "authorityAndEightArtifactSealsMatch": true,
+    "candidateOrProducerEvaluated": false,
+    "complete15CaseSourceBlockByteEqualR6": true,
+    "completeFourFileDeltaExactlyReproduced": true,
+    "manifestProposalFixtureGrammarEqual": true,
+    "newPublicPeerDeclaredMetadataMatches": true,
+    "sourceCopyListsAgreeAcrossManifestProposalAuthorReport": true,
+    "threeHeaderCasesAndTwelveProjectionCasesUnchanged": true,
+    "unchanged51Phases8CreatePhases37RefusalsExact": true,
+    "wholeOfficialGraphReaudited": false
+  },
+  "jsonSelfSeal": "Exact bytes/SHA256 supplied externally after complete report readback; no recursive self-pin.",
+  "limits": {
+    "budgetsSeconds": {
+      "bookkeepingInsideEachCommand": 1,
+      "diagnosticCleanupInsideTotal": 4,
+      "diagnosticTotal": 35,
+      "nodeCleanupInsideDiagnostic": 5,
+      "nodeFinalAbsoluteEnd": 30,
+      "nodeResultReserveInsideFinal": 0.5,
+      "nodeWorkInsideDiagnostic": 24,
+      "postReadbackMaximum": 25,
+      "primaryAbsoluteEnd": 85,
+      "setupPreflight": 20,
+      "syntaxCleanupInsideTotal": 1,
+      "syntaxTotal": 5,
+      "terminalConservativeReserve": 5
+    },
+    "httpRequestBytesMaximum": 2048,
+    "httpRequestsMaximum": 25,
+    "httpResponseBytesMaximum": 65536,
+    "outerSeconds": 90,
+    "perHttpTimerMillisecondsInsideSharedWork": 2000,
+    "primarySeconds": 85
+  },
+  "markdownRecord": {
+    "bytes": 7659,
+    "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
+    "sha256": "d3f8f307b64130154a2c7e26495663da2a289162cf80aa46bc3bd09ce86ca1f4"
+  },
+  "materialBlockers": [],
+  "measuredClosure": {
+    "additionalInputRows": 89,
+    "futurePinUnionIncludingManifestSelfAndFourAffectedReports": 831,
+    "inheritedInputRowsExact": 730,
+    "inheritedTopologyRows": 9,
+    "inputBytes": 27599346,
+    "inputRows": 819,
+    "newNormalPublicPeerRows": 1,
+    "ownedAndInputRows": 826,
+    "ownedRows": 7,
+    "packageRegularFilesUnchanged": 65,
+    "sourceCopies": 410,
+    "topologyRows": 10
+  },
+  "oneFinalAffectedReview": true,
+  "proposalState": {
+    "pins": {},
+    "rootReviewedExecutionGO": false,
+    "rootReviewedFinalAffectedReports": false,
+    "rootSupportedExecutionApprovalGranted": false
+  },
+  "reasoningEffort": "max",
+  "resultGrammar": {
+    "boundedReadMaximum": 1025,
+    "byteCap": 1024,
+    "compactMaximumIncludingNewline": 778,
+    "createPhaseCount": 8,
+    "fieldCount": 32,
+    "fields": [
+      "contractVersion",
+      "result",
+      "phase",
+      "category",
+      "refusalCode",
+      "createPhase",
+      "executeHttpPhase",
+      "executeTransportFailure",
+      "executeHttpStatus",
+      "headerCases",
+      "projectionCases",
+      "positivePath",
+      "taskCreated",
+      "workerCreated",
+      "executionCommitted",
+      "resultReturned",
+      "workerStopped",
+      "reservationReleased",
+      "entryRemoved",
+      "ownedEntriesRemoved",
+      "rootClosed",
+      "completedPlugins",
+      "httpRequests",
+      "requests",
+      "streams",
+      "tools",
+      "stepStarts",
+      "stepEnds",
+      "turnStarts",
+      "turnEnds",
+      "all87",
+      "CODE"
+    ],
+    "headerCasesMaximumAndRequired": 3,
+    "measurement": "Independent longest closed ASCII enum per field, maximum allowed counter digit widths, false booleans; literal metadata serialization only.",
+    "phaseCount": 51,
+    "prettyMaximumIncludingNewline": 907,
+    "projectionCasesMaximumAndRequired": 12,
+    "reachableRuntimeResultClaimed": false,
+    "refusalCount": 37
+  },
+  "retainedOracles": [
+    "Actual workerCreate ready before inventory/query/execute.",
+    "Actual returned refs, current CAS, context, consent, catalog, policy and admitted identity.",
+    "Exact actual input-message UTF-8 JSON bytes plus known output UTF-8 bytes; actual usage maximum32768.",
+    "One task/worker/execute/request/stream/turn/step; zero tools/external inference/memory writes.",
+    "Actual capture/result binding and factual finish/stopped-session absence/reservation release.",
+    "Six once-owned Loader removals, preset disposer, post-removal404 and HTTP25 maximum.",
+    "Strict rootClosed remains mandatory; active original root restart FAILED_HOLD remains separate from positivePath.",
+    "Once/inode/ownership/source-drift/full official graph/EOF/group/capped capture/first-reason/stop gates inherited unchanged."
+  ],
+  "reusedR6Authority": {
+    "actual": "R6 root-sealed actual assessments remain authoritative and consumed FAILED_HOLD.",
+    "commitmentResultFactualStopRelease": "NOT_ESTABLISHED",
+    "contractCasesPassed": 15,
+    "createPhase": "ready",
+    "firstReportedFailure": {
+      "category": "REJECTION",
+      "phase": "WORKER_EXECUTE",
+      "refusalCode": "NONE"
+    },
+    "httpRequestsAtFailure": 19,
+    "nativeMilestones": {
+      "requests": 1,
+      "stepEnds": 1,
+      "stepStarts": 1,
+      "streams": 1,
+      "tools": 0,
+      "turnEnds": 1,
+      "turnStarts": 1
+    },
+    "r3r5": "UNRUN",
+    "r4SupportedDriverReturn": "NOT_CAPTURED",
+    "responseAndPreciseCause": "NOT_ESTABLISHED",
+    "sourceDesign": "Unchanged R6 independent source/test-design authority is reused; no broad repeat audit."
+  },
+  "reviewActions": {
+    "broadRuntimeEnumeration": false,
+    "candidateCheckImportBuildTestRun": false,
+    "delegation": false,
+    "gitAction": false,
+    "privateContentInspection": false,
+    "producerEvaluation": false,
+    "readScope": "Explicit named public source/evidence plus applicable AGENTS references; targeted metadata and inert literal/JSON/byte/hash comparison.",
+    "runtimeListenersBrowserNetworkModelCloud": false,
+    "sourceEdited": false,
+    "writtenPaths": [
+      "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
+      "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json"
+    ]
+  },
+  "reviewModel": "gpt-6.1-sol",
+  "reviewedFinalSourceRecords": [
+    {
+      "bytes": 38353,
+      "path": ".runtime/ni6-positive-one-worker-r7b/fixture.mjs",
+      "sha256": "12ceb405f7929f3c405cb39b2c66486ead98f505431d272842d04cfb5a00d6dd"
+    },
+    {
+      "bytes": 33035,
+      "path": ".runtime/ni6-positive-one-worker-r7b/run-once.py",
+      "sha256": "cfd06f7c990e778b6372911ca784cfbad3ddbe48ee6de73bb6c22bf746bea3bb"
+    },
+    {
+      "bytes": 36886,
+      "path": ".runtime/ni6-positive-one-worker-r7b/execution-plan.proposed.json",
+      "sha256": "8855802f78dc3c1e611b3c7cf967a26274a6d3af991207839ef79fed0412842d"
+    },
+    {
+      "bytes": 42031,
+      "path": ".runtime/ni6-positive-one-worker-r7b/source-delta.diff",
+      "sha256": "24cfdbf4eaf7c11ec5dfbc35b788dea1e3434ffa35464c7c8c36597b3f9aef60"
+    },
+    {
+      "bytes": 5763,
+      "path": ".runtime/ni6-positive-one-worker-r7b/README.md",
+      "sha256": "4863ed32ba9a4244ea4528247188dfa1985fda479e83e7cb9afc8b8ca8eb34a7"
+    },
+    {
+      "bytes": 239469,
+      "path": ".runtime/ni6-positive-one-worker-r7b/source-manifest.json",
+      "sha256": "04e10dada761cdf9820e24872310eb1b3126a88d54028fa78ebc02051e85fc4a"
+    },
+    {
+      "bytes": 5751,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-source.md",
+      "sha256": "b911bd0bd30f39b0215858497bfaae97927749103d6ac44c0c4221ebd82918d6"
+    },
+    {
+      "bytes": 79937,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-source.json",
+      "sha256": "b00f4482ff2d08de79601d3832017154b32431d413eb8e7102399423ca2d8842"
+    }
+  ],
+  "reviewer": "fresh independent ISTQB final affected test-design reviewer",
+  "revision": "R7B",
+  "runtimeCasesStatus": {
+    "C01_C15": "NOT_RUN_R7B",
+    "D01": "NOT_RUN_R7B",
+    "D02": "NOT_RUN_R7B",
+    "faultFamiliesAdded": 0,
+    "newTransportRuntimeCasesAdded": 0
+  },
+  "sourceOnly": true,
+  "status": "NO_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN",
+  "transportDesign": {
+    "allOtherCallsDefaultFalse": true,
+    "callsRetriesTopLevelPhasesAdded": 0,
+    "coverageMethod": "Source equivalence partitions, boundaries, decision conditions and state transitions; no test execution or new test cases.",
+    "enums": {
+      "executeHttpPhase": [
+        "NOT_SENT",
+        "REQUEST_STARTED",
+        "HEADERS_OBSERVED",
+        "BODY_COMPLETE",
+        "RPC_VALUE_RETURNED"
+      ],
+      "executeHttpStatus": [
+        "NOT_RETURNED",
+        "HTTP_200",
+        "OTHER_STATUS"
+      ],
+      "executeTransportFailure": [
+        "NONE",
+        "REQUEST_ERROR",
+        "RESPONSE_ERROR",
+        "RESPONSE_LIMIT",
+        "TIMER_EXPIRED"
+      ]
+    },
+    "errorCallbackArgumentsInspected": false,
+    "existingForwardingPath": [
+      "rpc",
+      "call",
+      "send"
+    ],
+    "firstPhaseCategoryRefusalSemanticsUnchanged": true,
+    "firstUnsettledOriginLatchedAndNeverReset": true,
+    "initial": {
+      "executeHttpPhase": "NOT_SENT",
+      "executeHttpStatus": "NOT_RETURNED",
+      "executeTransportFailure": "NONE"
+    },
+    "limitAndTimerLatchedBeforeUnchangedDestruction": true,
+    "literalTrueSelections": 1,
+    "newRawHeaderBodyErrorStatusValueExported": false,
+    "phaseMonotonicWithinSingleSelectedCall": true,
+    "positiveAndPassRequired": {
+      "executeHttpPhase": "RPC_VALUE_RETURNED",
+      "executeHttpStatus": "HTTP_200",
+      "executeTransportFailure": "NONE"
+    },
+    "selectedRoute": "/df-rpc workerExecute",
+    "settledCallbacksCannotAddObserverFailure": true,
+    "sourcePartitions": [
+      {
+        "boundary": "Selected call not reached",
+        "expected": [
+          "NOT_SENT",
+          "NONE",
+          "NOT_RETURNED"
+        ],
+        "id": "S01",
+        "limit": "Other HTTP calls cannot update the observer."
+      },
+      {
+        "boundary": "Existing selected request attempt",
+        "expectedPhase": "REQUEST_STARTED",
+        "id": "S02",
+        "limit": "Attempt is not transmission or admission proof; synchronous setup failure may leave origin NONE."
+      },
+      {
+        "boundary": "Unsettled existing response callback",
+        "expectedPhase": "HEADERS_OBSERVED",
+        "id": "S03",
+        "limit": "No raw status, headers or response content added.",
+        "statusPartitions": {
+          "everyOtherStatus": "OTHER_STATUS",
+          "statusCode200": "HTTP_200"
+        }
+      },
+      {
+        "boundary": "Unsettled bounded response end",
+        "boundaryBytes": {
+          "allowed": 65536,
+          "firstOverLimit": 65537
+        },
+        "expectedPhase": "BODY_COMPLETE",
+        "id": "S04"
+      },
+      {
+        "boundary": "All existing call-level RPC guards passed",
+        "expectedPhase": "RPC_VALUE_RETURNED",
+        "id": "S05",
+        "limit": "Later execution/ref/CAS/usage/result/cleanup gates remain."
+      },
+      {
+        "boundary": "First unsettled request-error callback",
+        "errorArgumentInspected": false,
+        "expectedOrigin": "REQUEST_ERROR",
+        "id": "S06"
+      },
+      {
+        "boundary": "First unsettled response-error callback",
+        "errorArgumentInspected": false,
+        "expectedOrigin": "RESPONSE_ERROR",
+        "id": "S07"
+      },
+      {
+        "boundary": "Existing response-size failure",
+        "expectedOrigin": "RESPONSE_LIMIT",
+        "id": "S08",
+        "latchedBeforeDestroyAndFail": true
+      },
+      {
+        "boundary": "Existing timer failure",
+        "expectedOrigin": "TIMER_EXPIRED",
+        "id": "S09",
+        "latchedBeforeDestroyAndFail": true,
+        "maximumMillisecondsInsideSharedWork": 2000
+      },
+      {
+        "boundary": "Subsequent failure or settled response/end/error callbacks",
+        "expected": "No late observer failure or phase/status update; first origin remains latched.",
+        "id": "S10"
+      },
+      {
+        "boundary": "HTTP/content-type/JSON/RPC rejection after body",
+        "expectedOrigin": "NONE",
+        "expectedPhase": "BODY_COMPLETE",
+        "id": "S11",
+        "limit": "Existing first phase/category/refusal retained; no cause inferred."
+      }
+    ],
+    "timerExpressionUnchanged": "Math.max(1,Math.min(2000,WORK_END-performance.now()))"
+  }
+}

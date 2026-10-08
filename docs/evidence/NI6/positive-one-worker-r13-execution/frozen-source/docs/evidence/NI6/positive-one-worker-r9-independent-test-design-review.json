@@ -1,0 +1,615 @@
+{
+  "acceptance": false,
+  "actualExecutionPerformed": false,
+  "authorities": [
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 9897,
+      "path": "docs/ni6-positive-one-worker-r9-stream-cardinality-freeze-2026-10-08.md",
+      "sha256": "057ddfb9d4d9051b0d54628d42df854914a4f1972448abcba87cee2a4a21c8c3"
+    },
+    {
+      "bytes": 1166,
+      "path": "docs/browser-entry-preference-2026-10-08.md",
+      "sha256": "78b616baa630a1bae0c1e6f12b56edfdafced5a35fe7ac90bda14bdd0d128687"
+    },
+    {
+      "bytes": 1231,
+      "path": "docs/ni6-r9-ordinary-llm-source-read-scope-2026-10-08.md",
+      "sha256": "d01c091c0f8a33fc745c14e51c4d182ee2ea3b867b086ed66aad8b571af618ca"
+    }
+  ],
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "compactStreamProducer": {
+    "actualSourceSealMatched": true,
+    "additionalProviderModelStreamRequestAgentSessionHttpCalls": 0,
+    "allOriginalSnapshotsPreservedAfterMalformedCopies": true,
+    "borrowedPushStreamEventInputsPreserved": true,
+    "index": 0,
+    "inputTimes": [
+      10,
+      12,
+      14
+    ],
+    "instances": 3,
+    "malformedCasesDetachedCopiesOnly": true,
+    "noSurrogate": true,
+    "originalExport": "AssistantStreamAccumulator",
+    "originalNTextsNGapsRelation": "N texts with N-1 timing gaps",
+    "originalSnapshotsDetachedImmutable": true,
+    "positiveNativeEventsReturnSameEvents": true,
+    "pushCalls": 6,
+    "pushInputAndDetachedFrozenTimedOutputAssertions": true,
+    "selectedRanges": [
+      "1132-1184",
+      "1217-1250",
+      "2384 export declaration"
+    ],
+    "snapshotCalls": 3,
+    "snapshotShapeDetachedFrozenArraysAssertions": true,
+    "source": {
+      "bytes": 103333,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e"
+    },
+    "sourceReadScope": "selected ordinary accumulator push/snapshot and export only",
+    "status": "AUTHORED_NOT_RUN",
+    "syntheticTextRuns": [
+      [
+        "one"
+      ],
+      [
+        "one",
+        "two"
+      ],
+      [
+        "one",
+        "two",
+        "three"
+      ]
+    ]
+  },
+  "conservedExecutorGuards": [
+    "exclusive once marker consumption",
+    "exact root-selected plan/GO/pin union",
+    "ownership/inode/read-bound/EOF/group",
+    "first reason/stop/interruption/denial no retarget",
+    "source and inherited official graph drift",
+    "aggregate absolute budgets/output cap",
+    "direct actual supported driver return required"
+  ],
+  "conservedGenuineOracles": [
+    "ready worker creation and native identity/session binding",
+    "exact approved goal/context/expected deterministic output",
+    "references/digests/CAS/consent/catalog/policy/identity",
+    "one real request/stream/step/turn and zero tools",
+    "committed exact actual UTF-8 input-plus-output usage and expected result digest",
+    "unchanged original public capture/result source/content bindings and not-reviewed/not-requested",
+    "factual finish plus stopped worker and exact native agent/session absence",
+    "reservationHeld=false independently",
+    "six once-owned Loader removals and preset disposer",
+    "post-removal404 and completed-path25HTTP requests",
+    "strict rootClosed independent of EOF/group absence",
+    "first-failure latching and selected execute transport/idle callback containment"
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-independent-test-design/v1",
+  "coverageLimits": [
+    "source review establishes authored intent only; all R9 cases unrun",
+    "original first refusing R8 capture guard NOT_INDEPENDENTLY_WITNESSED; earlier guards could win",
+    "static cardinality correction does not establish actual capture/result/stop/release or fix acceptance",
+    "no maximum-length/other-record/all-guard/callback branch coverage claim",
+    "no new actual build or derivative client rebuild",
+    "final enclosing duration not retroactively invented",
+    "consumed R8 is immutable with no replay/reset/adoption"
+  ],
+  "date": "2026-10-08",
+  "descriptor": {
+    "allOtherDescriptorLeavesExact": true,
+    "bytes": 18440,
+    "canonicalAggregateSha256": "a7723952f1e367ed239eee513b3ae499f99740c9cf9a2997a21bf4a3ec26bafe",
+    "changedProductPath": "src/normal-contracts.mjs",
+    "newActualBuildClaimed": false,
+    "newDigest": "82da87ecf5468f4f028b419193bc4b79153b62c22abe4b877b0f293d9b8c6a1a",
+    "oldDigest": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11",
+    "producerEvaluated": false,
+    "role": "SOURCE_ONLY_DERIVATIVE_OF_ACTUALLY_BUILT_ANCESTOR",
+    "sha256": "e83d685ce4bd29f153d82e7dae46021b64b8606ef11d980fdce70075e53f5af0",
+    "singleChangedLeaf": "/product/files/44/digest",
+    "sortedCompactJsonPlusNewlineBytesExact": true
+  },
+  "executionGO": false,
+  "finiteGrammar": {
+    "categories": [
+      "NONE",
+      "REJECTION",
+      "INVARIANT",
+      "DEADLINE"
+    ],
+    "createPhases": [
+      "NOT_RETURNED",
+      "created",
+      "ready",
+      "running",
+      "unknown",
+      "cancel_requested",
+      "stopped",
+      "not_created"
+    ],
+    "executeHttpPhases": [
+      "NOT_SENT",
+      "REQUEST_STARTED",
+      "HEADERS_OBSERVED",
+      "BODY_COMPLETE",
+      "RPC_VALUE_RETURNED"
+    ],
+    "executeHttpStatuses": [
+      "NOT_RETURNED",
+      "HTTP_200",
+      "OTHER_STATUS"
+    ],
+    "executeIdlePhases": [
+      "NOT_OBSERVED",
+      "WAITING",
+      "RETURNED",
+      "REJECTED"
+    ],
+    "executeTransportFailures": [
+      "NONE",
+      "REQUEST_ERROR",
+      "RESPONSE_ERROR",
+      "RESPONSE_LIMIT",
+      "TIMER_EXPIRED"
+    ],
+    "fieldCount": 34,
+    "fields": [
+      "contractVersion",
+      "result",
+      "phase",
+      "category",
+      "refusalCode",
+      "createPhase",
+      "executeHttpPhase",
+      "executeTransportFailure",
+      "executeHttpStatus",
+      "executeIdlePhase",
+      "headerCases",
+      "projectionCases",
+      "streamCases",
+      "positivePath",
+      "taskCreated",
+      "workerCreated",
+      "executionCommitted",
+      "resultReturned",
+      "workerStopped",
+      "reservationReleased",
+      "entryRemoved",
+      "ownedEntriesRemoved",
+      "rootClosed",
+      "completedPlugins",
+      "httpRequests",
+      "requests",
+      "streams",
+      "tools",
+      "stepStarts",
+      "stepEnds",
+      "turnStarts",
+      "turnEnds",
+      "all87",
+      "CODE"
+    ],
+    "old51PhaseOrderPreserved": true,
+    "onlyNewScalar": "streamCases",
+    "phaseCount": 52,
+    "phases": [
+      "PREFLIGHT",
+      "HEADER_CONTRACT",
+      "STORED_PROJECTION_CONTRACT",
+      "COMPACT_STREAM_CONTRACT",
+      "IMPORTS",
+      "NAMESPACE",
+      "CONTEXT",
+      "PLUGIN_LOADER",
+      "PLUGIN_PROJECTIONS",
+      "PLUGIN_SESSIONS",
+      "PLUGIN_APPROVAL",
+      "PLUGIN_AGENTS",
+      "PLUGIN_LLM",
+      "PLUGIN_SYSTEM_PROMPT",
+      "PLUGIN_TOOLS",
+      "PLUGIN_CREDENTIALS",
+      "PLUGIN_WEB_SERVER",
+      "PLUGIN_CONNECTION",
+      "LISTENER_FENCE",
+      "INDEX_ROUTE",
+      "PUBLIC_SERVICES",
+      "PRESET",
+      "ENTRY_START",
+      "AUTH",
+      "SETUP_STATUS",
+      "SETUP_PREPARE",
+      "SETUP_CONFIRM",
+      "SETUP_READY",
+      "LIST",
+      "INTAKE",
+      "STATUS",
+      "CONTEXT_PREPARE",
+      "CONTEXT_DETAIL",
+      "CATALOG",
+      "POLICY_PREVIEW",
+      "POLICY_CONFIRM",
+      "WORKER_PLAN",
+      "WORKER_PREVIEW",
+      "WORKER_GRANT",
+      "WORKER_CREATE",
+      "WORKER_IDLE",
+      "WORKER_EXECUTE",
+      "WORKER_QUERY",
+      "WORKER_CAPTURE",
+      "WORKER_RESULT",
+      "WORKER_FINISH",
+      "FINAL_STATUS",
+      "PRESET_RELEASE",
+      "ENTRY_REMOVE",
+      "POST_DISPOSAL",
+      "ROOT_CLEANUP",
+      "COMPLETE"
+    ],
+    "positiveAndPassOldGatesConserved": true,
+    "positiveAndPassStreamCasesRequired": 8,
+    "refusalCodes": [
+      "NONE",
+      "STALE_VERSION",
+      "WORKER_POLICY_REQUIRED",
+      "WORKER_POLICY_STALE",
+      "WORKER_PREVIEW_STALE",
+      "WORKER_CONFIRMATION_REQUIRED",
+      "WORKER_CONTEXT_INVALID",
+      "WORKER_MAPPING_MISMATCH",
+      "WORKER_RESULT_UNAVAILABLE",
+      "WORKER_FINISH_UNAVAILABLE",
+      "WORKER_SOURCE_UNAVAILABLE",
+      "WORKER_PERSISTENCE_UNSUPPORTED",
+      "WORKER_PRESET_UNAVAILABLE",
+      "WORKER_REQUEST_DENIED",
+      "WORKER_SESSION_UNAVAILABLE",
+      "WORKER_CATALOG_UNAVAILABLE",
+      "WORKER_NOT_CONFIGURED",
+      "COST_UNKNOWN",
+      "CONFIG_INVALID",
+      "INPUT_INVALID",
+      "OUTPUT_TOO_LARGE",
+      "SERVICE_DISPOSED",
+      "CONTEXT_LIMIT",
+      "STORAGE_INVALID",
+      "WORKER_EXECUTION_ALREADY_SUBMITTED",
+      "INVALID_INPUT",
+      "STALE_AUTHORITY",
+      "HOST_PERMISSION_DENIED",
+      "STALE_MEMORY",
+      "HOST_DENIED",
+      "APPROVAL_INVALID",
+      "CLAIM_REVOKED",
+      "SPEC_MISMATCH",
+      "STALE_POLICY",
+      "ACTIVE_FULL",
+      "OPERATION_REJECTED",
+      "OTHER_REFUSAL"
+    ],
+    "streamCasesExactIntegerMinimum": 0,
+    "streamCasesMaximum": 8
+  },
+  "frozenArtifactSeals": [
+    {
+      "bytes": 42775,
+      "path": ".runtime/ni6-positive-one-worker-r9/fixture.mjs",
+      "sha256": "ebfbf3ec0b41ec16391d78d3056af47e5e2f92216e2bffa6d447f8125be59095"
+    },
+    {
+      "bytes": 33219,
+      "path": ".runtime/ni6-positive-one-worker-r9/run-once.py",
+      "sha256": "ad8c4257e73f8d0d97b3f9dc66c4481cb0fe437d45c7e9ddadbad85ad4b30cb8"
+    },
+    {
+      "bytes": 51699,
+      "path": ".runtime/ni6-positive-one-worker-r9/execution-plan.proposed.json",
+      "sha256": "c73e5927146cd70054f7455061e29952ec1e112d576a0413a4c19e1441b4651a"
+    },
+    {
+      "bytes": 86514,
+      "path": ".runtime/ni6-positive-one-worker-r9/source-delta.diff",
+      "sha256": "d8a85fe3d0bf813af3f072b85d0923ea4695b89dd6ff1d5f50c8787d00a05ca7"
+    },
+    {
+      "bytes": 6442,
+      "path": ".runtime/ni6-positive-one-worker-r9/README.md",
+      "sha256": "7841455d84ebf01e008732fb5381198472b0218b342ed65883267ce82ffd489f"
+    },
+    {
+      "bytes": 298577,
+      "path": ".runtime/ni6-positive-one-worker-r9/source-manifest.json",
+      "sha256": "eda05922781294a2822d3fdf770470a25b7cb217d35fdfe07c3dbac801ec3ff8"
+    },
+    {
+      "bytes": 6661,
+      "path": "docs/evidence/NI6/positive-one-worker-r9-source.md",
+      "sha256": "67500af055d1a96ff6462f602a733f0e2b707d5e48856750d3c139df914615ee"
+    },
+    {
+      "bytes": 93058,
+      "path": "docs/evidence/NI6/positive-one-worker-r9-source.json",
+      "sha256": "5493d0b2ca485db55250a142dafc978a55c4b10682bd30913aae0fa3b8c9be5a"
+    }
+  ],
+  "httpLimits": {
+    "authGets": 1,
+    "domainPosts": 23,
+    "otherRpcStepSecondsInsideSharedWork": 2.5,
+    "perRequestSecondsInsideSharedWork": 2,
+    "postDisposalPosts": 1,
+    "requestBytes": 2048,
+    "responseBytes": 65536,
+    "selectedExecuteAcknowledgementSecondsInsideSharedWork": 10,
+    "selectedExecuteRpcStepSecondsInsideSharedWork": 10.5,
+    "totalRequests": 25
+  },
+  "idleQualification": "RETURNED observes idle only; no independent operation/commit/result/stop/release inference",
+  "language": "English",
+  "literalDelta": {
+    "bodyBytes": 85960,
+    "cleanupBodyByteIdentical": true,
+    "completeRegeneratedBodyEqual": true,
+    "files": [
+      "fixture.mjs",
+      "run-once.py",
+      "execution-plan.proposed.json",
+      "README.md",
+      "package/src/normal-contracts.mjs",
+      "package/native-source-manifest.json"
+    ],
+    "genuineFunctionalBodyBytes": 14258,
+    "genuineFunctionalBodyOnlyAddition": "invariant(streamCases===8) before positivePath=true",
+    "preambleBytes": 554,
+    "productTwoOnlyEdits": [
+      "array(r.dt,128,1)->array(r.dt,128)",
+      "r.dt.length!==r.texts.length->r.dt.length+1!==r.texts.length"
+    ],
+    "remainingValidatorBytesExact": true,
+    "storedStreamRewrittenOrPadded": false
+  },
+  "materialFindings": [],
+  "maximumActiveSeconds": 90,
+  "maximumDirectInterpreterStarts": 3,
+  "maximumNodeChildStarts": 2,
+  "metadataClosure": {
+    "addedDeduplicatedRows": 93,
+    "changedPackageFiles": [
+      "src/normal-contracts.mjs",
+      "native-source-manifest.json"
+    ],
+    "futureDisjointPinsIncludingSelfAndFourReviews": 1018,
+    "inheritedGraphAuthority": "sealed; no whole-host re-audit",
+    "inheritedRows": 913,
+    "inheritedRowsPreservedExactly": true,
+    "inputBytes": 33193021,
+    "inputRows": 1006,
+    "ownedInputOverlap": 0,
+    "ownedRows": 7,
+    "packageConservationBasis": "exact frozen predecessor/current metadata for all65; changed two files independently read/hashed",
+    "packageRows": 65,
+    "packageRowsChanged": 2,
+    "packageRowsConserved": 63,
+    "topologyRows": 12,
+    "uniquePublicSourceCopies": 595
+  },
+  "model": "gpt-6.1-sol",
+  "newCases": [
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "ACCEPT_SAME_BORROWED_EVENTS_AND_UNCHANGED_STREAM",
+      "id": "C16",
+      "input": "original one same-index text delta; dt[]/texts[one]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "ACCEPT_SAME_BORROWED_EVENTS_AND_UNCHANGED_STREAM",
+      "id": "C17",
+      "input": "original two consecutive same-index deltas; dt[2]/texts[one,two]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "ACCEPT_SAME_BORROWED_EVENTS_AND_UNCHANGED_STREAM",
+      "id": "C18",
+      "input": "original three consecutive same-index deltas; dt[2,2]/texts[one,two,three]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "REFUSE_UNCHANGED",
+      "id": "C19",
+      "input": "detached two-text original snapshot copy; dt=[]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "REFUSE_UNCHANGED",
+      "id": "C20",
+      "input": "detached single-text original snapshot copy; dt=[0]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "REFUSE_UNCHANGED",
+      "id": "C21",
+      "input": "detached single-text original snapshot copy; texts=[]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "REFUSE_UNCHANGED",
+      "id": "C22",
+      "input": "detached two-text original snapshot copy; dt=[-1]",
+      "status": "NOT_RUN"
+    },
+    {
+      "borrowedInputsPreservedOracle": true,
+      "expected": "REFUSE_UNCHANGED",
+      "id": "C23",
+      "input": "detached two-text original snapshot copy; dt=[0.5]",
+      "status": "NOT_RUN"
+    }
+  ],
+  "originalCases": {
+    "blockBytes": 3555,
+    "blockSha256": "7c4505b8b9b0f26ee236dedac0235b3860c5fe5c2ae3fed9266305e083a2ddcc",
+    "byteIdentical": true,
+    "headerCases": 3,
+    "ids": "C01-C15",
+    "projectionCases": 12,
+    "status": "NOT_RUN_FOR_R9"
+  },
+  "privateStreamAggregateByteCap": 262144,
+  "privateStreamByteCap": 131072,
+  "proposal": {
+    "fourAffectedReviewDestinationsObservedAbsentBeforeThisPairCreation": true,
+    "pins": {},
+    "requiredAffectedReviews": [
+      "docs/evidence/NI6/positive-one-worker-r9-independent-source-review.md",
+      "docs/evidence/NI6/positive-one-worker-r9-independent-source-review.json",
+      "docs/evidence/NI6/positive-one-worker-r9-independent-test-design-review.md",
+      "docs/evidence/NI6/positive-one-worker-r9-independent-test-design-review.json"
+    ],
+    "reviewDoesNotGrantGO": true,
+    "rootOnlySupportedOnceSelection": true,
+    "rootReviewedExecutionGO": false,
+    "rootReviewedFinalAffectedReports": false,
+    "rootSupportedExecutionApprovalGranted": false,
+    "sixActualDestinationsObservedAbsent": true,
+    "status": "SOURCE_ONLY_NOT_RUN",
+    "testWorkerStarts": 0
+  },
+  "reasoningEffort": "max",
+  "reportIntegrity": {
+    "fullReadbackRequired": true,
+    "jsonSelfSeal": "EXTERNAL_AFTER_FULL_READBACK_NO_RECURSIVE_SELF_PIN",
+    "markdown": {
+      "bytes": 8294,
+      "path": "docs/evidence/NI6/positive-one-worker-r9-independent-test-design-review.md",
+      "sha256": "3e7bd68a1004104105ecc438a511fc24ec270b3889b03284e60061f9f19f9057"
+    }
+  },
+  "resultBounds": {
+    "byteCap": 1024,
+    "candidateEvaluated": false,
+    "compactFormat": "JSON.stringify plus newline; existing fixture format",
+    "compactMaximumIncludingNewline": 828,
+    "conservativePotentiallyInfeasibleCombinedMaxima": true,
+    "fieldCount": 34,
+    "independentlyReproduced": true,
+    "maximumMethod": "Independent per-field longest closed ASCII enum, maximum digit-width counters, false booleans (five bytes); conservative Cartesian scalar bound, no candidate evaluation",
+    "method": "Cartesian longest closed ASCII enums, maximum counter digit width and false booleans; literal JSON serialization only",
+    "prettyFormat": "Python json.dumps indent=2 sort_keys=True allow_nan=False plus newline; existing executor public save format",
+    "prettyMaximumIncludingNewline": 965,
+    "readMaximum": 1025
+  },
+  "retainedGates": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "UI": "BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF",
+    "accepted": 0,
+    "all87": "HOLD",
+    "browserCapability": "parent supplied browsers[], iab unavailable, Chrome extension absent; root no supported browser tools",
+    "cancelledQATask": "4da34a6d NEVER_EXECUTE",
+    "cloud": "TWICE_DENIED_NO_THIRD_ATTEMPT",
+    "futureBrowserPreference": [
+      "Codex built-in browser",
+      "Chrome extension fallback"
+    ],
+    "localOnly": true,
+    "nativeBrowserFallback": false,
+    "remotePublicationStableMvpAcceptanceClaimed": false,
+    "root": "HOLD"
+  },
+  "reviewer": "/root/r7b_transport_test_review",
+  "revision": "positive-one-worker-r9",
+  "role": "INDEPENDENT_ISTQB_FINAL_AFFECTED_SOURCE_TEST_DESIGN",
+  "scope": {
+    "broadEnumerationOrPrivatePathScan": false,
+    "candidateAstCheckImportBuildTestRun": false,
+    "completeAffectedFixtureExecutorDeltaRead": true,
+    "exactProposalManifestAndSourcePairRead": true,
+    "explicitPublicInertTextJsonLiteralHashOnly": true,
+    "inheritedWholeHostOrProductAuditRepeated": false,
+    "onlyFreshAssignedReportPairWritten": true,
+    "privateContentReadCopyDecodeHash": false,
+    "producerEvaluation": false,
+    "protectedFinalCodeOrOpaqueCaptureFinishImplementationInspected": false,
+    "runtimeListenerBrowserNetworkModelCredentialsGitHelpers": false,
+    "sourceOrPriorEvidenceMutated": false
+  },
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "strictRootQualification": "public root dispose restart with active UID0 is rootClosed=false/FAILED_HOLD; no EOF/group or pure-case substitution",
+  "supportedOnceOracles": [
+    {
+      "id": "D01",
+      "oracle": "exact proposed syntax child exit0 within inherited budget",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C01-C23",
+      "oracle": "header3/projection12/stream8 after every authored assertion",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "oracle": "entire original genuine flow, capture/result/finish/stop/release and strict root closure; first finite refusal/deadline/uncertainty remains FAILED_HOLD",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ENCLOSING",
+      "oracle": "complete EOF/owned group absence and exact before-after pins/graph/budgets plus directly observed supported driver return; no lifecycle substitution",
+      "status": "NOT_RUN"
+    }
+  ],
+  "testOracleAssessment": {
+    "additionalDispatchProviderInferenceHttpAgentSessionOperations": 0,
+    "beforeAfterDeepEqualityEveryCase": true,
+    "borrowedStreamReferencePreserved": true,
+    "caseCountOnlyIncrementsAfterAllAssertions": true,
+    "emptyTextsGuardQualification": "C21 also violates gap/text cardinality; branch identity not established",
+    "fullStoredProjectionPersistenceSourceContentUsageOracle": "retained genuine capture/result path required; pure nativeEvents cases insufficient",
+    "malformedInputsDetachedSyntheticCopiesOnly": true,
+    "maximumCompletedStreamCases": 8,
+    "negativeOracle": "rejection with input conservation; no exact internal guard assertion",
+    "positiveEnvelopeControls": 3,
+    "positiveReturnSameEventsReference": true,
+    "validCompletedEnvelope": [
+      "turn/start",
+      "step/start",
+      "assistant/message",
+      "step/end",
+      "turn/end"
+    ]
+  },
+  "testWorkerStarts": 0,
+  "unchangedProductPolicyMilliseconds": 60000,
+  "verdict": "NO_NEW_SOURCE_TEST_DESIGN_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

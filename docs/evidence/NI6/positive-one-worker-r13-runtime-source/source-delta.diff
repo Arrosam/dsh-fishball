@@ -1,0 +1,239 @@
+R13 complete literal six-file delta against consumed immutable R12.
+Behavioral delta is only the ordinary Python terminal wrapper: main code stored under BaseException; sys.exit outside.
+Fixture namespace-only; all65 package bytes conserved. Fresh namespace/current provenance and metadata closure separately classified; manifest/report self-diffs excluded to avoid recursive sealing.
+
+--- .runtime/ni6-positive-one-worker-r12/fixture.mjs
++++ .runtime/ni6-positive-one-worker-r13/fixture.mjs
+@@ -11,10 +11,10 @@
+ const STARTED = performance.now();
+ const WORK_END = STARTED + 24000, FINAL_END = STARTED + 30000;
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const NAME = '.runtime/ni6-positive-one-worker-r12';
++const NAME = '.runtime/ni6-positive-one-worker-r13';
+ const CAPSULE = resolve(ROOT, NAME), HOST = resolve(ROOT, '.runtime/dsh-web');
+ const PRODUCT = resolve(CAPSULE, 'package');
+-const PLAN_NAME = '.runtime/root-ni6-positive-one-worker-r12-execution-plan.json';
++const PLAN_NAME = '.runtime/root-ni6-positive-one-worker-r13-execution-plan.json';
+ const RESULT = resolve(CAPSULE, 'fixture-result.json');
+ const GRAPH_NAME = '.runtime/ni3-native-runtime/public-graph-pins.json';
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+--- .runtime/ni6-positive-one-worker-r12/run-once.py
++++ .runtime/ni6-positive-one-worker-r13/run-once.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-positive-one-worker-r12'
++NAME='.runtime/ni6-positive-one-worker-r13'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-positive-one-worker-r12-execution-plan.json'
++PLAN_NAME='.runtime/root-ni6-positive-one-worker-r13-execution-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -512,7 +512,7 @@
+     marker_owned=evidence_owned=private_owned=False
+     marker_id=evidence_id=private_id=None
+     marker=CAPSULE/'invocation.json'
+-    evidence=ROOT/'docs/evidence/NI6/positive-one-worker-r12-execution'
++    evidence=ROOT/'docs/evidence/NI6/positive-one-worker-r13-execution'
+     private=CAPSULE/'private-capture'
+     result_path=CAPSULE/'fixture-result.json'
+     rows=[]; before=after=None; selected=None; finalized=False; plan_digest=None
+@@ -668,5 +668,6 @@
+ if __name__=='__main__':
+     signal.signal(signal.SIGTERM,latch_interruption)
+     signal.signal(signal.SIGINT,latch_interruption)
+-    try: sys.exit(main())
+-    except BaseException: sys.exit(1)  # Never serialize a caught error or payload.
++    try: terminal_code = main()
++    except BaseException: terminal_code = 1  # Never serialize a caught error or payload.
++    sys.exit(terminal_code)
+--- .runtime/ni6-positive-one-worker-r12/execution-plan.proposed.json
++++ .runtime/ni6-positive-one-worker-r13/execution-plan.proposed.json
+@@ -26,11 +26,11 @@
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-positive-one-worker-r12/fixture.mjs"
++      ".runtime/ni6-positive-one-worker-r13/fixture.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      ".runtime/ni6-positive-one-worker-r12/fixture.mjs"
++      ".runtime/ni6-positive-one-worker-r13/fixture.mjs"
+     ]
+   ],
+   "concurrency": 1,
+@@ -86,9 +86,9 @@
+     "all87",
+     "CODE"
+   ],
+-  "diagnosticResult": ".runtime/ni6-positive-one-worker-r12/fixture-result.json",
++  "diagnosticResult": ".runtime/ni6-positive-one-worker-r13/fixture-result.json",
+   "effects": "One synthetic task/worker/execution/returned result and factual finish using actual owner HTTP; original credentials/SQLite/JSONL, one ephemeral loopback listener, no external inference/tools/memory writes. Strict original root cleanup remains HOLD.",
+-  "evidenceDirectory": "docs/evidence/NI6/positive-one-worker-r12-execution",
++  "evidenceDirectory": "docs/evidence/NI6/positive-one-worker-r13-execution",
+   "executeHttpPhases": [
+     "NOT_SENT",
+     "REQUEST_STARTED",
+@@ -191,8 +191,8 @@
+     "H14"
+   ],
+   "finishWaitWidth": 7,
+-  "freshInvocationMarker": ".runtime/ni6-positive-one-worker-r12/invocation.json",
+-  "freshRuntimeDirectory": ".runtime/ni6-positive-one-worker-r12/private-runtime",
++  "freshInvocationMarker": ".runtime/ni6-positive-one-worker-r13/invocation.json",
++  "freshRuntimeDirectory": ".runtime/ni6-positive-one-worker-r13/private-runtime",
+   "httpLimits": {
+     "authGets": 1,
+     "domainPosts": 23,
+@@ -268,7 +268,7 @@
+     "COMPLETE"
+   ],
+   "pins": {},
+-  "privateCaptureDirectory": ".runtime/ni6-positive-one-worker-r12/private-capture",
++  "privateCaptureDirectory": ".runtime/ni6-positive-one-worker-r13/private-capture",
+   "privateStreamAggregateByteCap": 262144,
+   "privateStreamByteCap": 131072,
+   "privateStreamsDecodedOrPublished": false,
+@@ -312,10 +312,10 @@
+     "OTHER_REFUSAL"
+   ],
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/positive-one-worker-r12-independent-source-review.md",
+-    "docs/evidence/NI6/positive-one-worker-r12-independent-source-review.json",
+-    "docs/evidence/NI6/positive-one-worker-r12-independent-test-design-review.md",
+-    "docs/evidence/NI6/positive-one-worker-r12-independent-test-design-review.json"
++    "docs/evidence/NI6/positive-one-worker-r13-independent-source-review.md",
++    "docs/evidence/NI6/positive-one-worker-r13-independent-source-review.json",
++    "docs/evidence/NI6/positive-one-worker-r13-independent-test-design-review.md",
++    "docs/evidence/NI6/positive-one-worker-r13-independent-test-design-review.json"
+   ],
+   "resultSizeBounds": {
+     "byteCap": 1024,
+@@ -333,13 +333,13 @@
+     "RESTARTED"
+   ],
+   "rootCleanupQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. Factual worker/ledger/persistence/preset/post404 guards remain independent; failed or unverified cleanup stays HOLD.",
+-  "rootPlan": ".runtime/root-ni6-positive-one-worker-r12-execution-plan.json",
++  "rootPlan": ".runtime/root-ni6-positive-one-worker-r13-execution-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "rootTerminalQualification": "Original standalone root dispose is restart, not application quit. RESTARTED requires returned original disposal, root UID0/state2, ten exact retained unique direct child fibers UID-null/state4 and six unique retained loader rows with successful original removal/absence checks and terminal fibers. Factual worker/ledger/persistence/preset/post404 guards remain independent; failed or unverified cleanup stays HOLD.",
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-positive-one-worker-r12/run-once.py",
++  "runner": ".runtime/ni6-positive-one-worker-r13/run-once.py",
+   "sourceCopies": [
+     ".runtime/ni6-positive-one-worker-r10/fixture.mjs",
+     ".runtime/ni6-positive-one-worker-r10/run-once.py",
+@@ -1157,7 +1157,72 @@
+     ".runtime/ni6-positive-one-worker-r12/package/src/schema7-runtime-composition.mjs",
+     ".runtime/ni6-positive-one-worker-r12/package/src/setup-state.mjs",
+     ".runtime/ni6-positive-one-worker-r12/package/src/testing-provider.mjs",
+-    ".runtime/ni6-positive-one-worker-r12/package/src/worker.mjs"
++    ".runtime/ni6-positive-one-worker-r12/package/src/worker.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/lib/client.js",
++    ".runtime/ni6-positive-one-worker-r13/package/native-source-manifest.json",
++    ".runtime/ni6-positive-one-worker-r13/package/package.json",
++    ".runtime/ni6-positive-one-worker-r13/package/scripts/build-client.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/scripts/build-native-source-manifest.py",
++    ".runtime/ni6-positive-one-worker-r13/package/scripts/dsh-web-runtime-lock.json",
++    ".runtime/ni6-positive-one-worker-r13/package/src/approval-preview.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/audit-input-pair.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/audit.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/chat.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/client-entry.cjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/config.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/context.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/control.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/coordinator.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/environment.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/event-clock.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/events.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/fishball-memory-core.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/foundation.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/host-probe.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/index.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-audit-native-source.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-audit-phases.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-audit.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-config.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-events.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-invocation.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-memory-continuity.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-memory.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-normal-services.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-owned-stream.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-plugin.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-results.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-role-recipes.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-worker-config.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-worker-facts.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/installed-worker.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/ledger.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/memory.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/messages.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/native-adapter.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/native-contributions.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/native-history-collector.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/native-source-descriptor.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-contracts.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-native-operations.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-native-planning.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-native-request.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-native-rpc.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-native-selection.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-resume-controls.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/normal-source-planning-binding.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/notifications.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/operator-bridge.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/owner-native-command-controls.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/results.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/runtime-plugin.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/runtime-security.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/runtime-store.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/scheduler.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/schema7-runtime-composition.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/setup-state.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/testing-provider.mjs",
++    ".runtime/ni6-positive-one-worker-r13/package/src/worker.mjs"
+   ],
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+--- .runtime/ni6-positive-one-worker-r12/README.md
++++ .runtime/ni6-positive-one-worker-r13/README.md
+@@ -1,17 +1,17 @@
+-# NI6 R12 source-only finish and owned cleanup correction
++# NI6 R13 source-only terminal-return correction
+ 
+-SOURCE_ONLY_NOT_RUN. Only the selected finish caller HTTP10000/RPC10500ms and unsupported standalone-root terminal assumption change. R11 remains consumed immutable FAILED_HOLD at WORKER_FINISH/REJECTION/refusalNONE/HTTP23/104/W030000. W03 proves the ordinary native finish await returned before later guards/response work; exact cause, guarded finish and release remain unestablished. The caller window is finite admission, not a DSH latency contract or a proven timer-only product fix.
++SOURCE_ONLY_NOT_RUN. Fresh derivative of consumed immutable R12 FUNCTIONAL_PASS_DRIVER_RETURN_FAILED_HOLD. Both original Node children and all genuine result/stop/release/owned-cleanup stage guards passed; the separately captured Python driver returned1. Persisted PASS does not prove main returned0 or discharge its final stop/deadline gate. No replay or promotion of R12 is selected.
+ 
+-All65 current package files,64-record descriptor, full host descriptor, built client, producer and runtime lock are byte-identical to immediate R11. No canonical product correction or new actual build; ancestor actualBuildReturn qualification stays exact. Current expected root plan is .runtime/root-ni6-positive-one-worker-r12-execution-plan.json, not its own pin. The selected entry is package/src/installed-plugin.mjs. Initial finishWait0000000 is seven ASCII characters; its31-stage grammar and original38-code finishTrace remain unchanged.
++Only the final ordinary Python entry wrapper changes behavior. It evaluates main once inside the existing BaseException handler and stores its returned code; an exception stores1 without binding, inspecting or serializing it. sys.exit(terminal_code) is outside that handler, so the returned status is propagated. Signal handlers and the complete main body are exact R12 after fresh namespace substitution, including return0 iff finalized and not STOP_REQUESTED and time.monotonic()<end, else1. No forced exit0, persisted-PASS shortcut, new gate, command, control, interpreter or dynamic wrapper test.
+ 
+-Diagnostic df.ni6-positive-one-worker/v2 replaces rootClosed with rootCleanup: NOT_RUN/UNCERTAIN/RESTARTED,36 fields/cap1024/read1025. Ten exact direct ctx.plugin child objects are retained before the original awaits; duplicates/root/excess are rejected. completedPlugins11 includes ten direct installs and one existing connection loader entry. Six original Loader rows/fibers remain independently retained. removalVerified is recorded only after the original terminal-fiber and Loader-entry absence assertions; removed=true alone cannot qualify. Original root dispose and its bounded await occur once. RESTARTED requires returned disposal, original root UID0/state2, all sixteen unique exact children UID-null/state4, all six successful removal records. UNCERTAIN is conservative on failure. This is selected owned cleanup, not full DSH application quit or proof of hidden teardown effects.
++Complete fixture is namespace-only conserved. All65 package files,64-record native descriptor, host descriptor, built client, descriptor producer and runtime lock are exact immediate R12 bytes. No product/canonical integration, new client build, producer/helper evaluation or source adoption. Canonical metadata reports are immutable public provenance only;25 identical/21 differing/19 absent paths is not permission or proof for mixed/full adoption. Opaque capture/finish and protected CODE remain excluded.
+ 
+-HOST_CLEANUP_CONTRACT uses the same source-owned bounded helper with literal records: L01 valid10+6 set; L02 missing/excess/duplicate/root direct fibers; L03 independent UID/state mismatches; L04 incomplete/unremoved/unverified/duplicate/nonterminal Loader rows; L05 unreturned disposal/wrong root. Controls are authored NOT_RUN, not actual host lifecycle tests. C01–C23/F01–F05/G01–G05 remain byte-identical. No extra counter/lifecycle/query/whenIdle/RPC/request/model/provider/listener/retry.
++Preserve diagnosticv2/36fields/55phases/cap1024/read1025, C01–C23/F01–F05/G01–G05/L01–L05 including20 cleanup assertions and every original functional, first-failure, finite finish/wait and positive/PASS oracle. Genuine owner HTTP/source/currentness/CAS/identity/consent/usage/persistence/result, guarded finish/reservationHeld=false, factual stopped worker/exact agent-session absence BEFORE cleanup, paired disposals, preset release, six once verified terminal Loader removals/absence, post404/exact25HTTP and ten-direct/six-loader rootCleanupRESTARTED checks are unchanged. Restart/state/event/idle/EOF/group observations alone cannot substitute for resource/ledger proof.
+ 
+-All original actual result/source/currentness/CAS/identity/consent/usage/persistence, guarded finish/reservationHeld=false, factual worker stop and exact agent/session absence BEFORE cleanup, paired disposal, preset release, six once removal/UID-null/state4/entry absence, post404 while WebServer is alive,25HTTP and enclosing security/drift/EOF/group/private-stream/final-return guards remain. Positive/PASS additionally requires RESTARTED. Event counts, root state or process closure alone never qualify.
++Execute and finishHTTP10000/RPC10500, otherHTTP2000/RPC2500, shared24s/Node cleanup5/final30/reserve0.5 and executor outer90/primary85/setup20/syntax5/functional35/post25/terminal5 remain exact/nonadditive. Original once/owner/inode/realpath/denial/stop/process ownership/noPIDreuse/EOF/group/output/private-stream/pin/host-drift/final-return gates are exact. At most two sequential Node children; one deterministic synthetic task/worker/action/execute/request/stream/turn/step, tools0/memorywrites0/externalcalls0,25HTTP.
+ 
+-Execute and selected finish HTTP10000/RPC10500ms; other HTTP2000/RPC2500ms; shared24s, Node cleanup5/final30/reserve0.5, executor outer90/primary85/setup20/syntax5/functional35/post25/terminal5 remain exact/nonadditive. At most two sequential Node children; one synthetic task/worker/action/execute/request/stream/turn/step, tools0/memory writes0/external calls0.
++Measured closure: 1379 inputs/46140117 bytes; 1286 exact inherited rows + 93 deduplicated public additions; 882 copies/26070666 bytes; 1391 disjoint future pins including7 owned/current manifest self/four final reviews; 16 topology. Exact inherited copy/topology ordered prefixes retained. Current expected plan .runtime/root-ni6-positive-one-worker-r13-execution-plan.json is not its own pin; selected entry package/src/installed-plugin.mjs,65/65 immediate R12 conservation and seven-ASCII initial wait remain explicit. Independent longest scalar bound878compact/1023pretty bytes INCLUDING newline:146compact/1pretty headroom.
+ 
+-Measured provenance: 1286 inputs/42936044 bytes; 1189 inherited exact rows + 97 deduplicated explicit public additions; 817 copies; 1298 disjoint future pins including7 owned/current manifest self/four reviews; 15 topology. Inherited copy/topology order conserved.36fields/55phases; independent longest-value878 compact/1023 pretty bytes including newline within1024/read1025; exactly one byte of pretty headroom, with no extra field/counter. All GO flags false/pins{}, starts0; six actual and four review destinations absent.
++All three GO flags false/pins{}, starts0. Six future actual/four review destinations absent. Root alone owns exact seal, independent English Sol6.1max code/ISTQB reviews, root plan/supported approval/once execution/direct tool returns and Git. A future successful run needs both Node exits0, all original stage/cleanup/EOF/group/drift/finalization guards and separately captured original driver exit0. Source comparisons are not dynamic tests or acceptance.
+ 
+-Root owns final seal, independent exact code/ISTQB reviews, plan/supported approval/once execution and Git. No candidate parse/import/check/build/test/run, helper/producer evaluation, runtime/Git/network/model/browser/private-content operation occurred. Opaque capture/finish bodies and protected CODE excluded/BLOCKED_UNCHANGED. All87HOLD accepted0/rootHOLD; cloud denied twice/no third; UI BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF; old QA/two unrelated drafts unchanged; cancelled4da34a6d NEVER_EXECUTE. No main merge/remote/publication/stable/MVP/acceptance claim.
++Preparation used explicit public inert byte/hash/JSON/literal comparisons only. No candidate parse/import/check/build/test/run, helper/producer/interpreter wrapper evaluation, runtime/Git/network/model/cloud/browser/private-content inspection or enumeration occurred. Canonical source, consumed packets, old QA and two unrelated drafts unchanged; cancelled4da34a6d NEVER_EXECUTE. All87HOLD accepted0/rootHOLD/CODE BLOCKED_UNCHANGED; cloud denied twice/no third; UI BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF. Full installed DSH quit/restart/reconciliation and aggregate functional/visual acceptance remain separate. No main merge/remote/push/publication/stable/MVP/full acceptance claim.

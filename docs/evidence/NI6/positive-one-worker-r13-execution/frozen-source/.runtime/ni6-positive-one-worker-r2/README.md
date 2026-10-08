@@ -1,0 +1,20 @@
+# NI6 positive one-worker r2 — SOURCE_ONLY_NOT_RUN
+
+Root alone selects the actual owned600 plan, final pins, runtime GO and Git. All three proposal GO flags are false and pins are empty. Never run the proposal: a refused invocation still consumes its fresh marker.
+
+Use genuine unchanged preparation-r3/package and the confirmed public Connection Loader inject:['webServer']; no rebuild or r4 observational package. Original public Loader supplies JSONL, AgentLoop with sessionPersistence injection, AgentPresetRegistry with one registered empty preset, testing-provider and the installed product. One fresh owned profile/workspace/auth/storage is selected.
+
+The sole positive path is actual owner HTTP setup, one intake/current context, separate policy preview/confirmation, action preview/grant, one idle native worker, one execution/capture/result/finish. The approved non-secret goal is: Synthetic NI6 positive01: return one bounded deterministic local result. No receipt/signature internals or adversarial family is selected. Memory background is empty; no memory writes, external tools, paid inference, browser, live webhook/chat or UI namespace reuse.
+
+Limits: 90 seconds shared outer, primary85, setup20, syntax5, functional35, post-readback25, conservative terminal5. Node work24/shared cleanup5/final30; individual HTTP2 seconds is inside work24, not additive. Exactly25 HTTP requests (1 auth GET +23 domain POSTs +1 post-disposal404). Requests2048/response65536 bytes. Exactly one worker/request/stream/turn/step; original native options contain no invented maxTurns/maxSteps. All waterfall observers return next() unchanged. Original r3 worker config/budget choices are retained.
+
+Public result: exact26 fields, at most1024 bytes/1025-byte executor read, finite phase/category/refusal code, booleans and bounded counts only. HTTP refusal retains only its allowlisted stable code or OTHER_REFUSAL. Result prose, HTTP headers/cookies/URLs/raw responses, private streams/transcripts/credentials/DB/key bytes and caught error properties never enter evidence. Private capture guards remain128KiB each/256KiB aggregate, exact stored-length no-follow reads, EOF/group/exit and actual return separately required.
+
+positivePath requires the worker/result/finish oracles and post-removal404; it is separate from overall result. Original root dispose restarts UID0, so rootClosed=false and FAILED_HOLD remain required if active. No task completion, review, delivery, full AC or acceptance follows. Failed/unknown work stops; no retry, replay, reset or adoption. Owned Loader entries and preset registration are removed at most once; fresh private storage is preserved.
+
+Root invocation after four independent reports and exact supported approval:
+/opt/homebrew/bin/python3 -I .runtime/ni6-positive-one-worker-r2/run-once.py .runtime/root-ni6-positive-one-worker-r2-execution-plan.json
+
+All438 r1 input records and full graph authority are inherited; add the r1 seven owned files, its manifest, four sealed final reports and the r2 freeze without repeating the full graph audit. Runtime verifies the original27577-file/12-link graph and original actual r3 build-return ancestor. No candidate parse/compile/import/check/test/runtime occurred in authoring. All87 accepted0/HOLD, final CODE BLOCKED_UNCHANGED, UI paused and cloud third submission unselected.
+
+The r1 usage oracle had a material pre-GO gap; r1 is preserved and never selected for execution. At the sole public llm/stream event, keep a positive safe integral UTF-8 JSON.stringify(options.messages) byte count internally, bounded16384. The selected two system/user text messages pass original Llm config/projection/adapter forwarding unchanged; no file/image/developer/assistant projection applies. The deterministic provider charges those same message values. Actual usage must equal that count plus the fixed output UTF-8 bytes, within32768 and with actual synthetic accounting. No payload/hash is published, no option is mutated, and next() is returned unchanged. All other r1 oracles and the exact26-field1024-byte public result are conserved.

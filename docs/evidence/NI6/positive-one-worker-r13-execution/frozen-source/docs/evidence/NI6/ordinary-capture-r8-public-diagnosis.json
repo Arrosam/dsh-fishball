@@ -1,0 +1,807 @@
+{
+  "contractVersion": "df.ni6-ordinary-capture-public-diagnosis/v1",
+  "date": "2026-10-08",
+  "diagnosticLane": "/root/ordinary_execute_ack_diagnosis",
+  "model": "gpt-6.1-sol",
+  "reasoningEffort": "max",
+  "independentOfAuthorsAndReviewers": true,
+  "status": "PROVEN_ORDINARY_COMPACT_STREAM_SCHEMA_MISMATCH_EXACT_R8_FIRST_REFUSING_GUARD_NOT_WITNESSED",
+  "executionGO": false,
+  "acceptanceGranted": false,
+  "implementationPerformed": false,
+  "candidateOrFreshExecutionSelected": false,
+  "authority": {
+    "freeze": "docs/ni6-positive-one-worker-r9-capture-diagnosis-freeze-2026-10-08.md",
+    "llmReadAmendment": "docs/ni6-r9-ordinary-llm-source-read-scope-2026-10-08.md",
+    "supplementalParentAuthorization": "Ordinary installed-worker boundAgent/currentness142-174 and installed-invocation trusted-carrier functions, directly supporting capture only.",
+    "browserOwnerPreference": "Codex built-in browser preferred; Chrome extension fallback only; no native app controls.",
+    "parentBrowserCapabilityQualification": "Root reports browsers:[], iab unavailable and extension absent at01:45UTC; not independently re-probed by this lane."
+  },
+  "primaryFinding": {
+    "staticMismatchEstablished": true,
+    "finding": "Original compact text-chunks records have one fewer timing gap than texts. Frozen ordinary product assistantStream validator incorrectly requires nonempty gaps and equal gap/text counts.",
+    "producer": {
+      "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+      "firstRecordLines": "1176-1183",
+      "continuationLines": "1171-1175",
+      "snapshotLines": "1234-1247",
+      "oneTextDeltaShape": {
+        "type": "text-chunks",
+        "dtCount": 0,
+        "textCount": 1
+      },
+      "generalRelation": "dt.length + 1 === texts.length"
+    },
+    "consumer": {
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/normal-contracts.mjs",
+      "line": 38,
+      "incorrectMinimum": "array(r.dt,128,1)",
+      "incorrectRelation": "r.dt.length === r.texts.length",
+      "nonemptyTexts": "array(r.texts,128,1)",
+      "firstPredictedFailureForOneDelta": "The dt array minimum1 fails before the later equal-length check."
+    },
+    "causalChain": [
+      {
+        "source": ".runtime/ni6-positive-one-worker-r8/package/src/testing-provider.mjs",
+        "lines": "119,121,123",
+        "fact": "The approved deterministic worker emits one text delta followed by usage and stop."
+      },
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "lines": "1157-1184,1217-1247",
+        "fact": "Original accumulator emits text-chunks dt[]/texts[one], then usage/finish chunk records; snapshot preserves gap cardinality."
+      },
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+        "lines": "396-400,449-450,461-462,1144-1150",
+        "fact": "Original loop feeds the accumulator, persists its stream snapshot and the unmodified assembler usage in the assistant event."
+      },
+      {
+        "source": ".runtime/ni6-positive-one-worker-r8/package/src/installed-worker.mjs",
+        "lines": "221",
+        "fact": "Normal live capture obtains fresh ordinary observed history and validates it."
+      },
+      {
+        "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+        "lines": "69,76-81,24-39",
+        "fact": "After original flush/open/read, projectStoredRootHistory invokes nativeEvents before committed event validation."
+      },
+      {
+        "source": ".runtime/ni6-positive-one-worker-r8/package/src/normal-contracts.mjs",
+        "lines": "38-39",
+        "fact": "nativeEvents delegates the assistant event stream to the incompatible text-chunks validator."
+      },
+      {
+        "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-adapter.mjs",
+        "lines": "356-357",
+        "fact": "The original catch replaces any live-hook failure with WORKER_RESULT_UNAVAILABLE."
+      }
+    ],
+    "actualQualification": "This guarantees rejection of an otherwise admissible genuine single-delta original compact stream at this source predicate. The consumed R8 public record does not reveal whether an earlier predicate failed first; no private stored stream was read.",
+    "actualFirstRefusingGuard": "NOT_INDEPENDENTLY_WITNESSED",
+    "earlierGuardCouldWin": true,
+    "privateHistoryOrStreamUsed": false
+  },
+  "actualEvidence": {
+    "run": "positive-one-worker-r8",
+    "consumedImmutable": true,
+    "supportedExitCode": 1,
+    "supportedReturnChunk": "7597b6",
+    "executionCommitted": true,
+    "exactInputPlusKnownOutputUtf8UsageAndDigestOracle": "PASSED",
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "phase": "WORKER_CAPTURE",
+    "category": "REJECTION",
+    "refusalCode": "WORKER_RESULT_UNAVAILABLE",
+    "httpRequests": 21,
+    "requests": 1,
+    "streams": 1,
+    "stepStarts": 1,
+    "stepEnds": 1,
+    "turnStarts": 1,
+    "turnEnds": 1,
+    "tools": 0,
+    "headerCases": 3,
+    "projectionCases": 12,
+    "completedPlugins": 11,
+    "workerQuery": "PASSED_UNCHANGED_GUARDS",
+    "resultCaptureReturnedResultFactualStopReservationRelease": "NOT_ESTABLISHED",
+    "rootClosed": false,
+    "ownedChildGroups": "ABSENT_OBSERVED_WITH_COMPLETE_EOF_ONLY",
+    "enclosingMonotonicDuration": "NOT_ESTABLISHED",
+    "earlierAcknowledgementLatencyCauseOrGeneralTimerFix": "NOT_ESTABLISHED"
+  },
+  "otherSourceFindings": {
+    "freshUserSystemOrderingHypothesis": "DISPROVED_BY_ORIGINAL_PUBLIC_SOURCE",
+    "orderingChain": [
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+        "lines": "103-110,180-207",
+        "fact": "Inbox claim commits only agent/inbox/spliced, not user/message."
+      },
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+        "lines": "267-270,1056-1061",
+        "fact": "First system prompt is appended before the claimed user messages."
+      },
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+        "lines": "432-433,75-96",
+        "fact": "Surface append pushes sequence order; system/user/assistant derive their original messages."
+      },
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "lines": "1554-1568",
+        "fact": "Original deriveMessages follows surface nodes."
+      },
+      {
+        "source": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+        "lines": "1262-1272",
+        "fact": "Provider request uses that exact derived history without a separate system-first reorder."
+      }
+    ],
+    "freshExpectedOrder": [
+      "system",
+      "user",
+      "assistant"
+    ],
+    "existingProjectionCoverageQualification": "Root independently reports C04-C15 contain baseline approval/request records only and do not exercise assistantStream (public source read chunk260189). Qualified parent evidence, not this lane's full fixture audit.",
+    "penultimateUserGuard": "SOURCE_CONSISTENT_FOR_THE_FRESH_APPROVED_PRODUCER",
+    "persistedUsageStrippingHypothesis": "NOT_SUPPORTED_BY_ORIGINAL_PRODUCER",
+    "usageSources": [
+      ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js:997-999,1096-1099",
+      ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js:461-462,1148",
+      ".runtime/ni6-positive-one-worker-r8/package/src/testing-provider.mjs:121"
+    ],
+    "usageFact": "BlockAssembler stores chunk.usage unchanged, retaining deterministic inputTokens/outputTokens/totalTokens.",
+    "executeDoesNotEliminateReadResultOrigin": true,
+    "executeQualification": "native-adapter330/332 computes committed independently of conditional committedResult assignment331. Installed workerExecute253 checks stream settlement and permit usage, not presence of committedResult.",
+    "idleQualification": "Original kick887-900 contains turn errors and still settles idle. Acknowledged idle does not prove every persisted completed-turn/persistence guard.",
+    "counterQualification": "Fresh fixture327 checked counters at the guarded execute oracle, unlike R7B's post-cleanup exports; the R8 closed end counters still omit turn-end reason, stored shape and persistence agreement."
+  },
+  "candidateRefusalOrigins": [
+    {
+      "id": "R01",
+      "boundary": "Native committed result and binding",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-adapter.mjs",
+      "lines": "335-338",
+      "condition": "Missing committedResult or execution/claim/generation/action/session mismatch.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R02",
+      "boundary": "Native live handle",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-adapter.mjs",
+      "lines": "352-354",
+      "condition": "Missing hook/handle or stopped entry.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R03",
+      "boundary": "Trusted invocation/source/owned agent",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/installed-worker.mjs",
+      "lines": "60,66,150-156,221",
+      "condition": "Original invocation, source, agent/session/model/preset/tools or prefix currentness rejects before/after the live await.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R04",
+      "boundary": "Permit usage/result binding",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/installed-worker.mjs",
+      "lines": "219-220",
+      "condition": "Absent or unequal accounting, summed/over-budget usage, result digest/content/size or execution binding.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R05",
+      "boundary": "Collector owned binding and idle",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "49-57,104-107",
+      "condition": "Binding/currentness/identity/hash or live status is invalid.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R06",
+      "boundary": "Original durability flush",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "67-70",
+      "condition": "Original SessionStore.flush throws or does not return true; post-flush owned currentness rejects.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R07",
+      "boundary": "Bounded persistence selection",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "72-80",
+      "condition": "Stat, original open/handle header/inherited prefix, bounded contiguous read or currentness rejects.",
+      "earlierThanStreamShape": true
+    },
+    {
+      "id": "R08",
+      "boundary": "Ordinary stored-root schema/projection",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "24-39,81",
+      "condition": "JSON/header/native event validation or original SurfaceManager rejects. The text-chunks gap-count incompatibility is proven here through normal-contracts38.",
+      "earlierThanStreamShape": "OTHER_SCHEMA_PREDICATES_CAN_PRECEDE_THE_PROVEN_TEXT_CHUNKS_PREDICATE"
+    },
+    {
+      "id": "R09",
+      "boundary": "Interrupted turn/inbox/limits",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "83-89",
+      "condition": "Messages/turn closers, restored inbox or canonical byte limit rejects.",
+      "earlierThanStreamShape": false
+    },
+    {
+      "id": "R10",
+      "boundary": "Borrowed original Session and persisted cut",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "90-97",
+      "condition": "Header/seq/events/surface/messages agreement, close/currentness or stable before/after stat rejects.",
+      "earlierThanStreamShape": false
+    },
+    {
+      "id": "R11",
+      "boundary": "Committed observation and exact producer events",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "109,131-138",
+      "condition": "HistoryObservation, unique input/assistant, event ordering, approved source/content or exact output digest rejects.",
+      "earlierThanStreamShape": false
+    },
+    {
+      "id": "R12",
+      "boundary": "Completed turn and persisted usage",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "139-140",
+      "condition": "Missing/noncompleted matching turn end or unequal persisted input/output/total usage.",
+      "earlierThanStreamShape": false
+    },
+    {
+      "id": "R13",
+      "boundary": "Surface cardinality/prefix/message pair",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+      "lines": "141-143",
+      "condition": "Fresh three-message or prior-prefix-plus-two cardinality/prefix, penultimate input or final assistant equality rejects. Fresh original system/user/assistant order is source-consistent.",
+      "earlierThanStreamShape": false
+    },
+    {
+      "id": "R14",
+      "boundary": "Post-hook identity and returned facts",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/native-adapter.mjs",
+      "lines": "358-366",
+      "condition": "Changed candidate/owned identities, scalar/history shape, digest or usage bound rejects.",
+      "earlierThanStreamShape": false
+    },
+    {
+      "id": "R15",
+      "boundary": "Ordinary capture currentness/input selection",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/normal-native-operations.mjs",
+      "lines": "71-74",
+      "condition": "Original capture admission/currentness/snapshot/plan/readResult or exact unique input selection rejects.",
+      "earlierThanStreamShape": "ADMISSION_CAN_PRECEDE_VALIDATION; POST_VALIDATION_CHECKS_FOLLOW"
+    },
+    {
+      "id": "R16",
+      "boundary": "Opaque original capture call and later return",
+      "source": ".runtime/ni6-positive-one-worker-r8/package/src/normal-native-operations.mjs",
+      "lines": "74-75",
+      "condition": "Opaque core.native.captureNormalNativeResult or later ordinary publication/service return rejects. Implementation is not investigated.",
+      "earlierThanStreamShape": false
+    }
+  ],
+  "minimalSpecificCorrection": {
+    "status": "PROPOSED_SOURCE_CORRECTION_ROOT_FREEZE_AND_INDEPENDENT_REVIEWS_REQUIRED",
+    "target": ".runtime/ni6-positive-one-worker-r8/package/src/normal-contracts.mjs:38 assistantStream text-chunks branch",
+    "changes": [
+      "Allow a dt array with minimum0 while retaining maximum128, dense array/prototype/key guards and each original numeric guard.",
+      "Require dt.length + 1 === texts.length, retaining nonempty bounded texts and every original text/index/time/exact-field/record-type guard."
+    ],
+    "reason": "time0 timestamps the first text; dt contains gaps only between subsequent texts. The correction matches the pinned original producer instead of inventing a first gap.",
+    "matchingAuthenticDescriptorPinRefreshRequired": true,
+    "earlierContractAssertionsPreserved": 15,
+    "hostProviderOrPersistenceChange": false,
+    "privateHistoryMutation": false,
+    "extraDispatchModelHttpRetry": false,
+    "allOriginalSourceIdentityCurrentnessContentUsageStopReleaseGuardsPreserved": true,
+    "protectedImplementationChange": false,
+    "numericTimeoutChange": false,
+    "scopeQualification": "Only this proven ordinary stream cardinality defect is selected as a proposed correction. No other failing actual predicate is assumed."
+  },
+  "smallestClosedDiscriminatorIfExactFreshOriginNeeded": {
+    "status": "CONDITIONAL_ONLY_IF_CONCRETE_CORRECTION_STILL_FAILS_NO_OBSERVER_SELECTED",
+    "condition": "Consider only if a separately reviewed fresh genuine run still refuses after the specific scalar/cardinality and authentic descriptor correction.",
+    "observationSourceChangeSelectedForInitialCorrection": false,
+    "field": "captureOrigin",
+    "maximumAsciiValueLength": 3,
+    "grammar": "One closed three-character code C00..C30, rooted in a separately frozen mapping.",
+    "purpose": "Locate the first still-pending existing ordinary guard/call boundary before native live-hook error collapse; include readResult and earlier currentness, not only validateCommitted.",
+    "map": [
+      {
+        "code": "C00",
+        "meaning": "No selected capture observation"
+      },
+      {
+        "code": "C01",
+        "meaning": "Ordinary capture admission/currentness"
+      },
+      {
+        "code": "C02",
+        "meaning": "Native readResult"
+      },
+      {
+        "code": "C03",
+        "meaning": "Native live handle"
+      },
+      {
+        "code": "C04",
+        "meaning": "Live hook invocation/source/owned agent"
+      },
+      {
+        "code": "C05",
+        "meaning": "Permit usage/result binding"
+      },
+      {
+        "code": "C06",
+        "meaning": "Collector currentness/binding/idle"
+      },
+      {
+        "code": "C07",
+        "meaning": "Original session flush and post-flush currentness"
+      },
+      {
+        "code": "C08",
+        "meaning": "Before-read persistence stat/bounds"
+      },
+      {
+        "code": "C09",
+        "meaning": "Original open/root header/prefix"
+      },
+      {
+        "code": "C10",
+        "meaning": "Original bounded read/contiguity"
+      },
+      {
+        "code": "C11",
+        "meaning": "Stored-root header/native-event schema before compact text branch"
+      },
+      {
+        "code": "C12",
+        "meaning": "Compact text-chunks timing guard"
+      },
+      {
+        "code": "C13",
+        "meaning": "Original surface derivation"
+      },
+      {
+        "code": "C14",
+        "meaning": "Interrupted-turn/restored inbox guard"
+      },
+      {
+        "code": "C15",
+        "meaning": "Canonical bound and live Session agreement"
+      },
+      {
+        "code": "C16",
+        "meaning": "Original read handle close/currentness"
+      },
+      {
+        "code": "C17",
+        "meaning": "After-read stable persistence stat"
+      },
+      {
+        "code": "C18",
+        "meaning": "Live history observation shape"
+      },
+      {
+        "code": "C19",
+        "meaning": "Producer unique input/assistant"
+      },
+      {
+        "code": "C20",
+        "meaning": "Producer exact source/content/digest"
+      },
+      {
+        "code": "C21",
+        "meaning": "Producer completed turn/persisted usage"
+      },
+      {
+        "code": "C22",
+        "meaning": "Producer surface cardinality/prefix/pair"
+      },
+      {
+        "code": "C23",
+        "meaning": "Native post-hook identities"
+      },
+      {
+        "code": "C24",
+        "meaning": "Native returned scalar/history shape"
+      },
+      {
+        "code": "C25",
+        "meaning": "Native digest/usage bound"
+      },
+      {
+        "code": "C26",
+        "meaning": "Capture post-validation currentness/input"
+      },
+      {
+        "code": "C27",
+        "meaning": "Opaque capture call entered"
+      },
+      {
+        "code": "C28",
+        "meaning": "Opaque capture returned; ordinary publication/post-return"
+      },
+      {
+        "code": "C29",
+        "meaning": "Original service/carrier postcondition"
+      },
+      {
+        "code": "C30",
+        "meaning": "Guarded capture value returned"
+      }
+    ],
+    "trustedAdmission": "One exact fresh owned capture invocation admitted by original operator/currentness/CAS/identity guards. No wire/config value can supply or replace an origin.",
+    "observation": "Trusted ordinary product progress/failure sink uses constant source-defined markers immediately before existing guards/awaits; never duplicates a predicate or invokes a host method again. Contained observation callbacks cannot affect the original operation.",
+    "snapshot": "Latch the current constant code at the first original selected capture rejection, before existing masked rethrow/cleanup; on success freeze C30 only after unchanged returned-value guards. Later callbacks/disposal cannot overwrite it.",
+    "delivery": "Allowlist only the finite code through the already selected capture HTTP outcome and existing closed fixture/executor metadata; no added request, host wrapper or extra dispatch.",
+    "exceptionPayloadRead": false,
+    "historyContentOrValuesExported": false,
+    "noExistingOriginalPublicCaptureGuardEvent": "The inspected original public interfaces do not provide an event that independently selects this refusing guard; a whenIdle observer cannot distinguish these capture checks.",
+    "opaqueRule": "C27 identifies dependence on opaque core.native.captureNormalNativeResult. Do not enter that implementation. C28 bounds a returned opaque call followed by ordinary publication/return.",
+    "preliminaryIndependentScalarBounds": {
+      "existingCompactMaximum": 812,
+      "existingPrettyMaximum": 945,
+      "additionalCompactBytes": 22,
+      "additionalPrettyBytes": 26,
+      "proposedCompactMaximum": 834,
+      "proposedPrettyMaximum": 971,
+      "unchangedCap": 1024,
+      "unchangedReadMaximum": 1025,
+      "qualification": "Literal ASCII metadata arithmetic only. Root/author must independently remeasure the exact newly frozen grammar; no candidate evaluation was performed."
+    },
+    "newExecutionAuthority": false,
+    "acceptedOrStoppedOrReleasedInferred": false
+  },
+  "functionalOraclesProposedNotRun": [
+    {
+      "id": "O1_ORIGINAL_SINGLE_DELTA",
+      "oracle": "Use the actual pinned public AssistantStreamAccumulator push/snapshot producer with one approved synthetic text delta. Its dt[]/texts[one] original record must pass ordinary stored-root/header/event/history projection without modifying records, with exact original messages and usage."
+    },
+    {
+      "id": "O2_ORIGINAL_MULTIPLE_DELTAS",
+      "oracle": "Original same-index consecutive deltas create N texts and N-1 gaps; separate runs create their own zero-gap first record. Confirm reconstruction and retained text boundaries against original producer output, not hand-authored surrogate records."
+    },
+    {
+      "id": "O3_MALFORMED_REJECTION",
+      "oracle": "Retain rejection of empty texts, wrong gap cardinalities including invented leading gap, non-dense/accessor/extra-field arrays and records, invalid existing numeric/text/index/time/type bounds, and all unrelated ordinary header/event/history cases."
+    },
+    {
+      "id": "O4_FRESH_ORIGIN_IF_SELECTED",
+      "oracle": "One finite source-defined capture origin is admitted under exact original identity/currentness, cannot be supplied by payload/config, reflects the first failed existing guard before masking, is immutable under cleanup and adds zero HTTP/model/dispatch/retry calls. Preserve exact byte cap and validators."
+    },
+    {
+      "id": "O5_GENUINE_CAPTURE_RESULT",
+      "oracle": "On one separately reviewed fresh fixture, require original committed exact usage/digest acknowledgement, successful guarded capture, exact result content and refs/cursors/input/output digests through existing workerResult, unchanged CAS/context/consent/catalog/policy, one request/stream/step/turn and tools0."
+    },
+    {
+      "id": "O6_FACTUAL_STOP_RELEASE",
+      "oracle": "Preserve original finish and independent factual exact agent/session absence plus supported reservationHeld=false. Counters, idle, closed process groups or stream acceptance cannot replace stop/release evidence."
+    },
+    {
+      "id": "O7_OWNED_LIFECYCLE_ROOT",
+      "oracle": "Preserve six once-owned Loader removals, preset disposer, post-removal404, 25-request complete path, complete EOF/owned groups and strict rootClosed separately; source correction/reviews are not acceptance."
+    }
+  ],
+  "opaqueBoundaries": {
+    "ordinaryCapture": ".runtime/ni6-positive-one-worker-r8/package/src/normal-native-operations.mjs:74 core.native.captureNormalNativeResult",
+    "captureImplementationInspected": false,
+    "finishImplementationInspected": false,
+    "protectedFinalCodeReceiptSignatureEnvelopeRevision999": "BLOCKED_UNCHANGED",
+    "noInvestigationRerouting": true
+  },
+  "sourceScope": {
+    "publicOnly": true,
+    "correctFrozenProductRoot": ".runtime/ni6-positive-one-worker-r8/package/src/",
+    "wrongCanonicalImplementationRead": false,
+    "wholeHostOrPinGraphReaudited": false,
+    "qualifiedRootPlanRead": "Five closed public evidence records were consulted. Four small records and root proof were fully read. Root-plan budgets/grammar/selection/terminal metadata were read; its large pin/source-copy arrays were not fully read or re-audited.",
+    "incidentalExcludedPublicSnippetDisclosure": "A preliminary line-selector search and neighboring selected mixed ordinary source ranges displayed audit/stopped-witness branch snippets. They were not followed, analyzed or used as diagnosis evidence. No protected final CODE implementation module or actual private data was opened.",
+    "sourceRows": [
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/fixture.mjs",
+        "ranges": [
+          "322-346"
+        ],
+        "purpose": "Unchanged execution/query/capture/result/stop/release oracles.",
+        "bytes": 39553,
+        "sha256": "1798ad35f380f469f2818f9bd04ee4f02f4a340ba03cf82d15612634552dc869",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/run-once.py",
+        "ranges": [
+          "447-480"
+        ],
+        "purpose": "Closed public metadata validator only; no private stream read.",
+        "bytes": 33147,
+        "sha256": "304710cf2b64706b17f672729ba5e0cbb9e9e93dde90b4008e1f2caf5f565d55",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/native-adapter.mjs",
+        "ranges": [
+          "74-91",
+          "256-333 ordinary path",
+          "335-367 ordinary path"
+        ],
+        "purpose": "Owned candidate/commitment, normal execute, readResult, masked live-hook validation.",
+        "bytes": 40778,
+        "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/installed-worker.mjs",
+        "ranges": [
+          "59-66",
+          "87-89",
+          "142-174",
+          "185-201 ordinary producer",
+          "218-223 ordinary live branch",
+          "253-256"
+        ],
+        "purpose": "Ordinary currentness/identity/request/usage binding and capture/result surface. Excluded audit and stopped-witness branches not followed.",
+        "bytes": 47301,
+        "sha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/native-history-collector.mjs",
+        "ranges": [
+          "24-57",
+          "62-110 live path",
+          "131-145 producer path"
+        ],
+        "purpose": "Bounded stored-root projection, live persistence/Session agreement and committed producer guards.",
+        "bytes": 12958,
+        "sha256": "5473de8f79f8b4aec13ba56f212ef8ee7a32e68e7dee9ce8ce61ed8be1704149",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/normal-native-operations.mjs",
+        "ranges": [
+          "61-75 ordinary execute/capture path"
+        ],
+        "purpose": "Ordinary capture routing up to opaque capture call at74; no implementation of core native capture/finish.",
+        "bytes": 20325,
+        "sha256": "278294f6f3a2006298b8fc89180b3deb0e062dd4da5f90efebf25c82afac81fe",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/normal-contracts.mjs",
+        "ranges": [
+          "34-40"
+        ],
+        "purpose": "Header/message/surface/native-event/historyObservation scalar shapes only.",
+        "bytes": 32057,
+        "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/testing-provider.mjs",
+        "ranges": [
+          "75-125 worker path",
+          "145-166 worker path"
+        ],
+        "purpose": "Deterministic producer request/content/usage and one-use permit contract.",
+        "bytes": 15937,
+        "sha256": "1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/package/src/installed-invocation.mjs",
+        "ranges": [
+          "1-59"
+        ],
+        "purpose": "Parent supplemental ordinary trusted carrier authorization; no bypass.",
+        "bytes": 2341,
+        "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+        "ranges": [
+          "94-110",
+          "180-207",
+          "230-281",
+          "353-454",
+          "887-900",
+          "901-1067",
+          "1127-1168",
+          "1259-1276",
+          "1-14",
+          "449-470"
+        ],
+        "purpose": "Original claim/system/user/assistant order, derived request history and completion qualification.",
+        "bytes": 72994,
+        "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+        "ranges": [
+          "1-104",
+          "425-531"
+        ],
+        "purpose": "Manifest-selected public SurfaceManager derivation and append order.",
+        "bytes": 26100,
+        "sha256": "ebe8920a22fca8d987cbacab94c9db92f71df44863f58370a1be559155be734e",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+        "ranges": [
+          "1068-1119",
+          "1540-1570",
+          "1590-1610",
+          "1820-1859"
+        ],
+        "purpose": "Original event snapshots, Session.deriveMessages and SessionStore.flush.",
+        "bytes": 89972,
+        "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js",
+        "ranges": [
+          "277-327"
+        ],
+        "purpose": "Original restore/inbox registry interface.",
+        "bytes": 20021,
+        "sha256": "022f1d13e25aeb3c18e10407d84c69e018c1c05a65c9ee36ed14d89b185a4fa8",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js",
+        "ranges": [
+          "236-281"
+        ],
+        "purpose": "Original section and runtime-context suppression contract.",
+        "bytes": 17395,
+        "sha256": "ff422afac6ba85f89afa985d921aed0b603feb354a05a549c48eae04cf0d2f57",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+        "ranges": [
+          "48-80",
+          "402-420",
+          "2454-2475",
+          "2536-2561"
+        ],
+        "purpose": "Original read/flush/open/stat public contracts only; no actual persisted data.",
+        "bytes": 142847,
+        "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b",
+        "matchesManifest": true
+      },
+      {
+        "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+        "bytes": 103333,
+        "sha256": "a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e",
+        "matchesManifest": true,
+        "ranges": [
+          "954-1005",
+          "1007-1123 supporting BlockAssembler producer",
+          "1132-1184",
+          "1217-1250"
+        ],
+        "purpose": "Explicit R9 LLM scope amendment; usage and compact text-stream producer directly supporting capture."
+      }
+    ],
+    "authorityAndEvidenceSeals": [
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/browser-entry-preference-2026-10-08.md",
+        "bytes": 1166,
+        "sha256": "78b616baa630a1bae0c1e6f12b56edfdafced5a35fe7ac90bda14bdd0d128687",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/ni6-positive-one-worker-r9-capture-diagnosis-freeze-2026-10-08.md",
+        "bytes": 5677,
+        "sha256": "5a1bfc3b23096f0c2156d1c95da4c163b4c2aeab229a4ffe16a75e19c937fdb6",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-source.md",
+        "bytes": 6170,
+        "sha256": "b8bc4c5ad7d85d5b6044cc1b50bee5086fa67775eaa14e053054d1410913b3c0",
+        "read": "FULL"
+      },
+      {
+        "path": ".runtime/ni6-positive-one-worker-r8/source-manifest.json",
+        "bytes": 268738,
+        "sha256": "385a9a2010e4b7a49c844e71dd1ee35f4534f48a3538439be03d9a8688932472",
+        "read": "SELECTED_PUBLIC_PIN_ROWS_ONLY"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-actual-return.json",
+        "bytes": 16510,
+        "sha256": "676e95f50e8b0223fb68e1edd6f8821cd5586728974aca73ade6a5f955a2bb2f",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-execution/fixture-result.json",
+        "bytes": 891,
+        "sha256": "51fac626be5b4d24a149e50c77b8e7c52645957f205326b8916f5eebb1483dd4",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-execution/executor-result.json",
+        "bytes": 4590,
+        "sha256": "56e6cde8154d8c730239d7be568257684c9d937573fc86db13e5c1f13c052a01",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-execution/command-results.json",
+        "bytes": 2996,
+        "sha256": "449aada0af9f0df065a07dff6201ee7d03895371a38b1e47c19b0fb09ea1f020",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-execution/before-after.json",
+        "bytes": 284,
+        "sha256": "42ff2de90d5ae9ab8e300e663a378cdce47512463ae6c37fd275fa0145a3a213",
+        "read": "FULL"
+      },
+      {
+        "path": "docs/evidence/NI6/positive-one-worker-r8-execution/root-plan.json",
+        "bytes": 175646,
+        "sha256": "6e89d064796fcde8ff7a522f28887a31d767a63b93b7ccb50952c0f78084c98b",
+        "read": "SELECTED_CLOSED_METADATA_ONLY_NO_FULL_PIN_GRAPH_AUDIT"
+      },
+      {
+        "path": "docs/ni6-r9-ordinary-llm-source-read-scope-2026-10-08.md",
+        "bytes": 1231,
+        "sha256": "d01c091c0f8a33fc745c14e51c4d182ee2ea3b867b086ed66aad8b571af618ca",
+        "read": "FULL"
+      }
+    ]
+  },
+  "actions": {
+    "writtenPaths": [
+      "docs/evidence/NI6/ordinary-capture-r8-public-diagnosis.md",
+      "docs/evidence/NI6/ordinary-capture-r8-public-diagnosis.json"
+    ],
+    "freshOutputsOnly": true,
+    "sourceMutation": false,
+    "candidateParseImportCheckBuildTestRun": false,
+    "runtimeListenerBrowserNetworkModelCredential": false,
+    "git": false,
+    "delegation": false,
+    "privateActualProfileKeyDatabaseHistoryCaptureResponseErrorContentReadCopiedDecodedHashed": false,
+    "consumedR8ResetReplayAdoption": false
+  },
+  "retainedGates": {
+    "all87": "HOLD",
+    "accepted": 0,
+    "root": "HOLD",
+    "CODE": "BLOCKED_UNCHANGED",
+    "R8": "CONSUMED_IMMUTABLE_FAILED_HOLD",
+    "UI": "PAUSED_NO_CORRECTED_AUTHENTICATED_FIXTURE_NO_SUPPORTED_BROWSER_CAPABILITY_ROOT_REPORTED",
+    "cloud": "TWICE_DENIED_NO_THIRD_ATTEMPT",
+    "publication": "LOCAL_ONLY_GATED",
+    "acceptanceReviewDeliveryReleaseTaskCompletionClaimed": false
+  },
+  "reportsFullyReadBackBeforeExternalSealsRequired": true,
+  "reportSelfSeals": "EXTERNAL_EXACT_BYTES_SHA256_AFTER_FULL_READBACK_NO_RECURSIVE_SELF_PIN"
+}
+

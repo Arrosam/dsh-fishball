@@ -1,0 +1,385 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GitMutations": 0,
+  "accepted": 0,
+  "actualBuildReturn": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+  "additionalInputCount": 20,
+  "additionalInputRecords": [
+    {
+      "bytes": 103870,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-manifest.json",
+      "sha256": "2b7b3afb67296e8a7709d272cf32c7048aca08a95f29ba4030f16bf8dc8bfdb1"
+    },
+    {
+      "bytes": 18973,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+      "sha256": "1f8123a742aeff56abb14e674f7493ed7d3090d775d002a0f1433a0d43b3e8dc"
+    },
+    {
+      "bytes": 31440,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+      "sha256": "66111ac925361ae4a13c19e02f2293a3e289ab16b8618a9776aaf6a6c820fd40"
+    },
+    {
+      "bytes": 141346,
+      "path": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+      "sha256": "ccdfd09e495aad6d9e13fd27976d32ba17e9ed78864eef9e6235cdbcaf101b72"
+    },
+    {
+      "bytes": 3445,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
+      "sha256": "91923fccf538d82ac5a740160f66377bc02b7beaba7df3b476a199c612b86633"
+    },
+    {
+      "bytes": 8537,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
+      "sha256": "c1c1a42ec2014c2d505fb507272569e7bbe0380aa0e0f623e7390e6c7b828b02"
+    },
+    {
+      "bytes": 4132,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+      "sha256": "dc0aef6c28949a32a7f1057eda69c4bd2f74cac75482ff237a2103458d188be5"
+    },
+    {
+      "bytes": 14374,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json",
+      "sha256": "549f2ddea7c2ccaacdea29a25dfd69ab6cbc4a2ab44ce2c0a7dd66dec5bca33e"
+    },
+    {
+      "bytes": 4316,
+      "path": "docs/evidence/NI6/bootstrap-diagnostic-r5-actual-return.json",
+      "sha256": "b181f5d9a5845a1f45626a28a7115c4674e440bd459629a2d5648e5f352d50e1"
+    },
+    {
+      "bytes": 8057,
+      "path": "docs/ni6-positive-one-worker-r1-freeze-2026-10-07.md",
+      "sha256": "9771c74235b594a9480882447f5602ee780500de4466ef710c1f874ea99aa134"
+    },
+    {
+      "bytes": 1995,
+      "path": "docs/evidence/NI6/positive-one-worker-fixture-proposal.md",
+      "sha256": "2f3c241603d800be3250c2413c6452c0acc4d8dd489b76ea566ce102d728c11f"
+    },
+    {
+      "bytes": 72994,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "bytes": 8901,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/index.d.ts",
+      "sha256": "906f202b859b11f7b0a399d8c4921c47384dd6177c990d59b8a93026a9875e8e"
+    },
+    {
+      "bytes": 31345,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/index.js",
+      "sha256": "7e23c01514303b2dfa1b69a95929cb19e43ba761d3478a3104d0f565ca537be7"
+    },
+    {
+      "bytes": 6378,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/index.d.ts",
+      "sha256": "47e6ec0952cfd9bffb30d1a0092c8303aa03800836cdd6d242fccc3e0770e6a9"
+    },
+    {
+      "bytes": 841,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/definition.d.ts",
+      "sha256": "aa1c78997fc78ef5028bfb43eccde245f44c67d9bc83031688ab4d3c582a103e"
+    },
+    {
+      "bytes": 652,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/preset.d.ts",
+      "sha256": "6f2ca6d3843ec86b4cab2bed970eeb72c0ae1a9419dd5d82cb91cf0b4b49e757"
+    },
+    {
+      "bytes": 142847,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    },
+    {
+      "bytes": 14575,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts",
+      "sha256": "806dfa610c3ed3ce80ffac89900993288d7013d4278ab21e2b55b193c542f79a"
+    },
+    {
+      "bytes": 20625,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts",
+      "sha256": "7c03f0f92be4a48cc7960ac02fc040b2088b462ae790eab1427e50bfe5e74b31"
+    }
+  ],
+  "all87": "HOLD",
+  "ancestorSourceManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "approvedGoal": "Synthetic NI6 positive01: return one bounded deterministic local result.",
+  "author": "/root/bootstrap_budget_fix_author",
+  "authorCorrectionsBeforeSeal": [
+    "Public AgentRegistry.list returns Agent[]; select its sole actual Agent and verify get(id) identity.",
+    "positivePath becomes true only after post-removal404.",
+    "Fixed source-declared stable HTTP refusal metadata added by root direction.",
+    "Independent ISTQB public-source finding: Loader provider entry uses genuine symbolic 'dsh-fishball/testing-provider' and config {}, with original r3 package self-resolution. No provider admission change."
+  ],
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidateParseCompileImportBuildTestRuntime": false,
+  "categories": [
+    "NONE",
+    "REJECTION",
+    "INVARIANT",
+    "DEADLINE"
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-source/v1",
+  "date": "2026-10-07",
+  "executorAuthority": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+  "faultOrProtectedCODEInvestigation": false,
+  "futureActualPinUnionCountIncludingSelfAndReviews": 450,
+  "inherited418RowsPreservedExactly": true,
+  "inheritedInputCount": 418,
+  "inputBytes": 17061114,
+  "inputFileCount": 438,
+  "metadataSelfHashes": "Neither author report recursively pins itself or manifest; root seals all eight final files externally.",
+  "originalProduct": ".runtime/ni6-public-preparation-r3/package",
+  "ownedCoreRecords": [
+    {
+      "bytes": 3330,
+      "path": ".runtime/ni6-positive-one-worker-r1/README.md",
+      "sha256": "3f2a9eedd6b912b3f7ad35867ac38856eaada081cdacc46cd83e56aa36513c5f"
+    },
+    {
+      "bytes": 7419,
+      "path": ".runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json",
+      "sha256": "f7742732f01db23e19ad5a959554b863947b4b47b7ae62dcbc2bb3bec49438da"
+    },
+    {
+      "bytes": 31759,
+      "path": ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
+      "sha256": "02bcbe5e2d11d58edb2534ccdf22014e3b426d123cfe64c78e25d7e9f4719111"
+    },
+    {
+      "bytes": 31987,
+      "path": ".runtime/ni6-positive-one-worker-r1/run-once.py",
+      "sha256": "1e9e7a932b58916d936a67f5e622c7bc5cf1f5f293f8e4583647c4b998d8dfe0"
+    },
+    {
+      "bytes": 62472,
+      "path": ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
+      "sha256": "498ede42b93f610ff705064fac04b1fe6553da045ef4ffaa318e8efb176dde13"
+    }
+  ],
+  "parentDeclaredHead": "3d0801b429bf13af98cc5277fa2b5f7ca3b001bd",
+  "phases": [
+    "PREFLIGHT",
+    "IMPORTS",
+    "NAMESPACE",
+    "CONTEXT",
+    "PLUGIN_LOADER",
+    "PLUGIN_PROJECTIONS",
+    "PLUGIN_SESSIONS",
+    "PLUGIN_APPROVAL",
+    "PLUGIN_AGENTS",
+    "PLUGIN_LLM",
+    "PLUGIN_SYSTEM_PROMPT",
+    "PLUGIN_TOOLS",
+    "PLUGIN_CREDENTIALS",
+    "PLUGIN_WEB_SERVER",
+    "PLUGIN_CONNECTION",
+    "LISTENER_FENCE",
+    "INDEX_ROUTE",
+    "PUBLIC_SERVICES",
+    "PRESET",
+    "ENTRY_START",
+    "AUTH",
+    "SETUP_STATUS",
+    "SETUP_PREPARE",
+    "SETUP_CONFIRM",
+    "SETUP_READY",
+    "LIST",
+    "INTAKE",
+    "STATUS",
+    "CONTEXT_PREPARE",
+    "CONTEXT_DETAIL",
+    "CATALOG",
+    "POLICY_PREVIEW",
+    "POLICY_CONFIRM",
+    "WORKER_PLAN",
+    "WORKER_PREVIEW",
+    "WORKER_GRANT",
+    "WORKER_CREATE",
+    "WORKER_IDLE",
+    "WORKER_EXECUTE",
+    "WORKER_QUERY",
+    "WORKER_CAPTURE",
+    "WORKER_RESULT",
+    "WORKER_FINISH",
+    "FINAL_STATUS",
+    "PRESET_RELEASE",
+    "ENTRY_REMOVE",
+    "POST_DISPOSAL",
+    "ROOT_CLEANUP",
+    "COMPLETE"
+  ],
+  "preflightAuthority": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+  "privateContentInspection": false,
+  "prospectiveEffects": {
+    "actionGrantsMaximum": 1,
+    "actualStepsMaximum": 1,
+    "actualTurnsMaximum": 1,
+    "authGetMaximum": 1,
+    "connectionLoaderEntry": 1,
+    "contextPreparationsMaximum": 1,
+    "directInterpreterStartsMaximum": 3,
+    "directRootHostPluginInvocations": 10,
+    "domainPostsMaximum": 23,
+    "durableStorage": "Explicit original setup SQLite/vault plus one original plaintext JSONL session; private contents never inspected by fixture/driver",
+    "ephemeralLoopbackListenersMaximum": 1,
+    "externalModelCallsMaximum": 0,
+    "freshDirectRuntimeDirectories": 5,
+    "httpRequestBytesMaximum": 2048,
+    "httpRequestsMaximum": 25,
+    "httpResponseBytesMaximum": 65536,
+    "memoryWritesMaximum": 0,
+    "nativeAgentsMaximum": 1,
+    "nativeEventObservationMaximum": 128,
+    "nativeProviderRequestsMaximum": 1,
+    "nativeSessionsMaximum": 1,
+    "nativeStreamsMaximum": 1,
+    "nativeToolsMaximum": 0,
+    "ordinaryCredentialFile": "Original private LocalCredentialProvider only",
+    "ownedLoaderEntriesMaximum": 6,
+    "policyConfirmsMaximum": 1,
+    "postDisposalPostsMaximum": 1,
+    "presetRegistrationDisposalMaximum": 1,
+    "presetRegistrationMaximum": 1,
+    "profileName": "ni6-positive01",
+    "publicLoaderAwaitMaximum": 12,
+    "publicLoaderCreateMaximum": 6,
+    "publicLoaderRemoveAttemptsMaximum": 6,
+    "rawEntryFiberAwaitMaximum": 12,
+    "resultQualification": "Synthetic local not-reviewed/not-requested; no task completion or acceptance",
+    "rootPublicDisposeMaximum": 1,
+    "sequentialNodeCommands": 2,
+    "taskIntakesMaximum": 1,
+    "temporaryHttpSocketsMaximum": 25,
+    "testWorkers": 0,
+    "unknownOutcome": "FAILED_HOLD; no retry/replay/reset/adoption",
+    "workerCapturesMaximum": 1,
+    "workerCreatesMaximum": 1,
+    "workerExecutesMaximum": 1,
+    "workerFinishesMaximum": 1,
+    "workerResultReadsMaximum": 1
+  },
+  "publicResultByteCap": 1024,
+  "publicResultFields": [
+    "contractVersion",
+    "result",
+    "phase",
+    "category",
+    "refusalCode",
+    "positivePath",
+    "taskCreated",
+    "workerCreated",
+    "executionCommitted",
+    "resultReturned",
+    "workerStopped",
+    "reservationReleased",
+    "entryRemoved",
+    "ownedEntriesRemoved",
+    "rootClosed",
+    "completedPlugins",
+    "httpRequests",
+    "requests",
+    "streams",
+    "tools",
+    "stepStarts",
+    "stepEnds",
+    "turnStarts",
+    "turnEnds",
+    "all87",
+    "CODE"
+  ],
+  "refusalCodes": [
+    "NONE",
+    "STALE_VERSION",
+    "WORKER_POLICY_REQUIRED",
+    "WORKER_POLICY_STALE",
+    "WORKER_PREVIEW_STALE",
+    "WORKER_CONFIRMATION_REQUIRED",
+    "WORKER_CONTEXT_INVALID",
+    "WORKER_MAPPING_MISMATCH",
+    "WORKER_RESULT_UNAVAILABLE",
+    "WORKER_FINISH_UNAVAILABLE",
+    "WORKER_SOURCE_UNAVAILABLE",
+    "WORKER_PERSISTENCE_UNSUPPORTED",
+    "WORKER_PRESET_UNAVAILABLE",
+    "WORKER_REQUEST_DENIED",
+    "WORKER_SESSION_UNAVAILABLE",
+    "WORKER_CATALOG_UNAVAILABLE",
+    "WORKER_NOT_CONFIGURED",
+    "COST_UNKNOWN",
+    "CONFIG_INVALID",
+    "INPUT_INVALID",
+    "OUTPUT_TOO_LARGE",
+    "SERVICE_DISPOSED",
+    "CONTEXT_LIMIT",
+    "STORAGE_INVALID",
+    "OTHER_REFUSAL"
+  ],
+  "remaining": [
+    "Independent source and ISTQB exact-byte final pairs",
+    "Root exact byte readback and closed actual pins",
+    "Supported once-only root run; observe actual driver return separately"
+  ],
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json"
+  ],
+  "rootGO": false,
+  "sealed": true,
+  "sourceCopies": [
+    ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r1/run-once.py",
+    ".runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
+    ".runtime/ni6-positive-one-worker-r1/README.md",
+    ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r1-source.md",
+    "docs/evidence/NI6/positive-one-worker-r1-source.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json",
+    "docs/ni6-positive-one-worker-r1-freeze-2026-10-07.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-actual-return.json",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json",
+    ".runtime/ni6-public-preparation-r3/source-manifest.json",
+    ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+    ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+    ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+    ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+    ".runtime/ni6-public-preparation-r3/build-readback.json",
+    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json"
+  ],
+  "sourceDelta": ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
+  "sourceManifest": ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "wholeGraphReaudited": false
+}
