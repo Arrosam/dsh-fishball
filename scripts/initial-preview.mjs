@@ -135,6 +135,7 @@ function prepare({ hostRoot, stateRoot }) {
     // Preserve the original Connection plugin; both dependencies belong to it.
     { id: 'connection', inject: ['webRuntime', 'webServer'], config: { trustedHosts: [], cookieMaxAgeDays: 1, recovery: {} } },
     { id: 'credentials', config: { dshHome: paths.home, path: join(paths.home, '.credentials.yaml'), watch: true } },
+    { id: 'session-persistence-jsonl', config: { root: installed.worker.persistence.directory, compression: installed.worker.persistence.compression } },
     { id: 'agent-loop', config: { agents: [] } },
     { id: 'approval', config: { policy: 'never' } },
     { id: 'agent-default-model', config: { provider: selection.provider, model: selection.model } },

@@ -30,6 +30,12 @@ Separate ISTQB design assessment: `/root/ordinary_product_test_selection` (Sol6.
 
 The exact source commit is recorded in the artifact's BUILD-METADATA.json and delivery receipt. Minimum smoke results and the archive identity are appended after the actual check. No inference or browser PASS is implied by source review.
 
+### First packaged attempt and correction
+
+The first archive, source `21120e9bb1f42230953791e46134f282aada2375`, contains100 public files and has SHA256 `2c588da8a52fac610a136dcf3dc9cb5b9e641bf53c535dd50289e2f39a21606c`. It was verified and extracted without changing its members. The actual original CLI became ready at the owned3091 endpoint; authentication exchange and native HTML HTTP200 succeeded. Explicit encrypted storage setup, one new synthetic task and context preparation succeeded. `workerCatalog` then refused `WORKER_PERSISTENCE_UNSUPPORTED`: there were zero worker-create, worker-execute and real-model requests. This attempt is failed, not a worker-path pass.
+
+The selected DF persistence directory/compression had not been applied to the original host's `session-persistence-jsonl` profile row. The sole author added that supported row with `root: installed.worker.persistence.directory` and `compression: installed.worker.persistence.compression`, matching the owned profile/df-data/df-sessions-initial-preview path and `none` encoding. Node22.22.2 syntax validation passed. Original CLI shutdown through the owned launcher's SIGINT completed with exit130 and retained its profile/task. That failed package and state are preserved; the corrected package uses a separate owned extraction/profile, and no previously submitted worker is replayed.
+
 ## Resume without repeating the failed workflow
 
 Start with README, INITIAL-PREVIEW.md, this file, AGENTS and `git status`. Preserve both reserved tracked drafts: `docs/evidence/UI/manual-web-qa-running-handoff-2026-10-07.md` and `docs/evidence/normal-entry-remaining-work.md`. Root owns Git/runtime; stage only exact selected paths. Keep granular branch history and use squash merges for reviewed development integrations; no destructive rewrite or public push.
