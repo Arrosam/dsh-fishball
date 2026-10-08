@@ -1,0 +1,720 @@
+{
+  "schema": "df.ni6-r11-independent-lifecycle-rootcause/v1",
+  "date": "2026-10-08",
+  "role": {
+    "lane": "ONE independent ordinary lifecycle/root-cause reviewer",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "language": "English",
+    "parentOwns": [
+      "actual finish-handler trace",
+      "future implementation selection",
+      "runtime",
+      "Git"
+    ],
+    "reportedContinuationHead": "87c333e3",
+    "headQueried": false
+  },
+  "authority": {
+    "currentAgents": "A1",
+    "acceptedHistoricalTicket": "R1",
+    "currentOwnerAmendments": [
+      "R2",
+      "R3"
+    ],
+    "normalEntryPlan": "R4",
+    "newParentSteering": "Trace original supported lifecycle end-to-end and assess strict standalone terminal-root requirement independently; fresh report pair only",
+    "narrowExtension": {
+      "parentConfirmed": true,
+      "publicFiles": [
+        "S5",
+        "S6"
+      ],
+      "purpose": "Close original createScope/rawDispose/quiescent-completion boundary",
+      "privateControlAuthority": false
+    }
+  },
+  "conclusions": [
+    {
+      "id": "ROOT_ORACLE_REQUIREMENT_MISMATCH",
+      "status": "ESTABLISHED_SOURCE_AND_REQUIREMENTS",
+      "finding": "Standalone Context root UID-null/state-4 is a diagnostic assumption, not an accepted product requirement or a supported original terminal-root call",
+      "requirements": [
+        "R1:19-20",
+        "R1:68-84",
+        "R1:141-158",
+        "R1:350-351",
+        "R1:474-475",
+        "A1:7-9",
+        "R2:27,31,33,39"
+      ],
+      "origin": [
+        "D1:1-23",
+        "D3:18,22",
+        "D2:5-9",
+        "D4:3,25"
+      ],
+      "host": [
+        "S1:1075-1113",
+        "S1:1288-1292",
+        "S1:1410-1414",
+        "S3:15-100"
+      ],
+      "notBasedSolelyOnActualFailure": true,
+      "pastCapsulesRemainImmutable": true
+    },
+    {
+      "id": "OWNED_DISPOSAL_COMPLETION_SUPPORTED",
+      "status": "ESTABLISHED_PUBLIC_SOURCE",
+      "finding": "Exact original AgentHandle disposal joins driver idle, memoized scope quiescence, persistence close and exact registry removal; factory structurally joins its live handles",
+      "sources": [
+        "S10:130-167",
+        "S7:1677-1721",
+        "S7:1419-1446",
+        "S5:281-305",
+        "S6:59-83"
+      ]
+    },
+    {
+      "id": "PUBLIC_SELF_AWAIT",
+      "status": "NOT_ESTABLISHED",
+      "finding": "Selected original chain does not establish an unconditional wait cycle; original reentrant owner callback and initiator drain have explicit exclusion mechanisms",
+      "sources": [
+        "S7:1713-1721",
+        "S9:624-667",
+        "S9:682-696",
+        "S1:964-967,1175-1196,1221-1247"
+      ],
+      "claimThatNoUpstreamCycleCanExist": false
+    },
+    {
+      "id": "ACTUAL_FINISH_ORIGIN",
+      "status": "NOT_ESTABLISHED",
+      "finding": "R10 finishTrace104 means the existing client timer fired before observed headers; it does not establish server receipt or pending server await",
+      "actualBasis": [
+        "E0",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ]
+    },
+    {
+      "id": "FINITE_OR_CLEANUP_SUCCESS_GUARANTEE",
+      "status": "NOT_ESTABLISHED",
+      "finding": "Original awaited disposal promises have no proven finite wall-clock bound and Cordis unload contains cleanup rejections; stable state alone does not prove every underlying resource cleanup succeeded",
+      "sources": [
+        "S1:1372-1414",
+        "S7:1683-1708",
+        "S11:1819-1854"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "criterion": "DF001 native lifecycle / historical BUB001",
+      "required": [
+        "original normal native installation",
+        "unregister listeners/entry/resources on unload",
+        "no duplicate handler/scheduling/orphan workers after reload",
+        "full DSH exit stops local reception/scheduling",
+        "restart reconciles durable facts",
+        "no independent daemon"
+      ],
+      "basis": [
+        "R1:19-20",
+        "R1:68-84",
+        "R1:474-475",
+        "A1:7-9"
+      ],
+      "standaloneRootUidNullState4Required": false
+    },
+    {
+      "criterion": "DF004 owned worker / historical BUB004",
+      "required": [
+        "ready before explicit execute",
+        "actual host responses and state",
+        "genuine original cancellation/ending capability",
+        "uncertainty preserved",
+        "no invented unpublished host control"
+      ],
+      "basis": [
+        "R1:141-158",
+        "S10:130-167"
+      ]
+    },
+    {
+      "criterion": "DF012 limits / historical BUB012",
+      "required": [
+        "unconfirmed worker retains slot",
+        "no release and repeat after timeout",
+        "all attempts and review work charged",
+        "actual usage distinct from estimate/unknown"
+      ],
+      "basis": [
+        "R1:350-357",
+        "A1:27-32"
+      ]
+    },
+    {
+      "criterion": "Normal-entry finish safety contract",
+      "required": [
+        "exact source-bound committed result and retained local artifact",
+        "actual synthetic usage and current authoritative CAS",
+        "exact original held native handle",
+        "seal provider/message admission",
+        "original factual stop/unregistration and persistence drain",
+        "settlement/release only after authoritative obligations proved"
+      ],
+      "basis": [
+        "R5:183-191",
+        "R4:5,10,50"
+      ],
+      "documentStatus": "AUTHOR CONTRACT DRAFT / required integration plan, not actual acceptance"
+    }
+  ],
+  "lifecycle": [
+    {
+      "edge": "standalone root dispose -> restart -> unload/refresh -> public await",
+      "sources": [
+        "S1:1102-1113",
+        "S1:1317-1343",
+        "S1:1372-1414"
+      ],
+      "terminalUidNullState4Follows": false
+    },
+    {
+      "edge": "plugin child dispose -> UID null -> inactive/unload -> join current inertia",
+      "sources": [
+        "S1:1075-1089",
+        "S1:1288-1292"
+      ],
+      "supportedOriginalCompletion": true,
+      "resourceSuccessProvedByStateAlone": false
+    },
+    {
+      "edge": "composite exact disposers -> reverse sequential teardown -> retained in-flight promise",
+      "sources": [
+        "S1:964-967",
+        "S1:1175-1196",
+        "S1:1221-1247"
+      ],
+      "wrapperOrIdentityReplacementAllowed": false
+    },
+    {
+      "edge": "await effect function -> setup completion -> disposer function",
+      "sources": [
+        "S1:1270-1276"
+      ],
+      "awaitAutomaticallyInvokesTeardown": false
+    },
+    {
+      "edge": "owned agent disposal -> publication -> cancel disposed -> stable whenIdle -> scope.dispose -> handle.close -> exact registry detaches -> unfollow owner",
+      "sources": [
+        "S7:1677-1708"
+      ],
+      "memoized": true,
+      "failurePropagation": "retained and rethrown; multiple failures aggregated",
+      "declarationNarrativeOrderDifference": "S10:135-136 narrates unregister/remove before scope unwind; selected implementation joins scope before persistence and detach; same final obligations, not an actual hang diagnosis"
+    },
+    {
+      "edge": "scope.dispose -> memoized quiesceFiber -> exact raw fiber.dispose -> existing inertia until quiescent",
+      "sources": [
+        "S5:281-305",
+        "S6:59-83"
+      ],
+      "rawDisposeExactIdentity": true
+    },
+    {
+      "edge": "owner composite -> lifecycle callback -> same agent disposal -> exact scope raw disposer",
+      "sources": [
+        "S7:1713-1721"
+      ],
+      "reentrantCallbackWhenDisposalPending": "returns without awaiting that same pending disposal",
+      "actualReachedThisBoundary": "NOT_ESTABLISHED"
+    },
+    {
+      "edge": "driver -> activity promise installed before running -> withInitiator/kick -> settle -> stable whenIdle",
+      "sources": [
+        "S7:854-875"
+      ],
+      "timerBoundDeclared": false
+    },
+    {
+      "edge": "factory dispose -> admission sealed -> live handles and startup tasks joined",
+      "sources": [
+        "S7:1419-1446"
+      ],
+      "timerBoundDeclared": false
+    },
+    {
+      "edge": "initiator shutdown -> admission closed -> exclude reentrant caller chain -> drain returned Promises",
+      "sources": [
+        "S9:624-667",
+        "S9:682-696"
+      ],
+      "concreteSelfAwaitProved": false
+    },
+    {
+      "edge": "exact original detach -> registry/session attachment removed -> contained disposed notification",
+      "sources": [
+        "S9:510-560",
+        "S11:1755-1773,1806-1817"
+      ],
+      "notificationsAloneProveDurability": false
+    },
+    {
+      "edge": "SessionStore.flush -> exact live entry -> all durability listeners settle -> propagate failure -> participation result",
+      "sources": [
+        "S11:1819-1854"
+      ],
+      "finiteLatencyProved": false,
+      "underlyingPersistenceProducerThisLane": "earlier sealed D5/D6 pointer only; no expanded producer audit"
+    }
+  ],
+  "r10Actual": {
+    "immutableConsumed": true,
+    "rootProof": "E0",
+    "fiveClosedRecords": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "supportedChunks": {
+      "initial": "eda2d9",
+      "poll": "b5806f",
+      "final": "0a9928",
+      "exit": 1
+    },
+    "execute": {
+      "httpPhase": "RPC_VALUE_RETURNED",
+      "httpStatus": "HTTP_200",
+      "idlePhase": "RETURNED",
+      "transportFailure": "NONE",
+      "executionCommitted": true,
+      "genuineCaptureReached": true,
+      "exactReturnedResultSourceDigestUsageDispositionOracleReached": true
+    },
+    "firstFailure": {
+      "phase": "WORKER_FINISH",
+      "category": "REJECTION",
+      "refusalCode": "NONE",
+      "httpRequests": 23,
+      "finishTrace": "104",
+      "finiteMeaning": [
+        "CLIENT_REQUEST_PREPARED",
+        "NO_HEADERS_OBSERVED",
+        "EXISTING_CLIENT_HTTP_TIMER"
+      ],
+      "serverReceipt": "NOT_ESTABLISHED",
+      "serverCause": "NOT_ESTABLISHED",
+      "pendingServerAwait": "NOT_ESTABLISHED",
+      "timerExtensionAsFix": "NOT_ESTABLISHED"
+    },
+    "nativeCounts": {
+      "requests": 1,
+      "streams": 1,
+      "turnStarts": 1,
+      "turnEnds": 1,
+      "stepStarts": 1,
+      "stepEnds": 1,
+      "tools": 0,
+      "timingLimitation": "End counters are cleanup-time historical observations and do not establish finish completion or activity state before the selected timer"
+    },
+    "fixtureRecorded": {
+      "workerStopped": false,
+      "reservationReleased": false,
+      "ownedEntriesRemoved": false,
+      "positivePath": false,
+      "rootClosed": false,
+      "entryRemoved": true,
+      "result": "FAILED_HOLD"
+    },
+    "unestablished": [
+      "factual stopped worker before destructive cleanup",
+      "exact agent/session absence while original registries still live",
+      "ledger settlement and release",
+      "final status",
+      "six owned Loader entry closures",
+      "post-entry-removal404",
+      "positive path",
+      "server-side finish entry/completion"
+    ],
+    "executorTermination": "Original EOF/process-group closure is separate from worker settlement and root/plugin correctness",
+    "pastStrictOracleRemains": "rootClosed=false / FAILED_HOLD; no retrospective PASS, reset, replay or adoption",
+    "selectedOriginalWaitMetadata": {
+      "finishHttpSeconds": 2,
+      "otherRpcSeconds": 2.5,
+      "absoluteSharedWorkSeconds": 24,
+      "cleanupSeconds": 5,
+      "finalAbsoluteSeconds": 30,
+      "outerMaximumSeconds": 90,
+      "source": "E5 selected closed metadata; unchanged budgets; no new execution"
+    },
+    "closedResultGrammarHistorical": {
+      "fields": 35,
+      "byteCap": 1024,
+      "readMaximum": 1025,
+      "compactMaximumIncludingNewline": 848,
+      "prettyMaximumIncludingNewline": 989,
+      "source": "E5; no new schema or candidate evaluation"
+    },
+    "rootPlanReadQualification": "Selected closed lifecycle/budget/grammar metadata and original source-pin identities; full-byte seal only, no full plan or official graph re-audit"
+  },
+  "freshCorrectionProposal": {
+    "status": "PROPOSED_ONLY_REQUIRES_NEW_CONCRETE_FREEZE_AND_REVIEWS",
+    "implementationSelected": false,
+    "runtimeGo": false,
+    "acceptanceGo": false,
+    "rootCallPreserved": "original public standalone root dispose remains unload/restart; report its actual supported observation without rootClosed=true at UID0",
+    "rootRequirementMapping": "Owned plugin/resources cleanup and actual native application quit are distinct requirements; standalone container cleanup does not itself pass full DSH quit/restart acceptance",
+    "ownedLifetimeOracle": [
+      "retain original Fiber returns from the same eleven existing plugin installations; no extra plugin installs or wrapping application",
+      "retain six owned Loader raw Fiber handles and original removal/await joins",
+      "require exact disposed child UID-null/state-4 after joined original cleanup; uncertainty remains HOLD",
+      "require factual stopped owned worker, exact original worker Fiber terminal observation, registry/session absence and persistence drain before removing services",
+      "require returned authoritative settlement/reservation disposition and final status",
+      "release preset and owned entries through the same original disposers",
+      "perform the existing post-entry-removal404 while the original WebServer remains available",
+      "join original root unload/restart and retain actual root UID/state observation",
+      "retain EOF/process-group closure as supplementary executor evidence, not sole product cleanup proof"
+    ],
+    "noRelaxation": [
+      "actual worker stop",
+      "exact native child terminal state",
+      "exact agent/session absence",
+      "source/currentness/identity/content/usage/CAS guards",
+      "persistence drain",
+      "authoritative ledger release",
+      "owned child disposal",
+      "uncertainty charging",
+      "entry removal and post404",
+      "all23 C01-C23 assertions",
+      "five F01-F05 controls",
+      "one request/stream/turn/step and zero tools",
+      "fixed budgets and source/full-graph integrity checks",
+      "all security and excluded-content boundaries"
+    ],
+    "schemaChangeRule": "Any future observation rename or field change must have a separately frozen closed grammar, literal byte bound, author/code/ISTQB reviews and root full readback",
+    "unsupportedActions": [
+      "set UID or state",
+      "private _unload/control invocation",
+      "call root restart terminal close",
+      "construct a new wrapping application or harness",
+      "replace host methods/services",
+      "use process exit as worker stop/release proof",
+      "release an unconfirmed worker slot",
+      "blind timeout increase",
+      "replay R10"
+    ],
+    "separateUpstreamLimit": "Selected standalone Context API has no separate terminal-root close. Use genuine original application/plugin owner shutdown for full-host quit validation; no private undocumented terminal root API is assumed."
+  },
+  "conditionalFinishDiscriminator": {
+    "status": "CONDITIONAL_NOT_SELECTED_NOT_IMPLEMENTED_NOT_EXECUTED",
+    "owner": "root",
+    "purpose": "If root source trace still cannot select actual pending finish boundary, distinguish ordinary server before-stop validation, owned disposer completion, stopped validation and guarded finish return",
+    "carrier": "one finite monotonic allowlisted field at existing once-only ordinary call/await boundaries, latched before destructive cleanup; exact codes and bytes require fresh freeze/review",
+    "lateCallbacks": "must not alter the sealed first observation",
+    "errorPayloadPublished": false,
+    "additionalDispatch": 0,
+    "additionalModel": 0,
+    "additionalHttp": 0,
+    "retry": 0,
+    "polling": false,
+    "wrapOriginalHostMethods": false,
+    "timersOrBudgetsChangedByThisReport": false,
+    "notProved": "client104 does not identify a server boundary; opaque core finish and registered public effects remain possible pending dependencies"
+  },
+  "boundaries": {
+    "protectedFinalCode": "BLOCKED_UNCHANGED",
+    "protectedExcluded": [
+      "final CODE receipt/signature/envelope/revision999 internals",
+      "opaque core.native captureNormalNativeResult and finish bodies"
+    ],
+    "privateContentsReadCopiedDecodedHashed": false,
+    "privateExcluded": [
+      "runtime/profile",
+      "keys and credentials",
+      "database",
+      "history and native logs",
+      "captures",
+      "actual raw responses",
+      "actual raw errors",
+      "personal data and old UI"
+    ],
+    "executedCandidateImportedBuiltTestedRun": false,
+    "producerEvaluated": false,
+    "runtimeListenerBrowserModelNetworkCredentialsOperation": false,
+    "gitOperation": false,
+    "sourceMutation": false,
+    "helperDelegation": false,
+    "thirdCloudAttempt": false,
+    "readQualification": "Some initial documentation/type batches were output-limited; decisive selected ranges were separately read. Bounded documentation path and public source identifier searches did not authorize additional implementation or private reads. No full-graph re-audit.",
+    "onlyAuthoredPaths": [
+      "docs/evidence/NI6/r11-independent-lifecycle-rootcause.md",
+      "docs/evidence/NI6/r11-independent-lifecycle-rootcause.json"
+    ],
+    "artifactCreation": "Repository-absolute paths checked for exact absence including symlinks; O_EXCL; full authored-content readback before external byte/SHA seals; no report self-hash embedded"
+  },
+  "disposition": {
+    "all87": "HOLD",
+    "accepted": 0,
+    "root": "HOLD",
+    "CODE": "BLOCKED_UNCHANGED",
+    "cloud": "TWICE_DENIED_NO_THIRD",
+    "UI": "BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF",
+    "publication": "GATED_LOCAL_ONLY",
+    "mvpAccepted": false,
+    "runtimeGo": false,
+    "remainingBlockers": [
+      "actual finish server origin and genuine stop/release remain unestablished",
+      "full native DSH quit/restart acceptance is not supplied by standalone root cleanup",
+      "final independent CODE and actual browser gates remain blocked"
+    ]
+  },
+  "provenance": [
+    {
+      "id": "A1",
+      "path": "AGENTS.md",
+      "bytes": 8292,
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+      "readQualification": "Full current authority"
+    },
+    {
+      "id": "R1",
+      "path": "docs/reference/approved-ticket-review.zh.txt",
+      "bytes": 45578,
+      "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3",
+      "readQualification": "Selected product-boundary and BUB001/004/012 requirements; historical approved source, with current owner amendments"
+    },
+    {
+      "id": "R2",
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "bytes": 5304,
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+      "readQualification": "Full current applicability and alias amendment"
+    },
+    {
+      "id": "R3",
+      "path": "docs/owner-normal-entry-continuation-2026-10-04.md",
+      "bytes": 2024,
+      "sha256": "e1370ac0a8fe31be56a111d443a1110307d195e2c24389470619df5716351078",
+      "readQualification": "Full normal-entry continuation"
+    },
+    {
+      "id": "R4",
+      "path": "docs/normal-entry-integration-plan.md",
+      "bytes": 13532,
+      "sha256": "19b983febe21f74a75c1a9b87862b47342ef855bb88f240d5ec72834b65820d0",
+      "readQualification": "Selected installed-path, lifecycle and aggregate requirement sections"
+    },
+    {
+      "id": "R5",
+      "path": "docs/normal-worker-contract.md",
+      "bytes": 51095,
+      "sha256": "c3c55af46f5ec2dc2f23a045b45129e70201024029fc33a28cc976abdeaa198b",
+      "readQualification": "Selected sections 7 and lifecycle ownership pointers; AUTHOR CONTRACT DRAFT, not actual acceptance"
+    },
+    {
+      "id": "R6",
+      "path": "docs/prep/W2/worker-lifecycle.md",
+      "bytes": 14564,
+      "sha256": "a4c9adedb041a1b8db40b242380eebb9661e5e3eae40439a25546de90ae090c9",
+      "readQualification": "Full lifecycle design; mock proposal, not actual acceptance"
+    },
+    {
+      "id": "D1",
+      "path": "docs/ni6-bootstrap-diagnostic-r1-freeze-2026-10-07.md",
+      "bytes": 8555,
+      "sha256": "3b3f9cd28317c5b94b3c8f1564d1b53483efc5088753c18a69027b3a1a9f9d40",
+      "readQualification": "Selected diagnostic origin sections"
+    },
+    {
+      "id": "D2",
+      "path": "docs/ni6-bootstrap-diagnostic-r1-lifecycle-clarification-2026-10-07.md",
+      "bytes": 2845,
+      "sha256": "37d5a51c8fb5d1ccbec5727a7de998c33a7f951564caef4aa5e898430c3b9826",
+      "readQualification": "Full diagnostic qualification"
+    },
+    {
+      "id": "D3",
+      "path": "docs/contracts/ni6-public-preparation-diagnostic-v1.md",
+      "bytes": 2079,
+      "sha256": "c68c943a72438940f19196d2f12e8d1f862231af9b9496562d93beebdcc66bf2",
+      "readQualification": "Public diagnostic schema and root observation"
+    },
+    {
+      "id": "D4",
+      "path": "docs/ni6-positive-one-worker-r1-freeze-2026-10-07.md",
+      "bytes": 8057,
+      "sha256": "9771c74235b594a9480882447f5602ee780500de4466ef710c1f874ea99aa134",
+      "readQualification": "Full positive-fixture freeze; strict ancestor observation and partial-evidence limitation"
+    },
+    {
+      "id": "D5",
+      "path": "docs/evidence/NI6/ordinary-finish-r9-public-diagnosis.md",
+      "bytes": 20812,
+      "sha256": "6b46da880313ee548917f29adc59efef5c1261fb001224216da1bfe839280421",
+      "readQualification": "Earlier sealed bounded diagnosis pointer; no old actual records reread"
+    },
+    {
+      "id": "D6",
+      "path": "docs/evidence/NI6/ordinary-finish-r9-public-diagnosis.json",
+      "bytes": 41244,
+      "sha256": "92922d5518c869f9d2861b8657f890cfb85a29e01f8acbd7b3e6d6b4e7b96897",
+      "readQualification": "Earlier sealed structured diagnosis pointer"
+    },
+    {
+      "id": "E0",
+      "path": "docs/evidence/NI6/positive-one-worker-r10-actual-return.json",
+      "bytes": 22776,
+      "sha256": "0e59d6dc2b05b7522135f96c4fac6ecd20be7f0c471ee1717e4e6f05c389c1f8",
+      "readQualification": "Full sealed R10 root proof; public metadata only"
+    },
+    {
+      "id": "E1",
+      "path": "docs/evidence/NI6/positive-one-worker-r10-execution/fixture-result.json",
+      "bytes": 912,
+      "sha256": "a832a85d83d90c5df6487d8a67d49ef39a23f74db57a3d2ca64d28bd0a64ce3e",
+      "readQualification": "Full closed public actual record"
+    },
+    {
+      "id": "E2",
+      "path": "docs/evidence/NI6/positive-one-worker-r10-execution/executor-result.json",
+      "bytes": 4621,
+      "sha256": "378e29b67db7a4af0b26eacd4ad5e6c1468eceda8e8a66d082eed78be3f02b3b",
+      "readQualification": "Full closed public actual record"
+    },
+    {
+      "id": "E3",
+      "path": "docs/evidence/NI6/positive-one-worker-r10-execution/command-results.json",
+      "bytes": 2999,
+      "sha256": "300385526f409192c896bdce317efc1342bf041b080f21501763315b3fe64d90",
+      "readQualification": "Full closed public actual record"
+    },
+    {
+      "id": "E4",
+      "path": "docs/evidence/NI6/positive-one-worker-r10-execution/before-after.json",
+      "bytes": 286,
+      "sha256": "3a0db5de5f5e87dc3be9297836d90e98bbe68613c7dc75533b2a81eb309c8d1b",
+      "readQualification": "Full closed public actual record"
+    },
+    {
+      "id": "E5",
+      "path": "docs/evidence/NI6/positive-one-worker-r10-execution/root-plan.json",
+      "bytes": 216706,
+      "sha256": "52b81e64ee07e78e6e27c2958f6e3a215a6240f027de4ee844763a6c1677cfb3",
+      "readQualification": "Full-byte public seal; selected closed lifecycle, budget, grammar and source-pin metadata only; no full plan or graph re-audit"
+    },
+    {
+      "id": "S1",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "bytes": 60361,
+      "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e",
+      "readQualification": "Selected Context/Fiber/effect public implementation; original method bodies read only, never invoked"
+    },
+    {
+      "id": "S2",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts",
+      "bytes": 8430,
+      "sha256": "eec0d229849c8a293ede90cc2b107c54262db28acfdcdf9181cfec5cd1d0a7d4",
+      "readQualification": "Selected declared disposal/effect/await/restart contracts"
+    },
+    {
+      "id": "S3",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts",
+      "bytes": 4749,
+      "sha256": "ddbdfbaace4a8e1982dded8fdb9a05b3f14b4db3613628caff53e623542f5b71",
+      "readQualification": "Declared Context interface and original root/child distinction"
+    },
+    {
+      "id": "S4",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts",
+      "bytes": 858,
+      "sha256": "51237bf92ef225c92c897c5fb0aa8e4482267a5ae6ff1cf768726a40c9a7db86",
+      "readQualification": "Public exports pointer"
+    },
+    {
+      "id": "S5",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/index.js",
+      "bytes": 12151,
+      "sha256": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca",
+      "readQualification": "Parent-authorized narrow extension: createScope/quiesceFiber implementation at 281-305; preceding ordinary public declarations only"
+    },
+    {
+      "id": "S6",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-scope/lib/types/index.d.ts",
+      "bytes": 5168,
+      "sha256": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e",
+      "readQualification": "Full public scope declaration; exact/shared disposal contract"
+    },
+    {
+      "id": "S7",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "bytes": 72994,
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2",
+      "readQualification": "Selected driver, factory ownership, prepare/publish and teardown implementation"
+    },
+    {
+      "id": "S8",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/types/agent.d.ts",
+      "bytes": 3414,
+      "sha256": "66131a86c5f024fabb77e99103f3f07cdca5818cbce7d6aaecb058197c66589e",
+      "readQualification": "Public agent lifecycle declaration"
+    },
+    {
+      "id": "S9",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "bytes": 28207,
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93",
+      "readQualification": "Selected exact registry detachment and initiator drain/reentrancy implementation"
+    },
+    {
+      "id": "S10",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "bytes": 20779,
+      "sha256": "3531899158347ff10627228732c67462c78ea0352e31a7eabc19631f90b08bc1",
+      "readQualification": "Selected AgentHandle and factory ownership declarations"
+    },
+    {
+      "id": "S11",
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "bytes": 89972,
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b",
+      "readQualification": "Selected exact session detachment, contained disposed notifications and awaited flush implementation"
+    }
+  ],
+  "parallelParentReportedSelection": {
+    "status": "SOURCE_ONLY_INERT_AUTHORING_SELECTED_BY_ROOT; NO_ACTUAL_RESULT_OR_LANE_CODE_REVIEW",
+    "purpose": "Separate bounded R11 server-wait discriminator; does not implement the owned-child root-oracle correction proposed here",
+    "marker": "finishWait: fixed seven ASCII characters, stage3 plus elapsed4, original client terminal freezes first finite observation",
+    "existingFinishHttpSeconds": 2,
+    "existingSharedWorkSeconds": 24,
+    "strictRootObservationPreservedForThisDiagnostic": true,
+    "reportedConsolidation": "Pure finite diagnostic exports in existing installed-invocation.mjs; original authority/carrier unchanged; named ordinary finish/history imports; no additional module or DSH dependency cycle",
+    "reportedProductFiles": 64,
+    "reportedPhysicalFiles": 65,
+    "reportedClosedResultFields": 36,
+    "reportedCompactMaximumIncludingNewline": 871,
+    "reportedPrettyMaximumIncludingNewline": 1016,
+    "reportedByteCap": 1024,
+    "laneReadOrReviewOfCandidate": false,
+    "parentReportedDocuments": [
+      {
+        "path": "docs/ni6-positive-one-worker-r11-server-wait-freeze-2026-10-08.md",
+        "bytes": 5065,
+        "sha256": "4a7beda8c618681f4d60eceeb9bf00d107d5fd5b65f43f0f41b49da1ed0e608a",
+        "identityBasis": "parent message only; not independently read or sealed by this lane"
+      },
+      {
+        "path": "docs/ni6-positive-one-worker-r11-diagnostic-consolidation-2026-10-08.md",
+        "bytes": 1961,
+        "sha256": "29c63097cbf3a0064807fdb29af8fe9870f3afb5d98c090c018e660c4c8ea987",
+        "identityBasis": "parent message only; not independently read or sealed by this lane"
+      }
+    ]
+  }
+}
