@@ -1,0 +1,333 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "UI": "PAUSED_MAC_LOCKED",
+  "accepted": 0,
+  "additionalMaterialFindings": [],
+  "all87": "HOLD",
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidate": "positive-one-worker-r5",
+  "caseOracles": {
+    "C04": "approval/policy tail; same header/event-array references and complete input values, one original event/no marker, measured empty nodes/messages and zero generations",
+    "C05": "first seq1 rejection with unchanged input",
+    "C06": "negative-zero seq rejection; structuredClone/strict equality and Object.is retain negative-zero",
+    "C07": "own ignorable undefined rejection; structuredClone/strict equality and own-property assertion retain undefined",
+    "C08": "unsupported required event rejection unchanged",
+    "C09": "seeded header rejection unchanged",
+    "C10": "parentSession metadata rejection unchanged",
+    "casesExecutedByReviewer": 0,
+    "headerCases": 3,
+    "negativeCaseIncrementAfterRejectionAndInputEquality": true,
+    "phase": "STORED_PROJECTION_CONTRACT",
+    "projectionCases": 7,
+    "pureCasesProveHostCompatibility": false,
+    "requestHeaderGuardCoverageComplete": false,
+    "sameFutureFunctionalChildBeforeContext": true
+  },
+  "cloud": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "conservedFlowAndExecutor": "Exact literal delta retains genuine product/provider/plugin identity and public Loader dependency, actual returned refs/CAS and ready admission, one execute/request/stream/turn/step, waterfall next(), exact input-plus-known-output usage, 25 HTTP cap, factual capture/result/finish/release, Loader/preset/remove/404 and strict root observation. Driver changes are names, projectionCases bound7 and exact positive/PASS oracle only; once/inode/drift/EOF/group/first-reason controls remain.",
+  "constructorGuardCoverageWithinOrdinaryDomain": [
+    {
+      "area": "Lossless JSON and envelope",
+      "sourceSupport": "Original isJsonValue shares snapshotJsonValue walk rules. Existing exact nativeEvents envelope, safe integer fields, original SessionSeq and discarded snapshotSessionEvent copies cover lossless/undefined/negative-zero, contiguous sequence and event-local/message/surface validation."
+    },
+    {
+      "area": "Ordinary header and inherited scope",
+      "sourceSupport": "Original absolute cwd guard is explicit. Strict rootHeader retains version4/unseeded/depth0, required fields and rejects parent/origin/seedLength; original read retains nativeId/handle.id/header.id, access and inheritedEventCount zero checks. No seeded/delegated constructor mode is admitted."
+    },
+    {
+      "area": "Current request/header shape",
+      "sourceSupport": "Existing reason/startsSeries checks, deterministic-only reasoningEffort, allowed defaults keys, true-only markers and public snapshot rejection of empty defaults are conserved. Nonempty provider/model and marker/config coupling are missing: R5-SOURCE-02."
+    },
+    {
+      "area": "Message and assistant settlement",
+      "sourceSupport": "Original snapshotSessionEvent invokes message identity/role/source checks, including nonempty assistant model source. nativeEvents restricts accepted event types, requires turn/step >=1 and stream array validation; this implies original assistant settlement >=0/nonnegative-zero guards. Excluded developer/tool/attempt event types are not newly admitted."
+    },
+    {
+      "area": "Surface transitions and original references",
+      "sourceSupport": "Original public SurfaceManager folds unchanged events and supplied original messageProjections; nodes and both generations are measured. Helper returns the input header/event-array references, makes no event writes, creates no Session/host/context/handle/capability, and immutable final capture remains at the original read point."
+    },
+    {
+      "area": "Identity, ownership and currentness",
+      "sourceSupport": "Literal collector delta preserves original class/service identities; flush/stat/id/unseeded/inherited/currentness/bounds/interrupted-turn/inbox checks; full header/log/seq/surface/messages comparisons; original restore receives unchanged header/events. resolveHostSource and readAuthenticNativeSource/assertCurrent remain unchanged."
+    }
+  ],
+  "contractVersion": "df.ni6-independent-affected-source-review/v1",
+  "date": "2026-10-07",
+  "disposition": "BLOCKED_SOURCE_GATE",
+  "executionGO": false,
+  "findings": [
+    {
+      "evidence": "HOST_FILES session paths preserve the old package.json position and append four paths. generate() emits for p in files without sorting. The sealed descriptor instead orders all seven session paths strictly ascending; stableSource rejects row.path <= last.",
+      "gate": "BLOCKER",
+      "id": "R5-SOURCE-01",
+      "impact": "Same path/digest set is insufficient: the actual producer would emit a different descriptor that the unchanged source validator rejects. This is a static authority/guard conservation failure; neither producer nor candidate was evaluated.",
+      "producerOrder": [
+        "lib/index.js",
+        "lib/types/index.d.ts",
+        "package.json",
+        "lib/types/surface.js",
+        "lib/types/surface.d.ts",
+        "lib/types/types.js",
+        "lib/types/known-event-types.js"
+      ],
+      "requiredDisposition": "Hold sealed R5 execution. Correct ordering only in a fresh successor, preserve original rows/digests/guards, and verify inert exact producer/descriptor ordering agreement.",
+      "sealedDescriptorOrder": [
+        "lib/index.js",
+        "lib/types/index.d.ts",
+        "lib/types/known-event-types.js",
+        "lib/types/surface.d.ts",
+        "lib/types/surface.js",
+        "lib/types/types.js",
+        "package.json"
+      ],
+      "severity": "HIGH",
+      "source": ".runtime/ni6-positive-one-worker-r5/package/scripts/build-native-source-manifest.py",
+      "sourceLines": [
+        5,
+        24
+      ],
+      "subject": "Descriptor producer does not reproduce the sealed valid host-file order",
+      "validator": ".runtime/ni6-positive-one-worker-r5/package/src/normal-contracts.mjs",
+      "validatorLines": [
+        15
+      ]
+    },
+    {
+      "evidence": "assertSessionEventEnvelope invokes assertCurrentLlmShape. For request/header it requires nonempty provider/model and true adapterDefaults.reasoningEffort/maxTokens only when the corresponding config field is present. nativeEvents text() permits empty strings and its defaults validation lacks those implications. snapshotSessionEvent/adopt and SurfaceManager do not invoke this constructor-only request/header branch; JSONL adoption does not restore it.",
+      "gate": "BLOCKER",
+      "id": "R5-SOURCE-02",
+      "impact": "The pure helper accepts some ordinary request/header inputs that the removed original constructor rejected. The freeze explicitly requires all original constructor guards; seven existing cases do not establish this missing conservation. No invalid case was evaluated and no actual R4 exception is identified.",
+      "originalAuthorityLines": [
+        1127,
+        1129,
+        1141,
+        1147,
+        1151,
+        1173,
+        1177,
+        1218,
+        1221
+      ],
+      "originalPublicAuthority": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "requiredDisposition": "Hold sealed R5 execution. A fresh narrowly frozen successor must add explicit ordinary helper guards preserving these original conditions; do not construct a discarded Session or relax existing scope/identity checks.",
+      "severity": "HIGH",
+      "source": ".runtime/ni6-positive-one-worker-r5/package/src/native-history-collector.mjs",
+      "sourceLines": [
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "subject": "Removed Session constructor request/header guards are not fully preserved",
+      "unconservedConditions": [
+        "request/header config.provider is a nonempty string",
+        "request/header config.model is a nonempty string",
+        "adapterDefaults.reasoningEffort=true implies config.reasoningEffort !== undefined",
+        "adapterDefaults.maxTokens=true implies config.maxTokens !== undefined"
+      ]
+    }
+  ],
+  "fullAuthorMarkdownAndJsonNarrativesRead": true,
+  "inertConservation": {
+    "addedHostFileRows": 10,
+    "additionalInputRecordsMeasured": 100,
+    "allThreeProposedGOFlags": false,
+    "boundedResultReadBytes": 1025,
+    "changedProductCodeFiles": 2,
+    "closedResultCapBytes": 1024,
+    "closedResultFields": 29,
+    "createPhases": 8,
+    "freshActualDestinations": "ABSENT",
+    "futurePinUnionIncludingSelfAndFourReports": 663,
+    "hostFileRows": 87,
+    "hostModules": 27,
+    "inertMaximumProjectionBytesIncludingNewline": 659,
+    "inheritedInputRecordsUnchangedByPath": 551,
+    "inputBytes": 22545268,
+    "inputFileCount": 651,
+    "literalSevenFileDelta": "EXACT_CONCATENATION",
+    "newClientBuildClaim": false,
+    "originalActualBuildAuthority": "ANCESTOR_ONLY",
+    "originalBuiltClientUnchanged": true,
+    "originalHostFileRowsPreserved": 77,
+    "originalHostModulesPreserved": 25,
+    "ownedRecordsMeasured": 7,
+    "phases": 51,
+    "producerDescriptorOrderingAgreement": false,
+    "productDescriptorRows": 64,
+    "proposalPins": {},
+    "refusalLabels": 37,
+    "regularPackageFiles": 65,
+    "sourceCopies": 242,
+    "topology": 8,
+    "unchangedRegularPackageFiles": 62,
+    "wholeInheritedGraphReaudited": false
+  },
+  "qualifications": [
+    "R5 is sealed source-only UNRUN and blocked; no runtime result or generated PASS follows. Preserve exact sealed R5 and consumed predecessors; correct only a fresh successor.",
+    "Static Session marker mismatch is established, but actual R4 first exception and reached reconstruction remain NOT_ESTABLISHED. R4 actual supported driver return remains NOT_CAPTURED; no replay or child-exit inference repairs it.",
+    "NOT_RETURNED and workerCreated=false do not prove no HTTP/native creation or reservation. Reservation release requires factual evidence; no adoption or balance claim follows.",
+    "Original root public dispose is restart; active rootClosed=false retains strict FAILED_HOLD independently of positive-path evidence. No lifecycle weakening or continuous root-cleanup event claim.",
+    "Child projection, child/driver exit, EOF/groups, executor finalization and actual supported return remain distinct; preterminal scalars do not establish final enclosing duration.",
+    "No UI handoff, task completion, review, delivery, all87 acceptance or protected final CODE closure follows."
+  ],
+  "reviewedAffectedProduct": [
+    {
+      "bytes": 12572,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/src/native-history-collector.mjs",
+      "sha256": "8c83f39e666ebca6a2851b230bebac57bc4f8f4a613140c08471296a623c5ae7"
+    },
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/scripts/build-native-source-manifest.py",
+      "sha256": "2edf6875ea27a264f305d7c20dead521da39db89f259abfaf88cbf6d6cbc9d4e"
+    },
+    {
+      "bytes": 18440,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/native-source-manifest.json",
+      "sha256": "28e530f394ad80911a5003fbe91e4ecdd2cad133bb33821e4cc4d4e357c85af5"
+    }
+  ],
+  "reviewedFinalSourcePacket": [
+    {
+      "bytes": 35460,
+      "path": ".runtime/ni6-positive-one-worker-r5/fixture.mjs",
+      "sha256": "31da2dd596795512dbf281313f37fc36c8865d067c24899f31c5809ede7ea158"
+    },
+    {
+      "bytes": 32325,
+      "path": ".runtime/ni6-positive-one-worker-r5/run-once.py",
+      "sha256": "f1d62350d7b02154c958ca0d948a3d50038dddc248af2d69337fbf33578ce059"
+    },
+    {
+      "bytes": 23767,
+      "path": ".runtime/ni6-positive-one-worker-r5/execution-plan.proposed.json",
+      "sha256": "5b974fee9967bd9a9392301682e9ae693ce1088f110db69f479e8bb118bf1967"
+    },
+    {
+      "bytes": 81799,
+      "path": ".runtime/ni6-positive-one-worker-r5/source-delta.diff",
+      "sha256": "5638982e58715c356f4d66a583b51b7101c183276ca5d35d6c0add4c99a9d9d8"
+    },
+    {
+      "bytes": 5306,
+      "path": ".runtime/ni6-positive-one-worker-r5/README.md",
+      "sha256": "805e793355310552752154033d037f93f60a5eed59aa57dafeaf23ea0f91baa2"
+    },
+    {
+      "bytes": 187667,
+      "path": ".runtime/ni6-positive-one-worker-r5/source-manifest.json",
+      "sha256": "a72499349b3b303409e30f299644ea489830115a96487108fe0a49b18f6e06d2"
+    },
+    {
+      "bytes": 4301,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-source.md",
+      "sha256": "0d26abb498d160c6720f3dcc883d9e098dc2c76c1a6f62832c1187ff86191458"
+    },
+    {
+      "bytes": 54029,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-source.json",
+      "sha256": "2ae486374a54d2bfe77c695901bc5986a6770039e4658f48474dc783d8eaad81"
+    }
+  ],
+  "reviewedPublicAuthority": [
+    {
+      "bytes": 8015,
+      "path": "docs/ni6-positive-one-worker-r5-stored-projection-freeze-2026-10-07.md",
+      "sha256": "0d88351e59d701bc9010b7edf64157d47371cab3e25f32ebffa9647fd494c4bb"
+    },
+    {
+      "bytes": 6448,
+      "path": "docs/evidence/NI6/ordinary-create-r4-static-diagnosis.md",
+      "sha256": "d0f3c0ce3ae238e170b9dbfb31b481178dedcbf638ea30765351d9a2f2f8a912"
+    },
+    {
+      "bytes": 17708,
+      "path": "docs/evidence/NI6/ordinary-create-r4-static-diagnosis.json",
+      "sha256": "bd1f6525cb10d5b8f8720cdd930a4e2d593d0d2383d1c96eb298a0e87b4ff488"
+    },
+    {
+      "bytes": 89972,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "bytes": 26100,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/surface.js",
+      "sha256": "ebe8920a22fca8d987cbacab94c9db92f71df44863f58370a1be559155be734e"
+    },
+    {
+      "bytes": 2749,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.js",
+      "sha256": "a03acad09eec657b94441109af0da31b5b29668feae35d1b9e72fd99beca505f"
+    },
+    {
+      "bytes": 2850,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/known-event-types.js",
+      "sha256": "8f38e6fc9439bb4e47f2bd3aa21c86d5141ef9679f41181c9d9a48765c67d3be"
+    },
+    {
+      "bytes": 1553,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/package.json",
+      "sha256": "e9d5af863ff3cb1544425bf31902e78ef232f2d8d127cf6e5d90c245bc535d2c"
+    },
+    {
+      "bytes": 1161,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-brand/lib/index.js",
+      "sha256": "14feb59256b891982b2017d73ed03ee65e2a7365f48e4902a856acb0e52d5eb0"
+    },
+    {
+      "bytes": 29627,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-util-values/lib/index.js",
+      "sha256": "4322a2aacdfe38476d2bbc62338120beea1e1660346d7db5b6c1e1f927a26b7c"
+    },
+    {
+      "bytes": 12920,
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence/lib/index.js",
+      "sha256": "cc0b6d3a224133af611b428d5a49020e300f86c3b4ba28037aeb219029bde3eb"
+    },
+    {
+      "bytes": 32057,
+      "path": ".runtime/ni6-positive-one-worker-r5/package/src/normal-contracts.mjs",
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    },
+    {
+      "bytes": 6739,
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/host-probe.mjs",
+      "sha256": "03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8"
+    },
+    {
+      "bytes": 2328,
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/native-source-descriptor.mjs",
+      "sha256": "4bba78e27328012038a18277bfaeea65b3fec3a1853cf26456143267caf3d36f"
+    }
+  ],
+  "reviewer": "independent CODE/SOURCE reviewer",
+  "reviewerActions": {
+    "candidateParseCheckCompileImportBuildTestRun": false,
+    "descriptorProducerEvaluated": false,
+    "gitAction": false,
+    "helperDelegation": false,
+    "networkListenerModelBrowserAction": false,
+    "privateProfileKeyDatabaseHistoryCaptureErrorPayloadRead": false,
+    "protectedCODEInvestigation": false,
+    "sourceMutation": false
+  },
+  "scope": "Frozen ordinary stored-root projection, constructor-guard conservation, public import binding, derivative metadata and affected fixture/executor changes only.",
+  "status": "SOURCE_ONLY_REVIEW_COMPLETE_BLOCKED"
+}

@@ -1,0 +1,249 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "actualSupportedDriverExitCode": null,
+  "actualSupportedDriverReturnObserved": false,
+  "admissionEvidence": "The supported exec_command call returned to the root wrapper, then the wrapper raised ReferenceError before storing the returned tool object. Fresh invocation marker and sealed public command artifacts establish execution; actual supported driver return and its timing remain NOT_CAPTURED.",
+  "all87": "HOLD",
+  "closedFixtureResult": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "INVARIANT",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "unknown",
+    "entryRemoved": true,
+    "executionCommitted": false,
+    "headerCases": 3,
+    "httpRequests": 17,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_CREATE",
+    "positivePath": false,
+    "refusalCode": "NONE",
+    "requests": 0,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 0,
+    "stepStarts": 0,
+    "streams": 0,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 0,
+    "turnStarts": 0,
+    "workerCreated": false,
+    "workerStopped": false
+  },
+  "closedPublicResultSeals": [
+    {
+      "bytes": 698,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/fixture-result.json",
+      "sha256": "b254c745128eb2dd548264488695c8ff79a693465d7c7d39f4c30f35d84040b9"
+    },
+    {
+      "bytes": 4388,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/executor-result.json",
+      "sha256": "bc494b52113cb7b3677ffd7dcdf3c25819606c1ea2333d20d3bf11b7d9facd21"
+    },
+    {
+      "bytes": 2996,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/command-results.json",
+      "sha256": "983104f88dc18d0c8b9539cb76d3b95ebd1e1ab1cfe209cf8674e242878406e1"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/before-after.json",
+      "sha256": "0fca82918f204dc3acfe0061c0668d31887b1f90a40b452f262ad2de6cb34c28"
+    },
+    {
+      "bytes": 95266,
+      "path": "docs/evidence/NI6/positive-one-worker-r4-execution/root-plan.json",
+      "sha256": "31d3737a26a921548fdc07987265d2246cf5f661f963b127f9b5e0c3e3501480"
+    }
+  ],
+  "cloudAction": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "contractVersion": "df.ni6-positive-one-worker-root-actual-return/v1",
+  "createdUTC": "2026-10-07T23:15:43.231386+00:00",
+  "date": "2026-10-07",
+  "executorFinalized": false,
+  "executorFirstReason": "EXECUTOR_COMMAND_NONZERO",
+  "executorResult": "FAILED_HOLD",
+  "invocationMarker": {
+    "bytes": 272,
+    "path": ".runtime/ni6-positive-one-worker-r4/invocation.json",
+    "sha256": "149efc0a02f10aca370c51217ef54f59056c091ef9ab5cd745c347dd473b591d",
+    "value": {
+      "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-invocation/v1",
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finalized": false,
+      "finishedAt": "2026-10-07T23:14:19.106297+00:00",
+      "startedAt": "2026-10-07T23:14:00.738518+00:00",
+      "state": "FAILED_HOLD"
+    }
+  },
+  "lockedUI": "PAUSED",
+  "privacy": {
+    "browserInput": false,
+    "externalInference": 0,
+    "privateCapturePayloadsReadDecodedCopied": false,
+    "privateProfilesKeysDatabasesHistoriesReadDecodedCopiedHashed": false,
+    "privateStreamMetadataOnly": true
+  },
+  "publicCommandReturnAndTerminationEvidence": [
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "durationSeconds": 0.068787,
+      "exitCode": 0,
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "privateStreamMetadataOnly": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": [],
+      "timedOut": false
+    },
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "durationSeconds": 6.164843,
+      "exitCode": 1,
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "privateStreamMetadataOnly": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "beadd597b0eb3e979946f576b84d1bf7ee7f323033c62ff3d9511e379411590c",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": [],
+      "timedOut": false
+    }
+  ],
+  "qualifications": [
+    "The three ordinary header contract cases passed; they do not alone establish genuine host compatibility.",
+    "Actual workerCreate returned the finite public phase unknown; readiness guard stopped before native query or execute. No caught private exception was read or inferred as observed.",
+    "workerCreated=false is a readiness milestone failure, not proof that no actual native worker creation or reservation occurred.",
+    "reservationReleased=false means release was not established; no zero balance or actual held balance is claimed.",
+    "entryRemoved=true is established by selected cleanup checks. ownedEntriesRemoved=false is a positive path milestone flag, not proof all final cleanup failed.",
+    "The original strict root terminal observation remains rootClosed=false. No lifecycle weakening, retry, replay, reservation adoption, task completion, review or delivery claim follows.",
+    "R3 remains sealed reviewed source-only UNRUN. R4 invocation is consumed and will not be reset or repeated.",
+    "The old UI profile and cancelled UI task were untouched; no UI service connection or corrected UI package handoff is established.",
+    "Protected final CODE receipt/envelope/revision999 investigation remains blocked; these ordinary corrections and tests cannot close it."
+  ],
+  "rootPlanSeal": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "bytes": 95266,
+    "candidateExecution": false,
+    "freshDestinationsAbsentBeforePlan": true,
+    "path": ".runtime/root-ni6-positive-one-worker-r4-execution-plan.json",
+    "pins": 563,
+    "reviewReports": 4,
+    "sha256": "31d3737a26a921548fdc07987265d2246cf5f661f963b127f9b5e0c3e3501480",
+    "sourceCopies": 142,
+    "status": "ROOT_FINAL_READBACK_AND_PLAN_SEALED",
+    "supportedPlatformApproval": "PENDING_EXACT_TOOL_INVOCATION"
+  },
+  "sealedPublicCommandExitCodes": [
+    0,
+    1
+  ],
+  "sourceAndOfficialGraphBeforeAfter": {
+    "after": {
+      "complete": true,
+      "inputCount": 563,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "before": {
+      "complete": true,
+      "inputCount": 563,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    }
+  },
+  "status": "CONSUMED_FAILED_HOLD_SUPPORTED_DRIVER_RETURN_UNRECOVERED",
+  "supportedInvocation": {
+    "actualSupportedDriverReturn": {
+      "chunkId": null,
+      "exitCode": null,
+      "observed": false,
+      "qualification": "Returned tool object was lost when the root wrapper failed before storing it. No driver exit code or supported-return timing is claimed.",
+      "sessionId": null
+    },
+    "command": [
+      "/opt/homebrew/bin/python3",
+      "-I",
+      ".runtime/ni6-positive-one-worker-r4/run-once.py",
+      ".runtime/root-ni6-positive-one-worker-r4-execution-plan.json"
+    ],
+    "initial": null,
+    "polls": [],
+    "publicFinalReadbackObservedMs": 1791414943096,
+    "publicFinalReadbackObservedUTC": {
+      "current_time": "2026-10-07 23:15:43 UTC"
+    },
+    "requestMs": 1791414832919,
+    "requestUTC": {
+      "current_time": "2026-10-07 23:13:52 UTC"
+    },
+    "returnCaptureError": {
+      "commandRepeated": false,
+      "location": "functions.exec wrapper after awaited exec_command resolved",
+      "message": "TextEncoder is not defined",
+      "name": "ReferenceError",
+      "privateOutputRead": false
+    },
+    "status": "CONSUMED_PUBLIC_FINAL_FAILED_HOLD_SUPPORTED_RETURN_NOT_CAPTURED"
+  },
+  "timing": {
+    "actualSupportedReturnTime": "NOT_CAPTURED",
+    "executorConservativeActiveSecondsPreterminal": 23.302594624925405,
+    "executorObservedSecondsPreterminal": 18.30259395809844,
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "markerFinishedAt": "2026-10-07T23:14:19.106297+00:00",
+    "markerStartedAt": "2026-10-07T23:14:00.738518+00:00",
+    "qualification": "Executor preterminal scalars and child command durations are separate observations. Request-to-public-readback interval includes review/transport/orchestrator work and is not an actual driver-return duration."
+  }
+}

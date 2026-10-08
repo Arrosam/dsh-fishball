@@ -1,0 +1,169 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "accepted": 0,
+  "additionalExecutionGO": false,
+  "all87": "HOLD",
+  "candidate": "positive-one-worker-r6",
+  "cloudAction": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "contractVersion": "df.ni6-independent-public-execution-evidence-review/v1",
+  "date": "2026-10-08",
+  "disposition": "NO_MATERIAL_EVIDENCE_BLOCKER",
+  "dispositionQualification": "No material inconsistency or unsupported success claim in the qualified public record. This is evidence consistency, not positive-path acceptance or authorization for another run.",
+  "executorRecord": {
+    "captureComplete": true,
+    "captureTerminationReason": "EOF_OBSERVED",
+    "childExitCodes": [
+      0,
+      1
+    ],
+    "commandArgvMatchesFrozenPlan": true,
+    "commandRecordsAndRootProjectionEqual": true,
+    "failureCode": "EXECUTOR_COMMAND_NONZERO",
+    "finalized": false,
+    "interruptions": false,
+    "overflow": false,
+    "ownedProcessGroupState": "ABSENT_OBSERVED",
+    "privateStreams": "PUBLIC_METADATA_ONLY; no payload read/copy/hash",
+    "remoteTermination": "NOT_CLAIMED",
+    "reservationRelease": "NOT_CLAIMED",
+    "result": "FAILED_HOLD",
+    "signalAttempts": 0,
+    "timeouts": false
+  },
+  "fullSixPublicJsonReadback": true,
+  "lockedUI": "PAUSED",
+  "materialEvidenceFindings": [],
+  "provenanceConsistency": {
+    "actualMarkerOrPrivateRuntimePathRead": false,
+    "beforeAfterExecutorProofEquality": true,
+    "embeddedMarkerMetadataConsistent": true,
+    "frozenPlanMetadata": {
+      "affectedReports": 4,
+      "pins": 742,
+      "runCountAuthorized": 1,
+      "sourceCopies": 321
+    },
+    "pinAndCopyShapeMembershipVerified": true,
+    "recordedBeforeAndAfter": {
+      "complete": true,
+      "inputCount": 742,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "snapshotQualification": "Copied plan SOURCE_ONLY_NOT_RUN and rootPlanSeal candidateExecution=false/pending approval fields describe the pre-invocation seal. The consumed final record and captured driver return describe the later execution.",
+    "sourceOrWholeGraphRehashPerformed": false
+  },
+  "qualifications": [
+    "Three header and twelve projection cases passed and actual createPhase was ready. These and completed native event counters establish selected milestones, not complete host acceptance or ledger commitment/result delivery.",
+    "WORKER_EXECUTE/REJECTION with refusalCode NONE identifies the retained first public phase/category, not an observed exception, response cause or absence of internal refusal. No private payload or source root-cause investigation was performed.",
+    "executionCommitted=false/resultReturned=false/positivePath=false retain failed positive evidence. workerStopped=false/reservationReleased=false leave factual stop/release unestablished; no held or zero balance, recovery adoption, reset or replay is inferred.",
+    "entryRemoved=true is the selected removal observation. ownedEntriesRemoved=false is a positive-path milestone rather than proof all final cleanup failed. rootClosed=false preserves strict independent root HOLD.",
+    "Complete EOF and observed absent owned groups are executor observations at the command boundaries. They do not establish remote termination or reservation release; private stream contents were not interpreted.",
+    "Actual supported driver exit1 is captured and remains distinct from child exits [0,1], public projection, executor failure/finalization and marker metadata. Executor preterminal scalars, child durations, marker timestamps and transport observations do not establish final enclosing driver duration.",
+    "The 742-pin/27577-file/12-link conservation claims are consistent public summaries, not a new independent source/graph audit. Root privacy/UI/cloud declarations are preserved without private inspection.",
+    "R6 is consumed, R3/R5 remain UNRUN and consumed R2/R4 evidence remains immutable. R4 supported driver return remains NOT_CAPTURED; R6 capture does not repair it.",
+    "All87 HOLD/accepted0, CODE BLOCKED_UNCHANGED, paused locked UI and blocked cloud action remain. No task completion/review/delivery, corrected UI handoff, acceptance or protected final CODE closure follows."
+  ],
+  "remainingLimitations": [
+    "Underlying WORKER_EXECUTE cause/response details remain NOT_ESTABLISHED.",
+    "Ledger commitment, result return, factual stop and reservation release were not established; strict root closure remains HOLD.",
+    "Final enclosing driver duration remains NOT_ESTABLISHED."
+  ],
+  "reviewScope": "PUBLIC_EXECUTION_EVIDENCE_ONLY",
+  "reviewedArtifacts": [
+    {
+      "bytes": 9979,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-actual-return.json",
+      "sha256": "b6eee11a50cf1570123b1c8bf6ed7d621c721d6f7510ba199b62218ae7281541"
+    },
+    {
+      "bytes": 721,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/fixture-result.json",
+      "sha256": "36f1c1a1699eb44eeecedb4f96520db812f6d0141999c6a3718312fc964c3118"
+    },
+    {
+      "bytes": 4412,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/executor-result.json",
+      "sha256": "af8bf392e23f389147cadd3031a805d521670541c3b5bbc182bea3af42b1369a"
+    },
+    {
+      "bytes": 2995,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/command-results.json",
+      "sha256": "81b8a3606bb7891bf58e5449ef336bf57e2643e8863d7cacda4f858c6e914b66"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/before-after.json",
+      "sha256": "709d0fcf8565e77656946761137424fd9d8f581f0b8db8afa6cac6fd779372c2"
+    },
+    {
+      "bytes": 134397,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-execution/root-plan.json",
+      "sha256": "d0d75d6eacd3c47e44a89490ff2615902af1dc41f3c5e07c07a72f692433cef3"
+    }
+  ],
+  "reviewer": "independent CODE/SOURCE reviewer",
+  "reviewerActions": {
+    "actualMarkerOrPrivateRuntimePathRead": false,
+    "candidateOrRuntimeExecuted": false,
+    "gitOrSourceMutation": false,
+    "helperDelegation": false,
+    "networkModelBrowserCloudAction": false,
+    "privateProfileKeyDatabaseHistoryCaptureErrorResponsePayloadReadCopiedHashed": false,
+    "protectedCODEInvestigation": false,
+    "sourceReviewOverwritten": false,
+    "sourceReviewRepeated": false,
+    "sourceRootCauseInvestigation": false
+  },
+  "status": "REVIEW_COMPLETE_CONSUMED_FAILED_HOLD_RETAINED",
+  "supportedDriverRecord": {
+    "actualSupportedDriverExitCode": 1,
+    "actualSupportedDriverReturnObserved": true,
+    "finalChunkId": "565f24",
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "independentOfChildExitProjection": true,
+    "initialChunkId": "4afdae",
+    "initialSessionId": 36981,
+    "pollChunkIds": [
+      "fd1dfb",
+      "565f24"
+    ],
+    "returnedOutputEmpty": true,
+    "source": "Selected root public actual-return proof; no tool replay or historical lookup."
+  },
+  "verifiedPublicRecord": {
+    "category": "REJECTION",
+    "closedFixtureExecutorProofEquality": true,
+    "completedPlugins": 11,
+    "coveredNativeCounters": {
+      "requests": 1,
+      "stepEnds": 1,
+      "stepStarts": 1,
+      "streams": 1,
+      "tools": 0,
+      "turnEnds": 1,
+      "turnStarts": 1
+    },
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executionCommitted": false,
+    "fixtureByteCap": 1024,
+    "fixtureBytes": 721,
+    "fixtureFields": 29,
+    "headerCases": 3,
+    "httpRequests": 19,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_EXECUTE",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "taskCreated": true,
+    "workerCreated": true,
+    "workerStopped": false
+  }
+}

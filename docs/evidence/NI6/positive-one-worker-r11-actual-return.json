@@ -1,0 +1,287 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "UI": "BLOCKED_NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF",
+  "acceptanceGO": false,
+  "accepted": 0,
+  "all87": "HOLD",
+  "assessment": {
+    "captureAndResult": "PASS_GENUINE_EXACT_RESULT_SOURCE_DIGEST_USAGE_AND_DISPOSITION_ASSERTIONS",
+    "falseMilestoneQualification": "workerStopped/reservationReleased/ownedEntriesRemoved/positivePath/rootClosed=false are unreached/unestablished independent test milestones. They do not prove absent durable release, actual worker still running or a resource leak. Later entryRemoved=true is cleanup and cannot substitute.",
+    "finishStopRelease": "NOT_ESTABLISHED_BY_GUARDED_PUBLIC_RECEIPT_AND_POST_FINISH_ORACLES",
+    "firstFailure": {
+      "category": "REJECTION",
+      "finishTrace": "104",
+      "finishWait": "W030000",
+      "httpRequests": 23,
+      "phase": "WORKER_FINISH",
+      "refusalCode": "NONE"
+    },
+    "newG01G05": "PASS_SEQUENTIAL_BLOCK_BEFORE_RUNTIME",
+    "observationsDoNotProve": "No final enclosing monotonic driver duration, exact server cause, hidden core implementation, full DSH application quit, delivery, independent product audit, acceptance or MVP.",
+    "originalC01C23": "PASS_HEADER3_PROJECTION12_STREAM8",
+    "originalF01F05": "PASS_SEQUENTIAL_BLOCK_BEFORE_RUNTIME",
+    "strictStandaloneRoot": "UNESTABLISHED_DIAGNOSTIC_MILESTONE; original public root dispose is restart, separate immutable lifecycle source report establishes terminal child oracle rationale. R11 retained strict root assertion unchanged.",
+    "syntax": "PASS_EXIT0",
+    "syntheticExecution": "PASS_ONE_REQUEST_STREAM_TURN_STEP_TOOLS0_ORIGINAL_EXECUTE_HTTP200_RPC_VALUE_IDLE_RETURNED_COMMITTED",
+    "traceMeaning": "104 records the original selected client HTTP timer before response headers. It does not identify a server internal error, wait cycle, exact latency or a timer-only product fix.",
+    "waitMeaning": "W03 is the marker immediately after the original await native.finishExecution returns in installed-worker.workerFinish. The snapshot therefore observes that return before later permit.seal/currentness and response work. The suffix0000 is floored elapsed milliseconds at first client terminal, not total finish latency."
+  },
+  "boundaries": {
+    "actualInvocations": 1,
+    "browserActions": 0,
+    "cancelledTask": "4da34a6d_NEVER_EXECUTE",
+    "canonicalProductModified": false,
+    "cloudAttempts": "TWICE_DENIED_NO_THIRD",
+    "earlierAttemptsReplayed": false,
+    "externalModelCalls": 0,
+    "liveChatOrWebhookSetup": false,
+    "mainMerged": false,
+    "memoryWrites": 0,
+    "newBuildClaimed": false,
+    "newHarnessOrDaemon": false,
+    "oldQaFixture": "UNTOUCHED",
+    "opaqueCaptureFinishBodiesInspected": false,
+    "originalHostModified": false,
+    "privateContentReadCopyDecodeHash": false,
+    "protectedCODEInspectedOrRerouted": false,
+    "remotePushPublish": false,
+    "tools": 0
+  },
+  "branch": "feat/S3-integrations",
+  "budgetQualification": {
+    "conservativeActiveSecondsSnapshot": 29.669802374904975,
+    "maximumActiveSeconds": 90,
+    "observedSecondsSnapshot": 24.669801624957472,
+    "qualification": "Original executor computes these snapshots before final public copies/writes; they are not final enclosing monotonic runtime. Actual final supported driver exit1 is independently captured above."
+  },
+  "captureAndProcess": {
+    "bothCompleteEOF": true,
+    "bothOwnedGroupsAbsentObserved": true,
+    "functionalStderr": {
+      "bytes": 169,
+      "rootReadDecodeCopyOrHashContent": false,
+      "sha256": "3655957de60978eafa56b5569b681c22bbab0b8fbfabb2e7b805262e8735bf56",
+      "source": "ORIGINAL_EXECUTOR_OPAQUE_STREAM_METADATA_ONLY"
+    },
+    "functionalStdoutBytes": 0,
+    "interrupted": false,
+    "overflow": false,
+    "remoteTermination": "NOT_CLAIMED",
+    "reservationRelease": "NOT_CLAIMED",
+    "signalAttempts": 0,
+    "signalBoundary": "NOT_SELECTED",
+    "timedOut": false,
+    "truncated": false
+  },
+  "closedPublicEvidence": [
+    {
+      "bytes": 939,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-execution/fixture-result.json",
+      "sha256": "908ae0a272f1b1dfbba93839b266481a387d80b8a75d985b6898a78804229f27"
+    },
+    {
+      "bytes": 4651,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-execution/executor-result.json",
+      "sha256": "80db3cfd58e51363493f982dc753ddffb5583181e2a6e23d9baf7242b76e8ec2"
+    },
+    {
+      "bytes": 2999,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-execution/command-results.json",
+      "sha256": "2be69efa9cc1f550887266f9fc8435a938ca7c64b8baa23a69a63899a1766623"
+    },
+    {
+      "bytes": 286,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-execution/before-after.json",
+      "sha256": "2469979f43bdce1210cd3fc2c97e45e9eade844c4805e0dfab4d058c84307bdc"
+    },
+    {
+      "bytes": 235277,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-execution/root-plan.json",
+      "sha256": "4f397a0047b20d6b784fe906b04927e15513eee21524398ffe956b45ec1d3f77"
+    },
+    {
+      "bytes": 272,
+      "path": ".runtime/ni6-positive-one-worker-r11/invocation.json",
+      "sha256": "be081218b5fd2426c2bdcbe0d3065de52e6a0c85a139cefd4ea0071c59d1505c"
+    }
+  ],
+  "commandsSummary": [
+    {
+      "childPid": 89013,
+      "durationSeconds": 0.072574,
+      "exitCode": 0,
+      "index": 1
+    },
+    {
+      "childPid": 89014,
+      "durationSeconds": 12.204527,
+      "exitCode": 1,
+      "index": 2
+    }
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-r11-root-actual-return/v1",
+  "date": "2026-10-08",
+  "descriptiveQualifications": {
+    "actualRootPlan": "Manifest field is inherited historical R10; actual PLAN_NAME/proposal.rootPlan and selected root plan are R11.",
+    "initialWidth": "Source report wording 'eight-digit-initial exclusion' is a wording note; actual protocol is seven ASCII characters.",
+    "packageRegularFilesUnchangedFromR9": "Historical predecessor count65; current measured conservation59/65.",
+    "productRuntimeEntry": "Generic src/index.mjs description; actual fixture ENTRY_START selects src/installed-plugin.mjs."
+  },
+  "headBefore": "f6fba92ffaba52759739eb3161d8fde23dd22051",
+  "independentFinalSourceReports": [
+    {
+      "bytes": 11734,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-independent-source-review.md",
+      "sha256": "750ef4c02a371d654aee3307c1219d9522de1432af97e99ab713d7a559fd349d"
+    },
+    {
+      "bytes": 28862,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-independent-source-review.json",
+      "sha256": "30d5074cd5db54baad717307fc6a021e107fef5b5e29400693ece97c8311866c"
+    },
+    {
+      "bytes": 11786,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-independent-test-design-review.md",
+      "sha256": "ea953a58d251425e9d205fd9ceb18f5558bbfd8afa1404ee79b41464752532db"
+    },
+    {
+      "bytes": 22924,
+      "path": "docs/evidence/NI6/positive-one-worker-r11-independent-test-design-review.json",
+      "sha256": "bf67ee7e24a2088f6c4730bce377f02ea6ce7453dea3bbe4b7cd2b75d7c0c2e6"
+    }
+  ],
+  "main": "3b136e1ab264040b535c1e787b89f659328b30c4",
+  "model": "gpt-6.1-sol",
+  "owner": "/root",
+  "privateNamespacesMetadataOnly": "Exact owned directory type/UID/mode checked; no enumeration or content read/hash/copy/decode.",
+  "provenanceAfter": {
+    "all1201PinsPhysicallyVerified": true,
+    "allSourceCopiesExact": true,
+    "publicHostBeforeAfterAuthority": "ORIGINAL_EXECUTOR_FULL_GRAPH_CHECK",
+    "sourceCopies": 752,
+    "sourceCopyBytes": 22165402,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "publicDiagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "finishTrace": "104",
+    "finishWait": "W030000",
+    "headerCases": 3,
+    "httpRequests": 23,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_FINISH",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "requests": 1,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": true,
+    "rootClosed": false,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streamCases": 8,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "publicationGO": false,
+  "remaining": [
+    "Interpret this finite actual boundary with independent actual reviewers; preserve failed case without replay.",
+    "Select a fresh correction for the unsupported two-second synthetic finish-ack assumption and separately supported owned-child cleanup oracle; independently review and run final corrected code.",
+    "Canonical integration/build and aggregate functional/visual acceptance remain outstanding; UI supported access absent and no corrected handoff."
+  ],
+  "repository": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "revision": "positive-one-worker-r11",
+  "root": "HOLD",
+  "rootReview": {
+    "all1197PresentSealsVerifiedBeforePlan": true,
+    "all65PackageRecordsVerified": true,
+    "carrier2341BytePrefixExact": true,
+    "descriptor64DigestsHostCanonicalSerializationVerified": true,
+    "fixtureAndExecutorExactlyNormalizeToR10": true,
+    "fourOrdinaryModulesExactlyNormalizeToR10": true,
+    "fullFixtureAndExecutorRead": true,
+    "fullFourFinalReportRead": true,
+    "fullReportReadQualification": "The first aggregate code-report read was truncated; missing JSON sections were re-read fully in separate bounded returns before plan selection.",
+    "inertComparisonQualification": "Initial root comparison predicates/schema assumptions were corrected (empty pins object, string delta rows, descriptor digest-only records, exact original close whitespace). Candidate bytes and behavior were not changed or evaluated by those checks.",
+    "noMaterialSourceBlocker": true,
+    "packageChanged6Conserved59": true,
+    "tenFileDeltaExactlyRegenerated": true
+  },
+  "selectedRootPlan": {
+    "bytes": 235277,
+    "changesOnly": [
+      "rootReviewedExecutionGO",
+      "rootSupportedExecutionApprovalGranted",
+      "rootReviewedFinalAffectedReports",
+      "pins"
+    ],
+    "currentActualPlanSelfPin": false,
+    "currentManifestSelfPin": true,
+    "mode": "0600",
+    "path": ".runtime/root-ni6-positive-one-worker-r11-execution-plan.json",
+    "pins": 1201,
+    "sha256": "4f397a0047b20d6b784fe906b04927e15513eee21524398ffe956b45ec1d3f77"
+  },
+  "status": "ACTUAL_FAILED_HOLD_CONSUMED_NO_REPLAY",
+  "supportedCommand": [
+    "/opt/homebrew/bin/python3",
+    "-I",
+    ".runtime/ni6-positive-one-worker-r11/run-once.py",
+    ".runtime/root-ni6-positive-one-worker-r11-execution-plan.json"
+  ],
+  "supportedFinalReturn": {
+    "chunkId": "f1e018",
+    "exitCode": 1,
+    "rawCaptureContentsInspected": false,
+    "stdoutBytes": 0
+  },
+  "supportedToolReturns": [
+    {
+      "chunk_id": "e78094",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 88951,
+      "wall_time_seconds": 1.000613375
+    },
+    {
+      "chunk_id": "944140",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 88951,
+      "wall_time_seconds": 5.001871496
+    },
+    {
+      "chunk_id": "ec7e17",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 88951,
+      "wall_time_seconds": 5.001018079
+    },
+    {
+      "chunk_id": "f1e018",
+      "exit_code": 1,
+      "original_token_count": 0,
+      "output": "",
+      "wall_time_seconds": 4.321170165
+    }
+  ]
+}

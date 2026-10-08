@@ -1,0 +1,309 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "GitMutations": false,
+  "accepted": 0,
+  "actualBuildReturn": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+  "additionalInputCount": 13,
+  "additionalInputRecords": [
+    {
+      "bytes": 3330,
+      "path": ".runtime/ni6-positive-one-worker-r1/README.md",
+      "sha256": "3f2a9eedd6b912b3f7ad35867ac38856eaada081cdacc46cd83e56aa36513c5f"
+    },
+    {
+      "bytes": 7419,
+      "path": ".runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json",
+      "sha256": "f7742732f01db23e19ad5a959554b863947b4b47b7ae62dcbc2bb3bec49438da"
+    },
+    {
+      "bytes": 31759,
+      "path": ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
+      "sha256": "02bcbe5e2d11d58edb2534ccdf22014e3b426d123cfe64c78e25d7e9f4719111"
+    },
+    {
+      "bytes": 31987,
+      "path": ".runtime/ni6-positive-one-worker-r1/run-once.py",
+      "sha256": "1e9e7a932b58916d936a67f5e622c7bc5cf1f5f293f8e4583647c4b998d8dfe0"
+    },
+    {
+      "bytes": 62472,
+      "path": ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
+      "sha256": "498ede42b93f610ff705064fac04b1fe6553da045ef4ffaa318e8efb176dde13"
+    },
+    {
+      "bytes": 14669,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-source.json",
+      "sha256": "f10a8fdc000ca0addb67b62239713015ee3f605f5bb9f1c794731bd248773322"
+    },
+    {
+      "bytes": 2632,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-source.md",
+      "sha256": "c9b4a962b41d4e19c86ce3df59f16cdf0158fb2248d2fccd12d4fca75fa7e504"
+    },
+    {
+      "bytes": 109628,
+      "path": ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
+      "sha256": "41cbd77dfdde3cca0cd86c4d15ad82ed65ea696974601c71b9f70cf3f4b131c2"
+    },
+    {
+      "bytes": 5126,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
+      "sha256": "419d6eeec51e6ff7a0d93a57c9289f4ea69b211722ed86f4703df0ed9e1bae3d"
+    },
+    {
+      "bytes": 12271,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
+      "sha256": "35be257279fb1fec2d68b59e5888f8eae197f664449df155461a160161d131fa"
+    },
+    {
+      "bytes": 7139,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
+      "sha256": "5277a4fe0bbaac81656b0997764a55f1a00b5eb8dda70060eb96e7d10dc98a3f"
+    },
+    {
+      "bytes": 11754,
+      "path": "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json",
+      "sha256": "baf0d156915e9b6f51276df5b637e754d6802d59c630a63319b118852372396e"
+    },
+    {
+      "bytes": 2603,
+      "path": "docs/ni6-positive-one-worker-r2-usage-fix-2026-10-07.md",
+      "sha256": "c6815b6475be1931d244fdbc8c86c737d46020c01094587459cf870401a239e4"
+    }
+  ],
+  "affectedLiteralOperations": [
+    "initialize inputMessageBytes=0 beside original counters",
+    "at sole llm/stream count UTF-8 JSON.stringify(options.messages), require one stream and positive safe integer <=16384, return next() unchanged",
+    "require execution.usage.units===inputMessageBytes+Buffer.byteLength(expected,utf8), retaining <=32768 and actual state/accounting"
+  ],
+  "all87": "HOLD",
+  "ancestorSourceManifestSha256": "1af86a03bdacec92a93648d7f082551ac90839100532533bb07bc2370552b3f2",
+  "author": "/root/bootstrap_budget_fix_author",
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "candidateParseCompileImportBuildCheckTestRuntime": false,
+  "contractVersion": "df.ni6-positive-one-worker-source/v1",
+  "date": "2026-10-07",
+  "faultOrProtectedCODEInvestigation": false,
+  "forwardingAuthority": {
+    "conclusion": "Observed public message values are the original deterministic provider input-accounting values on this selected path",
+    "extraCalls": 0,
+    "lines": [
+      1734,
+      1737,
+      2361,
+      2365,
+      2296,
+      2317,
+      756,
+      2236,
+      2259
+    ],
+    "messagesMutatedHashedPublished": false,
+    "provider": ".runtime/ni6-public-preparation-r3/package/src/testing-provider.mjs",
+    "providerLines": [
+      82,
+      92,
+      118,
+      121
+    ],
+    "publicHost": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+    "scope": "Fresh system/user text-only messages; no file/image/developer/assistant projection"
+  },
+  "futureActualPinUnionCountIncludingSelfAndReviews": 463,
+  "inherited438RowsPreservedExactly": true,
+  "inheritedInputCount": 438,
+  "inputBytes": 17363903,
+  "inputFileCount": 451,
+  "metadataSelfHashes": "ROOT_EXTERNAL_SEAL_REQUIRED; no recursive report or manifest self-pin",
+  "namespaceChangesOnlyOutsideOracle": true,
+  "originalProduct": ".runtime/ni6-public-preparation-r3/package",
+  "ownedCoreRecords": [
+    {
+      "bytes": 32061,
+      "path": ".runtime/ni6-positive-one-worker-r2/fixture.mjs",
+      "sha256": "414547d5dcda859b41c0d41551d83ebf5862a92595ca0db34c8185b49d64afdd"
+    },
+    {
+      "bytes": 31987,
+      "path": ".runtime/ni6-positive-one-worker-r2/run-once.py",
+      "sha256": "8cf8cfa6a258ee35b31fb1a5c5f19459aeec937b7272a9705540bdc3220ddc6b"
+    },
+    {
+      "bytes": 8282,
+      "path": ".runtime/ni6-positive-one-worker-r2/execution-plan.proposed.json",
+      "sha256": "00101ceca8c67265fc9a398e20ec64188417354205beb5e6e5a568dc7be2179f"
+    },
+    {
+      "bytes": 16405,
+      "path": ".runtime/ni6-positive-one-worker-r2/source-delta.diff",
+      "sha256": "5989a943f7ddc5c3b790e718881f600f2f430c3e79266e403a23c1fb98def79c"
+    },
+    {
+      "bytes": 4111,
+      "path": ".runtime/ni6-positive-one-worker-r2/README.md",
+      "sha256": "bc3fbe4e4676a1f9fc672594e976ba4946eec8975be3a1ad2ef262c0aa01d6cb"
+    }
+  ],
+  "privateContentInspection": false,
+  "prospectiveEffects": {
+    "actionGrantsMaximum": 1,
+    "actualStepsMaximum": 1,
+    "actualTurnsMaximum": 1,
+    "authGetMaximum": 1,
+    "connectionLoaderEntry": 1,
+    "contextPreparationsMaximum": 1,
+    "directInterpreterStartsMaximum": 3,
+    "directRootHostPluginInvocations": 10,
+    "domainPostsMaximum": 23,
+    "durableStorage": "Explicit original setup SQLite/vault plus one original plaintext JSONL session; private contents never inspected by fixture/driver",
+    "ephemeralLoopbackListenersMaximum": 1,
+    "externalModelCallsMaximum": 0,
+    "freshDirectRuntimeDirectories": 5,
+    "httpRequestBytesMaximum": 2048,
+    "httpRequestsMaximum": 25,
+    "httpResponseBytesMaximum": 65536,
+    "memoryWritesMaximum": 0,
+    "nativeAgentsMaximum": 1,
+    "nativeEventObservationMaximum": 128,
+    "nativeProviderRequestsMaximum": 1,
+    "nativeSessionsMaximum": 1,
+    "nativeStreamsMaximum": 1,
+    "nativeToolsMaximum": 0,
+    "ordinaryCredentialFile": "Original private LocalCredentialProvider only",
+    "ownedLoaderEntriesMaximum": 6,
+    "policyConfirmsMaximum": 1,
+    "postDisposalPostsMaximum": 1,
+    "presetRegistrationDisposalMaximum": 1,
+    "presetRegistrationMaximum": 1,
+    "profileName": "ni6-positive01",
+    "publicLoaderAwaitMaximum": 12,
+    "publicLoaderCreateMaximum": 6,
+    "publicLoaderRemoveAttemptsMaximum": 6,
+    "rawEntryFiberAwaitMaximum": 12,
+    "resultQualification": "Synthetic local not-reviewed/not-requested; no task completion or acceptance",
+    "rootPublicDisposeMaximum": 1,
+    "sequentialNodeCommands": 2,
+    "taskIntakesMaximum": 1,
+    "temporaryHttpSocketsMaximum": 25,
+    "testWorkers": 0,
+    "unknownOutcome": "FAILED_HOLD; no retry/replay/reset/adoption",
+    "workerCapturesMaximum": 1,
+    "workerCreatesMaximum": 1,
+    "workerExecutesMaximum": 1,
+    "workerFinishesMaximum": 1,
+    "workerResultReadsMaximum": 1
+  },
+  "publicResultByteCap": 1024,
+  "publicResultFields": [
+    "contractVersion",
+    "result",
+    "phase",
+    "category",
+    "refusalCode",
+    "positivePath",
+    "taskCreated",
+    "workerCreated",
+    "executionCommitted",
+    "resultReturned",
+    "workerStopped",
+    "reservationReleased",
+    "entryRemoved",
+    "ownedEntriesRemoved",
+    "rootClosed",
+    "completedPlugins",
+    "httpRequests",
+    "requests",
+    "streams",
+    "tools",
+    "stepStarts",
+    "stepEnds",
+    "turnStarts",
+    "turnEnds",
+    "all87",
+    "CODE"
+  ],
+  "qualifications": [
+    "r1 source/test reviews remain immutable; r1 no runtime selection",
+    "strict root restart cleanup remains rootClosed=false/FAILED_HOLD if active",
+    "positive ordinary result remains not-reviewed/not-requested; no task-completion inference",
+    "existing coarse nested Loader phase and finite result/executor qualifications retained",
+    "actual supported return and EOF/group/exit authority remain separate",
+    "no protected CODE acceptance; original full graph authority inherited"
+  ],
+  "remaining": [
+    "four final narrow independent source/test reports",
+    "root closed actual pins and explicit GO",
+    "root supported once-only execution and actual return readback"
+  ],
+  "requiredAffectedReviews": [
+    "docs/evidence/NI6/positive-one-worker-r2-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.json"
+  ],
+  "revision": "positive-one-worker-r2",
+  "rootGO": false,
+  "sealed": true,
+  "sourceCopies": [
+    ".runtime/ni6-positive-one-worker-r2/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r2/run-once.py",
+    ".runtime/ni6-positive-one-worker-r2/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r2/source-delta.diff",
+    ".runtime/ni6-positive-one-worker-r2/README.md",
+    ".runtime/ni6-positive-one-worker-r2/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r2-source.md",
+    "docs/evidence/NI6/positive-one-worker-r2-source.json",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r2-independent-test-design-review.json",
+    "docs/ni6-positive-one-worker-r1-freeze-2026-10-07.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-actual-return.json",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
+    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
+    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json",
+    ".runtime/ni6-public-preparation-r3/source-manifest.json",
+    ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+    ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
+    ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
+    ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+    ".runtime/ni6-public-preparation-r3/build-readback.json",
+    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json",
+    ".runtime/ni6-positive-one-worker-r1/README.md",
+    ".runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json",
+    ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
+    ".runtime/ni6-positive-one-worker-r1/run-once.py",
+    ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
+    "docs/evidence/NI6/positive-one-worker-r1-source.json",
+    "docs/evidence/NI6/positive-one-worker-r1-source.md",
+    ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
+    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json",
+    "docs/ni6-positive-one-worker-r2-usage-fix-2026-10-07.md"
+  ],
+  "sourceDelta": ".runtime/ni6-positive-one-worker-r2/source-delta.diff",
+  "sourceManifest": ".runtime/ni6-positive-one-worker-r2/source-manifest.json",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "wholeGraphReaudited": false
+}
