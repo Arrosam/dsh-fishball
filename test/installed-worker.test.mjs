@@ -11,6 +11,8 @@ import { createInstalledWorker } from '../src/installed-worker.mjs';
 import { createRuntimePlugin } from '../src/runtime-plugin.mjs';
 import { reference } from '../src/runtime-store.mjs';
 import { BootstrapError } from '../src/config.mjs';
+import { hash } from '../src/runtime-security.mjs';
+import { installedRef } from '../src/installed-worker-facts.mjs';
 const load=n=>import(pathToFileURL(resolveHostSource('@deepseek-ai/'+n)).href);
 const {Context}=await load('cordis');const {default:Loader}=await load('cordis-plugin-loader');const {default:Sessions}=await load('dsh-session');const {default:Projections}=await load('dsh-session-projection');const {default:Approval}=await load('dsh-user-approval');const {AgentRegistry}=await load('dsh-agent');const {LlmRuntime}=await load('dsh-llm');const {default:Prompt}=await load('dsh-system-prompt');const {default:Tools}=await load('dsh-tools');const {default:Presets}=await load('dsh-agent-preset-registry');const {WebServer}=await load('dsh-host-webserver');const {HostConnectionService}=await load('dsh-client-connection');
 class Response extends Writable {parts=[];_write(chunk,encoding,done){this.parts.push(Buffer.from(chunk));done();}writeHead(status,headers){this.statusCode=status;this.headers=headers;}}
@@ -38,6 +40,77 @@ async function fixture(t,{native=true,interceptComposition}={}){
  return{ctx,dir,child,selection,call,ok,privateOperations:()=>privateOperations,status:()=>child.ctx.df.diagnostics().installedWorkerStatus};
 }
 const command=tag=>reference(tag);
+
+// Read-only public installer seams: no native composition, profile, ledger,
+// listener, stream or worker operation is constructed by these cases.
+function retainedResultFixture(){
+ const dir=realpathSync(new URL('../',import.meta.url)),identity={ownerId:'retained-owner',workspaceId:'retained-workspace'};
+ const source=Object.fromEntries(['taskRef','actionRef','actionDigest','claimRef','generationRef','sessionRef','executionRef','inputDigest'].map(key=>[key,command('retained-'+key)]));
+ const taskRef=source.taskRef;source.cursor=2;source.resultDigest=hash('Retained synthetic result');
+ const body={contractVersion:'df.native-result/v1',source,content:'Retained synthetic result'},content=JSON.stringify(body);
+ const artifact={artifactRef:installedRef('df.installed-result/v1',source.taskRef,source.claimRef,source.executionRef),version:1,recordRef:command('retained-record'),digest:hash(content),generationRef:source.generationRef,producerClaimRef:source.claimRef,producerRef:command('retained-producer'),verification:null};
+ const record={recordRef:artifact.recordRef,kind:'artifact',digest:artifact.digest,sourceRef:artifact.artifactRef,generationRef:command('record-encryption-generation'),byteLength:Buffer.byteLength(content),cryptoVersion:2,taskVersion:8,authEpoch:0,createdAt:1};
+ const snap={task:{taskRef:source.taskRef,ownerRef:reference(identity.ownerId),workspaceRef:reference(identity.workspaceId),version:9,authEpoch:0},artifacts:[artifact],data:[record],workers:[{actionRef:source.actionRef,actionDigest:source.actionDigest,claimRef:source.claimRef,generationRef:source.generationRef,sessionRef:source.sessionRef,cursor:source.cursor,phase:'stopped'}],actions:[{actionRef:source.actionRef,actionDigest:source.actionDigest,claimRef:source.claimRef,generationRef:source.generationRef,executionRef:source.executionRef,spec:{dataDigest:source.inputDigest,executor:{generationRef:source.generationRef,sessionRef:source.sessionRef}}}],executions:[{taskRef:source.taskRef,actionRef:source.actionRef,actionDigest:source.actionDigest,claimRef:source.claimRef,generationRef:source.generationRef,executionRef:source.executionRef,dataDigest:source.inputDigest,state:'completed'}]};
+ const detail={...record,content},selection={enabled:true,selection:{provider:'df-testing-local',model:'df-testing-worker-v1',agentPreset:'empty',reasoningEffort:null,maxOutputTokens:128},environment:{root:dir,cwd:dir},persistence:{directory:join(dir,'df-sessions'),compression:'none',retention:'owner-managed'},bounds:{requestBytes:8192,resultBytes:128},policy:{maxRuntimeMs:10000,maxUsageUnits:20000,maxCostEstimateMicros:0},charges:{runtimeMs:1000,usageUnits:8320},previewTtlMs:30000,grantTtlMs:60000};
+ const created=createInstalledWorker({selection,identity,profile:{dir,name:'retained-source-only'}}),receivers=[];
+ let reads=0,afterRead=()=>{},snapshots=0;
+ const forbidden=()=>{throw Error('UNEXPECTED_NATIVE_OR_MUTATION');};
+ const install=()=>created.installedWorkerInstaller({ctx:{},snapshotOwner(value){assert.equal(value.taskRef,taskRef);snapshots++;return structuredClone(snap);},readOwnerData(value){assert.equal(value.taskRef,taskRef);assert.equal(value.recordRef,artifact.recordRef);reads++;const out=structuredClone(detail);afterRead();return out;},currentPolicy:forbidden,installOwnerPolicy:forbidden,planOwnerAction:forbidden,assertNativeRequestCurrent:forbidden,composeNativeWorker:forbidden,prepareOwnerPreview:forbidden,grantOwnerPreview:forbidden,subscribeRuntimeReceipts(callback){receivers.push(callback);return()=>{};},isAlive:()=>true});
+ const request={taskRef:source.taskRef,artifactRef:artifact.artifactRef,version:1,expectedTaskVersion:9,expectedAuthEpoch:0};
+ const read=(installed=install(),value=request,assertCurrent=()=>true)=>installed.operations.workerResult(value,{assertCurrent});
+ const seal=()=>{detail.content=JSON.stringify(body);detail.digest=artifact.digest=record.digest=hash(detail.content);detail.byteLength=record.byteLength=Buffer.byteLength(detail.content);};
+ const observe=(input={},receipt={})=>receivers.at(-1)({operation:'captureResult',input:{...source,artifactRef:artifact.artifactRef,version:1,commandRef:command('retained-capture'),...input},receipt:{...artifact,...receipt}});
+ return{body,source,artifact,record,snap,detail,install,request,read,seal,observe,afterRead(callback){afterRead=callback;},counts:()=>({reads,snapshots})};
+}
+test('retained worker result survives a fresh installer without native replay or a live receipt',async()=>{
+ const f=retainedResultFixture(),first=f.install();f.snap.executions[0].state='committed';f.snap.workers[0].cursor=f.source.cursor+2;f.observe();const live=await f.read(first);first.dispose();
+ f.snap.executions[0].state='completed';f.snap.task.version++;f.request.expectedTaskVersion++;
+ const restarted=f.install();assert.equal(restarted.status().phase,'needs_refresh');const retained=await f.read(restarted);
+ assert.deepEqual(retained,live);assert.equal(retained.content,'Retained synthetic result');assert.equal(retained.verification,'not-reviewed');assert.equal(retained.delivery,'not-requested');assert.deepEqual(f.counts(),{reads:2,snapshots:4});
+});
+test('retained worker result requires any present live capture to match the durable source',async()=>{
+ for(const [input,receipt]of [[{claimRef:command('wrong-live-claim')},{}],[{executionRef:command('wrong-live-execution')},{}],[{}, {recordRef:command('wrong-live-record')}],[{}, {digest:command('wrong-live-digest')}],[{}, {version:2}]]){
+  const f=retainedResultFixture(),installed=f.install();f.observe(input,receipt);await assert.rejects(f.read(installed),{code:'WORKER_RESULT_UNAVAILABLE'});
+ }
+});
+test('retained worker result rejects corrupt envelopes, content and unbound durable metadata',async()=>{
+ const cases={
+  'envelope digest':f=>{f.detail.content+=' ';},
+  'content digest':f=>{f.body.content='changed';f.seal();},
+  'malformed JSON':f=>{f.detail.content='{';f.detail.digest=f.artifact.digest=f.record.digest=hash('{');f.detail.byteLength=f.record.byteLength=1;},
+  'content type':f=>{f.body.content={text:'not text'};f.seal();},
+  'oversize content':f=>{f.body.content='x'.repeat(129);f.source.resultDigest=hash(f.body.content);f.seal();},
+  'extra source field':f=>{f.source.asserted=true;f.seal();},
+  'invalid cursor':f=>{f.source.cursor=-1;f.seal();},
+  'foreign task source':f=>{f.source.taskRef=command('foreign-task');f.seal();},
+  'foreign owner scope':f=>{f.snap.task.ownerRef=command('foreign-owner');},
+  'foreign workspace scope':f=>{f.snap.task.workspaceRef=command('foreign-workspace');},
+  'producer claim':f=>{f.artifact.producerClaimRef=command('foreign-claim');},
+  'producer generation':f=>{f.artifact.generationRef=command('foreign-generation');},
+  'record kind':f=>{f.record.kind=f.detail.kind='context';},
+  'record encryption':f=>{f.record.cryptoVersion=f.detail.cryptoVersion=1;},
+  'record digest':f=>{f.detail.digest=command('wrong-data-digest');},
+  'record source':f=>{f.detail.sourceRef=command('wrong-data-source');},
+  'unbound record source':f=>{f.detail.sourceRef=f.record.sourceRef=command('wrong-associated-source');},
+  'record byte length':f=>{f.detail.byteLength=f.record.byteLength=1;},
+  'worker session':f=>{f.snap.workers[0].sessionRef=command('foreign-session');},
+  'action digest':f=>{f.snap.actions[0].actionDigest=command('foreign-action-digest');},
+  'execution input':f=>{f.snap.executions[0].dataDigest=command('foreign-input');},
+  'duplicate artifact':f=>{f.snap.artifacts.push({...f.artifact});},
+  'missing execution':f=>{f.snap.executions=[];},
+ };
+ for(const [name,mutate]of Object.entries(cases)){
+  const f=retainedResultFixture();mutate(f);await assert.rejects(f.read(),{code:name.includes('scope')?'SCOPE_DENIED':'WORKER_RESULT_UNAVAILABLE'},name);
+ }
+});
+test('retained worker result rechecks CAS, authority and unchanged bindings after the data read',async()=>{
+ for(const [field,code]of [['version','STALE_VERSION'],['authEpoch','STALE_AUTHORITY']]){
+  const before=retainedResultFixture();before.snap.task[field]++;await assert.rejects(before.read(),{code});assert.equal(before.counts().reads,0);
+  const after=retainedResultFixture();after.afterRead(()=>{after.snap.task[field]++;});await assert.rejects(after.read(),{code});assert.equal(after.counts().reads,1);
+ }
+ const f=retainedResultFixture();f.afterRead(()=>{f.snap.executions[0].dataDigest=command('changed-after-read');});await assert.rejects(f.read(),{code:'WORKER_RESULT_UNAVAILABLE'});
+ const aborted=retainedResultFixture();aborted.afterRead(()=>{});await assert.rejects(aborted.read(undefined,undefined,()=>{if(aborted.counts().reads)throw new BootstrapError('REQUEST_ABORTED');return true;}),{code:'REQUEST_ABORTED'});
+});
 test('enabled normal installer boots with missing optional services and leaves existing task-memory usable',async t=>{const f=await fixture(t,{native:false});assert.equal(f.status().phase,'needs_refresh');assert.equal(f.status().actionsEnabled,false);assert.equal(f.ctx.sessions.list().length,0);assert.equal(existsSync(join(f.dir,'df-sessions')),false);assert.equal((await f.call('workerCatalog')).ok,false);const task=await f.ok('intake',{taskId:'optional-missing',provider:'synthetic',source:'local',eventId:'one',commandRef:command('missing-intake'),goal:'Synthetic goal'});assert.ok(task.task.taskRef);assert.equal(f.ctx.sessions.list().length,0);});
 test('catalogue and explicit policy consent use actual original facts and zero boot/session work',async t=>{
  const f=await fixture(t);assert.equal(f.status().phase,'needs_refresh');const catalog=await f.ok('workerCatalog');assert.equal(catalog.status.pricing,'source_zero');assert.equal(catalog.status.actionsEnabled,false);assert.equal(catalog.models[0].contextUnits,135168);assert.equal(catalog.status.persistence.encrypted,false);
