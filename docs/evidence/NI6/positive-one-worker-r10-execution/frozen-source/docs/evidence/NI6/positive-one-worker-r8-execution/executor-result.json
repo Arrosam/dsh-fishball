@@ -1,0 +1,154 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "actualDriverReturnRequired": true,
+  "after": {
+    "complete": true,
+    "inputCount": 925,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "all87": "HOLD",
+  "before": {
+    "complete": true,
+    "inputCount": 925,
+    "unchanged": true,
+    "wholeHostFiles": 27577,
+    "wholeHostLinks": 12
+  },
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-positive-one-worker-r8/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 77023,
+      "durationSeconds": 0.067368,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-08T01:38:46.564833+00:00",
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 77023,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T01:38:46.497520+00:00",
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-positive-one-worker-r8/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 77024,
+      "durationSeconds": 9.214725,
+      "exitCode": 1,
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finishedAt": "2026-10-08T01:38:55.855136+00:00",
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 77024,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "a956a45c9a4fbada237a3229c93e4f9304e60e5d2a11592ed7810199751069f1",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T01:38:46.640471+00:00",
+      "timedOut": false
+    }
+  ],
+  "conservativeActiveSeconds": 26.92505987500772,
+  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-executor/v1",
+  "diagnostic": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "RPC_VALUE_RETURNED",
+    "executeHttpStatus": "HTTP_200",
+    "executeIdlePhase": "RETURNED",
+    "executeTransportFailure": "NONE",
+    "executionCommitted": true,
+    "headerCases": 3,
+    "httpRequests": 21,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_CAPTURE",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "WORKER_RESULT_UNAVAILABLE",
+    "requests": 1,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "failureCode": "EXECUTOR_COMMAND_NONZERO",
+  "finalized": false,
+  "observedSeconds": 21.92505916696973,
+  "result": "FAILED_HOLD",
+  "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+}

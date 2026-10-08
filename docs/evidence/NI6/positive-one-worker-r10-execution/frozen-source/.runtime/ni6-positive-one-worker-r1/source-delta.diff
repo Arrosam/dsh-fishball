@@ -1,0 +1,717 @@
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs
++++ .runtime/ni6-positive-one-worker-r1/fixture.mjs
+@@ -1,4 +1,4 @@
+-// Separate source-only proposal. Original host/public calls; no HTTP client.
++// Source-only positive fixture. Genuine original public services and owner HTTP.
+ import { readFileSync, realpathSync, lstatSync, readlinkSync, existsSync, readdirSync,
+   mkdirSync, openSync, closeSync, writeFileSync, fchmodSync, fstatSync, fsyncSync, constants } from 'node:fs';
+ import { resolve, relative, sep } from 'node:path';
+@@ -6,29 +6,25 @@
+ import { createHash } from 'node:crypto';
+ import assert from 'node:assert/strict';
+ import { performance } from 'node:perf_hooks';
++import { request } from 'node:http';
+ 
+ const STARTED = performance.now();
+ const WORK_END = STARTED + 24000, FINAL_END = STARTED + 30000;
+ const ROOT = '/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball';
+-const NAME = '.runtime/ni6-public-preparation-bootstrap-diagnostic-r1';
++const NAME = '.runtime/ni6-positive-one-worker-r1';
+ const CAPSULE = resolve(ROOT, NAME), HOST = resolve(ROOT, '.runtime/dsh-web');
+ const PRODUCT = resolve(ROOT, '.runtime/ni6-public-preparation-r3/package');
+-const PLAN_NAME = '.runtime/root-ni6-bootstrap-diagnostic-r1-execution-plan.json';
+-const RESULT = resolve(CAPSULE, 'diagnostic-result.json');
++const PLAN_NAME = '.runtime/root-ni6-positive-one-worker-r1-execution-plan.json';
++const RESULT = resolve(CAPSULE, 'fixture-result.json');
+ const GRAPH_NAME = '.runtime/ni3-native-runtime/public-graph-pins.json';
+ const NODE = '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node';
+ const PYTHON = '/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14';
+-const PHASES = Object.freeze(['PREFLIGHT','IMPORTS','NAMESPACE','CONTEXT','PLUGIN_LOADER',
+-  'PLUGIN_PROJECTIONS','PLUGIN_SESSIONS','PLUGIN_APPROVAL','PLUGIN_AGENTS','PLUGIN_LLM',
+-  'PLUGIN_SYSTEM_PROMPT','PLUGIN_TOOLS','PLUGIN_CREDENTIALS','PLUGIN_WEB_SERVER','PLUGIN_CONNECTION',
+-  'LISTENER_FENCE','INDEX_ROUTE','BEFORE_ENTRY','LOADER_CREATE','LOADER_SETTLE','ENTRY_RESOLVE',
+-  'ENTRY_START','ENTRY_STATE','AFTER_ENTRY','ENTRY_REMOVE','ENTRY_DISPOSAL','LOADER_REMOVAL_SETTLE',
+-  'AFTER_REMOVAL','ROOT_CLEANUP','COMPLETE']);
++const PHASES = Object.freeze(["PREFLIGHT", "IMPORTS", "NAMESPACE", "CONTEXT", "PLUGIN_LOADER", "PLUGIN_PROJECTIONS", "PLUGIN_SESSIONS", "PLUGIN_APPROVAL", "PLUGIN_AGENTS", "PLUGIN_LLM", "PLUGIN_SYSTEM_PROMPT", "PLUGIN_TOOLS", "PLUGIN_CREDENTIALS", "PLUGIN_WEB_SERVER", "PLUGIN_CONNECTION", "LISTENER_FENCE", "INDEX_ROUTE", "PUBLIC_SERVICES", "PRESET", "ENTRY_START", "AUTH", "SETUP_STATUS", "SETUP_PREPARE", "SETUP_CONFIRM", "SETUP_READY", "LIST", "INTAKE", "STATUS", "CONTEXT_PREPARE", "CONTEXT_DETAIL", "CATALOG", "POLICY_PREVIEW", "POLICY_CONFIRM", "WORKER_PLAN", "WORKER_PREVIEW", "WORKER_GRANT", "WORKER_CREATE", "WORKER_IDLE", "WORKER_EXECUTE", "WORKER_QUERY", "WORKER_CAPTURE", "WORKER_RESULT", "WORKER_FINISH", "FINAL_STATUS", "PRESET_RELEASE", "ENTRY_REMOVE", "POST_DISPOSAL", "ROOT_CLEANUP", "COMPLETE"]);
+ const CATEGORIES = Object.freeze(['NONE','REJECTION','INVARIANT','DEADLINE']);
+ const ZERO = Object.freeze({agentCreated:0,agentDisposed:0,sessionCreated:0,sessionDisposed:0,sessionEvents:0,streams:0,tools:0});
+ const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+ let phase = 'PREFLIGHT', firstFailure, admitted = false, completedPlugins = 0;
+-let entryRemoved = false, rootClosed = false, zeroNative = false;
++let entryRemoved = false, rootClosed = false;
+ function failure(category) { firstFailure ??= Object.freeze({phase,category}); }
+ function invariant(condition) {
+   if (!condition) { failure('INVARIANT'); throw new Error(); }
+@@ -72,7 +68,7 @@
+ function json(path) { return JSON.parse(bytes(path).toString('utf8')); }
+ function preflight() {
+   invariant(process.argv.length === 2 && process.version === 'v22.22.2' && realpathSync(process.execPath) === NODE);
+-  invariant(realpathSync(ROOT) === ROOT && fileURLToPath(import.meta.url) === resolve(CAPSULE,'diagnostic.mjs'));
++  invariant(realpathSync(ROOT) === ROOT && fileURLToPath(import.meta.url) === resolve(CAPSULE,'fixture.mjs'));
+   directory(CAPSULE);
+   const manifestPath = resolve(CAPSULE,'source-manifest.json');
+   const manifest = json(manifestPath), proposal = json(resolve(CAPSULE,'execution-plan.proposed.json'));
+@@ -141,144 +137,160 @@
+   clock(); admitted = true;
+ }
+ 
++
++const GOAL = 'Synthetic NI6 positive01: return one bounded deterministic local result.';
++const ROUTES = Object.freeze([
++ ['/df-setup','status'],['/df-setup','prepare'],['/df-setup','confirm'],['/df-setup','status'],
++ ['/df-rpc','list'],['/df-rpc','intake'],['/df-rpc','status'],['/df-rpc','prepareContext'],['/df-rpc','detail'],
++ ...['workerCatalog','workerPolicyPreview','workerPolicyConfirm','workerPlan','workerPreview','workerGrant','workerCreate','workerQuery','workerExecute','workerQuery','workerCapture','workerResult','workerFinish','status'].map(n=>['/df-rpc',n])]);
++const REFUSALS = Object.freeze(["NONE", "STALE_VERSION", "WORKER_POLICY_REQUIRED", "WORKER_POLICY_STALE", "WORKER_PREVIEW_STALE", "WORKER_CONFIRMATION_REQUIRED", "WORKER_CONTEXT_INVALID", "WORKER_MAPPING_MISMATCH", "WORKER_RESULT_UNAVAILABLE", "WORKER_FINISH_UNAVAILABLE", "WORKER_SOURCE_UNAVAILABLE", "WORKER_PERSISTENCE_UNSUPPORTED", "WORKER_PRESET_UNAVAILABLE", "WORKER_REQUEST_DENIED", "WORKER_SESSION_UNAVAILABLE", "WORKER_CATALOG_UNAVAILABLE", "WORKER_NOT_CONFIGURED", "COST_UNKNOWN", "CONFIG_INVALID", "INPUT_INVALID", "OUTPUT_TOO_LARGE", "SERVICE_DISPOSED", "CONTEXT_LIMIT", "STORAGE_INVALID", "OTHER_REFUSAL"]);
++let refusalCode='NONE';
++const RESULT_FIELDS = Object.freeze(['contractVersion','result','phase','category','refusalCode','positivePath','taskCreated','workerCreated',
++ 'executionCommitted','resultReturned','workerStopped','reservationReleased','entryRemoved','ownedEntriesRemoved','rootClosed',
++ 'completedPlugins','httpRequests','requests','streams','tools','stepStarts','stepEnds','turnStarts','turnEnds','all87','CODE']);
++function ref(value) { invariant(typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)); return value; }
++function uint(value) { invariant(Number.isSafeInteger(value) && value >= 0); return value; }
++function keys(value, names) { invariant(value !== null && typeof value === 'object' && !Array.isArray(value)); equal(Object.keys(value).sort(),[...names].sort()); }
++function publicTask(value, taskRef) {
++ invariant(value && ref(value.taskRef) && Number.isSafeInteger(value.version) && value.version>0 && uint(value.authEpoch)>=0);
++ if (taskRef !== undefined) invariant(value.taskRef===taskRef);
++ invariant(value.status !== 'completed'); return value;
++}
++function transport(connection,port) {
++ invariant(Number.isSafeInteger(port)&&port>0&&port<=65535&&port!==3080);
++ const authority=`127.0.0.1:${port}`; let cookie,posts=0,total=0,exchanges=0,active=true;
++ async function send(method,path,body,auth) {
++  clock(); invariant(active&&++total<=25&&path.startsWith('/')&&!/[\r\n]/.test(path));
++  const data=body===undefined?undefined:Buffer.from(JSON.stringify(body));invariant(!data||data.length<=2048);
++  const headers={Host:authority,Origin:`http://${authority}`};if(auth){invariant(typeof cookie==='string');headers.Cookie=cookie;}
++  if(data){headers['Content-Type']='application/json';headers['Content-Length']=data.length;}
++  return new Promise((done,reject)=>{
++   let settled=false,timer;const fail=()=>{if(settled)return;settled=true;clearTimeout(timer);reject(new Error());};
++   const req=request({hostname:'127.0.0.1',port,method,path,headers,agent:false},res=>{
++    let size=0;const chunks=[];res.on('data',chunk=>{size+=chunk.length;if(size>65536){res.destroy();req.destroy();fail();}else chunks.push(chunk);});
++    res.on('error',fail);res.on('end',()=>{if(settled)return;settled=true;clearTimeout(timer);done({status:res.statusCode,headers:res.headers,bytes:Buffer.concat(chunks)});});
++   });req.on('error',fail);timer=setTimeout(()=>{req.destroy();fail();},Math.max(1,Math.min(2000,WORK_END-performance.now())));req.end(data);
++  });
++ }
++ return {async authenticate(){invariant(++exchanges===1&&posts===0);const u=new URL(connection.authenticatedUrl(`http://${authority}/`));invariant(u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.port===String(port)&&u.pathname==='/');
++   const r=await send('GET',u.pathname+u.search,undefined,false);invariant(r.status===303&&r.headers.location==='./'&&r.bytes.length===0);const c=r.headers['set-cookie'];invariant(Array.isArray(c)&&c.length===1);cookie=c[0].split(';',1)[0];invariant(cookie.length>0&&Buffer.byteLength(cookie)<=4096&&!/[\r\n]/.test(cookie));clock();},
++  async call(channel,name,payload){clock();invariant(exchanges===1&&posts<23);equal([channel,name],ROUTES[posts]);const rpcId=`ni6-positive01-${++posts}`;
++   const r=await send('POST',`${channel}/v1/${name}`,{type:'client-request',rpcId,method:`v1/${name}`,payload},true);clock();invariant(r.status===200&&r.headers['content-type']?.split(';')[0]==='application/json');
++   const m=JSON.parse(r.bytes.toString('utf8'));keys(m,['type','rpcId','result']);invariant(m.type==='server-response'&&m.rpcId===rpcId);invariant(typeof m.result.ok==='boolean');if(!m.result.ok){keys(m.result,['ok','error']);keys(m.result.error,['code','message','details']);const code=m.result.error.code;invariant(typeof code==='string'&&Buffer.byteLength(code)<=128);refusalCode=REFUSALS.includes(code)&&code!=='NONE'?code:'OTHER_REFUSAL';failure('REJECTION');throw new Error();}keys(m.result,['ok','value']);return m.result.value;},
++  async removed(payload){invariant(posts===23&&exchanges===1);const r=await send('POST','/df-rpc/v1/status',{type:'client-request',rpcId:'ni6-positive01-24',method:'v1/status',payload},true);invariant(r.status===404&&r.bytes.length===0);},
++  total:()=>total,close(){active=false;cookie=undefined;}};
++}
+ async function main() {
+-  let ctx, entry, entryId, removalAttempted = false, counts = {...ZERO}, observedReady = false;
+-  const noNative = () => {
+-    zeroNative = false;
+-    equal(counts,ZERO); equal(ctx.agents.list(),[]); equal(ctx.sessions.list(),[]);
+-    equal(ctx.tools.schemas(),[]); equal(ctx.llm.listProviders(),[]);
+-    invariant(!existsSync(resolve(CAPSULE,'private-runtime/profile/storage/df-sessions-prep01')));
+-    observedReady = true; zeroNative = true;
+-  };
+-  try {
+-    preflight();
+-    const modules = await step('IMPORTS',() => Promise.all([
+-      import('../dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js'),
+-      import('../dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js'),
+-    ]),5000);
+-    const [{Context},{default:Loader},{default:Projections},{default:Sessions},{default:Approval},
+-      {default:Agents},{default:Llm},{default:SystemPrompt},{default:Tools},{LocalCredentialProvider},
+-      {createLaunchEnvironmentSnapshot},{default:WebServer},Connection] = modules;
+-    phase = 'NAMESPACE'; clock();
+-    const make = path => { clock(); mkdirSync(path,{mode:0o700}); directory(path); clock(); return path; };
+-    const run = make(resolve(CAPSULE,'private-runtime'));
+-    const profileDir = make(resolve(run,'profile')), workspace = make(resolve(profileDir,'workspace'));
+-    const storage = make(resolve(profileDir,'storage')), authHome = make(resolve(profileDir,'auth'));
+-    const profile = Object.freeze({dir:profileDir,name:'ni6-prep01'});
+-    const databasePath = resolve(storage,'ledger.sqlite'), sessionDirectory = resolve(storage,'df-sessions-prep01');
+-    const config = {
+-      databasePath, limits:{queueCapacity:4,maxActive:1,maxAttempts:1,maxTasks:4,maxActionsPerTask:8,maxEventsPerTask:128,maxMetadataBytes:4096},
+-      memory:{enabled:true,byteLimit:16384,tokenLimit:16384},
+-      worker:{enabled:true,selection:{provider:'df-testing-local',model:'df-testing-worker-v1',agentPreset:'ni6-prep01-empty',reasoningEffort:'deterministic',maxOutputTokens:128},
+-        environment:{root:workspace,cwd:workspace},persistence:{directory:sessionDirectory,compression:'none',retention:'owner-managed'},
+-        bounds:{requestBytes:16384,resultBytes:1024},policy:{maxRuntimeMs:60000,maxUsageUnits:65536,maxCostEstimateMicros:0},
+-        charges:{runtimeMs:15000,usageUnits:32768},previewTtlMs:60000,grantTtlMs:60000},
+-      audit:{enabled:false},automation:{enabled:false},results:{enabled:false},
+-    };
+-    phase = 'CONTEXT'; clock();
+-    ctx = new Context().intercept('logger',{level:-1});
+-    ctx.baseUrl = pathToFileURL(resolve(PRODUCT,'package.json')).href;
+-    ctx.provide('profileContext',profile);
+-    ctx.provide('launchEnvironment',createLaunchEnvironmentSnapshot([
+-      {source:'process',values:{DSH_HOME:authHome,XDG_CONFIG_HOME:authHome}},
+-    ]));
+-    for (const [event,name] of [['agent/created','agentCreated'],['agent/disposed','agentDisposed'],['session/created','sessionCreated'],['session/disposed','sessionDisposed'],['session/event','sessionEvents']]) {
+-      ctx.on(event,() => { counts[name]++; },{global:true});
+-    }
+-    ctx.on('llm/stream',(_options,next) => { counts.streams++; return next(); },{global:true});
+-    ctx.on('tools/execute',(_execution,next) => { counts.tools++; return next(); },{global:true});
+-    const install = async (name,plugin,options) => step(name,async () => {
+-      const fiber = ctx.plugin(plugin,options); await fiber;
+-      invariant(fiber.state === 2 && fiber.uid !== null); completedPlugins++;
+-    });
+-    await install('PLUGIN_LOADER',Loader,{baseUrl:ctx.baseUrl});
+-    await install('PLUGIN_PROJECTIONS',Projections); await install('PLUGIN_SESSIONS',Sessions);
+-    await install('PLUGIN_APPROVAL',Approval,{policy:'never'}); await install('PLUGIN_AGENTS',Agents);
+-    await install('PLUGIN_LLM',Llm); await install('PLUGIN_SYSTEM_PROMPT',SystemPrompt,{});
+-    await install('PLUGIN_TOOLS',Tools,{mode:'native',maxParallelSubCalls:1});
+-    await install('PLUGIN_CREDENTIALS',LocalCredentialProvider,{path:resolve(authHome,'.credentials.yaml'),dshHome:authHome,watch:false,debounceMs:100});
+-    await install('PLUGIN_WEB_SERVER',WebServer,{host:'127.0.0.1',port:0,compression:'none'});
+-    await install('PLUGIN_CONNECTION',Connection,{trustedHosts:[],cookieMaxAgeDays:1,maxRequestBodyBytes:65536,recovery:{}});
+-    phase = 'LISTENER_FENCE'; clock();
+-    invariant(ctx.webServer.host === '127.0.0.1' && Number.isSafeInteger(ctx.webServer.port)
+-      && ctx.webServer.port > 0 && ctx.webServer.port <= 65535 && ctx.webServer.port !== 3080);
+-    phase = 'INDEX_ROUTE'; clock();
+-    ctx.effect(() => ctx.webServer.register({kind:'exact',path:'/',handler(req,res) {
+-      if (ctx.connection.authorizeIndex(req,res)) { res.writeHead(200,{'cache-control':'no-store'}); res.end(); }
+-    }}),'ni6.prep01.original-index-auth'); // Registered original route; never dispatched.
+-    phase = 'BEFORE_ENTRY'; clock(); noNative(); clock();
+-    entryId = await step('LOADER_CREATE',() => ctx.loader.create({name:pathToFileURL(resolve(PRODUCT,'src/installed-plugin.mjs')).href,config}));
+-    await step('LOADER_SETTLE',() => ctx.loader.await());
+-    phase = 'ENTRY_RESOLVE'; clock(); entry = ctx.loader.resolve(entryId); invariant(entry && entry.fiber); clock();
+-    await step('ENTRY_START',() => entry.fiber.await()); // Public raw Fiber await; no startup error payload inspection.
+-    phase = 'ENTRY_STATE'; clock(); invariant(entry.fiber.state === 2 && entry.fiber.uid !== null);
+-    phase = 'AFTER_ENTRY'; clock(); noNative(); clock();
+-    const fiber = entry.fiber;
+-    phase = 'ENTRY_REMOVE'; clock(); removalAttempted = true; ctx.loader.remove(entryId); clock(); // Once only.
+-    await step('ENTRY_DISPOSAL',() => fiber.await());
+-    await step('LOADER_REMOVAL_SETTLE',() => ctx.loader.await());
+-    invariant(!Array.from(ctx.loader.entries()).some(item => item.id === entryId)
+-      && fiber.uid === null && fiber.state === 4); entryRemoved = true;
+-    phase = 'AFTER_REMOVAL'; clock(); noNative(); clock();
+-    invariant(!existsSync(databasePath) && !existsSync(databasePath + '.df-setup') && !existsSync(sessionDirectory));
+-  } catch { failure('REJECTION'); }
+-  finally {
+-    // Save first work failure before cleanup. Root observers can unload during
+-    // this restart; no fresh post-root registries or continuous event proof.
+-    if (ctx) {
+-      const cleanupEnd = Math.min(performance.now() + 5000,FINAL_END - 500);
+-      if (entryId !== undefined && !removalAttempted) {
+-        try {
+-          const pendingFiber = entry?.fiber;
+-          phase = 'ENTRY_REMOVE'; clock(cleanupEnd); removalAttempted = true;
+-          ctx.loader.remove(entryId); clock(cleanupEnd);
+-          if (pendingFiber) await step('ENTRY_DISPOSAL',() => pendingFiber.await(),5000,cleanupEnd);
+-          await step('LOADER_REMOVAL_SETTLE',() => ctx.loader.await(),5000,cleanupEnd);
+-          entryRemoved = !!pendingFiber && !Array.from(ctx.loader.entries()).some(item => item.id === entryId)
+-            && pendingFiber.uid === null && pendingFiber.state === 4;
+-          if (completedPlugins === 11 && entryRemoved) {
+-            phase = 'AFTER_REMOVAL'; clock(cleanupEnd); noNative(); clock(cleanupEnd);
+-          }
+-        } catch { failure('REJECTION'); }
+-      }
+-      try {
+-        await step('ROOT_CLEANUP',() => ctx.fiber.dispose(),5000,cleanupEnd);
+-        rootClosed = ctx.fiber.uid === null && ctx.fiber.state === 4;
+-        invariant(rootClosed); // Original terminal assertion retained; restart is not closure.
+-      } catch { failure('REJECTION'); }
+-    }
+-    // Only already covered ready/removal boundaries and retained natural history.
+-    zeroNative = observedReady && zeroNative && Object.keys(ZERO).every(name => counts[name] === 0);
+-  }
+-  if (!admitted) { process.exitCode = 1; return; }
+-  const result = {contractVersion:'df.ni6-prep01-bootstrap-diagnostic/v1',result:firstFailure ? 'FAILED_HOLD' : 'PASS',
+-    phase:firstFailure?.phase ?? 'COMPLETE',category:firstFailure?.category ?? 'NONE',completedPlugins,
+-    entryRemoved,rootClosed,zeroNative,all87:'HOLD',CODE:'BLOCKED_UNCHANGED'};
+-  if (!firstFailure && !(completedPlugins === 11 && entryRemoved && rootClosed && zeroNative)) {
+-    phase = 'ROOT_CLEANUP'; failure('INVARIANT'); result.result = 'FAILED_HOLD'; result.phase = firstFailure.phase; result.category = firstFailure.category;
+-  }
+-  clock(FINAL_END); directory(CAPSULE);
+-  invariant(PHASES.includes(result.phase) && CATEGORIES.includes(result.category));
+-  const output = Buffer.from(JSON.stringify(result) + '\n'); invariant(output.length <= 512);
+-  const fd = openSync(RESULT,constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,0o600);
+-  try {
+-    fchmodSync(fd,0o600); const created = fstatSync(fd);
+-    invariant(created.isFile() && created.uid === process.getuid() && (created.mode & 0o777) === 0o600);
+-    writeFileSync(fd,output); fsyncSync(fd);
+-    const final = regular(RESULT,0o600); invariant(final.ino === created.ino && final.dev === created.dev);
+-    clock(FINAL_END);
+-  } finally { closeSync(fd); }
+-  process.exitCode = result.result === 'PASS' ? 0 : 1;
+-}
+-main().catch(() => { process.exitCode = 1; }); // Never print caught error/object/stack.
++ let ctx,http,presetDisposer,presetReleased=false,workerAgent,currentTask,addressed,positivePath=false;
++ const entries=[],counts={...ZERO},facts={taskCreated:false,workerCreated:false,executionCommitted:false,resultReturned:false,workerStopped:false,reservationReleased:false,ownedEntriesRemoved:false};
++ let requests=0,stepStarts=0,stepEnds=0,turnStarts=0,turnEnds=0,ownedEventCount=0;
++ const empty=()=>{equal(ctx.agents.list(),[]);equal(ctx.sessions.list(),[]);invariant(counts.tools===0);};
++ async function loaderEntry(name,config,inject=[]) {
++  clock();const id=await step('PUBLIC_SERVICES',()=>ctx.loader.create({name,config,...(inject.length?{inject}:{})}));
++  const row={id,fiber:null,removed:false,product:name.endsWith('/src/installed-plugin.mjs')};entries.push(row);
++  await step('PUBLIC_SERVICES',()=>ctx.loader.await());row.fiber=ctx.loader.resolve(id)?.fiber;invariant(row.fiber);await step('PUBLIC_SERVICES',()=>row.fiber.await());invariant(row.fiber.state===2&&row.fiber.uid!==null);return row;
++ }
++ async function remove(row,end) {
++  phase='ENTRY_REMOVE';clock(end);invariant(!row.removed);row.removed=true;
++  const fiber=row.fiber??ctx.loader.resolve(row.id)?.fiber;ctx.loader.remove(row.id);clock(end);
++  invariant(fiber);await step('ENTRY_REMOVE',()=>fiber.await(),5000,end);await step('ENTRY_REMOVE',()=>ctx.loader.await(),5000,end);
++  invariant(fiber.uid===null&&fiber.state===4&&!Array.from(ctx.loader.entries()).some(e=>e.id===row.id));if(row.product)entryRemoved=true;
++ }
++ const synthetic=label=>sha(Buffer.from(`df.ni6-positive01.synthetic/v1:${label}`));
++ const cas=()=>({taskRef:currentTask.taskRef,expectedTaskVersion:currentTask.version,expectedAuthEpoch:currentTask.authEpoch});
++ const update=value=>{
++  if(value?.task) currentTask=publicTask(value.task,currentTask?.taskRef);
++  else if(value&&Number.isSafeInteger(value.taskVersion)&&Number.isSafeInteger(value.authEpoch))currentTask={...currentTask,version:value.taskVersion,authEpoch:value.authEpoch};
++  return value;
++ };
++ async function rpc(p,channel,name,payload){const v=await step(p,()=>http.call(channel,name,payload),2500);clock();return update(v);}
++ try {
++  preflight();
++  const modules=await step('IMPORTS',()=>Promise.all([
++   import('../dsh-web/node_modules/@deepseek-ai/cordis/lib/index.js'),import('../dsh-web/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js'),
++   import('../dsh-web/node_modules/@deepseek-ai/dsh-session-projection/lib/index.js'),import('../dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js'),
++   import('../dsh-web/node_modules/@deepseek-ai/dsh-user-approval/lib/index.js'),import('../dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js'),
++   import('../dsh-web/node_modules/@deepseek-ai/dsh-llm/lib/index.js'),import('../dsh-web/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js'),
++   import('../dsh-web/node_modules/@deepseek-ai/dsh-tools/lib/index.js'),import('../dsh-web/node_modules/@deepseek-ai/dsh-credentials-local/lib/index.js'),
++   import('../dsh-web/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js'),import('../dsh-web/node_modules/@deepseek-ai/dsh-host-webserver/lib/index.js'),
++   import('../dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js')]),5000);
++  const [{Context},{default:Loader},{default:Projections},{default:Sessions},{default:Approval},{default:Agents},{default:Llm},{default:SystemPrompt},{default:Tools},{LocalCredentialProvider},{createLaunchEnvironmentSnapshot},{default:WebServer}]=modules;
++  phase='NAMESPACE';clock();const make=p=>{clock();mkdirSync(p,{mode:0o700});directory(p);clock();return p;};
++  const run=make(resolve(CAPSULE,'private-runtime')),profileDir=make(resolve(run,'profile')),workspace=make(resolve(profileDir,'workspace')),storage=make(resolve(profileDir,'storage')),authHome=make(resolve(profileDir,'auth'));
++  const databasePath=resolve(storage,'ledger.sqlite'),sessionDirectory=resolve(storage,'df-sessions-positive01'),preset='ni6-positive01-empty';
++  const config={databasePath,limits:{queueCapacity:4,maxActive:1,maxAttempts:1,maxTasks:4,maxActionsPerTask:8,maxEventsPerTask:128,maxMetadataBytes:4096},memory:{enabled:true,byteLimit:16384,tokenLimit:16384},
++   worker:{enabled:true,selection:{provider:'df-testing-local',model:'df-testing-worker-v1',agentPreset:preset,reasoningEffort:'deterministic',maxOutputTokens:128},environment:{root:workspace,cwd:workspace},persistence:{directory:sessionDirectory,compression:'none',retention:'owner-managed'},bounds:{requestBytes:16384,resultBytes:1024},policy:{maxRuntimeMs:60000,maxUsageUnits:65536,maxCostEstimateMicros:0},charges:{runtimeMs:15000,usageUnits:32768},previewTtlMs:60000,grantTtlMs:60000},audit:{enabled:false},automation:{enabled:false},results:{enabled:false}};
++  phase='CONTEXT';clock();ctx=new Context().intercept('logger',{level:-1});ctx.baseUrl=pathToFileURL(resolve(PRODUCT,'package.json')).href;
++  ctx.provide('profileContext',Object.freeze({dir:profileDir,name:'ni6-positive01'}));ctx.provide('launchEnvironment',createLaunchEnvironmentSnapshot([{source:'process',values:{DSH_HOME:authHome,XDG_CONFIG_HOME:authHome}}]));
++  for(const[event,name]of[['agent/created','agentCreated'],['agent/disposed','agentDisposed'],['session/created','sessionCreated'],['session/disposed','sessionDisposed'],['session/event','sessionEvents']])ctx.on(event,()=>{counts[name]++;},{global:true});
++  ctx.on('llm/stream',(_options,next)=>{counts.streams++;return next();},{global:true});ctx.on('tools/execute',(_execution,next)=>{counts.tools++;return next();},{global:true});
++  ctx.on('agent/request',(payload,next)=>{invariant(payload.agent===workerAgent&&++requests===1&&payload.turn===1&&payload.step===1);return next();},{global:true});
++  ctx.on('session/event',(session,event)=>{if(!workerAgent||session!==workerAgent.session)return;invariant(++ownedEventCount<=128);const fields={'step/start':'stepStarts','step/end':'stepEnds','turn/start':'turnStarts','turn/end':'turnEnds'};
++   if(Object.hasOwn(fields,event.type)){invariant(event.data.turn===1);if(event.type.startsWith('step/'))invariant(event.data.step===1);if(event.type==='step/start')stepStarts++;if(event.type==='step/end')stepEnds++;if(event.type==='turn/start')turnStarts++;if(event.type==='turn/end')turnEnds++;}},{global:true});
++  const install=async(p,plugin,options)=>step(p,async()=>{const f=ctx.plugin(plugin,options);await f;invariant(f.state===2&&f.uid!==null);completedPlugins++;});
++  await install('PLUGIN_LOADER',Loader,{baseUrl:ctx.baseUrl});await install('PLUGIN_PROJECTIONS',Projections);await install('PLUGIN_SESSIONS',Sessions);await install('PLUGIN_APPROVAL',Approval,{policy:'never'});await install('PLUGIN_AGENTS',Agents);await install('PLUGIN_LLM',Llm);await install('PLUGIN_SYSTEM_PROMPT',SystemPrompt,{});await install('PLUGIN_TOOLS',Tools,{mode:'native',maxParallelSubCalls:1});await install('PLUGIN_CREDENTIALS',LocalCredentialProvider,{path:resolve(authHome,'.credentials.yaml'),dshHome:authHome,watch:false,debounceMs:100});await install('PLUGIN_WEB_SERVER',WebServer,{host:'127.0.0.1',port:0,compression:'none'});
++  await step('PLUGIN_CONNECTION',async()=>{await loaderEntry(pathToFileURL(resolve(HOST,'node_modules/@deepseek-ai/dsh-client-connection/lib/index.js')).href,{trustedHosts:[],cookieMaxAgeDays:1,maxRequestBodyBytes:65536,recovery:{}},['webServer']);completedPlugins++;});
++  phase='LISTENER_FENCE';clock();invariant(ctx.webServer.host==='127.0.0.1'&&ctx.webServer.port>0&&ctx.webServer.port!==3080);
++  phase='INDEX_ROUTE';ctx.effect(()=>ctx.webServer.register({kind:'exact',path:'/',handler(req,res){if(ctx.connection.authorizeIndex(req,res)){res.writeHead(200,{'cache-control':'no-store'});res.end();}}}),'ni6.positive01.index-auth');empty();equal(counts,ZERO);
++  const host=name=>pathToFileURL(resolve(HOST,`node_modules/@deepseek-ai/${name}/lib/index.js`)).href;
++  await loaderEntry(host('dsh-session-persistence-jsonl'),{root:sessionDirectory,compression:'none'});
++  await loaderEntry(host('dsh-agent-loop'),{agents:[],maxParallelToolCalls:1},['sessionPersistence']);
++  await loaderEntry(host('dsh-agent-preset-registry'),{default:preset});
++  presetDisposer=await step('PRESET',()=>ctx.agentPresets.register({id:preset,plugins:[]}));invariant(typeof presetDisposer==='function');
++  await loaderEntry('dsh-fishball/testing-provider',{});
++  await step('ENTRY_START',()=>loaderEntry(pathToFileURL(resolve(PRODUCT,'src/installed-plugin.mjs')).href,config));empty();invariant(counts.streams===0);
++  http=transport(ctx.connection,ctx.webServer.port);await step('AUTH',()=>http.authenticate(),2500);
++  const setup=await rpc('SETUP_STATUS','/df-setup','status',{});invariant(setup.phase==='setup_required'&&setup.executionEnabled===false&&setup.storage.location===databasePath&&!existsSync(databasePath));
++  const sp=await rpc('SETUP_PREPARE','/df-setup','prepare',{});ref(sp.previewRef);ref(sp.planDigest);invariant(sp.expiresAt>Date.now()&&!existsSync(databasePath));
++  const sc=await rpc('SETUP_CONFIRM','/df-setup','confirm',{previewRef:sp.previewRef,planDigest:sp.planDigest,accept:true});invariant(sc.phase==='ready');
++  invariant((await rpc('SETUP_READY','/df-setup','status',{})).phase==='ready');equal(await rpc('LIST','/df-rpc','list',{}),[]);
++  const intake=await rpc('INTAKE','/df-rpc','intake',{taskId:'ni6-positive01-task',provider:'synthetic-local',source:'ni6-positive01',eventId:'ni6-positive01-event-1',commandRef:synthetic('intake'),goal:GOAL});invariant(intake.deduplicated===false);currentTask=publicTask(intake.task);addressed={taskRef:currentTask.taskRef};facts.taskCreated=true;
++  const baseline=await rpc('STATUS','/df-rpc','status',addressed);invariant(baseline.task.status==='queued'&&baseline.workers.length===0&&baseline.executions.length===0&&baseline.artifacts.length===0);
++  const prepared=await rpc('CONTEXT_PREPARE','/df-rpc','prepareContext',{...cas(),commandRef:synthetic('prepare'),terms:[],now:Date.now()});ref(prepared.recordRef);ref(prepared.digest);invariant(prepared.memory.revision===0);
++  const detail=await rpc('CONTEXT_DETAIL','/df-rpc','detail',{...cas(),recordRef:prepared.recordRef});invariant(detail.data.kind==='context'&&typeof detail.data.content==='string'&&sha(Buffer.from(detail.data.content))===prepared.digest&&Buffer.byteLength(detail.data.content)<=16384);
++  const expected=`Synthetic local result; approved input SHA-256: ${sha(Buffer.from(detail.data.content))}.`;
++  const catalogue=await rpc('CATALOG','/df-rpc','workerCatalog',{});invariant(catalogue.status.phase==='needs_policy');
++  const pp=await rpc('POLICY_PREVIEW','/df-rpc','workerPolicyPreview',{expectedPolicyVersion:baseline.policy.version});ref(pp.previewRef);ref(pp.planDigest);
++  invariant(pp.description.selection.provider==='df-testing-local'&&pp.description.selection.model==='df-testing-worker-v1'&&pp.description.effectiveReasoningEffort==='deterministic');
++  const pc=await rpc('POLICY_CONFIRM','/df-rpc','workerPolicyConfirm',{previewRef:pp.previewRef,planDigest:pp.planDigest,commandRef:synthetic('policy'),expectedPolicyVersion:pp.expectedPolicyVersion,accept:true});invariant(pc.status.phase==='ready');
++  const action=await rpc('WORKER_PLAN','/df-rpc','workerPlan',{...cas(),contextRecordRef:prepared.recordRef,commandRef:synthetic('plan')});ref(action.actionRef);ref(action.actionDigest);
++  const binding=()=>({...cas(),actionRef:action.actionRef,actionDigest:action.actionDigest});
++  const preview=await rpc('WORKER_PREVIEW','/df-rpc','workerPreview',{...binding(),recordRef:prepared.recordRef});ref(preview.previewRef);
++  await rpc('WORKER_GRANT','/df-rpc','workerGrant',{...binding(),previewRef:preview.previewRef,commandRef:synthetic('grant'),expiresAt:Date.now()+55000,accept:true});
++  const created=await rpc('WORKER_CREATE','/df-rpc','workerCreate',{...binding(),commandRef:synthetic('create')});const worker=created.worker;
++  for(const k of ['claimRef','generationRef','sessionRef','reservationRef'])ref(worker[k]);invariant(worker.taskRef===currentTask.taskRef&&worker.actionRef===action.actionRef&&worker.actionDigest===action.actionDigest);
++  const ids=ctx.agents.list();invariant(ids.length===1);workerAgent=ids[0];invariant(workerAgent&&ctx.agents.get(workerAgent.id)===workerAgent&&sha(Buffer.from(workerAgent.id))===worker.sessionRef&&ctx.sessions.get(workerAgent.id)===workerAgent.session&&counts.agentCreated===1&&counts.sessionCreated===1&&counts.streams===0);facts.workerCreated=true;
++  const query={taskRef:currentTask.taskRef,actionRef:action.actionRef,claimRef:worker.claimRef,generationRef:worker.generationRef};
++  const idle=await rpc('WORKER_IDLE','/df-rpc','workerQuery',query);invariant(idle.worker.phase==='ready'&&counts.streams===0);
++  const executed=await rpc('WORKER_EXECUTE','/df-rpc','workerExecute',{...binding(),claimRef:worker.claimRef,generationRef:worker.generationRef,contextRecordRef:prepared.recordRef,commandRef:synthetic('execute')});const execution=executed.execution;ref(execution.executionRef);ref(execution.resultDigest);
++  invariant(execution.state==='committed'&&execution.usage.state==='actual'&&execution.usage.accounting==='df-testing-utf8-byte-units/v1'&&uint(execution.usage.units)<=32768&&execution.resultDigest===sha(Buffer.from(expected))&&counts.streams===1&&requests===1&&counts.tools===0&&stepStarts===1&&stepEnds===1&&turnStarts===1&&turnEnds===1);facts.executionCommitted=true;
++  await rpc('WORKER_QUERY','/df-rpc','workerQuery',query);
++  const finish=()=>({...cas(),actionRef:action.actionRef,claimRef:worker.claimRef,generationRef:worker.generationRef,executionRef:execution.executionRef});
++  const captured=await rpc('WORKER_CAPTURE','/df-rpc','workerCapture',{...finish(),commandRef:synthetic('capture')});ref(captured.artifactRef);invariant(captured.version===1);
++  const returned=await rpc('WORKER_RESULT','/df-rpc','workerResult',{...cas(),artifactRef:captured.artifactRef,version:1});
++  invariant(returned.content===expected&&returned.verification==='not-reviewed'&&returned.delivery==='not-requested');
++  for(const k of ['taskRef','actionRef','claimRef','generationRef','sessionRef'])invariant(returned.source[k]===(k==='taskRef'?currentTask.taskRef:k==='actionRef'?action.actionRef:worker[k]));
++  invariant(returned.source.executionRef===execution.executionRef&&returned.source.actionDigest===action.actionDigest&&returned.source.resultDigest===execution.resultDigest&&returned.source.inputDigest===prepared.digest);facts.resultReturned=true;
++  const finished=await rpc('WORKER_FINISH','/df-rpc','workerFinish',{...finish(),commandRef:synthetic('finish')});invariant(typeof finished.reservationHeld==='boolean');facts.reservationReleased=finished.reservationHeld===false;
++  const final=await rpc('FINAL_STATUS','/df-rpc','status',addressed);invariant(final.workers.length===1&&final.workers[0].phase==='stopped'&&final.executions.length===1&&final.artifacts.length===1);empty();invariant(counts.agentDisposed===1&&counts.sessionDisposed===1);facts.workerStopped=true;
++  invariant(facts.reservationReleased&&counts.streams===1&&counts.tools===0);
++  await step('PRESET_RELEASE',async()=>{presetReleased=true;await presetDisposer();});
++  for(const row of [...entries].reverse())if(!row.removed)await remove(row,WORK_END);
++  facts.ownedEntriesRemoved=true;await step('POST_DISPOSAL',()=>http.removed(addressed),2500);invariant(http.total()===25);empty();positivePath=true;
++ } catch {failure('REJECTION');}
++ finally {
++  if(ctx){const end=Math.min(performance.now()+5000,FINAL_END-500);
++   if(presetDisposer&&!presetReleased)try{await step('PRESET_RELEASE',async()=>{presetReleased=true;await presetDisposer();},5000,end);}catch{failure('REJECTION');}
++   for(const row of [...entries].reverse())if(!row.removed)try{await remove(row,end);}catch{failure('REJECTION');}
++   try{await step('ROOT_CLEANUP',()=>ctx.fiber.dispose(),5000,end);rootClosed=ctx.fiber.uid===null&&ctx.fiber.state===4;invariant(rootClosed);}catch{failure('REJECTION');}
++  }http?.close();
++ }
++ if(!admitted){process.exitCode=1;return;}
++ const result={contractVersion:'df.ni6-positive-one-worker/v1',result:firstFailure?'FAILED_HOLD':'PASS',phase:firstFailure?.phase??'COMPLETE',category:firstFailure?.category??'NONE',refusalCode,positivePath,...facts,entryRemoved,rootClosed,completedPlugins,httpRequests:http?.total()??0,requests,streams:counts.streams,tools:counts.tools,stepStarts,stepEnds,turnStarts,turnEnds,all87:'HOLD',CODE:'BLOCKED_UNCHANGED'};
++ keys(result,RESULT_FIELDS);invariant(Object.values(result).every(v=>['string','boolean','number'].includes(typeof v)));clock(FINAL_END);directory(CAPSULE);
++ const output=Buffer.from(JSON.stringify(result)+'\n');invariant(output.length<=1024);
++ const fd=openSync(RESULT,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);
++ try{fchmodSync(fd,0o600);const created=fstatSync(fd);invariant(created.isFile()&&created.uid===process.getuid()&&(created.mode&0o777)===0o600);writeFileSync(fd,output);fsyncSync(fd);const final=regular(RESULT,0o600);invariant(final.ino===created.ino&&final.dev===created.dev);clock(FINAL_END);}finally{closeSync(fd);}
++ process.exitCode=result.result==='PASS'?0:1;
++}
++main().catch(()=>{process.exitCode=1;});
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py
++++ .runtime/ni6-positive-one-worker-r1/run-once.py
+@@ -14,7 +14,7 @@
+ import sys
+ 
+ ROOT=Path('/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball')
+-NAME='.runtime/ni6-public-preparation-bootstrap-diagnostic-r5'
++NAME='.runtime/ni6-positive-one-worker-r1'
+ CAPSULE=ROOT/NAME
+ HOST=ROOT/'.runtime/dsh-web'
+ NODE='/opt/homebrew/opt/node@22/bin/node'
+@@ -23,7 +23,7 @@
+ PYTHON_REAL='/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/bin/python3.14'
+ BINARY_HASHES={NODE_REAL:'463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de',
+  PYTHON_REAL:'2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12'}
+-PLAN_NAME='.runtime/root-ni6-bootstrap-diagnostic-r5-execution-plan.json'
++PLAN_NAME='.runtime/root-ni6-positive-one-worker-r1-execution-plan.json'
+ GRAPH_NAME='.runtime/ni3-native-runtime/public-graph-pins.json'
+ STOP_REQUESTED=False
+ FIRST_REASON=None
+@@ -445,20 +445,27 @@
+ 
+ 
+ def diagnostic_value(path,manifest):
+-    raw=bounded_owned_bytes(path,512)
++    raw=bounded_owned_bytes(path,1024)
+     value=strict_json(raw)
+-    fields={'contractVersion','result','phase','category','completedPlugins','entryRemoved','rootClosed','zeroNative','all87','CODE'}
+-    need(type(value) is dict and set(value)==fields,'EXECUTOR_DIAGNOSTIC_FIELDS')
+-    need(value['contractVersion']=='df.ni6-prep01-bootstrap-diagnostic/v1' and value['all87']=='HOLD'
++    need(type(value) is dict and set(value)==set(manifest['diagnosticFields']),'EXECUTOR_DIAGNOSTIC_FIELDS')
++    need(value['contractVersion']=='df.ni6-positive-one-worker/v1' and value['all87']=='HOLD'
+          and value['CODE']=='BLOCKED_UNCHANGED' and value['result'] in ('PASS','FAILED_HOLD')
+-         and value['phase'] in manifest['phases'] and value['category'] in manifest['categories'],
++         and value['phase'] in manifest['phases'] and value['category'] in manifest['categories']
++         and value['refusalCode'] in manifest['refusalCodes'],
+          'EXECUTOR_DIAGNOSTIC_ENUM')
+-    need(type(value['completedPlugins']) is int and 0<=value['completedPlugins']<=11
+-         and all(type(value[n]) is bool for n in ('entryRemoved','rootClosed','zeroNative')),
+-         'EXECUTOR_DIAGNOSTIC_TYPES')
++    booleans=('positivePath','taskCreated','workerCreated','executionCommitted','resultReturned','workerStopped',
++              'reservationReleased','entryRemoved','ownedEntriesRemoved','rootClosed')
++    limits={'completedPlugins':11,'httpRequests':25,'requests':1,'streams':1,'tools':0,
++            'stepStarts':1,'stepEnds':1,'turnStarts':1,'turnEnds':1}
++    need(all(type(value[k]) is bool for k in booleans)
++         and all(type(value[k]) is int and 0<=value[k]<=n for k,n in limits.items()),'EXECUTOR_DIAGNOSTIC_TYPES')
++    if value['positivePath']:
++        need(all(value[k] for k in ('taskCreated','workerCreated','executionCommitted','resultReturned','workerStopped','reservationReleased'))
++             and all(value[k]==1 for k in ('requests','streams','stepStarts','stepEnds','turnStarts','turnEnds')),
++             'EXECUTOR_POSITIVE_ORACLES')
+     if value['result']=='PASS':
+         need(value['phase']=='COMPLETE' and value['category']=='NONE' and value['completedPlugins']==11
+-             and value['entryRemoved'] and value['rootClosed'] and value['zeroNative'],'EXECUTOR_DIAGNOSTIC_PASS')
++             and all(value[k] for k in booleans) and value['httpRequests']==25,'EXECUTOR_DIAGNOSTIC_PASS')
+     else:
+         need(value['phase']!='COMPLETE' and value['category']!='NONE','EXECUTOR_DIAGNOSTIC_FAILURE')
+     return value,raw
+@@ -472,9 +479,9 @@
+     marker_owned=evidence_owned=private_owned=False
+     marker_id=evidence_id=private_id=None
+     marker=CAPSULE/'invocation.json'
+-    evidence=ROOT/'docs/evidence/NI6/bootstrap-diagnostic-r5-execution'
++    evidence=ROOT/'docs/evidence/NI6/positive-one-worker-r1-execution'
+     private=CAPSULE/'private-capture'
+-    result_path=CAPSULE/'diagnostic-result.json'
++    result_path=CAPSULE/'fixture-result.json'
+     rows=[]; before=after=None; selected=None; finalized=False; plan_digest=None
+     marker_value={'contractVersion':'df.ni6-prep01-bootstrap-diagnostic-invocation/v1',
+                   'state':'IN_PROGRESS','finalized':False,'startedAt':now()}
+@@ -512,7 +519,7 @@
+                 need(plan[key]==proposal[key],'EXECUTOR_PLAN_SELECTION')
+         need(plan['rootReviewedExecutionGO'] is True and plan['rootSupportedExecutionApprovalGranted'] is True
+              and plan['rootReviewedFinalAffectedReports'] is True,'EXECUTOR_ROOT_GO')
+-        commands=[[NODE,'--check',NAME+'/diagnostic.mjs'],[NODE,NAME+'/diagnostic.mjs']]
++        commands=[[NODE,'--check',NAME+'/fixture.mjs'],[NODE,NAME+'/fixture.mjs']]
+         need(plan['commands']==commands and plan['runCountAuthorized']==1 and plan['runner']==NAME+'/run-once.py'
+              and plan['all87']=='HOLD' and plan['CODE']=='BLOCKED_UNCHANGED','EXECUTOR_EXACT_COMMANDS')
+         for name in manifest['environmentMustBeAbsent']:
+@@ -592,7 +599,7 @@
+                 put('root-plan.json',plan)
+                 put('before-after.json',{'before':before,'after':after})
+                 put('command-results.json',{'commands':rows,'stopAfterFirstFailure':True,'rawDecodedOrCopied':False})
+-                if selected is not None: put('diagnostic-result.json',selected)
++                if selected is not None: put('fixture-result.json',selected)
+                 created=set()
+                 evidence_owner(); copies=evidence/'frozen-source'; private_directory(copies)
+                 for name in manifest['sourceCopies']:
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r1/execution-plan.proposed.json
++++ .runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json
+@@ -9,9 +9,9 @@
+     "nodeFinalAbsoluteEnd": 30,
+     "nodeResultReserveInsideFinal": 0.5,
+     "nodeWorkInsideDiagnostic": 24,
+-    "postReadbackMaximum": 7,
+-    "primaryAbsoluteEnd": 55,
+-    "setupPreflight": 8,
++    "postReadbackMaximum": 25,
++    "primaryAbsoluteEnd": 85,
++    "setupPreflight": 20,
+     "syntaxCleanupInsideTotal": 1,
+     "syntaxTotal": 5,
+     "terminalConservativeReserve": 5
+@@ -26,35 +26,60 @@
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+       "--check",
+-      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs"
++      ".runtime/ni6-positive-one-worker-r1/fixture.mjs"
+     ],
+     [
+       "/opt/homebrew/opt/node@22/bin/node",
+-      ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs"
++      ".runtime/ni6-positive-one-worker-r1/fixture.mjs"
+     ]
+   ],
+   "concurrency": 1,
+-  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-plan/v1",
++  "contractVersion": "df.ni6-positive-one-worker-plan/v1",
+   "cwd": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+-  "diagnosticByteCap": 512,
++  "diagnosticByteCap": 1024,
+   "diagnosticFields": [
+     "contractVersion",
+     "result",
+     "phase",
+     "category",
++    "refusalCode",
++    "positivePath",
++    "taskCreated",
++    "workerCreated",
++    "executionCommitted",
++    "resultReturned",
++    "workerStopped",
++    "reservationReleased",
++    "entryRemoved",
++    "ownedEntriesRemoved",
++    "rootClosed",
+     "completedPlugins",
+-    "entryRemoved",
+-    "rootClosed",
+-    "zeroNative",
++    "httpRequests",
++    "requests",
++    "streams",
++    "tools",
++    "stepStarts",
++    "stepEnds",
++    "turnStarts",
++    "turnEnds",
+     "all87",
+     "CODE"
+   ],
+-  "diagnosticResult": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic-result.json",
+-  "effects": "Original eleven host plugins and installed Loader entry only; fresh synthetic credentials and one original in-memory SQLite probe are declared; one ephemeral loopback listener; zero dispatched HTTP/domain/setup/model/provider/tool/session/agent work.",
+-  "evidenceDirectory": "docs/evidence/NI6/bootstrap-diagnostic-r1-execution",
+-  "freshInvocationMarker": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/invocation.json",
+-  "freshRuntimeDirectory": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/private-runtime",
+-  "maximumActiveSeconds": 60,
++  "diagnosticResult": ".runtime/ni6-positive-one-worker-r1/fixture-result.json",
++  "effects": "One synthetic task/worker/execution/returned result and factual finish using actual owner HTTP; original credentials/SQLite/JSONL, one ephemeral loopback listener, no external inference/tools/memory writes. Strict original root cleanup remains HOLD.",
++  "evidenceDirectory": "docs/evidence/NI6/positive-one-worker-r1-execution",
++  "freshInvocationMarker": ".runtime/ni6-positive-one-worker-r1/invocation.json",
++  "freshRuntimeDirectory": ".runtime/ni6-positive-one-worker-r1/private-runtime",
++  "httpLimits": {
++    "authGets": 1,
++    "domainPosts": 23,
++    "perRequestSecondsInsideSharedWork": 2,
++    "postDisposalPosts": 1,
++    "requestBytes": 2048,
++    "responseBytes": 65536,
++    "totalRequests": 25
++  },
++  "maximumActiveSeconds": 90,
+   "maximumDirectInterpreterStarts": 3,
+   "maximumNodeChildStarts": 2,
+   "phases": [
+@@ -75,62 +100,114 @@
+     "PLUGIN_CONNECTION",
+     "LISTENER_FENCE",
+     "INDEX_ROUTE",
+-    "BEFORE_ENTRY",
+-    "LOADER_CREATE",
+-    "LOADER_SETTLE",
+-    "ENTRY_RESOLVE",
++    "PUBLIC_SERVICES",
++    "PRESET",
+     "ENTRY_START",
+-    "ENTRY_STATE",
+-    "AFTER_ENTRY",
++    "AUTH",
++    "SETUP_STATUS",
++    "SETUP_PREPARE",
++    "SETUP_CONFIRM",
++    "SETUP_READY",
++    "LIST",
++    "INTAKE",
++    "STATUS",
++    "CONTEXT_PREPARE",
++    "CONTEXT_DETAIL",
++    "CATALOG",
++    "POLICY_PREVIEW",
++    "POLICY_CONFIRM",
++    "WORKER_PLAN",
++    "WORKER_PREVIEW",
++    "WORKER_GRANT",
++    "WORKER_CREATE",
++    "WORKER_IDLE",
++    "WORKER_EXECUTE",
++    "WORKER_QUERY",
++    "WORKER_CAPTURE",
++    "WORKER_RESULT",
++    "WORKER_FINISH",
++    "FINAL_STATUS",
++    "PRESET_RELEASE",
+     "ENTRY_REMOVE",
+-    "ENTRY_DISPOSAL",
+-    "LOADER_REMOVAL_SETTLE",
+-    "AFTER_REMOVAL",
++    "POST_DISPOSAL",
+     "ROOT_CLEANUP",
+     "COMPLETE"
+   ],
+   "pins": {},
+-  "privateCaptureDirectory": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/private-capture",
++  "privateCaptureDirectory": ".runtime/ni6-positive-one-worker-r1/private-capture",
+   "privateStreamAggregateByteCap": 262144,
+   "privateStreamByteCap": 131072,
+   "privateStreamsDecodedOrPublished": false,
++  "refusalCodes": [
++    "NONE",
++    "STALE_VERSION",
++    "WORKER_POLICY_REQUIRED",
++    "WORKER_POLICY_STALE",
++    "WORKER_PREVIEW_STALE",
++    "WORKER_CONFIRMATION_REQUIRED",
++    "WORKER_CONTEXT_INVALID",
++    "WORKER_MAPPING_MISMATCH",
++    "WORKER_RESULT_UNAVAILABLE",
++    "WORKER_FINISH_UNAVAILABLE",
++    "WORKER_SOURCE_UNAVAILABLE",
++    "WORKER_PERSISTENCE_UNSUPPORTED",
++    "WORKER_PRESET_UNAVAILABLE",
++    "WORKER_REQUEST_DENIED",
++    "WORKER_SESSION_UNAVAILABLE",
++    "WORKER_CATALOG_UNAVAILABLE",
++    "WORKER_NOT_CONFIGURED",
++    "COST_UNKNOWN",
++    "CONFIG_INVALID",
++    "INPUT_INVALID",
++    "OUTPUT_TOO_LARGE",
++    "SERVICE_DISPOSED",
++    "CONTEXT_LIMIT",
++    "STORAGE_INVALID",
++    "OTHER_REFUSAL"
++  ],
+   "requiredAffectedReviews": [
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json"
+-  ],
+-  "rootPlan": ".runtime/root-ni6-bootstrap-diagnostic-r1-execution-plan.json",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json"
++  ],
++  "rootPlan": ".runtime/root-ni6-positive-one-worker-r1-execution-plan.json",
+   "rootReviewedExecutionGO": false,
+   "rootReviewedFinalAffectedReports": false,
+   "rootSupportedExecutionApprovalGranted": false,
+   "rootTerminalQualification": "Public root dispose is restart in the original standalone Context. Keep original terminal observation; active UID0 means rootClosed=false/FAILED_HOLD. No preparation acceptance.",
+   "runCountAuthorized": 1,
+-  "runner": ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
++  "runner": ".runtime/ni6-positive-one-worker-r1/run-once.py",
+   "sourceCopies": [
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/diagnostic.mjs",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-delta.diff",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/execution-plan.proposed.json",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/README.md",
+-    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r1/source-manifest.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-source.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-source.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-source-review.json",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.md",
+-    "docs/evidence/NI6/bootstrap-diagnostic-r1-independent-test-design-review.json",
+-    "docs/ni6-bootstrap-diagnostic-r1-freeze-2026-10-07.md",
+-    "docs/ni6-bootstrap-diagnostic-r1-lifecycle-clarification-2026-10-07.md",
++    ".runtime/ni6-positive-one-worker-r1/fixture.mjs",
++    ".runtime/ni6-positive-one-worker-r1/run-once.py",
++    ".runtime/ni6-positive-one-worker-r1/execution-plan.proposed.json",
++    ".runtime/ni6-positive-one-worker-r1/source-delta.diff",
++    ".runtime/ni6-positive-one-worker-r1/README.md",
++    ".runtime/ni6-positive-one-worker-r1/source-manifest.json",
++    "docs/evidence/NI6/positive-one-worker-r1-source.md",
++    "docs/evidence/NI6/positive-one-worker-r1-source.json",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.md",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-source-review.json",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.md",
++    "docs/evidence/NI6/positive-one-worker-r1-independent-test-design-review.json",
++    "docs/ni6-positive-one-worker-r1-freeze-2026-10-07.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r5-actual-return.json",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/run-once.py",
++    ".runtime/ni6-public-preparation-bootstrap-diagnostic-r5/source-manifest.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-source-review.json",
++    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.md",
++    "docs/evidence/NI6/bootstrap-diagnostic-r5-independent-test-design-review.json",
+     ".runtime/ni6-public-preparation-r3/source-manifest.json",
+     ".runtime/ni6-public-preparation-r3/original-bootstrap.mjs",
+-    ".runtime/ni6-prep01-executor-r3/runner.py",
+-    ".runtime/ni3-native-runtime/public-graph-pins.json",
++    ".runtime/ni6-public-preparation-r3/public-preparation.test.mjs",
++    ".runtime/ni6-public-preparation-r3/http-rpc.mjs",
++    ".runtime/ni6-public-preparation-r3/public-oracles.mjs",
+     ".runtime/ni6-public-preparation-r3/build-readback.json",
++    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+     "docs/evidence/NI6/public-preparation-r3-build/command-results.json",
+-    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json",
+-    "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+-    "docs/evidence/NI6/public-preparation-r3-bounded-failure-code.json"
++    "docs/evidence/NI6/public-preparation-r3-build/root-phase-result.json"
+   ],
+   "status": "SOURCE_ONLY_NOT_RUN",
+   "stopAfterFirstFailure": true,
+--- .runtime/ni6-public-preparation-bootstrap-diagnostic-r1/README.md
++++ .runtime/ni6-positive-one-worker-r1/README.md
+@@ -1,23 +1,18 @@
+-# Separate NI6 bootstrap diagnostic r1 — SOURCE_ONLY_NOT_RUN
++# NI6 positive one-worker r1 — SOURCE_ONLY_NOT_RUN
+ 
+-This new capsule uses the actually built preparation-r3 package directly. Every predecessor, marker, ledger and synthetic namespace is preserved. It has no runtime GO. The r3 projection establishes only `PREP01_ORIGINAL_BOOTSTRAP_FAILED`; the failing plugin/call and its original cause remain unknown. Explicit raw `entry.fiber.await()` is a supported lifecycle correction, not an established explanation of that failure.
++Root alone selects the actual owned600 plan, final pins, runtime GO and Git. All three proposal GO flags are false and pins are empty. Never run the proposal: a refused invocation still consumes its fresh marker.
+ 
+-The diagnostic retains the original eleven public plugin invocations, order and options, original quiet Context logger and synthetic launch snapshot before activation. Only the fresh namespace paths change. One `127.0.0.1:0` listener excludes3080; no request is dispatched, no setup is confirmed, no domain/task/data operation occurs, and no provider, model, worker, tool, agent or session is activated. The original LocalCredentialProvider may create the fresh private credential file. The installed entry may perform its ordinary in-memory SQLite capability probe. Auth, profile, key, lock, DB and raw stream contents remain private and are never inspected by this diagnostic/driver.
++Use genuine unchanged preparation-r3/package and the confirmed public Connection Loader inject:['webServer']; no rebuild or r4 observational package. Original public Loader supplies JSONL, AgentLoop with sessionPersistence injection, AgentPresetRegistry with one registered empty preset, testing-provider and the installed product. One fresh owned profile/workspace/auth/storage is selected.
+ 
+-Original `dsh-atomic-write.withFileLock` has a stale-lock branch that reads a holder record and probes its PID. The selected new owned auth path has no predecessor lock; ordinary selected startup creates/releases its own lock. This capsule adds no lock-record or unrelated-PID inspection/probe and makes no claim that the original library lacks that branch.
++The sole positive path is actual owner HTTP setup, one intake/current context, separate policy preview/confirmation, action preview/grant, one idle native worker, one execution/capture/result/finish. The approved non-secret goal is: Synthetic NI6 positive01: return one bounded deterministic local result. No receipt/signature internals or adversarial family is selected. Memory background is empty; no memory writes, external tools, paid inference, browser, live webhook/chat or UI namespace reuse.
+ 
+-The one entry is removed at most once with original `Loader.remove(entryId)`, joined through the saved raw `fiber.await()` and `Loader.await()`, and independently checked absent/terminal. A work failure can use the same once-only removal in the shared cleanup window. The first work phase/category survives later cleanup failures. Original root `dispose()` and terminal observation are preserved. The pinned root implementation restarts its UID0 fiber; if it remains active, `rootClosed=false` and `FAILED_HOLD` are honest and required. No wrapping host, private unload, state mutation or closure alias is added. Natural counters cover actual ready/removal boundaries and retained history, not continuous root-unload coverage. Registry/provider/tool inventories are read only while those original services exist.
++Limits: 90 seconds shared outer, primary85, setup20, syntax5, functional35, post-readback25, conservative terminal5. Node work24/shared cleanup5/final30; individual HTTP2 seconds is inside work24, not additive. Exactly25 HTTP requests (1 auth GET +23 domain POSTs +1 post-disposal404). Requests2048/response65536 bytes. Exactly one worker/request/stream/turn/step; original native options contain no invented maxTurns/maxSteps. All waterfall observers return next() unchanged. Original r3 worker config/budget choices are retained.
+ 
+-Proposed root command, from `/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball`:
++Public result: exact26 fields, at most1024 bytes/1025-byte executor read, finite phase/category/refusal code, booleans and bounded counts only. HTTP refusal retains only its allowlisted stable code or OTHER_REFUSAL. Result prose, HTTP headers/cookies/URLs/raw responses, private streams/transcripts/credentials/DB/key bytes and caught error properties never enter evidence. Private capture guards remain128KiB each/256KiB aggregate, exact stored-length no-follow reads, EOF/group/exit and actual return separately required.
+ 
+-```text
+-/opt/homebrew/bin/python3 .runtime/ni6-public-preparation-bootstrap-diagnostic-r1/run-once.py .runtime/root-ni6-bootstrap-diagnostic-r1-execution-plan.json
+-```
++positivePath requires the worker/result/finish oracles and post-removal404; it is separate from overall result. Original root dispose restarts UID0, so rootClosed=false and FAILED_HOLD remain required if active. No task completion, review, delivery, full AC or acceptance follows. Failed/unknown work stops; no retry, replay, reset or adoption. Owned Loader entries and preset registration are removed at most once; fresh private storage is preserved.
+ 
+-Root must exclusively materialize an owned600 true plan from `execution-plan.proposed.json`, replacing only its three GO booleans and pins after complete root/independent readbacks and supported exact action approval. Pins must be the closed union of manifest owned/input rows, this manifest itself and the four actual new independent reports. No future hash is invented. Running the false proposal is forbidden and would consume its fresh invocation marker before refusing GO.
++Root invocation after four independent reports and exact supported approval:
++/opt/homebrew/bin/python3 -I .runtime/ni6-positive-one-worker-r1/run-once.py .runtime/root-ni6-positive-one-worker-r1-execution-plan.json
+ 
+-Exactly two prospective commands run sequentially once: canonical Node `--check diagnostic.mjs`, then direct Node `diagnostic.mjs`. First failure stops. Maximum interpreter starts3 include the Python driver; no Node test worker. Shared active limit60s includes setup8, syntax5, diagnostic35, final readback7 and conservative terminal reserve5; sublimits are inside those totals. Node work24, cleanup5 and final absolute30 are inside the diagnostic command's30s work allowance. Both synchronous source/hash/setup/readback/publication and async lifecycle work charge the same deadlines; guards surround reads/writes and the driver observes only its own group. These are fail-closed bounded allocations, not a claim of instantaneous cancellation or interruptible OS filesystem calls.
+-
+-Private stdout/stderr are byte-only, capped at128KiB each/256KiB aggregate. Exact stored-length reads use at most stored+1 bytes and fd/path identity; output prefix hashes, overflow, EOF, exit and owned-group absence are checked separately. The at-most512-byte result is read at most513 bytes after size/type/mode/identity validation. Catch handlers never serialize error text/stack/properties. Only the exact ten-field diagnostic and finite executor metadata/source are public. Pre-existing destinations receive zero writes. Catchable stop flags latch; cleanup signals only the fresh owned group and any denial/unknown stops all further signalling. Driver success requires its actual successful return, not a persisted PASS file.
+-
+-The sealed manifest will own7 source/report files plus itself, pin418 finite immutable input files and the complete original host graph27577 files/479383316 bytes/12 links separately, plus6 selected physical alias/peer links. The built product is65 regular files:64 descriptor entries plus the descriptor. `23` explicit public source/readback/report names are proposed for evidence copies; four report names are future prerequisites, not observed reviews. All syntax/diagnostic results remain NOT_RUN. All87 accepted0/HOLD, final CODE permanently BLOCKED_UNCHANGED, prior NI6 FAILED_HOLD and LIVE02 blocked remain unchanged.
++Original418 input records and full graph authority are inherited; new helper/review/freeze/public source records are hashed without repeating the full graph audit. Runtime verifies the original27577-file/12-link graph and original actual r3 build-return ancestor. No candidate parse/compile/import/check/test/runtime occurred in authoring. All87 accepted0/HOLD, final CODE BLOCKED_UNCHANGED, UI paused and cloud third submission unselected.

@@ -1,0 +1,97 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "--check",
+        ".runtime/ni6-positive-one-worker-r7b/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 71687,
+      "durationSeconds": 0.060925,
+      "exitCode": 0,
+      "failureCode": null,
+      "finishedAt": "2026-10-08T00:42:10.760435+00:00",
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 71687,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T00:42:10.699568+00:00",
+      "timedOut": false
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/node@22/bin/node",
+        ".runtime/ni6-positive-one-worker-r7b/fixture.mjs"
+      ],
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "childPid": 71688,
+      "durationSeconds": 8.401407,
+      "exitCode": 1,
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finishedAt": "2026-10-08T00:42:19.227092+00:00",
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "ownedProcessGroup": 71688,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 169,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 169,
+          "sha256": "5c7a617f8e9b12e1408a51dfc487b05e6204f5bfa8afc69616426ee383ac49ae",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "prefixVerified": true,
+          "receivedAtLeastBytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "remoteTermination": "NOT_CLAIMED",
+      "reservationRelease": "NOT_CLAIMED",
+      "signalAttempts": [],
+      "signalBoundary": "NOT_SELECTED",
+      "signalOutcomes": [],
+      "startedAt": "2026-10-08T00:42:10.825746+00:00",
+      "timedOut": false
+    }
+  ],
+  "rawDecodedOrCopied": false,
+  "stopAfterFirstFailure": true
+}
