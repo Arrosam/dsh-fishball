@@ -122,7 +122,7 @@ The minimum executable-path command returned exit0 (original request `cacbb8`, f
 
 ## Reproduce the package and launch
 
-Build from the exact source tree identified by BUILD-METADATA; the destination directory must exist and its filename must be fresh. The commit argument labels this tree and does not perform a checkout. This explicit selection includes the design, workflow, decisions, scope, public contracts, ticket index and delivery records. Complete historical ticket/evidence files remain in the local Git repository.
+Build from the exact source tree identified by BUILD-METADATA; the destination directory must exist and its filename must be fresh. The commit argument labels this tree and does not perform a checkout. This explicit selection includes the design, workflow, decisions, scope, public contracts, all local tickets/acceptance criteria and delivery records. Complete historical detailed evidence stays in the local Git repository.
 
 ```sh
 /opt/homebrew/bin/python3 -I scripts/package-initial-preview.py \
@@ -153,7 +153,26 @@ Build from the exact source tree identified by BUILD-METADATA; the destination d
   --include docs/owner-amendment-2026-10-07-ollama.md \
   --include docs/owner-initial-preview-2026-10-08.md \
   --include docs/tickets/README.md \
-  --include docs/INITIAL-PREVIEW-DELIVERY.md
+  --include docs/INITIAL-PREVIEW-DELIVERY.md \
+  --include docs/waves.md \
+  --include docs/tickets/BUB001.md \
+  --include docs/tickets/BUB002.md \
+  --include docs/tickets/BUB003.md \
+  --include docs/tickets/BUB004.md \
+  --include docs/tickets/BUB005.md \
+  --include docs/tickets/BUB006.md \
+  --include docs/tickets/BUB007A.md \
+  --include docs/tickets/BUB007B.md \
+  --include docs/tickets/BUB008.md \
+  --include docs/tickets/BUB009.md \
+  --include docs/tickets/BUB010.md \
+  --include docs/tickets/BUB010A.md \
+  --include docs/tickets/BUB011.md \
+  --include docs/tickets/BUB012.md \
+  --include docs/tickets/BUB013.md \
+  --include docs/tickets/BUB014.md \
+  --include docs/tickets/BUB015.md \
+  --include docs/tickets/BUB016.md
 ```
 
 ```sh
