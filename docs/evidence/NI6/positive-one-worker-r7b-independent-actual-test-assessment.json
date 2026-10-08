@@ -1,0 +1,360 @@
+{
+  "acceptance": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "R3_R5": "UNRUN",
+    "R4SupportedReturn": "NOT_CAPTURED",
+    "R6": "CONSUMED_IMMUTABLE",
+    "UI": "PAUSED_MAC_LOCKED",
+    "accepted": 0,
+    "all87": "HOLD",
+    "cloud": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+    "correctedUIHandoff": "NOT_ESTABLISHED",
+    "publication": "LOCAL_ONLY_GATED",
+    "rootCleanup": "HOLD",
+    "taskCompletionReviewDeliveryAggregateAcceptanceReleaseClaimed": false
+  },
+  "assessmentActions": {
+    "broadEnumeration": false,
+    "listenerBrowserModelNetworkGitHelperAction": false,
+    "newTestFamily": false,
+    "privateProfileKeyDatabaseHistoryCaptureResponseErrorContentAccess": false,
+    "protectedReceiptSignatureEnvelopeRevision999CODEInspection": false,
+    "runtimeOrReplay": false,
+    "scope": "Only six explicit public execution JSONs and four final affected review reports; public JSON and seal consistency checks.",
+    "sourceAuditRepeated": false,
+    "sourceReportMutation": false,
+    "writtenPaths": [
+      "docs/evidence/NI6/positive-one-worker-r7b-independent-actual-test-assessment.md",
+      "docs/evidence/NI6/positive-one-worker-r7b-independent-actual-test-assessment.json"
+    ]
+  },
+  "caseAssessments": [
+    {
+      "basis": "Syntax child exit0; not a full host-functionality oracle.",
+      "id": "D01",
+      "result": "PASS"
+    },
+    {
+      "basis": "headerCases3; all unchanged selected header assertions completed.",
+      "id": "C01-C03",
+      "result": "PASS"
+    },
+    {
+      "basis": "projectionCases12; all unchanged selected projection assertions completed.",
+      "id": "C04-C15",
+      "result": "PASS"
+    },
+    {
+      "basis": "taskCreated/workerCreated true, createPhase ready, completedPlugins11.",
+      "id": "Genuine creation/readiness milestone",
+      "result": "PASS"
+    },
+    {
+      "basis": "One request/stream/turn/step with starts/ends; tools0. No commitment/settlement/delivery inference.",
+      "id": "Native event milestones",
+      "result": "PASS"
+    },
+    {
+      "basis": "Existing selected client request attempt and unsettled timer branch before recorded headers.",
+      "id": "Selected transport observation",
+      "result": "OBSERVED"
+    },
+    {
+      "basis": "Functional child exit1; WORKER_EXECUTE/REJECTION/refusalNONE/HTTP19; positivePath false.",
+      "id": "D02",
+      "result": "FAIL"
+    }
+  ],
+  "closedActualFixture": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "createPhase": "ready",
+    "entryRemoved": true,
+    "executeHttpPhase": "REQUEST_STARTED",
+    "executeHttpStatus": "NOT_RETURNED",
+    "executeTransportFailure": "TIMER_EXPIRED",
+    "executionCommitted": false,
+    "headerCases": 3,
+    "httpRequests": 19,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_EXECUTE",
+    "positivePath": false,
+    "projectionCases": 12,
+    "refusalCode": "NONE",
+    "requests": 1,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 1,
+    "stepStarts": 1,
+    "streams": 1,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 1,
+    "turnStarts": 1,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "commandTerminationMetadata": [
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "durationSeconds": 0.060925,
+      "exitCode": 0,
+      "index": 1,
+      "interrupted": false,
+      "overflow": false,
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": [],
+      "timedOut": false
+    },
+    {
+      "captureComplete": true,
+      "captureTerminationReason": "EOF_OBSERVED",
+      "durationSeconds": 8.401407,
+      "exitCode": 1,
+      "index": 2,
+      "interrupted": false,
+      "overflow": false,
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [],
+      "signalOutcomes": [],
+      "timedOut": false
+    }
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-r7b-independent-actual-test-assessment/v1",
+  "date": "2026-10-08",
+  "evidenceInconsistencies": [],
+  "executionGO": false,
+  "executorAndConsumption": {
+    "consumed": true,
+    "failureCode": "EXECUTOR_COMMAND_NONZERO",
+    "finalized": false,
+    "markerStateFromProof": "FAILED_HOLD",
+    "ownedGroupAbsenceProvesRemoteTerminationOrReservationRelease": false,
+    "resetAdoptionReplayAuthorized": false,
+    "result": "FAILED_HOLD",
+    "runtimeMarkerRead": false,
+    "terminationProof": "OWNED_PROCESS_GROUP_AND_EOF_ONLY"
+  },
+  "fullReadbackRequired": true,
+  "jsonSelfSeal": "Exact bytes/SHA256 supplied externally after complete report readback; no recursive self-pin.",
+  "markdownRecord": {
+    "bytes": 6027,
+    "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-actual-test-assessment.md",
+    "sha256": "89bccac448c4ae1ed2853d12a27b9fa27d7fe1f0c5bfb73838a5f16521d3e6f8"
+  },
+  "observedTransport": {
+    "actualSelectedRequestElapsedTime": "NOT_ESTABLISHED",
+    "branchCoverageClaimed": false,
+    "established": "The selected existing client timer branch fired while its request promise was unsettled; no response callback/header was recorded beforehand.",
+    "executeHttpPhase": "REQUEST_STARTED",
+    "executeHttpStatus": "NOT_RETURNED",
+    "executeTransportFailure": "TIMER_EXPIRED",
+    "existingTimerMaximumMillisecondsInsideSharedWork": 2000,
+    "newFaultFamilyOrTransportTestAdded": false,
+    "otherTransportPartitionNames": [
+      "REQUEST_ERROR",
+      "RESPONSE_ERROR",
+      "RESPONSE_LIMIT",
+      "HTTP_200/OTHER_STATUS classification",
+      "BODY_COMPLETE",
+      "RPC_VALUE_RETURNED",
+      "competing origins and settled/late callbacks"
+    ],
+    "otherTransportPartitions": "NOT_RUN",
+    "processTimedOutFieldIsHttpTimerOracle": false,
+    "receiptCommitmentResultStopReleaseDelivery": "NOT_ESTABLISHED",
+    "requestTransmissionOrRemoteAdmission": "NOT_ESTABLISHED",
+    "serverSideCauseLatencyResponse": "NOT_ESTABLISHED"
+  },
+  "oneActualAssessment": true,
+  "publishedPreservationEvidence": {
+    "assessmentVerifiedRecordAgreementOnly": true,
+    "beforeAfter": {
+      "after": {
+        "complete": true,
+        "inputCount": 831,
+        "unchanged": true,
+        "wholeHostFiles": 27577,
+        "wholeHostLinks": 12
+      },
+      "before": {
+        "complete": true,
+        "inputCount": 831,
+        "unchanged": true,
+        "wholeHostFiles": 27577,
+        "wholeHostLinks": 12
+      }
+    },
+    "fullOfficialGraphReaudited": false,
+    "rootVerifiedPublicSourceCopiesAfterRun": 410,
+    "savedPlanHistoricalStatus": "SOURCE_ONLY_NOT_RUN",
+    "savedPlanIsLaterCompletionProof": false,
+    "savedPlanPriorRunCountAuthorized": 1,
+    "sourceAuditRepeated": false
+  },
+  "reasoningEffort": "max",
+  "recordConsistency": {
+    "actualCompactIncludingNewline": 718,
+    "actualPrettyIncludingNewline": 847,
+    "allSixSuppliedEvidenceSealsMatch": true,
+    "executorAndCommandRowsExact": true,
+    "executorProofBeforeAfterExact": true,
+    "fixtureByteCap": 1024,
+    "fixtureClosed32FieldGrammarAndEnumsMatchPlan": true,
+    "fixtureProofExecutorDiagnosticExact": true,
+    "fourFinalAffectedReportsUnchangedAndPlanPinsMatch": true,
+    "liveGraphOrCopiesRehashedByAssessor": false,
+    "rootPlanPins": 831,
+    "rootPlanSourceCopies": 410
+  },
+  "remainingGates": {
+    "acknowledgedExactUsage": "NOT_ESTABLISHED",
+    "entryRemoved": "SELECTED_REMOVAL_OBSERVED",
+    "executionCommitmentAndReceipt": "NOT_ESTABLISHED",
+    "factualWorkerStop": "NOT_ESTABLISHED",
+    "falseFlagsProveReceiptLedgerOrBalanceAbsence": false,
+    "full25RequestPositivePath": "NOT_PASSED",
+    "normalFollowupQueryCaptureResultFinishFinalStatusPostDisposal404": "NOT_REACHED",
+    "ownedEntriesRemovedFalseMeansAllCleanupFailed": false,
+    "reservationRelease": "NOT_ESTABLISHED",
+    "returnedResult": "NOT_ESTABLISHED",
+    "rootClosed": false,
+    "strictRootCleanup": "HOLD",
+    "taskCompletionReviewDelivery": "NOT_ESTABLISHED"
+  },
+  "reviewModel": "gpt-6.1-sol",
+  "reviewedPublicEvidenceRecords": [
+    {
+      "bytes": 13492,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-actual-return.json",
+      "sha256": "c0e5ea7289cfa0058ffaa0048aa7aa203a3e7b67e2b90c2843b8f672b38d2f78"
+    },
+    {
+      "bytes": 847,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/fixture-result.json",
+      "sha256": "2cbc9009b5b22efe135b77b7c85af1051c153b52ae8887166579ed01dc48b629"
+    },
+    {
+      "bytes": 4547,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/executor-result.json",
+      "sha256": "e68c4512ecae3e3785407f9c907758059f7c24034226bf7dc6008b6c9141e61a"
+    },
+    {
+      "bytes": 2998,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/command-results.json",
+      "sha256": "4b821095e11e297d5bb855bcd059998cdf0d1a699d97fc1e25f9f8ae0bf9a05c"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/before-after.json",
+      "sha256": "3815ac0ca466417b4b9f5194d2cbd306db1948fa1910ce60d210fff573949f60"
+    },
+    {
+      "bytes": 154456,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-execution/root-plan.json",
+      "sha256": "fee1c978c7cbbfa0dcebec7a74b49ea2e6e97fdab0c2e29cdb881a58f66c591d"
+    }
+  ],
+  "reviewer": "independent ISTQB actual test assessor",
+  "revision": "R7B",
+  "status": "D02_FAIL_CONSUMED_FAILED_HOLD",
+  "streamEvidenceLimits": {
+    "groupAndEOFProofScope": "Owned operating-system processes and streams only; no full service disposal, remote termination or reservation-release proof.",
+    "privateStreamPayloadReadDecodedCopiedHashedByAssessor": false,
+    "publishedStreamsAllCompleteWithEOF": true,
+    "publishedStreamsAllUntruncated": true,
+    "supportedToolOutputAndPrivateStreamPayloadAreDistinct": true
+  },
+  "supportedDriverReturn": {
+    "allSupportedToolReturnOutputsEmpty": true,
+    "capturedBeforeOptionalProcessing": true,
+    "directFinalReturn": {
+      "chunkId": "3ea188",
+      "exitCode": 1,
+      "observed": true,
+      "originalTokenCount": 0,
+      "outputIsEmpty": true,
+      "returnObservedMs": 1791420144347,
+      "sessionId": null,
+      "wallTimeSeconds": 1.7121e-05
+    },
+    "doesNotRepairPriorR4UncapturedReturn": true,
+    "exitCode": 1,
+    "initial": {
+      "chunkId": "a4aece",
+      "exitCode": null,
+      "originalTokenCount": 0,
+      "outputIsEmpty": true,
+      "returnObservedMs": 1791420124232,
+      "sessionId": 10711,
+      "wallTimeSeconds": 1.001867154
+    },
+    "observed": true,
+    "polls": [
+      {
+        "chunkId": "d04ae4",
+        "exitCode": null,
+        "originalTokenCount": 0,
+        "outputIsEmpty": true,
+        "returnObservedMs": 1791420134159,
+        "sessionId": 10711,
+        "wallTimeSeconds": 5.001045764
+      },
+      {
+        "chunkId": "3ea188",
+        "exitCode": 1,
+        "originalTokenCount": 0,
+        "outputIsEmpty": true,
+        "returnObservedMs": 1791420144347,
+        "sessionId": null,
+        "wallTimeSeconds": 1.7121e-05
+      }
+    ]
+  },
+  "timing": {
+    "childDurationsSeconds": [
+      0.060925,
+      8.401407
+    ],
+    "directReturnObservedMs": 1791420144347,
+    "executorConservativeActiveSecondsPreterminal": 24.98550995788537,
+    "executorObservedSecondsPreterminal": 19.985509332967922,
+    "finalEnclosingDriverDuration": "NOT_ESTABLISHED",
+    "markerFinishedAtFromProof": "2026-10-08T00:42:23.320403+00:00",
+    "markerStartedAtFromProof": "2026-10-08T00:42:03.097442+00:00",
+    "qualification": "Child durations, preterminal scalars, marker timestamps, direct tool-return observations and subsequent clock queries are distinct; no driver duration inferred.",
+    "subsequentClockReadIsDirectReturnTime": false,
+    "subsequentClockReadUTC": {
+      "current_time": "2026-10-08 00:42:54 UTC"
+    }
+  },
+  "unchangedFinalAffectedReviewRecords": [
+    {
+      "bytes": 7266,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.md",
+      "sha256": "8dc62c4f22a8b78745978716d859e52c3d889a7e1a737b8b16c88977b44f783a"
+    },
+    {
+      "bytes": 15561,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-source-review.json",
+      "sha256": "9d95ced75338eef43151180ef818055551b948a94c3e719e79c1c7664e17ad04"
+    },
+    {
+      "bytes": 7659,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.md",
+      "sha256": "d3f8f307b64130154a2c7e26495663da2a289162cf80aa46bc3bd09ce86ca1f4"
+    },
+    {
+      "bytes": 14581,
+      "path": "docs/evidence/NI6/positive-one-worker-r7b-independent-test-design-review.json",
+      "sha256": "5a9fc86dc77d44f1150db7c2f3450f40af6f25ef8fd0502b79688c9765f3c844"
+    }
+  ]
+}

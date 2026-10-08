@@ -1,0 +1,285 @@
+{
+  "contractVersion": "df.ni6-positive-one-worker-independent-source-review/v1",
+  "revision": "positive-one-worker-r4",
+  "date": "2026-10-07",
+  "reviewer": "/root/bootstrap_diagnostic_r1_code_review",
+  "status": "SOURCE_ONLY_NOT_RUN",
+  "sourceDisposition": "NO_AFFECTED_SOURCE_GATE_BLOCKER",
+  "sourceGateBlockers": [],
+  "scope": "Ordinary root creation/baseline header public-API compatibility only: two module edits, derivative descriptor/provenance, three literal header cases and affected finite projection/namespace conservation.",
+  "runtimeGO": false,
+  "runtimeResultGenerated": false,
+  "all87": "HOLD",
+  "accepted": 0,
+  "CODE": "BLOCKED_UNCHANGED",
+  "reviewedFinalArtifacts": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/fixture.mjs",
+      "bytes": 33515,
+      "sha256": "1ea3e4c1bb9d90b1377d587177b536d43f4c21662aa724f014206184b0d8ef00"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/run-once.py",
+      "bytes": 32241,
+      "sha256": "aee6eb04bd4320647a2d944494e9c94d9190564b783d599c0b8f937550f36055"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/execution-plan.proposed.json",
+      "bytes": 16148,
+      "sha256": "1c28a2ff531b844e0341c57d8219a1c39d688b3d55c321c78c62a8b6309d67f1"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/source-delta.diff",
+      "bytes": 70266,
+      "sha256": "60eb611a3c09f31199d720af86cb834359d78236bb8a4303515138aadad368b4"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/README.md",
+      "bytes": 4280,
+      "sha256": "76450d241f0f731146953e3eb0439928d87954c5394831c536c5d8da2a53f862"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/source-manifest.json",
+      "bytes": 156341,
+      "sha256": "ff82a794bfb071c69c3b2fd2306c4bd1a4df942801570c8335f8bbd18fb1e9e5"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-source.md",
+      "bytes": 3353,
+      "sha256": "13a663051ea60bd0ce097f28ae2bbd379ec952e3191ff2e2f626011449c39725"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r4-source.json",
+      "bytes": 50796,
+      "sha256": "5adafdd88703d3483009d139d84ef7242d8321d76386d31e3746780304f875cc"
+    }
+  ],
+  "reviewedChangedPackageArtifacts": [
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/native-adapter.mjs",
+      "bytes": 40778,
+      "sha256": "78407d88f88f2bce0580040777096d3c3adb9977fe5f5c9145366191274ab18c"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/normal-contracts.mjs",
+      "bytes": 32057,
+      "sha256": "d9a764eb3cf648877a6ee3d1769039fe28621d0242fa71efd2659ff81f850d11"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/native-source-manifest.json",
+      "bytes": 17236,
+      "sha256": "d4199cc0d5e70de6297c5652bca2991a3124f6642b5d8137ee85300665efe278"
+    }
+  ],
+  "supportingAuthority": [
+    {
+      "path": "docs/ni6-positive-one-worker-r4-native-header-fix-freeze-2026-10-07.md",
+      "bytes": 5285,
+      "sha256": "1b4781f2f319e11820b0ee00339cad75c51016cb614e21489f7599b340908757"
+    },
+    {
+      "path": "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.md",
+      "bytes": 3646,
+      "sha256": "3767e4b231a0a586fd5b50a31cc66e2652227f69299be90e891c910c5b125e34"
+    },
+    {
+      "path": "docs/evidence/NI6/native-root-header-static-diagnosis-2026-10-07.json",
+      "bytes": 7979,
+      "sha256": "0296389206f9bd7d62645516f686ab4062f79945e05004208db966231515fe07"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/fixture.mjs",
+      "bytes": 32687,
+      "sha256": "be1d4a5c86f8e5d903c69e8c6370bdafb8a3c57fa56a6dd058015e3d843af188"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/run-once.py",
+      "bytes": 32169,
+      "sha256": "f466a9eb390a6a429c6377c5d61f54de2fe1bc67e3017ba2e2588f3bc88681b4"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r3/source-manifest.json",
+      "bytes": 119530,
+      "sha256": "eef74748ee6de286ef155a6dfd5f91d22cd912d01e06cd5d861680f18870087f"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r3-independent-source-review.md",
+      "bytes": 3864,
+      "sha256": "8df0734efbfd980744500a0f3988c0bb425521e745b013a676e3a4eeae29c820"
+    },
+    {
+      "path": "docs/evidence/NI6/positive-one-worker-r3-independent-source-review.json",
+      "bytes": 9594,
+      "sha256": "2a6da3f3130fedf26573d5cc57c2bd68ab25bcd92ca04570a06b8ae64b8bcf98"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/native-adapter.mjs",
+      "bytes": 40758,
+      "sha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/src/normal-contracts.mjs",
+      "bytes": 31990,
+      "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67"
+    },
+    {
+      "path": ".runtime/ni6-public-preparation-r3/package/native-source-manifest.json",
+      "bytes": 17236,
+      "sha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/native-history-collector.mjs",
+      "bytes": 11620,
+      "sha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/runtime-security.mjs",
+      "bytes": 6033,
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d"
+    },
+    {
+      "path": ".runtime/ni6-positive-one-worker-r4/package/src/ledger.mjs",
+      "bytes": 21799,
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent/lib/index.js",
+      "bytes": 28207,
+      "sha256": "7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "bytes": 89972,
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js",
+      "bytes": 142847,
+      "sha256": "0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b"
+    }
+  ],
+  "readQualification": "Complete affected fixture/runner edits, proposal/README, root freeze, static diagnosis MD/JSON and full author narrative read. All author metadata/record matrices inertly reconciled by path and hashes, without reproducing them here. Exact full-byte/module/delta comparisons establish unchanged portions; semantic reading of immutable large sources was limited to ordinary public root metadata/header forwarding and baseline equality, with no protected final-boundary investigation.",
+  "packageConservation": {
+    "regularFilePaths": 65,
+    "unchangedRegularFiles": 62,
+    "changedModules": [
+      "src/native-adapter.mjs",
+      "src/normal-contracts.mjs"
+    ],
+    "descriptorDigestChanges": 2,
+    "otherDescriptorBytesUnchanged": true,
+    "productDescriptorRows": 64,
+    "originalHostMetadataUnchanged": true,
+    "originalClientBytesUnchanged": true,
+    "originalBuildAuthorityRole": "ANCESTOR_ONLY",
+    "correctedDescriptorSha256": "d4199cc0d5e70de6297c5652bca2991a3124f6642b5d8137ee85300665efe278",
+    "newClientBuild": false,
+    "normalPeer": "Exact original pinned official node_modules",
+    "fullGraphRehashed": false
+  },
+  "ordinaryHeaderFindings": {
+    "nativeCreateOnlyMetadataAddition": "delegationDepth:0",
+    "originalPublicAgentMetadataForwardingRetained": true,
+    "sessionPrepareRetainsExplicitZero": true,
+    "jsonlEncodingRestorationRetainsZero": true,
+    "headerAllowedAndRequiredDepth": true,
+    "headerDepthValidation": "integer(v.delegationDepth,0,0)",
+    "previousStrictVersionUnseededFieldsRetained": true,
+    "fullLivePersistedHeaderComparisonUnchanged": true,
+    "depthCoercionStrippingOrDelegatedHeaderAcceptanceAdded": false,
+    "r2ActualExceptionConfirmed": false
+  },
+  "headerCases": {
+    "sourcePreparedOnly": true,
+    "sameFutureFunctionalChild": true,
+    "beforeNativeContext": true,
+    "fixedLiteralSyntheticInputsOnly": true,
+    "expectedCases": [
+      "depth0 accepts unchanged",
+      "missing depth rejects INVALID_INPUT unchanged",
+      "depth1 rejects INVALID_INPUT unchanged"
+    ],
+    "errorCodeReadScope": "Only own literal public pure-header validation failures; no application/private exception inspected.",
+    "nativeSessionHttpModelEffectsAdded": 0,
+    "pureCasesAloneProveHostCompatibility": false
+  },
+  "affectedGuardChecks": {
+    "literalSevenFileDeltaExact": true,
+    "fixtureReverseSelectedChangesRecoversR3": true,
+    "runnerReverseSelectedChangesRecoversR3": true,
+    "createPhaseReadyGateUnchanged": true,
+    "exactSyntheticUsageUnchanged": true,
+    "actualReturnedRefsCASFlowUnchanged": true,
+    "httpRequestMaximum": 25,
+    "onceInodeCapturesEOFGroupDriftBudgetsUnchanged": true,
+    "strictRootRestartHoldUnchanged": true
+  },
+  "projection": {
+    "fieldCount": 28,
+    "soleNewField": "headerCases",
+    "headerCasesIntegerRange": [
+      0,
+      3
+    ],
+    "positiveAndPassRequireHeaderCases": 3,
+    "phaseCount": 50,
+    "soleNewPhase": "HEADER_CONTRACT",
+    "createLabels": 8,
+    "refusalLabels": 37,
+    "byteCap": 1024,
+    "boundedExecutorReadMaximum": 1025
+  },
+  "conservation": {
+    "inheritedInputRecordsExactByPath": 471,
+    "additionalPublicInputsHashed": 80,
+    "ownedArtifactsHashed": 7,
+    "inputCount": 551,
+    "inputBytes": 19941699,
+    "futureActualPinsIncludingManifestAndFourReviews": 563,
+    "sourceCopies": 142,
+    "selectedTopologyLinksChecked": 7,
+    "r3FinalReviewsAndUnrunStatePreserved": true,
+    "r2ConsumedFailureEvidencePreserved": true
+  },
+  "budgetsSeconds": {
+    "bookkeepingInsideEachCommand": 1,
+    "diagnosticCleanupInsideTotal": 4,
+    "diagnosticTotal": 35,
+    "nodeCleanupInsideDiagnostic": 5,
+    "nodeFinalAbsoluteEnd": 30,
+    "nodeResultReserveInsideFinal": 0.5,
+    "nodeWorkInsideDiagnostic": 24,
+    "postReadbackMaximum": 25,
+    "primaryAbsoluteEnd": 85,
+    "setupPreflight": 20,
+    "syntaxCleanupInsideTotal": 1,
+    "syntaxTotal": 5,
+    "terminalConservativeReserve": 5
+  },
+  "retainedQualifications": [
+    "Two ordinary static incompatibilities are source-established; consumed r2 first exception is not confirmed by this correction or its safe public projection.",
+    "Pure synthetic header cases are unexecuted here and cannot alone establish genuine ordinary host compatibility.",
+    "The fresh package is a separately pinned source-corrected derivative of the original actual build; no new client build or unchanged-original-product authority is asserted.",
+    "NOT_RETURNED means no valid phase captured and does not prove no HTTP return. workerCreated=false means readiness milestone not passed, not zero native creation or released reservation.",
+    "Strict root public disposal restarts UID0; rootClosed=false/FAILED_HOLD remains when active and prior firstFailure is preserved.",
+    "Coarse nested Loader phases, outstanding async work after timeout, noninterruptible synchronous calls, natural observer removal and preterminal timing limits remain.",
+    "Child result, command exits/capture/EOF/groups, executor finalization and supported actual return remain separate; partial positive observations cannot confer aggregate acceptance.",
+    "Ordinary output remains not-reviewed/not-requested; no task completion/full AC/all87 acceptance or final protected CODE receipt/envelope/revision999 finding."
+  ],
+  "allThreeProposalGOFalse": true,
+  "proposalPinsEmpty": true,
+  "freshActualDestinationsAbsentAtReadback": true,
+  "remainingRootActions": [
+    "Read final independent test review and seal four actual affected report pins.",
+    "Only root selects actual closed plan/GO and supported approval.",
+    "Any actual once run must separately preserve ordinary header/native-path evidence, command/driver return and strict lifecycle HOLD."
+  ],
+  "reviewLaneActions": {
+    "candidateParseCheckCompileImportBuildTestRuntime": false,
+    "privateContentInspection": false,
+    "sourceProductGitMutation": false,
+    "applicationListenerModelBrowserActions": false,
+    "helperDelegation": false,
+    "faultOrProtectedFinalCODEInvestigation": false
+  }
+}

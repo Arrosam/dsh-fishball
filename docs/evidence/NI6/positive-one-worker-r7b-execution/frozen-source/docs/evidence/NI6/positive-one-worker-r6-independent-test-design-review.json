@@ -1,0 +1,325 @@
+{
+  "acceptance": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "R5BlockedUNRUNPreserved": true,
+    "UI": "PAUSED_MAC_LOCKED",
+    "accepted": 0,
+    "aggregateOrGenuinePositivePASS": false,
+    "all87": "HOLD",
+    "cloud": "BLOCKED",
+    "rootOwnsPlanCallGit": true
+  },
+  "caseDesign": {
+    "beforeContext": true,
+    "counterIncrementAfterCompleteOracles": true,
+    "exceptionFieldsInspected": false,
+    "firstAssertionFailureStopsBeforeContext": true,
+    "headerCasesRange": [
+      0,
+      3
+    ],
+    "headerCasesRequired": 3,
+    "newProjectionCases": 5,
+    "originalApprovalExpectedTypeDefaultPreserved": true,
+    "phase": "STORED_PROJECTION_CONTRACT",
+    "positiveAndPASSRequire": 12,
+    "projectionCasesRange": [
+      0,
+      12
+    ],
+    "pureCasesProveHostCompatibility": false,
+    "retainedProjectionCases": 7,
+    "sameFutureFunctionalChild": true,
+    "structuredCloneStrictEqualityRetainUndefinedNegativeZero": true
+  },
+  "changedProductRecords": [
+    {
+      "bytes": 12958,
+      "path": ".runtime/ni6-positive-one-worker-r6/package/src/native-history-collector.mjs",
+      "sha256": "5473de8f79f8b4aec13ba56f212ef8ee7a32e68e7dee9ce8ce61ed8be1704149"
+    },
+    {
+      "bytes": 5583,
+      "path": ".runtime/ni6-positive-one-worker-r6/package/scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    },
+    {
+      "bytes": 18440,
+      "path": ".runtime/ni6-positive-one-worker-r6/package/native-source-manifest.json",
+      "sha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9"
+    }
+  ],
+  "conservedOraclesAndQualifications": [
+    "Original lossless/header/absolute cwd/nativeEvents/SessionSeq/snapshotSessionEvent/SurfaceManager and original supplied projections retained; borrowed references/no marker.",
+    "Original restore/immutable final observation/flush/stat/id/unseeded/inherited/currentness/bounds/interrupted-turn/inbox and ALL live/stored header/log/seq/surface/message equality.",
+    "Actual returned createPhase ready before native inventory/query/execute; original symbolic provider/service identities and actual refs/CAS/consent/context/catalog/policy.",
+    "Exactly one native task/worker/request/stream/turn/step; next() unchanged; zero tools/external inference/memory writes.",
+    "Actual committed accounting and exact input-message plus known-output UTF-8 usage; output/capture/source identities and not-reviewed/not-requested disposition.",
+    "Factual finish/stopped/session absence/released reservation; six once-owned Loader removals/raw fibers/preset disposer/post-removal404 and HTTP25.",
+    "Original once exclusive consumption/inode ownership/pin/source drift/full graph/stop/first failure/EOF/owned-group/capped capture guards unchanged.",
+    "Outer90 primary85 setup20 syntax5 functional35 post25 terminal5; Node24-5-30 and0.5 reserve; per-request2s inside shared work with2048/65536 byte caps.",
+    "Strict root restart rootClosedfalse/FAILED_HOLD while active, distinct from positivePath and preserving earlier first failure.",
+    "NOT_RETURNED/readiness do not prove no creation/reservation; release requires factual evidence; child projection/child return/executor/marker/supported return are distinct.",
+    "Preterminal scalars are not final duration/return; root must store supported return before optional processing; R4 remains driver NOT_CAPTURED/first exception NOT_ESTABLISHED."
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-independent-test-design-review/v1",
+  "date": "2026-10-07",
+  "executionGO": false,
+  "immutableAuthorityRecords": [
+    {
+      "bytes": 7362,
+      "path": "docs/ni6-positive-one-worker-r6-conservation-fix-freeze-2026-10-07.md",
+      "sha256": "31d0e7ce4aaa9e4701d0c19b55bd084cea57399b5eb796a68c0862c6dfc87fe6"
+    },
+    {
+      "bytes": 8015,
+      "path": "docs/ni6-positive-one-worker-r5-stored-projection-freeze-2026-10-07.md",
+      "sha256": "0d88351e59d701bc9010b7edf64157d47371cab3e25f32ebffa9647fd494c4bb"
+    },
+    {
+      "bytes": 5108,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-independent-source-review.md",
+      "sha256": "cd567e5d9d4bd4fdf40c23a084f2876a502beae47d4627d3da184cbcd44f5a96"
+    },
+    {
+      "bytes": 16720,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-independent-source-review.json",
+      "sha256": "1a9dceca73f41b22ce34c11ef2af9a0302610eb377d1ac19f9807c5d080976f2"
+    },
+    {
+      "bytes": 9340,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-independent-test-design-review.md",
+      "sha256": "9c042b7ab76d76aae33738c8d5e924e6ab3d973cb7f4604bd8e379247278283f"
+    },
+    {
+      "bytes": 18321,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-independent-test-design-review.json",
+      "sha256": "17461354addf61f7509fec879b7e296086799de4ede623fa60da7158a54494a8"
+    },
+    {
+      "bytes": 2922,
+      "path": "docs/evidence/NI6/positive-one-worker-r5-root-producer-order-hold.json",
+      "sha256": "ef0b0ba0e025cbfa26ca7546b0309b502e18509c2a6b1dd28141e07305a01cfa"
+    }
+  ],
+  "inertVerification": {
+    "actualDestinationsAbsentByMetadata": true,
+    "allEightSealsExact": true,
+    "boundedReadMaximum": 1025,
+    "byteCap": 1024,
+    "collectorOnlyImplicationLoopChanged": true,
+    "completeAffectedSourceReportsRead": true,
+    "conservativeCompactMaximumBytesIncludingNewline": 660,
+    "createLabels": 8,
+    "descriptorChangedProductDigests": 2,
+    "descriptorHostModules": 27,
+    "descriptorHostRows": 87,
+    "descriptorProductRows": 64,
+    "fixtureReverseTextEquality": true,
+    "fullOrderedMeasuredSerializedDescriptorEquality": true,
+    "futurePinsIncludingManifestSelfAndFourReviews": 742,
+    "hostInventoryMetadataOrderUnchangedFromR5": true,
+    "inheritedInputRowsUnchanged": 651,
+    "inputBytes": 24979690,
+    "inputCount": 730,
+    "literalDeltaExact": true,
+    "literalDeltaFiles": 7,
+    "newClientBuild": false,
+    "newInputRowsHashed": 79,
+    "originalActualBuiltClientConserved": true,
+    "ownedRowsHashed": 7,
+    "packageFilesUnchanged": 62,
+    "packageRegularFiles": 65,
+    "phases": 51,
+    "producerOnlySessionOrderChanged": true,
+    "proposalGOFlagsFalse": true,
+    "proposalPinsEmpty": true,
+    "refusalLabels": 37,
+    "resultFields": 29,
+    "runnerNamespaceAndThreeBoundChangesOnly": true,
+    "sourceCopies": 321,
+    "topology": 9,
+    "wholeOfficialGraphReaudited": false
+  },
+  "jsonSelfSeal": "EXTERNAL_COMPLETE_READBACK_SIZE_SHA256_REQUIRED",
+  "limits": {
+    "GitUsed": false,
+    "candidateParseCheckCompileImportBuildTestRuntime": false,
+    "helperDelegationUsed": false,
+    "listenerNetworkBrowserModelCloudUsed": false,
+    "onlyWrites": "this independent report pair",
+    "privateBytesOrCapturePayloadRead": false,
+    "producerEvaluated": false,
+    "protectedCODEReceiptEnvelopeRevision999Work": false,
+    "sourceOnly": true
+  },
+  "markdownRecord": {
+    "bytes": 8076,
+    "path": "docs/evidence/NI6/positive-one-worker-r6-independent-test-design-review.md",
+    "sha256": "f6d295f9432f3df5441e0a18d217fab50cbfab58e994aa59ce7f0931851b1173"
+  },
+  "materialBlockers": [],
+  "originalBuildAncestry": {
+    "actualBuildReturnPath": "docs/evidence/NI6/public-preparation-r3-root-readback/root-ni6-prep01-r3-observed-build-return.json",
+    "actualBuildReturnSha256": "71769b976186b302fd455a2728c904b7d02cb5cf5d5f63ad2d69e9751b2d4c14",
+    "clientSha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+    "derivativeDescriptorSha256": "06fce97380e5efe41df8f59bdbd27911edd22b22171d6683b11ebbd32cf776a9",
+    "derivativeNotNewBuild": true,
+    "descriptorAncestorSha256": "6c2c17b1a751a9ca07880661f8a14eb732344c0ff086e663293ce9ceec2f0382"
+  },
+  "originalPublicConstructorRecord": {
+    "bytes": 89972,
+    "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+    "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+  },
+  "reasoningEffort": "max",
+  "resolvedR5SourceFindings": [
+    {
+      "allFileListsStrictAscending": true,
+      "closedAt": "R6_SOURCE_SUPPORT_ONLY",
+      "consumerOrderingRelaxed": false,
+      "descriptorBytes": 18440,
+      "hostDigestRowsMeasured": 87,
+      "id": "F01",
+      "onlyProducerChange": "session HOST_FILES order",
+      "predecessorFinding": "T01",
+      "producerEvaluated": false,
+      "productDigestRowsMeasured": 64,
+      "wholeOrderedSerializedDescriptorEqual": true
+    },
+    {
+      "closedAt": "R6_SOURCE_SUPPORT_ONLY",
+      "equivalenceDomain": "strict ordinary nativeEvents domain",
+      "existingValidatorFirst": "nativeEvents",
+      "id": "F02",
+      "locations": {
+        "collector": {
+          "lines": [
+            28,
+            36
+          ],
+          "path": ".runtime/ni6-positive-one-worker-r6/package/src/native-history-collector.mjs"
+        },
+        "originalConstructor": {
+          "lines": [
+            1144,
+            1154,
+            1173,
+            1177,
+            1218,
+            1222
+          ],
+          "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js"
+        }
+      },
+      "newGuards": [
+        "config.provider/model nonempty",
+        "true reasoningEffort default implies config.reasoningEffort defined",
+        "true maxTokens default implies config.maxTokens defined"
+      ],
+      "noDetachedSession": true,
+      "otherConstructorOmissionIdentified": false,
+      "predecessorFinding": "T02",
+      "restOfCollectorExactR5": true
+    }
+  ],
+  "reviewModel": "gpt-6.1-sol",
+  "reviewedFinalSourceRecords": [
+    {
+      "bytes": 36351,
+      "path": ".runtime/ni6-positive-one-worker-r6/fixture.mjs",
+      "sha256": "01b2217c78402949cc63f3967d07b94fbbdea914a292922e28b33de7794c961e"
+    },
+    {
+      "bytes": 32328,
+      "path": ".runtime/ni6-positive-one-worker-r6/run-once.py",
+      "sha256": "b90363c35c78b2d2d26e4d7a4288c616f1ec5bf3b68dc64aa085379ad3161cc1"
+    },
+    {
+      "bytes": 29656,
+      "path": ".runtime/ni6-positive-one-worker-r6/execution-plan.proposed.json",
+      "sha256": "40bad86dc09d908cb5bb4c65de7e95bff5d825fbdc1d4aefefeec18992fff796"
+    },
+    {
+      "bytes": 73596,
+      "path": ".runtime/ni6-positive-one-worker-r6/source-delta.diff",
+      "sha256": "7c0d5161772dec1f04ca95330a0092e7c64ff37eefeb74fcae7f43e1bfd5122a"
+    },
+    {
+      "bytes": 5245,
+      "path": ".runtime/ni6-positive-one-worker-r6/README.md",
+      "sha256": "d4a0c44adc1ebda9b86086a55f7012a47a475ccc2604226c7eb05c87d0f9fe57"
+    },
+    {
+      "bytes": 210135,
+      "path": ".runtime/ni6-positive-one-worker-r6/source-manifest.json",
+      "sha256": "37ac9b883b0a9973f4b319ae3340334565e89d0eb8c2c966dcd32e9b0171dc15"
+    },
+    {
+      "bytes": 3581,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-source.md",
+      "sha256": "cfd634cc60a43ea73df8b9e13391ba562b09fd373785f1854109719656c78b6c"
+    },
+    {
+      "bytes": 54708,
+      "path": "docs/evidence/NI6/positive-one-worker-r6-source.json",
+      "sha256": "e300824f1001f9c57215a60cc94f443c712ef0c839d97b5e447cc4fe8dc69bdb"
+    }
+  ],
+  "reviewer": "/root/bootstrap_diagnostic_r1_test_review",
+  "revision": "positive-one-worker-r6",
+  "runtimeCasesStatus": "NOT_RUN",
+  "selectedCases": [
+    {
+      "id": "D01",
+      "oracle": "Exact future syntax child return0 plus inherited command/group/EOF/capture guards",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "oracle": "Complete original genuine one-worker path including ready/usage/refs/CAS/capture/result/finish/release/25HTTP/removal; root HOLD separate",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C01-C03",
+      "oracle": "Retained depth0 accept/missing-depth and depth1 INVALID_INPUT with unchanged inputs",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C04-C10",
+      "oracle": "Seven exact inherited pure projection cases; positive approval tail/same refs/no marker/measured empty surface; six rejection/no-mutation oracles, retaining negative-zero/undefined",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C11",
+      "input": "nonempty synthetic provider/model, deterministic reasoning, maxTokens128 and both matching true defaults",
+      "oracle": "ACCEPT_SAME_REFS_FULL_VALUES_ONE_EVENT_NO_MARKER_EMPTY_NODES_MESSAGES_MEASURED_GENERATIONS0",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C12",
+      "input": "only provider becomes empty",
+      "oracle": "REJECT_UNCHANGED_INPUTS_PROJECTIONS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C13",
+      "input": "only model becomes empty",
+      "oracle": "REJECT_UNCHANGED_INPUTS_PROJECTIONS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C14",
+      "input": "only config.reasoningEffort removed; true marker retained",
+      "oracle": "REJECT_UNCHANGED_INPUTS_PROJECTIONS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C15",
+      "input": "only config.maxTokens removed; true marker retained",
+      "oracle": "REJECT_UNCHANGED_INPUTS_PROJECTIONS",
+      "status": "NOT_RUN"
+    }
+  ],
+  "status": "NO_NEW_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

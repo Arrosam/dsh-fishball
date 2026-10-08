@@ -1,0 +1,174 @@
+{
+  "CODE": "BLOCKED_UNCHANGED",
+  "LIVE02": "BLOCKED_AFTER_SECOND_REVIEWER_REJECTION",
+  "UI": "PAUSED_MAC_LOCKED_NO_HANDOFF",
+  "accepted": 0,
+  "actualDriverExitCode": 1,
+  "actualInvocation": {
+    "actualDriverExitCode": 1,
+    "afterUTC": "2026-10-07 22:40:19 UTC",
+    "beforeUTC": "2026-10-07 22:39:39 UTC",
+    "chunks": [
+      {
+        "chunk_id": "796b1f",
+        "exit_code": null,
+        "outputCharacters": 0,
+        "session_id": 68351,
+        "wall_time_seconds": 1.001095188
+      },
+      {
+        "chunk_id": "3ee8ff",
+        "exit_code": null,
+        "outputCharacters": 0,
+        "session_id": 68351,
+        "wall_time_seconds": 5.001091972
+      },
+      {
+        "chunk_id": "0ae7b8",
+        "exit_code": 1,
+        "outputCharacters": 0,
+        "session_id": null,
+        "wall_time_seconds": 1.5884e-05
+      }
+    ],
+    "requestMs": 1791412779091,
+    "returnMs": 1791412819462,
+    "toolReturned": true
+  },
+  "all87": "HOLD",
+  "beforeAfter": {
+    "after": {
+      "complete": true,
+      "inputCount": 463,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    },
+    "before": {
+      "complete": true,
+      "inputCount": 463,
+      "unchanged": true,
+      "wholeHostFiles": 27577,
+      "wholeHostLinks": 12
+    }
+  },
+  "cancelledUIRecord4da34a6d": "NOT_REUSED_OR_EXECUTED",
+  "childProjection": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "category": "REJECTION",
+    "completedPlugins": 11,
+    "contractVersion": "df.ni6-positive-one-worker/v1",
+    "entryRemoved": true,
+    "executionCommitted": false,
+    "httpRequests": 19,
+    "ownedEntriesRemoved": false,
+    "phase": "WORKER_EXECUTE",
+    "positivePath": false,
+    "refusalCode": "OTHER_REFUSAL",
+    "requests": 0,
+    "reservationReleased": false,
+    "result": "FAILED_HOLD",
+    "resultReturned": false,
+    "rootClosed": false,
+    "stepEnds": 0,
+    "stepStarts": 0,
+    "streams": 0,
+    "taskCreated": true,
+    "tools": 0,
+    "turnEnds": 0,
+    "turnStarts": 0,
+    "workerCreated": true,
+    "workerStopped": false
+  },
+  "commandExitCodes": [
+    0,
+    1
+  ],
+  "contractVersion": "df.ni6-positive-one-worker-actual-return/v1",
+  "date": "2026-10-07",
+  "executorFailureCode": "EXECUTOR_COMMAND_NONZERO",
+  "executorFinalized": false,
+  "functionalDisposition": "CONFIRMED_THROUGH_SYNTHETIC_TASK_AND_ORIGINAL_WORKER_CREATION; EXECUTE_RETURNED_A_REFUSAL_BEFORE_ANY_ADMITTED_REQUEST_OR_STREAM",
+  "invocationMarker": {
+    "bytes": 272,
+    "path": ".runtime/ni6-positive-one-worker-r2/invocation.json",
+    "projection": {
+      "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-invocation/v1",
+      "failureCode": "EXECUTOR_COMMAND_NONZERO",
+      "finalized": false,
+      "finishedAt": "2026-10-07T22:40:14.917274+00:00",
+      "startedAt": "2026-10-07T22:39:56.659706+00:00",
+      "state": "FAILED_HOLD"
+    },
+    "sha256": "97ecf86f61c897b6fde01c07c594e24219c4482ff074ed6cddd94f783c95d6b3"
+  },
+  "nativeResult": "NOT_RETURNED",
+  "ownedEntriesRemovedQualification": "False positive-path milestone flag does not alone establish every final cleanup entry state. Product entry removal is observed true; owned process groups are observed absent.",
+  "ownedTermination": {
+    "captures": "COMPLETE_EOF_OBSERVED",
+    "continuousPostRootEventHistory": "NOT_ESTABLISHED",
+    "overflow": false,
+    "processGroups": "ABSENT_OBSERVED_FOR_BOTH_COMMANDS",
+    "remoteTermination": "NOT_CLAIMED",
+    "signalAttempts": 0,
+    "timeout": false
+  },
+  "owner": "/root",
+  "preterminalExecutorTiming": {
+    "conservativeActiveSeconds": 23.251046292018145,
+    "observedSeconds": 18.251045792130753,
+    "qualification": "Executor preterminal observations/reserve only; actual supported driver return is recorded separately."
+  },
+  "privateCaptureContents": "NOT_READ_DECODED_OR_COPIED",
+  "privateUIProfile": "UNTOUCHED",
+  "productBuild": "UNCHANGED_GENUINE_R3_BUILD",
+  "requestIntervalQualification": "Supported request, approval/transport and polling interval; not an exact child or final executor duration.",
+  "requestToActualReturnMilliseconds": 40371,
+  "rerun": "FORBIDDEN_CONSUMED_ONCE_INVOCATION",
+  "reservationRelease": "NOT_ESTABLISHED",
+  "result": "FAILED_HOLD",
+  "rootPlan": {
+    "CODE": "BLOCKED_UNCHANGED",
+    "all87": "HOLD",
+    "bytes": 73241,
+    "candidateExecution": false,
+    "freshDestinationsAbsent": true,
+    "path": ".runtime/root-ni6-positive-one-worker-r2-execution-plan.json",
+    "pins": 463,
+    "reviewReports": 4,
+    "sha256": "9acfd743376267db44a316447e1470fd4c8255c06bccead3cf8e112061f16a2e",
+    "status": "ROOT_FINAL_READBACK_AND_PLAN_SEALED",
+    "supportedPlatformApproval": "PENDING_EXACT_TOOL_INVOCATION"
+  },
+  "safeExecutionRecords": [
+    {
+      "bytes": 659,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-execution/fixture-result.json",
+      "sha256": "cf84c141c5654017bd481221339eea44ec8b1efd4fbaf9f4c9f62532a6f8db38"
+    },
+    {
+      "bytes": 4346,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-execution/executor-result.json",
+      "sha256": "13a396298eddfd828a55219b214208faa5b0bfda833d0101cdd14bb3e854571b"
+    },
+    {
+      "bytes": 2996,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-execution/command-results.json",
+      "sha256": "76c63dd3c0dae00ca896c4b2a86ace373593552a1e5a19b0c50a805d613d0f99"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-execution/before-after.json",
+      "sha256": "777fbdd720f4138fd308a253e7bcc8f97a020df78fac8a203b9c46a44403343e"
+    },
+    {
+      "bytes": 73241,
+      "path": "docs/evidence/NI6/positive-one-worker-r2-execution/root-plan.json",
+      "sha256": "9acfd743376267db44a316447e1470fd4c8255c06bccead3cf8e112061f16a2e"
+    }
+  ],
+  "supportedAction": "/opt/homebrew/bin/python3 -I .runtime/ni6-positive-one-worker-r2/run-once.py .runtime/root-ni6-positive-one-worker-r2-execution-plan.json",
+  "supportedPlatformAction": "APPROVED_AND_EXECUTED_ONCE",
+  "underlyingRefusalOrException": "NOT_ESTABLISHED_BY_CLOSED_OTHER_REFUSAL_PROJECTION"
+}
