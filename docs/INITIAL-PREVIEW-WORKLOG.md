@@ -46,6 +46,10 @@ Owned launcher SIGINT completed with original exit130/EOF. A separate loopback o
 
 [INITIAL-PREVIEW-DELIVERY.md](INITIAL-PREVIEW-DELIVERY.md) preserves the sanitized actual receipt and reproduction command. Final packaging adds these delivery records only; executable and canonical product bytes are unchanged from the actual corrected check. BUILD-METADATA identifies the final documentation source commit. The archive's generated `.sha256` and Library delivery identity are external receipts, avoiding a checksum self-reference.
 
+### Final archive and Library delivery
+
+Delivered source2da469caa67721585a233adbc6067581debfb376, version0.1.0-preview.1,120 public files/620338bytes. Final SHA256: `c994c06b1f9c6598f4a48539b3afba33fb3a9285569a35577fbbaac73059aced`. Library saved `dsh-fishball-0.1.0-preview.1-initial-2da469c.tar.gz` as `libfile_8ea2bcadbba88191bfbafb7bb5023913`, Library version0; local identity metadata persisted successfully. [The external package receipt](INITIAL-PREVIEW-PACKAGE-RECEIPT.md) records the exact build command and owned service/profile handoff, without private URLs. Archive contents include all local tickets/AC, design, public contracts, workflow and actual delivery checks; detailed historical evidence remains in the local repository. No remote/push/public release occurred.
+
 ## Resume without repeating the failed workflow
 
 Start with README, INITIAL-PREVIEW.md, this file, AGENTS and `git status`. Preserve both reserved tracked drafts: `docs/evidence/UI/manual-web-qa-running-handoff-2026-10-07.md` and `docs/evidence/normal-entry-remaining-work.md`. Root owns Git/runtime; stage only exact selected paths. Keep granular branch history and use squash merges for reviewed development integrations; no destructive rewrite or public push.
