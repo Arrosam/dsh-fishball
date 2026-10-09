@@ -1,6 +1,27 @@
 # Frontend validation — 2026-10-09
 
-Current result: **UI_RENDER_AND_LOCAL_TASK_RETEST_PASS; WORKER_RECOVERY_BLOCKED; REAL_DF_OLLAMA_POLICY_BLOCKED**. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` returned an actual fixed-candidate retest. Its panel/cards and bounded local task checks passed; the native worker card remains offline. The latest received outcome below supersedes earlier pending/render-failure statements only for this bounded run. Earlier candidate/launch records remain historical, not current liveness claims. No full frontend/MVP acceptance follows.
+Current result: **UI_RENDER_AND_LOCAL_TASK_RETEST_PASS; PUBLIC_WORKER_WIRING_CHECKS_PASS; CORRECTED_HOST_RESTART_PENDING; IAB_WORKER_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` returned an actual fixed-candidate retest. Its panel/cards and bounded local task checks passed; the native worker card remained offline. The focused public connection repair below passed targeted checks, but actual UI recovery is not yet observed. Earlier candidate/launch records remain historical, not current liveness claims. No full frontend/MVP acceptance follows.
+
+## Focused public worker-connection repair
+
+Parent explicitly resumed this independent wiring fix after the backlog inventory, retaining the opaque RuntimeStore boundary. Sole author `/root/ollama_ui_bridge_author` (Sol6.1/high) changed only client wiring and targeted fixtures; root read the public change, rebuilt/tested and owns Git/runtime. No additional audit lane was opened. RuntimeStore, capture/finish/receipt/signature/envelope internals and denied searches remain untouched.
+
+Pinned public `@deepseek-ai/dsh-client-connection`0.2.1-alpha.1 exposes `generation.getSnapshot()/subscribe` for establishment/replacement/loss and `connection/reset` for cache repull. Its public client publishes connected state before the ready generation (`c645ac`, `a1fc7f`). DF previously observed only state/reset, invalidated worker state during that readiness gap, and never refreshed worker status. This explains the actual IAB offline card without requiring protected internals.
+
+Logical code commit: `e495fa94ceaa222d4d4f68dc6616cb56e7b3b4bf`. `src/client-entry.cjs` now observes generation readiness/loss, clears consent on setup loading/offline/reset, refreshes task detail before cached worker status, and fences follow-up reads by active lifetime, recovery revision and generation identity. It never confirms policy/approval, creates a worker or executes inference during recovery. Existing owner decisions remain explicit. The generated bundle and only two source hashes were refreshed; other62 product members and host descriptor remain identical (`8778ae`). Client SHA256 `1bf88fac070c3d0ccc37366a85eae8569bd657220c60490b0a64958409035b41`; source factory SHA256 `a66883dd5886c332720f71c427fa9d63c51be5c7f7b24c15d32f56f9d25060ef`.
+
+Root command on Node22.22.2:
+
+```sh
+/opt/homebrew/opt/node@22/bin/node scripts/build-client.mjs
+/opt/homebrew/opt/node@22/bin/node --test test/client-connection-wiring.test.mjs test/onboarding-client.test.mjs test/worker-client-functional.test.mjs test/worker-client.test.mjs test/client-control-card-render.test.mjs test/client-build.test.mjs
+```
+
+Final result **134 passed,0 failed,0 skipped** (`5a92d7`). Nine new actual-apply fixture cases cover established generation, state-before-generation and reconnect, explicit setup-required→ready, late replies across setup/task-list/task-detail/worker-status, unavailable setup/reset and disposal/subscription cleanup. Automatic recovery is checked against a read-only route allowlist, with no worker decisions or mutations. Existing functional source/bundle checks retain stale/unknown/approval/cancellation protections.
+
+First affected run was133PASS/1FAIL (`e356a5`); diagnostic19f23b retained the failure. Only C32's old seven-export closed list failed: baseline HEAD already exposes12 helpers/cards (`5ef92b`), unrelated to this wiring change. Author corrected the explicit expected12-name list, preserving exact serialization/lazy imports/closed equality. Root retested final code; no product export or failing assertion was removed. The final TAP is retained locally at `/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-connection-final-v5gkn76e.tap`; this external temp record is not packaged evidence.
+
+Package/restart and actual IAB worker-control retest remain pending at this record. This closes no full source criterion or ticket. The canceled fresh572bac91 and historical smoke tasks must not be replayed. Exact Ollama integration is separately held; this public repair changes no accounting contract, provider/model, credentials or profiles.
 
 ## Received fixed-candidate IAB retest
 
@@ -12,7 +33,7 @@ Actual PASS: rendered panel/both repaired cards; repeated selection and two relo
 
 Remaining BLOCKED: worker status persistently says “Host disconnected. Worker decisions are cleared.” Refresh worker status/catalogue and dependent controls stay disabled while storage/task RPC works. Reload/refresh/context selection did not recover it. Native Settings service-unavailable/compressed narrow layout observations remain separate upstream findings. Worker/result/continuation journeys and real Ollama capture were not run. Duplicate/concurrent creation, full empty profile and host outage were not simulated. Browser tab closed/reset viewport; root-owned runtime was left running. These observations establish a bounded render/task pass and a worker recovery defect, not a new host liveness guarantee or complete criterion acceptance.
 
-The implementation lane's public connection-wiring investigation is paused read-only while the owner-requested backlog inventory is completed. No new wiring edit, protected-body inspection, provider execution or listener/profile change was made for that inventory.
+The implementation lane paused read-only for the owner-requested backlog inventory; that documentation action changed no wiring, protected body, provider or profile. Parent subsequently resumed the focused public repair recorded above.
 
 ## Candidate and scope
 
