@@ -29,7 +29,8 @@ const text = node => typeof node === 'object' ? node.children.map(text).join(' '
 function panel(setupModel) { return client.Panel({ setupModel, model: client.createModel({ call: async () => ok([]) }) }); }
 function application(rpc) {
   const registrations = [], callbacks = new Map(), cleanups = [];
-  const ctx = { connection: { rpc, state: { subscribe: () => () => {} }, generation: { getSnapshot: () => ({}) } }, layout: {}, slots: { inject(_key, install) { install(); }, register(spec, component) { registrations.push({ spec, component }); return () => {}; } }, effect(install) { const cleanup = install(); if (typeof cleanup === 'function') cleanups.push(cleanup); }, on(event, callback) { callbacks.set(event, callback); } };
+  const generation = { id: 1, host: { home: '/synthetic' } };
+  const ctx = { connection: { rpc, state: { subscribe: () => () => {} }, generation: { getSnapshot: () => generation } }, layout: {}, slots: { inject(_key, install) { install(); }, register(spec, component) { registrations.push({ spec, component }); return () => {}; } }, effect(install) { const cleanup = install(); if (typeof cleanup === 'function') cleanups.push(cleanup); }, on(event, callback) { callbacks.set(event, callback); } };
   client.apply(ctx);
   const props = registrations.find(value => value.spec.key === 'df').spec.inject();
   return { ...props, reset: () => callbacks.get('connection/reset')(), close: () => cleanups.reverse().forEach(cleanup => cleanup()) };
@@ -137,9 +138,9 @@ test('recovery, unavailable, loading, disconnected and ready phases do not expos
 
 test('native application mount and reconnect perform only setup status until actual ready', async () => {
   const calls = []; let phase = 'setup_required';
-  const app = application({ async call(channel, endpoint, input) { calls.push({ channel, endpoint, input }); if (channel === '/df-setup') return ok(status(phase)); assert.equal(endpoint, 'v1/list'); return ok([]); } }); await settle();
+  const app = application({ async call(channel, endpoint, input) { calls.push({ channel, endpoint, input }); if (endpoint === 'v1/workerStatus') return ok({enabled:false,phase:'disabled',reasonCode:null,configurationRef:null,policyVersion:null,selection:null,environment:null,persistence:null,bounds:null,accounting:null,pricing:'unknown',actionsEnabled:false}); if (channel === '/df-setup') return ok(status(phase)); assert.equal(endpoint, 'v1/list'); return ok([]); } }); await settle();
   assert.deepEqual(calls.map(value => [value.channel, value.endpoint]), [['/df-setup', 'v1/status']]); app.reset(); await settle(); assert.equal(calls.length, 2); assert.equal(calls.some(value => value.endpoint === 'v1/confirm'), false);
-  phase = 'ready'; app.reset(); await settle(); assert.equal(app.model.getSnapshot().phase, 'ready'); assert.equal(calls.at(-1).channel, '/df-rpc'); assert.equal(text(client.Panel(app)).includes('Create task'), true); app.close();
+  phase = 'ready'; app.reset(); await settle(); assert.equal(app.model.getSnapshot().phase, 'ready'); assert.deepEqual([calls.at(-1).channel,calls.at(-1).endpoint], ['/df-setup','v1/workerStatus']); assert.equal(app.workerModel.getSnapshot().phase,'disabled'); assert.equal(text(client.Panel(app)).includes('Create task'), true); app.close();
 });
 
 test('advanced compatibility requires exact pinned status404 signature and a successful original list', async () => {

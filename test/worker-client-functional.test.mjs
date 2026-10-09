@@ -125,19 +125,21 @@ const shape = (input, keys) => assert.deepEqual(Object.keys(input).sort(), [...k
 
 for (const [surface, client] of Object.entries(clients)) {
   const add = (id, title, fn) => test(`${id} ${surface}: ${title}`, fn);
-  add('C01', 'actual apply, ordinary refresh and reset emit zero implicit worker RPC', async () => {
+  add('C01', 'actual apply and reset refresh only cached worker status without implicit decisions', async () => {
     const f = fixture(client), events = new Map(), effects = [], registrations = [];
-    const ctx = { connection: { rpc: f.rpc, state: { subscribe: () => () => {} }, generation: { getSnapshot: () => ({}) } }, layout: {},
+    const generation = { id: 1, host: { home: '/synthetic' } };
+    const ctx = { connection: { rpc: f.rpc, state: { subscribe: () => () => {} }, generation: { getSnapshot: () => generation } }, layout: {},
       slots: { inject(_slot, install) { install(); }, register(...args) { registrations.push(args); return () => {}; } },
       effect(install) { effects.push(install()); }, on(name, handler) { events.set(name, handler); } };
     client.apply(ctx); await turn(); await turn();
     assert.equal(registrations.length, 2);
-    assert.deepEqual(f.calls.map(call => [call.channel, call.name]), [['/df-setup', 'status'], ['/df-rpc', 'list'], ['/df-rpc', 'status']]);
+    assert.deepEqual(f.calls.map(call => [call.channel, call.name]), [['/df-setup', 'status'], ['/df-rpc', 'list'], ['/df-rpc', 'status'], ['/df-setup', 'workerStatus']]);
     const injected = registrations.find(args => args[0].key === 'df')[0].inject();
     client.Panel({ model: injected.model, setupModel: injected.setupModel, workerModel: injected.workerModel });
     events.get('connection/reset')(); await turn(); await turn();
-    assert.equal(f.calls.some(call => /^worker|prepareContext/.test(call.name)), false);
-    assert.equal(injected.workerModel.getSnapshot().status, null);
+    assert.equal(f.calls.some(call => /^(?:worker(?!Status)|prepareContext)/.test(call.name)), false);
+    assert.deepEqual(injected.workerModel.getSnapshot().status, f.status());
+    assert.equal(f.mutations().length, 0);
     effects.forEach(dispose => dispose?.()); f.dispose();
   });
   add('C02', 'ordered explicit decisions emit exact closed requests and fresh command references', async () => {
@@ -410,6 +412,6 @@ test('C32 exact source/emitted bundle serialization and lazy module registration
   let loaded, imports = 0;
   new Script(bundleText).runInContext(createContext({ window: { __ModuleLoader__: { load(value) { assert.equal(loaded, undefined); loaded = value; } } } }));
   assert.equal(imports, 0); const exports = loaded.factory(name => { imports++; assert.equal(name, 'react'); return React; });
-  assert.equal(imports, 1); assert.deepEqual(Object.keys(exports).sort(), ['Icon','Panel','apply','createModel','createSetupModel','createWorkerModel','inject'].sort());
+  assert.equal(imports, 1); assert.deepEqual(Object.keys(exports).sort(), ['ContinuationCard','Icon','OwnerFinishRecoveryCard','Panel','apply','createAuditModel','createContinuationModel','createModel','createOwnerFinishRecoveryModel','createSetupModel','createWorkerModel','inject'].sort());
   assert.equal(bundleText.includes('document.'), false); assert.equal(bundleText.includes('process.env'), false);
 });
