@@ -1,6 +1,6 @@
 # Frontend validation — 2026-10-09
 
-Current result: **UI_RENDER_FIX_MODULE_PASS; IAB_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. This ledger retains the actual IAB failure and focused correction without promoting untested cases. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` reached authenticated native UI and reproduced a blank DF panel. Browser retest of the fixed candidate and task/worker journeys remain pending.
+Current result: **UI_FIX_HOST_READY; IAB_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. This ledger retains the actual IAB failure and focused correction without promoting untested cases. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` reached authenticated native UI and reproduced a blank DF panel. Browser retest of the fixed candidate and task/worker journeys remain pending.
 
 ## Candidate and scope
 
@@ -132,3 +132,25 @@ Root rebuilt the client (`d0861c`) and ran `node --test test/client-control-card
 Only two source/client hashes were refreshed by opaque byte hashing (`876d35`); other62 product members and the host descriptor stayed unchanged. Fixed client SHA256 `00f1f5b30885509e093eb149b5a40a7687ff513d65435b4732a6d78eaf4360b2`; source factory SHA256 `133eb7ad9386cd0bafb9faea822037ac28ac5b00cfd7e1b152554fac5d5a19be`. Manifest compact formatting was preserved. No additional review lane was opened, per parent instruction.
 
 F2 is native Settings `permissionPresets/catalog` service-unavailable; F3 is the native narrow Settings layout observation. This repair does not patch upstream DSH or broaden access. Post-fix rendering and DF functional/visual acceptance remain pending.
+
+## Fixed preview ready for IAB retest
+
+Root packaged and verified the committed fixed source (`7b271b`, `0c51eb`), stopped its own original launcher through Ctrl+C with exit130/state retained (`1ae41e`), then upgraded only the allowlisted public package files in place (`3e69f4`). Old changed public bytes were retained privately; archived historical candidates remain unchanged. The package root stays at the same physical path so its strict owner marker and native profile remain valid. No owner rebinding, profile/database/key/transcript copying, private-state selection or protected-source change occurred. The directory's `9f23122` name is historical; current BUILD-METADATA identifies the new source below.
+
+The unchanged supported launcher restarted through normal execution approval (`fcb338`, `6b0417`). At06:35:57UTC, normal local authentication returned native HTML200 with no auth gate; ready/access/current/lock identity and actual client digest matched (`a3d42a`). This remains readiness evidence, not a rendered regression PASS.
+
+| Fixed candidate / current handoff | Value |
+| --- | --- |
+| Package source | `2768365e7a51a10ef5b3f3856b2f737b3dffdd6b` |
+| UI code commit | `9e505b7` |
+| Local archive | `dist/initial-preview-2026-10-09/dsh-fishball-0.1.0-preview.1-ui-fix-2768365.tar.gz` |
+| Archive SHA256 | `8e103e9de91083664008dc0253f848b0848990dc5e4910c81603fc448b83b74e` |
+| Archive bytes / public files | `635563` / `121` |
+| Version / host | `0.1.0-preview.1` / DSH Web0.2.1-alpha.1 |
+| Client SHA256 | `00f1f5b30885509e093eb149b5a40a7687ff513d65435b4732a6d78eaf4360b2` |
+| Clean endpoint / native profile | `http://127.0.0.1:3091/` / `df-initial-preview` |
+| CLI / launcher / owned PTY | `10281` / `10274` / `20516` |
+| Storage / provider / model | ready / `df-testing-local` / `df-testing-worker-v1` |
+| Readiness RPC / inference requests | `0` / `0` |
+
+The fresh private handoff is the same extraction-relative `.runtime/initial-preview/private/current-launch.json`, updated by the new launch. Keep its access data private. Root owns lifecycle; IAB owns actual retest. Retained smoke task/result and old cancellation-requested4da34a6d are not execution inputs. Real Ollama admission remains blocked; this candidate has the UI repair only. Library version1 has not been replaced while browser/accounting outcomes remain pending.
