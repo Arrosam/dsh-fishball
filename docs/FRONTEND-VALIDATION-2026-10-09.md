@@ -1,6 +1,18 @@
 # Frontend validation — 2026-10-09
 
-Current result: **UI_FIX_HOST_READY; IAB_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. This ledger retains the actual IAB failure and focused correction without promoting untested cases. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` reached authenticated native UI and reproduced a blank DF panel. Browser retest of the fixed candidate and task/worker journeys remain pending.
+Current result: **UI_RENDER_AND_LOCAL_TASK_RETEST_PASS; WORKER_RECOVERY_BLOCKED; REAL_DF_OLLAMA_POLICY_BLOCKED**. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` returned an actual fixed-candidate retest. Its panel/cards and bounded local task checks passed; the native worker card remains offline. The latest received outcome below supersedes earlier pending/render-failure statements only for this bounded run. Earlier candidate/launch records remain historical, not current liveness claims. No full frontend/MVP acceptance follows.
+
+## Received fixed-candidate IAB retest
+
+Root read the actual parent-owned report at `/Users/samuel/Documents/Codex/2026-10-08/task-4/df-frontend-qa-20261009/ui-fix-retest/report.md` (tool `003cb4`; earlier read `06825f`). Its companion identity/DOM/console/measurements/screenshots remain in that lane's local evidence directory; they were not copied into this repo or claimed as packaged deliverables.
+
+Exact candidate: package source `2768365e7a51a10ef5b3f3856b2f737b3dffdd6b`, UI repair `9e505b7`, fixed client SHA256 `00f1f5b30885509e093eb149b5a40a7687ff513d65435b4732a6d78eaf4360b2`, clean origin `127.0.0.1:3091`, native profile `df-initial-preview`. The browser lane checked launch/PID/client identity at entry and completion. Provider/model remained `df-testing-local`/`df-testing-worker-v1`; no configuration change or inference occurred.
+
+Actual PASS: rendered panel/both repaired cards; repeated selection and two reloads with zero console errors; setup/task refresh without duplicate rows; empty/whitespace draft disabled; multiline Chinese/keyboard focus; one fresh task creation; pause/continue gates and version changes; cancellation request persisted after refresh/reload; safe historical saved-command and stopped-predecessor reads; native Settings close; inspected390×844 layout without document overflow. Fresh task `572bac91…` advanced1→2→3→4, approval epoch3, now cancellation-requested with no worker/action/artifact: **never execute it**. Retained task `d441229f…` and its original saved evidence were unchanged. Pause visibility still reads Queued while controls convey the paused state; this is a readability observation.
+
+Remaining BLOCKED: worker status persistently says “Host disconnected. Worker decisions are cleared.” Refresh worker status/catalogue and dependent controls stay disabled while storage/task RPC works. Reload/refresh/context selection did not recover it. Native Settings service-unavailable/compressed narrow layout observations remain separate upstream findings. Worker/result/continuation journeys and real Ollama capture were not run. Duplicate/concurrent creation, full empty profile and host outage were not simulated. Browser tab closed/reset viewport; root-owned runtime was left running. These observations establish a bounded render/task pass and a worker recovery defect, not a new host liveness guarantee or complete criterion acceptance.
+
+The implementation lane's public connection-wiring investigation is paused read-only while the owner-requested backlog inventory is completed. No new wiring edit, protected-body inspection, provider execution or listener/profile change was made for that inventory.
 
 ## Candidate and scope
 

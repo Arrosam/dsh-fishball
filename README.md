@@ -35,6 +35,8 @@ The output directory must exist and the destination must be fresh. The [delivery
 
 ## Project records
 
+**[Full product backlog and remaining-work index](docs/PRODUCT-BACKLOG.md)** links the complete approved plan, all18 ticket cards,82 original plus5 chat-contract criteria, scope amendments, implementation/validation debt and newer evidence. It distinguishes committed records from reserved drafts and the unavailable original DOCX/PDF binaries.
+
 [AGENTS.md](AGENTS.md), [workflow](docs/development-workflow.md), [decisions](docs/decisions.md), [three-stage mapping](docs/three-stage-development.md), [tickets/BUB aliases](docs/tickets/README.md), [traceability](docs/acceptance-traceability.md) and [acceptance debt](docs/evidence/acceptance-debt.md) preserve the full agreed scope. Every ticket's development code/test review remains separate from runtime independent audit. Incomplete, failed and unrun checks remain visible; initial delivery does not promote them to PASS.
 
 The owner chose [MIT](LICENSE); [notices](THIRD_PARTY_NOTICES.md) and [fishball provenance](docs/fishball-provenance.md) describe the translated memory subset and separately pinned host. No personal fishball files are automatically imported or shared. The ledger is authoritative; summaries cannot authorize work.
