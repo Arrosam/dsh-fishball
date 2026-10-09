@@ -2,6 +2,8 @@
 
 Version: **0.1.0-preview.1**. Local preview only; full MVP/stable/public release is not accepted. The final archive's BUILD-METADATA.json names its exact source commit; SHA256 is supplied in the external sidecar and delivery response.
 
+October9 frontend follow-up: actual IAB confirms both blank-panel and worker-recovery fixes on codee495fa9/package sourcedd114ad. Worker status/catalogue reads work before/after reload, repeated selection and task refresh; catalogue reaches needs policy with execution disabled; zero console errors and unchanged tasks, no worker/model calls. [The frontend ledger](FRONTEND-VALIDATION-2026-10-09.md) retains exact candidate/report provenance and remaining RuntimeStore/Ollama blocker. Earlier NOT_RUN visual fields below are immutable historical receipt statements, not the current bounded frontend result. Full UI/worker/continuation/MVP acceptance remains open.
+
 The runnable executable bytes were actually tested from commit `c805bb7bd9566766164150847df9c79f1af0feb7` in the extracted package. Final documentation packaging preserves those script and canonical product bytes. Its source identity differs only because these outcomes were added to README/design/work records. Original DSH Web0.2.1-alpha.1/Node22.22.2 on macOS arm64 is a separately installed prerequisite, not included or downloaded by this archive.
 
 | Check | Actual outcome |

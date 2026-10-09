@@ -1,6 +1,32 @@
 # Frontend validation — 2026-10-09
 
-Current result: **UI_RENDER_AND_LOCAL_TASK_RETEST_PASS; PUBLIC_WORKER_WIRING_CHECKS_PASS; CORRECTED_HOST_READY; IAB_WORKER_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` returned an actual fixed-candidate retest. Its panel/cards and bounded local task checks passed; the native worker card remained offline. The focused public connection repair below passed targeted checks and its package restarted ready, but actual UI recovery is not yet observed. Earlier candidate/launch records remain historical, not current liveness claims. No full frontend/MVP acceptance follows.
+Current result: **PERMITTED_FRONTEND_SLICE_PASS; REAL_DF_OLLAMA_POLICY_BLOCKED**. Actual IAB retests confirm both the blank-panel repair and worker status/catalogue recovery on the fixed candidate. Task/worker admission remains explicit. This closes the bounded F1/F4 frontend slice, not the full UI matrix, worker execution/capture, protected review or MVP. Earlier failure/pending/launch records remain historical, not current liveness claims.
+
+## Final bounded IAB worker recovery — PASS
+
+Root read the parent-owned actual report `/Users/samuel/Documents/Codex/2026-10-08/task-4/df-frontend-qa-20261009/worker-recovery-retest/report.md` (`d286eb`, `fcfac5`). Companion receipt/DOM/console/screenshot files remain in that local browser lane directory. No private handoff or credential appears in this repository record.
+
+Candidate: code `e495fa94ceaa222d4d4f68dc6616cb56e7b3b4bf`, package source `dd114adcc41185e6fefb4e01733ccb3150788041`, client SHA256 `1bf88fac070c3d0ccc37366a85eae8569bd657220c60490b0a64958409035b41`. Ready/access/PID/client identities matched at entry and completion; native DSH Web0.2.1-alpha.1, profile `df-initial-preview`, port3091, CLI12082. Root-owned service was left running; browser tab closed/viewport reset.
+
+| Requested regression | Actual outcome |
+| --- | --- |
+| Normal authenticated home/DF selection | PASS: panel and repaired continuation/saved-finish cards render. |
+| Worker recovery controls | PASS: no Host disconnected label; status refresh/catalogue enabled. Initial state needs refresh; unknown pricing/accounting and disabled execution remain visible. |
+| Status→catalogue→status reads | PASS: catalogue reaches needs policy, exposes exact synthetic worker/review/repair selection and deterministic byte accounting; policy preview is available, execution stays disabled. |
+| Task refresh/two repeated selections | PASS: worker remains recoverable and panel/cards remain rendered. |
+| Full reload/reselection/status/catalogue | PASS: reads stay enabled and catalogue again reaches needs policy. |
+| Task preservation | PASS: exactly two rows; d441229f remains Activev4 and572bac91 remains Cancellation requestedv4. Neither mutated or executed. |
+| Console regression | PASS: zero errors. |
+
+No policy preview/confirmation, action approval, context preparation, worker create/execute/capture/finish, task mutation or model submission occurred. Needs policy is the expected explicit admission gate, not a recovery failure. This closes F4 and confirms F1 remains fixed. Consent after an induced actual disconnect, host outage, narrow layout and unrelated native Settings findings were outside this final retest; earlier scoped layout/task evidence retains its own candidate/limits. No complete original AC/ticket is accepted by this bounded browser pass.
+
+### Exact remaining real-model/RuntimeStore boundary
+
+The owner-authorized model remains existing local Ollama `deepseek-v4.1-flash:cloud`; metadata verification is not inference. Public contracts still impose synthetic-only accounting (`df-testing-utf8-byte-units/v1`, source_zero) and captured output-token/UTF-8-byte equality. Their public protected-core caller supplies usageUnits without an accounting discriminator. Honest API token/unknown billing support therefore needs compatible authoritative accounting/capture validation; changing a model setting or labeling cloud usage synthetic is insufficient.
+
+Automatic approval rejected the focused protected RuntimeStore accounting/capture search before execution: “The read-only grep targets the protected RuntimeStore implementation, which the trusted project instructions explicitly require to remain opaque and not be inspected; use public contracts instead.” That inspection was stopped. Its exact authorization remains pending; no alternate copy/search/session, indirect body inspection, signature/receipt investigation or real inference is performed. The public UI fix has no dependency on those internals. The broader blocked final CODE/receipt investigation and remaining native continuation/audit/results/fault acceptance stay open separately. Real DF Ollama execution/durable capture remains HELD /UNTESTED in this continuation.
+
+Parent requested a documentation-only archive refresh of the same Library item after this browser result. Package integrity/privacy exclusions suffice; no unchanged suite or fixture is rerun. The existing owned preview is preserved. Actual new Library version/filename/hash are recorded in the external package receipt after successful guarded replacement, without a checksum self-reference inside the archive.
 
 ## Focused public worker-connection repair
 
@@ -21,7 +47,7 @@ Final result **134 passed,0 failed,0 skipped** (`5a92d7`). Nine new actual-apply
 
 First affected run was133PASS/1FAIL (`e356a5`); diagnostic19f23b retained the failure. Only C32's old seven-export closed list failed: baseline HEAD already exposes12 helpers/cards (`5ef92b`), unrelated to this wiring change. Author corrected the explicit expected12-name list, preserving exact serialization/lazy imports/closed equality. Root retested final code; no product export or failing assertion was removed. The final TAP is retained locally at `/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-connection-final-v5gkn76e.tap`; this external temp record is not packaged evidence.
 
-The following readiness handoff supersedes the package/restart pending state. Actual IAB worker-control retest remains pending. This closes no full source criterion or ticket. The canceled fresh572bac91 and historical smoke tasks must not be replayed. Exact Ollama integration is separately held; this public repair changes no accounting contract, provider/model, credentials or profile selection.
+The following readiness handoff superseded the package/restart pending state. Its pending IAB worker-control state is now superseded by the final PASS above. This closes no full source criterion or ticket. The canceled fresh572bac91 and historical smoke tasks must not be replayed. Exact Ollama integration is separately held; this public repair changes no accounting contract, provider/model, credentials or profile selection.
 
 ## Corrected worker-wiring package and IAB handoff
 
