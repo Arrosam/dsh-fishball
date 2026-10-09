@@ -1,6 +1,6 @@
 # Frontend validation — 2026-10-09
 
-Current result: **HOST_READY; BROWSER_EXECUTION_PENDING**. This is the implementation lane's readiness and handoff record. It contains no rendered frontend PASS, screenshot or completed visual assessment. The parent has resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3`, which confirmed supported IAB access. Its initial navigation encountered the stopped host; the corrected ready handoff below supersedes that runtime observation.
+Current result: **UI_RENDER_FIX_MODULE_PASS; IAB_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. This ledger retains the actual IAB failure and focused correction without promoting untested cases. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` reached authenticated native UI and reproduced a blank DF panel. Browser retest of the fixed candidate and task/worker journeys remain pending.
 
 ## Candidate and scope
 
@@ -16,6 +16,8 @@ Current result: **HOST_READY; BROWSER_EXECUTION_PENDING**. This is the implement
 | Library | Same item `libfile_8ea2bcadbba88191bfbafb7bb5023913`, last confirmed version `1`; no replacement in this phase |
 
 Checkout comparison against the delivered source found no change in `src`, `lib`, the native source manifest, or the three initial-preview scripts. The two reserved tracked drafts were preserved. This phase changes documentation only. No new review agent, broad test rerun, product modification, build, model call or publication occurred.
+
+Parent-requested identity clarification: `git diff 9f23122..f538ff4` contains five documentation/README files only (`fe21e0`). A targeted opaque-byte comparison of all68 packaged executable members (`src`, `lib`, `scripts`, package metadata and native source manifest) found zero differences between the active extraction, the delivered archive's member hashes and committed `f538ff4` source (`732a62`). Thus `9f23122` is the earlier executable commit, and `f538ff4` is its later documentation-only packaging commit; executable content is identical, including the corrected result reader. Runtime BUILD-METADATA truthfully remains `9f23122`; it is not relabeled. No runtime replacement, data migration or restart is needed for this clarification. Actual frontend results remain pending.
 
 The authorized practical UI scope covers native loading/navigation, task intake/status/control/results, settings, validation and empty/loading/error states, repeated interactions, cancellation, refresh/reopen persistence, and desktop/narrow layout. Synthetic provider checks remain separate from real inference. BUB014-01–05, BUB003 and BUB013 remain subject to their original acceptance criteria; this bounded run does not close full ticket/MVP acceptance.
 
@@ -50,7 +52,7 @@ Use a new owned IAB tab; the browser route does not establish a separately isola
 
 This root executor exposes no callable CUA/IAB/Chrome controller. Supported browser instructions were read from the existing Hydrogen reference `browser-route.md` without modifying Hydrogen. No external browser controller, Browser LUA or source-based acceptance substitute was used. The parent separately confirmed IAB availability in the resumed browser task; that task owns actual browser execution and will supply findings.
 
-All cases below are **Not Run in this lane**. Browser/version/viewports actually exercised, screenshots, observed behavior and localized fixes must be appended from the IAB lane. Proposed viewports are desktop1440×900 and narrow390×844, subject to the browser's advertised viewport capability; they are not measured results.
+The table below retains root's original planned cases, which root did not execute through a browser. The actual IAB findings below supersede their initial disposition where evidence is available. IAB exercised desktop1440×900 and narrow390×844; DF task/worker controls were inaccessible because of the render crash. Root's HTTP/source checks remain distinct.
 
 | Case | Steps / synthetic data | Expected behavior | Acceptance / technique | Actual / status |
 | --- | --- | --- | --- | --- |
@@ -71,4 +73,62 @@ BVA for undocumented business limits is deferred; this handoff does not invent n
 
 ## Remaining work
 
-The IAB task can resume at the ready endpoint using the updated private handoff. Its current-source UI findings and sanitized evidence are still pending. If it identifies a localized defect, root owns the single implementation lane, targeted validation and factual retest record. No product change has been established here, so no package rebuild or guarded Library replacement is warranted. Real inference, native continuation, protected final CODE, full MVP acceptance and publication remain outside this readiness milestone.
+The IAB task needs the fixed candidate and fresh private handoff for retest. Root owns the single implementation lane, targeted checks and factual runtime/evidence record. The localized render fix changes source/client hashes and requires a new package identity; delivered Library version1 remains historical until an actual guarded replacement. Native continuation, protected final CODE, full MVP acceptance and publication remain open.
+
+## Renewed Ollama test request and concrete integration blocker
+
+The parent relayed renewed explicit owner authorization on October9 for testing DF with the previously selected existing Ollama model. It then assigned the real task submission to the browser lane and placed root inference on HOLD pending coordination to prevent duplicate calls. The IAB lane subsequently reported `net::ERR_BLOCKED_BY_CLIENT` at the clean3091 endpoint; its bounded browser-policy diagnosis and any non-browser fallback remain parent-owned. This is distinct from the earlier stopped-host refusal and root's missing browser tools. No browser PASS is inferred.
+
+Root verified the existing endpoint and exact model through normal execution approval at `06:09:11 UTC` (`cda96d`):
+
+| Metadata check | Actual result |
+| --- | --- |
+| Endpoint | `http://127.0.0.1:11434` |
+| `GET /api/version` | HTTP200, Ollama `0.40.0` |
+| `POST /api/show`, exact model | HTTP200, `deepseek-v4.1-flash:cloud` |
+| Advertised capabilities | completion, thinking, tools, vision |
+| Inference requests / credential changes | `0` / `0` |
+
+The exact intended inference target is the existing `/api/chat` route for `deepseek-v4.1-flash:cloud`, with harmless synthetic text only. Endpoint/model availability is proven; **DF real-worker readiness is not**. The active service and delivered product remain the byte-identical synthetic candidate. No models were pulled, credentials created, accounts altered or persistent access configured.
+
+One bounded implementation lane, `/root/ollama_ui_bridge_author` (gpt-6.1-sol/high), checked feasibility using current public source boundaries and earlier Ollama work as reference. It stopped before editing because the normal durable worker path is explicitly synthetic-only. Root independently checked these exact public boundaries; neither lane inspected or changed protected implementation bodies:
+
+| Current public boundary | Concrete incompatibility |
+| --- | --- |
+| `src/installed-worker-facts.mjs:214`; `src/client-entry.cjs:334/337/396` | Current source binding/status/execution accepts synthetic pricing and byte accounting; changing model configuration alone cannot admit or render honest token accounting. |
+| `src/normal-native-selection.mjs:35` (`159853`) | Normal native selection requires `source_zero`, `df-testing-utf8-byte-units/v1` and deterministic effort. |
+| `src/native-history-collector.mjs:123/127` (`13036e`) | Persisted usage requires synthetic accounting and equates output token count to UTF-8 output byte count. Ollama API tokens are a different unit. |
+| `src/normal-contracts.mjs:154/229` (`5455ae`) | Public `NativeCapture` contract mandates `df-testing-utf8-byte-units/v1`. |
+| `src/normal-native-operations.mjs:75` (`449360`) | Current public protected-core capture call supplies `usageUnits` without an accounting discriminator. Public-only model/UI changes cannot establish correct durable accounting. |
+
+No adapter patch, source modification or inference was made. Relabeling real API tokens as synthetic byte units, reporting cloud pricing as free, or swapping an older fixture into the running delivered candidate would not satisfy this test. Earlier uncertain/denied requests and fixture positions remain untouched. No new action-time inference approval was requested, because parent coordination is still pending and this candidate has no established compatible real DF capture path.
+
+The parent subsequently directed a focused accounting fix with truthful minimal/unknown usage rather than a billing expansion. Normal approval rejected root's targeted `rg` of RuntimeStore accounting literals/capture entry points before process creation: “The read-only grep targets the protected RuntimeStore implementation, which the trusted project instructions explicitly require to remain opaque and not be inspected; use public contracts instead.” No workaround or indirect inspection followed.
+
+The author checked a public-only byte-volume alternative. Existing persisted history requires its token fields to equal byte counts, so substituting byte volume would misrepresent real provider usage. A separate byte observation cannot establish the closed durable capture contract. Four unwired adapter drafts were authored then removed; none were exported, installed, committed or executed. Accounting source remains unchanged; inference0.
+
+The exact blocked scope is inspection and minimal change of the native usage-accounting discriminator in `captureNormalNativeResult` and corresponding durable capture/finish validation, plus the public callers/validators listed above. The separate receipt/signature/envelope/revision999 investigation remains excluded. Truthful unknown usage is acceptable, but needs a compatible authoritative representation. Further protected work needs explicit authorization resolving the opaque-source restriction and normal approval. Hold the real DF task while the independent UI repair/retest continues.
+
+## Actual IAB finding and focused render repair
+
+Primary browser evidence is `/Users/samuel/Documents/Codex/2026-10-08/task-4/df-frontend-qa-20261009/report.md`; `screenshots/reopened-panel-desktop.jpg`, console receipts and narrow-layout measurements are alongside it. Root read the report (`65d780`) without altering that workspace. It records supported Codex IAB in a new owned tab, normal private authenticated access, native DSH Web0.2.1-alpha.1, desktop1440×900 and narrow390×844. The tab was closed and viewport reset. No task/inference was submitted.
+
+| Actual case on executable9f23122 | Outcome |
+| --- | --- |
+| Fresh authenticated native home/sidebar | PASS |
+| Select DF; reload and select again | FAIL, reproduced blank main panel |
+| Native Settings open/close/reopen | PASS, with unavailable service visibly surfaced |
+| Narrow native Settings containment | PASS, measured dialog/document fit390px viewport |
+| Narrow native Settings readability | Usability FAIL observation in native host, compressed content column |
+| DF task/status/control/result/repeated actions | NOT_RUN, blocked by render failure |
+| Real Ollama task/durable capture | NOT_RUN/HELD, no inference |
+
+F1 is the blocking DF defect: `ReferenceError: button is not defined` in `ContinuationCard` and `OwnerFinishRecoveryCard`, served bundle lines136573/136596, source lines774/796 before repair. Each called a helper scoped inside other functions. Authenticated selection and reload/reselection reproduced the crash; it is not merely a source hypothesis.
+
+The same sole Sol6.1/high author added a local renderer to each component using existing styling, `type=button`, original callbacks and busy/disabled gates. Code commit `9e505b7`, branch `feat/S3-integrations`. No worker/accounting/permission contract changed; synthetic behavior and protected core remain unchanged.
+
+Root rebuilt the client (`d0861c`) and ran `node --test test/client-control-card-render.test.mjs test/client-build.test.mjs` with pinned Node22.22.2 (`196453`): **2 passed,0 failed**. The component case renders both cards before selection with real initial client models, verifies zero render-time RPCs, selected callbacks, distinct approval prerequisites and disabled busy controls. The bundle case checks reproducible lazy registration/materialization. Module checks do not replace IAB retest.
+
+Only two source/client hashes were refreshed by opaque byte hashing (`876d35`); other62 product members and the host descriptor stayed unchanged. Fixed client SHA256 `00f1f5b30885509e093eb149b5a40a7687ff513d65435b4732a6d78eaf4360b2`; source factory SHA256 `133eb7ad9386cd0bafb9faea822037ac28ac5b00cfd7e1b152554fac5d5a19be`. Manifest compact formatting was preserved. No additional review lane was opened, per parent instruction.
+
+F2 is native Settings `permissionPresets/catalog` service-unavailable; F3 is the native narrow Settings layout observation. This repair does not patch upstream DSH or broaden access. Post-fix rendering and DF functional/visual acceptance remain pending.
