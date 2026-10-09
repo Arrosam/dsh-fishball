@@ -1,4 +1,34 @@
-# Initial-preview archive receipt — 2026-10-08
+# Initial-preview archive receipt — latest October9
+
+## UI-fixed full-backlog delivery — Library version2
+
+The supported replacement succeeded on the same Library item with expected_current_version1. The returned identity/version metadata was persisted on the original local archive through the current supported helper (`222507`, exit0). Versions0/1 remain retained history. This external receipt is committed after packaging; it is not embedded in its own archive.
+
+| Field | Confirmed value |
+| --- | --- |
+| Library item | `libfile_8ea2bcadbba88191bfbafb7bb5023913` |
+| Library version | 2 |
+| Returned file_id | `file_00000000a78081f887f1fab9c0f9f198` |
+| Filename | `dsh-fishball-0.1.0-preview.1-ui-fixed-bb05c22.tar.gz` |
+| Library path | `/dsh-fishball-0.1.0-preview.1-ui-fixed-bb05c22.tar.gz` |
+| Archive source commit | `bb05c226fafa439610c07e8b91c9f7d1778a972a` |
+| Executable UI recovery commit | `e495fa94ceaa222d4d4f68dc6616cb56e7b3b4bf`; includes render repair9e505b7 |
+| Actual IAB package source | `dd114adcc41185e6fefb4e01733ccb3150788041` |
+| Browser evidence documentation commit | `15e7d2c30dcc1a417386cae6661b9c7a2d573f49` |
+| SHA256 | `50d6104bbdc06ed75b4d25a13c71257cc9c51aa042206f1ecacf24587277bf2d` |
+| Bytes / public regular files | 670547 /123 |
+| Previous-version guard | 1 |
+| Product/channel/acceptance | 0.1.0-preview.1 /initial local preview /full MVP not accepted |
+
+Local archive: `/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/dist/initial-preview-2026-10-09/dsh-fishball-0.1.0-preview.1-ui-fixed-bb05c22.tar.gz`; exact checksum and public member sidecars are adjacent. Root verified every archive member and all68 executable members byte-identical to the actual IAB dd114ad candidate (`8c4a22`). The additional source commits change documentation only; the owned preview remains untouched on its tested package/profile/PTY48595. No host restart, fixture rebuild, unchanged test rerun, RuntimeStore inspection or inference was part of this refresh.
+
+Contents include both UI fixes, complete full-backlog index, all18 ticket cards/AC, byte-identical529-line approved-plan Markdown mirror, current design/decisions/contracts and latest bounded actual browser/work records. Hidden/private runtime, dependencies, profile/keys/credentials, access handoff and raw logs are excluded. Original canonical plan/cards remain unchanged; historical evidence and reserved drafts remain local rather than uploaded wholesale. Existing supported packager/strict public-document selection were reused without code changes.
+
+Actual IAB F1/F4 bounded regressions pass: panel/cards render; worker status/catalogue refresh after reload, selection and task refresh; needs-policy gate with execution disabled; zero console errors and unchanged tasks. No worker execution or model call. [The frontend ledger](FRONTEND-VALIDATION-2026-10-09.md) records exact received evidence and untested cases. Real Ollama remains held on the pending protected RuntimeStore accounting/capture authorization and truthful usage compatibility; full UI/native continuation/audit/fault/MVP/publication gates remain open. No private launch URL, credential, OAuth expansion, remote Git push or public release is included.
+
+To reproduce the closed public selection from exact `bb05c22` source, use the existing `scripts/package-initial-preview.py` with `--commit bb05c226fafa439610c07e8b91c9f7d1778a972a`, `--date 2026-10-09` and a fresh existing output directory. Pass `--include` for each `docs/` Markdown member listed in `BUILD-METADATA.membersExcludingMetadata` (including nested tickets/reference paths); the required product/script/core records are selected by the unchanged packager. The local `.members.json` records the same exact selection. The source argument labels the existing tree, not a checkout.
+
+## Historical initial delivery — Library version0
 
 This external receipt records the delivered archive; it is added after packaging so the archive does not contain its own checksum. The archive source commit remains **2da469caa67721585a233adbc6067581debfb376**. Subsequent repository documentation commits do not relabel or rewrite that artifact.
 
