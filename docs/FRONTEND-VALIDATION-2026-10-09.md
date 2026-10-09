@@ -1,6 +1,6 @@
 # Frontend validation — 2026-10-09
 
-Current result: **UI_RENDER_AND_LOCAL_TASK_RETEST_PASS; PUBLIC_WORKER_WIRING_CHECKS_PASS; CORRECTED_HOST_RESTART_PENDING; IAB_WORKER_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` returned an actual fixed-candidate retest. Its panel/cards and bounded local task checks passed; the native worker card remained offline. The focused public connection repair below passed targeted checks, but actual UI recovery is not yet observed. Earlier candidate/launch records remain historical, not current liveness claims. No full frontend/MVP acceptance follows.
+Current result: **UI_RENDER_AND_LOCAL_TASK_RETEST_PASS; PUBLIC_WORKER_WIRING_CHECKS_PASS; CORRECTED_HOST_READY; IAB_WORKER_RETEST_PENDING; REAL_DF_OLLAMA_POLICY_BLOCKED**. The resumed browser task `01a1192f-8e15-7798-b971-2859e338e0e3` returned an actual fixed-candidate retest. Its panel/cards and bounded local task checks passed; the native worker card remained offline. The focused public connection repair below passed targeted checks and its package restarted ready, but actual UI recovery is not yet observed. Earlier candidate/launch records remain historical, not current liveness claims. No full frontend/MVP acceptance follows.
 
 ## Focused public worker-connection repair
 
@@ -21,7 +21,30 @@ Final result **134 passed,0 failed,0 skipped** (`5a92d7`). Nine new actual-apply
 
 First affected run was133PASS/1FAIL (`e356a5`); diagnostic19f23b retained the failure. Only C32's old seven-export closed list failed: baseline HEAD already exposes12 helpers/cards (`5ef92b`), unrelated to this wiring change. Author corrected the explicit expected12-name list, preserving exact serialization/lazy imports/closed equality. Root retested final code; no product export or failing assertion was removed. The final TAP is retained locally at `/var/folders/mj/09mjvhwd4jq7ffd41cl1fyjw0000gn/T/df-connection-final-v5gkn76e.tap`; this external temp record is not packaged evidence.
 
-Package/restart and actual IAB worker-control retest remain pending at this record. This closes no full source criterion or ticket. The canceled fresh572bac91 and historical smoke tasks must not be replayed. Exact Ollama integration is separately held; this public repair changes no accounting contract, provider/model, credentials or profiles.
+The following readiness handoff supersedes the package/restart pending state. Actual IAB worker-control retest remains pending. This closes no full source criterion or ticket. The canceled fresh572bac91 and historical smoke tasks must not be replayed. Exact Ollama integration is separately held; this public repair changes no accounting contract, provider/model, credentials or profile selection.
+
+## Corrected worker-wiring package and IAB handoff
+
+| Item | Verified identity |
+| --- | --- |
+| Packaged source | `dd114adcc41185e6fefb4e01733ccb3150788041`; executable repair `e495fa94ceaa222d4d4f68dc6616cb56e7b3b4bf` |
+| Local immutable archive | `dist/initial-preview-2026-10-09/dsh-fishball-0.1.0-preview.1-worker-wiring-dd114ad.tar.gz` |
+| Archive SHA256 / bytes / public files | `a2d9afeee39a31c6a98e73fb96b5e554d69e23705797977534b8d0fe41c7050a` /645783 /122 |
+| Fixed client SHA256 | `1bf88fac070c3d0ccc37366a85eae8569bd657220c60490b0a64958409035b41` |
+| Host / package / native profile | DSH Web0.2.1-alpha.1 /DF0.1.0-preview.1 /`df-initial-preview` |
+| Clean endpoint | `http://127.0.0.1:3091/` |
+| Original CLI / launcher / foreground PTY | 12082 /12075 /48595; root retains lifecycle ownership |
+| Readiness checked | 2026-10-09 07:22:11UTC: setup ready, authenticated native HTML200, matching current/ready/access/lock/client identity |
+| Provider / model / preset | `df-testing-local` /`df-testing-worker-v1` /`df-initial-preview-read-only` |
+| Readiness RPC / worker / real-model requests | 0 /0 /0 |
+
+Root built/verified every archive member (`984400`); private state is excluded. It stopped its own PTY20516 by Ctrl+C with exit130/state retained (`c2ff8a`). Public files were upgraded at the same physical package root, and old changed public files were retained at `.runtime/ui-public-upgrade-backup-e495fa9/`. The first upgrade command's final assertion incorrectly assumed Python JSON whitespace for the original JavaScript owner marker (`f33e34`); files had already been written and verified. Root did not repeat the mutation. Read-only follow-up (`795a79`) verified all122 installed public members, unchanged owner identity/host descriptor,62 unchanged product members and absent old owned lock. No private DB/key/transcript/profile copying or owner rebinding occurred.
+
+Original supported launcher restarted (`e16943`, `5551fa`). The normal approved authenticated HTTP check (`e9e462`) matched the corrected build/client and synthetic selection at the timestamp above. It emitted no private URL/cookie and submitted no RPC/model request. This is readiness, not a rendered worker recovery PASS. Library item version1 remains unchanged and historical; no replacement/publication is performed in this handoff.
+
+Active physical root remains `.runtime/result-reopen-package-9f23122/dsh-fishball-0.1.0-preview.1-initial-preview/`; its historical directory name does not identify current code. `BUILD-METADATA.json` names exactdd114ad. Under that root, `.runtime/initial-preview/private/current-launch.json` points to fresh local access/ready files. The authorized IAB lane uses that handoff locally in a new owned tab; never post its private URL or credentials. Isolation is the native synthetic host/profile/state, not a separately established browser cookie profile. Old3080 is untouched.
+
+Bounded IAB retest: verify candidate identity and native version; select DF and check ready storage/task data plus recovered worker status/Refresh/catalogue controls; repeat selection/reload/read refresh; confirm no automatic policy confirmation/grant/worker execution; preserve the cancellation-requested572bac91 and old4da34a6d records. Historical d441229f smoke remains read-only. Any explicitly authorized synthetic worker case uses a fresh task and existing exact consent flow. Real Ollama remains held; no model switching or protected-body action is implied by this readiness. Report actual enabled/disabled state and any first error before expanding dependent journeys.
 
 ## Received fixed-candidate IAB retest
 
