@@ -120,6 +120,8 @@ The exact-model request is authorized, but the normal public accounting/capture 
 
 Parent authorized replacing the same delivered Library archive `libfile_8ea2bcadbba88191bfbafb7bb5023913` with both UI fixes, full backlog and latest records. Supported Library read confirmed currentversion1. Only owned documentation changes are committed before packaging; no unchanged suite, broad fixture or runtime restart is needed. Existing service/profile and reserved drafts remain preserved. Exact new archive/source/hash and confirmed Library version are added to the external package receipt after successful guarded replacement; this avoids embedding the archive's own checksum/returned version in its contents.
 
+The refreshed artifact also includes a byte-identical Markdown mirror of the529-line canonical approved TXT, SHA256cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3. The full-backlog index links this portable mirror, so the archive contains the complete source plan through the existing Markdown-only public-document route. Original TXT/cards/AC remain unchanged; no agreement is reconstructed and no packaging code or executable is modified.
+
 ## Resume without repeating the failed workflow
 
 Start with README, INITIAL-PREVIEW.md, this file, AGENTS and `git status`. Preserve both reserved tracked drafts: `docs/evidence/UI/manual-web-qa-running-handoff-2026-10-07.md` and `docs/evidence/normal-entry-remaining-work.md`. Root owns Git/runtime; stage only exact selected paths. Keep granular branch history and use squash merges for reviewed development integrations; no destructive rewrite or public push.

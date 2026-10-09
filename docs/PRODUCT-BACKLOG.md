@@ -8,7 +8,7 @@ The recorded full product plan is preserved locally: **16 original product areas
 
 | Record | Purpose and authority |
 | --- | --- |
-| [Complete approved Chinese plan](reference/approved-ticket-review.zh.txt) | All 529 extracted lines, including scope, dependencies, all original AC, faults/races, end-to-end scenario and D1–D14 decisions. This is the original planning text, including historical recommendations later superseded by owner decisions. |
+| [Complete approved Chinese plan](reference/approved-ticket-review.zh.md) | Portable Markdown mirror, byte-identical to the [canonical extracted text](reference/approved-ticket-review.zh.txt): all529 lines, scope, dependencies, original AC, faults/races, end-to-end scenario and D1–D14 decisions. The mirror is included by the existing public-document package route; canonical TXT remains unchanged in Git. Historical recommendations are interpreted through later owner decisions. |
 | [Local ticket backlog](tickets/README.md) | All 18 cards, same-suffix BUB/DF aliases, wave assignments and per-ticket development gates. Each substantive card retains its approved source scope/AC and links evidence. |
 | [Owner name/license/chat amendment](owner-amendment-2026-10-04.md) | dsh-fishball/DF naming, MIT, neutral adapter required now, live chat implementation deferred, and mobile/Hydrogen ambition outside this phase. |
 | [Compatibility](compatibility.md) and [decisions](decisions.md) | Pinned tested DSH Web baseline, cancelled dsh-std proposal, resolved choices, grouped pending product policies and source-transfer limitations. |
