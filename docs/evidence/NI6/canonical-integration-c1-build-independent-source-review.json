@@ -1,0 +1,332 @@
+{
+  "budgets": {
+    "beforeAfterDesignCap": 4096,
+    "commandsAndExecutorDesignCap": 16384,
+    "finalReserveSeconds": 10,
+    "inertStructuralExemplarsIncludingLF": {
+      "before-after.json": 174,
+      "command-results.json": 6947,
+      "executor-result.json": 7744,
+      "root-plan.json": 33811
+    },
+    "initialPinsMaximumSeconds": 15,
+    "outerSeconds": 90,
+    "outputSizeQualification": "Conservative manually constructed closed data exemplars, not executed output or save-cap enforcement. Actual records require measured bounded readback.",
+    "perCommandBookkeepingSeconds": 1,
+    "perCommandCleanupSeconds": 4,
+    "perCommandMaximumSeconds": 60,
+    "privateAggregateCap": 131072,
+    "privateStreamCap": 65536,
+    "selectedPlanDesignCap": 65536,
+    "sharedWorkSeconds": 80,
+    "timersAdditive": false
+  },
+  "closure": {
+    "afterImmutablePinCount": 262,
+    "ancestorEvidenceCopied": false,
+    "beforeFuturePinCount": 264,
+    "canonicalSemanticAuditRepeated": false,
+    "currentRootPlanSelfPinned": false,
+    "descriptorProductFiles": 64,
+    "expectedDescriptorHostAndCurrentProductPinsMatch": true,
+    "fullHostGraphAuditRepeated": false,
+    "futureAffectedReviewPins": 4,
+    "futurePinUnion": 264,
+    "inputBytes": 6176945,
+    "inputCount": 256,
+    "inputVerification": "EXPLICIT_SELECTED_PUBLIC_PATH_SIZE_SHA_ONLY",
+    "manifestSelfPin": 1,
+    "opaqueCanonicalProductFiles": 65,
+    "ownedFiles": 3,
+    "presentSelectedRecordsVerified": 259,
+    "publicHostLockFiles": 1,
+    "publicHostModuleFiles": 87,
+    "publicHostModules": 27,
+    "selectedMutableOutputs": [
+      "lib/client.js",
+      "native-source-manifest.json"
+    ]
+  },
+  "conservation": {
+    "clientFactoryHeaderOnly": "module.exports is function; UI lazy require stays inside factory",
+    "fromR13NotEarlierCanonicalAbsentAPIs": true,
+    "opaqueBodySemanticReview": false,
+    "otherConservedFunctions": [
+      "need",
+      "latch_interruption",
+      "guard",
+      "strict_json",
+      "contained",
+      "pin_path",
+      "read_json",
+      "owned_directory",
+      "owned_file",
+      "private_directory",
+      "copy_parents",
+      "exclusive",
+      "owned_handle",
+      "bounded_owned_bytes",
+      "save",
+      "identity",
+      "group_exists"
+    ],
+    "protectedFinalCODEReviewClosure": false,
+    "publicProducerInvoked": false,
+    "reusedISTQBDesign": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.json",
+    "reusedOrdinaryReview": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.json",
+    "selectedRunCommandExactBytes": 10001,
+    "selectedRunCommandExactlyConserved": true,
+    "selectedRunCommandSHA256": "6dc484b9b9062cc90d3ba7303201e2d1b8419f8a676b58fa33d9c32b0d7a9293",
+    "terminalWrapperMainOnceExitOutsideHandler": true
+  },
+  "date": "2026-10-08",
+  "guardAssessment": {
+    "denialUnknownOwnershipLatchesNoAlternateSignal": true,
+    "directDriverExit0IndependentOfSavedPASS": true,
+    "exclusiveOnceMarkerBeforeGO": true,
+    "failureResetsMarker": false,
+    "fileIdentityAndNoFollowReadback": true,
+    "futurePinSetExact": true,
+    "instantOrAtomicCancellationClaimed": false,
+    "negativeStopDeadlineExceptionCases": "SOURCE_ONLY_NOT_RUN",
+    "noGlobalProcessScan": true,
+    "observedGroupAbsenceMonotonic": true,
+    "overflowFailsClosed": true,
+    "ownedDirectories0700Files0600": true,
+    "ownedGroupAbsenceRequiredBeforeNextCommand": true,
+    "planDigestImmutableAndSyntaxInventoryRechecked": true,
+    "planFieldsExactExceptThreeGOAndPins": true,
+    "prefixHashAndLengthReadbackRequired": true,
+    "twoStreamEOFRequired": true
+  },
+  "markdownContent": {
+    "bytes": 8995,
+    "sha256": "4da8d0ab78d8970e7ff6776169d039936d0abb26fb51c43c9d3846cc8a5d2cb0"
+  },
+  "materialFindings": [
+    {
+      "atomicWorkspaceGuarantee": false,
+      "file": ".runtime/ni6-canonical-integration-c1/validation/build/run-build.py",
+      "id": "C1-BUILD-CODE-01",
+      "lines": [
+        445,
+        446,
+        447,
+        450,
+        451,
+        454,
+        455,
+        456
+      ],
+      "oldSubsetMustNotRun": true,
+      "oldSubsetOverwritten": false,
+      "requiredFreshSourceCorrection": [
+        "Latch actual command2 client size/SHA256 and regular-file identity after success.",
+        "Require same client seal at pre/post command3, pre/post command4, descriptor/product validation and final output readback cuts.",
+        "Bound-read one descriptor snapshot, validate those bytes and require final recorded descriptor seal to match that exact validated snapshot.",
+        "Keep all other pins and original command, source/host/product, once/ownership, shared deadline, EOF/group and direct-driver gates; disagreement fails closed."
+      ],
+      "severity": "HIGH",
+      "sourceCounterexample": "Client drift after successful command3 may be incorporated by command4 and pass self-consistent current digest checks; descriptor final seal may be read from different bytes than its validated snapshot. No fault injection executed.",
+      "title": "Generated outputs are not bound across producer/check/descriptor/final readback"
+    }
+  ],
+  "observedAbsencesBeforeReportWrite": {
+    "assignedReviewDestinations": [
+      "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.md",
+      "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.json"
+    ],
+    "futureActualPaths": [
+      ".runtime/ni6-canonical-integration-c1/validation/build/invocation.json",
+      ".runtime/ni6-canonical-integration-c1/validation/build/private-capture",
+      ".runtime/ni6-canonical-integration-c1/validation/build/execution",
+      ".runtime/root-ni6-canonical-integration-c1-build-plan.json"
+    ],
+    "otherReviewLaneFinalization": "NOT_INDEPENDENTLY_OBSERVED_IN_THIS_LANE"
+  },
+  "outcome": {
+    "acceptanceGO": false,
+    "actualStarts": 0,
+    "buildExecuted": false,
+    "checksExecuted": false,
+    "executionGO": false,
+    "freshReviewedSuccessorRequired": true,
+    "individualCriteriaReconciled": false,
+    "originalSubsetStatus": "SOURCE_ONLY_NOT_RUN_WITH_MATERIAL_BLOCKER",
+    "overallAcceptance": "HOLD",
+    "publicationGO": false
+  },
+  "performed": {
+    "GitOrCandidateSourceMutation": false,
+    "candidateParseImportCheckBuildTestRun": false,
+    "delegation": false,
+    "helperProducerEvaluation": false,
+    "inertPublicTextJSONLiteralHashSizeComparisons": true,
+    "onlyFreshAssignedReportPairWritten": true,
+    "publicSelectedBytesOpaqueHash": true,
+    "runtimeListenerNetworkModelBrowserCloud": false
+  },
+  "recordQualifications": [
+    "After verification covers262 immutable pins; two generated files are mutable and separately measured. Do not claim all264 old hashes unchanged.",
+    "Helper docstring says two Node commands; actual fixed set is three Node plus one Python.",
+    "nestedSyntaxCommands is the correct set/count but its scripts-first order differs from actual src/scripts/test traversal.",
+    "Conservation checker initially included predecessor top-level constants after run_command; exact-return text boundary corrected that inert assertion.",
+    "Initial aggregate manifest display was clipped; selected metadata, explicit selected hashes and bounded reads resolved relevant content.",
+    "No candidate source parser/import/check/build/evaluation or dynamic test ran.",
+    "Later worker/CLI plans must bind actual build outputs and any newly changed sources."
+  ],
+  "reportPair": {
+    "completeReadbackRequired": true,
+    "creation": "Both exact destinations absent; O_EXCL|O_NOFOLLOW owned0600",
+    "externalByteSHASealsRequired": true,
+    "json": "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.json",
+    "markdown": "docs/evidence/NI6/canonical-integration-c1-build-independent-source-review.md",
+    "recursiveSelfHash": false
+  },
+  "retainedLimits": {
+    "BrowserLUA": "AVOID_ROUTE_NOT_LUNA_MODEL_BAN",
+    "browser": "SUPPORTED_ROUTE_UNAVAILABLE_NO_CORRECTED_HANDOFF; additional lock; no new probe/native fallback",
+    "cancelled4da34a6d": "NEVER_EXECUTE",
+    "cloud": "DENIED_TWICE_NO_THIRD_ATTEMPT",
+    "fullInstalledQuitCanonicalRuntimeAggregateAcceptance": "NOT_GRANTED_BY_SOURCE_REVIEW",
+    "historicalR7BProcessQualification": "Prior initial private pathname enumeration only/no content inspection; no paths repeated or new enumeration here.",
+    "mainRemoteDraftSharedQA3080": "UNTOUCHED",
+    "opaqueCaptureFinishBodies": "EXCLUDED_NO_SEMANTIC_READ",
+    "privateContentReadCopyDecodeHashEnumeration": false,
+    "protectedCODEReceiptSignatureEnvelopeRevision999": "BLOCKED_UNCHANGED"
+  },
+  "reviewedIdentities": [
+    {
+      "bytes": 24027,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build/run-build.py",
+      "sha256": "8a7e0b132ef04a74b8fe8f279337609ff78ab249dfd66d49edb8966424881e48"
+    },
+    {
+      "bytes": 1410,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build/execution-plan.proposed.json",
+      "sha256": "58baa0d1c12400cf296adb3f82b2fc876fbf187ad58bf0b47c01e8febd3881a2"
+    },
+    {
+      "bytes": 1100,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build/README.md",
+      "sha256": "75dc93b74e764318361080fb046ddf8114f5d017950effe1227477e402700c10"
+    },
+    {
+      "bytes": 89554,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/build/source-manifest.json",
+      "sha256": "e7d6c9f992a687caf3d4a2f55dec6109569411ab09ce2f284c9238b2d95392b1"
+    },
+    {
+      "bytes": 1148,
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-author-source.md",
+      "sha256": "3bd4d8e208fa0b849e6654437757df3a32a35174cdd88ce92df144018273329e"
+    },
+    {
+      "bytes": 2433,
+      "path": "docs/evidence/NI6/canonical-integration-c1-build-author-source.json",
+      "sha256": "326ce5815043565f42e8527b77d58de3083744b326b0c44e87f239490a4c26d3"
+    },
+    {
+      "bytes": 8292,
+      "path": "AGENTS.md",
+      "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+    },
+    {
+      "bytes": 8806,
+      "path": "docs/ni6-canonical-integration-c1-freeze-2026-10-08.md",
+      "sha256": "86d0ad4608efedaded09a66fd1cd34d7e39a288e7e09c7551463ed2d49c6608f"
+    },
+    {
+      "bytes": 8412,
+      "path": "docs/ni6-canonical-integration-c1-validation-freeze-2026-10-08.md",
+      "sha256": "22c58bfc7a9af511394ddcb8dd6d2bd04c3223e39b147540559ecf4f2d1c777e"
+    },
+    {
+      "bytes": 17324,
+      "path": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.md",
+      "sha256": "7bca4bd76bddb98f5fea70ab17acf3f0478ea9342e97dcff8ba42501c97e4683"
+    },
+    {
+      "bytes": 24471,
+      "path": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.json",
+      "sha256": "57935a74b14b8024f2a4cd086faa487a802289b1b36e587305f7e7b758748889"
+    },
+    {
+      "bytes": 10872,
+      "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.md",
+      "sha256": "0fdf5c4cf88cea9084c009669ac1b2766addc1c59607249fec37510df267f12a"
+    },
+    {
+      "bytes": 21859,
+      "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.json",
+      "sha256": "9169dbbcadf0e2a354afb2b15b3204ac1b4ae5ff0fbbed1da59e822db5f7acba"
+    },
+    {
+      "bytes": 654,
+      "path": "scripts/check.mjs",
+      "sha256": "27da93bacd5164d57073aedbe4ab567bc6bf7ff934ace406c127c7473e5b040a"
+    },
+    {
+      "bytes": 1166,
+      "path": "scripts/build-client.mjs",
+      "sha256": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+    },
+    {
+      "bytes": 5583,
+      "path": "scripts/build-native-source-manifest.py",
+      "sha256": "964d2d2efb31e17c4eb918dbccdba1a94074bd50959bd9c03124c64b199cc028"
+    }
+  ],
+  "reviewer": {
+    "independentOfAuthorAndISTQB": true,
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "task": "/root/r7b_transport_code_review"
+  },
+  "schema": "df.canonical-c1.build-independent-source-review/v1",
+  "selection": {
+    "actualNestedOrder": [
+      "src",
+      "scripts",
+      "test"
+    ],
+    "commands": [
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/check.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/build-client.mjs"
+      ],
+      [
+        "/opt/homebrew/opt/node@22/bin/node",
+        "scripts/build-client.mjs",
+        "--check"
+      ],
+      [
+        "/opt/homebrew/bin/python3",
+        "scripts/build-native-source-manifest.py",
+        "--product-root",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+        "--host-root",
+        "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/dsh-web"
+      ]
+    ],
+    "countAuthority": "SOURCE_DERIVED_EXACT_SELECTION_NOT_RUNTIME_INSTRUMENTATION",
+    "declaredNestedArrayFirstDirectory": "scripts",
+    "declaredNestedArrayOrderIsActualOrder": false,
+    "declaredNestedCommandSetAndCountMatch": true,
+    "maxActualStarts": 156,
+    "syntaxTargetCounts": {
+      "scripts": 12,
+      "src": 59,
+      "test": 81
+    },
+    "syntaxTargets": 152,
+    "syntaxTestBodiesExecuted": false,
+    "topLevelCommands": 4
+  },
+  "verdict": "MATERIAL_GENERATED_OUTPUT_BINDING_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

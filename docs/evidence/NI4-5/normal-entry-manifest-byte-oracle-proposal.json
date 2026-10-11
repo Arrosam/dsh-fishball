@@ -1,0 +1,25 @@
+{
+  "criteria": {
+    "accepted": 0,
+    "state": "HOLD",
+    "total": 87
+  },
+  "execution": "NOT_RUN",
+  "existingUnknownRecipe": "UNCHANGED",
+  "implementation": "NONE",
+  "missingInterfaces": [
+    "explicit trusted finite byte objective and separately named original reviewer source",
+    "original native producer or typed owner-manifest provenance accepted by installed audit",
+    "independently reviewed source/config/fixture execution lease"
+  ],
+  "proposalSha256": "331343fa007230917581986bed4a41b4b2244b73016f0655005bf7e372a3ba61",
+  "sourceDomainFiles": {
+    "installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+    "installed-audit.mjs": "f5708784e5d935e4a650b060c478b52e2e811be76f9a17be6e2c8126caaef459",
+    "installed-results.mjs": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5",
+    "installed-role-recipes.mjs": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+    "runtime-store.mjs": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+    "testing-provider.mjs": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c"
+  },
+  "status": "UNSUPPORTED_CURRENT_CLOSED_SOURCE_POSITIVE_PUBLICATION_HOLD"
+}

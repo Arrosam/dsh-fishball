@@ -1,0 +1,50 @@
+SOURCE PROPOSAL ONLY. Root-selected alternative B; not applied.
+New companion refinement, preserving immutable original13-field proposal:
+interface NativeHistoryObservationCoreRevision1 { // EXACT 14 REQUIRED FIELDS
+  schema:'df.native-history/v1';
+  ownerRef:Ref; workspaceRef:Ref; taskRef:Ref; claimRef:Ref;
+  generationRef:Ref; sessionRef:Ref;
+  sourceRef:Ref actual historical role-specific live source observation;
+  stableSourceRef:Ref H(actual final StableSource descriptor);
+  configurationDigest:Digest exact create/resume configuration content;
+  header:NativeHeader;
+  events:NativeEvent[0..128] complete contiguous0-based original public log;
+  surface:NativeSurface actual full public projection;
+  messages:NativeMessage[0..19] complete actual surface-derived messages;
+}
+Domains unchanged for all original13 fields. Both new/ref source fields are exact
+lowerhex64 refs, with distinct meanings. sourceRef is never replaced by stableSourceRef,
+and stableSourceRef is never derived by echoing intent.sourceRef. Genuine collector
+computes canonicalDigest(actual final installed source descriptor), compares it to
+its authenticated configured descriptor and stable source/backend selection, and
+repeats original live class/Loader/fiber/provider/lifetime/profile/directory/backend/
+owner/invocation checks before/after each awaited original flush/open/read/close and
+at final publication. Source descriptor freeze remains root/runtime dependency.
+Core's stable join compares h.stableSourceRef to signed intent.sourceRef; h.sourceRef
+is retained as authenticated historical observation, never current authority.
+
+NativeCapture cursor: UInt actual assistant event.seq, inputCursor<cursor<eventCount.
+NativeCapture inputCursor: UInt actual matching df-context user event.seq.
+NativeCapture eventCount: UInt<=128 complete persisted current-format event count.
+Full events are contiguous0..eventCount-1; output may precede step/end + completed
+turn/end. New/historical core checks actual user event ID, assistant event/message,
+complete projected messages, and completed same-turn suffix. Original result/worker/
+response cursor stays assistant seq. Baseline/old prefix and complete commit boundary
+remain separately verified. No partial tail or count-substituted cursor is accepted.
+
+WITHDRAWN F03 blocker; optional root-requested proposal only (not necessary on supported writer):
+  (originalSettlementReceipt.releaseEvidenceRef ?? null) === signedFinish.releaseEvidenceRef
+Original released receipt carries Ref; original held receipt may omit the field.
+Signed finish persists Ref|null. Original wire remains unchanged; held remains held.
+No envelope/sealing/old receipt algorithm, source-kind/ref recipe, generic settlement
+meaning or acknowledged actual-only usage branch changes.
+
+Correction: actual original #planEffect initializes releaseEvidenceRef:null; actual
+normal held #settleEffect retains it. The source equality is reachable and correct;
+no absent-field bug/fixture is claimed. Preserve the actual wire unchanged.
+
+Root disposition: DO NOT apply withdrawn F03 runtime equivalence. Preserve strict
+validator and original wire. Companion type clarification only:
+  OriginalSettlementReceipt.releaseEvidenceRef?: Ref|null
+Actual supported normal held receipt retains null initialized by original plan;
+released retains Ref. This describes actual old wire and does not change it.

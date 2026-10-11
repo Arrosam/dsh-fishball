@@ -1,0 +1,1304 @@
+{
+  "contract": "df.ni6.owner-finish-intent.independent-source-review/v1",
+  "reviewDate": "2026-10-07",
+  "reviewer": "/root/ni4_scope_timer_review",
+  "reviewLanguage": "English",
+  "reviewType": "INDEPENDENT_AFFECTED_PRODUCT_SOURCE_ONLY",
+  "status": "SOURCE_REVIEW_COMPLETE_OPEN_OI_F01_NOT_ADOPTED_NOT_EXECUTED",
+  "authority": "Delegated owner/AGENTS-authorized review. Root controls all adoption, amended scope, commands, execution and Git. Explicit root permission allows byte-only SHA verification of four prior test files.",
+  "subject": {
+    "capsule": ".runtime/ni6-owner-finish-intent-core-proposal",
+    "authorProposal": "docs/evidence/NI6/schema7-core-author-owner-finish-intent-source-proposal.md",
+    "originalHistoricalContract": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/original-owner-command-core-protocol.d.ts.txt",
+    "amendedContract": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+    "onlyChangedModule": "runtime-store.mjs",
+    "priorFreezeDigest": "72927f81a3d08f5c9888a742c1d74b491a87da3605884c2b338174a427dfd91a"
+  },
+  "verification": {
+    "manifestSha256": "86404ee955af4372aa6c1551c9ae7d77537338ca31948c1243c433efd8357889",
+    "computedFreezeDigest": "70fe5c97133429cbe4cca2bffd9494d05189e32cc98f1682047307860ce91d6e",
+    "freezeMatches": true,
+    "fileCount": 32,
+    "all32PinsMatch": true,
+    "files": [
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/README.md",
+        "bytes": 2122,
+        "sha256": "5c2aca2b484fea456eadb1078216d28759bd4b5a4dbb6127f00ac0f6b08d7f6e",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/runtime-store.mjs",
+        "bytes": 330375,
+        "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/before-after.json",
+        "bytes": 4498,
+        "sha256": "e0884c7b6e34eded8473681a84f084d37c0c236aaa2e5e2241c1d4745c00f189",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+        "bytes": 10082,
+        "sha256": "b56ca315ade426eaabcc9358285a19189452fd3c974a29cbc671116b93a31ec5",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/core-refinements.d.ts.txt",
+        "bytes": 8035,
+        "sha256": "5d5384b66d5cc5ec8682cd79a77bf7e32fd77af762f583d1054ade03e0f0aa5d",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/escaped-secret-refinement-r2.txt",
+        "bytes": 1971,
+        "sha256": "17e320858df777b09bb555749ce29b9893cbe2371dd058e81e8e84d10061fd41",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/literal-refinements.md",
+        "bytes": 10989,
+        "sha256": "c2398d136b1e408e518a31705f08eedb78b9cee0382f44f7b4afbe7f48c94b95",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/proposed-operation-bindings.txt",
+        "bytes": 8878,
+        "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/review-refinements-r1.d.ts.txt",
+        "bytes": 6295,
+        "sha256": "71c9d4f5fac225031f42b308a2a25a97b59bee92207bc980df8c650b68383668",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/review-refinements-r1.md",
+        "bytes": 4326,
+        "sha256": "a1da8b4d80d8a1c9f692af0b5b08e0d28571def55dc61199c3f1b49c07b63f99",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/inherited-r2/schema7-contracts.d.ts.txt",
+        "bytes": 45312,
+        "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/literal-refinements.md",
+        "bytes": 4135,
+        "sha256": "c8670c2d9f2f5b4dedf0407ba07eaaba870c1b004fb59e60fe976c1efb2824a8",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/original-owner-command-core-protocol.d.ts.txt",
+        "bytes": 4835,
+        "sha256": "4afcd5d073ea33f69db7376bed0715fe3d29d886817417288c26af6bd1a8f020",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/effects.json",
+        "bytes": 2779,
+        "sha256": "28c30ba438f7eac5879a24d1880d5d62e473f3eae7d4bd122fd0f2c5f7e83c5e",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/import-closure.json",
+        "bytes": 8384,
+        "sha256": "af8c3f515525d1562ab1be60b28056a167bf7c437863ed64d6fc8c95772f61fd",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/prior-r2-comparison.json",
+        "bytes": 8587,
+        "sha256": "76fced8598c527619ce542361014ec95f59e5d58ca581e4062d8533ee5cb00b3",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/context.mjs",
+        "bytes": 28297,
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/fishball-memory-core.mjs",
+        "bytes": 21009,
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/ledger.mjs",
+        "bytes": 21799,
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/memory.mjs",
+        "bytes": 36680,
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/normal-contracts.mjs",
+        "bytes": 31990,
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-security.mjs",
+        "bytes": 6033,
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+        "bytes": 344766,
+        "sha256": "cfc30b5bec526606f6b4075145f8b77e7701aafd2577d251c594640f7b51db28",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/required.diff",
+        "bytes": 34835,
+        "sha256": "d136bfd59526ee6afbf6de03dce08a48dffaed9da44b7a136553c19eeb7dbefe",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/source-baseline.json",
+        "bytes": 3126,
+        "sha256": "0c5f6dde5e89dfb05c054efaa7f050d32f073f319b178b99d09eaaedb7d26059",
+        "matches": true
+      },
+      {
+        "path": ".runtime/ni6-owner-finish-intent-core-proposal/source-windows.json",
+        "bytes": 4632,
+        "sha256": "706e4d571c5e7367d9169c058cfa787c07b85a973dbe216284dbe077638a6125",
+        "matches": true
+      }
+    ],
+    "beforeAfterChanged": [
+      "runtime-store.mjs"
+    ],
+    "reconstructedDiffSha256": "d136bfd59526ee6afbf6de03dce08a48dffaed9da44b7a136553c19eeb7dbefe",
+    "diffByteIdentical": true,
+    "priorManifestSha256": "48973af274fab3c82ef4edce1a0129ece321b6ffc2daa46319b3e0e48cd931d0",
+    "priorEntryCount": 28,
+    "priorAll28Match": true,
+    "prior28": [
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/core-refinements.d.ts.txt",
+        "sha256": "5d5384b66d5cc5ec8682cd79a77bf7e32fd77af762f583d1054ade03e0f0aa5d",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/escaped-secret-refinement-r2.txt",
+        "sha256": "17e320858df777b09bb555749ce29b9893cbe2371dd058e81e8e84d10061fd41",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/literal-refinements.md",
+        "sha256": "c2398d136b1e408e518a31705f08eedb78b9cee0382f44f7b4afbe7f48c94b95",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/proposed-operation-bindings.txt",
+        "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.d.ts.txt",
+        "sha256": "71c9d4f5fac225031f42b308a2a25a97b59bee92207bc980df8c650b68383668",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.md",
+        "sha256": "a1da8b4d80d8a1c9f692af0b5b08e0d28571def55dc61199c3f1b49c07b63f99",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+        "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/contracts/source-manifest.json",
+        "sha256": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/history/README.txt",
+        "sha256": "022ee8ddb9ebb493dea73b30ace162e0651061478cde7e8c179247e511e95bbc",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/history/core-methods-draft.txt",
+        "sha256": "a360fd56ef9a59784fbc38e596b21fa3bdd293347eed8f75fdd6e7c186dcc1ff",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/history/factor-original.py.txt",
+        "sha256": "1597a5a9e200ae2be7949a7eda5a8fbc57f81c683959924e25279e74b7d253d5",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/context.mjs",
+        "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+        "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+        "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+        "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+        "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/context.mjs",
+        "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+        "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+        "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+        "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+        "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+        "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+        "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+        "matches": true,
+        "inspection": "SOURCE_OR_METADATA_HASH"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/test/schema7-core-source.test.mjs",
+        "sha256": "884bb7eec1a729b9ef1f4d76bdbcc1e8cd43d907a0a69cbc2d2887533ae83729",
+        "matches": true,
+        "inspection": "BYTE_HASH_ONLY_NO_DECODE"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/test/schema7-normal-intent-boundary.mjs",
+        "sha256": "f47f48822fa53c35c07ee82e9f98e654855f879f194fd0509aff4028bea309b8",
+        "matches": true,
+        "inspection": "BYTE_HASH_ONLY_NO_DECODE"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/test/schema7-preparation-escaped-secrets.test.mjs",
+        "sha256": "48fda767076abd2d600508acf1341e06027fb268e1cea463764042afbef54978",
+        "matches": true,
+        "inspection": "BYTE_HASH_ONLY_NO_DECODE"
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/test/schema7-preparation-review-boundaries.test.mjs",
+        "sha256": "2d8558a41fdb35fa69c792cc01a27b3cce4fae24ad4b99413d9e742994032d93",
+        "matches": true,
+        "inspection": "BYTE_HASH_ONLY_NO_DECODE"
+      }
+    ],
+    "imports": [
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/context.mjs",
+        "lexicalSpecifiers": [
+          "./runtime-store.mjs",
+          "node:util",
+          "node:crypto"
+        ],
+        "matches": true,
+        "relativePins": [
+          {
+            "specifier": "./runtime-store.mjs",
+            "sha256": "cfc30b5bec526606f6b4075145f8b77e7701aafd2577d251c594640f7b51db28",
+            "matches": true
+          }
+        ],
+        "dynamicLiteralOccurrences": 0
+      },
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/fishball-memory-core.mjs",
+        "lexicalSpecifiers": [
+          "node:util"
+        ],
+        "matches": true,
+        "relativePins": [],
+        "dynamicLiteralOccurrences": 0
+      },
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/ledger.mjs",
+        "lexicalSpecifiers": [
+          "node:sqlite",
+          "node:fs",
+          "node:fs",
+          "node:path",
+          "node:os"
+        ],
+        "matches": true,
+        "relativePins": [],
+        "dynamicLiteralOccurrences": 0
+      },
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/memory.mjs",
+        "lexicalSpecifiers": [
+          "./runtime-store.mjs",
+          "./normal-contracts.mjs",
+          "node:util",
+          "node:crypto",
+          "./fishball-memory-core.mjs",
+          "./context.mjs"
+        ],
+        "matches": true,
+        "relativePins": [
+          {
+            "specifier": "./runtime-store.mjs",
+            "sha256": "cfc30b5bec526606f6b4075145f8b77e7701aafd2577d251c594640f7b51db28",
+            "matches": true
+          },
+          {
+            "specifier": "./normal-contracts.mjs",
+            "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+            "matches": true
+          },
+          {
+            "specifier": "./fishball-memory-core.mjs",
+            "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+            "matches": true
+          },
+          {
+            "specifier": "./context.mjs",
+            "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+            "matches": true
+          }
+        ],
+        "dynamicLiteralOccurrences": 0
+      },
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/normal-contracts.mjs",
+        "lexicalSpecifiers": [
+          "node:util",
+          "node:path",
+          "./ledger.mjs",
+          "./runtime-security.mjs"
+        ],
+        "matches": true,
+        "relativePins": [
+          {
+            "specifier": "./ledger.mjs",
+            "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+            "matches": true
+          },
+          {
+            "specifier": "./runtime-security.mjs",
+            "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+            "matches": true
+          }
+        ],
+        "dynamicLiteralOccurrences": 0
+      },
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-security.mjs",
+        "lexicalSpecifiers": [
+          "node:crypto",
+          "node:util",
+          "./ledger.mjs"
+        ],
+        "matches": true,
+        "relativePins": [
+          {
+            "specifier": "./ledger.mjs",
+            "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+            "matches": true
+          }
+        ],
+        "dynamicLiteralOccurrences": 0
+      },
+      {
+        "module": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+        "lexicalSpecifiers": [
+          "node:util",
+          "node:crypto",
+          "./ledger.mjs",
+          "./runtime-security.mjs",
+          "./context.mjs",
+          "./normal-contracts.mjs"
+        ],
+        "matches": true,
+        "relativePins": [
+          {
+            "specifier": "./ledger.mjs",
+            "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+            "matches": true
+          },
+          {
+            "specifier": "./runtime-security.mjs",
+            "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+            "matches": true
+          },
+          {
+            "specifier": "./context.mjs",
+            "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+            "matches": true
+          },
+          {
+            "specifier": "./normal-contracts.mjs",
+            "sha256": "98e68b5678070815e1da07c6410000eb7ce4a711f72ebe87f5070bf9fbc97e67",
+            "matches": true
+          }
+        ],
+        "dynamicLiteralOccurrences": 0
+      }
+    ],
+    "allImportSpecifiersAndPinsMatch": true,
+    "genuine6Baseline": [
+      {
+        "copied": ".runtime/ni6-schema7-core/original/context.mjs",
+        "shared": "src/context.mjs",
+        "matches": true
+      },
+      {
+        "copied": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+        "shared": "src/fishball-memory-core.mjs",
+        "matches": true
+      },
+      {
+        "copied": ".runtime/ni6-schema7-core/original/ledger.mjs",
+        "shared": "src/ledger.mjs",
+        "matches": true
+      },
+      {
+        "copied": ".runtime/ni6-schema7-core/original/memory.mjs",
+        "shared": "src/memory.mjs",
+        "matches": true
+      },
+      {
+        "copied": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+        "shared": "src/runtime-security.mjs",
+        "matches": true
+      },
+      {
+        "copied": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+        "shared": "src/runtime-store.mjs",
+        "matches": true
+      }
+    ],
+    "allGenuine6SharedBaselineMatch": true,
+    "nodeBinary": {
+      "resolvedPath": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "bytes": 84640,
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+      "matches": true,
+      "execution": "NOT_RUN"
+    }
+  },
+  "sourceReview": {
+    "blockingSourceFindings": 1,
+    "findings": [
+      {
+        "id": "OI-F01",
+        "severity": "HIGH",
+        "category": "REQUIRED_SEQUENCE_SOURCE_PROTOCOL_INCOMPATIBILITY",
+        "disposition": "OPEN_SOURCE_ONLY_NOT_REMEDIATED",
+        "title": "An immutable pre-capture Q becomes stale when first durable producer or repair artifact capture increments task version",
+        "requirement": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+            "line": 75,
+            "endLine": 84
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+            "line": 106,
+            "endLine": 109
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+            "line": 136,
+            "endLine": 139
+          }
+        ],
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 211,
+            "endLine": 216
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 228,
+            "endLine": 234
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 1111,
+            "endLine": 1112
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3160,
+            "endLine": 3162
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3171,
+            "endLine": 3171
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3190,
+            "endLine": 3198
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3215,
+            "endLine": 3222
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3281,
+            "endLine": 3307
+          }
+        ],
+        "trigger": "A new Q is recorded at current task version V, then the required sequence performs first captureNormalNativeResult or writeNormalNativeRepairArtifact, then attempts finishNormalNativeExecution with that same Q.",
+        "sourceProof": [
+          "recordOwnerNativeFinishIntent admits first Q through #ownerFinishActive -> original #cas, so expectedTaskVersion must equal actual V; intent write does not increment it.",
+          "captureNormalNativeResult uses the original #artifactEffect. writeNormalNativeRepairArtifact uses the same helper. The helper unconditionally calls #update, which increments actual task version to V+1.",
+          "finishNormalNativeExecution first requires the authentic immutable same-Q intent, then original #cas compares actual V+1 to Q.expectedTaskVersion V and throws STALE_VERSION before settlement.",
+          "Changing Q for the same eventual command conflicts in #ownerFinishIntent. Recording a fresh post-capture command is a distinct intent and cannot establish the companion's promised pre-capture ordering for that new exact Q."
+        ],
+        "scope": "This is confirmed for first durable producer output/artifact capture and repair artifact writes after Q. It does not assert failure for an already durably captured artifact/output or for a read-only collector of such a capture. No separate runtime composition has been reviewed or executed here. Stop/normal stopped observation does not increment task version at original workerObservation880-907; unknown observation does, and must still cause currentness denial.",
+        "impact": "The prescribed first-capture sequence cannot finish the same immutable owner command even without races, quota pressure, storage faults or foreign inputs. The intent remains pending and the reservation cannot be released by this attempted finish. This is distinct from later authorized traffic consuming admission headroom.",
+        "remediation": "Root must request a fresh bounded literal/source amendment. Root has proposed requiring durable output/artifact/report capture before owner Q, then persisting exact Q before stop, current read-only collector, actual-usage reread and final finish. This steering is not reviewed implementation. It must preserve exact immutable Q, original task/auth CAS, scope/current-source/lifetime guards, and no refresh/backfill/replay authority. Explicitly prove which post-Q operations may change task version; unknown/error transitions must fail closed. Re-freeze the companion/runtime source and obtain fresh affected review before adoption.",
+        "affectedSourceObligations": [
+          "OI-S03",
+          "OI-S06",
+          "OI-S07",
+          "OI-S08"
+        ],
+        "affectedRetainedAC": [
+          "BUB003-01",
+          "BUB003-02",
+          "BUB004-04",
+          "BUB004-05",
+          "BUB006-02",
+          "BUB012-01",
+          "BUB012-04",
+          "BUB016-01",
+          "BUB016-02",
+          "BUB016-03"
+        ],
+        "executableReproduction": "NOT_RUN",
+        "acceptance": "NO_AC_ACCEPTED_ALL87_HOLD"
+      }
+    ],
+    "obligations": [
+      {
+        "id": "OI-S01",
+        "subject": "Original exact eight-field Q and closed owner record/read/list DTOs",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/normal-contracts.mjs",
+            "line": 32,
+            "endLine": 33
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3181,
+            "endLine": 3182
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3281,
+            "endLine": 3282
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3309,
+            "endLine": 3323
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "Original ref/integer/exact/detach parsing and original scoped finishDigest are reused. Read closes taskRef/commandRef; list closes the five-field execution tuple. Four states project exactly the original four DTO fields; sorted list is bounded at16."
+      },
+      {
+        "id": "OI-S02",
+        "subject": "Genuine original owner/task/native-origin/current reservation/auth admission",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 132,
+            "endLine": 161
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 206,
+            "endLine": 216
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 867,
+            "endLine": 879
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3081,
+            "endLine": 3094
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3183,
+            "endLine": 3198
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3291,
+            "endLine": 3296
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "All three public methods require original owner role and scoped task. New admission checks current task/auth CAS, authentic action/claim/generation/execution metadata, marked create/resume graph and actual scoped held reservation. Original signed native graph joins source/configuration/backend. This is durable graph admission, not a grant for live source, host, model or tool effects."
+      },
+      {
+        "id": "OI-S03",
+        "subject": "Exact historical command lookup before CAS and immutable pending replay",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 255,
+            "endLine": 263
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3173,
+            "endLine": 3179
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3215,
+            "endLine": 3229
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3281,
+            "endLine": 3294
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "Readonly command-specific history precedes active CAS and the mutation transaction. Same-Q typed replay returns its authentic projection without requiring current CAS, worker phase or held reservation. Different Q conflicts. A different completed command on the same claim leaves the earlier exact Q pending; the original finish missing-command/finished-claim guard still refuses new execution."
+      },
+      {
+        "id": "OI-S04",
+        "subject": "Reference-only signed result and private encrypted exact Q with typed inverses",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 278,
+            "endLine": 285
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 461,
+            "endLine": 479
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 519,
+            "endLine": 553
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3066,
+            "endLine": 3066
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3200,
+            "endLine": 3213
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3257,
+            "endLine": 3279
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3303,
+            "endLine": 3305
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "Original signed command result contains contractVersion plus recordRef/digest/ownerRequestDigest. Original encrypted runtime_data contains the exact canonical request under owner_finish_intent. Private command/record IDs, owner/workspace/task, sourceRef, taskVersion/authEpoch, finishDigest, actual worker/action/execution and unique command/record ownership are joined. No new table, native/preparation kind, schema8, migration, receipt rewrite or key rewrite is introduced."
+      },
+      {
+        "id": "OI-S05",
+        "subject": "Owner-only readonly closed read/list and authentic legacy association",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3065,
+            "endLine": 3065
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3183,
+            "endLine": 3188
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3231,
+            "endLine": 3255
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3309,
+            "endLine": 3323
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "Queries are guarded and contain no mutation transaction or live callbacks. Read known commands without typed Q projects legacy_unrestorable with null Q; list uses only authenticated original finish/settle claim associations and omits unsupported unverified legacy associations. No Q or current CAS is reconstructed."
+      },
+      {
+        "id": "OI-S06",
+        "subject": "Final authentic same-Q intent gate and compatibility with first durable capture ordering",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+            "line": 106,
+            "endLine": 109
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+            "line": 136,
+            "endLine": 139
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 211,
+            "endLine": 216
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 228,
+            "endLine": 234
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 1111,
+            "endLine": 1112
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3156,
+            "endLine": 3156
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3160,
+            "endLine": 3162
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3169,
+            "endLine": 3179
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3190,
+            "endLine": 3198
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3215,
+            "endLine": 3222
+          }
+        ],
+        "disposition": "OPEN_OI_F01_SOURCE_PROTOCOL_FINDING",
+        "execution": "NOT_RUN",
+        "notes": "Same-Q intent is required in the original normal transaction before original CAS/settlement. Original actual-usage, stopped worker, capture, role, immutable outcome, strict release-evidence equality and generic marked settlement refusal remain. Required pre-intent sequencing must be amended because first durable producer/repair artifact capture increments task version after a pre-capture intent."
+      },
+      {
+        "id": "OI-S07",
+        "subject": "Admission capacity, terminal classification, per-execution16 and whole wrapper bounds",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/contracts/amended-owner-command-core-protocol.d.ts.txt",
+            "line": 85,
+            "endLine": 104
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 270,
+            "endLine": 285
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 355,
+            "endLine": 359
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 378,
+            "endLine": 399
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 461,
+            "endLine": 479
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3253,
+            "endLine": 3255
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3295,
+            "endLine": 3305
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ADMISSION_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "Actual global count+2+12*actualHeld+originalMaxControlCommands<=originalMaxCommands runs before private data write. After intent, one immediate finish slot remains in addition to the complete original reserve. Every intent counts as a real command. This is headroom at admission, not durable future allocation. Full pending wrapper+selected maxMetadataBytes+64, body/data/metadata, actual result and sealed command wrapper are bounded transactionally; final runtime transport remains unverified."
+      },
+      {
+        "id": "OI-S08",
+        "subject": "Cold typed validation, old/future compatibility and no pending autoexecution",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 109,
+            "endLine": 129
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 2842,
+            "endLine": 2846
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 2970,
+            "endLine": 2970
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3025,
+            "endLine": 3053
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3107,
+            "endLine": 3107
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3257,
+            "endLine": 3279
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/runtime-store.mjs",
+            "line": 513,
+            "endLine": 513
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/before/runtime-store.mjs",
+            "line": 3009,
+            "endLine": 3010
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/ledger.mjs",
+            "line": 41,
+            "endLine": 54
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_PROSPECTIVE_COMPATIBILITY_HOLD",
+        "execution": "NOT_RUN",
+        "notes": "New pre7 private kind/operation rejects; old r2 source rejects the unfamiliar private kind during original cold validation. Future schema header is refused by unchanged Ledger preflight before SQLite opens. Constructor validates before ordinary recovery. Recovery does not traverse or execute owner intent commands; immutable Q is never refreshed, backfilled, resealed or replayed. Coherent new core/runtime adoption and cold-file behavior remain unexecuted."
+      },
+      {
+        "id": "OI-S09",
+        "subject": "Private Q exclusion from generic data/export/memory/diagnostics and stable errors",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 197,
+            "endLine": 201
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 481,
+            "endLine": 497
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 555,
+            "endLine": 581
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 1359,
+            "endLine": 1404
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 1500,
+            "endLine": 1510
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3279,
+            "endLine": 3279
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/runtime-store.mjs",
+            "line": 3341,
+            "endLine": 3350
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/proposed/src/ledger.mjs",
+            "line": 198,
+            "endLine": 207
+          }
+        ],
+        "disposition": "SOURCE_SUPPORTED_ONLY",
+        "execution": "NOT_RUN",
+        "notes": "Generic putData refuses the private kind, generic read/list refuses or omits it, snapshot/export use that filtered data list, memory receipt lookup refuses the operation, and diagnostics have no request payload. Known-secret checks and stable error codes are reused. Source inspection does not substitute for actual output/file scanning."
+      },
+      {
+        "id": "OI-S10",
+        "subject": "Exact frozen source/diff/import/effects provenance and immutable prior28",
+        "source": [
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/source-manifest.json"
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/required.diff"
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/import-closure.json"
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/effects.json"
+          },
+          {
+            "path": ".runtime/ni6-owner-finish-intent-core-proposal/prior-r2-comparison.json"
+          }
+        ],
+        "disposition": "FILESYSTEM_BYTE_AND_LEXICAL_VERIFICATION_COMPLETE",
+        "execution": "TARGET_JS_PARSE_IMPORT_EXECUTION_NOT_RUN",
+        "notes": "All32 files/freeze/manifest/diff and seven lexical import inventories/relative pins independently match. Only runtime-store changes; six sibling modules and prior28 unchanged. Four prior test files were byte-hashed only by explicit root permission; no decoding, content/oracle review or execution. Existing context/store cycle and constructor behavior remain unexecuted."
+      }
+    ],
+    "capacity": "Present admission headroom only; no durable global future capacity guarantee. OI-F01 is a deterministic version/order incompatibility, independent of quota races.",
+    "nativeKinds": "Original SIX unchanged; new private kind is not a native/preparation kind.",
+    "effects": "No new import or top-level executable effect introduced. Existing Ledger constructor/validation/recovery effects were reviewed as source, never invoked. New owner intent transaction adds one encrypted private data record and one signed refs-only command, plus original registry initialization when applicable."
+  },
+  "affectedRetainedAC": [
+    {
+      "ticket": "BUB003",
+      "dfAlias": "DF003",
+      "criteria": [
+        "BUB003-01",
+        "BUB003-02",
+        "BUB003-03",
+        "BUB003-04",
+        "BUB003-05"
+      ],
+      "path": "docs/tickets/BUB003.md",
+      "sourceObligations": [
+        "OI-S03",
+        "OI-S04",
+        "OI-S06",
+        "OI-S07",
+        "OI-S08",
+        "OI-S09"
+      ],
+      "execution": "NOT_RUN",
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    {
+      "ticket": "BUB004",
+      "dfAlias": "DF004",
+      "criteria": [
+        "BUB004-01",
+        "BUB004-04",
+        "BUB004-05"
+      ],
+      "path": "docs/tickets/BUB004.md",
+      "sourceObligations": [
+        "OI-S02",
+        "OI-S03",
+        "OI-S06",
+        "OI-S08"
+      ],
+      "execution": "NOT_RUN",
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    {
+      "ticket": "BUB006",
+      "dfAlias": "DF006",
+      "criteria": [
+        "BUB006-01",
+        "BUB006-02",
+        "BUB006-03",
+        "BUB006-05"
+      ],
+      "path": "docs/tickets/BUB006.md",
+      "sourceObligations": [
+        "OI-S01",
+        "OI-S02",
+        "OI-S03",
+        "OI-S04",
+        "OI-S05",
+        "OI-S06",
+        "OI-S09"
+      ],
+      "execution": "NOT_RUN",
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    {
+      "ticket": "BUB012",
+      "dfAlias": "DF012",
+      "criteria": [
+        "BUB012-01",
+        "BUB012-03",
+        "BUB012-04",
+        "BUB012-05"
+      ],
+      "path": "docs/tickets/BUB012.md",
+      "sourceObligations": [
+        "OI-S06",
+        "OI-S07"
+      ],
+      "execution": "NOT_RUN",
+      "accepted": 0,
+      "status": "HOLD"
+    },
+    {
+      "ticket": "BUB016",
+      "dfAlias": "DF016",
+      "criteria": [
+        "BUB016-01",
+        "BUB016-02",
+        "BUB016-03",
+        "BUB016-04"
+      ],
+      "path": "docs/tickets/BUB016.md",
+      "sourceObligations": [
+        "OI-S01",
+        "OI-S02",
+        "OI-S03",
+        "OI-S04",
+        "OI-S05",
+        "OI-S06",
+        "OI-S07",
+        "OI-S08",
+        "OI-S09",
+        "OI-S10"
+      ],
+      "execution": "NOT_RUN",
+      "accepted": 0,
+      "status": "HOLD"
+    }
+  ],
+  "remainingObligations": [
+    {
+      "id": "OI-R01",
+      "status": "HOLD_SOURCE_AMENDMENT_REQUIRED",
+      "work": "Resolve OI-F01 with an exact new ordering/version literal and affected core/runtime source freeze. Preserve this initial32 review and all prior source. Obtain independent affected source review; no CAS weakening, Q refresh or backfill."
+    },
+    {
+      "id": "OI-R02",
+      "status": "NOT_RUN",
+      "work": "Parse/import the exact coherently composed seven modules and runtime under root's separate bounded execution GO; verify the existing ESM cycle and original captured API descriptors/private brands. Earlier r2 syntax/public preparation results do not apply to this new store."
+    },
+    {
+      "id": "OI-R03",
+      "status": "NOT_RUN",
+      "work": "Exercise original genuine owner/task/native create and resume admission through public APIs, closed inputs/DTOs, same-command exact-Q replay, conflict/foreign role-owner-workspace-task/generation/execution denial and zero denied mutation. Do not fabricate native authority or use SQL/receipt/cipher tamper carriers."
+    },
+    {
+      "id": "OI-R04",
+      "status": "NOT_RUN",
+      "work": "Verify historical exact finish lookup under changed current CAS/auth, legacy/null-Q projection and authenticated legacy list association. Preserve pending Q after a different command finishes its claim; ensure no pending row gains stop, settlement or automatic replay permission."
+    },
+    {
+      "id": "OI-R05",
+      "status": "NOT_RUN_AFTER_OI_F01_AMENDMENT",
+      "work": "Verify genuine first producer output and repair artifact ordering at ample capacity, durable capture/report prerequisite before Q, exact stored Q before stop/read-only collector/actual-usage reread/final finish, and stopped vs unknown observation task-version behavior. Retain current owner/task/auth/source/profile/backend/lifetime guards before and after asynchronous reads."
+    },
+    {
+      "id": "OI-R06",
+      "status": "NOT_RUN",
+      "work": "Verify same-transaction data/receipt commit, rollback and supported cut/lost-reply/restart behavior through separately authorized original interfaces. Reads/list must remain readonly; cold recovery must preserve immutable intents and never execute pending commands. Protected tamper/SQL/cipher experiments remain excluded."
+    },
+    {
+      "id": "OI-R07",
+      "status": "NOT_RUN",
+      "work": "Independently verify admission equality and one-below/above boundaries for count+2+12*actualHeld+maxControlCommands, multiple genuine held claims, every pending command counted, original controls/terminal progress and terminal completion at last available slot. Check authorized later traffic races without claiming durable allocation or unconditional eventual finish."
+    },
+    {
+      "id": "OI-R08",
+      "status": "NOT_RUN",
+      "work": "Verify per-execution15/16/17 including authenticated legacy entries and CAS-stale pending commands, actual whole data/metadata/sealed result/wrapper limits and record/audit reserve rollback, plus exact final public transport UTF8 wrapper bytes<=65536. Do not infer feasibility from payload-only size."
+    },
+    {
+      "id": "OI-R09",
+      "status": "NOT_RUN_COLD_COMPATIBILITY_HOLD",
+      "work": "Verify prospective coherent new core/runtime installation, original old7 unfamiliar-kind failclosed behavior, supported pre7/future version admission and retained file/key/receipt/hold state using only approved public/synthetic cold paths. No production7 migration, schema8 or older blocked artifact is supplied or authorized here."
+    },
+    {
+      "id": "OI-R10",
+      "status": "NOT_RUN",
+      "work": "Scan actual public read/list/data/export/snapshot/memory/error/diagnostic outputs and permitted synthetic persisted evidence for Q/raw secrets. Typed inverse negatives lacking a supported public carrier remain HOLD, without author-oracle or protected database manipulation."
+    },
+    {
+      "id": "OI-R11",
+      "status": "HOLD",
+      "work": "Separate independent ISTQB design/results review, final CODE session, supported HOST/browser observation, useful real model/native work and consolidated acceptance remain separate. All87 accepted0/HOLD; packageQAa58c522/archivefa3fb398/profileui-qa-a58c522/listener3080 stay untouched."
+    }
+  ],
+  "acceptance": {
+    "retainedACCount": 87,
+    "accepted": 0,
+    "status": "HOLD",
+    "newClosedCriterion": false,
+    "CODE": "HOLD_BLOCKED_FINAL_REVIEW_NOT_CLOSED",
+    "HOST": "HOLD_NOT_LAUNCHED_NOT_OBSERVED",
+    "coldCompatibility": "HOLD_NOT_RUN",
+    "browser": "UNSUPPORTED_MAC_LOCKED_NO_QA_LAUNCH",
+    "modelQuality": "HOLD_NOT_RUN",
+    "publication": "HOLD_NOT_AUTHORIZED"
+  },
+  "execution": {
+    "filesystemMetadataAndHashes": "COMPLETED",
+    "literalSourceAndContractReads": "COMPLETED",
+    "JSParse": "NOT_RUN",
+    "JSImport": "NOT_RUN",
+    "productExecution": "NOT_RUN",
+    "tests": "NOT_RUN",
+    "testBodyOrOracleReview": "NOT_READ",
+    "priorTestBytes": "SHA_ONLY_FOUR_FILES_NO_DECODE_NO_PRINT",
+    "build": "NOT_RUN",
+    "database": "NOT_OPENED",
+    "nativeModelProvider": "NOT_RUN",
+    "networkListenerBrowser": "NOT_RUN",
+    "Git": "NOT_RUN",
+    "sourceOrCapsuleEdits": "NONE",
+    "protectedQA": "UNTOUCHED",
+    "blockedCODEExperiments": "NOT_ACCESSED_NOT_REROUTED"
+  },
+  "limitations": [
+    "Source review cannot prove actual runtime descriptor capture, asynchronous currentness/lifetime enforcement, native useful behavior, final transport encoding, transaction durability or concurrency/cold-file behavior.",
+    "Root's proposed before-Q durable capture ordering is future steering only; OI-F01 remains open on this exact frozen32 proposal until fresh literal/source amendment and affected review.",
+    "Original r2 strict held receipt equality and prior source are unchanged; this report neither applies withdrawn F03 nor closes the earlier blocked final CODE investigation.",
+    "Only independent evidence MD/JSON are written. No independent fixture/assertion/test implementation is included.",
+    "Local staged development/integration evidence never implies full ticket, MVP, HOST/model/browser acceptance, release or publication."
+  ],
+  "writtenDeliverables": [
+    "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-owner-finish-intent-source-review.md",
+    "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/docs/evidence/NI6/schema7-core-independent-owner-finish-intent-source-review.json"
+  ]
+}
+

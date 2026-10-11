@@ -1,0 +1,196 @@
+{
+  "contractVersion": "df.ni6-runtime-composition-r3-source-report/v1",
+  "status": "SOURCE_FROZEN_NOT_EXECUTABLE_FRESH_INDEPENDENT_REVIEW_REQUIRED",
+  "capsule": ".runtime/ni6-runtime-composition-r3",
+  "metadataPins": {
+    "source-closure.json": "cee7b324478539ba3669419bd1d445eac47d8bfe1b9e5d0840fbfac857e1d9d5",
+    "status.json": "abb173c88cca7c5bda51f5eacd67f052518e45935229b1036fa19fbe864c7bc6",
+    "literal-source.patch": "a1a3a039ef252e2c142d8f8657253c2cda5969672951aba3e9b10b6d7fcfbb59",
+    "literal-original-base-to-r3.patch": "e9e354e8072b2f1c9b7b3f9bca79ffc40ae11931b97cf834a15bdfda39bc5366",
+    "changed-source-pins.json": "408bd8fe4c5c701a30d60ea914a85d587f299923c0fd11409a50d9fdeb6a65d3",
+    "full-composition-source-pins.json": "12de5ecfc320dd6ac4ca8271aa977652b191a9020f244d38d0c37df28328b0dd",
+    "imports-effects.json": "4498873fe510e6d5587afc9aaab708c7da3f603fc9670673501b323a3aaad5db",
+    "dependency-base.json": "a4b4a7167b9d0864aa8b443b8c7973aed78b04238ecf63cf3e48e91749f94eac",
+    "descriptor-source-accounting.json": "a09e9d530a64fee714e2de837ab19644f28e8fae78c1fd55a6ea230014733f81",
+    "original-public-api-pins.json": "6993d94bba63beb7922338f8890856f8f73c9663b25f78e64b5c52c2cb271ffd",
+    "contracts/post-stop-source-checkpoint.md": "26811260b798e41cc1709b33562b1041d0df7592ed7591ec96bd2ac1373e1702",
+    "contracts/owner-command-protocol.d.ts.txt": "06a91ea6dcb8f22ec6a43a5730f1f6681f31484a5562adc70ed5c553dff3c97d",
+    "contracts/owner-intent-capture-order-core-manifest.json": "28009f53ee74defc4dfc91f348d253db74431a464678315cb78fb50816274e6f",
+    "scripts/build-native-source-manifest.py": "48e73c32e777d3a089043e348ad499c96f19073284e210f28c9d1b06d471e63e",
+    "scripts/build-client.mjs": "f5c98d5daabcfea01ef8829284fd589085e47dae95d9a72ec652283366a65702"
+  },
+  "changedSource": [
+    {
+      "path": "src/installed-audit-native-source.mjs",
+      "beforeSha256": "edbb633a9f7b101ae89dea2531d12714bae5b51395c7b4fb914b34d8522af487",
+      "afterSha256": "d2c37c4d5ed0c1dc4d4a274b8e19d67fa66e1580ef886c37413b1a23c4a00925",
+      "beforeBytes": 11488,
+      "afterBytes": 13615,
+      "addedLines": 15,
+      "removedLines": 3
+    },
+    {
+      "path": "src/installed-audit.mjs",
+      "beforeSha256": "d743d8aace17c9f19a14058ef6ec8fb094ccd05f9d9bbcdb497bdb841549a11d",
+      "afterSha256": "f2e9cd9e71b2e90b41ddd550e2f1f280ed79c4e35167b09f63790bea2f29cece",
+      "beforeBytes": 53906,
+      "afterBytes": 56388,
+      "addedLines": 15,
+      "removedLines": 1
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "beforeSha256": "e3ab421f19d06daee796be7857b0f6eefd02e0ad77345a5567cedf290e3bddd9",
+      "afterSha256": "772b6aca59c52780e8e123cc1dd68907507c65adf81d37733e73d9f4fdc435d4",
+      "beforeBytes": 44433,
+      "afterBytes": 47301,
+      "addedLines": 16,
+      "removedLines": 2
+    },
+    {
+      "path": "src/native-adapter.mjs",
+      "beforeSha256": "c510239891d7678b55ae48eaf1c1fee9e6d1a491af7f52717693e5b9ec5674a7",
+      "afterSha256": "16bda3e31f6294ad76ce5aa256b6f1f0088371fcea03c4c00e92e98b48b3b744",
+      "beforeBytes": 38605,
+      "afterBytes": 40758,
+      "addedLines": 21,
+      "removedLines": 2
+    },
+    {
+      "path": "src/native-history-collector.mjs",
+      "beforeSha256": "0a46a81a5f879e4fc9b510d6941ab8ddcfad6b20e90a924353a89fc5905cf3f6",
+      "afterSha256": "a5232835a388da6df08262ac7a94050b88ffd2be34aee24e8e58373aa9efcdd1",
+      "beforeBytes": 8645,
+      "afterBytes": 11620,
+      "addedLines": 39,
+      "removedLines": 12
+    },
+    {
+      "path": "src/normal-native-operations.mjs",
+      "beforeSha256": "6992a87ca3117866003270e63a37f3688ceea39566f7e8b8126a17210f4c5ae7",
+      "afterSha256": "b8fa8cee39c6bd83c2e5e749f43497e5d7087c2d639a536ac07b9fd116b8bfef",
+      "beforeBytes": 20009,
+      "afterBytes": 20337,
+      "addedLines": 3,
+      "removedLines": 0
+    },
+    {
+      "path": "src/runtime-plugin.mjs",
+      "beforeSha256": "5f665e077593219fce2fa410f3cc7c4ba7c7f1301da15b08b46935feade278c5",
+      "afterSha256": "b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095",
+      "beforeBytes": 66942,
+      "afterBytes": 67362,
+      "addedLines": 2,
+      "removedLines": 2
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "beforeSha256": "cfc30b5bec526606f6b4075145f8b77e7701aafd2577d251c594640f7b51db28",
+      "afterSha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7",
+      "beforeBytes": 344766,
+      "afterBytes": 347241,
+      "addedLines": 27,
+      "removedLines": 1
+    }
+  ],
+  "r2Delta": {
+    "changedFiles": 8,
+    "addedLines": 138,
+    "removedLines": 23
+  },
+  "fullHistoricalBaseDelta": {
+    "changedModules": 24,
+    "addedLines": 1215,
+    "removedLines": 95,
+    "base": "exact old proposal before/ mixed original NI4 source4dce + historic core7 preF06, NOT an accepted installed product/core6 baseline"
+  },
+  "inventory": {
+    "sourceFiles": 59,
+    "capsuleFiles": 312,
+    "descriptorProductFiles": 64,
+    "descriptorCap": 64,
+    "descriptorGenerated": false,
+    "missingLexicalLocalImports": 0,
+    "directOriginalPublicPinDrift": 0,
+    "preservation": {
+      "r2All151": true,
+      "oldAll125": true,
+      "priorR3DraftAll154": true,
+      "r2ExternalReportPair": true
+    }
+  },
+  "currentOwnerCore": {
+    "freeze": "5aa3fd6009b533ac7f85b28277de8d7db26491736021fb2d5a2fa761b3994a88",
+    "storeSha256": "4fb893614b30d22c5ad5b904aa585605bc74a2e2a38aa05cbaea38aeb52a23c7",
+    "manifestSha256": "28009f53ee74defc4dfc91f348d253db74431a464678315cb78fb50816274e6f",
+    "protocolSha256": "06a91ea6dcb8f22ec6a43a5730f1f6681f31484a5562adc70ed5c553dff3c97d",
+    "sourceCapsule": ".runtime/ni6-owner-finish-intent-capture-order-r1",
+    "priorStoreSha256": "cfc30b5bec526606f6b4075145f8b77e7701aafd2577d251c594640f7b51db28",
+    "companionSix": "unchanged from exact prior70fe source",
+    "disposition": "root approved exact SOURCE-only r3 store overlay after independent affected source review; FUNCTIONAL OPEN; no product adoption/executable GO",
+    "independentMdSha256": "37317b6681d02be3b9ba99fcc63bdac179b0ee433b078b00967eaebd5e4e1c4a",
+    "independentJsonSha256": "c877b67caf3ec1872e419b4c6e15a86b425ddbaee86d163313d3afe8ece2cc2b"
+  },
+  "order": [
+    "Original durable output capture and any chosen role report/repair artifact BEFORE owner Q construction; actual UI refresh supplies current V/auth",
+    "Exact genuine historical Q read FIRST; returns prior settlement before new currentness/FS/maps/native/CAS effects",
+    "Null history -> genuine current capture readiness -> exact immutable owner intent -> repeated readonly readiness",
+    "Private BEFORE_STOP on same fourth hook: exact source-owned saved witness + unchanged live original class/preset/tools/source/history/usage, fresh authorized owner action/worker/execution/result/present-role joins",
+    "Actual original owned AgentHandle.dispose -> original writer close/registry detach -> actual worker stopped observation",
+    "Private STOPPED on same fourth hook: fresh public readonly full persisted events/header/surface/messages and retained ORIGINAL Session comparison; actual persisted usage supplies final accounting; cached permit facts only equality discriminator",
+    "Existing marked stopped query repeats registry absence/publication drift at final synchronous boundary",
+    "Exact original Q final atomic native writer, with unchanged original role completion/usage/release semantics"
+  ],
+  "authorityBoundary": {
+    "hookCount": 4,
+    "newWireCheckpointFields": 0,
+    "dispatchPermissionChanges": 0,
+    "genericCapabilities": 0,
+    "nativeKindCount": 6,
+    "preparationKindCount": 3,
+    "postQCaptureArtifactReportWrites": 0,
+    "unmarkedLegacyResultFinishPath": "preserved",
+    "exactUnknownQ": "immutable pending; no refreshing/reconstruction/retry",
+    "missingRoleEvidence": "truthful original held finish, no completion/release inferred"
+  },
+  "publicSourceBasis": [
+    "Original AgentRegistry.create/resume publication and AgentHandle consumer-owned disposal",
+    "Original agent-loop disposer awaits idle/scope disposal/persistence close then detaches original agent/session registries",
+    "Original SessionStore.flush rejects detached sessions; post-stop path never invokes it",
+    "Original SessionPersistence readonly stat/open/read/close; Session.create and actual session projection restore over immutable full original events",
+    "Original public owner snapshot action/worker/execution/review fields; audit resultRef is original executionRef association; present report joins are genuine public projection",
+    "Original audit dispatch-current admission conflicts after authentic submitted report or changed repair artifact; only private cleanup checkpoint reads captured joins instead",
+    "Original worker stopped observation does not bump task V; unknown observation may bump V/auth and final immutable Q CAS may refuse"
+  ],
+  "execution": {
+    "Node": "NOT_RUN_NOT_AUTHORIZED",
+    "parse": "NOT_RUN_NOT_AUTHORIZED",
+    "import": "NOT_RUN_NOT_AUTHORIZED",
+    "build": "NOT_RUN_NOT_AUTHORIZED",
+    "test": "NOT_RUN_NOT_AUTHORIZED",
+    "DB": "NOT_RUN_NOT_AUTHORIZED",
+    "migration": "NOT_RUN_NOT_AUTHORIZED",
+    "native": "NOT_RUN_NOT_AUTHORIZED",
+    "model": "NOT_RUN_NOT_AUTHORIZED",
+    "provider": "NOT_RUN_NOT_AUTHORIZED",
+    "profile": "NOT_RUN_NOT_AUTHORIZED",
+    "service": "NOT_RUN_NOT_AUTHORIZED",
+    "timer": "NOT_RUN_NOT_AUTHORIZED",
+    "network": "NOT_RUN_NOT_AUTHORIZED",
+    "listener": "NOT_RUN_NOT_AUTHORIZED",
+    "Git": "NOT_RUN_NOT_AUTHORIZED"
+  },
+  "authorshipCommands": "rg/sed/cat/ls/wc static reads; Python standard-library text/copy/diff/hash/JSON scripts in /tmp; NO candidate or host module execution",
+  "unresolved": [
+    "Fresh independent affected SOURCE review and independent actual-interface design required",
+    "Warm producer/review/repair finish, missing-role held, unknown/cancel/source/auth/task drift and actual post-stop usage/history proof NOT_RUN",
+    "Cold whole-history same-ID resume and fresh consent/charged continuation/owner command restoration NOT_RUN",
+    "Original public reader may use immutable revision-checked cold memo; no force physical reparse, atomic filesystem snapshot/CAS, hard decode allocation bound, or global never-resumed/ABA oracle",
+    "Marked old finishing ticket can remain fenced by later same-ID successor publication; genuine historical owner reads are first and available independently",
+    "Host DOM/renderer/manual/offline/general recovery and NI4 scope/timer/NI5 result lifetime/PURE separate minimal merge waves OPEN",
+    "Final authentic source/build/package descriptor NOT_GENERATED; builder remains source-only; any new reachable source file exceeds64 without reviewed consolidation",
+    "Full27577-file original host graph is retained by original pinned manifest, not rehashed here; fresh execution closure must verify before GO",
+    "Original blocked finalCODE review remains held; no reroute attempted"
+  ],
+  "acceptance": "All87/CODE/UI/quality HOLD; no execution/adoption/native/cold/UI success claim"
+}

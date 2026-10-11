@@ -1,0 +1,2795 @@
+{
+  "schema": "df.c1.individual-acceptance-reconciliation-preparation/v1",
+  "date": "2026-10-08",
+  "reviewer": {
+    "lane": "/root/ordinary_execute_ack_diagnosis",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "language": "English",
+    "independent_of_authors_and_code_and_ISTQB_execution_reviewers": true
+  },
+  "disposition": "EVIDENCE_READY_PREPARATION_NO_NEW_INDIVIDUAL_ACCEPTANCE",
+  "scope": "Complete87 retained criterion identifiers; current build-r2 actual proof incorporated, fresh worker and installed CLI actuals not yet supplied.",
+  "counts": {
+    "retained_ids": 87,
+    "original_unique_ids": 82,
+    "current_DF010_contract_ids": 5,
+    "ticket_cards_fully_read": 18,
+    "original_full_literals_match_approved_reference": true,
+    "proposed_partial": 83,
+    "proposed_documentary_pass": 2,
+    "owner_out_of_phase": 1,
+    "supported_browser_blocked": 1,
+    "new_criteria_accepted_by_this_report": 0
+  },
+  "current_evidence_state": {
+    "canonical_C1_source": {
+      "proof": "SRC/SRCJSON",
+      "status": "SOURCE_ONLY_ORDINARY_REVIEWED_65_FILES_CONSERVED_FROM_R13",
+      "selected_bytes": 1952632,
+      "old_ancestor_acceptance_not_adopted": true
+    },
+    "build_r2": {
+      "proof": "BUILD",
+      "status": "ACTUAL_PASS_ROOT_AND_INDEPENDENT_CODE_ISTQB_ASSESSMENTS_SEALED",
+      "original_supported_driver_exit": 0,
+      "top_level_commands": 4,
+      "all_top_level_exit0_EOFcomplete_groups_absent": true,
+      "signal_attempts": 0,
+      "after_immutable_pins": 270,
+      "descriptor_product_digests": 64,
+      "descriptor_host_modules": 27,
+      "syntax_targets": 152,
+      "syntax_target_count_authority": "EXACT_PINNED_SCRIPT_PLUS_SUCCESSFUL_COMMAND_SOURCE_DERIVED_NOT_NESTED_INSTRUMENTATION",
+      "test_bodies_executed": false,
+      "generated_witnesses_separate": 2,
+      "generated_outputs": [
+        {
+          "path": "lib/client.js",
+          "bytes": 151584,
+          "sha256": "2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41"
+        },
+        {
+          "path": "native-source-manifest.json",
+          "bytes": 18440,
+          "sha256": "fdfdc09f672fbd584deff350b43a322dd4d1371a3680ce7c140cc8303dbdb2a5"
+        }
+      ],
+      "original_build_subset": "IMMUTABLE_NOT_RUN_MUST_NOT_EXECUTE",
+      "first_currentness_gap": "ORDINARY_DEVELOPMENT_REVIEW_FINDING_CORRECTED_IN_R2_NOT_POLICY_DENIAL",
+      "finite_currentness_cut_not_continuous_atomic_exclusion": true,
+      "identical_ancestor_output_bytes_do_not_erase_new_execution": true,
+      "final_enclosing_monotonic_duration_not_independently_instrumented": true,
+      "independent_assessment_evidence": [
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ]
+    },
+    "W01": "NOT_RUN_AT_PARENT_BUILD_UPDATE_NO_CURRENT_ACTUAL_SUPPLIED",
+    "Q01": "NOT_RUN_AT_PARENT_BUILD_UPDATE_NO_CURRENT_ACTUAL_SUPPLIED",
+    "Q02": "NOT_RUN_AT_PARENT_BUILD_UPDATE_NO_CURRENT_ACTUAL_SUPPLIED",
+    "Q03": "NOT_RUN_AT_PARENT_BUILD_UPDATE_NO_CURRENT_ACTUAL_SUPPLIED",
+    "current_worker_or_installed_CLI_starts_at_that_update": 0,
+    "public_proof_not_original_tool_return_access": "This lane read the closed root proof; it did not independently witness the parent's original supported build return.",
+    "phase_flags": {
+      "acceptance_GO": false,
+      "publication_GO": false,
+      "new_execution_GO_by_this_report": false,
+      "overall_acceptance_and_publication": "HOLD"
+    }
+  },
+  "pending_case_oracles": {
+    "W01": "Fresh canonical worker; C01-C23/F01-F05/G01-G05/L01-L05 (20 cleanup assertions) plus N01 duplicate execute:39 named groups, one task/worker/action/request/stream/turn/step, tools/memory writes/external effects0, at most26HTTP. Preserve exact original input/result/usage/persistence/currentness/stop/agent-session absence/release and owning-child cleanup; no consumed R13 replay.",
+    "Q01": "Two fresh original full-CLI processes on the same owned synthetic store/key/namespace. Native auth, before-consent no writes, one paused durable task and duplicate, genuine DF terminal/fences/observer joins before original forced-exit fallback, EOF/groups/listener absence, authenticated retained restart/no automatic work replay; no worker/model/tool attempts.",
+    "Q02": "One fresh original full-CLI disabled Loader entry: no DF services/routes/named storage/work; no substitute config-only disabled flag.",
+    "Q03": "One fresh original full-CLI invalid shallow database target: visible failed setup, not disabled; no DF services/routes/storage/work. Public code only if interface actually exposes it.",
+    "case_family_qualification": "W01 is not an installed full-CLI worker quit. Q01 is idle and not an active-worker crash or resume. The independent finite oracles cannot be concatenated into an unrun full product scenario."
+  },
+  "method": [
+    "Read complete criterion sections in all18 authoritative cards. Collapse identical BUB007 parent criteria duplicated in A/B cards without losing provenance; 82 unique source IDs plus five exact owner contract statements.",
+    "Every complete original criterion literal, including wrapped lines, matches the approved reference after whitespace normalization. Preserve original raw text, line range, per-criterion UTF8/LF byte hash and card SHA. Each source path resolves to its once-listed exact file pin in the authority/card catalog.",
+    "Keep original Chinese only as quoted authoritative provenance; all assessment and downstream recommendations are English.",
+    "Map actual records by their own source snapshot and bounded observation. Counts overlap and are never added. Source-only conservation and test design are not current execution.",
+    "The source review's65 target hashes are the current C1 review snapshot. Comparing an unchanged facade hash to a historical held hash does not establish unchanged core/host dependencies or rerun old tests.",
+    "Proposals are conditional evidence dispositions. No87HOLD status is copied from historical packets; no new PASS acceptance is issued. Documentary PASS proposals for BUB001-05/BUB016-06 can be assessed separately from runtime gates.",
+    "If later current actual reports arrive, append a separately sealed final per-ID assessment binding resulting source/generated/fixture/actual identities. Preserve this preparation, earlier failures and consumed capsules."
+  ],
+  "important_complete_obligations": [
+    {
+      "id": "BUB002-04",
+      "source_lines": [
+        34,
+        35
+      ],
+      "meaning": "Responsiveness is measured in the BUB012 selected environment; avoiding one awaited worker call alone is insufficient."
+    },
+    {
+      "id": "BUB015-04",
+      "source_lines": [
+        35,
+        36
+      ],
+      "meaning": "Two rounds is a suggestion; configured cutoff and owner escalation remain constrained by shared total BUB012 budgets."
+    },
+    {
+      "id": "BUB016-02",
+      "source_reference_lines": [
+        470,
+        477
+      ],
+      "meaning": "Applicable page19 chain retains native intake/authorization/current context/budget/work/version correction/full quit/reconcile/missed plans/memory/independent review/openable delivery/UI and unknown-send reconciliation. Owner excludes only actual chat-platform portions."
+    }
+  ],
+  "historical_conservation_qualification": {
+    "R13": "One consumed actual derivative-package synthetic worker path, now matching adopted public product bytes by SRC. Its original namespace/root/driver result remains ancestor execution, not fresh C1 actual.",
+    "M6_NI1": "Actual751/919/975 module or installed-memory results bind their historical88/91/96-file freezes; none is a current whole-C1 run.",
+    "genuine_resume": "NCL lines36 documents historical genuine persisted public AgentLoop new-incarnation resume with an explicit new committed result; this is stronger than a mocked persistence case and remains distinct from current normal-installed resume.",
+    "full_quit": "Older M6 stop/absence/exit0 are bounded ancestor observations. Current Q01 explicitly requires genuine supported DF terminal joins before the host's original forced-exit fallback; exit0 alone is insufficient.",
+    "whole_core_dependency": "Current SRCJSON runtime-store whole hash differs from historical held S3MEM/S3AUD core. No protected body comparison or semantic inference is performed.",
+    "no_current_body_audit": true
+  },
+  "unchanged_facade_metadata_comparisons": [
+    {
+      "path": "src/messages.mjs",
+      "ancestor": "S2MR",
+      "sha256": "a44d8ba0d2fff046bee618e4e3affd08ec79f662a09b13745d9d60e6ca030a6d",
+      "C1_source_report_equal": true
+    },
+    {
+      "path": "src/control.mjs",
+      "ancestor": "S2MR",
+      "sha256": "a41673f9a4f5de6825b6f3c49f4796a55ed6051d043fb02b41737f517323cd2f",
+      "C1_source_report_equal": true
+    },
+    {
+      "path": "src/results.mjs",
+      "ancestor": "S3NT",
+      "sha256": "8a44c8e3e2fb4dfcdeae1fd7f69ddc90dd8c36b4cdf7d292964ebfd5cf5af077",
+      "C1_source_report_equal": true
+    },
+    {
+      "path": "src/audit.mjs",
+      "ancestor": "S3AUD",
+      "sha256": "a1f6bff346c7897d4cf5c7cffa2b8f12e1fee5d69cd2a6fc78c4c4d843475beb",
+      "C1_source_report_equal": true
+    },
+    {
+      "path": "src/notifications.mjs",
+      "ancestor": "S3NT",
+      "sha256": "85071387f087f90aae67753802500d3a83f9f18ef0d03269f04aac4a723471e0",
+      "C1_source_report_equal": true
+    }
+  ],
+  "applicability": {
+    "real_chat_provider": "OUT_THIS_PHASE_BY_OWNER; BUB010-01 wholly deferred; platform portions of BUB010-02..05/BUB013/BUB016 deferred. Five DF010 contract rows remain current and are validated with synthetic adapters plus authoritative native ledger.",
+    "other_native_UI_memory_event_worker_audit_fault_artifact_security_packaging": "RETAINED_CURRENT_REQUIREMENTS",
+    "pending_ordinary_work": "Fresh fixture implementation/reviews/actuals and residual ordinary implementation/regression are unexecuted development, not an authorization denial.",
+    "final_CODE": "Protected final receipt/signature/envelope/revision999 semantic review BLOCKED_UNCHANGED; no opaque capture/finish bodies inspected. This does not impose identical dispositions on unrelated documentary criteria.",
+    "browser": "Parent's last01:45UTC verification: browsers:[]; iab unavailable; Chrome extension absent. Lock is additional and unlock alone does not create capability. No new probe, native fallback or BrowserLUA route.",
+    "cloud": "Two automatic-review denials remain; no third request or private denied-content read. The lane does not newly classify ordinary model-policy/mock contract work as cloud-blocked.",
+    "publication": "HOLD; no remote, stable, MVP, acceptance or publication decision."
+  },
+  "provenance": {
+    "authority_records": [
+      {
+        "path": "AGENTS.md",
+        "bytes": 8292,
+        "sha256": "f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba"
+      },
+      {
+        "path": "docs/reference/approved-ticket-review.zh.txt",
+        "bytes": 45578,
+        "sha256": "cf38310f93b9a7bd96efaca8ab53e1d71c16e86d6810513807c4b56ed33d1ca3"
+      },
+      {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e"
+      },
+      {
+        "path": "docs/owner-normal-entry-continuation-2026-10-04.md",
+        "bytes": 2024,
+        "sha256": "e1370ac0a8fe31be56a111d443a1110307d195e2c24389470619df5716351078"
+      },
+      {
+        "path": "docs/acceptance-traceability.md",
+        "bytes": 37983,
+        "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64"
+      },
+      {
+        "path": "docs/compatibility.md",
+        "bytes": 4073,
+        "sha256": "5ad7d101eb8a9766e63e95616cec7a711b549290e2c3441338926b18e3f209fe"
+      },
+      {
+        "path": "docs/ni6-canonical-integration-c1-freeze-2026-10-08.md",
+        "bytes": 8806,
+        "sha256": "86d0ad4608efedaded09a66fd1cd34d7e39a288e7e09c7551463ed2d49c6608f"
+      },
+      {
+        "path": "docs/ni6-canonical-integration-c1-validation-freeze-2026-10-08.md",
+        "bytes": 8412,
+        "sha256": "22c58bfc7a9af511394ddcb8dd6d2bd04c3223e39b147540559ecf4f2d1c777e"
+      },
+      {
+        "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.md",
+        "bytes": 10872,
+        "sha256": "0fdf5c4cf88cea9084c009669ac1b2766addc1c59607249fec37510df267f12a"
+      },
+      {
+        "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.json",
+        "bytes": 21859,
+        "sha256": "9169dbbcadf0e2a354afb2b15b3204ac1b4ae5ff0fbbed1da59e822db5f7acba"
+      },
+      {
+        "path": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.md",
+        "bytes": 17324,
+        "sha256": "7bca4bd76bddb98f5fea70ab17acf3f0478ea9342e97dcff8ba42501c97e4683"
+      }
+    ],
+    "ticket_card_records": [
+      {
+        "path": "docs/tickets/BUB001.md",
+        "bytes": 5071,
+        "sha256": "a83391a353c74b832f668251f3cc15f376adaa457afcb4c2d96176e1d29872e6"
+      },
+      {
+        "path": "docs/tickets/BUB002.md",
+        "bytes": 4240,
+        "sha256": "1b3b7a1d25f67deefe0947004422919b22712b8682553edfa2ca6d379e990665"
+      },
+      {
+        "path": "docs/tickets/BUB003.md",
+        "bytes": 5005,
+        "sha256": "05d35e1c51cfb79ebdccf9b37dc3b5ef4b726ea1119ff17a3b707a150bc5ec73"
+      },
+      {
+        "path": "docs/tickets/BUB004.md",
+        "bytes": 4168,
+        "sha256": "8b19cff5e3296ebcfbac7eb32b82aab7c2aa939cf42a6564520848fdaf23a6a0"
+      },
+      {
+        "path": "docs/tickets/BUB005.md",
+        "bytes": 4306,
+        "sha256": "8517546177534ea4bf8adc7fff3c25da6a718823128183307fea9ade8432ea4f"
+      },
+      {
+        "path": "docs/tickets/BUB006.md",
+        "bytes": 5105,
+        "sha256": "affa8641b9a80efce152cbcc9e6cfad4114e255aaac04617d6f935bc52878f94"
+      },
+      {
+        "path": "docs/tickets/BUB007A.md",
+        "bytes": 4875,
+        "sha256": "53a129eb330bdf8c0afedd44694825bcf4937e6d58a8b358f4a933bbae69382a"
+      },
+      {
+        "path": "docs/tickets/BUB007B.md",
+        "bytes": 5211,
+        "sha256": "3265a66d375f1566792fb595da81e8b501ab5265b8f49cd076de9ea2096ef39d"
+      },
+      {
+        "path": "docs/tickets/BUB008.md",
+        "bytes": 4808,
+        "sha256": "f83349faa315d51e260e8fb61dc27c3e953791bec4b185b9789bce55b936b82a"
+      },
+      {
+        "path": "docs/tickets/BUB009.md",
+        "bytes": 4446,
+        "sha256": "235a5bc3606c21da9a1022e70fd12e2848ecace538de46606dc838a45c474ca4"
+      },
+      {
+        "path": "docs/tickets/BUB010.md",
+        "bytes": 4730,
+        "sha256": "e12f27624d329e33cb76ee0a3690b8da6dc89f4555f78ac738420b312b12c91a"
+      },
+      {
+        "path": "docs/tickets/BUB010A.md",
+        "bytes": 852,
+        "sha256": "3057b3e1c2b01a37e987050387f8809a48e7d8f8f0319af705794fb7b6a9a874"
+      },
+      {
+        "path": "docs/tickets/BUB011.md",
+        "bytes": 4227,
+        "sha256": "ab185f940bd7a32a7a1d8dffc4e7cbeb33d21a8b51ceaa354750c6db2bc5623a"
+      },
+      {
+        "path": "docs/tickets/BUB012.md",
+        "bytes": 4621,
+        "sha256": "93e00fa5795a40c3561ce1c50d4ed07b4e784b7fa4d1f54fa8fa58cdc6d1bac7"
+      },
+      {
+        "path": "docs/tickets/BUB013.md",
+        "bytes": 4549,
+        "sha256": "a9d4c28492f6bdb49a469d1fbcde58079a8a28461143a653ed59102b57e99012"
+      },
+      {
+        "path": "docs/tickets/BUB014.md",
+        "bytes": 4853,
+        "sha256": "59ab8b06baecb67b62d1a8c22e157efabb2858daeddc46cbd31aad4a63db34df"
+      },
+      {
+        "path": "docs/tickets/BUB015.md",
+        "bytes": 4460,
+        "sha256": "0072c0ea9f5239a5b7cdf970f644b538fc75636eca02e34435bd7c5c9c59c1ff"
+      },
+      {
+        "path": "docs/tickets/BUB016.md",
+        "bytes": 6041,
+        "sha256": "9a0e36699f88bc8d0a34df162497847124a9aef61446c54d1e3fc4e90c7305dd"
+      }
+    ],
+    "evidence_catalog": [
+      {
+        "id": "OWNER",
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "bytes": 5304,
+        "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+        "kind": "CURRENT_REQUIREMENT_POLICY",
+        "read_scope": "FULL",
+        "proof_scope": "Owner applicability, five contract requirements, rights and preview/publication policy."
+      },
+      {
+        "id": "COMP",
+        "path": "docs/compatibility.md",
+        "bytes": 4073,
+        "sha256": "5ad7d101eb8a9766e63e95616cec7a711b549290e2c3441338926b18e3f209fe",
+        "kind": "CURRENT_DOCUMENTARY_POLICY",
+        "read_scope": "FULL",
+        "proof_scope": "Selected Web baseline, Desktop exclusion and explicit unverified interactive/non-Web CLI."
+      },
+      {
+        "id": "TRACE",
+        "path": "docs/acceptance-traceability.md",
+        "bytes": 37983,
+        "sha256": "4ca9df1a3fd28cc66732a7128f6243f3770d74b07cc8e075468fca3ea21cae64",
+        "kind": "HISTORICAL_TRACE_POINTERS_NOT_CURRENT_VERDICT",
+        "read_scope": "FULL",
+        "proof_scope": "All87 retained rows and module/test pointers; historical blanket HOLD is not imported."
+      },
+      {
+        "id": "SRC",
+        "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.md",
+        "bytes": 10872,
+        "sha256": "0fdf5c4cf88cea9084c009669ac1b2766addc1c59607249fec37510df267f12a",
+        "kind": "CURRENT_C1_SOURCE_ONLY",
+        "read_scope": "FULL",
+        "proof_scope": "65 canonical product bytes equal frozen R13; ordinary wiring reviewed, no C1 build/runtime validation."
+      },
+      {
+        "id": "SRCJSON",
+        "path": "docs/evidence/NI6/canonical-integration-c1-independent-source-review.json",
+        "bytes": 21859,
+        "sha256": "9169dbbcadf0e2a354afb2b15b3204ac1b4ae5ff0fbbed1da59e822db5f7acba",
+        "kind": "CURRENT_C1_SOURCE_ONLY",
+        "read_scope": "FULL",
+        "proof_scope": "Closed source identities and qualifications, including 65 explicit target hashes."
+      },
+      {
+        "id": "DESIGN",
+        "path": "docs/evidence/NI6/canonical-continuation-istqb-design-2026-10-08.md",
+        "bytes": 17324,
+        "sha256": "7bca4bd76bddb98f5fea70ab17acf3f0478ea9342e97dcff8ba42501c97e4683",
+        "kind": "CURRENT_C1_DESIGN_ONLY",
+        "read_scope": "FULL",
+        "proof_scope": "W01/Q01/Q02/Q03 bounded design; all proposed commands NOT_RUN in that record."
+      },
+      {
+        "id": "AUDIDS",
+        "path": "docs/evidence/NI6/canonical-integration-c1-author-source.md",
+        "bytes": 2815,
+        "sha256": "28edd2943e0e616c850ccbb184e8f5fd69d604bfa23f3531492ef52297a85b1d",
+        "kind": "CURRENT_C1_AUTHOR_RECORD",
+        "read_scope": "FULL",
+        "proof_scope": "Source author identity; separate independent code and ISTQB design records. No self-sign acceptance."
+      },
+      {
+        "id": "M6REG",
+        "path": "docs/evidence/M6/consolidated-regression.md",
+        "bytes": 10085,
+        "sha256": "a872c9f46444ed716cfaa984a3aa480937fdfd41bd517026416e3eab1803464c",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "751/751 and exact ancestor88-file freeze; syntax/bundle/native protocol/package scopes, not current C1."
+      },
+      {
+        "id": "M6FUP",
+        "path": "docs/evidence/M6/normal-followup-regression.md",
+        "bytes": 5882,
+        "sha256": "8ffa6cca246be5b3d90401ecebb81151b7345175d4b2ad412d573f2f888a53e3",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "919/919 at ancestor91-file freeze; normal-entry, setup and UI/carrier module additions."
+      },
+      {
+        "id": "M6CLI",
+        "path": "docs/evidence/M6/normal-native-lifecycle.md",
+        "bytes": 13634,
+        "sha256": "62381a96c095273adec6ca3791cdc66140ea824a9df34c59584075d43bc9b25e",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "Physical installed original CLI auth/setup/paused intake/ten reloads/quit/same-store restart/uninstall, zero worker/provider attempts."
+      },
+      {
+        "id": "NI1",
+        "path": "docs/evidence/NI1/checkpoint.md",
+        "bytes": 13033,
+        "sha256": "be64e77a85cbc69fdc9d6bf3d40a4f7649be37d85faea5c96875d82e663f4d5f",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "975/975 ancestor96-file freeze; physical installed memory/context writes/reload/restart/cold-read; no worker/model/tool attempts."
+      },
+      {
+        "id": "S2CC",
+        "path": "docs/evidence/S2/coordinator-context.md",
+        "bytes": 7736,
+        "sha256": "01d1f3ffd9373d0617587e9fa2bf893aebfe6f4871a4283974d87c3efa22df15",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "23 actual SQLite/coordinator/context cases including process CAS; no native responsiveness latency claim."
+      },
+      {
+        "id": "S2MR",
+        "path": "docs/evidence/S2/messages-results.md",
+        "bytes": 11941,
+        "sha256": "b9a0b8b32b9ce5adc08f218c10fb04e6c076462c664257090864f7dcb443a3a5",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "28 actual SQLite broker/results/control cases with explicit synthetic transport/opening callbacks."
+      },
+      {
+        "id": "S3PORT",
+        "path": "docs/evidence/S3/fishball-portability.md",
+        "bytes": 6942,
+        "sha256": "0d64ed823edef5b3badc1e87e7ad26a903735fb513da824aae88c6ab99ecfe14",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "34 ESM/port/context cases including public Cordis fixture; no Kotlin/JS compilation claim."
+      },
+      {
+        "id": "S3MEM",
+        "path": "docs/evidence/S3/memory-test-review.md",
+        "bytes": 11666,
+        "sha256": "a83b70c2969697093d2c59e4d17aac33199367401f0d20b9016666a9b86e77e9",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "Stable169/169 held cases, actual process/store/context/adversarial/migration partitions; overlaps audit/notifications."
+      },
+      {
+        "id": "S3AUD",
+        "path": "docs/evidence/S3/runtime-audit-test-review.md",
+        "bytes": 7665,
+        "sha256": "105cd3e650920252f1f538c20e7b930907a7fc60b3e2b1151135f0528ba0eca4",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "Same169 held run: distinct required reviewer/material/stale/failure/repair budget gates; no model-quality claim."
+      },
+      {
+        "id": "S3EV",
+        "path": "docs/evidence/S3/event-adapters.md",
+        "bytes": 4179,
+        "sha256": "b53a02b5def14cc8b0b891c858b2af0ba6fd10163597fc413e894fc90cc08aa3",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "61 event/schedule/chat cases on actual authoritative store using synthetic authentication/callbacks/clocks/recipients."
+      },
+      {
+        "id": "S3NT",
+        "path": "docs/evidence/S3/notifications.md",
+        "bytes": 15071,
+        "sha256": "73f994fa7adee745dc116502969c797a911b6d317fab89d45dd87659d75d2296",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "FULL",
+        "proof_scope": "Corrected87 focused cases including23 notifications; durable quiet/merge/frequency/reconcile cases, synthetic recipients."
+      },
+      {
+        "id": "NCL",
+        "path": "docs/evidence/S3/native-client-test-review.md",
+        "bytes": 67842,
+        "sha256": "5677862e49e488164a2562940c65cff9e098757ba4bb5258d87d5a49ff3ca39c",
+        "kind": "ACTUAL_ANCESTOR",
+        "read_scope": "LINES_1_87_AND_292_312",
+        "proof_scope": "Closed actual public-library/client scopes including genuine JSONL new-incarnation resume and109 corrected UI/module cases; no actual rendered browser. Selected ranges only; clipped intermediate aggregate display is not treated as full read."
+      },
+      {
+        "id": "R13",
+        "path": "docs/evidence/NI6/positive-one-worker-r13-independent-execution-review.md",
+        "bytes": 11970,
+        "sha256": "724dfc5da9280d627b51a84d9e4ac383ef9f7408d33f9dcb7c0fdabff8167d68",
+        "kind": "ACTUAL_ANCESTOR_FROZEN_R13_PRODUCT",
+        "read_scope": "FULL",
+        "proof_scope": "Consumed once driver0, original one mock-backed worker, exact input/capture/usage/result/stop/release and owned standalone cleanup; no installed full-CLI quit."
+      },
+      {
+        "id": "R13TEST",
+        "path": "docs/evidence/NI6/positive-one-worker-r13-independent-actual-test-assessment.md",
+        "bytes": 12206,
+        "sha256": "f90480ac38d4b9ad3057b35da863ffd8d915412f1009cbd2571b9be520518671",
+        "kind": "ACTUAL_ANCESTOR_FROZEN_R13_PRODUCT",
+        "read_scope": "FULL",
+        "proof_scope": "Independent actual assessment of same R13 invocation, not a second run; bounded controls and no private stream inspection."
+      },
+      {
+        "id": "BUILD",
+        "path": "docs/evidence/NI6/canonical-integration-c1-build-actual-return.json",
+        "bytes": 4870,
+        "sha256": "b2648682052fc5b266e7a6d033c7299e5c90d665476daf407062e09ce8fafc4b",
+        "kind": "ACTUAL_CURRENT_C1_BUILD_ROOT_SEALED",
+        "read_scope": "FULL",
+        "proof_scope": "Original once build-r2 driver0; four top-level commands0/EOF/groups absent/signals0; actual client producer/check/native descriptor, 270 immutable pins and64 product/27 host digests; 152 syntax targets source-derived, test bodies not executed. Independent actual build/evidence and ISTQB assessments now corroborate this bounded PASS."
+      },
+      {
+        "id": "BUILD_CODE",
+        "path": "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-execution-review.md",
+        "bytes": 5948,
+        "sha256": "6dc3a365220329c500f7e9f6b95a0d00da0254c92b3c557ca94dcb399054c6e0",
+        "kind": "ACTUAL_CURRENT_C1_BUILD_INDEPENDENT_CODE_ASSESSMENT",
+        "read_scope": "FULL",
+        "proof_scope": "Independent bounded actual build/evidence PASS; no material record blocker, no functional/worker/CLI/acceptance claim."
+      },
+      {
+        "id": "BUILD_TEST",
+        "path": "docs/evidence/NI6/canonical-integration-c1-build-r2-independent-actual-test-assessment.md",
+        "bytes": 6397,
+        "sha256": "13a74950b6181c36cd10356408ff7ef473b2521087cc8c72b4fdb52f7382061d",
+        "kind": "ACTUAL_CURRENT_C1_BUILD_INDEPENDENT_ISTQB_ASSESSMENT",
+        "read_scope": "FULL",
+        "proof_scope": "Independent selected B01-B04 actual build PASS; syntax152 source-derived, test bodies unexecuted and negative drift/failure partitions NOT_RUN."
+      }
+    ],
+    "parent_build_update": "Parent supplied current4870-byte build proof followed by final independent actual build CODE/ISTQB assessments. Worker/CLI source packets are sealed with independent source reviews active; their actuals remain NOT_RUN at that update."
+  },
+  "criteria": [
+    {
+      "id": "BUB001-01",
+      "original_text": "BUB001-01 在 owner 选定的基线版本安装、启动、重载、卸载均有运行证据；不支持版本显示具体差异和处\n理建议，不半初始化后接受任务。",
+      "source": {
+        "path": "docs/tickets/BUB001.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 181,
+        "criterion_sha256": "003baefd4911124c4e6ae96ef2fa704c5abdaec1a0f116fed84e545997650aca"
+      },
+      "requirement_english": "On the selected baseline, installation, start, reload and uninstall have actual evidence; unsupported versions show specific differences and remedies and admit no half-initialized work.",
+      "evidence": [
+        "M6CLI",
+        "M6REG",
+        "SRC",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Earlier physical installed Web package loaded, reloaded and uninstalled with genuine native authentication; C1 incorporation is source-only.",
+      "pending_c1_cases": [
+        "Q01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Current physical installation/start/reload/uninstall and unsupported-version diagnostics, with selected build proof independently assessed; Q01 restart alone covers only part.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB001-02",
+      "original_text": "BUB001-02 连续 10 次重载后，一个输入只产生一个入口记录；无残留监听、重复调度或新增孤儿工作会话。",
+      "source": {
+        "path": "docs/tickets/BUB001.md",
+        "line_start": 31,
+        "line_end": 31,
+        "criterion_utf8_bytes": 138,
+        "criterion_sha256": "0708e9e74fbb7ac9b0d06b7732ca363088f7404bdc3e84322b0df9c2d30c4a90"
+      },
+      "requirement_english": "Ten consecutive reloads yield one entry record per input, without residual listeners, duplicate schedules or new orphan workers.",
+      "evidence": [
+        "M6CLI",
+        "M6REG",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Historical installed runs performed ten Loader reloads, deduplicated intake and observed old-reference disposal; NI1 also reloaded memory/context.",
+      "pending_c1_cases": [
+        "Q01"
+      ],
+      "remaining_full_oracle": "Ten fresh current installed reloads with one-input/one-entry, schedule/listener counts and owned worker/agent-session absence. Q01 has two starts, not ten reloads.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB001-03",
+      "original_text": "BUB001-03 缺失必要会话或权限服务时，不执行相关任务；诊断标明实际检测结果，不能只看版本字符串。",
+      "source": {
+        "path": "docs/tickets/BUB001.md",
+        "line_start": 32,
+        "line_end": 32,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "2f54317e6f8e3599750a47e6a34e85d11570e43f9f4550de6d614c7db3080e64"
+      },
+      "requirement_english": "Missing required session or permission services stops dependent work; diagnostics show actual detections rather than version strings.",
+      "evidence": [
+        "NCL",
+        "M6CLI",
+        "R13",
+        "SRC"
+      ],
+      "existing_actual_coverage": "Historical public service/readiness negatives and default-deny carrier; R13 genuine ready worker under its exact available services.",
+      "pending_c1_cases": [
+        "W01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Current missing-session and missing-permission negatives with safe detected facts and zero dependent work. Disabled entry or invalid storage does not replace these feature failures.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB001-04",
+      "original_text": "BUB001-04 关闭窗口后用宿主状态确认是否仍运行；完整退出后插件停止。重新启动由 BUB003 对账恢复，\n不盲目重发外部动作。",
+      "source": {
+        "path": "docs/tickets/BUB001.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 164,
+        "criterion_sha256": "304d09a13f54b140146e1a4be14966be3d06faa37f2f31e9ef91af11babd99eb"
+      },
+      "requirement_english": "Window closure is checked against host running state; full exit stops the plugin; restart reconciles under BUB003 without blind external replay.",
+      "evidence": [
+        "M6CLI",
+        "NI1",
+        "R13"
+      ],
+      "existing_actual_coverage": "Earlier installed idle stop/restart retained one task; R13 stopped its worker before cleanup and restarted a standalone Cordis root.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current original-CLI terminal joins before forced exit, retained-store reconciliation and no replay; actual window-close host-state observation remains browser-blocked. Active/unknown-effect recovery is separate from the selected idle restart.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB001-05",
+      "original_text": "BUB001-05 同一配置在 Desktop 与 CLI 上分别记录已验证、未验证或不适用；文档不以一端成功代替另一端\n兼容。",
+      "source": {
+        "path": "docs/tickets/BUB001.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 143,
+        "criterion_sha256": "c2000860bababfa2f0e8218b3437f994981272a46930496af4fd0c896c13c794"
+      },
+      "requirement_english": "Record Desktop and CLI compatibility separately for the same configuration as verified, unverified or not applicable; one carrier's success proves no other carrier.",
+      "evidence": [
+        "COMP",
+        "OWNER",
+        "DESIGN"
+      ],
+      "existing_actual_coverage": "Documentary criterion: pinned Web is explicit, Desktop excluded by owner and interactive/non-Web CLI unverified; no runtime equivalence asserted.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current compatibility and owner-scope identities must remain exact; no additional carrier run is required merely to document unverified or not-applicable status.",
+      "proposed_disposition": "PASS_DOCUMENTARY_PROPOSED",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "DOCUMENTARY_PASS_IF_IDENTITY_RETAINED"
+    },
+    {
+      "id": "BUB002-01",
+      "original_text": "BUB002-01 主对话接收同一 provider message id 的重复投递只建立一个入口；用户刻意重发但拥有新 id 的\n消息保留，不按文本相同误删。",
+      "source": {
+        "path": "docs/tickets/BUB002.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 172,
+        "criterion_sha256": "9267ac232b005b7e02bffc923cdd87f8ff296791845581ac73f8d8998e9813a3"
+      },
+      "requirement_english": "Duplicate delivery with the same provider message ID creates one entry; a deliberate new-ID message survives despite identical text.",
+      "evidence": [
+        "S2CC",
+        "M6CLI",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Actual store replay/new-ID tests and earlier native single-source duplicate intake; no real chat provider claim.",
+      "pending_c1_cases": [
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current new-ID/same-text and full source-identity collision tests alongside Q01 duplicate intake; live-provider transport portion is owner-deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB002-02",
+      "original_text": "BUB002-02 同一任务运行时用户修改约束，任务版本递增；后续工作看到新版本，旧结果不得覆盖新要求。",
+      "source": {
+        "path": "docs/tickets/BUB002.md",
+        "line_start": 31,
+        "line_end": 31,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "d115306064bca5fc3cb6da6e01578ab141a8c92efe7e415a00f9470d249f99cc"
+      },
+      "requirement_english": "A correction during running work increments task version, reaches subsequent work and prevents old results overwriting new requirements.",
+      "evidence": [
+        "S2CC",
+        "NI1",
+        "R13"
+      ],
+      "existing_actual_coverage": "Actual store revision/process CAS and stale completion/context tests; NI1 retained current constraints; R13 one fixed-version execution.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current executing-worker correction and subsequent-input/late-result race. A fixed-version W01 pass does not exercise correction during execution.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB002-03",
+      "original_text": "BUB002-03 用户说停止时先停止新派发，再请求 DSH 取消；呈现已请求、已停止或结果不确定，不能在未确\n认时写已取消。",
+      "source": {
+        "path": "docs/tickets/BUB002.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 158,
+        "criterion_sha256": "da65fa03350c6b43564c6cf4cd8895ed54c8edd78d8b5ec5030d319dee2843ed"
+      },
+      "requirement_english": "Stop first fences new dispatch, then requests native cancellation; requested, stopped and unknown remain distinct until confirmation.",
+      "evidence": [
+        "S2CC",
+        "S2MR",
+        "R13"
+      ],
+      "existing_actual_coverage": "Actual module commit-before-cancel and retained unknown reservations; R13 factual original worker stop and registry absence before cleanup.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current user-stop versus dispatch/completion/unknown-effect ordering and visible requested/confirmed/unknown states; normal finish and idle quit cover only part.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB002-04",
+      "original_text": "BUB002-04 新问题与长任务并发时，无须等待整个工作会话结束才能接收输入和查询状态；响应性能在\nBUB012 的选定环境下测量。",
+      "source": {
+        "path": "docs/tickets/BUB002.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 166,
+        "criterion_sha256": "645399b25e92b5a21ef7479a1ad787ceda92857883ad35429b9f6ade2ef5b0a3"
+      },
+      "requirement_english": "During long work, new input and status queries do not await the entire worker session; measure response performance in the BUB012 selected environment.",
+      "evidence": [
+        "S2CC",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual module pending classifier/cancellation tests leave inbox/status available; no selected-environment latency result.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Concurrent long-worker input/status experiment with frozen environment and recorded response latency. One isolated successful W01 provides no concurrent responsiveness measurement.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB002-05",
+      "original_text": "BUB002-05 确需澄清时，把相关决策一次汇总；可从已有上下文确定的事项不重复追问，也不把沉默当批\n准。",
+      "source": {
+        "path": "docs/tickets/BUB002.md",
+        "line_start": 36,
+        "line_end": 37,
+        "criterion_utf8_bytes": 141,
+        "criterion_sha256": "eda3bc0266e46ce034c9c7b8e29d59cdaf8e28e58ab65bf6e40d1cefca403a58"
+      },
+      "requirement_english": "Bundle necessary clarification decisions, avoid asking what context already resolves and never interpret silence as approval.",
+      "evidence": [
+        "S2CC",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual SQLite clarification batches, durable answers, filtering and stale/silent-answer refusal.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported clarification input/display, attributable answers and branch continuation using the same authority ledger.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB003-01",
+      "original_text": "BUB003-01 在登记前、登记后派发前、派发后回执前、动作完成后落盘前注入故障。持久受理后的任务必须\n可恢复；受理前仅在来源支持回放时可补收，否则声明接收缺口，不确认已受理；回执缺失不盲目重做动作。",
+      "source": {
+        "path": "docs/tickets/BUB003.md",
+        "line_start": 30,
+        "line_end": 31,
+        "criterion_utf8_bytes": 282,
+        "criterion_sha256": "f5443620445f5e01b59375318399fa95fb716ddb827b80a42e7f7965d921f890"
+      },
+      "requirement_english": "Inject faults before intake, after intake before dispatch, after dispatch before receipt and after effect before persistence; recover durable admissions, declare unsupported pre-admission gaps and never blindly repeat unknown effects.",
+      "evidence": [
+        "S3MEM",
+        "M6REG",
+        "M6CLI",
+        "NI1",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical OS-process CAS/precommit/postack recovery and durable native task/context retention; R13 successful acknowledged worker execution.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "All four current integrated fault cuts, source replay-or-gap distinction and effect reconciliation. Q01 idle acknowledged restart and W01 clean finish do not cover the cut matrix.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB003-02",
+      "original_text": "BUB003-02 两个入口或 worker 并发更新同一任务时，以版本检查拒绝旧写入；历史保留变化原因与证据，完\n成态不得被旧进度倒退。",
+      "source": {
+        "path": "docs/tickets/BUB003.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 170,
+        "criterion_sha256": "aa695d8ddddd99400a733d56c0f9098c32a9be6bcdc2f70163dc5e7d154524a3"
+      },
+      "requirement_english": "Concurrent entries or workers use version checks to reject stale writes, retain reasons/evidence and never regress terminal state.",
+      "evidence": [
+        "S2CC",
+        "S2MR",
+        "S3MEM",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual process CAS winner/loser/readback and stale completion/control tests on historical stores.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current multi-entry/worker process race, historical reason evidence and terminal-versus-late-progress assertion; N01 duplicate execute is a different oracle.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB003-03",
+      "original_text": "BUB003-03 磁盘不可写、存储损坏或空间不足时，显式进入受限状态，停止需持久保证的新操作并提示风\n险。",
+      "source": {
+        "path": "docs/tickets/BUB003.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 141,
+        "criterion_sha256": "e6d035dd7891eef97be8e313e6bc0c558ccec6c0265ec0fd5a2304866af086ba"
+      },
+      "requirement_english": "Unwritable, corrupt or full storage enters a visible restricted state, stops new durable operations and warns of risk.",
+      "evidence": [
+        "S3MEM",
+        "NI1",
+        "M6CLI"
+      ],
+      "existing_actual_coverage": "Historical corruption/key/rollback/fail-closed storage tests; earlier native overflow and rejected setup preserve state.",
+      "pending_c1_cases": [
+        "Q03"
+      ],
+      "remaining_full_oracle": "Current unwritable/corrupt/full storage cases after admission and readable restriction diagnostics. Q03 shallow invalid path is only an early setup-failure subset.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB003-04",
+      "original_text": "BUB003-04 升级迁移前保存可恢复副本；新旧 schema、不完整迁移及回滚均有测试，不覆盖不能理解的数\n据。",
+      "source": {
+        "path": "docs/tickets/BUB003.md",
+        "line_start": 36,
+        "line_end": 37,
+        "criterion_utf8_bytes": 139,
+        "criterion_sha256": "fe4462845f13f1becdcb506223949873e70814f147fbbc0753b76acd8b8d8386"
+      },
+      "requirement_english": "Keep a recoverable copy before migration; test old/new schema, incomplete migration and rollback and do not overwrite unknown data.",
+      "evidence": [
+        "S3MEM",
+        "M6REG",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Actual historical schema/WAL/hot-journal and backup/key/tamper/legacy-refusal cases; no current C1 upgrade run.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical migration/backup/incomplete/rollback matrix with durable conservation. The successful four-command build is no migration evidence.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB003-05",
+      "original_text": "BUB003-05 导出包含状态、来源、时间与产物引用；删除后禁止重新调度，按确认的保留范围清理，不能把\n无法控制的第三方副本宣称删除。",
+      "source": {
+        "path": "docs/tickets/BUB003.md",
+        "line_start": 38,
+        "line_end": 39,
+        "criterion_utf8_bytes": 183,
+        "criterion_sha256": "1d97a9598c912f748032ed725c2d454c29a3c53328a9f64c6a021bdcdcff7e84"
+      },
+      "requirement_english": "Export includes state, source, time and artifact references; deletion prevents rescheduling and respects confirmed retention without claiming third-party copies erased.",
+      "evidence": [
+        "M6REG",
+        "S2MR",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Historical authoritative store/export/delete module coverage and memory tombstone tests; no complete current installed export/deletion journey.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current installed export contents, consented retention cleanup, post-delete no-reschedule and honest third-party-copy limitation.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB004-01",
+      "original_text": "BUB004-01 分别显示创建请求已受理、会话已创建、ready、执行中、结束或状态未知；每一步都有真实服务\n响应或状态证据。",
+      "source": {
+        "path": "docs/tickets/BUB004.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 161,
+        "criterion_sha256": "b7f3c8d8e817be8dd50ba9414107ea8410ae7fb85880ec8e583ecde8829b795e"
+      },
+      "requirement_english": "Distinguish create-request acceptance, created, ready, running, ended and unknown, each supported by genuine service response or state.",
+      "evidence": [
+        "NCL",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical native lifecycle partitions; R13 genuine ready/execute/capture/factual-stopped positive path.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current positive transitions plus create-accepted/created/not-ready/unknown service partitions and their visible states. W01 alone cannot establish every partition.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB004-02",
+      "original_text": "BUB004-02 创建超时但随后发现会话存在时，关联已有会话，不重复创建第二个执行者；无法判定时保持核\n查态。",
+      "source": {
+        "path": "docs/tickets/BUB004.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 147,
+        "criterion_sha256": "0b0286d1f9e36d85a1d81c6faebf6bfc964b3752e564ca2c8adb4edcfd0994af"
+      },
+      "requirement_english": "If creation times out but a session later exists, associate it without creating another executor; unresolved identity stays under verification.",
+      "evidence": [
+        "NCL",
+        "M6REG",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical late-create/no-second-executor module coverage; R13 one successful creation and one execute.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current genuine delayed-create discovery, immutable association and zero second executor; N01 prevents duplicate execute after acknowledgement but is not a create-timeout test.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB004-03",
+      "original_text": "BUB004-03 恢复既有会话后执行一项可观察工作并得到产物；不存在或不属于当前授权范围的 session 不恢\n复。",
+      "source": {
+        "path": "docs/tickets/BUB004.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 141,
+        "criterion_sha256": "203fd7b0a1ad1ba6136ce57f03778b56cab31675ce1d9ce6bedda353056c9d71"
+      },
+      "requirement_english": "Resume an existing authorized session, execute observable work and obtain an artifact; missing or unauthorized sessions are not resumed.",
+      "evidence": [
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Historical genuine public AgentLoop JSONL resume used a new approved claim/generation and current context to produce one new committed result; separate mock-persistence case was labelled mock.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Fresh genuine supported existing-session resume with observable result and missing/foreign-session negatives. W01 creates a new session.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB004-04",
+      "original_text": "BUB004-04 取消请求与完成并发时，保留实际已完成效果与晚到结果；不宣称已经撤销外部发送、文件修改\n等既成效果。",
+      "source": {
+        "path": "docs/tickets/BUB004.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 156,
+        "criterion_sha256": "f56f913876315749525d1412c488f3ad1c25e04aee0c074a3c8470b195ab786d"
+      },
+      "requirement_english": "Cancellation racing completion preserves actual effects and late results and never claims completed sends or file changes were undone.",
+      "evidence": [
+        "NCL",
+        "S2MR",
+        "M6REG",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical cancel/late-result and unknown-delivery tests; R13 normal factual stop, not a cancellation race.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current genuine cancel-versus-complete race with factual effect/late-result evidence and correct uncertainty. Tools0 normal finish proves no file/send race.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB004-05",
+      "original_text": "BUB004-05 事件流断开后通过当前查询与账本对账；重新订阅不会把历史事件当新任务，也不会丢失终态。",
+      "source": {
+        "path": "docs/tickets/BUB004.md",
+        "line_start": 37,
+        "line_end": 37,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "17b7c393a92cd1bd41c3537dc2e8e8ba9d5f5388efc3f1e273c667a2c6bb2e17"
+      },
+      "requirement_english": "After event-feed loss, query current host state and reconcile ledger; resubscription neither creates tasks from history nor loses terminal state.",
+      "evidence": [
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Historical public-library feed/current-query/history-replay tests.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported native feed-disconnect/resubscribe/query lifecycle, retained terminal fact and no new task from historical events.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB005-01",
+      "original_text": "BUB005-01 父子会话的状态回报可到达已授权父会话；无关会话未经明确 grant 发送消息时被拒绝，并留下\n不含秘密的拒绝理由。",
+      "source": {
+        "path": "docs/tickets/BUB005.md",
+        "line_start": 30,
+        "line_end": 31,
+        "criterion_utf8_bytes": 166,
+        "criterion_sha256": "96bca8c243e6b4f6a1749d3ebcc2c01f932bbeafb44a3bda5c776bcc083cbb76"
+      },
+      "requirement_english": "Authorized parent sessions receive child status; unrelated ungranted messages are denied with secret-free reasons.",
+      "evidence": [
+        "S2MR",
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual scoped SQLite broker and public-library native messaging negatives; no current genuine parent-recipient observation.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current authorized parent/child receipt plus ungranted unrelated-session refusal and redacted reason; one worker result is not parent-message consumption.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB005-02",
+      "original_text": "BUB005-02 grant 绑定任务或有界会话集合与消息类别；校验与派发记录绑定同一授权版本，定义撤销和派发\n的先后判定点。撤销先发生则拒绝；已提交动作标为在途，不宣称撤回既成效果。",
+      "source": {
+        "path": "docs/tickets/BUB005.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 246,
+        "criterion_sha256": "e688ea1e803e457cc7d632f465dca4d48f3f22fb15f82f1cda8585f25f125578"
+      },
+      "requirement_english": "Grants bind task or bounded sessions and category; dispatch and revoke share an authorization-version decision point, with committed work retained as in flight.",
+      "evidence": [
+        "S2MR",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual compound claim/outbox, scoped grant and revoke-before/after-claim partitions on historical dependencies.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current bound grant/dispatch/revoke concurrency across native transport, including committed in-flight reconciliation rather than false withdrawal.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB005-03",
+      "original_text": "BUB005-03 按完整作用域和持久消息记录防止已知重复派发；消费状态未知时先核查，不盲目重发，不宣称\n接收方 exactly once。乱序消息不能覆盖更高任务版本；无唯一 id 时明示降级。",
+      "source": {
+        "path": "docs/tickets/BUB005.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 239,
+        "criterion_sha256": "1096ec9af0286f77790090c4c0fa0ab3d79be3f8e81593d457cdb523d72bf04f"
+      },
+      "requirement_english": "Durable fully scoped identity prevents known duplicate dispatch; unknown consumption is checked first, order cannot replace newer task versions and missing IDs expose degraded guarantees.",
+      "evidence": [
+        "S2MR",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual immutable-ID conflict, unknown timeout/reopen/no resend and held reservations; higher-version/control guards.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current crash/order/missing-ID transport partitions and recipient query, without an arbitrary-receiver exactly-once claim.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB005-04",
+      "original_text": "BUB005-04 消息经过多个会话转发时保留原始来源和用途，并设置跳数或循环检测；出现循环时停止放大。",
+      "source": {
+        "path": "docs/tickets/BUB005.md",
+        "line_start": 36,
+        "line_end": 36,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "18672c3ce9fc69781c8c2838dc566dd35a663c582770e83a90e18749bdd8537f"
+      },
+      "requirement_english": "Forwarding preserves original source and purpose and enforces hop bounds or cycle detection to stop amplification.",
+      "evidence": [
+        "S2MR",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual SQLite two-hop provenance, bounded relay and loop-refusal tests.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current native multi-session forwarding with source/purpose preservation and cycle/hop-limit refusal.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB005-05",
+      "original_text": "BUB005-05 accepted、已写入发件箱、sent、目标确认消费分别可见；超时只是状态未知或未确认，不自动\n写成已送达。",
+      "source": {
+        "path": "docs/tickets/BUB005.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 150,
+        "criterion_sha256": "f7d345e504778d9b5c6222d11f61cd29336d974b1fef25718dbb2401f4cf323c"
+      },
+      "requirement_english": "Accepted, durable outbox, sent and target-confirmed consumption are separate observable facts; timeout remains unknown or unconfirmed.",
+      "evidence": [
+        "S2MR",
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Actual store/facade accepted/sent/unknown/reconcile distinctions using explicit synthetic recipients.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current native recipient consumption and truthful displayed transport states; synthetic contract evidence remains valid only for its bounded contract.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB006-01",
+      "original_text": "BUB006-01 未绑定身份、冒名渠道账户、跨 workspace 请求和伪造 webhook 均不执行；为每类拒绝建立正\n反测试。",
+      "source": {
+        "path": "docs/tickets/BUB006.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 140,
+        "criterion_sha256": "83446cbf0b514f8fda45222ceafa90d11773ec14189884eb5dd4c5f04577ad53"
+      },
+      "requirement_english": "Unbound identity, spoofed accounts, foreign workspace and forged webhooks never execute; every rejection class has positive and negative tests.",
+      "evidence": [
+        "S3EV",
+        "S2MR",
+        "M6CLI",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Historical scoped/forged-handle and callback negatives plus original native 303/401/403/200 authentication.",
+      "pending_c1_cases": [
+        "Q01",
+        "Q02",
+        "Q03",
+        "W01"
+      ],
+      "remaining_full_oracle": "Current positive/negative identity classes including trusted callback signatures and cross-workspace admission; CLI auth negatives alone are not forged-webhook coverage.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB006-02",
+      "original_text": "BUB006-02 批准后目标、数据或风险实质变化，以及撤销、到期、任务版本不匹配时重新请求授权；旧按钮\n和旧回复不能批准新动作。以当前授权版本判断派发与撤销先后，已在途动作独立对账。",
+      "source": {
+        "path": "docs/tickets/BUB006.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 255,
+        "criterion_sha256": "a9aa12b81dfeca1083dade222e9e5bb8a4aab0ca4accacf820015bee6947a88a"
+      },
+      "requirement_english": "Material target/data/risk changes, revocation, expiry or task-version mismatch require fresh authorization; stale controls cannot approve new work and committed effects reconcile independently.",
+      "evidence": [
+        "S2MR",
+        "S3AUD",
+        "S3EV",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical immutable approval/claim/currentness races and stale controls; R13 exact current consent/grant/CAS positive.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current material-change/expiry/stale-control/revoke-before-and-after-dispatch partitions and separate in-flight effect reconciliation.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB006-03",
+      "original_text": "BUB006-03 主对话、入口证据、日志、诊断包、记忆、导出和错误消息均不包含密钥或令牌；输入主动夹带\n假秘密并扫描全部输出及持久文件。原始 payload 不进入普通日志或记忆。",
+      "source": {
+        "path": "docs/tickets/BUB006.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 234,
+        "criterion_sha256": "01d4fd0beaa4b3c207063ab15746b8de4f7415be012ec30e8d5e6457e9dafe73"
+      },
+      "requirement_english": "Synthetic secret injection is absent from every output and durable surface, including chat, evidence, logs, diagnostics, memory, export and errors; ordinary logs/memory retain no raw payload.",
+      "evidence": [
+        "S3MEM",
+        "S2MR",
+        "S3NT",
+        "NI1",
+        "M6CLI",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Historical own-canary encrypted-storage/output tests and NI1 bounded public privacy scan; original private credentials were not inspected.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Fresh current all-surface synthetic-canary oracle, including exported/build artifacts and public errors. Old scans and zero tool attempts are not a current universal privacy proof.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB006-04",
+      "original_text": "BUB006-04 对外发送仅包含任务所需且已批准的数据；测试接收端实际收到的字段，不能只在 UI 上声明隔\n离。",
+      "source": {
+        "path": "docs/tickets/BUB006.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 142,
+        "criterion_sha256": "531693c41dd62efe1a8bc4a68975867491204eed0c2a963ae49cc2de73522fe8"
+      },
+      "requirement_english": "Outward data contains only necessary approved fields; inspect actual recipient fields rather than trusting an isolation label.",
+      "evidence": [
+        "S2MR",
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Historical synthetic recipient callbacks verify exact approved bytes/route/digest; no current real local recipient path.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current authorized local/native recipient observation of exact allowed and excluded fields; live chat platform delivery is owner-deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB006-05",
+      "original_text": "BUB006-05 无法确定权限或宿主拒绝时安全停止依赖动作，独立只读工作可继续；运行时 reviewer 没有修改\n授权或自我授予权限的能力。",
+      "source": {
+        "path": "docs/tickets/BUB006.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 175,
+        "criterion_sha256": "d0181954d8f8a6bf60eb84f5a7d843564089cfad3a5dc71bb0e7c29d2be82e00"
+      },
+      "requirement_english": "Unknown permissions or host denial stop dependent work while independently allowed read-only work can continue; reviewers cannot grant themselves authority.",
+      "evidence": [
+        "NCL",
+        "S3AUD",
+        "M6CLI",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical normal host-permission denial and reviewer-bound authority tests; R13 genuine empty-tool worker under exact approval.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current host-denial/dependent-stop/read-only-continuation and reviewer self-grant negatives. Tools0 does not prove useful-tool denial or continuation.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB007-01",
+      "original_text": "BUB007-01 007A 在真实插件运行环境完成编译、加载、写入、重读和迁移测试；说明支持的目标与缺口，不\n能以 Kotlin 支持 JS 代替项目实际可移植证据。",
+      "source": {
+        "path": "docs/tickets/BUB007A.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 197,
+        "criterion_sha256": "83d0356ae0b3d0bfa91a35bf72b3e98eba59e07a4967bd942e5b4367de747a3c"
+      },
+      "duplicate_card_provenance": [
+        {
+          "path": "docs/tickets/BUB007B.md",
+          "line_start": 31,
+          "line_end": 32,
+          "criterion_utf8_bytes": 197,
+          "criterion_sha256": "83d0356ae0b3d0bfa91a35bf72b3e98eba59e07a4967bd942e5b4367de747a3c"
+        }
+      ],
+      "requirement_english": "In the genuine plugin environment, compile/load/write/reread/migrate the selected port and declare target gaps; Kotlin's JS capability is no project evidence.",
+      "evidence": [
+        "S3PORT",
+        "S3MEM",
+        "NI1",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Historical actual ESM port/Cordis fixture and installed memory/context write, reread and restart; no Kotlin/JS compilation claimed.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current canonical native memory write/reread and supported migration with exact target declaration; actual syntax/build and selected memory-writes0 cases do not repeat NI1's memory oracle.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB007-02",
+      "original_text": "BUB007-02 007A 确认代码及依赖的再分发权。未找到受跟踪许可证时，公开发布保持阻塞；不能以 owner\n可读源代码推断可开源再分发。",
+      "source": {
+        "path": "docs/tickets/BUB007A.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 173,
+        "criterion_sha256": "4e698fc4654359d3af266584f4b53c6b8fb33b2f7115caa6f4b7dfab33fe0052"
+      },
+      "duplicate_card_provenance": [
+        {
+          "path": "docs/tickets/BUB007B.md",
+          "line_start": 33,
+          "line_end": 34,
+          "criterion_utf8_bytes": 173,
+          "criterion_sha256": "4e698fc4654359d3af266584f4b53c6b8fb33b2f7115caa6f4b7dfab33fe0052"
+        }
+      ],
+      "requirement_english": "Verify redistribution rights for reused code and dependencies; unresolved tracked-license rights block publication and readable source is not a grant.",
+      "evidence": [
+        "OWNER",
+        "S3PORT",
+        "S3MEM",
+        "M6REG",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Owner MIT decision and bounded reused-path contributor/provenance review; historical package license/notice inventory.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Exact current package/source/dependency notice inventory and any newly incorporated rights boundary; no identified rights conflict or ordinary-development prohibition is inferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB007-03",
+      "original_text": "BUB007-03 007B 使用 bubbles 独立的 owner 与 workspace 命名空间；相同检索词不能返回别的空间数据，\n默认没有现有 fishball 数据导入。",
+      "source": {
+        "path": "docs/tickets/BUB007A.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 168,
+        "criterion_sha256": "2c79483198a7e0ba1d262e0d074a0a7dbce902dae0056dd1e26bf39dabf5b90c"
+      },
+      "duplicate_card_provenance": [
+        {
+          "path": "docs/tickets/BUB007B.md",
+          "line_start": 35,
+          "line_end": 36,
+          "criterion_utf8_bytes": 168,
+          "criterion_sha256": "2c79483198a7e0ba1d262e0d074a0a7dbce902dae0056dd1e26bf39dabf5b90c"
+        }
+      ],
+      "requirement_english": "Use independent owner/workspace memory namespaces, exclude foreign same-query results and import no existing personal Fishball data by default.",
+      "evidence": [
+        "S3MEM",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Actual private namespace/generation/query negatives and fresh synthetic installed namespaces; no personal-data import.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current canonical foreign owner/workspace/task input isolation and default no-import proof through normal memory facade; selected one-scope worker alone is insufficient.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB007-04",
+      "original_text": "BUB007-04 007B 对所有读写和恢复失败可观察；原代码抑制持久化错误的行为须被适配或修正，不能向用户\n写已保存却只留在内存。",
+      "source": {
+        "path": "docs/tickets/BUB007A.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 170,
+        "criterion_sha256": "684640b13c4a4c65408c29c25200e9c93538790f3dfc8d7688cd983ba6d67f60"
+      },
+      "duplicate_card_provenance": [
+        {
+          "path": "docs/tickets/BUB007B.md",
+          "line_start": 37,
+          "line_end": 38,
+          "criterion_utf8_bytes": 170,
+          "criterion_sha256": "684640b13c4a4c65408c29c25200e9c93538790f3dfc8d7688cd983ba6d67f60"
+        }
+      ],
+      "requirement_english": "Every read/write/recovery failure is observable; suppressed persistence errors must be adapted and no memory-only value is reported saved.",
+      "evidence": [
+        "S3PORT",
+        "S3MEM",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Historical fail-closed persistence callbacks, rollback/process recovery and actual durable memory readback.",
+      "pending_c1_cases": [
+        "Q03"
+      ],
+      "remaining_full_oracle": "Current normal memory read/write/recovery error state and no phantom-save assertions; Q03 is setup failure before memory operations.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB007-05",
+      "original_text": "BUB007-05 007B 记忆保留来源、时间、置信度及修订关系；用户纠正或删除后，缓存与检索不继续使用旧\n值；秘密不进入事实抽取。",
+      "source": {
+        "path": "docs/tickets/BUB007A.md",
+        "line_start": 39,
+        "line_end": 40,
+        "criterion_utf8_bytes": 170,
+        "criterion_sha256": "fd35c96a912c4830bdbb3814ce4e95c4e0eeba5b88c0489b44a49d3bd0fbee4b"
+      },
+      "duplicate_card_provenance": [
+        {
+          "path": "docs/tickets/BUB007B.md",
+          "line_start": 39,
+          "line_end": 40,
+          "criterion_utf8_bytes": 170,
+          "criterion_sha256": "fd35c96a912c4830bdbb3814ce4e95c4e0eeba5b88c0489b44a49d3bd0fbee4b"
+        }
+      ],
+      "requirement_english": "Memory preserves source/time/confidence/revision; correction or deletion removes stale query/cache values and secrets never reach extraction.",
+      "evidence": [
+        "S3MEM",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Actual sourced fractional-confidence write/replay, revision/tombstone correction/deletion and canary-before-extractor tests.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current normal correction/delete/query/cache and secret-extractor negative journey with durable reopened state.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB007-06",
+      "original_text": "BUB007-06 007B 任务终态与批准仅从账本读取。冲突记忆只能触发核查，不能覆盖用户最新指示，也不能批\n准动作。",
+      "source": {
+        "path": "docs/tickets/BUB007A.md",
+        "line_start": 41,
+        "line_end": 42,
+        "criterion_utf8_bytes": 149,
+        "criterion_sha256": "5632f500f894fcd7e7459423cb228f227c0670aece668abad37de2ff25c4b63d"
+      },
+      "duplicate_card_provenance": [
+        {
+          "path": "docs/tickets/BUB007B.md",
+          "line_start": 41,
+          "line_end": 42,
+          "criterion_utf8_bytes": 149,
+          "criterion_sha256": "5632f500f894fcd7e7459423cb228f227c0670aece668abad37de2ff25c4b63d"
+        }
+      ],
+      "requirement_english": "Only ledger determines task terminal and approval state; conflicting memory requests verification and never overrides current instructions or grants an action.",
+      "evidence": [
+        "S3MEM",
+        "S2CC",
+        "NI1",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical protected-context and memory-not-authority tests; NI1 current constraints and R13 exact ledger approval binding.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current native adversarial memory/current-instruction conflict and verification presentation; one ordinary approved input is only a positive.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB008-01",
+      "original_text": "BUB008-01 同一任务在不同会话或重启后恢复时，得到一致的最新目标、限制、待决项和已完成步骤，不因\n旧摘要重复工作。",
+      "source": {
+        "path": "docs/tickets/BUB008.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 162,
+        "criterion_sha256": "ca68111708a83e96701b9de0fca005f4e409d19f9ecfbc7a90c2bacf05e61d3d"
+      },
+      "requirement_english": "Across sessions or restart, restore latest goal, constraints, pending decisions and completed steps consistently, without repeating work from old summaries.",
+      "evidence": [
+        "S2CC",
+        "S3MEM",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Actual store reopen/current-context and cold decrypted context read; no current existing-session continuation.",
+      "pending_c1_cases": [
+        "Q01",
+        "W01"
+      ],
+      "remaining_full_oracle": "Current nonempty task/context alternate-session and restart continuation with completed-step nonreplay. Q01 paused task plus memory0 worker do not cover it.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB008-02",
+      "original_text": "BUB008-02 摘要带来源范围、生成时间和任务版本；新指示与旧摘要冲突时以新指示为准，并保留冲突核查\n记录。",
+      "source": {
+        "path": "docs/tickets/BUB008.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 147,
+        "criterion_sha256": "023480237c090845c2ce3a0a4226bf6ddc1b0d3250b42c22b5213485fbdc3919"
+      },
+      "requirement_english": "Summaries carry scope, time and task version; newer conflicting instructions win and conflict-verification evidence persists.",
+      "evidence": [
+        "S2CC",
+        "S3MEM",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Historical provenance and asynchronous context/task/memory CAS, stale summary omission and retained current constraints.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current native conflicting-summary/update race and visible provenance/conflict record; normal fixed-version input covers only part.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB008-03",
+      "original_text": "BUB008-03 在已选模型上下文上限以下、恰好达到上限、超出上限测试；可解释地压缩或拒绝，不能截断关\n键约束后照常执行。",
+      "source": {
+        "path": "docs/tickets/BUB008.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 165,
+        "criterion_sha256": "9a8ecb0595a27758a6d4ebd38938511ea5b3d291e36ecd3a9a78ca188287d22e"
+      },
+      "requirement_english": "Test below, exactly at and above the chosen model's actual context cap; compression/refusal is explained and never truncates critical constraints before execution.",
+      "evidence": [
+        "S2CC",
+        "S3MEM",
+        "NI1"
+      ],
+      "existing_actual_coverage": "Historical injected-tokenizer/UTF8/envelope boundaries and NI1 explicit fixed-density heuristic/overflow; heuristic is not model capacity.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Selected model's genuine capacity/accounting N-1/N/N+1 input oracle with protected constraints and meaningful compression/refusal. One small mock request cannot close this.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB008-04",
+      "original_text": "BUB008-04 不相关 owner、workspace 和任务材料不进入 briefing；测试实际模型输入，避免仅检索端隔离\n但组装端泄漏。",
+      "source": {
+        "path": "docs/tickets/BUB008.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 148,
+        "criterion_sha256": "cee25048c86a9168208b55692448541aa6cb033d19527520ddf365b1d7e17282"
+      },
+      "requirement_english": "Exclude unrelated owner/workspace/task material from briefing and test actual model input, not retrieval isolation alone.",
+      "evidence": [
+        "S2CC",
+        "S3MEM",
+        "NI1",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical decrypted/assembled canaries and native deterministic input tests; R13 exact full prepared request binding.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current actual native input with foreign owner/workspace/task canaries and assembly-scope negatives; exact one-scope W01 input is a positive subset.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB008-05",
+      "original_text": "BUB008-05 完成状态与审批必须重新读账本；长时间陈旧的工具状态标为快照，并能触发当前查询，不能写\n成实时状态。",
+      "source": {
+        "path": "docs/tickets/BUB008.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 156,
+        "criterion_sha256": "a323266c5d53503a49c469bcfe5c63ac70eccbc832d7eadc169d9aa8a60c73f1"
+      },
+      "requirement_english": "Reread ledger for completion and approval; stale tool state is labelled a snapshot and can trigger a current query, never a real-time claim.",
+      "evidence": [
+        "S2CC",
+        "S3MEM",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical authority/currentness and stale-query labels; R13 actual guarded ledger/request/result/stop rereads.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current stale tool/environment snapshot and queried-state permission races with displayed age/source; tools0 leaves tool freshness unobserved.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB009-01",
+      "original_text": "BUB009-01 按 owner、workspace、provider 与 event id 持久去重，防止重复派发；triage 冻结去重保留窗\n口。崩溃恢复可能重新进入 handler，须可对账；无 id、签名失败、过期与错误订阅分别测试，不保证任意外\n部副作用只发生一次。",
+      "source": {
+        "path": "docs/tickets/BUB009.md",
+        "line_start": 29,
+        "line_end": 31,
+        "criterion_utf8_bytes": 293,
+        "criterion_sha256": "508657dc3d17f48cb1b3629e8929b39e84a1181719a28214d4357d8f2ea44d1e"
+      },
+      "requirement_english": "Persistently deduplicate full owner/workspace/provider/event identity within a frozen retention window; reconcile handler reentry and test missing ID, bad signature, expiry and wrong subscription without arbitrary-effect exactly-once claims.",
+      "evidence": [
+        "S3EV",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual SQLite full-identity receipt/reopen/conflicting-edit/subscription/currentness cases with synthetic callbacks.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical contract regression and normal installed ingress, frozen retention and genuine reentry/effect-reconciliation variants.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB009-02",
+      "original_text": "BUB009-02 登记前后与处理途中崩溃时，恢复可分辨未处理、处理中、已处理和结果未知；副作用未知时先\n查询，不盲目重试。",
+      "source": {
+        "path": "docs/tickets/BUB009.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 165,
+        "criterion_sha256": "1bcd299fb37ca914108fd05ecca28cf4c21819aeee08f9466e4aae548ea848c9"
+      },
+      "requirement_english": "Crashes before/after registration and during handling recover unprocessed, running, done and unknown states; uncertain effects are queried rather than blindly retried.",
+      "evidence": [
+        "S3EV",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Historical durable event receipt and handler/recovery/unknown module tests.",
+      "pending_c1_cases": [
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current installed active-handler crash cuts and queried uncertainty. Q01 has no event handler or external action attempt.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB009-03",
+      "original_text": "BUB009-03 DSH 停止期间不承诺接收；重启报告错过的本地计划和已知事件缺口，按配置合并、跳过或等用\n户核查。",
+      "source": {
+        "path": "docs/tickets/BUB009.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 148,
+        "criterion_sha256": "347e031f772162d48aa330512ed7f5bab98f2b6036ea53b92b27b2e45be733f2"
+      },
+      "requirement_english": "Make no reception promise while DSH is stopped; restart reports missed plans and known gaps and follows configured merge, skip or user-verification policy.",
+      "evidence": [
+        "S3EV",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual durable coalesce/skip/max-age/missed-plan, restart and synthetic timer-quit tests.",
+      "pending_c1_cases": [
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current normal installed configured schedules across full quit/restart and visible source gaps; Q01 paused-task restart does not schedule or coalesce a plan.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB009-04",
+      "original_text": "BUB009-04 时区变更、夏令时重复或缺失时刻、午夜跨日均有确定行为；计划显示 owner 使用的时区和下一\n次运行时间。",
+      "source": {
+        "path": "docs/tickets/BUB009.md",
+        "line_start": 36,
+        "line_end": 37,
+        "criterion_utf8_bytes": 154,
+        "criterion_sha256": "539cb9afb73a111241fa50c976d395a39e2e9696143cfb2f9285d21fad69e6fc"
+      },
+      "requirement_english": "Timezone changes, DST folds/gaps and midnight have deterministic behavior; show owner timezone and next run.",
+      "evidence": [
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Actual synthetic-clock IANA fold/restart, start/cadence/midnight/quiet-boundary module cases.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current normal configured timezone changes, all retained boundary partitions and timezone/next-run presentation. No live-provider account is required.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB009-05",
+      "original_text": "BUB009-05 安静时段可继续允许的后台工作，普通通知延后且合并；紧急例外、频率上限和暂停须可配置并\n有验证。",
+      "source": {
+        "path": "docs/tickets/BUB009.md",
+        "line_start": 38,
+        "line_end": 39,
+        "criterion_utf8_bytes": 150,
+        "criterion_sha256": "9e36ab4a2a22fb35f37c01d2688d6fd515dfe8d0c179c6028ccbbb68297524f9"
+      },
+      "requirement_english": "Allowed background work continues in quiet periods while ordinary notices defer/merge; emergency, frequency and pause rules are configurable and verified.",
+      "evidence": [
+        "S3NT",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Actual atomic quiet/merge/emergency/frequency/disabled tests, including independent-process last-frequency claim.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current normal policy setup, enabled background/notice drain, pause and native recipient integration; selected C1 cases emit no such notices.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB010-01",
+      "original_text": "BUB010-01 010A 在真实 provider 完成身份绑定、接收、回复、查询任务、停止和解绑；记录需要的服务权\n限，不以本地 mock 替代上线连通验证。",
+      "source": {
+        "path": "docs/tickets/BUB010.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 183,
+        "criterion_sha256": "10acd7ccca832ce03f0b08485231f71623a063b106aec1e32e9927a98d1e3390"
+      },
+      "requirement_english": "On a real selected chat provider, pair identity, receive/reply/query/stop/unpair and document permissions; local mocks cannot prove connectivity.",
+      "evidence": [
+        "OWNER"
+      ],
+      "existing_actual_coverage": "No real-provider acceptance claimed; explicit owner deferral controls this entire criterion.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "None in the current phase. Preserve original text for the later owner-selected provider phase.",
+      "proposed_disposition": "OUT_OF_PHASE_OWNER",
+      "applicability": "OUT_OF_PHASE_OWNER",
+      "after_selected_success_rule": "REMAIN_OWNER_DEFERRED"
+    },
+    {
+      "id": "BUB010-02",
+      "original_text": "BUB010-02 重复、乱序、编辑、删除和 thread 回复有清晰语义；编辑不能无提示地改变已经执行的动作授\n权。",
+      "source": {
+        "path": "docs/tickets/BUB010.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 140,
+        "criterion_sha256": "7616eec80580d4a9d45501c1cd1c39515c1482dbfcfac580059128ed33ed5dd9"
+      },
+      "requirement_english": "Give duplicate/order/edit/delete/thread replies explicit semantics; editing never silently changes an already executed authorization.",
+      "evidence": [
+        "OWNER",
+        "S3EV"
+      ],
+      "existing_actual_coverage": "Actual synthetic immutable event/source/edit/delete/thread contract cases; no provider-specific connectivity.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical synthetic authoritative-ledger regression for DF010-C02 and source-order/thread cases. Provider-specific portion remains deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT_CONTRACT_PROVIDER_SLICE_OUT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB010-03",
+      "original_text": "BUB010-03 回复路由到正确的对话及线程，另一聊天窗口不能拿到不相关任务内容；群聊默认不作为私人\nowner 控制入口。",
+      "source": {
+        "path": "docs/tickets/BUB010.md",
+        "line_start": 36,
+        "line_end": 37,
+        "criterion_utf8_bytes": 156,
+        "criterion_sha256": "599ac92bb1dd8487c688d7b7be601884e762ca49c253d13fbae2772712ae0cfc"
+      },
+      "requirement_english": "Route replies to the admitted conversation/thread, prevent unrelated-window task access and default group chat out of private-owner control.",
+      "evidence": [
+        "OWNER",
+        "S3EV"
+      ],
+      "existing_actual_coverage": "Actual synthetic pairing/window/revision/group/forward/cross-task and original-route negatives.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current synthetic DF010-C01/C03 native-ledger binding, revocation and routing regression; live platform portion is deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT_CONTRACT_PROVIDER_SLICE_OUT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB010-04",
+      "original_text": "BUB010-04 附件在来源受控的情况下可读取并生成可打开的结果；不能用只在本机可见的路径宣称已交付。",
+      "source": {
+        "path": "docs/tickets/BUB010.md",
+        "line_start": 38,
+        "line_end": 38,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "9306b8dc42ae5c9c382455f5d7cc97a72fa14ff3e9749225e9dbe17076ca5c7f"
+      },
+      "requirement_english": "Read source-controlled attachments and produce openable results; a machine-local path alone never establishes delivery.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "S2MR"
+      ],
+      "existing_actual_coverage": "Actual bounded trusted attachment bytes/digest/access/reopen/quota/expiry cases and synthetic recipient-opening distinction.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current synthetic DF010-C04 contract plus still-applicable local/native result-openability oracle; actual chat-platform attachment/delivery portion is deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT_CONTRACT_PROVIDER_SLICE_OUT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB010-05",
+      "original_text": "BUB010-05 限流、provider 断线和不确定发送状态可见；没有 delivery receipt 时显示 sent 或未确认，不写\nguaranteed delivered。",
+      "source": {
+        "path": "docs/tickets/BUB010.md",
+        "line_start": 39,
+        "line_end": 40,
+        "criterion_utf8_bytes": 152,
+        "criterion_sha256": "47951d280b4209fe287731abc611571d5bf724c5720dd1241c86d382648743ee"
+      },
+      "requirement_english": "Expose rate limits, disconnect and uncertain send; without a delivery receipt report sent/unconfirmed rather than guaranteed delivered.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Actual synthetic rate/disconnect/unknown-send/reopen/reconcile-before-retry distinctions.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current synthetic DF010-C05 contract and visible rate/disconnect/unknown states; real provider behavior is deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT_CONTRACT_PROVIDER_SLICE_OUT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB011-01",
+      "original_text": "BUB011-01 用户指定 workspace 或环境时，实际执行记录与之相符；环境不在线、不支持或无权限时不转去\n别处擅自完成。",
+      "source": {
+        "path": "docs/tickets/BUB011.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 155,
+        "criterion_sha256": "234bed29d346104335babe5b485b5905a3467546c835fd1671752c25c9514a99"
+      },
+      "requirement_english": "Execution records match the owner's chosen workspace/environment; offline, unsupported or unauthorized targets never silently fall back elsewhere.",
+      "evidence": [
+        "NCL",
+        "R13",
+        "SRC"
+      ],
+      "existing_actual_coverage": "Historical environment-selection/refusal tests; R13 exact owned namespace/preset/prepared-input bindings.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current supported real selected environment records and offline/unsupported/denied target negatives. One isolated local worker is a positive subset.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB011-02",
+      "original_text": "BUB011-02 工具经过 DSH 正常权限路径，宿主拒绝后停止该动作；不能改用另一工具规避拒绝。",
+      "source": {
+        "path": "docs/tickets/BUB011.md",
+        "line_start": 31,
+        "line_end": 31,
+        "criterion_utf8_bytes": 121,
+        "criterion_sha256": "8437d9fd6511f8dcb3fbd842998e11891628ef29c132c87df27aa8d0767cb56a"
+      },
+      "requirement_english": "Use DSH's normal tool permission path; host denial stops the action and no substitute tool bypasses it.",
+      "evidence": [
+        "NCL",
+        "M6REG",
+        "M6CLI"
+      ],
+      "existing_actual_coverage": "Historical original permission-hook refusal and native default-deny observations.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current useful-tool positive and host-denial/no-alternate-tool negative through original supported permissions. W01 tools0 cannot supply them.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB011-03",
+      "original_text": "BUB011-03 接管请求包含目标、原因、需要用户做的步骤和恢复条件；在任务面板有待用户状态，敏感凭据\n不出现在聊天或日志。",
+      "source": {
+        "path": "docs/tickets/BUB011.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 168,
+        "criterion_sha256": "caf5acd70f45ac25f4910ee1fec98110c9481fa7d88c2d52f4820928ee867dad"
+      },
+      "requirement_english": "Handoff states target, reason, required user steps and resume conditions, shows waiting-for-user in the panel and exposes no credentials in chat/logs.",
+      "evidence": [
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Historical environment/handoff schema and waiting-control module coverage; no current rendered handoff.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported handoff request/state/panel and synthetic secret-canary output oracle. Rendered panel portion requires a supported browser.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB011-04",
+      "original_text": "BUB011-04 用户完成登录或接管后，以当前工具或页面状态验证，不直接假设成功；失效请求不会批准另一\n个任务的动作。",
+      "source": {
+        "path": "docs/tickets/BUB011.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 159,
+        "criterion_sha256": "3e0d2ca1ec20fa6b609ee6b6f7625ce500795c8b7c075ffb6c74e17ffca049ed"
+      },
+      "requirement_english": "After login/handoff, verify current tool/page state instead of assuming success; stale requests cannot authorize another task.",
+      "evidence": [
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Historical currentness/handoff/refusal module partitions; no current actual page/tool verification.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported post-handoff tool/page verification and stale/cross-task negative; page observation remains browser-blocked.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB011-05",
+      "original_text": "BUB011-05 工具或环境暂时失联后可重新核查和恢复，保留已完成效果；无法验证的步骤标记未知而非自动\n重跑。",
+      "source": {
+        "path": "docs/tickets/BUB011.md",
+        "line_start": 36,
+        "line_end": 37,
+        "criterion_utf8_bytes": 147,
+        "criterion_sha256": "c79fd5daa9765102956fc9f5a269b9f40cc76467152d2101f2a3b8ba47428351"
+      },
+      "requirement_english": "After transient tool/environment loss, recheck and resume while preserving effects; unverifiable steps stay unknown rather than auto-rerunning.",
+      "evidence": [
+        "NCL",
+        "S2MR",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Historical environment-loss/current-query and unknown-effect/no-retry tests.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current genuine supported environment disconnect/recheck/resume with observable retained effects and unknown-step behavior.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB012-01",
+      "original_text": "BUB012-01 队列在并发上限减一、等于上限、超过上限测试；不会创建超限执行者。超时但未确认结束的\nworker 继续占槽，不能释放槽位再重试；主对话输入不被长任务队列吞没。",
+      "source": {
+        "path": "docs/tickets/BUB012.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 232,
+        "criterion_sha256": "156ba0a6bee3aa5259d9f2807029e2732a3c1e6a75553124e86b34f5f70ff93e"
+      },
+      "requirement_english": "At concurrency N-1/N/N+1, never overcreate; unconfirmed timed-out workers retain slots and the long queue never swallows main-conversation input.",
+      "evidence": [
+        "NCL",
+        "M6REG",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical store/admission capacity and unknown reservation tests; R13 one worker and exact known release.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current concurrency boundary/timeout-held-slot/last-slot races and concurrent input oracle. One admitted worker plus N01 duplicate refusal is not a capacity test.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB012-02",
+      "original_text": "BUB012-02 模型与 reasoning 预设可配置，owner 当前偏好有明确配置记录；模型不可用时不静默使用不允\n许的模型或降低要求。",
+      "source": {
+        "path": "docs/tickets/BUB012.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 161,
+        "criterion_sha256": "f136e1232f9f6336a131505d75c8200bd99381e7bea53b378aa79cdc9a65da4e"
+      },
+      "requirement_english": "Configure model/reasoning with recorded current owner preferences; unavailability never silently selects a forbidden model or lower requirement.",
+      "evidence": [
+        "R13",
+        "SRC",
+        "NI1"
+      ],
+      "existing_actual_coverage": "R13 exact coupled original mock request/model/default-input guards; normal configuration/currentness reviewed as source-only.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current owner-selected configuration/readiness plus unavailable-model/no-downgrade refusal and recorded preference changes. External review quality is a separate twice-denied cloud boundary.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB012-03",
+      "original_text": "BUB012-03 同类自动重试在预算耗尽后停止并报告；失败重试、reviewer 和自动修复都计入总会话、运行时\n长与用量预算，不通过额外审查会话绕过上限。",
+      "source": {
+        "path": "docs/tickets/BUB012.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 198,
+        "criterion_sha256": "e05221b268e0955263a725a26133ed73600af55875b2d368bab03a1b20cebc86"
+      },
+      "requirement_english": "Stop/report exhausted retries; failed retries, reviewers and repairs all count toward total sessions, runtime and usage budgets.",
+      "evidence": [
+        "S3AUD",
+        "M6REG",
+        "R13"
+      ],
+      "existing_actual_coverage": "Actual historical zero/shared repair-budget refusals and resource accounting; R13 one guarded reservation and factual release.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current integrated retry/reviewer/repair exhaustion and shared accounting; the one-work/no-review positive does not exercise these partitions.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB012-04",
+      "original_text": "BUB012-04 用量为实际、估算或未知分别显示，估算给出来源与误差限制；缺数据时不伪造成本，宿主无硬\n限能力时明确只做派发预算控制。",
+      "source": {
+        "path": "docs/tickets/BUB012.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 183,
+        "criterion_sha256": "0fc54aa28fae4cecf88334fca36fb28a05fc500f8daa5913faba148c81ef23e3"
+      },
+      "requirement_english": "Distinguish actual, estimated and unknown usage; estimates state source/error limits, missing cost is not fabricated and absent host hard caps are declared admission control only.",
+      "evidence": [
+        "NI1",
+        "R13",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "NI1 explicitly labelled UTF16 fixed-density heuristic/UTF8 bytes, not billing; R13 exact original mock UTF8 usage/persistence guards.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current visible actual/estimated/unknown usage and unknown-price/error-source/hard-cap limitation partitions; selected mock usage does not prove billing or a host hard cap.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB012-05",
+      "original_text": "BUB012-05 triage 固定队列长度、事件与消息尺寸、存储体积和溢出策略；对突发、卡住会话和日志增长做\n负载测试。竞争最后预算槽位时不超发，记录响应延迟及恢复表现。",
+      "source": {
+        "path": "docs/tickets/BUB012.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 226,
+        "criterion_sha256": "8c5d1c91954b5956ef7ec56c8efbc488b38475563a042b876c8b9aed257e7012"
+      },
+      "requirement_english": "Freeze queue/message/event/storage caps and overflow policy; load-test bursts, stuck sessions and log growth, last-slot admission, latency and recovery.",
+      "evidence": [
+        "M6REG",
+        "S3MEM",
+        "S3NT",
+        "R13"
+      ],
+      "existing_actual_coverage": "Historical byte/record caps and actual last-frequency/process CAS races; R13 bounded one-worker invocation.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Frozen selected-environment burst/stall/log-growth load and latency/recovery measurements, including queue/slot N boundaries. Fixed finite fixtures are not that load test.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB013-01",
+      "original_text": "BUB013-01 报告列出原目标、实际完成范围、产物、验证证据、未完成部分和下一步；未运行测试明确写未\n验证，不用全部通过代替空证据。",
+      "source": {
+        "path": "docs/tickets/BUB013.md",
+        "line_start": 30,
+        "line_end": 31,
+        "criterion_utf8_bytes": 183,
+        "criterion_sha256": "df44c1652ae315ac977128896b3dc06b29cbf2f32b6db3e73bec577ed188f8f9"
+      },
+      "requirement_english": "Reports state original goal, actual scope, artifacts, verification, unfinished work and next steps; unrun checks are explicit and empty evidence is never called all-pass.",
+      "evidence": [
+        "S2MR",
+        "S3NT",
+        "R13"
+      ],
+      "existing_actual_coverage": "Actual complete report/progress normalization and explicit not_run checks; R13 returned result is explicitly unreviewed/not-requested.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current normal task-produced report and its displayed complete fields/evidence; capture of deterministic text alone is not the full report oracle.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB013-02",
+      "original_text": "BUB013-02 文件或链接从实际接收方权限与目标渠道验证可打开；审查、验证和交付绑定同一任务与产物版\n本或内容摘要。产物变化使旧审查失效；本地路径、过期链接和错误版本不能标为交付完成。",
+      "source": {
+        "path": "docs/tickets/BUB013.md",
+        "line_start": 32,
+        "line_end": 33,
+        "criterion_utf8_bytes": 261,
+        "criterion_sha256": "c58a6278fa6fccac05cf695294bda7d861767b367f7dfbdf92c3d8c55eb0d568"
+      },
+      "requirement_english": "Verify openability using actual recipient/channel permissions; task/version/digest binds review, verification and delivery, changes invalidate old review and invalid paths/expiry/version cannot complete delivery.",
+      "evidence": [
+        "S2MR",
+        "S3EV",
+        "S3AUD"
+      ],
+      "existing_actual_coverage": "Actual encrypted immutable versions/stale-review/refusal and explicit synthetic opening-receipt/current-access tests.",
+      "pending_c1_cases": [
+        "W01"
+      ],
+      "remaining_full_oracle": "Current applicable local/native recipient openability, reviewed exact version/digest and wrong/expired/revoked negatives. Live chat delivery is deferred; W01 performs no review or delivery.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB013-03",
+      "original_text": "BUB013-03 多文件交付逐项记录 accepted、sent 和可核查的 delivered；部分成功只重试确认失败部分，不\n整批重复发送。",
+      "source": {
+        "path": "docs/tickets/BUB013.md",
+        "line_start": 34,
+        "line_end": 35,
+        "criterion_utf8_bytes": 150,
+        "criterion_sha256": "dadf879ece29509b5a7db0ac99a3cce0fd61861d5298340b47d4a5ff52dcaf97"
+      },
+      "requirement_english": "Record each file's accepted/sent/checkable-delivered state; partial success retries only confirmed failed items, never the entire batch.",
+      "evidence": [
+        "S2MR",
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Actual synthetic per-item outcomes, exact known-release retry lineage and no resend of delivered/unknown siblings.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current applicable local/native multi-artifact delivery/partial-failure/reconcile oracle. Live chat provider portions remain deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB013-04",
+      "original_text": "BUB013-04 状态未变化时不重复发送同一进度；重要阻塞及时通知，普通更新受安静时段和合并规则约束。",
+      "source": {
+        "path": "docs/tickets/BUB013.md",
+        "line_start": 36,
+        "line_end": 36,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "80b2dc451529eebc20e62ddd517ef6bbbba1c81a23ffb9c8d3224ed24315b73e"
+      },
+      "requirement_english": "Unchanged progress is not resent; blockers notify promptly and ordinary updates obey quiet and merge rules.",
+      "evidence": [
+        "S2MR",
+        "S3NT",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Actual durable progress/fact dedup, atomic quiet/merge/frequency and synthetic notification cases.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current normal notice drain and native recipient observation with frozen blocker latency and quiet/coalescing policy.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB013-05",
+      "original_text": "BUB013-05 不确定发送结果先核查渠道记录；无法核查时报告未确认及重复风险，不能把超时当作未发送后\n无条件重试。",
+      "source": {
+        "path": "docs/tickets/BUB013.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 156,
+        "criterion_sha256": "5f46fdb1fc9072ead8670a4255c6f700789edf7f314474eaefe6e91d8a566b9b"
+      },
+      "requirement_english": "Query uncertain sends; if unqueryable, report unconfirmed and duplicate risk instead of treating timeout as unsent and unconditionally retrying.",
+      "evidence": [
+        "S2MR",
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Actual timeout-after-synthetic-effect, durable unknown/reopen/held resource and reconcile-only cases.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current applicable native/local channel query and unqueryable visibility/no-retry partitions. Actual chat provider behavior is deferred.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB014-01",
+      "original_text": "BUB014-01 列表和详情对同一任务的状态、版本及阻塞一致；过时快照有时间标识，刷新会查询当前状态而\n不是重画旧内容。",
+      "source": {
+        "path": "docs/tickets/BUB014.md",
+        "line_start": 30,
+        "line_end": 31,
+        "criterion_utf8_bytes": 162,
+        "criterion_sha256": "f557a8bfabce756d707e296de51e5d24d66e32c20f1341febad704a2c81eb3d4"
+      },
+      "requirement_english": "List/detail agree on task state/version/block; stale snapshots show time and refresh queries current state rather than repainting old data.",
+      "evidence": [
+        "S2MR",
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual ledger snapshots/CAS/pagination and shallow/native component tests; no actual current rendered page.",
+      "pending_c1_cases": [
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current authoritative list/detail freshness plus actual DSH rendered interaction; Q01 may prove RPC state but has no browser UI.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB014-02",
+      "original_text": "BUB014-02 对每个非终态提供适用控制；已完成、已取消、待审批和执行中任务的按钮符合状态转换合同。",
+      "source": {
+        "path": "docs/tickets/BUB014.md",
+        "line_start": 32,
+        "line_end": 32,
+        "criterion_utf8_bytes": 137,
+        "criterion_sha256": "53d9c6c7430866ecec8afcd7976c3728e2e24a513bfb1465b1c112dd2bdcc851"
+      },
+      "requirement_english": "Each nonterminal state has applicable controls; completed/cancelled/awaiting-approval/running buttons obey transition contracts.",
+      "evidence": [
+        "S2MR",
+        "NCL"
+      ],
+      "existing_actual_coverage": "Actual control primitives and component state/borrowed-reference tests.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current full state/control capability matrix in actual DSH with requested-versus-confirmed behavior; worker/CLI headless state is only part.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB014-03",
+      "original_text": "BUB014-03 双击、旧页面和并发控制不会重复派发或覆盖新版本；错误提示解释失败与如何核查，不让 UI 自\n行推断成功。",
+      "source": {
+        "path": "docs/tickets/BUB014.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 157,
+        "criterion_sha256": "e59847fe7106ae2ac22b16c54556bace83e1ccb42896846cd4fb72293ec05a51"
+      },
+      "requirement_english": "Double-clicks, stale pages and concurrent controls cannot duplicate dispatch or overwrite new versions; failures explain verification and UI never invents success.",
+      "evidence": [
+        "S2MR",
+        "NCL",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual durable idempotency/CAS/stale/lost-reply tests and component callbacks; no current stale-tab/double-click rendered race.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current browser double-click/old-tab/concurrent-control and readable error/requery behavior; N01 is service duplicate-execute refusal, not a browser interaction.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB014-04",
+      "original_text": "BUB014-04 真实 DSH UI 下检查窗口缩放、长中文、键盘操作、焦点、空列表、加载与错误状态；无截断关键\n信息或遮挡操作。",
+      "source": {
+        "path": "docs/tickets/BUB014.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 161,
+        "criterion_sha256": "3033f3c5ec6f3c5fca25880012b5471ff49d070c739d595b5ecb1bec1c06ee4f"
+      },
+      "requirement_english": "In genuine DSH UI, test resize, long Chinese, keyboard/focus, empty/loading/error states with no hidden actions or truncated essential information.",
+      "evidence": [
+        "NCL",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Module/component/build tests are historical actuals; no genuine rendered visual/accessibility acceptance evidence.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Supported browser capability and a corrected current UI handoff, then actual visual/keyboard/focus/resize oracles. browsers:[]/iab unavailable/no Chrome extension is distinct from screen lock.",
+      "proposed_disposition": "BLOCKED_SUPPORTED_BROWSER",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "BROWSER_DEPENDENCY_REMAINS"
+    },
+    {
+      "id": "BUB014-05",
+      "original_text": "BUB014-05 可直接查看任务相关会话、产物和授权范围；不展示凭据，不提供越权会话或其他 workspace 的\n快捷入口。",
+      "source": {
+        "path": "docs/tickets/BUB014.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 149,
+        "criterion_sha256": "7fd13e2f94e379cbb15dadf59d3ec954f84db6051611c336b0b7841175eb87c7"
+      },
+      "requirement_english": "Show authorized related sessions/artifacts/grant scope directly, without credentials or foreign-workspace/unauthorized-session shortcuts.",
+      "evidence": [
+        "S2MR",
+        "NCL",
+        "M6CLI"
+      ],
+      "existing_actual_coverage": "Actual scoped reference/authorized navigation and carrier negatives; no current rendered shortcut journey.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current genuine UI authorized navigation and foreign-session/workspace/credential negatives; headless worker and task RPCs do not prove shortcuts.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB015-01",
+      "original_text": "BUB015-01 独立 reviewer 能看到完成任务所需的材料与证据，不能读取不相关私密信息；审核报告标出检查\n覆盖和未检查部分。",
+      "source": {
+        "path": "docs/tickets/BUB015.md",
+        "line_start": 29,
+        "line_end": 30,
+        "criterion_utf8_bytes": 163,
+        "criterion_sha256": "cb68ca897f28aeab62a35765ef42f8553bdb527908d93e624583a0c5f7ef7282"
+      },
+      "requirement_english": "An independent reviewer sees needed material/evidence but no unrelated private data, and reports coverage and unexamined portions.",
+      "evidence": [
+        "S3AUD",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Actual distinct charged reviewer/exact material allowlist/foreign-target/unexamined tests on the held store.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported native reviewer input/coverage and adversarial material-scope oracle; no review-model attempt is selected by C1.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB015-02",
+      "original_text": "BUB015-02 作者、代码 reviewer 与测试 reviewer 的身份可核查；同一作者自签不得满足独立开发评审门\n槛。",
+      "source": {
+        "path": "docs/tickets/BUB015.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 134,
+        "criterion_sha256": "f126b9a88355ce7a035356b6d0abeeb241d4b571e1d9871f98e240b2c9838490"
+      },
+      "requirement_english": "Author, code reviewer and test reviewer identities are verifiable; author self-signing never satisfies independent development review.",
+      "evidence": [
+        "AUDIDS",
+        "SRC",
+        "DESIGN",
+        "S3AUD",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "C1 source author and independent code/ISTQB design identities exist; historical producer/reviewer generation tests deny self-review.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Bind final author/code/ISTQB identities and reports to exact canonical/generated/fixture/actual pins. Successful build/runtime alone does not close review-identity coverage; final protected semantic verdict stays separate.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "FINAL_INDEPENDENT_IDENTITIES_AND_PINS_REQUIRED"
+    },
+    {
+      "id": "BUB015-03",
+      "original_text": "BUB015-03 必须审查的任务在 reviewer 失败、超预算或结果未知时保持待审或阻塞，不能跳过后标记完成。\n致命或按策略判为阻塞的问题未解决时也不能完成。证据绑定任务与产物版本，变化后旧审查失效。",
+      "source": {
+        "path": "docs/tickets/BUB015.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 268,
+        "criterion_sha256": "822b3c44512a896a5371d5206dc3404a0f47fdd9a00519b186986f7a33d182c4"
+      },
+      "requirement_english": "Required review failure, budget exhaustion or unknown keeps tasks pending/blocked; unresolved fatal/policy-blocking issues prevent completion and task/artifact changes invalidate old evidence.",
+      "evidence": [
+        "S3AUD",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Actual pending/failed/unknown/budget/fatal/stale/multiple-required-report gate and immutable-history tests.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported native required-review outcomes and stale-version task completion. W01's unreviewed result neither completes a task nor satisfies an audit; external model-quality boundary remains separate.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB015-04",
+      "original_text": "BUB015-04 建议每项任务最多 2 轮自动修复与复查，达到上限仍有问题时交给 owner；具体阈值可配置且受\nBUB012 总预算约束。",
+      "source": {
+        "path": "docs/tickets/BUB015.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 160,
+        "criterion_sha256": "2d7bbdb29ddca0f4fbdd803d158d79cc9344174410812be802d5272809c0841c"
+      },
+      "requirement_english": "Two repair/review rounds are suggested, while the cutoff is configurable; unresolved work escalates to owner and all rounds obey the shared BUB012 budget.",
+      "evidence": [
+        "S3AUD",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Actual configured0/shared-total exhaustion, approved repair lineage and retained prior failure tests; no fixed-two default adopted.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current normal bounded reviewer/repair/escalation workflow, configured cutoff and total sessions/runtime/usage accounting. No selected C1 repair is run.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB015-05",
+      "original_text": "BUB015-05 reviewer 输出不能授予权限或修改审批账本；恶意产物要求其批准、泄露或跨任务发送时被拒绝\n并留证据。",
+      "source": {
+        "path": "docs/tickets/BUB015.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 150,
+        "criterion_sha256": "38d18e8e4504bc8c3050647b83f5874c0fd40c2a2c5c0b3af893cebcae00c5d0"
+      },
+      "requirement_english": "Reviewer output never grants permissions or changes approval ledger; malicious approve/exfiltrate/cross-task-send instructions are refused with evidence.",
+      "evidence": [
+        "S3AUD",
+        "S2MR",
+        "S3MEM"
+      ],
+      "existing_actual_coverage": "Actual hostile authority/prose/path/producer/foreign-material and reviewer send/grant negatives.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current supported native adversarial artifact/reviewer-output refusal with safe evidence; ordinary product source conservation is not that actual test.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB016-01",
+      "original_text": "BUB016-01 每个 ticket AC 都能追到测试及实际结果。许可证未解决、跨空间泄露、权限旁路、发布包含真实\n秘密是不可豁免门槛；其他功能限制须 owner 明确接受并写入用户文档，不能默默漏验。",
+      "source": {
+        "path": "docs/tickets/BUB016.md",
+        "line_start": 31,
+        "line_end": 32,
+        "criterion_utf8_bytes": 252,
+        "criterion_sha256": "f6307a88f750ce5c6f7f3f20ed3946207a32b713db5c882029df7c27790046ec"
+      },
+      "requirement_english": "Every criterion traces to tests and actual results; license, cross-space leakage, permission bypass and real-secret release are nonwaivable, and other gaps need explicit owner acceptance and user documentation.",
+      "evidence": [
+        "TRACE",
+        "M6REG",
+        "NI1",
+        "SRC",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Exact original82+five-contract catalogue and bounded historical actual records exist; C1 source conservation is reviewed.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Final per-criterion current evidence/actual result and residual disposition, all nonwaivable security/rights/privacy gates and explicit owner-accepted documented limitations. This preparation is not that acceptance.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB016-02",
+      "original_text": "BUB016-02 执行第 19 页全链场景及故障变体；在真实 DSH 与首个聊天 provider 完成，不以 mock 或静态代\n码阅读替代。",
+      "source": {
+        "path": "docs/tickets/BUB016.md",
+        "line_start": 33,
+        "line_end": 34,
+        "criterion_utf8_bytes": 148,
+        "criterion_sha256": "33afdf3ea465c7f53b616c24c50b18aee8b2277f55b0af9a93db9d7219d1c264"
+      },
+      "requirement_english": "Run the original page19 complete scenario and fault variants in genuine DSH; the first-provider portion is owner-deferred, while native end-to-end work cannot be replaced by mocks/static reading.",
+      "evidence": [
+        "R13",
+        "M6CLI",
+        "NI1",
+        "S3EV",
+        "S3AUD",
+        "OWNER",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Separate genuine mock-backed worker, installed idle lifecycle, memory/context and synthetic event/audit modules; no single full current chain.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01"
+      ],
+      "remaining_full_oracle": "Current native intake/permissions/context/budget/worker correction/quit-reconcile/missed plans/memory/review/openable delivery/UI chain and faults. Synthetic provider-neutral contracts replace only the deferred chat-platform slice.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB016-03",
+      "original_text": "BUB016-03 全链升级、重启恢复、完整退出停止、账号解绑、数据导出删除、权限撤销和资源超限均经过测\n试。",
+      "source": {
+        "path": "docs/tickets/BUB016.md",
+        "line_start": 35,
+        "line_end": 36,
+        "criterion_utf8_bytes": 144,
+        "criterion_sha256": "5053a7818a9fd0100ea98afee0236efcb02f67db737b51974d867995c9f8632b"
+      },
+      "requirement_english": "Test integrated upgrade, restart reconciliation, full quit stop, unpair/revoke, export/delete and resource overflow; live chat-account portion is deferred.",
+      "evidence": [
+        "M6CLI",
+        "NI1",
+        "M6REG",
+        "S3EV",
+        "S3MEM",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Historical idle installed quit/restart/uninstall and module upgrade/revoke/memory-delete/capacity cases.",
+      "pending_c1_cases": [
+        "W01",
+        "Q01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Current integrated nonempty upgrade/recovery/export-delete/revoke/capacity matrix, with actual stop/resource fences. Four CLI starts and one worker are bounded subsets.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB016-04",
+      "original_text": "BUB016-04 发布产物包含可复现构建说明、插件安装卸载、兼容矩阵、默认 preview 标记、配置与诊断说\n明；无真实令牌、个人数据或内部测试秘密。",
+      "source": {
+        "path": "docs/tickets/BUB016.md",
+        "line_start": 37,
+        "line_end": 38,
+        "criterion_utf8_bytes": 192,
+        "criterion_sha256": "9ddf246923b0ef8c24374341f9b76f40130cfc45fc2cf8d80c0e1c578170f9dd"
+      },
+      "requirement_english": "Release artifacts include reproducible build, install/uninstall, compatibility, preview defaults, configuration/diagnostics and no real tokens, personal data or internal test secrets.",
+      "evidence": [
+        "M6REG",
+        "NI1",
+        "COMP",
+        "SRC",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Current build-r2 genuinely produced/checked client and native descriptor with conserved pins; historical physical package/rights/privacy inventories remain ancestor evidence.",
+      "pending_c1_cases": [
+        "Q01",
+        "Q02",
+        "Q03"
+      ],
+      "remaining_full_oracle": "Fresh physical install/uninstall/package/configuration/diagnostic inventory and own-canary artifact privacy oracle. Independently corroborated build producers alone do not prove release packaging or install lifecycle.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB016-05",
+      "original_text": "BUB016-05 核查复用代码、依赖、名称与资产的许可证和 notices；仅有源代码可见不代表取得分发权。",
+      "source": {
+        "path": "docs/tickets/BUB016.md",
+        "line_start": 39,
+        "line_end": 39,
+        "criterion_utf8_bytes": 130,
+        "criterion_sha256": "92716e476629b04a5563870c7d247abb0ce95275162ef540c47cf3897ffef8d4"
+      },
+      "requirement_english": "Verify reused-code/dependency/name/asset rights and notices; visible source alone does not establish redistribution rights.",
+      "evidence": [
+        "OWNER",
+        "S3PORT",
+        "M6REG",
+        "NI1",
+        "BUILD",
+        "BUILD_CODE",
+        "BUILD_TEST"
+      ],
+      "existing_actual_coverage": "Owner MIT/subset contributor provenance and historical dependency/package notice inventory; no identified conflicting claim.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Exact current incorporated-source/dependency/asset/name and distributed-notice inventory; new external reuse needs its own rights proof.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "current_build_relevance": true,
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "BUB016-06",
+      "original_text": "BUB016-06 stable 只能由 owner 明确指定的发布产生；不通过默认分支、自动打标签或依赖脚本偷偷改变渠\n道。",
+      "source": {
+        "path": "docs/tickets/BUB016.md",
+        "line_start": 40,
+        "line_end": 41,
+        "criterion_utf8_bytes": 140,
+        "criterion_sha256": "de6463df648c1a460344b097f1d40cc11b00880234a0984a54f917377578ae13"
+      },
+      "requirement_english": "Only an owner-explicit release selects stable; default branch, automatic tags and dependency scripts cannot silently change channel.",
+      "evidence": [
+        "OWNER",
+        "SRC",
+        "DESIGN"
+      ],
+      "existing_actual_coverage": "Documentary current private preview package and owner-only stable/publication rules; sealed source/design review finds no automatic channel switch.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Maintain exact current preview/package/script/policy identities. This criterion's documentary PASS proposal grants no stable release or publication.",
+      "proposed_disposition": "PASS_DOCUMENTARY_PROPOSED",
+      "applicability": "CURRENT",
+      "after_selected_success_rule": "DOCUMENTARY_PASS_IF_IDENTITY_RETAINED"
+    },
+    {
+      "id": "DF010-C01",
+      "requirement_english": "Only privately admitted paired owner identity may read/control a task; revoke, wrong window, group or stale binding fails closed.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual synthetic paired-owner/window/group/revision/revoke/control/foreign-task negatives using authoritative SQLite.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical synthetic native-ledger regression and exact full dependency/pin binding. Real chat connectivity is not a current prerequisite.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "original_text": "Only privately admitted paired owner identity may read/control a task; revoke, wrong window, group or stale binding fails closed.",
+      "source": {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "line_start": 21,
+        "line_end": 21
+      },
+      "source_row_text": "| DF010-C01 | Only privately admitted paired owner identity may read/control a task; revoke, wrong window, group or stale binding fails closed. | BUB010-01/03, BUB006 |",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "DF010-C02",
+      "requirement_english": "Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "M6REG"
+      ],
+      "existing_actual_coverage": "Actual synthetic immutable source/digest/edit/delete/thread/reopen/dedup contract cases.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical synthetic identity/order/thread and immutable-action/route regression, with changed core dependencies covered.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "original_text": "Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route.",
+      "source": {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "line_start": 22,
+        "line_end": 22
+      },
+      "source_row_text": "| DF010-C02 | Complete source identity deduplicates; edits/deletes/order/thread changes cannot silently replace an admitted action or original route. | BUB010-02 |",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "DF010-C03",
+      "requirement_english": "Replies and task access remain scoped to the admitted source/conversation/thread; forwarded payload claims confer no authority.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "S2MR"
+      ],
+      "existing_actual_coverage": "Actual original-channel/window/cross-task/forwarded-origin and scoped opaque-caller negatives.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical synthetic trusted route/forwarding/access regression; no provider account or platform selection is required.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "original_text": "Replies and task access remain scoped to the admitted source/conversation/thread; forwarded payload claims confer no authority.",
+      "source": {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "line_start": 23,
+        "line_end": 23
+      },
+      "source_row_text": "| DF010-C03 | Replies and task access remain scoped to the admitted source/conversation/thread; forwarded payload claims confer no authority. | BUB010-03 |",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "DF010-C04",
+      "requirement_english": "Bounded attachment descriptors retain trusted source/digest/access evidence; no local path alone establishes recipient delivery.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "S2MR"
+      ],
+      "existing_actual_coverage": "Actual synthetic attachment byte/digest/source/access/quota/reopen/expiry and opening-receipt distinctions.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical synthetic attachment/access/expiry/bounds negatives and honest local/native delivery contract. A file-path existence check is insufficient.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "original_text": "Bounded attachment descriptors retain trusted source/digest/access evidence; no local path alone establishes recipient delivery.",
+      "source": {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "line_start": 24,
+        "line_end": 24
+      },
+      "source_row_text": "| DF010-C04 | Bounded attachment descriptors retain trusted source/digest/access evidence; no local path alone establishes recipient delivery. | BUB010-04, BUB013 |",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    },
+    {
+      "id": "DF010-C05",
+      "requirement_english": "Rate/disconnect and unknown send are visible; sent, delivered and currently accessible stay distinct, with reconciliation before retry.",
+      "evidence": [
+        "OWNER",
+        "S3EV",
+        "S3NT"
+      ],
+      "existing_actual_coverage": "Actual synthetic rate/disconnect/timeout/reopen/unknown-query and historical-delivered/current-access partitions.",
+      "pending_c1_cases": [],
+      "remaining_full_oracle": "Current canonical synthetic send-state/reconcile-before-retry regression and visible contract outcomes; no actual provider delivery is required this phase.",
+      "proposed_disposition": "PARTIAL",
+      "applicability": "CURRENT",
+      "original_text": "Rate/disconnect and unknown send are visible; sent, delivered and currently accessible stay distinct, with reconciliation before retry.",
+      "source": {
+        "path": "docs/owner-amendment-2026-10-04.md",
+        "line_start": 25,
+        "line_end": 25
+      },
+      "source_row_text": "| DF010-C05 | Rate/disconnect and unknown send are visible; sent, delivered and currently accessible stay distinct, with reconciliation before retry. | BUB010-05, BUB013 |",
+      "after_selected_success_rule": "PARTIAL_RESIDUAL_REMAINS"
+    }
+  ],
+  "safety_and_actions": {
+    "only_two_assigned_fresh_reports_written": true,
+    "report_creation": "O_EXCL/O_NOFOLLOW_AFTER_EXACT_ABSENCE_CHECK",
+    "full_authored_content_readback_and_external_seals": "REQUIRED_AND_REPORTED_IN_FINAL_HANDOFF",
+    "no_Git": true,
+    "no_source_mutation": true,
+    "no_build_test_runtime_producer_or_candidate_evaluation_by_this_lane": true,
+    "no_browser_cloud_network_model_or_credential_action": true,
+    "no_private_state_capture_error_response_profile_key_db_content_read_copy_decode_hash_or_enumeration": true,
+    "no_opaque_capture_finish_or_protected_final_CODE_body_inspection": true,
+    "no_delegation": true,
+    "no_new_authorization_barrier": true,
+    "original_return_raw_streams_and_invocation_marker_not_opened": true
+  },
+  "self_hash": "EXTERNAL_FINAL_SEAL_ONLY_NONRECURSIVE",
+  "conditional_proposal_rules": {
+    "DOCUMENTARY_PASS_IF_IDENTITY_RETAINED": "Propose PASS only for this complete documentary requirement if exact current policy/package/reference identities remain; no execution/release/overall acceptance follows.",
+    "REMAIN_OWNER_DEFERRED": "No current-phase provider connectivity oracle; preserve original criterion for future selection.",
+    "BROWSER_DEPENDENCY_REMAINS": "Successful build and headless W01/CLI cannot close actual rendered UI.",
+    "FINAL_INDEPENDENT_IDENTITIES_AND_PINS_REQUIRED": "For BUB015-02, final distinct-role identity/coverage and exact reviewed pins can support a documentary PASS proposal; successful runtime alone is insufficient.",
+    "PARTIAL_RESIDUAL_REMAINS": "Even if all selected pending C1 cases pass, retain PARTIAL for the complete criterion until the exact stated residual oracle has evidence."
+  },
+  "markdown_record": {
+    "path": "docs/evidence/NI6/c1-individual-acceptance-reconciliation-preparation-2026-10-08.md",
+    "bytes": 32323,
+    "sha256": "2489ab220e0a9764053e792c20b9a1ae959938c669d37f25e435bf1bf61d0f3c"
+  }
+}

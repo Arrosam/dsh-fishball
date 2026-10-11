@@ -1,0 +1,300 @@
+{
+  "contractAmendmentAssessment": "Initial functional prose does not explicitly assign every nested context error to a result, so the discrepancy is not evidence of intentional oracle evasion. The original strict scope/association validators, complete source joins and independent D-before-U decision table support correction. A broader malformed-context => unknown policy would be an explicit observable contract change requiring root rationale and independent new disposition; it is not justified merely by implementation convenience. Preserve frozen design and historical case expectations rather than editing them to make current source conform.",
+  "contractVersion": "df.ni5-independent-functional-source-review-amendment/v1",
+  "disposition": "PURE_CONTEXT_CONTRACT_GAP_CONFIRMED_FULL_PURE_ACCEPTANCE_HOLD",
+  "evidenceWrites": [
+    "docs/evidence/NI4-5/normal-selected-byte-reviewer-functional-source-review-amendment-context-precedence.md",
+    "docs/evidence/NI4-5/normal-selected-byte-reviewer-functional-source-review-amendment-context-precedence.json"
+  ],
+  "execution": {
+    "DB": false,
+    "Git": false,
+    "JSExecution": false,
+    "JSImport": false,
+    "JSParse": false,
+    "SQLExperiment": false,
+    "authorFixtures": false,
+    "browser": false,
+    "install": false,
+    "model": false,
+    "native": false,
+    "network": false,
+    "productEdits": false,
+    "provider": false,
+    "service": false,
+    "tests": false,
+    "timer": false
+  },
+  "finding": {
+    "cases": [
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED",
+        "cause": "Original validator scope errors are swallowed; explicit task-fact scope mismatch returns false.",
+        "condition": "Nested sourceScope or protected taskFacts.scope disagrees with audit/context scope",
+        "families": [
+          "INT11"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:46\u201349,59,65,91",
+          "context.mjs:82\u201383,93"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED",
+        "cause": "Bad join and healthy extra-source support cardinality share return false; exact base-only source keys are also inside broad catch.",
+        "condition": "Goal/provenance ref or digest disagrees with the authenticated goal, or provenance refs do not satisfy original sourceRefs membership/coverage",
+        "families": [
+          "DOM05"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED for malformed join; UNKNOWN for healthy additional original sources",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:51,54\u201355,65,91",
+          "context.mjs:85\u2013107"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED",
+        "cause": "Original numeric/binding validator failure is converted to false.",
+        "condition": "Known source/provenance version/auth/time integer domain invalid or beyond original envelope",
+        "families": [
+          "DOM06"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:49,65,91",
+          "context.mjs:84,91,94\u201396,102"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED for both",
+        "cause": "Same catch handles exact/known shape/type failures and original literal-tag rejection.",
+        "condition": "Malformed known context schema versus healthy unsupported contract/materialKind/verification discriminator",
+        "families": [
+          "DOM07"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED for malformed known schema; UNKNOWN for healthy unsupported domain",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:47\u201350,65,91",
+          "context.mjs:80\u201384"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED for both",
+        "cause": "Known validator and exact memory failures are swallowed alongside healthy support predicates.",
+        "condition": "Malformed memory schema/refs/numerics versus valid nonempty memory provenance or positive revision",
+        "families": [
+          "DOM08"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED for malformed memory; UNKNOWN for healthy nonempty memory",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:49,52\u201353,65,91",
+          "context.mjs:108\u2013119"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED for both",
+        "cause": "One Boolean condition merges exact byte/schema/association checks with queued/null-generation domain selection.",
+        "condition": "Task-fact scope/version/auth disagreement or malformed known fields versus healthy other status/generation",
+        "families": [
+          "DOM13"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED for malformed joins; UNKNOWN for healthy unsupported status/generation",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:58\u201359,65,91",
+          "context.mjs:193"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED for both",
+        "cause": "Exact/canonical exceptions are swallowed; non-array type and nonempty array share return false.",
+        "condition": "Malformed work-fact keys/array/policy/control types or canonical bounds versus healthy nonempty arrays or paused control",
+        "families": [
+          "DOM14"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED for malformed known work schema; UNKNOWN for healthy expanded domain",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:60\u201363,65,91",
+          "context.mjs:258\u2013259"
+        ]
+      },
+      {
+        "actualSourceResult": "UNKNOWN_UNEXAMINED",
+        "cause": "Original count validator failure is swallowed.",
+        "condition": "inputCounts.bytes differs from whole inner UTF8 bytes, or count numeric domain invalid",
+        "families": [
+          "DOM15"
+        ],
+        "independentRequiredResult": "WORKER_REQUEST_DENIED",
+        "sourceSites": [
+          "installed-synthetic-byte-review.mjs:49,65,91",
+          "context.mjs:122\u2013123"
+        ]
+      }
+    ],
+    "classification": "PURE_FUNCTIONAL_CONTRACT_AND_VALIDATION_PRECEDENCE_GAP",
+    "id": "F-AM01",
+    "primarySites": [
+      "installed-synthetic-byte-review.mjs:44\u201365,90\u201392"
+    ],
+    "priorityDetail": "This concerns denied versus inert unknown semantics. Current path does not assign positive coverage to malformed inputs. Original genuine native context-origin guards remain independent and can deny before pure recipe evaluation; such upstream denial does not exercise or establish the pure recipe D oracle.",
+    "severity": "Blocking for full pure recipe contract acceptance; no native security bypass established",
+    "sourceCondition": "Known malformed context validation/association failures and healthy unsupported context predicates collapse to the same Boolean false; earlier unknown returns bypass context validation altogether."
+  },
+  "independentContractSources": {
+    "functionalProposalPermittedReadLines": [
+      1,
+      53
+    ],
+    "functionalProposalSites": [
+      20,
+      44,
+      46,
+      48,
+      50
+    ],
+    "independentDesignSites": [
+      68,
+      72,
+      74,
+      127,
+      142,
+      143,
+      144,
+      145,
+      150,
+      151,
+      152
+    ],
+    "originalContextSites": [
+      "78\u2013126",
+      "191\u2013197",
+      "258\u2013279"
+    ]
+  },
+  "markdownSha256": "dfc6aafa82ab009cb9784d082abd22ed89a246a1a628c3f5077054688ad0f911",
+  "minimalSourceCorrectionRequirements": [
+    {
+      "order": 1,
+      "requirement": "Preserve original outer audit/native artifact validation and full-byte hashing. Add a separate context integrity phase that can throw WORKER_REQUEST_DENIED; keep support selection as a separate false/unknown predicate. Do not use one catch-all false result for both."
+    },
+    {
+      "order": 2,
+      "requirement": "For the known context schema, map original validateExecutionContext(scope) failures and exact closed known-schema failures to denied. Check original numeric/reference/provenance/count bounds and unambiguous compact JSON serialization. Do not enforce queued/empty-memory/no-supplements as integrity requirements."
+    },
+    {
+      "order": 3,
+      "requirement": "Separate goal/source digest and membership joins from one-source support cardinality. A malformed observable goal/provenance ref/digest association denies. A structurally valid original context with additional source provenance, healthy supplement/observation fields, retained/dropped backgrounds or valid nonempty memory stays unknown. Do not change the source base-only exact check to a throwing check that rejects healthy original optional source fields."
+    },
+    {
+      "order": 4,
+      "requirement": "Separate recognizable protected task/work JSON integrity from support values. Exact known fields, scalar/array/policy types, canonical bounds, scope/version/auth and actual goal-content joins deny when inconsistent. Healthy other task status/generation, active alternatives, nonempty valid vectors and additional healthy sections remain unsupported/unknown. Missing/reordered sections with otherwise healthy metadata are unsupported; corruption of a recognized joined JSON section is malformed. No guessed live task record or generation proof is introduced."
+    },
+    {
+      "order": 5,
+      "requirement": "Distinguish healthy unknown contract/materialKind/verification discriminators explicitly from malformed known schema. Original validator uses CONTEXT_INVALID for both, so error-code-only mapping or a blanket catch-to-denied replacement cannot classify them. A future schema is never passed or treated as examined; validate applicable known shared associations before unknown and do not invent validation rules for unknown fields or rewrite input tags to simulate a supported record."
+    },
+    {
+      "order": 6,
+      "requirement": "Run applicable known context integrity and observable joins before all unsupported returns at lines90\u201392, including extra-material/policy/goal cases. Unsupported flags can be collected while strict checks continue. No positive coverage follows from integrity alone; only unchanged supported-domain payload equality can produce passed."
+    },
+    {
+      "order": 7,
+      "requirement": "Keep original source bytes, unknown/repair recipes, native carriers/guards, full context digest/payload formula, model selection, grant/currentness and budgets unchanged. Only the new pure recipe needs source correction. Resubmit literal candidate/hash/effects for independent review before authoring or executing malformed-domain cases."
+    }
+  ],
+  "nativeProofProduced": false,
+  "passedCases": 0,
+  "priorConclusionNarrowing": "Prior report accurately recorded current source behavior and its unsupported-domain interpretation. Its no-new-blocker conclusion cannot establish conformity to the now-supplied independent D-before-U context contract. This amendment adds that contract blocker without changing earlier evidence.",
+  "priorReviewPreserved": true,
+  "readBoundary": {
+    "BP01SourceOrPlansRead": false,
+    "authorFixturesOrOraclesRead": false,
+    "blockedInvestigationReadOrRerouted": false,
+    "newSourceTextReads": [
+      "pure candidate installed-synthetic-byte-review.mjs",
+      "original context.mjs validateExecutionContext/protectedParts/workFacts",
+      "first three functional SOURCE proposal sections",
+      "independent source design MD"
+    ],
+    "wholeFileHashOnly": [
+      "prior sealed functional MD/JSON",
+      "independent design JSON",
+      "candidate closure"
+    ]
+  },
+  "recommendedDisposition": "CORRECT_NEW_PURE_SOURCE_WITH_STRICT_KNOWN_CONTEXT_INTEGRITY_BEFORE_SUPPORT_UNKNOWN",
+  "remainingBlockers": [
+    "Root explicit correction/contract disposition",
+    "Source correction authoring and freshly pinned independent review",
+    "Pure D/U case execution remains not authorized/not run in this amendment",
+    "All87/CODE/UI/semantic quality/MVP/publication remain HOLD",
+    "Notification producer provenance/ACL/time seams remain HOLD",
+    "Original blocked final CODE investigation remains blocked"
+  ],
+  "reviewerSession": "/root/ni5_byte_functional_source_review",
+  "rootDisposition": {
+    "auditExecutionAuthority": "NONE",
+    "correctionOrContractAmendmentChoice": "PENDING_ROOT_EXPLICIT_DISPOSITION",
+    "currentGate": "HOLD",
+    "recordedInstructions": [
+      "Preserve sealed prior review",
+      "Healthy supplement/memory/nonempty work/future unsupported context remains UNKNOWN/unexamined",
+      "Known malformed joins must not be mislabeled examined or accepted",
+      "Root may run separately bounded healthy positive native capture while gap stays visible",
+      "Full pure acceptance waits honest resolution"
+    ],
+    "source": "Parent /root delegated follow-up task"
+  },
+  "scope": "NEW_ROOT_ASSIGNED_CONTEXT_ERROR_PRECEDENCE_SOURCE_AMENDMENT_ONLY",
+  "sealedAtUtc": "2026-10-07T06:03:40.983692+00:00",
+  "sourceOnlyPins": [
+    {
+      "bytes": 11640,
+      "path": ".runtime/ni5-selected-byte-review-proposal/src/installed-synthetic-byte-review.mjs",
+      "sha256": "09e03f7f80d48fb8cea9517c5db319d59605f784550ab52dfa42fc3100b849fb"
+    },
+    {
+      "bytes": 24196,
+      "path": ".runtime/ni5-selected-byte-review-proposal/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "bytes": 14807,
+      "path": ".runtime/ni5-selected-byte-review-proposal/byte-review-source-closure.json",
+      "sha256": "5d69a80249ed6841068bbd7ff75346f60f025e4e0570ae1161ba0a2e880b5633"
+    },
+    {
+      "bytes": 18894,
+      "path": "docs/evidence/NI4-5/normal-entry-selected-byte-reviewer-source-proposal.md",
+      "sha256": "e64e299f3b09c1085b4611cf8d105eb8bda5720fd3c1ce2ad70c9c92fe78a7ec"
+    },
+    {
+      "bytes": 39218,
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-independent-design.md",
+      "sha256": "672428559c8977020222732cc96a8ff11db49030833615b7fc6701ba5806c70a"
+    },
+    {
+      "bytes": 29506,
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-independent-design.json",
+      "sha256": "4f382612962e1b646633fcefa02095acbdb362800b0be99e8f14e6fe3971af38"
+    },
+    {
+      "bytes": 10812,
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-functional-source-review.md",
+      "sha256": "a41995dacc872a3c9091b7fb029d4574fbd1cfdba5ef35fef8fa9d592ad79c6b"
+    },
+    {
+      "bytes": 40063,
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-functional-source-review.json",
+      "sha256": "0f97b601093d380042a40c9615f989f8501383f75fae499d71b56c7bbd563ad2"
+    }
+  ],
+  "testsRun": 0,
+  "whyNotOnlyCatchToDenied": [
+    "Original validator literal-tag rejection would incorrectly deny healthy future/unsupported context domains",
+    "Healthy supplement/observation provenance uses original optional keys and must remain unsupported rather than denied",
+    "Explicit mismatch predicates at55/59/62\u201363 currently return false rather than throwing",
+    "Early unsupported returns at90\u201392 would still skip integrity checks"
+  ]
+}

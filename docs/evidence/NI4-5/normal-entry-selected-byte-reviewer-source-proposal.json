@@ -1,0 +1,112 @@
+{
+  "contractVersion": "df.ni4-5-selected-byte-reviewer-source-proposal/v1",
+  "status": "PROPOSED_NOT_IMPLEMENTED_NOT_RUN",
+  "proposal": {
+    "path": "docs/evidence/NI4-5/normal-entry-selected-byte-reviewer-source-proposal.md",
+    "sha256": "e64e299f3b09c1085b4611cf8d105eb8bda5720fd3c1ce2ad70c9c92fe78a7ec"
+  },
+  "originalSources": [
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/testing-provider.mjs",
+      "sha256": "4247d216c629dce37196836b7533941fbf44607c601d732c7470ce4b432bf48c",
+      "bytes": 14405
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/installed-worker-facts.mjs",
+      "sha256": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+      "bytes": 21961
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/installed-worker.mjs",
+      "sha256": "4b6e9ba15da7c13298a7291789fa62eb5bdab4a459b6525272279117656c3a3d",
+      "bytes": 37622
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/installed-audit-native-source.mjs",
+      "sha256": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+      "bytes": 10963
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/client-entry.cjs",
+      "sha256": "8789517fd4271eff7e1531b57ee34713de24c8cbc1899938c4e60b53a0b26e74",
+      "bytes": 170175
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/installed-role-recipes.mjs",
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950",
+      "bytes": 2127
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "bytes": 24196
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/memory.mjs",
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "bytes": 31812
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793
+    },
+    {
+      "path": ".runtime/ni4-5-normal-wiring-proposal/src/installed-results.mjs",
+      "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5",
+      "bytes": 48343
+    }
+  ],
+  "newModel": "df-testing-context-byte-review-v1",
+  "provider": "df-testing-local",
+  "role": "review",
+  "reasoningEffort": "deterministic",
+  "maxOutputTokens": 4096,
+  "selectedRecipeOnly": true,
+  "existingUnknownRecipeUnchanged": true,
+  "proposedChangedFiles": [
+    ".runtime/ni4-5-normal-wiring-proposal/src/testing-provider.mjs",
+    ".runtime/ni4-5-normal-wiring-proposal/src/installed-worker-facts.mjs",
+    ".runtime/ni4-5-normal-wiring-proposal/src/installed-worker.mjs",
+    ".runtime/ni4-5-normal-wiring-proposal/src/installed-audit-native-source.mjs",
+    ".runtime/ni4-5-normal-wiring-proposal/src/client-entry.cjs",
+    ".runtime/ni4-5-normal-wiring-proposal/src/installed-synthetic-byte-review.mjs"
+  ],
+  "newMaterialKinds": [
+    "artifact",
+    "context",
+    "goal"
+  ],
+  "nativeFixtureBounds": {
+    "providerCalls": 2,
+    "sessions": 2,
+    "publicationDispatches": 1,
+    "publicationRecords": 1,
+    "repairCalls": 0,
+    "automaticGrants": 0,
+    "resends": 0,
+    "reservedRuntimeMs": 3000,
+    "reservedUsageUnits": 405504,
+    "policyRuntimeMs": 60000,
+    "policyUsageUnits": 600000,
+    "maxActive": 1,
+    "maxAttempts": 1,
+    "maxTotalAttempts": 4
+  },
+  "effectsNow": [
+    "read source bytes",
+    "write proposal/evidence metadata only"
+  ],
+  "futureImportEffects": [
+    "pure finite recipe module",
+    "one source-owned recipe byte pin/read during existing provider initialization and currentness",
+    "original DSH registration only when explicitly installed"
+  ],
+  "execution": "NOT_AUTHORIZED",
+  "acceptance": {
+    "total": 87,
+    "accepted": 0,
+    "status": "HOLD"
+  },
+  "independentReviews": "PENDING_ROOT_DISPOSITION"
+}

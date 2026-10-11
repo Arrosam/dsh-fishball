@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-08",
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "fullCriterionPASS": false,
+  "fullMVPAcceptance": false,
+  "independentActualReviews": "PENDING_SEPARATE_FINAL_PAIRS",
+  "observations": {
+    "actualValues": "NOT_RECORDED",
+    "category": "INVARIANT",
+    "completedLeadingFinalLeaves": "Seven earlier snapshot assertions preceded this phase under conserved source; inference only, not retained values",
+    "correctionCurrent": true,
+    "httpRequests": 30,
+    "noArtifactFlag": false,
+    "noArtifactMeaning": "assignment not reached; earlier artifact-count zero assertion precedes failed marker under source; not artifact-existence evidence",
+    "ownedEntriesRemoved": false,
+    "phase": "FINAL_W_TASK_REF",
+    "positivePath": false,
+    "predicate": "final.workers[0].taskRef === worker.taskRef",
+    "reservationHeld": true,
+    "rootCleanup": "RESTARTED",
+    "sourceFaultMatrix": "NOT_RUN",
+    "staleCaptureRefused": true,
+    "workerStopped": true
+  },
+  "originalDriverCommand": "/opt/homebrew/bin/python3 -I .runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r4/run-once.py .runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r4-plan.json",
+  "originalDriverMode": "require_escalated normal supported review",
+  "originalToolReturns": [
+    {
+      "chunk_id": "eb0b58",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 17089,
+      "wall_time_seconds": 1.000858497
+    },
+    {
+      "chunk_id": "c0ce6c",
+      "original_token_count": 0,
+      "output": "",
+      "session_id": 17089,
+      "wall_time_seconds": 5.001816575
+    },
+    {
+      "chunk_id": "4803d9",
+      "exit_code": 1,
+      "original_token_count": 0,
+      "output": "",
+      "wall_time_seconds": 2.0612e-05
+    }
+  ],
+  "protectedCODE": "BLOCKED_UNCHANGED",
+  "publicationGO": false,
+  "qualification": "Natural owned syntax/functional exits0/1, complete EOF/groupabsence/no signals; private169stderr UNREAD. Source marker locates this case only, not retrospective R3 cause. Stopped/held/source-qualified portions are separate from full success/native release/CLI quit/calibrated SLA. C02/O01/all87individual unchanged; no blanket HOLD.",
+  "recordPins": [
+    {
+      "bytes": 59926,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r4-execution/root-plan.json",
+      "sha256": "697fe8d3f603c9b6fa305185c1380eb932dfa6778a0511d198637e5da6fc1e1d"
+    },
+    {
+      "bytes": 946,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r4-execution/fixture-result.json",
+      "sha256": "86780625c9cf69b020d00a7a28f9bc55273ff2dd4426f1aa281701193e1ef2e1"
+    },
+    {
+      "bytes": 397,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r4-execution/responsiveness.json",
+      "sha256": "53224a1d4e292dcba93704a2fcce7ffda9a4ebd5329b8e0fc6a1a5d4c1b352ab"
+    },
+    {
+      "bytes": 5172,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r4-execution/executor-result.json",
+      "sha256": "65068b2ea3dbc51536a674ec90a226fbcb1d80ba9fca2855a15a747fe0be3614"
+    },
+    {
+      "bytes": 3067,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r4-execution/command-results.json",
+      "sha256": "2a90e4d39c0a280aab48b520a92da6059b0e202a452c63260cfce0695b3079af"
+    },
+    {
+      "bytes": 284,
+      "path": "docs/evidence/NI6/canonical-integration-c1-delayed-worker-d01-r4-execution/before-after.json",
+      "sha256": "a21e9be5c952b668ac462a6574239442dc4930d155a3c1e433d63f6f8405ee42"
+    }
+  ],
+  "replayGO": false,
+  "result": "FAILED_HOLD",
+  "rootPlan": {
+    "bytes": 59926,
+    "path": ".runtime/root-ni6-canonical-integration-c1-delayed-worker-d01-r4-plan.json",
+    "sha256": "697fe8d3f603c9b6fa305185c1380eb932dfa6778a0511d198637e5da6fc1e1d"
+  },
+  "schema": "df.canonical-c1.delayed-worker-d01-r4-root-original-return/v1",
+  "timing": {
+    "conservativeActiveSeconds": 24.013716542162,
+    "finalEnclosingOrProofWriteWindow": "NOT_ESTABLISHED",
+    "observedSeconds": 19.01371583295986,
+    "ownerFinalized": false,
+    "source": "executor pre-terminal publication observations"
+  }
+}

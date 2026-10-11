@@ -1,0 +1,11 @@
+--- .runtime/ni6-schema7-core/src/memory.mjs
++++ .runtime/ni6-schema7-core/src/memory.mjs (PROPOSED ONLY)
+@@ -282,7 +282,7 @@
+     exact(input, ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'recordRefs', 'terms', 'vectors', 'now', 'limit'], ['taskRef', 'commandRef', 'expectedTaskVersion', 'expectedAuthEpoch', 'terms', 'now']);
+     ref(input.commandRef);
+     const capability=this.#preparationCapability;
+-    if(capability){input=freeze(preparationRequest(input));assertPreparationSourceBinding(this.#store,capability,this.#handle,this.#namespace,input.taskRef);const historical=guarded(()=>this.#sourceCall('preparedContextCommandReceipt',capability,{request:input}));if(historical!==null)return freeze(clone(historical.receipt));const status=guarded(()=>this.#sourceCall('preparedContextStatus',capability,{}));if(!status.ready)fail('CONTEXT_PREPARATION_LIMIT');}
++    if(capability){input=freeze(preparationRequest(input,this.#secrets));assertPreparationSourceBinding(this.#store,capability,this.#handle,this.#namespace,input.taskRef);const historical=guarded(()=>this.#sourceCall('preparedContextCommandReceipt',capability,{request:input}));if(historical!==null)return freeze(clone(historical.receipt));const status=guarded(()=>this.#sourceCall('preparedContextStatus',capability,{}));if(!status.ready)fail('CONTEXT_PREPARATION_LIMIT');}
+     if (!['owner', 'coordinator'].includes(this.#binding.role) || !capability&&typeof this.#store.putData !== 'function') fail('UNAUTHORIZED');
+     const commandRef = input.commandRef, assemblyInput = { ...input }; delete assemblyInput.commandRef;
+     const unit = await this.#assemble(assemblyInput,!!capability), expectedMemory = { namespaceRef: this.#namespace, revision: unit.memory.revision };

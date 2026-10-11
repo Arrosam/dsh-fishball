@@ -1,0 +1,73 @@
+{
+  "administrativeInterpreterStartsMaximum": 2,
+  "cases": {
+    "disabled": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+    "invalid": "NOT_RUN_STOP_AFTER_FIRST_FAILURE",
+    "positive": "FAILED_HOLD"
+  },
+  "controllerCode": "STOPPED",
+  "directPublicationToolReturnRequired": true,
+  "disposition": "CONSUMED_DO_NOT_REPLAY",
+  "failureCode": "EXECUTOR_READY_STAGE_FIB",
+  "finalProofWriteTimingRequiredFromRoot": true,
+  "fullAcceptance": false,
+  "missingOrUncertain": [],
+  "originalToolReturns": [
+    {
+      "case": "prepare",
+      "chunkId": "34333f",
+      "exitCode": 0,
+      "kind": "RETURN",
+      "outputBytes": 185,
+      "sessionId": null,
+      "wallTimeSeconds": 1.9436e-05
+    },
+    {
+      "case": "positive",
+      "chunkId": "829880",
+      "exitCode": 1,
+      "kind": "RETURN",
+      "outputBytes": 0,
+      "sessionId": null,
+      "wallTimeSeconds": 0.633782649
+    }
+  ],
+  "publication": {
+    "closedArchiveComplete": true,
+    "noPrivateContentRead": true,
+    "originalPlanDigestBound": true,
+    "secondsCap": 10,
+    "withinOriginalFamilyAtStart": true,
+    "withinOriginalFamilyBeforeProof": true
+  },
+  "recordPins": [
+    {
+      "bytes": 497,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r6-execution/positive/case-result.json",
+      "sha256": "3c8919b39606ae6e75aafd6da6a680bf3c1091dd34445f645a9078f9a6064171"
+    },
+    {
+      "bytes": 964,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r6-execution/positive/command-results.json",
+      "sha256": "5280a7263a5ee5e29153d5c792f5065d22164da19804f5cb64ef1db5d42a5138"
+    },
+    {
+      "bytes": 106,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r6-execution/positive/before-after.json",
+      "sha256": "538e95aa735c35900f693496ee0ce43ccbe03697fb8d46bb80fd37adfdcfe393"
+    },
+    {
+      "bytes": 74,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r6-execution/positive/invocation-result.json",
+      "sha256": "7f53bc35c278cac0eae46593f5cf3396157c11ba3c5cb60d5ccb3a9b53ef737c"
+    },
+    {
+      "bytes": 50661,
+      "path": "docs/evidence/NI6/canonical-integration-c1-cli-r6-execution/root-plan.json",
+      "sha256": "fe9a8becb085c9c67705bcf456f59d6e1a33a12ac390b6f1766d130c30e3b778"
+    }
+  ],
+  "result": "FAILED_HOLD",
+  "runtimeInterpreterStartsMaximum": 7,
+  "schema": "df.canonical-c1.cli-r6-actual-return/v1"
+}

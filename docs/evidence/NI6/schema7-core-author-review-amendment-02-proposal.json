@@ -1,0 +1,68 @@
+{
+  "status": "PROPOSAL_NOT_APPLIED",
+  "frozenSourceDigest": "8ae78baf7e66697f4d490ad24a5f4bca2162d0f5e22dad30a8785ff2bdd3fdc8",
+  "frozenFiles": [
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sha256": "bc7074c72abe97780055cbf15b71bce223e53191e0867e6c09ff13a3860333d8"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "sha256": "6b284217281a821f3fb6de61b41e6df62f8786614f1d8c50f36117315c7fb993"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "sha256": "516fcb08e43e6eba2884eee3eb6999b5857929eb8cec14e581c4d1f1a9a09531"
+    }
+  ],
+  "dependentRequiredProposal": "schema7-core-author-review-amendment-01-required.diff (F01/F02)",
+  "changes": [
+    "F04 actual original task-bound handle admission at entries/source delivery/final mutation/effect",
+    "F05 four new terminal operation classifications using actual original held claim/action/execution/output/repair domains",
+    "F06 actual adapter secrets before historical lookup",
+    "F07 complete shared-field/metadata/envelope/row-task NEW preparation inverses"
+  ],
+  "ordinaryMethods": "UNCHANGED except new operation discrimination before existing terminal helper",
+  "execution": "NOT_RUN",
+  "candidateEdited": false,
+  "sourceFilesProposed": [
+    "runtime-store.mjs",
+    "context.mjs",
+    "memory.mjs"
+  ],
+  "dependentRequiredProposalSha256": "29d16511d7a3e2089865890622695f930dda39a9df2777d6019c8468d384c54a",
+  "artifacts": [
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-f04.diff",
+      "sha256": "2d256b6cbe5676ad2ae3d918af63b0af07a12e9eb41d77906619b2c56d2a92fa"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-f05.diff",
+      "sha256": "f9f98773e484c93042bc29f24fdcc82cb9ad7d848bcabbcc6b33bcdc76d8ee7f"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-f06.diff",
+      "sha256": "a91ab33d75a4993ac47ef466bac92660b13959a5ae5073cf945cb0de0080ba06"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-f07.diff",
+      "sha256": "67f6cce9da443f73d973fa9855b39cd5005965032faf948f26d1bc0c9b98a9a2"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-literal.txt",
+      "sha256": "de529b9a3f7223bbcd6783f65d160d95f19ee6ebf2def4fd0fc94df391e40e79"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-oracles.md",
+      "sha256": "fdb509658bb539694820f20f04e865362a420283f48d96ab45afe2dac0532ec3"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-required.diff",
+      "sha256": "90fe86c089760521dd9230c34eb32f638a1c53e2f924147f69fb9516ab901117"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02.md",
+      "sha256": "46da83f61c754f41a753095211cceca7f22ff25363de06bccd1040f329ee1568"
+    }
+  ]
+}

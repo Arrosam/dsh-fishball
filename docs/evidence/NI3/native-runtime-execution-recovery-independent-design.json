@@ -1,0 +1,746 @@
+{
+  "contractVersion": "df.ni3.nr-ui04.independent-istqb-design/v1",
+  "status": "SOURCE_DESIGN_SEALED_SOURCE_BLOCKER_NO_EXECUTABLE_GO",
+  "recordedAt": "2026-10-07T05:03:17.697399+00:00",
+  "reviewer": "/root/ni6_independent_design",
+  "parent": "/root",
+  "language": "English",
+  "repository": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball",
+  "exactReviewedSource": {
+    "readPath": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+    "sha256": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+    "bytes": 121601,
+    "lines": 718,
+    "preservedByteIdenticalPath": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/before/client-entry.cjs"
+  },
+  "pathCorrection": {
+    "initialMissingPath": ".runtime/ni3-native-execution-recovery-proposal/src/client-entry.cjs",
+    "resolution": "Hash-only discovery matched0909 at proposed/, root explicitly corrected target before body review. No silent retarget."
+  },
+  "concurrentAuthorDrift": {
+    "observedCurrentPathPin": {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+      "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+      "bytes": 121721,
+      "inspection": "Hash only at seal: current author path changed, body not read in original0909 lane."
+    },
+    "resolution": "Stdlib generation stopped on pin mismatch before writing artifacts. Root verified0909 before snapshot and explicitly authorized sealing read-time original design. Root separately source-approved d8990e→a281; no executable GO.2f077 closure is historical/stale during authoring.",
+    "newA281BodyReadInThisOriginalDesign": false
+  },
+  "inputs": [
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/before/client-entry.cjs",
+      "sha256": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+      "bytes": 121601,
+      "inspection": "Root-confirmed byte-identical0909 preserved source. Body was reviewed at proposed/ while its hash was0909; this preserved file was identity-hashed only."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/literal-client.patch",
+      "sha256": "815cdec544f0ee229a65e2b6f4158bad8ba82471f2715d068fccafcd16b33113",
+      "bytes": 13284,
+      "inspection": "Full client-only literal diff read; combined test diffs excluded."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/parsing-contract.json",
+      "sha256": "fb192c907eff72209bfddd4c17a164f950910a7edcf25b4f507400d90a0f4f53",
+      "bytes": 7265,
+      "inspection": "Closed final0909 contract read."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/source-closure.json",
+      "sha256": "2f0776d20db26a4fecb2e1d37816c110b5e94a7284db7d09c32b8bc275496f4b",
+      "bytes": 23811,
+      "inspection": "Import/pin/declared effects metadata only; root now identifies2f077 as historical/stale during authoring, no GO."
+    },
+    {
+      "path": "src/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "bytes": 239793,
+      "inspection": "Original public owner snapshot/execution projection and allowed ordinary writer-domain excerpts only; protected paths excluded."
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "dea33c79f404cbab39acfc96b70b5e01962b9214cfd44f5cb6524764b1e45fc4",
+      "bytes": 7668,
+      "inspection": "Applicable rules read."
+    },
+    {
+      "path": "docs/owner-amendment-2026-10-04.md",
+      "sha256": "92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+      "bytes": 5304,
+      "inspection": "Applicable owner amendment read earlier; preserved identity."
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-resumed-execution-reconciliation-proposal.md",
+      "sha256": "383ca51c0a1a12435c7c31fd7aa0b9d5c6de93b5149b75cc92ad3b24e3411f14",
+      "bytes": 3028,
+      "inspection": "Original reconciliation proposal read; old candidate pins are historical."
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-resumed-execution-reconciliation-proposal.json",
+      "sha256": "00cc3ec137bd6f8e692709d9da720378365cb0a6d347db018b088ff89d3e3e6c",
+      "bytes": 6559,
+      "inspection": "Keys/status/authorityLimits only. Author groups/fixture plan/assertions excluded."
+    }
+  ],
+  "preservedPriorNI6Artifacts": [
+    {
+      "path": "docs/evidence/NI6/schema7-independent-design.md",
+      "sha256": "9a01d8d71fe97def605bff63a4c2da3556bdbff61adf7376ee6741636dc8c5ec",
+      "bytes": 44965,
+      "inspection": "Integrity hash only; sealed NI6 artifact unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-independent-design.json",
+      "sha256": "706113919029e0812b96950d737f26ea1c055927a352f8f14f488b0ee5395611",
+      "bytes": 110282,
+      "inspection": "Integrity hash only; sealed NI6 artifact unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review.md",
+      "sha256": "e5e400fc24242b3ce62256fadceeb8442587c7b54f7193ac8e203ae88f86bd83",
+      "bytes": 47338,
+      "inspection": "Integrity hash only; sealed NI6 artifact unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review.json",
+      "sha256": "f3c3bf9f9c8f3c6e0636a2d84b58232d7a61b023ee195337f83a3e1c7bfd4bec",
+      "bytes": 108175,
+      "inspection": "Integrity hash only; sealed NI6 artifact unchanged."
+    }
+  ],
+  "authorization": {
+    "newOnlyOutputs": [
+      "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.md",
+      "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.json"
+    ],
+    "scope": "Affected0909 source/client-only diff/closed contract/import-pin metadata and public original schema6 projection domains; Python stdlib artifact processing only.",
+    "exclusions": "Author ER fixture/test/assertion/oracle bodies; ordinary review oracle reports; combined source/test diffs; fixture creation/execution; source edits; Node parse/import/check/test/build; DB/migration/native/provider/model/tool/browser/profile/listener/network/install/Git; receipt-envelope/rev999/legacy/quarantine/finalCODE reroute; QA/frozen a58; dsh-std/upgrade.",
+    "hostPin": "DSH Web0.2.1-alpha.1",
+    "futureNodePin": "22.22.2",
+    "stdlibPython": "3.14.5"
+  },
+  "closedProjection": {
+    "required19": [
+      "kind",
+      "executionRef",
+      "taskRef",
+      "actionRef",
+      "actionDigest",
+      "claimRef",
+      "generationRef",
+      "sessionRef",
+      "inputRecordRef",
+      "inputDigest",
+      "dataDigest",
+      "auditRef",
+      "bindingDigest",
+      "materialDigest",
+      "purpose",
+      "semanticRevision",
+      "commandRef",
+      "state",
+      "createdAt"
+    ],
+    "optional5": [
+      "admittedAt",
+      "resultRef",
+      "reportRef",
+      "outcomeEvidenceRef",
+      "terminalEvidenceRef"
+    ],
+    "states6": [
+      "intent_committed",
+      "dispatch_intent",
+      "unknown",
+      "completed",
+      "failed",
+      "terminated"
+    ],
+    "equalityAxes13": [
+      "taskRef",
+      "actionRef",
+      "actionDigest",
+      "claimRef",
+      "generationRef",
+      "sessionRef",
+      "inputRecordRef",
+      "inputDigest",
+      "auditRef",
+      "bindingDigest",
+      "materialDigest",
+      "purpose",
+      "executionRef=currentAction.executionRef"
+    ],
+    "arraysMax": 128,
+    "ref": "64 lowercase hexadecimal",
+    "integer": "safe nonnegative",
+    "historicalTypedOnly": [
+      "dataDigest",
+      "semanticRevision",
+      "commandRef"
+    ],
+    "authority": "Stored observation only, no mutation/RPC/ref generation/collection/finish authority."
+  },
+  "publicOriginalDomains": [
+    {
+      "id": "PD01",
+      "line": 1288,
+      "fact": "Original owner/workspace/task-scoped snapshot exposes original action metadata, stored workers and stored executions. No invented owner/workspace/proof fields on execution rows."
+    },
+    {
+      "id": "PD02",
+      "line": 2466,
+      "fact": "beginAuditExecution persists19 keys; dataDigest historical artifactDigest, inputDigest prepared digest, semanticRevision historical material revision, stored original commandRef and executionRef; action metadata stores same executionRef."
+    },
+    {
+      "id": "PD03",
+      "line": 2479,
+      "fact": "assertExecutionCurrent persists dispatch_intent/admittedAt. admitted and deduplicated are return-only, absent from stored row."
+    },
+    {
+      "id": "PD04",
+      "line": 2559,
+      "fact": "capture adds resultRef=executionRef to execution; captured is state of separate audit_result association, not execution."
+    },
+    {
+      "id": "PD05",
+      "line": 2622,
+      "fact": "submitAuditResult adds reportRef to execution after genuine result linkage."
+    },
+    {
+      "id": "PD06",
+      "line": 879,
+      "fact": "settle stores unknown for unknown outcome or missing actual worker terminal evidence; otherwise completed/failed/terminated. outcomeEvidenceRef from original input, terminalEvidenceRef actual worker ref and nullable in unknown; cancelled is not execution state."
+    },
+    {
+      "id": "PD07",
+      "line": 746,
+      "fact": "Original worker may omit taskRef and starts native terminalEvidenceRef:null; match six identities and optional taskRef, never infer physical state."
+    },
+    {
+      "id": "PD08",
+      "line": 2334,
+      "fact": "Public prepare reply omits artifactDigest/semanticRevision; typed historical fields cannot be guessed from reply/current task."
+    },
+    {
+      "id": "PD09",
+      "line": 1360,
+      "fact": "Original semantic defaults1 and increments>=1; UI safe-nonnegative typing0 is wire boundary only, not a claimed genuine public-store positive."
+    }
+  ],
+  "stateSequence": [
+    "One original execute sent; lost reply retains uncertain executeAudit/execution null/stale true.",
+    "Refresh original current task facts without execute retry.",
+    "Explicit unique reference recovery copies exact stored record; stale/uncertainty/status/worker/collection unchanged, preview null/accepted false.",
+    "Explicit genuine fresh status restores existing stale mutation gate; a status already refreshed before recovery is preserved, not forced stale again.",
+    "Explicit original collection with current CAS/execution identity, only actual reply supplies collection facts/uncertainty.",
+    "Explicit original finish needs received collection/execution and original host currentness/physical/evidence/obligation checks."
+  ],
+  "sourceBlockers": [
+    {
+      "id": "NR4-SRC01",
+      "severity": "HIGH",
+      "status": "ROOT_ACKNOWLEDGED_BLOCKER_IN_REVIEWED0909",
+      "title": "Real refresh clears retained recovery facts during temporary detail absence",
+      "sourceLines": [
+        68,
+        74,
+        545,
+        550,
+        565,
+        596,
+        705
+      ],
+      "evidence": [
+        "refresh68 awaits select for selectedA.",
+        "select74 publishes detail:null/stale:true before status read.",
+        "Subscriber545 sees before=A and t undefined, resets requirement/input/action/worker/execution/collection/uncertain.",
+        "ownRefresh suppresses clear only, not the reset.",
+        "run550 sets executeAudit uncertainty after lost response then invokes this real refresh.",
+        "RestoredA does not reconstruct erased facts; recovery565 cannot pass.",
+        "apply705 wires the exact real task+audit models."
+      ],
+      "impact": "Actual lost-response path cannot survive normal same-task refresh; earlier successful setup mutations encounter reset too. A detail-preserving carrier hides it.",
+      "requiredCorrection": "Distinguish same-selected-task transient absence from real foreign selection/offline/auth/version/incarnation changes. Retain only read-only original mappings/uncertainty, preserving stale/currentness until genuine fresh status and original host checks; no refs, retry or authority fabrication.",
+      "runtimeResult": "NOT_RUN",
+      "laterAmendment": "Root separately approved d8990e source literal to currenta281 after source review only. This original0909 design does not assess that correction; affected report separate."
+    }
+  ],
+  "independentStrategy": {
+    "groups28": true,
+    "techniques": [
+      "equivalence",
+      "one-axis boundaries",
+      "closed relationship decisions",
+      "state transitions",
+      "real public model composition",
+      "revision/epoch/subscription races",
+      "separate oracle tiers"
+    ],
+    "notAuthorGroupCopy": true,
+    "noCartesianBooleanMatrix": true
+  },
+  "fixtures": [
+    {
+      "id": "FX-NR4-WIRE",
+      "scope": "Exact public createAuditModel plus finite admitted snapshot carrier, in-memory RPC envelopes/deferred calls and deterministic injected clock/uuid/digest. Establish retained state via public model methods only.",
+      "limit": "Wire/model contract only; projection-shaped synthetic refs are not authentic encrypted state, owner/native authority, collection/finish or DOM proof."
+    },
+    {
+      "id": "FX-NR4-REALMODELS",
+      "scope": "Exact exported createModel+createAuditModel used by apply, real subscribe/refresh/select and finite list/status/detail/setup/mutation RPC replies. No private audit-state injection.",
+      "limit": "Mandatory transient detail:null oracle. A carrier whose refresh preserves detail hides the0909 regression. Earlier successful setup mutations may fail before execute; record that honestly."
+    },
+    {
+      "id": "FX-NR4-PUBLIC6",
+      "scope": "Separately leased genuine original public schema6 writers and owner snapshot, using only synthetic identities to observe begin/assert/capture/submit/settle projection fields.",
+      "limit": "Projection-domain evidence only. Trusted fixture host-writer calls are not physical native proof. No raw rows/receipts or fabricated authenticated negatives."
+    },
+    {
+      "id": "FX-NR4-HOSTDOM",
+      "scope": "Separately leased final original host/source-owned synthetic role and authentic owner projection after a real lost execute response, explicit status/collect/finish, mounted React/DOM/browser lifecycle.",
+      "limit": "Final source/owner/provider/physical stop/currentness and DOM oracles missing. No paid/live model or frozen a58/QA reuse."
+    }
+  ],
+  "cases": [
+    {
+      "id": "NR4-D01",
+      "title": "Unique exact recovery, both roles",
+      "technique": "equivalence/state",
+      "trigger": "Retained executeAudit uncertainty, no local execution, fresh selected task detail, one exact worker/action/audit_input row; review and repair variants.",
+      "oracle": "Explicit recovery copies exact stored ref/record only; no RPC/digest/uuid/native/collection/finish authority. Preserve stale/uncertain/status/worker/collection; clear preview/acceptance.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "565-583,595-596",
+      "feasibilityLimit": "Real composed positive is blocked by NR4-SRC01; native-positive requires original host.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D02",
+      "title": "Lost execute response",
+      "technique": "state/uncertainty",
+      "trigger": "Send one valid executeAudit request; lose/reject its reply or malformed envelope, then let original own-refresh run.",
+      "oracle": "Keep input/action/worker, uncertainty executeAudit, execution null/stale true; no retry/create/send. Current real-model refresh violates retention (NR4-SRC01).",
+      "fixtureId": "FX-NR4-REALMODELS",
+      "oracleTier": "WIRE_REAL_MODEL",
+      "sourceLines": "550,594",
+      "feasibilityLimit": "Use actual public model setup, no private-state injection or refresh carrier that hides detail:null.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D03",
+      "title": "Real-model transient detail-null",
+      "technique": "state/temporal regression",
+      "trigger": "Compose exact task/audit models; expose refresh→select selectedA/detail:null/restoredA after success and lost mutation response.",
+      "oracle": "Same-task temporary detail absence preserves only read-only retained facts/uncertainty and gates stale.0909 clears them at545, including earlier setup mutations.",
+      "fixtureId": "FX-NR4-REALMODELS",
+      "oracleTier": "WIRE_REAL_MODEL",
+      "sourceLines": "68,74,545,550,705",
+      "feasibilityLimit": "NR4-SRC01 correction needs separate source revision/review; no invented positive setup.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D04",
+      "title": "Recovery preconditions",
+      "technique": "decision/equivalence",
+      "trigger": "Vary one axis: inactive/disposed, busy, uncertainty not executeAudit, existing execution, missing action/input/worker, stale/missing selected task.",
+      "oracle": "Both availability/recovery refuse with no recovery publication/RPC/ref generation. Audit stale may remain true during read-only recovery.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "565-568,595-596",
+      "feasibilityLimit": "Only predicate behavior; original host authority remains separate.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D05",
+      "title": "Fresh selected task binding",
+      "technique": "boundary/equivalence",
+      "trigger": "Wrong/missing task, version/auth mismatch, invalid safeTask fields/status and stale snapshot; then restore exact current detail.",
+      "oracle": "Refuse stale/foreign/inconsistent selected facts; derive task/CAS from actual owner model, no caller/execution guess.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "24-27,546,567",
+      "feasibilityLimit": "Owner connection authentication must be proved by original host.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D06",
+      "title": "Array limits and uniqueness",
+      "technique": "boundary/cardinality",
+      "trigger": "Each actions/workers/executions array absent/nonarray or lengths127/128/129 with one valid match; separately0/1/2 matching rows and unrelated kinds.",
+      "oracle": "At most128 and exactly one matching identity; refuse ambiguity, never first-match. Unrelated execution kinds ignored.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "567,569-574",
+      "feasibilityLimit": "Duplicate authenticated original DB states not fabricated; wire negative only.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D07",
+      "title": "Current worker mapping",
+      "technique": "equivalence/identity",
+      "trigger": "Individually change six worker identity refs; taskRef omitted/exact/foreign; current phase drift.",
+      "oracle": "Match exact action/digest/claim/reservation/generation/session, optional taskRef. Preserve retained worker; observed phase does not create result/finish.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "553,566,569-570",
+      "feasibilityLimit": "Original public snapshot may omit taskRef; physical state is host-only.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D08",
+      "title": "Current action linkage",
+      "technique": "equivalence/identity",
+      "trigger": "Zero/one/two exact action/digest matches; claim/gen/executionRef mismatch/missing/invalid.",
+      "oracle": "Only unique current action bound to retained claim/gen and literal stored executionRef accepts; compute no reference.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "571-572,577",
+      "feasibilityLimit": "Public beginAuditExecution writes metadata ref; malformed/duplicate mappings are wire negatives.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D09",
+      "title": "Thirteen execution equalities",
+      "technique": "equivalence/field binding",
+      "trigger": "Independently mismatch each13 equality axis, including prepared record/digest and purpose.",
+      "oracle": "Each mismatch refuses; all exact original current action/input/worker/selected-task bindings required. No partial match or proof flag.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "577-578",
+      "feasibilityLimit": "One-field variations, no Cartesian Boolean matrix.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D10",
+      "title": "Historical typed-only fields",
+      "technique": "equivalence/historical data",
+      "trigger": "Valid historical dataDigest differs inputDigest; semanticRevision differs current; distinct literal original commandRef. Invalid typed controls.",
+      "oracle": "Copy historical data/command exactly, no current/input equality inference, normalization, generated ref or retry.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "575-578",
+      "feasibilityLimit": "Actual writer supports historical differences; semantic0 is parser-boundary only.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D11",
+      "title": "Closed required/extra fields",
+      "technique": "closed schema/boundary",
+      "trigger": "Omit each19 base key; add admitted/deduplicated/extra/proof keys; undefined optional, symbol/nonenumerable/accessor/custom prototype; plain/null-prototype controls.",
+      "oracle": "Closed descriptors refuse missing/extra/invalid record. No return-only adoption, no universal zero Proxy/getter-trap promise.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "281-299,306-310,575-576",
+      "feasibilityLimit": "Shape-positive is not native/authenticated provenance.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D12",
+      "title": "Reference/numeric boundaries",
+      "technique": "boundary/relational",
+      "trigger": "Ref63/64/65 lowercase/uppercase/nonhex; integer0/MAX_SAFE/negative/fraction/unsafe/NaN/Infinity; admittedAt absent and before/equal/after createdAt.",
+      "oracle": "Exact64 lowercase refs, safe nonnegative integers. dispatch_intent requires admittedAt; present admission time>=createdAt.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "7-8,576,579",
+      "feasibilityLimit": "Original semantic defaults1; extremes/semantic0 are wire boundaries, not genuine source positives.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D13",
+      "title": "Six execution states",
+      "technique": "state/domain",
+      "trigger": "Original public writer states intent_committed/dispatch_intent/unknown/completed/failed/terminated; unknown evidence absent/null/ref where reachable; captured/cancelled negatives.",
+      "oracle": "Copy only original allowed states with admission/evidence dependencies. captured is separate result state; cancelled not execution transition. No state implies collection/finish.",
+      "fixtureId": "FX-NR4-PUBLIC6",
+      "oracleTier": "PUBLIC_PROJECTION_DOMAIN",
+      "sourceLines": "576,579-581",
+      "feasibilityLimit": "Public writer/DB lease absent; impossible combos remain wire negatives.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D14",
+      "title": "Optional reference relationships",
+      "technique": "decision/dependency",
+      "trigger": "Result absent/equal execution/mismatch; report with/without result; invalid optional refs; terminal null/ref; terminal states missing evidence pair.",
+      "oracle": "Five fields closed/typed; result=execution, report requires result; completed/failed/terminated require non-null terminal/outcome refs. Unknown nullable stays unknown.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "580-581",
+      "feasibilityLimit": "Genuine optional positives follow public writer branches, no forged signed rows.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D15",
+      "title": "Immutable literal publication",
+      "technique": "copy/state/effects",
+      "trigger": "Availability repeated, one explicit recovery, duplicate recovery; caller attempts mutation of source/local snapshots. Count recovery listeners/RPC/uuid/digest.",
+      "oracle": "Availability publishes0; successful copy is frozen/detached and exact. One local recovery update; preserve uncertainty/stale/status/worker/collection, preview null/accepted false; duplicate cannot replace.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "583,595-596",
+      "feasibilityLimit": "Count audit recovery notification separately from task events.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D16",
+      "title": "Snapshot cannot finish",
+      "technique": "state/no authority",
+      "trigger": "Recover observed result/report/terminal state; collect/finish while stale or before collection; direct finish after fresh status with collection null.",
+      "oracle": "Observation supplies execution only. Stale blocks mutations; final600 missing collection/execution refuses before uuid/digest/RPC. Never invent stopped/released.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "596,599-600",
+      "feasibilityLimit": "Public model guard proof only, not native stop/release.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D17",
+      "title": "Explicit audit status refresh",
+      "technique": "state/explicit refresh",
+      "trigger": "Normal lost-execute stale=true, recovery then explicit status success/error/malformed/pending/disabled/not-ready. Also status refreshed before recovery.",
+      "oracle": "Recovery preserves stale exactly and never auto-refreshes. Actual explicit status reply restores original stale gate; execute uncertainty persists until collection. Preexisting fresh status stays unchanged; no stricter always-after claim.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "544,586,596,599",
+      "feasibilityLimit": "Absolute post-recovery ordering beyond stale gate would require new literal.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D18",
+      "title": "Original collection request",
+      "technique": "interface/request binding",
+      "trigger": "Recovered ref plus explicit fresh status/current task CAS; make one collect with a fresh command for collect only.",
+      "oracle": "Exact8 keys taskRef/commandRef/expectedTaskVersion/expectedAuthEpoch/actionRef/claimRef/generationRef/executionRef. No actionDigest/content/outcome/usage/evidence flags or execute resend.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "547,551-552,599",
+      "feasibilityLimit": "Actual collection proof requires final original host response oracle.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D19",
+      "title": "Collection reply/loss",
+      "technique": "uncertainty/interface",
+      "trigger": "Final source-confirmed unknown/collected replies once literal frozen; rejected/malformed envelope/lost/disconnected/stale replies.",
+      "oracle": "Only original collect reply populates collection or changes uncertainty. Unknown does not imply stop/release; errors/loss gated, late changed-revision responses do not publish.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "549-550,599",
+      "feasibilityLimit": "Full positive collect reply contract/provenance is not available in projection-only lane; do not invent it.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D20",
+      "title": "Original finish request/ack",
+      "technique": "interface/request boundary",
+      "trigger": "Missing execution/collection direct calls; then actual collection/current CAS and explicit finish; host failure and authentic held/released completed replies.",
+      "oracle": "Presence guard rejects before request. Exact same8 identity/CAS keys, no caller proof. Only actual matching claim/completed/boolean-held original reply updates unknown/stopped.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "547,551-552,600",
+      "feasibilityLimit": "Full original terminal/obligation/receipt/physical provenance remains host-only.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D21",
+      "title": "Busy/duplicate serialization",
+      "technique": "serialization/negative effects",
+      "trigger": "Competing calls while execute/status/collect/finish await; duplicate execute/create after recovery and retry after unknown/loss.",
+      "oracle": "Busy/stale/execution/uncertainty guards deny competing/repeated execution; no implicit grant/send. Original query may truthfully write worker observations; no global-zero-query-write claim.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "550,593-600",
+      "feasibilityLimit": "Finite deferred promises/call logs, no real dispatch or blocking sleep.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D22",
+      "title": "Task authority across awaits",
+      "technique": "race/currentness",
+      "trigger": "Change selected identity/version/auth via public task model at digest or pending execute/status/collect/finish; deliver old response.",
+      "oracle": "Old response cannot publish to changed task; re-read actual facts and keep admission stale. ownRefresh must not hide auth/version/incarnation changes.",
+      "fixtureId": "FX-NR4-REALMODELS",
+      "oracleTier": "WIRE_REAL_MODEL",
+      "sourceLines": "545-550,586,601",
+      "feasibilityLimit": "Original host permission/CAS denial needs separate real oracle.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D23",
+      "title": "Own refresh versus switch",
+      "technique": "race/selection",
+      "trigger": "Own refresh selectedA/detail temporarily absent/restoredA versus selectB/no selected task/auth/version/current worker generation/session changes.",
+      "oracle": "Preserve only read-only A facts/uncertainty for valid transient absence. Changed scope/authority/incarnation invalidates admission; no lending refs or broad ownRefresh exemption.",
+      "fixtureId": "FX-NR4-REALMODELS",
+      "oracleTier": "WIRE_REAL_MODEL",
+      "sourceLines": "74,545,550,567-578",
+      "feasibilityLimit": "NR4-SRC01 separate amendment/review pending, not included in0909 design.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D24",
+      "title": "Disconnect/reset/dispose",
+      "technique": "race/epoch/lifecycle",
+      "trigger": "Disconnect/reset/dispose at digest/RPC/status; actual detail-null disconnect publication; reconnect current/foreign task, late old response.",
+      "oracle": "Epoch/controller/active deny late publication/send/recovery. Any retained lost-execute facts remain read-only/stale until actual current facts/status/host checks; no auto execution.",
+      "fixtureId": "FX-NR4-REALMODELS",
+      "oracleTier": "WIRE_REAL_MODEL",
+      "sourceLines": "549-550,586,601,712-714",
+      "feasibilityLimit": "Manual/offline/error recovery/native restart remains independently held.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D25",
+      "title": "Availability versus publication race",
+      "technique": "race/read publication",
+      "trigger": "Eligible availability snapshot, then actual public detail/revision/epoch change before recover; controlled changing-snapshot carrier only as negative wire input.",
+      "oracle": "Recovery rechecks active/busy/revision/epoch/exact snapshot and complete bindings; stale availability cannot publish. Helper synchronous/no await, no invented inner interleaving.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_ONLY",
+      "sourceLines": "595-596",
+      "feasibilityLimit": "Wire double proves guarded predicate only; real subscription races need actual model.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D26",
+      "title": "Recovery UI wire",
+      "technique": "presentation/wire",
+      "trigger": "Actual React element wire labels/actions/disabled busy/stale/ambiguous/enabled and unconfirmed recovery/status/collection/finish text.",
+      "oracle": "Button calls helper and predicate matches disabled wire; explicit recovery/refresh/collect messaging, no auto execute. Wire tree does not prove mounted DOM/focus/keyboard/accessibility.",
+      "fixtureId": "FX-NR4-WIRE",
+      "oracleTier": "WIRE_UI_ONLY",
+      "sourceLines": "604-612",
+      "feasibilityLimit": "Actual React/DSH browser/DOM profile oracle absent, a58/QA untouched.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D27",
+      "title": "Genuine original-host reconciliation",
+      "technique": "integration/public authority",
+      "trigger": "Actual source-owned synthetic role lost response→owner snapshot unique ref→explicit status→original collect/finish under current original scope/source/permissions.",
+      "oracle": "Exactly one original execution, no recovery native allocation/retry. Result/terminal/held/released facts are actual host proofs; unavailable/revoked/foreign incarnation refuses without fabrication.",
+      "fixtureId": "FX-NR4-HOSTDOM",
+      "oracleTier": "ORIGINAL_HOST_REQUIRED",
+      "sourceLines": "PD01-08;596,599-600",
+      "feasibilityLimit": "Final source/owner/provider/history/usage/stop/native lease absent; finalCODE unchanged blocked.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR4-D28",
+      "title": "Mounted final client lifecycle",
+      "technique": "physical/UI integration",
+      "trigger": "Actual final React/DSH DOM/buttons, original owner window/connection/task with late response/state transitions.",
+      "oracle": "Host/DOM follows closed model sequence with truthful uncertainty and no false stop/release/implicit mutation. Wire-only fixtures cannot pass physical UI/all87.",
+      "fixtureId": "FX-NR4-HOSTDOM",
+      "oracleTier": "DOM_HOST_REQUIRED",
+      "sourceLines": "apply702-718;604-612",
+      "feasibilityLimit": "Final package/browser/profile/listener/DOM/source lease absent, no QA reuse.",
+      "authoring": "DESIGN_ONLY_NO_FIXTURE_CREATED",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    }
+  ],
+  "oracleLimits": [
+    "Original12 author groups remain NOT_RUN by parent attribution; their assertions/coverage were not inspected.",
+    "Full positive collect/finish reply provenance not closed by projection-only contract; freeze original public host literal/actual observation separately.",
+    "Malformed/duplicate/missing signed DB states not fabricated; wire negatives prove model predicates only.",
+    "Synthetic refs/shape/state/result/report/evidence labels confer no native or owner authority.",
+    "UI wire tests cannot prove mounted DOM, source/Loader/provider/model quality/current permissions/native result/stop/release or physical lifecycle.",
+    "Currenta281 amendment source is a separate affected design lane; original0909 blocker and design remain sealed."
+  ],
+  "readScope": {
+    "client": "Affected539-614; real task refresh/select65-90; helpers281-324; apply685-718 and client-only diff. Whole-file hash does not claim unrelated feature code review.",
+    "store": "Public snapshot1288-1327; worker733-753; prepared return2333-2350; begin/assert2454-2501; capture2539-2568; submit2602-2626; settle projection844-885; semantic1360-1366. Old private calls treated as black boxes.",
+    "disclosure": "Initial broad public-field rg displayed nearby old inverse2819-2839; not followed/analyzed/used. A guessed src/ui-rpc.mjs was absent. Authorized source closure test import literals seen only as metadata; no assertion derivation or body read."
+  },
+  "executionCounters": {
+    "sourceEdits": 0,
+    "fixtureAuthoringExecution": 0,
+    "authorAssertionOracleBodyReads": 0,
+    "ordinaryOracleReportReads": 0,
+    "NodeParseImportCheckTestBuild": 0,
+    "DBMigrationNativeProviderModelTool": 0,
+    "browserProfileListenerNetworkInstall": 0,
+    "Git": 0,
+    "blockedExperimentRerunReroute": 0,
+    "QAFrozenA58Changes": 0
+  },
+  "acceptance": {
+    "independent28": "DESIGN_ONLY_NOT_RUN_HOLD",
+    "author12": "NOT_RUN_PARENT_ATTRIBUTION",
+    "all87": "HOLD",
+    "finalCODE": "ORIGINAL_BLOCKED_UNCHANGED",
+    "hostDOMNativeModelQualityMVPPublication": "HOLD"
+  },
+  "artifactIntegrityChecks": {
+    "newOnly": true,
+    "caseCount": 28,
+    "uniqueCaseIds": 28,
+    "fixtures": 4,
+    "keys": 19,
+    "optionalKeys": 5,
+    "states": 6,
+    "equalityAxes": 13,
+    "sourceBlockers": 1,
+    "preserved0909Exact": true,
+    "preservedNI6FourExact": true,
+    "verification": "Python stdlib JSON/text/hash only, no implementation tests."
+  }
+}

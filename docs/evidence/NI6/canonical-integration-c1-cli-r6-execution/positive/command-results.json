@@ -1,0 +1,39 @@
+{
+  "commands": [
+    {
+      "boot": 1,
+      "captureComplete": true,
+      "childPid": 88575,
+      "eof": true,
+      "exitCode": 0,
+      "failureCode": "EXECUTOR_FORCED_CLEANUP",
+      "forcedCleanup": true,
+      "overflow": false,
+      "ownedProcessGroup": 88575,
+      "privateStreams": {
+        "stderr": {
+          "bytes": 2055,
+          "complete": true,
+          "eofObserved": true,
+          "sha256": "a19ae7c09dff40e059535e6319fae47388434d8abdc6979f4b66b83165352905",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "complete": true,
+          "eofObserved": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      },
+      "processGroupState": "ABSENT_OBSERVED",
+      "signalAttempts": [
+        "SIGTERM"
+      ],
+      "signalOutcomes": [
+        "SUBMITTED"
+      ]
+    }
+  ],
+  "rawDecodedOrCopied": false
+}
