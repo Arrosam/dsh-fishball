@@ -1,0 +1,36 @@
+{
+  "status": "ROOT_APPROVED_SOURCE_AUTHORED_FROZEN_ORDINARY_AFFECTED_REVIEW_COMPLETE_NOT_RUN",
+  "sourceClosureSHA256": "2f0776d20db26a4fecb2e1d37816c110b5e94a7284db7d09c32b8bc275496f4b",
+  "targetSHA256": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+  "testSHA256": "be73e92cf993f9bb2d0c99b77764d825aff5bc5dd908188b1e65e3293a75ad1a",
+  "fixtureStatusSHA256": "09b15b47209a630ce9b0ae2f59b96d2f14cc40c2e3373773054d80ef02883d36",
+  "capsulePins": 91,
+  "groups": 12,
+  "literalFinishSourcePatchSHA256": "88e6a06672c95861a84b2458fbda9b7e945cfa636cf88eac271596c18a407ee2",
+  "finishSourceTestDiffSHA256": "361cb85cad8abf35cf8f37be0b89c9eb3aa858882e36097c53882d09a27a5696",
+  "fullSourceTestDiffSHA256": "e75f98d2afbf1c2b65ff0f7d3c0fc24034e9772ff641466f2b18db6efa94ae74",
+  "ordinaryReview": {
+    "MD": {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-ordinary-review.md",
+      "sha256": "084e9bcbf2f3412b79e3f50a2e58ab7fdb768aebeac19875c53075588a43d553"
+    },
+    "JSON": {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-ordinary-review.json",
+      "sha256": "77347b7b82bd1a5972347fc8f128db4488dbacb8da22e4a1a5625b4a43d8cbd9"
+    },
+    "disposition": "Terminal-state and direct model finish admission findings closed on exact reviewed source, all fixtures NOT_RUN",
+    "boundary": "Any non-null collection including unknown may permit only the original finish request; original host authority handling remains unverified. No completed/released fact follows a reference/collection wire observation or a mock host error."
+  },
+  "preservedBefore": "history/NR-UI04-finish-guard-before preserves7bf/client436/test613 and prior review pair; all older proposal/source histories retained",
+  "sourceChanges": "Exactly approved88e6 one finish() guard before original run; no host/receipt/wire/source role or uncertainty semantics changes",
+  "fixtureChange": "ER10 direct finish false/zero RPC immediately after recovery and after explicit audit-status refresh with collectionnull; separate collection wire reply permits existing original request, mock AUDIT_UNKNOWN does not paint completed/released",
+  "executionAuthorized": false,
+  "executionPerformed": false,
+  "originalNativeRowsObserved": false,
+  "currentRuntimeOrSharedSourceWrites": false,
+  "remainingBlockers": [
+    "independent affected ISTQB design review",
+    "root exact bounded execution GO",
+    "actual fixture execution results before any runtime acceptance claim"
+  ]
+}

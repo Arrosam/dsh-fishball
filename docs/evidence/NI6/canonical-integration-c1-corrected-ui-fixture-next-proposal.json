@@ -1,0 +1,189 @@
+{
+"acceptance": "No QA/full-criterion/MVP pass; C02 full PASS/O01 PASS54 conserved, D01 immutable; aggregate unaccepted is no blanket87 HOLD.",
+"archive": {
+"archiveBytes": null,
+"archiveSHA256": null,
+"builder": "Future reviewed standard-library data copy/tar builder; not supplied/executed",
+"checks": "Exclusive staging/archive/extraction; before/after member seals, conserved exports/client; external archive seal after materialization",
+"membership": "Exactly canonical65 plus LICENSE and THIRD_PARTY_NOTICES.md; external member manifest, no globs",
+"normalization": "Uncompressed tar; package/ prefix; sorted relative regular files; mtime/uid/gid0, owner names empty, file0444/dir0555; no links/traversal/extras",
+"payloadMembers": 67,
+"peers": "Owned aliases to exact flat graph; verify realpath/class identity/lock, no host mutation/install/fallback"
+},
+"cleanup": {
+"creationLatch": "Set BEFORE Create idle worker submission, including lost browser/RPC response; never infer absence from missing local handle",
+"destructiveGuard": "Original factual stopped binding plus paired agent/session absence; otherwise retain owned private state and uncertainty",
+"limit": "Termination proves no release/all-path cleanup/restart; retain uncertainty without deletion/replay.",
+"ownedScope": "Close owned tab/CLI/group; complete captures/EOF/group closure; no global IAB stop/shared deletion"
+},
+"composition": {
+"identity": "Original owner peer/profile setup only; no payload identity/key/mock handles/pre-seeding",
+"installed": "W01 public config: fresh owned storage/workspace/session paths; memory byte/token16384; request16384/result1024; queue4/tasks4/active1/attempt1; runtime60000/usage65536/cost0, charges15000/32768; preview/grant60000; audit/automation/results disabled",
+"nativeServices": "W01 original native services and registry; agents[], approval never; no mocked replacements",
+"presetDefinition": {
+"id": "df-ui-u01-read-only",
+"name": "DF Read Only",
+"plugins": []
+},
+"presetOwnership": "Owned plugin register()/retain disposer using confirmed schema; no loader self-wait.",
+"prohibited": "No new harness/daemon/page/API shim/observer/stream gate/provider replacement or source mutation",
+"rows": [
+"dsh-fishball/testing-provider",
+"dsh-fishball/installed"
+],
+"selection": {
+"agentPreset": "df-ui-u01-read-only",
+"maxOutputTokens": 128,
+"model": "df-testing-worker-v1",
+"provider": "df-testing-local",
+"reasoningEffort": "deterministic"
+}
+},
+"date": "2026-10-08",
+"flow": [
+[
+"U1",
+"Native frontend/modules/current DF sidebar Preview and owned path identity; empty setup/list; missing API/client is blocker, not disconnected-page PASS"
+],
+[
+"U2",
+"Preview owner-only encrypted local setup, exact location/checkbox/confirm thenready; no automatic inference/model authority"
+],
+[
+"U3",
+"Refresh worker/current catalogue, exact synthetic selection/DF Read Only, preview/accept/confirm policy thenready"
+],
+[
+"U4",
+"New task via native-panel/owner-input intake; unique goal/current version/auth epoch; context→plan→preview→grant→create idle→query"
+],
+[
+"U5",
+"Only fresh root-approved scope: one original synthetic execute; committed or truthful unknown; no unknown retry; refresh/pause/query, no protected capture/finish/continuation/delivery"
+],
+[
+"U6",
+"Desktop/mobile layout, wrapping/scroll, keyboard focus/labels, stale/expiry/offline disabled controls; supported .jpg screenshots, no SLA/calibration/full-criterion inference"
+]
+],
+"gates": {
+"acceptanceGO": false,
+"browserGO": false,
+"installGO": false,
+"packageBuildGO": false,
+"publicationGO": false,
+"runtimeGO": false,
+"sourceReviewGO": false
+},
+"handoff": {
+"IAB": "Parent cua.createBrowserTab(iab, ownURL, {visible:false}); read returned docs, bind returned browser/tab IDs; never hardcode2 or acquire old tabs",
+"availability": "Parent verified supported route; root has no callable CUA currently. No universal Mac-lock/browser-unavailable inference; no Hydrogen fixture access beyond named receipt",
+"capabilities": "Only supported DOM/locators/waits/viewport/screenshot/owned close after returned docs; no CDP/external Playwright/native fallback",
+"isolation": "Fresh native DSH profile and owned tab/origin; browser-profile creation not advertised, cookies are not port-isolated. No shared-state inspection/clear.",
+"private": "Root generates new process URL via original connection.authenticatedUrl into mode0600 owned launch material; trusted parent/browser channel only, no public URL/token/cookie/header/log dump",
+"public": "Lane/profile/port/PID plus package/client/config seals, native paths and unique U01/4fea280 goal",
+"readiness": "After loader settles, joint package/client/API/profile/model/preset/bind currentness; original-service facts only."
+},
+"history": "Unused excluded-source snippet/private-name exposure remains qualified without reproduction, interpretation or pristine-history claim.",
+"hostRoute": {
+"CLI": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh/lib/bin.js",
+"argvProposal": [
+"--profile",
+"df-ui-u01",
+"--host",
+"127.0.0.1",
+"--no-open"
+],
+"connection": {
+"cookieMaxAgeDays": 1,
+"maxRequestBodyBytes": 65536,
+"recovery": {},
+"trustedHosts": []
+},
+"environment": "Fresh DSH_HOME/DSH_AGENTS_HOME/cwd, minimal allowlist; no inherited account/model config",
+"frontend": "Original maintained WebApp/FrontendStatic, modules, __DSH_BOOT__ and /plugins/<id>/client.js; package dsh.client inject/exports unchanged; no W01 empty index",
+"liveProviders": "Disable external account/provider/title inference/telemetry; future author/review must freeze exact row inventory.",
+"portQualification": "W01 server API0, not CLI parsing; fence actual nonzero/non3080 bind; overlay needs review.",
+"profile": "Fresh owned DSH_HOME/profiles/df-ui-u01; bundles @deepseek-ai/dsh-base and @deepseek-ai/dsh-web-app",
+"webRuntime": {
+"openBrowser": false,
+"printUrl": false,
+"surfaceContext": true,
+"trustedHosts": []
+},
+"webserver": {
+"compression": "none",
+"host": "127.0.0.1",
+"port": 0
+}
+},
+"inputSealGrammar": "Each path maps to decimal bytes SPACE lowercase SHA256; exact named public inputs only",
+"inputSeals": {
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/definition.d.ts": "841 aa1c78997fc78ef5028bfb43eccde245f44c67d9bc83031688ab4d3c582a103e",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/index.d.ts": "6378 47e6ec0952cfd9bffb30d1a0092c8303aa03800836cdd6d242fccc3e0770e6a9",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/types/preset.d.ts": "652 6f2ca6d3843ec86b4cab2bed970eeb72c0ae1a9419dd5d82cb91cf0b4b49e757",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/index.d.ts": "3474 d83649e8d3f48e7e28fe930df033632ae303843d5512ddd1b81a2098d4e33d78",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-client-connection/lib/types/rpc-host.d.ts": "2743 4655fdfdef83f155b6aa8d8240b8ae74972ddcc185e8873efde7b819fc0e7426",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml": "22549 3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/index.js": "10774 c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/lib/types/index.d.ts": "3699 0e53c01dacb4bb838d3ee321e8a7d2ab764f18aff33a826f882b9177cfa87b0b",
+".runtime/dsh-web/node_modules/@deepseek-ai/dsh-web-app/package.json": "10230 b502f63a057b1e388439c2a592ac16091d3c67fb9e76727b893f0d7a1325f8f5",
+".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/fixture.mjs": "65237 9cd43225de8bccf3e21d19b5c92cfa38e0b638f19099c157aa2c58a0264acdc7",
+".runtime/ni6-canonical-integration-c1/validation/delayed-worker-d01-r3/source-manifest.json": "72626 4902091e778415ba2c479ee5276fe66287ba99958b2e12d033245928e2a528bf",
+".runtime/ni6-canonical-integration-c1/validation/worker/fixture.mjs": "54799 3a535a9d67f52817dc41c57d6573570a0df8631af4b7838f577de3e6b98fae36",
+"/Users/samuel/Documents/Codex/2026-10-08/task-4/hydrogen-retention-copy-browser-20261008/browser-route.md": "3332 0ff289a52cb97f75efb9110159ffe934a2de3c441e331ffab8ea450c5f93603a",
+"AGENTS.md": "8292 f7b4685d6c376159a9de2114c10acd3c08710ceed732b4ea7f07f7ed404e95ba",
+"LICENSE": "1064 e65cdd31ae4a1bbbb2ff700b6e12c2317de385c355af15c4d473ead81468a6fa",
+"THIRD_PARTY_NOTICES.md": "3057 1d2774c8a7b25728afda591265f1d46509eefc3f0437448fbe9625ca1a99f182",
+"docs/compatibility.md": "4073 5ad7d101eb8a9766e63e95616cec7a711b549290e2c3441338926b18e3f209fe",
+"docs/development-workflow.md": "4700 7bd5cd72b34fb9ccd170fac986ccd5f7a0f5996e0760efa32ee9bcedd51e1ef7",
+"docs/owner-amendment-2026-10-04.md": "5304 92f1b4b2cae959e88e6e35a351c253e186ef4b3567f2f048cd60fc7017b8a89e",
+"lib/client.js": "151584 2df9592a085c65f01f104e552f52128d8a4657bb57ef4ba3592e2fdb89748d41",
+"native-source-manifest.json": "18440 fdfdc09f672fbd584deff350b43a322dd4d1371a3680ce7c140cc8303dbdb2a5",
+"package.json": "2691 a1d5a7886e690dd8f715b5ae9059fc8c6eaef22a322071d84aa515b1c9e46e58",
+"scripts/dsh-web-setup.mjs": "1294 e056f77cffe7253108a0b307d1230fd8fc768cb452d21162c2cbd9b981933bc3",
+"scripts/dsh-web.mjs": "5557 c2e263b24529bec25815aac00ed3750b8eb1410971e6f7390ce4579361d9c686",
+"src/client-entry.cjs": "151616 9ee23e8c759d8e3d061d8317d080b19f296f19905ff596622bbc028a8a2e8ff1",
+"src/host-probe.mjs": "6739 03e34e0bc3e82a8cbc0841a8f208cf98eac99e8accd7393f2997d394581d33c8",
+"src/installed-plugin.mjs": "10275 e365e0f3558a184d9325e9a37f0a9fbbb6385e7fcf08cd53ba5696957c5c97a5",
+"src/installed-worker.mjs": "47428 5a60c989df978ecc2d51ff936cda33065f164189478e0bf73d35dc8caa8c84d2",
+"src/runtime-plugin.mjs": "67362 b7d1243d463c8425cf0ad7ea1b3eff453dbd8d2c557142413334cf69a4d16095",
+"src/testing-provider.mjs": "15937 1a45f5c441d4cd98a02297b6633e63960e7c04c793915ec26bcbb830a7648c0c"
+},
+"proposedBounds": {
+"CLIStarts": 1,
+"leaseSeconds": 600,
+"nonAdditiveIncludedSeconds": {
+"browser": 480,
+"cleanup": 60,
+"launch": 30,
+"preflight": 30
+},
+"ownerDirectInterpretersMaximum": 2,
+"qualification": "Proposed caps only; root freezes executable/browser/child/import/capture bounds before selection; no telemetry measured.",
+"realInferenceToolsExternalCalls": 0,
+"retries": 0,
+"setupPolicyGrantCreateExecuteEachMaximum": 1,
+"unselectedChildren": 0
+},
+"reads": "Named public text/types and metadata; UI/runtime/worker/W01 targeted ranges, D01-r3 prior coverage reused. Client/license/notices metadata only. Imported protected callbacks opaque; no full graph audit, private walk or RuntimeStore/protected final/signature/envelope/revision999 investigation.",
+"remainingGates": [
+"Root supplies sealed builder/composition/overlay/offline resolution/client discovery/handoff/cleanup source",
+"Independent CODE and ISTQB affected source reviews; protected final CODE stays outside this lane",
+"Fresh root once-selection and actual parent IAB with original returned docs/currentness/ownership/bounds; no reused approvals",
+"Connected UI/native and termination oracles before subset QA disposition"
+],
+"schema": "df.canonical-c1.corrected-ui-fixture-next-proposal/v1",
+"status": "SOURCE_ONLY_PROPOSAL_NOT_BUILT_NOT_RUN",
+"target": {
+"DSHWeb": "0.2.1-alpha.1",
+"Node": "22.22.2",
+"canonicalBytes": 1952632,
+"canonicalDerivation": "native-source-manifest.product.files64 digest-matched to D01-r3 inputFiles plus manifest itself; metadata only, no physical protected-source read/hash",
+"canonicalFiles": 65,
+"docsHEADOwnerReported": "df32d46d5f92dc22b962cbd96153231ab5302031",
+"package": "0.1.0-preview.1",
+"productCommitOwnerReported": "4fea2809345823b3da8cf3f6b165babd5701d482"
+},
+"untouched": "Prior3080 and .runtime/ui-qa-a58c522/, cancelled4da34a6d v2/auth1 NEVER_EXECUTE; Hydrogen fixture untouched, receipt only"
+}

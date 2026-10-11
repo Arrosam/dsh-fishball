@@ -1,0 +1,113 @@
+{
+  "contractVersion": "df.ni4-5-parser-ordinary-review/v1",
+  "reviewType": "independent Luna ordinary source/interface/test-coverage review",
+  "status": "SOURCE_REVIEWED_NP_ORD_01_RETRACTED_BOUNDARY_FIXTURE_GAP",
+  "acceptance": {
+    "total87": 87,
+    "accepted": 0,
+    "state": "HOLD",
+    "nativePass": false,
+    "istqbReview": false,
+    "go": false,
+    "positivePublication": "HELD_UNSUPPORTED_CURRENT_UNKNOWN_RECIPE"
+  },
+  "approvedProposal": {
+    "path": "docs/evidence/NI4-5/normal-entry-parser-domain-proposal.md",
+    "sha256": "7900a2782979aaf67745a8dbc1aac0ee10b361ef708384db37ce3515417dcd14"
+  },
+  "candidatePins": {
+    "capsule": ".runtime/ni4-5-normal-wiring-proposal/",
+    "client": {
+      "path": "src/client-entry.cjs",
+      "sha256": "8789517fd4271eff7e1531b57ee34713de24c8cbc1899938c4e60b53a0b26e74"
+    },
+    "fixture": {
+      "path": "test/normal-parser-source.test.mjs",
+      "sha256": "f4693d8e827cda18b898a752a8e82768784fa394e0fb8611ba0016d0fb6e515d"
+    },
+    "deltaPatch": {
+      "path": "parser-source-delta.patch",
+      "sha256": "fd0e2052780f2249d9e850afa89ad2c02774ffe61f2e332b0c5b13a27ee5f164"
+    },
+    "draftClosure": {
+      "path": "draft-source-closure.json",
+      "sha256": "73c8088d785211c117820cb9205029a72262ccaab2b95962214b15b48287ddee"
+    },
+    "parserClosure": {
+      "path": "parser-source-closure.json",
+      "sha256": "4f37d24fe84f31f2930e1eca784914847bb379582a4fb3b6dc5387d2a9124ac2"
+    },
+    "sourceHold": {
+      "path": "docs/evidence/NI4-5/normal-entry-parser-source-hold.json",
+      "sha256": "58a3c2afacad96ed6b60eefbe934debc49a9a1f054f1dcfc483b7b9b3c599685"
+    }
+  },
+  "originalPublicDomainPins": {
+    "installedEvents": "d04c3e05993843d938773ac115ceab3aee68ffb4fd43294e09c7f1b42ba9fe3a",
+    "eventClock": "65d7882c9960227dacdc7be3591da60c924cb17019b54e14e87a032f38f737c5",
+    "installedMemoryContinuity": "e7163309956f2a07b9f80cec154fc29bf12f57b4fc2adeced7bc7595eda85382",
+    "memoryAdapter": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+    "fishballMemoryCore": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+    "candidateInstalledPluginFeatures": "cf079d25ade310e94da36c4c13ca4bf5a5d4af0f9d84e00c241fb2456c46a3a3"
+  },
+  "reviewedDomainSummary": {
+    "automationSlots": "all 21 top-level slot keys plus closed nested pending, clock decision, and occurrence shapes checked against original installed-events/event-clock source",
+    "occurrences": "timezone and Intl localDate computation mirror the original formatter, including extended year output; stopped/missing/stale clocks remain valid facts",
+    "memoryFeatures": "closed enabled/readiness/accounting/bounds shape matches current candidate installed-plugin; NP02 uses a hand-built endpoint wire rather than invoking that plugin",
+    "memoryStatusAndHistory": "absent/live/deleted status and observed/not-observed command metadata checked against original public continuity source",
+    "memoryProjection": "closed core/world/preference/turn/fact structures; conflictRefs max16 matches the original MemoryAdapter helper default at validation and candidate admission; bounded arbitrary exchange JSON stays inert data; embeddings preserve original Float32 normalization",
+    "memoryPreviewsAndMutations": "original import/delete previews, typed results, metadata replay and invalid-ack uncertainty statically align, subject to finding below"
+  },
+  "findings": [],
+  "retractedFindings": [
+    {
+      "id": "NP-ORD-01",
+      "status": "RETRACTED",
+      "priorClaim": "The original MemoryAdapter allowed conflictRefs greater than 16, up to 256, while the parser allowed only 16.",
+      "correction": "The exact frozen source helper is function array(value, max = 16). Both #validate at line 74 and #candidate at line 133 call array(conflictRefs) without a max override. The client normalRefs call at lines 598 and 655 also defaults to 16. No accepted-domain mismatch is present in this comparison.",
+      "exactOriginalSource": {
+        "path": ".runtime/ni4-5-normal-wiring-proposal/before/src/memory.mjs",
+        "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+        "locations": ["line 25 helper default max=16", "line 74 projection #validate call uses default", "line 133 candidate admission call uses default"]
+      },
+      "matchingCandidateSource": {
+        "path": ".runtime/ni4-5-normal-wiring-proposal/src/client-entry.cjs",
+        "locations": ["line 598 normalRefs default max=16", "line 655 conflictRefs call omits max"]
+      },
+      "preservedPriorReportPair": {
+        "directory": "docs/evidence/NI4-5/history/parser-conflictrefs-before-correction/",
+        "markdownSha256": "3bb039f89e1d2f37e47425f131055714d0aff4d74cc070576f14745708eb3d8a",
+        "jsonSha256": "19fdc88ab5f1349729cbd7e0d296b560df79cffef71b820e36d9a3b928d46dd9"
+      },
+      "coverageGap": "NP03/NP04 do not explicitly test the boundary trio of valid 0, valid 16, invalid 17 conflictRefs values. This is a coverage gap only; no functional defect is established.",
+      "continuityCaptureClarification": "The outer capture array ceiling of 128 does not widen the original MemoryAdapter's inner default limit of 16."
+    }
+  ],
+  "fixtureStatus": {
+    "NP01": "NOT_RUN",
+    "NP02": "NOT_RUN",
+    "NP03": "NOT_RUN",
+    "NP04": "NOT_RUN",
+    "NP05": "NOT_RUN",
+    "NP02Limit": "hand-built finite feature wire; no installed-plugin endpoint or Panel-visibility exercise",
+    "executionPerformed": false
+  },
+  "dependencyBoundary": {
+    "capturedNI3RuntimeSha256": "4bb9aea5130e420cdcb30ae05e555e1dbfdb664543eed9069ef3c52fa973e71d",
+    "laterLiveNI3RuntimeSha256": "8e1d2a2fed33545e86be76fc6b566eebde1bb9ae0b3a9abcb25593891e3b73fc",
+    "laterRuntimeDisposition": "excluded pending root decision; not inspected",
+    "ni3ReviewArtifactsModified": false,
+    "preservedPriorMetadata": ".runtime/ni4-5-normal-wiring-proposal/history/parser-6498-before-live-dependency-observation/",
+    "preservedSourceBeforeParser": ".runtime/ni4-5-normal-wiring-proposal/history/a5aa-source-before-parser-implementation/"
+  },
+  "method": {
+    "sourceOnly": true,
+    "operationsPerformed": ["source reads", "rg searches", "SHA-256 checks"],
+    "operationsNotPerformed": ["Node", "syntax/import/build/tests", "DB/service/native", "browser/network/listener", "Git", "shared/product source edits", "protected S3 receipt/envelope investigation"]
+  },
+  "scopeDisposition": {
+    "blockedCoreCodeReviewGap": "not closed",
+    "all87AC": "HOLD",
+    "positivePublication": "not established"
+  }
+}

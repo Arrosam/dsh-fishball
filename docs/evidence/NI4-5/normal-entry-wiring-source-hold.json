@@ -1,0 +1,123 @@
+{
+  "NI3RootRunEvidence": "PENDING_NOT_NATIVE_PASS",
+  "capsule": ".runtime/ni4-5-normal-wiring-proposal",
+  "changedSourceAndFixture": [
+    {
+      "beforeSha256": "b4ec3368a0b0af0ab223e5e937e282bab8392dc0dc54a117fe55257964672aad",
+      "bytes": 170175,
+      "path": "src/client-entry.cjs",
+      "sha256": "8789517fd4271eff7e1531b57ee34713de24c8cbc1899938c4e60b53a0b26e74"
+    },
+    {
+      "beforeSha256": "066f55c30d0044d2cab2a2823d6e3d90af504889ab6afc50efdf1f65692c637c",
+      "bytes": 52956,
+      "path": "src/installed-audit.mjs",
+      "sha256": "f5708784e5d935e4a650b060c478b52e2e811be76f9a17be6e2c8126caaef459"
+    },
+    {
+      "beforeSha256": "8161a5ed881d413e0b889ba20d4167b5ec502619240f5a1ef2b33808d12bccee",
+      "bytes": 3857,
+      "path": "src/installed-config.mjs",
+      "sha256": "86e8055a594cac70698375ac9ad8452437f3db048ecda4bad448a85954f4c042"
+    },
+    {
+      "beforeSha256": null,
+      "bytes": 14134,
+      "path": "src/installed-normal-services.mjs",
+      "sha256": "be2bfe06022920177078a9302294fcc0e0d2f6a3c1da4fbb92b487677254aa39"
+    },
+    {
+      "beforeSha256": "c57d089d50013af6fcee7d36831dd631a970d72e2e5d8f0bc4b2c6ffba0aee97",
+      "bytes": 9609,
+      "path": "src/installed-plugin.mjs",
+      "sha256": "cf079d25ade310e94da36c4c13ca4bf5a5d4af0f9d84e00c241fb2456c46a3a3"
+    },
+    {
+      "beforeSha256": "f98296928737a7f8a2feb7c487fe8ff06af17a4d5fed631b561a5ece7d5c77d8",
+      "bytes": 48343,
+      "path": "src/installed-results.mjs",
+      "sha256": "e125cc28ed942e79ae7593b009a4a8bc8faaef9bd142ff0c9dcc3b214a4e05c5"
+    },
+    {
+      "beforeSha256": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237",
+      "bytes": 37622,
+      "path": "src/installed-worker.mjs",
+      "sha256": "4b6e9ba15da7c13298a7291789fa62eb5bdab4a459b6525272279117656c3a3d"
+    },
+    {
+      "beforeSha256": "6552aaa328bb088d1e5259e2b3da790f882f4751b087bc47340eff7621403a65",
+      "bytes": 9944,
+      "path": "src/operator-bridge.mjs",
+      "sha256": "8b0b5e7ede27b4cc1b9c6d97c41b614ab7fc4faf9a0b69a2233da6b3ab170286"
+    },
+    {
+      "beforeSha256": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
+      "bytes": 58761,
+      "path": "src/runtime-plugin.mjs",
+      "sha256": "2daade502b0269c857c47d5e76ae8f8b821b6fb00ba60824cb5a234b1634bed5"
+    },
+    {
+      "beforeSha256": null,
+      "bytes": 20839,
+      "path": "test/normal-parser-source.test.mjs",
+      "sha256": "f4693d8e827cda18b898a752a8e82768784fa394e0fb8611ba0016d0fb6e515d"
+    },
+    {
+      "beforeSha256": null,
+      "bytes": 17099,
+      "path": "test/normal-wiring-native-negative.test.mjs",
+      "sha256": "6829558abed5d482b37e903ba8c6ceba9d46a5e5248c62d111b6672b8e32d0b6"
+    },
+    {
+      "beforeSha256": null,
+      "bytes": 31381,
+      "path": "test/normal-wiring-source.test.mjs",
+      "sha256": "fe8ba55b3f038ca5af05019b5689f79190495f5d1beb8d50212c87fbd4efd6f7"
+    }
+  ],
+  "criteria": {
+    "BUB": 82,
+    "DF010": 5,
+    "accepted": 0,
+    "state": "HOLD",
+    "total": 87
+  },
+  "dependencyDrift": [
+    {
+      "capturedSha256": "4bb9aea5130e420cdcb30ae05e555e1dbfdb664543eed9069ef3c52fa973e71d",
+      "currentReadSha256": "8e1d2a2fed33545e86be76fc6b566eebde1bb9ae0b3a9abcb25593891e3b73fc",
+      "source": ".runtime/ni3-native-runtime/src/runtime-plugin.mjs"
+    }
+  ],
+  "execution": {
+    "Git": false,
+    "Node": false,
+    "SQLite": false,
+    "browser": false,
+    "imports": false,
+    "install": false,
+    "listener": false,
+    "native": false,
+    "network": false,
+    "profile": false,
+    "syntax": false,
+    "tests": false
+  },
+  "finalNI3PinsSha256": "0713ad598d709fc84df32a7fa62709b2d090868b32c2ebb80537d50af1394525",
+  "fixtures": {
+    "deniedLocalOperationReplyLoss": "NW12_SOURCE_NOT_RUN",
+    "executed": 0,
+    "nativeNegativeNamedGroups": 1,
+    "nativePositiveProvenance": "NOT_FABRICATED_UNSUPPORTED_BY_CURRENT_UNKNOWN_RECIPE",
+    "nonNativeNamedGroups": 17,
+    "parserNamedGroups": 5,
+    "successfulLocalDispatchReplyLoss": "PENDING_ACCEPTED_NATIVE_SOURCE"
+  },
+  "importEffectsSha256": "42a6f50ad3be88da702aa2e5afd6b7aba89ec28a1184ca46cc367376eb2c207d",
+  "literalDiffSha256": "ec6ae1b23848eec4f222056ac04e3d19795948daf7e2c7e4fda364c41be94948",
+  "parserSourceClosureSha256": "4f37d24fe84f31f2930e1eca784914847bb379582a4fb3b6dc5387d2a9124ac2",
+  "proposalSha256": "2f445f20a3573b14368f28c357088a299d2c55ce416c916d46b328048b739cb1",
+  "sourceClosureSha256": "73c8088d785211c117820cb9205029a72262ccaab2b95962214b15b48287ddee",
+  "sourceDocumentSha256": "5e77dc745fc7f232758ef6937c5a95e88a8a8866411cbd944d7fb41b5987aa9b",
+  "status": "SOURCE_CANDIDATE_APPROVED_PARSER_IMPLEMENTED_AWAIT_AFFECTED_REVIEW_AND_GO_NOT_RUN"
+}

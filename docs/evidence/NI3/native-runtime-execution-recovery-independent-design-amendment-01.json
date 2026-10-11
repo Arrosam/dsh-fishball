@@ -1,0 +1,316 @@
+{
+  "contractVersion": "df.ni3.nr-ui05.independent-affected-design/v1",
+  "status": "SOURCE_REMEDIATED_NARROW_CANONICAL_PATH_NOT_TESTED_NO_EXECUTABLE_GO",
+  "recordedAt": "2026-10-07T05:08:05.795564+00:00",
+  "reviewer": "/root/ni6_independent_design",
+  "parent": "/root",
+  "language": "English",
+  "exactSource": {
+    "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+    "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+    "bytes": 121721,
+    "lines": 718
+  },
+  "exactDelta": {
+    "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/literal-client.patch",
+    "sha256": "d8990e358032417c0b0153b55493f9e134215a8685c09837768965b2066fea17",
+    "bytes": 1726,
+    "oldSource": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+    "newSource": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+    "changedLines": [
+      545
+    ]
+  },
+  "inputs": [
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposed/client-entry.cjs",
+      "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+      "bytes": 121721,
+      "inspection": "Affected line545/current caller context and exact text comparison read; no author fixture/oracles."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/before/client-entry.cjs",
+      "sha256": "0909a3effda67f0c1780b5ca9fc090650920d15ce0fe9f3acb137df122cb85b0",
+      "bytes": 121601,
+      "inspection": "Original reviewed0909 retained snapshot; line comparison only."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/projected-client-entry.cjs",
+      "sha256": "a281011d3a9aac1071fbe7be081a5645a67619d78b2dfae4912989d75590adf2",
+      "bytes": 121721,
+      "inspection": "Byte-identical projected source identity hash only."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/literal-client.patch",
+      "sha256": "d8990e358032417c0b0153b55493f9e134215a8685c09837768965b2066fea17",
+      "bytes": 1726,
+      "inspection": "Full one-line client-only literal diff read."
+    },
+    {
+      "path": ".runtime/ni3-native-execution-recovery-proposal/proposals/NR-UI05-real-model-refresh/source-contract.json",
+      "sha256": "e2692f6b7157f19c06903bdcbe5e3b287a89a78c85b56b22240fc5b0d3918314",
+      "bytes": 3609,
+      "inspection": "Source predicate/boundary/import/effects declaration only. Author actual-model-fixture plan/assertions excluded."
+    }
+  ],
+  "sealedArtifactsPreserved": [
+    {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.md",
+      "sha256": "291dcf436aef2ae8df6d0f472d515da2fc9c8db35289f357a442a83f567f47c6",
+      "bytes": 28130,
+      "inspection": "Sealed artifact identity; unchanged."
+    },
+    {
+      "path": "docs/evidence/NI3/native-runtime-execution-recovery-independent-design.json",
+      "sha256": "c78c1fdc27be32aac1d5e99cc727cdc3151b11023fedf5c4e739d20a285577d4",
+      "bytes": 39078,
+      "inspection": "Sealed artifact identity; unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-independent-design.md",
+      "sha256": "9a01d8d71fe97def605bff63a4c2da3556bdbff61adf7376ee6741636dc8c5ec",
+      "bytes": 44965,
+      "inspection": "Sealed artifact identity; unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-independent-design.json",
+      "sha256": "706113919029e0812b96950d737f26ea1c055927a352f8f14f488b0ee5395611",
+      "bytes": 110282,
+      "inspection": "Sealed artifact identity; unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review.md",
+      "sha256": "e5e400fc24242b3ce62256fadceeb8442587c7b54f7193ac8e203ae88f86bd83",
+      "bytes": 47338,
+      "inspection": "Sealed artifact identity; unchanged."
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-independent-source-review.json",
+      "sha256": "f3c3bf9f9c8f3c6e0636a2d84b58232d7a61b023ee195337f83a3e1c7bfd4bec",
+      "bytes": 108175,
+      "inspection": "Sealed artifact identity; unchanged."
+    }
+  ],
+  "authorization": "Separate parent-assigned SOURCE-only affected design against a281/d899 after sealing0909 original28. No candidate edits/parser/import/test/DB/native/fixture/Git/browser/network or author fixture/oracle reads.",
+  "sourceDisposition": {
+    "findingId": "NR4-SRC01",
+    "originalFindingStillPreserved": true,
+    "state": "SOURCE_REMEDIATED_FOR_EXACT_OWNED_SUCCESSFUL_SAME_TASK_REFRESH",
+    "reason": "Actual createModel successful refresh restores phase ready before select publishes selectedA/detail:null/stale:true. New early return preserves tracked key and existing local audit facts only at that exact transient. The original unconditional reset no longer executes there. Later restored details still execute original key logic.",
+    "practicalLimit": "No executable or real composed-model pass. Manual/nonowned, offline/loading/error, foreign/no selection and inherited successful-own-refresh auth/version/currentness semantics are not remediated or proven by this delta. Source preservation creates no authority."
+  },
+  "predicate": [
+    "ownRefresh===true",
+    "previous selected key is non-null",
+    "s.detail===null",
+    "s.stale===true",
+    "s.phase==='ready'",
+    "s.selected===previousSelectedKey.taskRef"
+  ],
+  "preservedOnly": [
+    "tracked selected key",
+    "existing requirement/input/action/worker/execution/collection/uncertainty",
+    "existing audit stale state",
+    "original mutator/clear preview and acceptance state"
+  ],
+  "unchanged": [
+    "19required+5optional closed execution parser",
+    "13 exact recovery binding joins",
+    "historical typed-only dataDigest/semanticRevision/commandRef",
+    "local immutable recovery/noRPC/no ref mint",
+    "existing stale/busy/epoch/revision/active guards",
+    "exact original collect/finish8 requests and600 collection presence guard",
+    "actual original host permissions/source/native/receipt checks and DOM integration"
+  ],
+  "affectedObligations": [
+    {
+      "id": "NR5-AX01",
+      "preservedCaseIds": "NR4-D02/NR4-D03",
+      "title": "Canonical real owned refresh",
+      "trigger": "Use exact createModel/createAuditModel public setup and mutation methods. Expose actual same-A refresh loading→ready→select(detail:null/stale:true)→restored detail, success and lost execute reply.",
+      "oracle": "New line545 returns only at exact transient, preserving tracked key/read-only mappings/uncertainty instead of original reset. Restored detail still processes original key logic. Do not inject private state.",
+      "status": "SOURCE_REMOVED_CANONICAL_RESET_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX02",
+      "preservedCaseIds": "NR4-D02/NR4-D15/NR4-D17",
+      "title": "Lost execute stays uncertain",
+      "trigger": "One execute request loses reply; real own refresh restores same current A after transient; recover then explicit status.",
+      "oracle": "Keep uncertain executeAudit/execution null/stale true until explicit unique recovery. Recovery copies original row, preserves stale/uncertainty and adds0RPC/ref/native effects. Status remains explicit; no execute retry.",
+      "status": "AFFECTED_POSITIVE_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX03",
+      "preservedCaseIds": "NR4-D04/NR4-D23",
+      "title": "Each guard conjunct boundary",
+      "trigger": "Individually false ownRefresh, previous key absent, detail undefined/empty/non-null, stale false, phase loading/error/offline, selected null/foreign. Keep others fixed as bounded wire negatives.",
+      "oracle": "No early-return exemption outside exact six-conjunct predicate. Existing invalidation/key/reset rules run. Impossible carrier combinations are wire negatives only, not genuine model states.",
+      "status": "PREDICATE_BOUNDARIES_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX04",
+      "preservedCaseIds": "NR4-D03/NR4-D21",
+      "title": "Transient gates remain closed",
+      "trigger": "At real select detail:null while ownRefresh awaits, attempt audit mutation/query/recovery, including canRecover and explicit recover.",
+      "oracle": "Task model stale and audit busy guards deny mutation/query/recovery. New early return changes no stale/busy/status/execution/collection/permit field and issues no request.",
+      "status": "READ_ONLY_GATE_REGRESSION_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX05",
+      "preservedCaseIds": "NR4-D23/NR4-D25",
+      "title": "Foreign selection during owned refresh",
+      "trigger": "While A own refresh awaits status/detail, select actual B/no-task via original public task model and deliver old A reply.",
+      "oracle": "Different selected task fails same-task clause and old maps cannot lend authority. Existing detailRevision/revision/identity checks prevent late A publication to B. No auto recovery/create.",
+      "status": "RACE_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX06",
+      "preservedCaseIds": "NR4-D22/NR4-D23",
+      "title": "Auth/version changes still observed",
+      "trigger": "Return fresh same-A details with changed version/auth; separately publish external changes outside own refresh at original digest/RPC awaits.",
+      "oracle": "Non-null fresh detail cannot hit early return and original key path still runs. Lost execute remains read-only/stale. Outside-owned changes retain revision/stale fencing. Successful-own-refresh authority semantics are inherited and not proved by this delta; original host currentness required.",
+      "status": "AUTHORITY_ORACLE_HOLD",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX07",
+      "preservedCaseIds": "NR4-D07/NR4-D08/NR4-D09/NR4-D23",
+      "title": "New worker incarnation cannot borrow",
+      "trigger": "Restore same task with changed current worker/action/claim/gen/session/execution/input bindings after preserving old local facts.",
+      "oracle": "Unchanged recoveredExecution exact current identity joins refuse old retained mapping. Preservation creates no new worker/capability/source/currentness/permission; no latest-incarnation borrowing.",
+      "status": "INCARNATION_NEGATIVES_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX08",
+      "preservedCaseIds": "NR4-D24",
+      "title": "Offline/error/loading/reset/dispose",
+      "trigger": "Disconnect/reset/dispose or cause real status/detail refresh error while detail is null; also ordinary offline with detail retained.",
+      "oracle": "Phase offline/error/loading fails narrow predicate; existing epoch/active/controller/revision/stale gates remain. No late response/recovery/send/native work. Outside-predicate outcome retention/reset is inherited and not claimed reconciled.",
+      "status": "OFFLINE_ERROR_RECOVERY_HOLD",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX09",
+      "preservedCaseIds": "NR4-D03/NR4-D17/NR4-D24",
+      "title": "Manual nonowned refresh",
+      "trigger": "Invoke real owner task refresh/select outside audit ownRefresh after lost execute and retained facts.",
+      "oracle": "No exemption (ownRefresh false), original reset/invalidation behavior remains. This amendment does not solve manual missing-detail retention or promise recovery after every refresh; specific original cells remain HOLD.",
+      "status": "MANUAL_RECOVERY_HOLD",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX10",
+      "preservedCaseIds": "NR4-D01/NR4-D16/NR4-D18/NR4-D19/NR4-D20",
+      "title": "Full wire reconciliation requests",
+      "trigger": "After corrected canonical public setup/lost response/unique ref recovery, explicitly refresh audit status, call original collect and then guarded original finish with actual allowed wire reply literal once frozen.",
+      "oracle": "Exact original8 identity/CAS request keys and final missing-execution/collection guard unchanged. Observation adds no collection/finish authority; original host reply/currentness remains necessary. Unknown/error never proves stop/release.",
+      "status": "WIRE_PATH_NOT_RUN_HOST_PROVENANCE_HOLD",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX11",
+      "preservedCaseIds": "All NR4-D01..NR4-D28",
+      "title": "Unchanged literal/source effects",
+      "trigger": "Compare exact0909→a281 source text; verify only line545 changed, existing parser/recovery/call/Panel/apply/finish lines and imports untouched by delta.",
+      "oracle": "No new import/RPC/ref generation/native/receipt/host/DOM path. Original28 required groups carry forward without being passed; source text comparison is not syntax/import/runtime proof.",
+      "status": "TEXT_COMPARISON_ONLY",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    },
+    {
+      "id": "NR5-AX12",
+      "preservedCaseIds": "NR4-D27/NR4-D28",
+      "title": "Original-host and mounted UI evidence",
+      "trigger": "Final original public owner/source-owned synthetic role and actual React/DSH DOM after separately authorized exact current closure and runtime/profile lease.",
+      "oracle": "Actual result/collection/physical stop/currentness/held-released/DOM claims require original host/DOM oracles. This one-line model source fix cannot pass them or original finalCODE/all87.",
+      "status": "HOST_DOM_NATIVE_HOLD",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD"
+    }
+  ],
+  "carryForward": {
+    "original28Ids": [
+      "NR4-D01",
+      "NR4-D02",
+      "NR4-D03",
+      "NR4-D04",
+      "NR4-D05",
+      "NR4-D06",
+      "NR4-D07",
+      "NR4-D08",
+      "NR4-D09",
+      "NR4-D10",
+      "NR4-D11",
+      "NR4-D12",
+      "NR4-D13",
+      "NR4-D14",
+      "NR4-D15",
+      "NR4-D16",
+      "NR4-D17",
+      "NR4-D18",
+      "NR4-D19",
+      "NR4-D20",
+      "NR4-D21",
+      "NR4-D22",
+      "NR4-D23",
+      "NR4-D24",
+      "NR4-D25",
+      "NR4-D26",
+      "NR4-D27",
+      "NR4-D28"
+    ],
+    "allStatus": "DESIGN_ONLY_NOT_RUN_HOLD",
+    "originalAuthor12": "NOT_RUN_BY_PARENT_NO_ASSERTION_OR_COVERAGE_READ",
+    "newAuthorFixturePlans": "Not read, adopted or approved."
+  },
+  "metadataLimits": [
+    "Root approved d899 source literal/applieda281 after source review only. Current source contract still labels itself proposal/not applied; that status is historical declaration, not execution evidence.",
+    "Root identifies original2f077 source closure as historical/stale during authoring; no source/import/fixture executable GO follows from it. New final closure must be independently reviewed by root.",
+    "No author actual-model-fixture-plan or ER fixture/assertion/oracle body was read.",
+    "An imprecise bounded client excerpt238-259 displayed unrelated automation code; not followed/analyzed/used. Actual public task disconnected276 retains detail when present, sets offline/stale and fences revisions; detail-null offline case is reachable if disconnect occurs during select."
+  ],
+  "executionCounters": {
+    "sourceEdits": 0,
+    "fixtureAuthoringExecution": 0,
+    "authorFixturePlanAssertionOracleReads": 0,
+    "ordinaryOracleReportReads": 0,
+    "NodeParseImportCheckTestBuild": 0,
+    "DBMigrationNativeProviderModelTool": 0,
+    "browserProfileListenerNetworkInstall": 0,
+    "Git": 0,
+    "blockedExperimentRerunReroute": 0,
+    "QAFrozenA58Changes": 0
+  },
+  "acceptance": {
+    "sourceRemediation": "CONDITIONAL_NARROW_SOURCE_ONLY",
+    "affected12": "NOT_RUN_HOLD",
+    "original28": "NOT_RUN_HOLD",
+    "all87": "HOLD",
+    "originalFinalCODE": "BLOCKED_UNCHANGED",
+    "manualOfflineErrorColdHostDOMNativeModelQualityMVPPhysicalPublication": "HOLD"
+  },
+  "artifactIntegrityChecks": {
+    "newOnly": true,
+    "obligations": 12,
+    "original28Preserved": true,
+    "originalNR4PairAndNI6FourExact": true,
+    "oneChangedLine": 545,
+    "verification": "Python stdlib text/JSON/hash only; no implementation testing."
+  }
+}

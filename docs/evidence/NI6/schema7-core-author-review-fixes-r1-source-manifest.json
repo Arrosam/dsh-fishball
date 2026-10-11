@@ -1,0 +1,1037 @@
+{
+  "contract": "df.schema7-core.source-freeze/v2",
+  "date": "2026-10-07",
+  "status": "SOURCE_REVIEW_FIXES_APPLIED_FIXTURES_AUTHORED_NOT_EXECUTED_NOT_ACCEPTED",
+  "capsule": ".runtime/ni6-schema7-core",
+  "sourceFreezeDigest": "879a693d3a463073c7035e8f7bc987f8daebc90d331e5887f7ad5492df41b1f1",
+  "sourceFreezeDigestRecipe": "SHA256 UTF8 json.dumps(files,sort_keys=True,separators=(comma,colon)); exact26 sorted active file entries",
+  "priorSourceFreezeDigest": "8ae78baf7e66697f4d490ad24a5f4bca2162d0f5e22dad30a8785ff2bdd3fdc8",
+  "beforeHistory": {
+    "path": ".runtime/ni6-schema7-core/history/8ae78-before-review-fixes/preservation-manifest.json",
+    "sha256": "387deb0c020eb8bdcba93b2dca3b6aa77f2de917feeee360f15547b7cfd87e43",
+    "preservedFiles": 53,
+    "allOldManifestEntries": 23,
+    "independentSourceEntries": 18,
+    "byteIdentityVerified": true
+  },
+  "sourceApplication": {
+    "approvedCombinedDiff": "docs/evidence/NI6/schema7-core-author-review-amendment-03-combined-required.diff",
+    "sha256": "6e2ea58507db3394d55a94f5a55cf48cc885182332af7b96ef76e01e4ab845c0",
+    "changedSourceFiles": [
+      {
+        "path": ".runtime/ni6-schema7-core/src/context.mjs",
+        "beforeSha256": "6b284217281a821f3fb6de61b41e6df62f8786614f1d8c50f36117315c7fb993",
+        "proposedAfterSha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+        "beforeBytes": 28179,
+        "proposedAfterBytes": 28297
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+        "beforeSha256": "516fcb08e43e6eba2884eee3eb6999b5857929eb8cec14e581c4d1f1a9a09531",
+        "proposedAfterSha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+        "beforeBytes": 36431,
+        "proposedAfterBytes": 36680
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+        "beforeSha256": "e07bbfcff66db140aedff87e30d2cc8dd8eb2d527e18b6a83a939f0211ca83f8",
+        "proposedAfterSha256": "42e19dd55ba878d79fb3993c47ea4c753895198d447884a3fcd0d8196a7496fe",
+        "beforeBytes": 31883,
+        "proposedAfterBytes": 31947
+      },
+      {
+        "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+        "beforeSha256": "bc7074c72abe97780055cbf15b71bce223e53191e0867e6c09ff13a3860333d8",
+        "proposedAfterSha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+        "beforeBytes": 322302,
+        "proposedAfterBytes": 330375
+      }
+    ],
+    "scope": [
+      "F01",
+      "F02",
+      "F04",
+      "F05",
+      "F06",
+      "F07",
+      "F08"
+    ],
+    "F03": "RETRACTED_STRICT_VALIDATOR_UNCHANGED"
+  },
+  "files": [
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/core-refinements.d.ts.txt",
+      "bytes": 8035,
+      "sha256": "5d5384b66d5cc5ec8682cd79a77bf7e32fd77af762f583d1054ade03e0f0aa5d",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/literal-refinements.md",
+      "bytes": 10989,
+      "sha256": "c2398d136b1e408e518a31705f08eedb78b9cee0382f44f7b4afbe7f48c94b95",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/proposed-operation-bindings.txt",
+      "bytes": 8878,
+      "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.d.ts.txt",
+      "bytes": 6295,
+      "sha256": "71c9d4f5fac225031f42b308a2a25a97b59bee92207bc980df8c650b68383668",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/review-refinements-r1.md",
+      "bytes": 4326,
+      "sha256": "a1da8b4d80d8a1c9f692af0b5b08e0d28571def55dc61199c3f1b49c07b63f99",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+      "bytes": 45312,
+      "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/contracts/source-manifest.json",
+      "bytes": 21461,
+      "sha256": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+      "category": "contracts"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/history/README.txt",
+      "bytes": 197,
+      "sha256": "022ee8ddb9ebb493dea73b30ace162e0651061478cde7e8c179247e511e95bbc",
+      "category": "history"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/history/core-methods-draft.txt",
+      "bytes": 70014,
+      "sha256": "a360fd56ef9a59784fbc38e596b21fa3bdd293347eed8f75fdd6e7c186dcc1ff",
+      "category": "history"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/history/factor-original.py.txt",
+      "bytes": 8203,
+      "sha256": "1597a5a9e200ae2be7949a7eda5a8fbc57f81c683959924e25279e74b7d253d5",
+      "category": "history"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "category": "original"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "category": "original"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "category": "original"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "bytes": 31812,
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "category": "original"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "category": "original"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "bytes": 239793,
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "category": "original"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "bytes": 28297,
+      "sha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "bytes": 21009,
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "bytes": 21799,
+      "sha256": "250cfddd11187ac08defd006737491df54b1bfa5901e1df90ef577f72882fbb4",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "bytes": 36680,
+      "sha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "bytes": 31947,
+      "sha256": "42e19dd55ba878d79fb3993c47ea4c753895198d447884a3fcd0d8196a7496fe",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "bytes": 6033,
+      "sha256": "ee3c1051f3c16adf8c9d4f66a15623de5e13c1a3fef844a40927b9e7193c406d",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "bytes": 330375,
+      "sha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+      "category": "src"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/test/schema7-core-source.test.mjs",
+      "bytes": 10687,
+      "sha256": "884bb7eec1a729b9ef1f4d76bdbcc1e8cd43d907a0a69cbc2d2887533ae83729",
+      "category": "test"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/test/schema7-normal-intent-boundary.mjs",
+      "bytes": 3256,
+      "sha256": "f47f48822fa53c35c07ee82e9f98e654855f879f194fd0509aff4028bea309b8",
+      "category": "test"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/test/schema7-preparation-review-boundaries.test.mjs",
+      "bytes": 7807,
+      "sha256": "2d8558a41fdb35fa69c792cc01a27b3cce4fae24ad4b99413d9e742994032d93",
+      "category": "test"
+    }
+  ],
+  "imports": [
+    {
+      "path": ".runtime/ni6-schema7-core/original/context.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "imports": [
+        {
+          "specifier": "node:sqlite",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./fishball-memory-core.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/ledger.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-security.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "imports": [
+        {
+          "specifier": "./runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/ledger.mjs",
+      "imports": [
+        {
+          "specifier": "node:sqlite",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "imports": [
+        {
+          "specifier": "./runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./normal-contracts.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./fishball-memory-core.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/fishball-memory-core.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-security.mjs",
+      "imports": [
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "imports": [
+        {
+          "specifier": "node:util",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:crypto",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "./ledger.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/ledger.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./runtime-security.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "./normal-contracts.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/normal-contracts.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/test/schema7-core-source.test.mjs",
+      "imports": [
+        {
+          "specifier": "node:test",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "../original/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../original/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/memory.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../original/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/context.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/runtime-security.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/test/schema7-normal-intent-boundary.mjs",
+      "imports": [
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "../src/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/runtime-security.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-security.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/test/schema7-preparation-review-boundaries.test.mjs",
+      "imports": [
+        {
+          "specifier": "node:test",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:assert/strict",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:fs",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:path",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "node:os",
+          "kind": "builtin",
+          "resolved": null,
+          "localFileExists": null
+        },
+        {
+          "specifier": "../original/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/original/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/runtime-store.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/runtime-store.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/context.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/context.mjs",
+          "localFileExists": true
+        },
+        {
+          "specifier": "../src/memory.mjs",
+          "kind": "relative",
+          "resolved": "/Users/samuel/Documents/Codex/2026-10-04/task-6/dsh-fishball/.runtime/ni6-schema7-core/src/memory.mjs",
+          "localFileExists": true
+        }
+      ],
+      "inventory": "Filesystem lexical import statements only; no JS parser/import executed"
+    }
+  ],
+  "genuine6Baseline": [
+    {
+      "copied": ".runtime/ni6-schema7-core/original/context.mjs",
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "shared": "src/context.mjs",
+      "sharedSha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700",
+      "byteIdenticalToShared": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/original/fishball-memory-core.mjs",
+      "sha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "shared": "src/fishball-memory-core.mjs",
+      "sharedSha256": "65efb6117e6f60f5b669b2305b75f3e43ed7e77530c20c374158d504b7ac03bc",
+      "byteIdenticalToShared": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/original/ledger.mjs",
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "shared": "src/ledger.mjs",
+      "sharedSha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258",
+      "byteIdenticalToShared": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/original/memory.mjs",
+      "sha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "shared": "src/memory.mjs",
+      "sharedSha256": "dba915b9f3c2a76ef05cce50611a553ecb792e896b7095b70e7491a9cae72a01",
+      "byteIdenticalToShared": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/original/runtime-security.mjs",
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "shared": "src/runtime-security.mjs",
+      "sharedSha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820",
+      "byteIdenticalToShared": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/original/runtime-store.mjs",
+      "sha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "shared": "src/runtime-store.mjs",
+      "sharedSha256": "1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f",
+      "byteIdenticalToShared": true
+    }
+  ],
+  "immutableProposal": [
+    {
+      "copied": ".runtime/ni6-schema7-core/contracts/schema7-contracts.d.ts.txt",
+      "source": ".runtime/ni6-schema7-proposal/schema7-contracts.d.ts.txt",
+      "sha256": "3559319922afc9ca20a0ee30d3e2aa84543efa005ca7ad8384c86e69b457b210",
+      "byteIdentical": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/contracts/proposed-operation-bindings.txt",
+      "source": ".runtime/ni6-schema7-proposal/proposed-operation-bindings.txt",
+      "sha256": "e1e7a279a5c5025b015ad780305141da32794033fbe6200e294e05aef70ecc0e",
+      "byteIdentical": true
+    },
+    {
+      "copied": ".runtime/ni6-schema7-core/contracts/source-manifest.json",
+      "source": ".runtime/ni6-schema7-proposal/source-manifest.json",
+      "sha256": "f6a629cd45aa423bcd23037819b00c9eddf1f99e307d6dfa2740abbcf7c01c73",
+      "byteIdentical": true
+    }
+  ],
+  "declaredMethodInventory": [
+    {
+      "method": "preparedContextCommandReceipt",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3110
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "preparedContextStatus",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3112
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "putPreparedContext",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3125
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readPreparedContextCheck",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3128
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readMemoryCommand",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        1681
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "planNormalNativeAction",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3131
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "claimNormalCreate",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3133
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "recordNormalNativeOrigin",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3135
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "captureNormalNativeResult",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3143
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "captureNormalNativeAuditResult",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3144
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "writeNormalNativeRepairArtifact",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3145
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "finishNormalNativeExecution",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3154
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readNormalNativeFinish",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3155
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readNormalResumeOrigin",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3159
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readNormalNativeArtifact",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3160
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readNormalNativeAuditResult",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3161
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "readNormalResumeInput",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3165
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "resolveNormalNativeIdentity",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3162
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "planNormalResume",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3166
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "claimNormalResume",
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "sourceLines": [
+        3169
+      ],
+      "execution": "NOT_RUN"
+    },
+    {
+      "method": "assembleForPreparation",
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "sourceLines": [
+        147
+      ],
+      "execution": "NOT_RUN"
+    }
+  ],
+  "inventoryNote": "Exact inventory is 21 names: original readMemoryCommand plus 19 new store methods and assembler assembleForPreparation. Earlier informal all20 wording does not replace the enumerated declaration.",
+  "actualDiff": {
+    "path": "docs/evidence/NI6/schema7-core-author-review-fixes-r1-actual.diff",
+    "sha256": "17633bcacb129e25cb9e6673c2d16a61455a2e3a0ca522dbfd8d98b06f2ac146"
+  },
+  "originalSourceDiff": {
+    "path": "docs/evidence/NI6/schema7-core-author-review-fixes-r1-original-source.diff",
+    "sha256": "016a0bc7e38006c98d82709b4f003508c6e51e0abfad642bf194b04786c81e61"
+  },
+  "contractRefinements": [
+    ".runtime/ni6-schema7-core/contracts/review-refinements-r1.d.ts.txt",
+    ".runtime/ni6-schema7-core/contracts/review-refinements-r1.md"
+  ],
+  "fixtureScopes": {
+    "path": "docs/evidence/NI6/schema7-core-author-review-fixes-r1-fixtures.md",
+    "sha256": "675d46e234302e824fe5f08fe53ffe62975c02d62e9e81c4a82c30b56a24e9be",
+    "newCases": [
+      "P1",
+      "P2",
+      "P3",
+      "S1",
+      "S2"
+    ],
+    "newFixture": ".runtime/ni6-schema7-core/test/schema7-preparation-review-boundaries.test.mjs",
+    "existingFixtureSha256": "884bb7eec1a729b9ef1f4d76bdbcc1e8cd43d907a0a69cbc2d2887533ae83729",
+    "execution": "NOT_RUN"
+  },
+  "effects": {
+    "newRuntimeEffects": "NONE; pure parser/readonly joins/task admission and one private readonly synchronous terminal classifier",
+    "durableMutation": "Existing one original Ledger.transaction for original private effect+new graph+command; no nested public transaction",
+    "sourceModuleEvaluation": "Builtin imports/class/function definitions/captured descriptor maps only; no RuntimeStore/MemoryAdapter/ContextAssembler construction at module scope",
+    "fixtureModuleEvaluation": "Node test registration; execution not authorized. Five new callbacks if later run each allocate fresh tmpdir, original6 public seed A/B, close/migrate candidate7, public preparation/snapshots, P3 public constraints drift, finally dispose only fresh paths",
+    "callbacks": "Only actual trusted tokenizer/new-only observer count; no replacement descriptors/inaccessible receipt counters",
+    "migration": "Existing genuine6 migration algorithm unchanged by review patch; source-only fixture lifecycle NOT_RUN",
+    "importsChanged": false,
+    "dependenciesInstalled": false
+  },
+  "execution": {
+    "NodeImports": "NOT_RUN",
+    "syntax": "NOT_RUN",
+    "unitFixtures": "NOT_RUN",
+    "DBOrMigration": "NOT_RUN",
+    "nativeOrProvider": "NOT_RUN",
+    "service": "NOT_RUN",
+    "Git": "ROOT_ONLY_NOT_RUN",
+    "networkInstallBrowser": "NOT_RUN"
+  },
+  "unresolved": [
+    "Root full applied source/contract/fixtures/import/effects review plus independent affected SOURCE review",
+    "Separate bounded executable GO before any parser/import/test/DB/migration/native execution",
+    "Runtime7 integration/authentic actual collector/current authority source/backend guards and final installed file pins remain separate unimplemented scope",
+    "Native/runtime/provider/UI/final migration/cold/finish/resume/unsupported authentic inverse negatives acceptance remain HOLD",
+    "All87 HOLD; blocked CODE experiment unchanged"
+  ]
+}

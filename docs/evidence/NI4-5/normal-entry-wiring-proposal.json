@@ -1,0 +1,16 @@
+{
+  "status": "ROOT_APPROVED_SOURCE_ONLY_EXECUTION_HOLD",
+  "proposalSha256": "2f445f20a3573b14368f28c357088a299d2c55ce416c916d46b328048b739cb1",
+  "scope": [
+    ".runtime/ni4-5-normal-wiring-proposal",
+    "docs/evidence/NI4-5"
+  ],
+  "dependency": "NI3 provisional until final pins supplied",
+  "all87": "HOLD",
+  "rootDecisions": [
+    "results requires worker and audit",
+    "third exact named subscriber",
+    "no manufactured positive provenance",
+    "no execution before separate literal GO"
+  ]
+}

@@ -1,0 +1,1144 @@
+{
+  "contractVersion": "df.selected-byte-pure55-fixture-source-report/v1",
+  "date": "2026-10-07",
+  "authorLane": "/root/ni5_pure55_fixture_source",
+  "status": "SOURCE_ONLY",
+  "execution": "NOT_RUN",
+  "executableGO": false,
+  "acceptance": "HOLD",
+  "acceptedAC": 0,
+  "markdownCompanion": {
+    "path": "docs/evidence/NI4-5/selected-byte-pure55-fixture-source.md",
+    "bytes": 11283,
+    "sha256": "e851133369844a3963c8fd2a3f7e5ff2e3dfeede57afc39417045a2a02f71579"
+  },
+  "capsule": ".runtime/ni5-pure55-independent-fixtures",
+  "manifestPins": [
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/source-closure.json",
+      "bytes": 33545,
+      "sha256": "73a888b740b3020df0180903a24cfb3fc4cf7b5fde13f2892ce2139151bf062a"
+    },
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/import-effects.json",
+      "bytes": 16395,
+      "sha256": "c8646e9fa6eb9c67521369884976124a5bcf0a6e3a3cb6b51daf8346a7257ab4"
+    }
+  ],
+  "sourcePins": [
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/src/dispatcher.mjs",
+      "bytes": 9193,
+      "sha256": "2a4271412097d4fa5b22c95da32e60e72ce84856d43c02f0a178fe723a196973"
+    },
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/src/oracle.mjs",
+      "bytes": 7342,
+      "sha256": "7c289bb35d69e5fa8f3bc6441053e9f76dfad94a138356ed92f284099262d05c"
+    },
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/src/recipe-families.mjs",
+      "bytes": 25306,
+      "sha256": "e630775a93b6a4a375e152c73703a19b083dbfa5264518a74af5a463e52eff0b"
+    },
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/src/security-boundaries.mjs",
+      "bytes": 3019,
+      "sha256": "372c4facab8e09ecee6b1f336900aab4c8c9b49991345e29099c90099471d7ea"
+    },
+    {
+      "path": ".runtime/ni5-pure55-independent-fixtures/src/audit-config-boundaries.mjs",
+      "bytes": 1960,
+      "sha256": "edbefd333bfbc2b70ca536b2984986660ef10a784276cb96c91a2079d3c30418"
+    }
+  ],
+  "readmePin": {
+    "path": ".runtime/ni5-pure55-independent-fixtures/README.md",
+    "bytes": 3363,
+    "sha256": "4220b740df3113af5006b81a3c67ebc43e7fe5a4ef762d221ac98701ee0eb1ea"
+  },
+  "runtimeSourcePins": [
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/installed-synthetic-byte-review.mjs",
+      "bytes": 16488,
+      "sha256": "1a7f324d95553b0246423334f613cf959710750ec2acab6dec3a4fd16710605f"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/runtime-security.mjs",
+      "bytes": 5323,
+      "sha256": "66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/ledger.mjs",
+      "bytes": 21567,
+      "sha256": "c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/config.mjs",
+      "bytes": 2918,
+      "sha256": "e738a6c50b41140e8d8d1f00dcf4e35868aba6a521d1d72bc804888831d248d8"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/context.mjs",
+      "bytes": 24196,
+      "sha256": "6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/installed-role-recipes.mjs",
+      "bytes": 2127,
+      "sha256": "e8b98864eb136c51ece9837c6adf0219f27fffcb49cf2af2b039211d58739950"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/installed-audit.mjs",
+      "bytes": 52956,
+      "sha256": "f5708784e5d935e4a650b060c478b52e2e811be76f9a17be6e2c8126caaef459"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/installed-worker-config.mjs",
+      "bytes": 5018,
+      "sha256": "8a9f454fc4b0bc14078107a17e4cb7db03580098ad2d8c5f61f6721e351c4a13"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/src/installed-invocation.mjs",
+      "bytes": 2341,
+      "sha256": "5c07bdfae80e7f624d1e6242a6b7ca97b50c6724860973be1906168fb0d35484"
+    }
+  ],
+  "sealedInputPins": [
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/source-closure.json",
+      "bytes": 13902,
+      "sha256": "93012576c05090a7617f69235fb2a3ecf91eb3b3d439aee009ba8036ffe49f87"
+    },
+    {
+      "path": ".runtime/ni5-context-admission-refinement-r3/import-effects.json",
+      "bytes": 53455,
+      "sha256": "2954d73d88df95e83c6aa3fef058199a50ef8ce88fb42d299bd68eed88f07f64"
+    },
+    {
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-independent-design.md",
+      "bytes": 39218,
+      "sha256": "672428559c8977020222732cc96a8ff11db49030833615b7fc6701ba5806c70a"
+    },
+    {
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-independent-design.json",
+      "bytes": 29506,
+      "sha256": "4f382612962e1b646633fcefa02095acbdb362800b0be99e8f14e6fe3971af38"
+    },
+    {
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.md",
+      "bytes": 13338,
+      "sha256": "25af1bc597b07e6909e78756c08e633b25fda0068282e77f3352439c6b5642bb"
+    },
+    {
+      "path": "docs/evidence/NI4-5/normal-selected-byte-reviewer-context-admission-r3-affected-functional-source-review.json",
+      "bytes": 193931,
+      "sha256": "3f8bb7b8a0c98bc3e2865c62ae4c5dffd4ebe15d58a5eb016107c9acf5165c25"
+    },
+    {
+      "path": ".runtime/ni5-result-lifetime-positive/fixture-data/approved-bde73841af7ed538f41d0813fca73db8af3e0296053d5fbb6c0136cd68a76144/approved-audit-input-v1.json",
+      "bytes": 6135,
+      "sha256": "bde73841af7ed538f41d0813fca73db8af3e0296053d5fbb6c0136cd68a76144"
+    },
+    {
+      "path": ".runtime/ni5-result-lifetime-positive/fixture-data/approved-bde73841af7ed538f41d0813fca73db8af3e0296053d5fbb6c0136cd68a76144/capture-metadata.json",
+      "bytes": 1327,
+      "sha256": "3107a4b4fc842eb8d0a7e108faea61ecbf2c30dfefa66e1d7960c912189b8181"
+    }
+  ],
+  "runtimeDependencies": {
+    "node": {
+      "entry": "/opt/homebrew/opt/node@22/bin/node",
+      "resolvedBinary": "/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node",
+      "expectedVersion": "v22.22.2",
+      "bytes": 84640,
+      "sha256": "463b47d6e984e4f84cd2421dabf5081414e40ab9d967e828b2db7858e707f6de",
+      "actualBinaryHashReadMatched": true,
+      "versionCommandExecuted": false
+    },
+    "python": {
+      "entry": "/opt/homebrew/bin/python3",
+      "cellarEntry": "/opt/homebrew/Cellar/python@3.14/3.14.5/bin/python3",
+      "cellarEntrySymlink": "../Frameworks/Python.framework/Versions/3.14/bin/python3",
+      "expectedVersion": "3.14.5",
+      "resolvedBytes": 52448,
+      "sha256": "2477b47fa3ae65b9574eb18a15edb364e96948eaa1875ad3f1c80d780efc9c12",
+      "actualBinaryHashReadMatched": true,
+      "versionCommandExecuted": false,
+      "usedForAuthoringOrApplication": false,
+      "dependencyRole": "environment pin only; no Python program/subprocess leaf"
+    }
+  },
+  "counts": {
+    "sealedDesignFamilies": 85,
+    "declaredPURE": 55,
+    "dispatcherUniqueIds": 55,
+    "exactOrderedCatalogueMatch": true,
+    "authoredCompletePublicLeafFamilies": 44,
+    "partialSourceHold": 7,
+    "fullSourceHold": 4,
+    "excludedNATIVE": 24,
+    "excludedExplicitHold": 6,
+    "executed": 0,
+    "passed": 0,
+    "accepted": 0
+  },
+  "caseFamilies": [
+    {
+      "id": "SEL01",
+      "group": "selection",
+      "technique": "EP",
+      "oracle": "exact_new_descriptor",
+      "effects": [
+        "E0",
+        "E1"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "Only actual public role/model/prompt/recipe descriptor; provider/effort/preset/capacity components need original config/catalogue.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL02",
+      "group": "selection",
+      "technique": "EP",
+      "oracle": "D_role_provider_mismatch",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "Wrong role covered; wrong provider unavailable in two-argument selector.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL03",
+      "group": "selection",
+      "technique": "EP",
+      "oracle": "D_nonliteral_model_id",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL04",
+      "group": "selection",
+      "technique": "EP",
+      "oracle": "D_caller_descriptor_not_authority",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "Caller object/model/allow inputs covered; mounted prompt/recipe request authority needs actual original request boundary.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL06",
+      "group": "selection",
+      "technique": "BVA",
+      "oracle": "original512_label_limit",
+      "effects": [
+        "E1",
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "FULL_SOURCE_HOLD",
+      "uncoveredComponent": "Client512/513 label parser is inside exported clientFactory.createWorkerModel; standalone parser unavailable. Actual pinned React graph and ordinary RPC controller leaf were not authored/leased in this capsule.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL07",
+      "group": "selection",
+      "technique": "DT",
+      "oracle": "CONFIG_INVALID4096_over2048_vs_corrected4096",
+      "effects": [
+        "E1",
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "FULL_SOURCE_HOLD",
+      "uncoveredComponent": "Cross4096 audit/2048-or4096 worker constraint requires original worker ownedDirectory filesystem environment and constructor seam.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL08",
+      "group": "selection",
+      "technique": "EP",
+      "oracle": "disabled_and_explicit_old_choice_conserved",
+      "effects": [
+        "E0",
+        "E9"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "SEL09",
+      "group": "selection",
+      "technique": "CO",
+      "oracle": "pure_import_and_complete_recipe_source_pins",
+      "effects": [
+        "E0",
+        "E1"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "FULL_SOURCE_HOLD",
+      "uncoveredComponent": "Pure source registration/effects are lexical; actual source freshness/currentness needs separately permitted original provider environment.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT01",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_text_json_utf8_nul",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT02",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_closed_full_audit_carrier",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT03",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_bad_contract_joins_U_valid_unsupported_round",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT04",
+      "group": "association",
+      "technique": "BVA",
+      "oracle": "D_invalid_integer_U_valid_nonzero_round",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT05",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_every_reference_shape",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT06",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_duplicate_or_conflicting_material",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT07",
+      "group": "association",
+      "technique": "DT",
+      "oracle": "D_each_complete_material_digest",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT08",
+      "group": "association",
+      "technique": "DT",
+      "oracle": "D_sorted_material_digest",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT09",
+      "group": "association",
+      "technique": "DT",
+      "oracle": "D_each_binding_field_and_original_order",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT10",
+      "group": "association",
+      "technique": "DT",
+      "oracle": "D_artifact_context_pointer_join",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT11",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_scope_cross_join",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT12",
+      "group": "association",
+      "technique": "DT",
+      "oracle": "D_precedes_U",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "INT13",
+      "group": "association",
+      "technique": "EP",
+      "oracle": "D_inert_plain_value_no_callback",
+      "effects": [
+        "E0",
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "ENV02",
+      "group": "originalEnvelope",
+      "technique": "EP",
+      "oracle": "D_raw_payload_is_not_original_envelope",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "ENV03",
+      "group": "originalEnvelope",
+      "technique": "EP",
+      "oracle": "D_closed_full_native_envelope",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "ENV04",
+      "group": "originalEnvelope",
+      "technique": "EP",
+      "oracle": "D_task_context_source_join",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "ENV05",
+      "group": "originalEnvelope",
+      "technique": "DT",
+      "oracle": "D_payload_digest_vs_F_honest_wrong_payload",
+      "effects": [
+        "E2",
+        "E4"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "ENV06",
+      "group": "originalEnvelope",
+      "technique": "BVA",
+      "oracle": "D_source_refs_cursor_primitive_domains",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM01",
+      "group": "objectiveContextDomain",
+      "technique": "DT",
+      "oracle": "U_valid_nonthree_PF_exact_three",
+      "effects": [
+        "E3",
+        "E5"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM02",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_unsupported_kind_mix",
+      "effects": [
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "SOURCE_SPECIFICATION_GAP: unknown healthy material kind U oracle is sealed; public audit-carrier admitted kind set closed. Do not weaken U or claim family passed.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM03",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_nonliteral_complete_goal",
+      "effects": [
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM04",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_embedded_goal_is_not_selection",
+      "effects": [
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM05",
+      "group": "objectiveContextDomain",
+      "technique": "DT",
+      "oracle": "D_bad_goal_join_U_healthy_extra_sources",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM06",
+      "group": "objectiveContextDomain",
+      "technique": "BVA",
+      "oracle": "D_original_provenance_envelope_bounds",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM07",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_healthy_unsupported_context_D_malformed_schema",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM08",
+      "group": "objectiveContextDomain",
+      "technique": "DT",
+      "oracle": "U_nonempty_memory_D_malformed_memory",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM10",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_background_retained_dropped_sources",
+      "effects": [
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM11",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_supplement_observation_clarification_constraints_reports",
+      "effects": [
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM12",
+      "group": "objectiveContextDomain",
+      "technique": "DT",
+      "oracle": "U_nonexact_five_sections_D_bad_joins",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM13",
+      "group": "objectiveContextDomain",
+      "technique": "EP",
+      "oracle": "U_expanded_task_domain_D_inconsistent_scope_version_auth",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM14",
+      "group": "objectiveContextDomain",
+      "technique": "DT",
+      "oracle": "U_nonempty_work_facts_D_malformed_types",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "DOM15",
+      "group": "objectiveContextDomain",
+      "technique": "DT",
+      "oracle": "D_complete_inner_utf8_byte_count_no_invented_metadata_proof",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT01",
+      "group": "payloadEquality",
+      "technique": "EP",
+      "oracle": "P_exact_F_each_byte_position",
+      "effects": [
+        "E4",
+        "E5"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT02",
+      "group": "payloadEquality",
+      "technique": "BVA",
+      "oracle": "F_112_114_suffix_prefix_newline",
+      "effects": [
+        "E4"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT03",
+      "group": "payloadEquality",
+      "technique": "EP",
+      "oracle": "F_unicode_case_normalization_lookalikes",
+      "effects": [
+        "E4"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT04",
+      "group": "payloadEquality",
+      "technique": "DT",
+      "oracle": "F_inner_or_reconstructed_context_hash",
+      "effects": [
+        "E4"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT05",
+      "group": "payloadEquality",
+      "technique": "DT",
+      "oracle": "full_context_bytes_affect_expected_payload",
+      "effects": [
+        "E4",
+        "E5"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT06",
+      "group": "payloadEquality",
+      "technique": "EP",
+      "oracle": "never_P_by_substring_prefix_or_ignored_tail",
+      "effects": [
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BYT07",
+      "group": "payloadEquality",
+      "technique": "DT",
+      "oracle": "exact_PFU_response_coverage_and_finite_finding",
+      "effects": [
+        "E0",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BND01",
+      "group": "bounds",
+      "technique": "BVA",
+      "oracle": "full_A_utf8_65536_boundary",
+      "effects": [
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BND02",
+      "group": "bounds",
+      "technique": "BVA",
+      "oracle": "D_original_count_limits_U_nonthree",
+      "effects": [
+        "E2",
+        "E3"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BND03",
+      "group": "bounds",
+      "technique": "BVA",
+      "oracle": "original128_4096_selection_and_exact_output_bound",
+      "effects": [
+        "E1",
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "Actual validateInstalledAudit selection127/128/4096/4097 interval covered; catalogue capacity/provider request and actual output-limit boundaries remain HOLD.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BND05",
+      "group": "bounds",
+      "technique": "BVA",
+      "oracle": "original_reservation_aggregate_active_attempt_limits",
+      "effects": [
+        "E1",
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "FULL_SOURCE_HOLD",
+      "uncoveredComponent": "Core admission/reservation aggregate/maxActive/attempt bounds unavailable; do not substitute arithmetic or fake core state.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "BND06",
+      "group": "bounds",
+      "technique": "BVA",
+      "oracle": "original_canonical_depth_key_array_string_integer_bounds",
+      "effects": [
+        "E0",
+        "E2"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "OLD01",
+      "group": "conservation",
+      "technique": "EP",
+      "oracle": "exact_original_unknown_review",
+      "effects": [
+        "E9"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "AUTHORED_PUBLIC_LEAF_NOT_RUN",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "OLD02",
+      "group": "conservation",
+      "technique": "EP",
+      "oracle": "exact_original_repair_worker_formula",
+      "effects": [
+        "E9"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "Actual original public repair recipe covered; worker formula remains inside actual original provider authority.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    },
+    {
+      "id": "OLD03",
+      "group": "conservation",
+      "technique": "DT",
+      "oracle": "original_recipe_bytes_prompt_models_catalog_preview_conserved",
+      "effects": [
+        "E0",
+        "E9"
+      ],
+      "lease": "PURE",
+      "sourceLeafStatus": "PARTIAL_SOURCE_HOLD",
+      "uncoveredComponent": "Public old descriptor literals and exact old recipe byte hash conserved; original public catalogue/preview components unavailable.",
+      "execution": "NOT_RUN",
+      "acceptance": "HOLD",
+      "oracleOrigin": "SEALED_INDEPENDENT_DESIGN"
+    }
+  ],
+  "independentlyDefinedOracles": {
+    "source": "sealed independent design JSON/Markdown, original public schema and explicit source dispositions",
+    "expectedValuesConstructedFromSubject": false,
+    "subjectCalls": false,
+    "subjectJavaScriptParse": false,
+    "legacyAuthorAssertionsRead": false,
+    "onlyPositive": "untouched original bde73841 6135B full audit",
+    "detachedMutationExpectations": [
+      "D",
+      "U",
+      "F"
+    ],
+    "fullContextHash": true,
+    "wholeOriginalArtifactEnvelope": true,
+    "noRawPayloadCaptureSubstitution": true,
+    "noNormalization": true,
+    "noSyntheticNativeProof": true,
+    "ledgerSnapshotDigestRecomputed": false
+  },
+  "sourceSpecificationGaps": [
+    {
+      "id": "DOM02",
+      "status": "OPEN_SOURCE_SPECIFICATION_GAP",
+      "sealedExpected": "U for healthy unknown material kind",
+      "publicCarrierContract": "closed admitted kind set",
+      "fixtureExpectedChanged": false,
+      "unknownKindVariantPresent": true,
+      "executionDerived": false,
+      "dispositionRequired": "independent source-design/functional specification decision; no silent oracle weakening"
+    }
+  ],
+  "originalPublicSeams": [
+    {
+      "file": "src/installed-synthetic-byte-review.mjs",
+      "exports": [
+        "BYTE_REVIEW_MODEL",
+        "BYTE_REVIEW_GOAL",
+        "BYTE_REVIEW_PROMPT",
+        "contextByteReviewRecipe(content)",
+        "auditModelDescriptor(role,model)",
+        "runAuditModelRecipe(role,model,content)"
+      ],
+      "namespaceObtainedBy": "root later imports exact pinned original module; no callback adapter or mock namespace"
+    },
+    {
+      "file": "src/runtime-security.mjs",
+      "exports": [
+        "canonical(value,depth=0)",
+        "exact(value,allowed,required=allowed)",
+        "integer(value,min=0,max=MAX_SAFE_INTEGER)"
+      ],
+      "scope": "direct public validation root only",
+      "rootSourceOnlyAuthorization": true
+    },
+    {
+      "file": "src/installed-audit.mjs",
+      "exports": [
+        "validateInstalledAudit(value)"
+      ],
+      "scope": "closed config DTO validation only; no constructor/installer/worker ownedDirectory",
+      "rootSourceOnlyAuthorization": true
+    }
+  ],
+  "importEffects": {
+    "path": ".runtime/ni5-pure55-independent-fixtures/import-effects.json",
+    "sha256": "c8646e9fa6eb9c67521369884976124a5bcf0a6e3a3cb6b51daf8346a7257ab4",
+    "sourceGraphModulePins": 14,
+    "edges": 40,
+    "localEdges": 23,
+    "builtinEdges": 17,
+    "unresolved": 0,
+    "subjectNamespaceRootImportedLater": true,
+    "newFixtureFilesystemCalls": false,
+    "ordinaryTransitiveLedgerBuiltinImport": true,
+    "ledgerConstructed": false,
+    "SQLCalled": false,
+    "ordinaryOriginalAsyncLocalStorageImportAllocation": true,
+    "installedCarrierUsed": false,
+    "workerOwnedDirectoryCalled": false
+  },
+  "readBoundary": {
+    "controls": [
+      "AGENTS.md",
+      "docs/owner-amendment-2026-10-04.md"
+    ],
+    "sealedDesignRead": true,
+    "r3AffectedSourceReviewRead": true,
+    "publicCaptureFullBytesRead": true,
+    "captureMetadataRead": true,
+    "implementationContractTextRead": "exported descriptor/recipe definitions and public audit carrier contract; expectations remain sealed design/original public source",
+    "originalPublicSchemasRead": [
+      "context.validateExecutionContext",
+      "runtime-security.canonical/exact/integer",
+      "installed-audit.validateInstalledAudit",
+      "installed-worker-config public seam restrictions",
+      "installed-role-recipes public literals/formula"
+    ],
+    "lexicalTransitiveImportInventoryRead": true,
+    "privateQaProfileRead": false,
+    "personalFilesRead": false,
+    "legacyAuthorAssertionsRead": false
+  },
+  "performed": [
+    "repository/source/synthetic-capture filesystem text reads",
+    "sha256 and byte length/mode reads",
+    "JSON evidence metadata decoding",
+    "lexical static-ID/import-edge analysis",
+    "new inert fixture source and report writes"
+  ],
+  "notPerformed": [
+    "product JavaScript parse/import/execution",
+    "test/build",
+    "Git",
+    "DB/SQL execution",
+    "native/model/provider/service/account/credential",
+    "listeners/timers/browser/network",
+    "installation",
+    "Python application subprocess",
+    "personal data/private running QA profile",
+    "original blocked receipt-envelope-SQL-crypto investigation"
+  ],
+  "verification": {
+    "method": "source-only actual-byte SHA256/size checks and lexical IDs/imports; no product parser or fixture execution",
+    "familyCatalogue55Matches": true,
+    "binaryHashesMatched": true,
+    "versionCommandsExecuted": false,
+    "fixtureSyntaxValidated": false,
+    "fixtureBehaviorValidated": false
+  },
+  "historicalHolds": {
+    "All87": "HOLD",
+    "CODE": "HOLD",
+    "pure55": "HOLD_NOT_RUN",
+    "native24": "EXCLUDED_HOLD",
+    "explicit6": "EXCLUDED_HOLD",
+    "semanticQuality": "HOLD",
+    "blockedReceiptEnvelopeSqliteExperiment": "NOT_INVESTIGATED_NOT_RUN_NOT_REROUTED"
+  },
+  "nextRequired": [
+    "fresh independent fixture SOURCE review",
+    "DOM02 independent specification disposition",
+    "full/partial component hold disposition without substitution",
+    "root-authored bounded sequential first-failure wrapper/plan",
+    "separate root execution GO and evidence; original source still immutable"
+  ],
+  "acceptanceDebtClosed": []
+}

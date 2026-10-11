@@ -1,0 +1,104 @@
+{
+  "status": "PROPOSAL_NOT_APPLIED",
+  "frozenSourceDigest": "8ae78baf7e66697f4d490ad24a5f4bca2162d0f5e22dad30a8785ff2bdd3fdc8",
+  "dependencies": [
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-01-required.diff",
+      "sha256": "29d16511d7a3e2089865890622695f930dda39a9df2777d6019c8468d384c54a"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-02-required.diff",
+      "sha256": "90fe86c089760521dd9230c34eb32f638a1c53e2f924147f69fb9516ab901117"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": ".runtime/ni6-schema7-core/src/context.mjs",
+      "beforeSha256": "6b284217281a821f3fb6de61b41e6df62f8786614f1d8c50f36117315c7fb993",
+      "proposedAfterSha256": "f6c8ec033c53ee11617d090a416ad61da9162a3feb7f526088cac89cdef91cb9",
+      "beforeBytes": 28179,
+      "proposedAfterBytes": 28297
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/memory.mjs",
+      "beforeSha256": "516fcb08e43e6eba2884eee3eb6999b5857929eb8cec14e581c4d1f1a9a09531",
+      "proposedAfterSha256": "074ec0bb4ce686b9b8fddec1e71e885ca5890f108b876b482f4a1ec086f0f1e9",
+      "beforeBytes": 36431,
+      "proposedAfterBytes": 36680
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/normal-contracts.mjs",
+      "beforeSha256": "e07bbfcff66db140aedff87e30d2cc8dd8eb2d527e18b6a83a939f0211ca83f8",
+      "proposedAfterSha256": "42e19dd55ba878d79fb3993c47ea4c753895198d447884a3fcd0d8196a7496fe",
+      "beforeBytes": 31883,
+      "proposedAfterBytes": 31947
+    },
+    {
+      "path": ".runtime/ni6-schema7-core/src/runtime-store.mjs",
+      "beforeSha256": "bc7074c72abe97780055cbf15b71bce223e53191e0867e6c09ff13a3860333d8",
+      "proposedAfterSha256": "59e7b1130ce4a80293881b3aa7bcb7e649402d817922290eee09544b7deafd07",
+      "beforeBytes": 322302,
+      "proposedAfterBytes": 330375
+    }
+  ],
+  "changes": [
+    "F01 stableSourceRef required distinct live sourceRef",
+    "F02 actual assistant cursor distinct complete eventCount",
+    "F04 original task-bound handle admission",
+    "F05 exact four new terminal operation classifications",
+    "F06 adapter knownSecrets before replay",
+    "F07 complete NEW preparation inverse joins",
+    "F08 closed df-context/df-audit-input source and actual-purpose admission/inverse joins"
+  ],
+  "F03": "RETRACTED_RUNTIME_CHANGE_EXCLUDED",
+  "initialHistoryMessages": "UNCHANGED3: actual full original system/user/assistant surface; request2 is pre-response",
+  "newImports": [],
+  "removedImports": [],
+  "effects": "No new durable/native/service/model effects. Original private effect remains one existing joint transaction; new terminal classifier is synchronous readonly. F08 pure parser/read validation. No extra public API or private instrumentation.",
+  "executed": "Only Python stdlib text/diff/hash authoring; no source import/syntax/test/DB/native/Git",
+  "candidateEdited": false,
+  "sourceEvidence": [
+    {
+      "path": ".runtime/ni3-native-runtime/src/installed-audit-native-source.mjs",
+      "sha256": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9"
+    },
+    {
+      "path": "src/installed-worker.mjs",
+      "sha256": "61c6eaabe82a7b32b31d8cf996bfd965f9b8188d70f407673e7a9907a2af20fb"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "sha256": "00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+      "sha256": "b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b"
+    },
+    {
+      "path": ".runtime/dsh-web/node_modules/@deepseek-ai/dsh-session/lib/types/types.d.ts",
+      "sha256": "d46f867afad2ce27298dcc99762dc241d803e6d2102a4587587fddccedf1c733"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-03-combined-required.diff",
+      "sha256": "6e2ea58507db3394d55a94f5a55cf48cc885182332af7b96ef76e01e4ab845c0"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-03-f08.diff",
+      "sha256": "d262993e910177da2987004c93a256d30af62f4fac05e8ae619c0778643ff7a7"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-03-literal.txt",
+      "sha256": "fc2ab6184d24c76db327b1accbbefff0d04c8c638748ed35658813bdc01063cc"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-03-oracles.md",
+      "sha256": "6832099e7a15cd41ec3c2d9462c4fde3f1f45be747b423f38d8ff1bc51846e73"
+    },
+    {
+      "path": "docs/evidence/NI6/schema7-core-author-review-amendment-03.md",
+      "sha256": "d790409064fe9107cfa08133fcf531850cdd09a99a86e7aba4c0659dda4e193f"
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+{
+  "additionalMaterialLifecycleFindings": [],
+  "authorAuthority": {
+    "bytes": 4875,
+    "path": "docs/evidence/NI6/canonical-integration-c1-cli-author-source.json",
+    "sha256": "120ef40a5e5ae684bbb436140d677430e473d61a0a387188204142089b2f13db"
+  },
+  "caps": {
+    "beforeAfter": 4096,
+    "caseRead": 4097,
+    "caseResult": 4096,
+    "commandResults": 16384,
+    "plan": 65536,
+    "privateAggregate": 131072,
+    "privatePerStream": 65536
+  },
+  "cases": [
+    {
+      "CLIStarts": 2,
+      "actual": "NOT_RUN",
+      "case": "positive",
+      "id": "Q01",
+      "oracles": [
+        "One paused task/complete-source duplicate intake",
+        "Original before-consent and preview no-write guards",
+        "Authenticated original HTTP and401/403 admission negatives",
+        "Original submitted SIGTERM/exit0 plus retained DF terminal UID/state/admission/service absence",
+        "Observer completion/full EOF/group/listener absence",
+        "New process same-store/task/version/control/dedup and no work replay"
+      ],
+      "order": "sequential same store, second only after first verified teardown/listener absence"
+    },
+    {
+      "CLIStarts": 1,
+      "actual": "NOT_RUN",
+      "case": "disabled",
+      "id": "Q02",
+      "oracles": [
+        "Original Loader disabled flag and absent fiber",
+        "No DF services/routes or exact declared storage leaves",
+        "No worker/provider/model/tool attempt",
+        "Original process teardown/group/listener/EOF"
+      ]
+    },
+    {
+      "CLIStarts": 1,
+      "actual": "NOT_RUN",
+      "actualRefusal": "NOT_OBSERVED",
+      "case": "invalid",
+      "id": "Q03",
+      "oracles": [
+        "Profile-relative depth1 invalid before DB/vault/RPC creation",
+        "Enabled failed original entry, absent services/routes/leaves/work",
+        "Source expected stable code qualified NOT_OBSERVED",
+        "Original process teardown/group/listener/EOF"
+      ],
+      "sourceExpectedRefusal": "SETUP_UNAVAILABLE",
+      "target": "home/profiles/web/df-invalid.sqlite"
+    }
+  ],
+  "closure": {
+    "allProposedGO": false,
+    "authorActualStarts": 0,
+    "canonicalBytes": 1952632,
+    "canonicalRecordCount": 65,
+    "canonicalRowsExactlyBoundToInputs": true,
+    "disabledIDsDisjointKept": true,
+    "disabledRootIDsUnique": 171,
+    "finalReviews": 4,
+    "futurePinUnion": 199,
+    "inputBytes": 8439632,
+    "inputCount": 189,
+    "literalAddedThreeFileDeltaBytes": 48186,
+    "literalDeltaEquality": true,
+    "manifestSelf": 1,
+    "ownedExcludingManifest": 5,
+    "proposalPins": {},
+    "rootFamilyDeadline": null,
+    "sourceCopies": 0,
+    "topology": 3
+  },
+  "criteria": {
+    "BUB001-04": "Process quit/restart portion planned; browser-close remains blocked; entire criterion cannot PASS",
+    "BUB004-03": "Genuine restored-session work not selected; residual PARTIAL/NOT_RUN",
+    "aggregateAcceptance": "HOLD",
+    "full87Mapping": "Separate exact-criterion reconciliation; do not copy universal historical HOLD",
+    "liveChatProviderDelivery": "OUT_OF_PHASE"
+  },
+  "date": "2026-10-08",
+  "effects": {
+    "CLIStartsMaximum": 4,
+    "HTTPMaximum": 48,
+    "HTTPPerCaseMaximum": [
+      32,
+      8,
+      8
+    ],
+    "agentsSessionsWorkersProvidersModelsToolsExternalAttempts": 0,
+    "caseDriversMaximum": 3,
+    "concurrentCLI": 1,
+    "postStopConnectionAttemptsFamilyMaximum": 4,
+    "totalInterpretersMaximum": 7
+  },
+  "lifecycleAuthority": {
+    "activeWorkerQuitSelected": false,
+    "forcedOriginalExit0AloneInsufficient": true,
+    "fullHiddenHostDisposalClaim": false,
+    "lifecycleWrapping": false,
+    "mustJointlyObserve": [
+      "Retained setup/runtime/native terminal UID-null/state4",
+      "Original disposed-service admission fence and service absence",
+      "Observer completion",
+      "Submitted once SIGTERM to retained owned group",
+      "Original CLIexit0",
+      "Complete EOF/verified prefix/group absence",
+      "Single retained endpoint refusal probe"
+    ],
+    "observer": "Readonly published Context/Loader/Cordis/AppReady/fiber/services; injection ordering only",
+    "observerDisposesProduct": false,
+    "originalCLI": true,
+    "physicalCanonicalPackage": true
+  },
+  "markdownContent": {
+    "bytes": 8939,
+    "sha256": "d8e4a868b18bc4533c327159bf6390db2ea77bfbe24edee1e1137d0768d36a84"
+  },
+  "materialFindings": [
+    {
+      "affectedLines": [
+        340,
+        342,
+        343,
+        345
+      ],
+      "effect": "Sequential/partial operations can overrun RPC/case/family end and consume stop/record reserve; late guard refuses PASS but cannot bound preceding runtime",
+      "id": "H01",
+      "line": 332,
+      "observedSource": "One socket timeout from remaining RPC window, then synchronous request/getresponse/read(65537), only pre/post guards",
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/lifecycle-driver.py",
+      "requiredSourceFix": "Fresh successor must enforce the single trusted monotonic deadline through transmission/headers/bounded body and close/contain the owned connection at that boundary, preserving caps/reserves/ownership/stable failure",
+      "rootDisposition": "Agreed; original immutable MUST_NOT_EXECUTE, fresh affected successor selected",
+      "runtimeReproduction": "NOT_RUN_NONE_SELECTED",
+      "severity": "HIGH",
+      "title": "Shared absolute HTTP deadline not enforced during blocking request/header/body stages"
+    }
+  ],
+  "outcome": {
+    "acceptance": false,
+    "acceptanceGO": false,
+    "actualCLI": "NOT_RUN",
+    "executionGO": false,
+    "originalCLI": "IMMUTABLE_NOT_RUN_MUST_NOT_EXECUTE",
+    "overallAcceptance": "HOLD",
+    "publicationGO": false,
+    "sourceDesign": "REQUIRES_FRESH_AFFECTED_SUCCESSOR",
+    "worker": "UNAFFECTED_SEPARATE_SEALED_SOURCE_REVIEW"
+  },
+  "performed": {
+    "GitCanonicalRuntimeNetworkBrowserModelCloudDelegation": false,
+    "helperCandidateProducerEvaluationExecution": false,
+    "inertPublicSourceMetadataHashOnly": true,
+    "privateContentOrCaseCreation": false,
+    "protectedOpaqueSemanticInspection": false
+  },
+  "refusalRouteQualification": {
+    "actualInvalidCode": "NOT_OBSERVED",
+    "invalidSource": "SETUP_UNAVAILABLE",
+    "listenerClosed": "Retained endpoint connection refusal, not HTTP status",
+    "nativeNegativePOSTFallback": 405,
+    "privateErrorsRecovered": false,
+    "standaloneWorkerPostDisposal": 404
+  },
+  "remainingNotRun": [
+    "Every Q01-Q03 assertion",
+    "Slow/partial HTTP transmission/header/body deadline partitions",
+    "Real observer/startup/teardown races",
+    "Overflow/nonzero/denied or unknown ownership/partial-record/deadline branches",
+    "Active-worker/four-cut crash/existing-session resume and browser cases"
+  ],
+  "reports": {
+    "exclusiveCreation": true,
+    "fullReadbackExternalSealsRequired": true,
+    "json": "docs/evidence/NI6/canonical-integration-c1-cli-independent-test-design-review.json",
+    "markdown": "docs/evidence/NI6/canonical-integration-c1-cli-independent-test-design-review.md"
+  },
+  "requiredActual": [
+    "Fresh successor final reviews/root selected once approval",
+    "Original three supported driver returns0 and four original CLI exits0",
+    "Case-specific exact public RPC/observer/metadata assertions",
+    "Complete two-stream EOF/prefix/group absence and once-owned stops",
+    "Exact selected immutable/physical product/currentness checks and root public host conservation",
+    "Joint teardown/admission/listener proof; no forced-cleanup substitution"
+  ],
+  "retainedBlocks": {
+    "BrowserLUA": "Browser route only, not Luna ban",
+    "browser": "NO_SUPPORTED_BROWSER_NO_CORRECTED_HANDOFF; Mac lock additional; no native/LUA route",
+    "cancelled4da34a6d": "NEVER_EXECUTE",
+    "cloud": "DENIED_TWICE_NO_THIRD",
+    "protectedCODE": "BLOCKED_UNCHANGED",
+    "sharedQA3080MainDraftsHistory": "UNTOUCHED"
+  },
+  "reviewer": {
+    "independent": true,
+    "language": "English",
+    "model": "gpt-6.1-sol",
+    "reasoning": "max",
+    "task": "/root/r7b_transport_test_review"
+  },
+  "rootControl": {
+    "HTTPEnforcementMaterialGap": "H01",
+    "architecture": "One trusted exclusive plan digest/deadline; root three sequential original supported calls, immediate return retention, stop on failure; remaining-time records/cleanup",
+    "caseCapsNonadditive": true,
+    "caseMaximums": [
+      120,
+      25,
+      25
+    ],
+    "eachCaseClampsToSameFamilyDeadline": true,
+    "familyFinalReserveMaximum": 10,
+    "sharedFamilyMaximum": 180
+  },
+  "schema": "df.canonical-c1.cli-independent-test-design-review/v1",
+  "sealedRuntimeArtifacts": [
+    {
+      "bytes": 5917,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/observer.mjs",
+      "sha256": "3c7bf131fff11f61d98386c1d688f05f548f56e5ec50cf3bccc929f79d70ff1f"
+    },
+    {
+      "bytes": 35892,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/lifecycle-driver.py",
+      "sha256": "f6dd2b0f8df1acb557ec7baebcac7ebdbe290f7a53b57a8135b58db6cd1aeb83"
+    },
+    {
+      "bytes": 5286,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/execution-plan.proposed.json",
+      "sha256": "72a2532fb15ac58601d114c4f54735b57c299c599200c95d13f1dcd1dc9f25b1"
+    },
+    {
+      "bytes": 2183,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/README.md",
+      "sha256": "553cb878df4f011b5d6cf7dc1267948a044ccdb9ee365399ecdfaeac6d5b7123"
+    },
+    {
+      "bytes": 48186,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/source-delta.diff",
+      "sha256": "5a2dfd5985a47120ffa9a20a5e4f77a09e36644130b563706bc87a166d497d16"
+    },
+    {
+      "bytes": 56631,
+      "path": ".runtime/ni6-canonical-integration-c1/validation/cli/source-manifest.json",
+      "sha256": "15ee7aaa1a22bc242ca0541f208ee16451561e2ffcaf28d8a48031f330fb4070"
+    }
+  ],
+  "status": "MATERIAL_SOURCE_BLOCKER_SOURCE_ONLY_NOT_RUN"
+}

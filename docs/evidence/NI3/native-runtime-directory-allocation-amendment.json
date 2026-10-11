@@ -1,0 +1,95 @@
+{
+  "contractVersion": "df.ni3-native-runtime-directory-proposal/v1",
+  "status": "SOURCE_ONLY_PROPOSED_NOT_IMPLEMENTED_NOT_RUN",
+  "id": "NR-DIR01",
+  "owner": "/root/native_audit_runtime_author",
+  "rootApprovalRequiredBeforeImplementation": true,
+  "preservedHistory": {
+    "path": ".runtime/ni3-native-runtime/history/NR-DIR01-before/pins.json",
+    "sha256": "7244f1dcd55de723a9f4d3e8526299465a8bf167284f8066bdde0d3ba021260a",
+    "files": {
+      "execution-closure.json": "0bf1a8ae61b416da0c3d798aa161009b32f8ae5e22b058c25a1c58f427221f59",
+      "literal-runtime-diff.patch": "b5b36da4837959f412c3a637289f96beda9e2c6b784bdbfba7bba1bc83985399",
+      "native-runtime-author-source-hold.json": "37bb804fb93778089ecfb189473a10978b048354f87b1ecc348b45d7d13b535e",
+      "native-runtime-author-source-hold.md": "56e873d839ed52869a98b40e1cd7ca6a3a5c33bca012b95c4208077dd90da8c3",
+      "src/installed-audit-native-source.mjs": "bf2b3e38962ea5cd3abbf289f7e3b55b793d9edd758b93e909539279541a10a9",
+      "src/installed-owned-stream.mjs": "a059363119a2aac9ba39244cc147c6fc1f5c8d7536e23fe068eed83b28647df6",
+      "src/installed-worker-facts.mjs": "5291442042971664eef10ae23ac27011ab6d27636d5c6c05c03cdb2c30e6eef7",
+      "src/installed-worker.mjs": "df2eae365c522b468591af7182ca2ef01d95052adeee187d6c216214de1ee552",
+      "test/native-runtime-original-chain.test.mjs": "289ed767130aa7470fb88fe25bc699fee79d440c2bee1c66acf8bce067aac941"
+    }
+  },
+  "currentSourcePins": {
+    "src/installed-worker-facts.mjs": "5291442042971664eef10ae23ac27011ab6d27636d5c6c05c03cdb2c30e6eef7",
+    "src/installed-worker.mjs": "df2eae365c522b468591af7182ca2ef01d95052adeee187d6c216214de1ee552"
+  },
+  "projectedSourcePinsNotInstalled": {
+    "src/installed-worker-facts.mjs": "9443dab98db9937dc10b84ddc14a1c2d1d8751b744d1993357133344925dc5c7",
+    "src/installed-worker.mjs": "cdb1397b5e212d6bd25f435eba4f568a4032441dc2b2add0052c8e32771ff237"
+  },
+  "literalPatch": {
+    "path": ".runtime/ni3-native-runtime/proposals/NR-DIR01.patch",
+    "sha256": "2f42da67cbe4b89c3ddd942982871c0f1e68273ba906b342dde0c51357e5963e"
+  },
+  "staticFinding": {
+    "A": "Initial producer/review/repair resolver closures each retain absent leaf and separate allocation=null. Actual producer claimDirectory mkdir records currentLeaf only in producer closure; already-resolved role facts reject that source-owned transition.",
+    "B": "Aggregate Object.freeze({...next,catalogEvidenceRef}) snapshots original allocation getter, so facts.allocation remains null after original producer closure allocates. On next refresh previous.allocation is stale; actual present leaf becomes a new approvedLeaf/environmentRef, invalidating accepted policy. This is static source disposition, not tested failure.",
+    "C": "Same problem occurs role-first\u2192other-role if roles are prepared while absent: each separate role closure would reject another actual original role creating the common source-owned backend directory.",
+    "sourceLocations": [
+      "src/installed-worker-facts.mjs: resolveInstalledWorkerFacts allocation/assertCurrent/claimDirectory",
+      "src/installed-worker.mjs: refresh original role resolutions and aggregate spread"
+    ]
+  },
+  "literalChoice": {
+    "recordIssuer": "Private module WeakMap in original installed-worker-facts source; first genuine resolver issues Object.freeze({}) token, never a label/digest/boolean or wire field.",
+    "recordBinding": "Actual installer ctx identity, actual original SessionPersistence service identity, exact current sourceRef (actual services/Loader loop+persistence/provider lifetimes), exact source-read directory/persistence/profile and parent/root/cwd/profile dev/ino/owner/mode facts.",
+    "share": "Producer result carries source-private directoryBinding token; role resolution receives next.directoryBinding. Previous refresh facts must carry the same authentic token; aggregate spread retains token identity. Missing/mismatched/forged token or different ctx/backend/source/profile/path facts denies. No public allocation object can authenticate state. Explicit null/false/non-source token denies; only absent optional binding for first genuine source resolution can mint initial state.",
+    "approval": "Immutable approvedLeaf remains exact original approval-time source fact (null if absent); environmentRef continues to derive from it. Existing source-created allocation is separate currentLeaf observation in private record, never silently reapproved or adopted.",
+    "allocation": "Only actual source claimDirectory after full existing currentness/claim schema checks may mkdir mode0700 once and assign frozen actual fsFact currentLeaf+exact original first creator claim. Next producer/review/repair/freshreview validate same actual currentLeaf and never mkdir or replace first claim.",
+    "current": "Existing source/class/lock/import/provider/Loader/services/lifetime/ownedrealpath/no-symlink/owner/mode/devino/profile checks stay unchanged. Each own role retains its original per-model/preset facts and assertion closure; only the common genuine backend directory allocation observation is shared.",
+    "locked": "assertCurrent consults private record and exact source filesystem/services facts synchronously; zero public task/store snapshots, transactions, model resolves, awaits or permit effects on locked matchesFull route. Token creation occurs normal refresh outside lock; assignment occurs actual original setup source claimDirectory.",
+    "cold": "No cold/public JSON adoption, token serialization, exposed setter, receipt-retention API or source7. Existing previous lacking source-issued token denies. No original installed profile opens/upgrade."
+  },
+  "plannedOraclesNotAuthoredOrRun": [
+    {
+      "id": "DIR1",
+      "oracle": "Original fixture newly creates mode700 synthetic profile/data/environment; original JSONL backend root absent. workerCatalog/policy preview/confirm resolve all selected roles without creating leaf. Preserve actual initial environmentRef/catalog/accepted policy. At producer setup, actual original claimDirectory creates exactly one mode700 leaf; preserve original lstat dev/ino/uid/mode."
+    },
+    {
+      "id": "DIR2",
+      "oracle": "Perform actual original producer execution/capture/finish, then workerCatalog/audit refresh. Authenticated opaque token survives aggregate spread; environmentRef and accepted policy remain stable. Already resolved producer/review/repair facts assert current with same actual backend leaf. No additional mkdir, generation/claim/permit/source relaxation."
+    },
+    {
+      "id": "DIR3",
+      "oracle": "Actual charged original review\u2192repair\u2192freshreview separate sessions on same leaf keep exact first allocated dev/ino/uid/mode and original accepted policy. Their source-only current gates/collector pass; each uses own role facts/prompt/model/permit/output limits. Existing full unknown/fixed119/unknown content assertions remain."
+    },
+    {
+      "id": "DIR4",
+      "oracle": "Source-owned role-first fixture resolves producer+review+repair while absent, then actual review claimDirectory creates common leaf, repair and producer current+claimDirectory observe same exact genuine allocation without second mkdir. Need actual source closures under source run/capture guard, not labels or booleans."
+    },
+    {
+      "id": "DIR5",
+      "oracle": "Preexisting genuine owned0700 leaf is baseline approvedLeaf, no new mkdir/claim allocation; all roles retain exact original fact. JSON-cloned/forged token, public allocation shape, changed ctx/backend/provider/Loader lifetime/profile/persistence directory refuses. No cold adoption."
+    },
+    {
+      "id": "DIR6",
+      "oracle": "Externally created leaf before original claim, deletion/replacement devino, symlink, wrong owner/mode, backend/config/profile/service-lifetime drift deny before new native publication/send. No recomputed approved environment or policy expansion. Preserve source-first failure."
+    },
+    {
+      "id": "DIR7",
+      "oracle": "First source mkdir failure records no allocation and remains denied, with no retry/adopt. If an effect exists without authenticated returned fsFact, later currentness refuses it. Actual owner revocation at async boundaries remains NR-C01 oracle."
+    }
+  ],
+  "effects": {
+    "now": "Only Python standard-library source read/hash/history copies and proposal/patch writes. Current candidate code, hold pair, core/engine/installer/QA/product/Git remain byte-for-byte unchanged. No JS/syntax/import/DB/native/model/network/HTTP/browser execution.",
+    "afterApprovedSource": "Apply exact two-file patch in owned candidate only; preserve before history, then separately author meaningful source/native fixture updates, regenerate complete literal source/test/dependency/command/effect hold before requesting executable GO. Source module grows one private WeakMap and one opaque token per genuine current directory/source origin, no filesystem effect before original setup.",
+    "futureExecution": "Existing real original setup mkdir0700 only once under explicitly held synthetic fixture. Later role setup no new mkdir; current checks read lstat/realpath/source hashes only. No store/core/schema7/installed profile changes, no native retry or forced tool allow."
+  },
+  "installer": "Original copied24dd unchanged; root reports separate066f installer held/pending author run. No overlay until root final pin notification.",
+  "retainedHolds": [
+    "All NI3/all87 acceptance and semantic quality remain HOLD",
+    "Root original full dependencies plus separate executable GO required",
+    "No engine/core/shared source edits",
+    "No denied-action retries or receipt/envelope investigation"
+  ]
+}
