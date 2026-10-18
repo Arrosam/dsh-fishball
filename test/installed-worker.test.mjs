@@ -23,7 +23,7 @@ async function fixture(t,{native=true,interceptComposition}={}){
  async function install(plugin,config){const f=ctx.plugin(plugin,config);fibers.push(f);await f;}
  await install(Projections);await install(Sessions);await install(Approval,{policy:'never'});let server;
  await install({apply(webCtx){server=new WebServer(webCtx,{host:'127.0.0.1',port:3080,compression:'none'});}});assert.equal(server.server,undefined);
- await install({name:'synthetic-owner-connection',inject:['webServer'],apply(connectionCtx){new HostConnectionService(connectionCtx,[],{isAuthenticated:request=>request.headers['x-synthetic-auth']==='approved'});}});
+ await install({name:'synthetic-owner-connection',inject:['webServer'],apply(connectionCtx){new HostConnectionService(connectionCtx,[],{isAuthenticated:request=>request.headers['x-synthetic-auth']==='approved',authenticateApi:()=>undefined});}});
  if(native){await install(AgentRegistry);await install(LlmRuntime);await install(Prompt,{});await install(Tools,{});await install(Loader,{baseUrl:ctx.baseUrl});
  async function entry(name,config){const id=await ctx.loader.create({name,config});await ctx.loader.await();const e=ctx.loader.resolve(id);entries.push(e);assert.equal(e.fiber.state,2);}
  await entry('@deepseek-ai/dsh-session-persistence-jsonl',{root:join(dir,'df-sessions'),compression:'none'});await entry('@deepseek-ai/dsh-agent-loop',{agents:[],maxParallelToolCalls:1});await install(Presets,{default:'empty'});removePreset=await ctx.agentPresets.register({id:'empty',plugins:[]});await entry('dsh-fishball/testing-provider',{});}

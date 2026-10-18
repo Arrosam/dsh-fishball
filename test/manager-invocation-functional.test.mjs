@@ -92,7 +92,7 @@ async function fixture(t, { normal = true, apiTransform = api => api } = {}) {
   await install({ inject: ['webServer'], apply(connectionCtx) {
     // Explicit no-listener authentication double; the original connection owns
     // the actual OperatorPeer and the original per-request abort signal.
-    new HostConnectionService(connectionCtx, [], { isAuthenticated: req => req.headers['x-fixture-owner'] === 'synthetic-approved' });
+    new HostConnectionService(connectionCtx, [], { isAuthenticated: req => req.headers['x-fixture-owner'] === 'synthetic-approved', authenticateApi: () => undefined });
   } });
   if (normal) {
     await install(AgentRegistry); await install(LlmRuntime); await install(Prompt, {}); await install(Tools, {});

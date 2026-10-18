@@ -14,7 +14,7 @@ const safeFailure = (value, code) => {
 function fixture(operations, { isAlive = () => true, unregister = () => undefined, connection: sharedConnection } = {}) {
   const peer = sharedConnection?.operator ?? Object.freeze({ provenance: 'typed-private-peer' });
   let handler, registrationCount = 0, unregisterCount = 0;
-  const connection = sharedConnection ?? { operator: peer };
+  const connection = sharedConnection ?? { browserPeer: peer };
   connection.rpc = { handle(channel, callback) {
     assert.equal(channel, '/df-rpc'); registrationCount++; handler = callback;
     return () => { unregisterCount++; return unregister(); };
@@ -93,7 +93,7 @@ test('I05 post-await guard loss prevents typed final effect under each captured 
     const result = f.call('guarded', { value: 'synthetic' }, { signal: controller.signal });
     let disposal;
     if (drift === 'abort') controller.abort();
-    if (drift === 'peer') f.connection.operator = Object.freeze({ provenance: 'typed-private-peer' });
+    if (drift === 'peer') f.connection.browserPeer = Object.freeze({ provenance: 'typed-private-peer' });
     if (drift === 'deactivate') f.bridge.deactivate();
     if (drift === 'dispose-pending') { disposal = f.bridge.dispose(); assert.equal(f.unregisters, 1); safeFailure(await f.call('guarded'), 'SERVICE_DISPOSED'); }
     if (drift === 'alive-false') alive = () => false;
@@ -116,7 +116,7 @@ test('I06 final after-await check is selected by trusted closure use, not endpoi
     const gate = barrier(), controller = new AbortController(); let alive = true, operationCalls = 0;
     const f = fixture({ guarded: async (input, context) => { operationCalls++; context.assertCurrent(); await gate.promise; return 'do not publish'; } }, { isAlive: () => alive });
     const result = f.call('guarded', { guarded: false, useGuard: false }, { signal: controller.signal });
-    if (drift === 'abort') controller.abort(); if (drift === 'peer') f.connection.operator = {}; if (drift === 'lifetime') alive = false;
+    if (drift === 'abort') controller.abort(); if (drift === 'peer') f.connection.browserPeer = {}; if (drift === 'lifetime') alive = false;
     gate.release(); safeFailure(await result, drift === 'abort' ? 'REQUEST_ABORTED' : drift === 'peer' ? 'OPERATOR_REQUIRED' : 'SERVICE_DISPOSED'); assert.equal(operationCalls, 1);
   });
 });
@@ -145,12 +145,12 @@ test('I09 exact captured peer denies semantic clones/current replacement and mal
   let operations = 0, traps = 0;
   const f = fixture({ guarded: (input, context) => { operations++; context.assertCurrent(); return true; } });
   const getter = Object.defineProperty({}, 'proof', { enumerable: true, get() { traps++; throw Error(CANARY); } });
-  for (const admittedPeer of [undefined, { provenance: 'typed-private-peer' }, { operator: f.peer }, f.connection]) {
+  for (const admittedPeer of [undefined, { provenance: 'typed-private-peer' }, { operator: f.peer }, { browserPeer: f.peer }, f.connection]) {
     safeFailure(await f.handler('v1/guarded', getter, undefined, admittedPeer), 'OPERATOR_REQUIRED');
   }
   for (const endpoint of ['guarded', 'v1/guarded/', 'v1/Guarded', 'v1/guarded?x=1', 'v1/notInstalled', undefined, 1]) safeFailure(await f.handler(endpoint, getter, undefined, f.peer), 'ENDPOINT_NOT_FOUND');
-  f.connection.operator = {};
-  safeFailure(await f.handler('v1/guarded', {}, undefined, f.peer), 'OPERATOR_REQUIRED'); safeFailure(await f.handler('v1/guarded', {}, undefined, f.connection.operator), 'OPERATOR_REQUIRED');
+  f.connection.browserPeer = {};
+  safeFailure(await f.handler('v1/guarded', {}, undefined, f.peer), 'OPERATOR_REQUIRED'); safeFailure(await f.handler('v1/guarded', {}, undefined, f.connection.browserPeer), 'OPERATOR_REQUIRED');
   assert.equal(operations, 0); assert.equal(traps, 0);
 });
 

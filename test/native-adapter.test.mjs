@@ -23,7 +23,8 @@ const { default: SessionProjectionRegistry } = await import(`${root}/dsh-session
 const { default: SystemPrompt } = await import(`${root}/dsh-system-prompt/lib/index.js`);
 const { default: ToolRuntime } = await import(`${root}/dsh-tools/lib/index.js`);
 const { default: AgentLoop } = await import(`${root}/dsh-agent-loop/lib/index.js`);
-const { default: JsonlSessionPersistence } = await import(`${root}/dsh-session-persistence-jsonl/lib/index.js`);
+// rc.2 JSONL persistence is a plugin namespace (apply/Config/name), not a default class.
+const JsonlSessionPersistence = await import(`${root}/dsh-session-persistence-jsonl/lib/index.js`);
 
 async function fixture({ actualLoop = false, deterministicStream = false, messageAdmission = () => true, workspaceRoot, persistenceRoot, resolveSession } = {}) {
   const directory = workspaceRoot ?? realpathSync(mkdtempSync(join(tmpdir(), 'df-native-')));
@@ -176,7 +177,7 @@ test('actual encrypted context and JSONL session survive native teardown; resume
     const resumeContext = await memory.prepareExecutionContext({ ...bind('persistent-resume-context'), terms: [], now: Date.now() });
     assert.notEqual(resumeContext.digest, prepared.digest, 'fresh context reflects the current stopped/settled ledger');
     f = await fixture({ actualLoop: true, deterministicStream: true, workspaceRoot: directory, persistenceRoot: join(directory, 'sessions'), resolveSession: () => nativeId });
-    assert.equal(probePersistenceHost(f.ctx).version, '0.2.1-alpha.1');
+    assert.equal(probePersistenceHost(f.ctx).version, '0.2.1-rc.2');
     manager = new WorkerManager({ store, hostHandle: host, adapter: f.adapter });
     const resumedSpec = { ...spec, dataDigest: resumeContext.digest, actionRef: d('persistent-resume-action'), attemptGroupRef: d('persistent-resume-group'), executor: { ...spec.executor, mode: 'resume', generationRef: d('persistent-resume-generation') } };
     const resumedAction = store.planAction(owner, { ...bind('persistent-resume-plan'), spec: resumedSpec });

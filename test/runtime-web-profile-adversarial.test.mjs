@@ -14,7 +14,7 @@ const hash = data => createHash('sha256').update(data).digest('hex');
 function compiledProfile() {
   const layers = ['dsh-base', 'dsh-web-app'].map(name => {
     const data = readFileSync(`${packages}/${name}/cordis.patch.yml`);
-    const expected = name === 'dsh-base' ? '9c2be64f46a193eff3cca190c26e697e8e8eee25c9b40149dfdb56f8142c252d' : '3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192';
+    const expected = name === 'dsh-base' ? 'a2cc57868a4d016609801e28781262515483dde29b41c2742d9a3b27a6f52f77' : '3e1f923309612ed8551141127409d662e78758e2d0d125218a3f70514417e472';
     assert.equal(hash(data), expected);
     return yaml.load(data.toString('utf8'), { schema: entryListSchema });
   });

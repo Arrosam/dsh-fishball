@@ -69,12 +69,20 @@ function capture(value, depth = 0, fractions = false) {
 }
 const rejected = code => ({ ok: false, error: { code, message: code, details: {} } });
 
-// Connection owns the authenticated OperatorPeer for its whole lifetime. The
+// DSH Web 0.2.1-rc.2 renamed alpha.1 `operator` ("the operator Peer every
+// admitted request speaks for") to `browserPeer` ("the Peer every
+// authenticated browser connection shares"). rc.2 also mints separate
+// per-credential API Peers via the launch-token /connect exchange; those are
+// deliberately NOT owner authority here, so admission stays exactly as narrow
+// as alpha.1. Widening to API Peers requires an explicit owner decision.
+export const ownerPeerOf = connection => connection?.browserPeer;
+
+// Connection owns the authenticated browser Peer for its whole lifetime. The
 // fourth handler argument is supplied by DSH after admission, never by JSON.
 // Only trusted same-process composition may install these operation closures.
 export function installOperatorBridge({ connection, operations, isAlive = () => true }) {
-  if (!connection?.operator || typeof connection.rpc?.handle !== 'function' || typeof isAlive !== 'function') fail('BRIDGE_CONFIG_INVALID');
-  const peer = connection.operator;
+  if (!ownerPeerOf(connection) || typeof connection.rpc?.handle !== 'function' || typeof isAlive !== 'function') fail('BRIDGE_CONFIG_INVALID');
+  const peer = ownerPeerOf(connection);
   if (!operations || types.isProxy(operations) || Object.getPrototypeOf(operations) !== Object.prototype) fail('BRIDGE_CONFIG_INVALID');
   const descriptors = Object.getOwnPropertyDescriptors(operations), commands = new Map();
   for (const [key, field] of Object.entries(descriptors)) {
@@ -91,7 +99,7 @@ export function installOperatorBridge({ connection, operations, isAlive = () => 
       let alive = false;
       try { alive = active && isAlive() === true; } catch { /* stable failure below */ }
       if (!alive) return rejected('SERVICE_DISPOSED');
-      if (admittedPeer !== peer || connection.operator !== peer) return rejected('OPERATOR_REQUIRED');
+      if (admittedPeer !== peer || ownerPeerOf(connection) !== peer) return rejected('OPERATOR_REQUIRED');
       if (signal?.aborted) return rejected('REQUEST_ABORTED');
       const name = typeof endpoint === 'string' && endpoint.startsWith(prefix) ? endpoint.slice(prefix.length) : undefined;
       const operation = commands.get(name);
@@ -110,7 +118,7 @@ export function installOperatorBridge({ connection, operations, isAlive = () => 
           let current = false;
           try { current = active && isAlive() === true; } catch { /* bounded below */ }
           if (!current) fail('SERVICE_DISPOSED');
-          if (connection.operator !== peer || admittedPeer !== peer) fail('OPERATOR_REQUIRED');
+          if (ownerPeerOf(connection) !== peer || admittedPeer !== peer) fail('OPERATOR_REQUIRED');
           if (signal?.aborted) fail('REQUEST_ABORTED');
           return true;
         };

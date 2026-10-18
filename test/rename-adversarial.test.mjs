@@ -158,7 +158,7 @@ test('independent rename public identities: MIT/private preview package, native 
 
 test('independent rename RPC: channel rename never admits JSON or cloned peers, aliases or disposed captured handlers', async () => {
   const peer = {}, captures = []; let operations = 0;
-  const bridge = installOperatorBridge({ connection: { operator: peer, rpc: { handle(channel, handler) { captures.push({ channel, handler }); return () => {}; } } }, operations: { list() { operations++; return []; } } });
+  const bridge = installOperatorBridge({ connection: { browserPeer: peer, rpc: { handle(channel, handler) { captures.push({ channel, handler }); return () => {}; } } }, operations: { list() { operations++; return []; } } });
   assert.equal(captures.length, 1); assert.equal(captures[0].channel, '/df-rpc'); const call = captures[0].handler;
   for (const caller of [{}, { role: 'owner', channel: '/df-rpc', verified: true }, undefined]) {
     const result = await call('v1/list', { role: 'owner', scope, verified: true }, undefined, caller); assert.equal(result.error.code, 'OPERATOR_REQUIRED');
@@ -179,7 +179,7 @@ test('independent rename native carrier: df diagnostics and RPC retain trusted s
   t.after(() => ctx.fiber.dispose());
   ctx.provide('webServer', { register(route) { assert.equal(routes.has(route.path), false); routes.set(route.path, route); return () => routes.delete(route.path); } });
   await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
-  await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: request => request.headers['x-synthetic-auth'] === 'approved' }); } });
+  await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], {isAuthenticated:request => request.headers['x-synthetic-auth'] === 'approved',authenticateApi:()=>undefined}); } });
   const identity = { ownerId: 'rename-owner', workspaceId: 'rename-workspace' };
   const plugin = ctx.plugin(createRuntimePlugin({ identity: () => identity, encryptionKey: () => Buffer.alloc(32, 44), forbiddenSecrets: [secret] }), { databasePath: join(home, 'dsh-fishball.sqlite') }); await plugin;
   const service = ctx.df; assert.deepEqual(Object.keys(service), ['diagnostics']); assert.equal(ctx.reflect.get('bubbles'), undefined);

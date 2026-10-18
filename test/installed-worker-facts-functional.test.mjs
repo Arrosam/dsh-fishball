@@ -27,7 +27,8 @@ const { default: Prompt } = await load('dsh-system-prompt');
 const { default: Tools } = await load('dsh-tools');
 const { default: Presets } = await load('dsh-agent-preset-registry');
 const { default: AgentLoop } = await load('dsh-agent-loop');
-const { default: Jsonl } = await load('dsh-session-persistence-jsonl');
+// rc.2 JSONL persistence exports a plugin namespace; its service is a SessionPersistence subclass.
+const Jsonl = await load('dsh-session-persistence-jsonl');
 const { SessionPersistence } = await load('dsh-session-persistence');
 const runFile = promisify(execFile);
 const baseUrl = new URL('../', import.meta.url).href;
@@ -117,12 +118,12 @@ async function fixture(t, { synthetic = false, providerCount = 1, modelCount = 1
 test('F01 actual classes and supplying factory entries expose resolved selected metadata without allocation', async t => {
   const f = await fixture(t, { effortCount: 2 }), before = readdirSync(f.dataParent), facts = await f.resolve();
   for (const [name, C] of Object.entries({ sessions: SessionStore, agents: AgentRegistry, llm: LlmRuntime, tools: Tools,
-    systemPrompt: Prompt, approval: Approval, agentPresets: Presets, loader: Loader, sessionPersistence: Jsonl, agentLoop: AgentLoop })) {
+    systemPrompt: Prompt, approval: Approval, agentPresets: Presets, loader: Loader, sessionPersistence: SessionPersistence, agentLoop: AgentLoop })) {
     assert.ok(facts.services[name] instanceof C, name);
     assert.equal(originalIdentity(facts.services[name]), originalIdentity(f.ctx.reflect.get(name)), name);
   }
   for (const entry of [f.loopEntry, f.persistenceEntry]) assert.ok(entry instanceof Entry);
-  assert.equal(f.loopEntry.moduleNamespace.default, AgentLoop); assert.equal(f.persistenceEntry.moduleNamespace.default, Jsonl);
+  assert.equal(f.loopEntry.moduleNamespace.default, AgentLoop); assert.equal(f.persistenceEntry.moduleNamespace, Jsonl); assert.equal(originalIdentity(facts.services.sessionPersistence).name, Jsonl.name);
   assert.ok(f.loopEntry.ctx.reflect.get('sessionPersistence') instanceof SessionPersistence);
   assert.equal(originalIdentity(f.loopEntry.ctx.reflect.get('sessionPersistence')), originalIdentity(f.ctx.sessionPersistence));
   const nativeList = await f.ctx.llm.listModels(f.choice.selection.provider);

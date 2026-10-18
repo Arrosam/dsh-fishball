@@ -16,9 +16,9 @@ const packages = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const includeFile = `${packages}/cordis-plugin-include/lib/index.js`;
 const pins = {
   'cordis-plugin-include/lib/index.js': 'ad5eaf3b80a8fd9945466486493a0d1a8e9590895bcde01e5673f3d07b4fd306',
-  'dsh-app-boot/lib/index.js': '619d80619320e953e5ddcee7c71e4b97e90e722a7d17da8819f3bb47e00587be',
-  'dsh-base/cordis.patch.yml': '9c2be64f46a193eff3cca190c26e697e8e8eee25c9b40149dfdb56f8142c252d',
-  'dsh-web-app/cordis.patch.yml': '3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192',
+  'dsh-app-boot/lib/index.js': '5135179ac810e4f626f32ec3bdc3293dc7d2028e8aa92e5e0c006f1a33b78e76',
+  'dsh-base/cordis.patch.yml': 'a2cc57868a4d016609801e28781262515483dde29b41c2742d9a3b27a6f52f77',
+  'dsh-web-app/cordis.patch.yml': '3e1f923309612ed8551141127409d662e78758e2d0d125218a3f70514417e472',
 };
 const hash = data => createHash('sha256').update(data).digest('hex');
 for (const [file, expected] of Object.entries(pins)) assert.equal(hash(readFileSync(`${packages}/${file}`)), expected);
@@ -94,7 +94,7 @@ test('compiled selected provider class and original Loader Connection produce ve
     const before = hash(readFileSync(auth));
     const url = new URL(ctx.connection.authenticatedUrl('http://127.0.0.1:3080')); let cookie;
     ctx.connection.authorizeIndex({ method: 'GET', url: url.pathname + url.search, headers: { host: url.host } }, { writeHead(status, headers) { assert.equal(status, 303); assert.equal(headers.location, './'); cookie = headers['set-cookie'].split(';')[0]; }, end() {} });
-    assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin, cookie } }).peer, ctx.connection.operator);
+    assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin, cookie } }).peer, ctx.connection.browserPeer);
     assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin } }).rejection, 401);
     assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: 'http://synthetic.invalid', cookie } }).rejection, 403);
     chmodSync(auth, 0o644); await assert.rejects(verifyFixtureCredentialBacking(ctx, auth), { message: 'FIXTURE_CREDENTIAL_BACKING_UNAVAILABLE' }); chmodSync(auth, 0o600);

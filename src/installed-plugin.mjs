@@ -14,6 +14,7 @@ import { requireHost, resolveHostSource } from './host-probe.mjs';
 import { createRuntimePlugin } from './runtime-plugin.mjs';
 import { SETUP_BOUNDS, SetupError, SetupState } from './setup-state.mjs';
 import { record } from './config.mjs';
+import { ownerPeerOf } from './operator-bridge.mjs';
 import { types } from 'node:util';
 const { HostConnectionService } = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-client-connection')).href);
 const codes = new Set(['SETUP_REQUIRED', 'SETUP_RECOVERY_REQUIRED', 'SETUP_UNAVAILABLE', 'SETUP_PREVIEW_STALE', 'SETUP_CONFIRMATION_REQUIRED', 'SETUP_INVALID_INPUT', 'REQUEST_ABORTED', 'OPERATOR_REQUIRED', 'SERVICE_DISPOSED']);
@@ -28,10 +29,10 @@ export async function apply(ctx, input) {
   const bindMemory = memory.enabled ? await prepareInstalledMemory(memory) : undefined;
   if (![1, 2].includes(ctx.fiber.state) || ctx.fiber.uid === null) throw new SetupError('SERVICE_DISPOSED');
   if (!(ctx.connection instanceof HostConnectionService)) throw new SetupError('SETUP_UNAVAILABLE');
-  const peer = ctx.connection.operator;
+  const peer = ownerPeerOf(ctx.connection);
   if (!peer || !ctx.profileContext) throw new SetupError('SETUP_UNAVAILABLE');
   let active = true, child, childShutdown;
-  const alive = () => active && [1, 2].includes(ctx.fiber.state) && ctx.fiber.uid !== null && ctx.connection instanceof HostConnectionService && ctx.connection.operator === peer;
+  const alive = () => active && [1, 2].includes(ctx.fiber.state) && ctx.fiber.uid !== null && ctx.connection instanceof HostConnectionService && ownerPeerOf(ctx.connection) === peer;
   const admitted = () => alive() && ctx.fiber.state === 2;
   const state = new SetupState({ databasePath: config.databasePath, limits: config.limits,
     profile: { dir: ctx.profileContext.dir, name: ctx.profileContext.name }, isAlive: alive,

@@ -37,7 +37,7 @@ async function fixture(t) {
     // The exported native Connection owns the actual peer/trust fence/RPC
     // framing. BrowserAuth is a private synthetic double, without credentials,
     // server listener, cookies, browser, provider or external model calls.
-    new HostConnectionService(connectionCtx, [], { isAuthenticated: request => request.headers['x-synthetic-auth'] === 'approved' });
+    new HostConnectionService(connectionCtx, [], {isAuthenticated:request => request.headers['x-synthetic-auth'] === 'approved',authenticateApi:()=>undefined});
   } });
   const send = async (command, payload = {}, headers = {}) => {
     const method = `v1/${command}`, envelope = { type: 'client-request', rpcId: 'fixture-rpc', method, payload };
@@ -143,7 +143,7 @@ test('scoped Web runtime requires real public WebServer registration and seals o
   ctx.logger.exporters?.clear?.();
   t.after(async () => { try { await ctx.fiber.dispose(); } finally { rmSync(directory, { recursive: true, force: true }); } });
   await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
-  const connection = ctx.plugin({ inject: ['webServer'], apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: () => true }); } });
+  const connection = ctx.plugin({ inject: ['webServer'], apply(connectionCtx) { new HostConnectionService(connectionCtx, [], {isAuthenticated:() => true,authenticateApi:()=>undefined}); } });
   const databasePath = join(directory, 'ledger.sqlite'); let runtime;
   const parent = ctx.plugin({ inject: ['connection', 'sessions', 'approval', 'webServer'], async apply(scopedCtx) {
     runtime = scopedCtx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'scoped-owner', workspaceId: 'scoped-workspace' }), encryptionKey: () => Buffer.alloc(32, 17) }), { databasePath });

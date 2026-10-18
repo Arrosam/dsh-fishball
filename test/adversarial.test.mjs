@@ -873,11 +873,11 @@ test('independent: actual public Web Cordis rejects malicious identity adapters 
     try {
       await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
       const host = probeHost(ctx);
-      assert.equal(host.target, 'dsh-web-0.2.1-alpha.1');
+      assert.equal(host.target, 'dsh-web-0.2.1-rc.2');
       assert.equal(host.supported, true);
       assert.equal(host.runtime.node, 'v22.22.2');
-      assert.deepEqual(host.versions, { harness: '0.2.1-alpha.1', cordis: '4.0.5-alpha.1',
-        sessions: '0.2.1-alpha.1', approval: '0.2.1-alpha.1', web: '0.2.1-alpha.1', webServer: '0.2.1-alpha.1' });
+      assert.deepEqual(host.versions, { harness: '0.2.1-rc.2', cordis: '4.0.5',
+        sessions: '0.2.1-rc.2', approval: '0.2.1-rc.2', web: '0.2.1-rc.2', webServer: '0.2.1-rc.2' });
       assert.ok(Object.values(host.checks).every(value => value === true));
       assert.deepEqual(host.failures, []);
       let invalidIndex = 0;
@@ -940,5 +940,5 @@ test('independent: actual public Web Cordis rejects malicious identity adapters 
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.deepEqual(JSON.parse(result.stdout.trim().split('\n').at(-1)), { passed: true,
-    target: 'dsh-web-0.2.1-alpha.1', node: 'v22.22.2', reloads: 10, heldReservations: 1, inferenceCalls: 0 });
+    target: 'dsh-web-0.2.1-rc.2', node: 'v22.22.2', reloads: 10, heldReservations: 1, inferenceCalls: 0 });
 });

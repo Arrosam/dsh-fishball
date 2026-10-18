@@ -2,6 +2,7 @@ import { types } from 'node:util';
 import { exact, canonical, canonicalDigest, hash, ref, integer, normalizedSpec } from './runtime-security.mjs';
 import { contextText } from './context.mjs';
 import { normalizeNotificationPolicy } from './notifications.mjs';
+import { ownerPeerOf } from './operator-bridge.mjs';
 
 export class InstalledResultsError extends Error {
   constructor(code) { super(code); this.name = 'InstalledResultsError'; this.code = code; }
@@ -173,11 +174,11 @@ export function createInstalledResults(input) {
   return Object.freeze({ installedResultsInstaller(installation) {
     exact(installation, ['ctx', ...METHODS]); if (!installation.ctx || METHODS.some(n => typeof installation[n] !== 'function')) fail('RESULT_CAPABILITY_UNAVAILABLE');
     if (installed) fail('RESULT_ALREADY_INSTALLED'); installed = true;
-    const api = { ...installation }, ctx = api.ctx, connection = ctx.connection, peer = connection?.operator;
+    const api = { ...installation }, ctx = api.ctx, connection = ctx.connection, peer = ownerPeerOf(connection);
     if (!peer || !ctx.profileContext || ctx.profileContext.dir !== profile.dir || ctx.profileContext.name !== profile.name) fail('RESULT_CAPABILITY_UNAVAILABLE');
     let active = true, disposed = false; const plans = new Map(), permits = new Map();
     const live = () => {
-      let admitted = false; try { admitted = active && api.isAlive() === true && ctx.connection === connection && connection.operator === peer && ctx.profileContext.dir === profile.dir && ctx.profileContext.name === profile.name; } catch {}
+      let admitted = false; try { admitted = active && api.isAlive() === true && ctx.connection === connection && ownerPeerOf(connection) === peer && ctx.profileContext.dir === profile.dir && ctx.profileContext.name === profile.name; } catch {}
       if (!admitted) { active = false; permits.clear(); } return admitted;
     };
     const check = () => { if (!selection.enabled) fail('RESULTS_DISABLED'); if (!live()) fail('SERVICE_DISPOSED'); };

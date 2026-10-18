@@ -42,7 +42,7 @@ function fixture(options = {}) {
   const route = { recipientRef: C([namespace, 'df.native-owner/v1']), channelRef: C([namespace, 'df.local-results/v1']),
     policyRef: C([namespace, 'notification-policy']), mergeKeyRef: C([namespace, 'progress-group']) };
   const calls = [], hooks = {}, faults = {}, current = new Map(), versions = new Map(), bodies = new Map(), deliveries = new Map(), projections = new Map();
-  const peer = Object.freeze({ T: 'original-carrier-peer' }), ctx = { connection: { operator: peer }, profileContext: clone(PROFILE) };
+  const peer = Object.freeze({ T: 'original-carrier-peer' }), ctx = { connection: { browserPeer: peer }, profileContext: clone(PROFILE) };
   const lifetime = { alive: true }, listeners = new Set();
   const state = { observedAt: Date.UTC(2026, 9, 4, 12), task: { taskRef: TASK, ownerRef: H(ID.ownerId), workspaceRef: H(ID.workspaceId),
     version: 2, authEpoch: 7, status: 'running' }, control: 'active', actions: [], artifacts: [], progress: [], notifications: [], notificationFacts: [],
@@ -260,13 +260,13 @@ for (const [name, mutate] of [
 });
 
 for (const [name, mutate] of [
-  ['peer', f => { f.ctx.connection.operator = {}; }], ['connection', f => { f.ctx.connection = { operator: f.peer }; }],
+  ['peer', f => { f.ctx.connection.browserPeer = {}; }], ['connection', f => { f.ctx.connection = { browserPeer: f.peer }; }],
   ['profile dir', f => { f.ctx.profileContext.dir += '-other'; }], ['profile name', f => { f.ctx.profileContext.name += '-other'; }],
   ['alive false', f => { f.lifetime.alive = false; }], ['alive promise', f => { f.lifetime.alive = Promise.resolve(true); }],
   ['dispose', f => f.service.dispose()],
 ]) test(`T N5-02/18/N5R-10: captured ${name} lifetime seals old callbacks`, () => {
   const f = fixture(); mutate(f); rejectsCode(() => f.service.localResultsStatus({ taskRef: TASK }), 'SERVICE_DISPOSED');
-  f.ctx.connection = { operator: f.peer }; f.ctx.profileContext = clone(PROFILE); f.lifetime.alive = true;
+  f.ctx.connection = { browserPeer: f.peer }; f.ctx.profileContext = clone(PROFILE); f.lifetime.alive = true;
   rejectsCode(() => f.service.localResultsStatus({ taskRef: TASK }), 'SERVICE_DISPOSED'); assert.equal(f.mutations().length, 0);
 });
 
@@ -435,7 +435,7 @@ for (const [name, modify] of [
 });
 
 for (const [name, mutate] of [
-  ['peer', f => { f.ctx.connection.operator = {}; }], ['profile', f => { f.ctx.profileContext.name = 'T-replaced'; }],
+  ['peer', f => { f.ctx.connection.browserPeer = {}; }], ['profile', f => { f.ctx.profileContext.name = 'T-replaced'; }],
   ['dispose', f => f.service.dispose()], ['lifetime', f => { f.lifetime.alive = false; }],
 ]) test(`T N5-09/18/N5R-06: committed await then ${name} loss keeps source fact and forbids stale success`, async () => {
   const f = fixture(), record = f.ready(); let release, committed;

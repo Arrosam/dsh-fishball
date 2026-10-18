@@ -56,13 +56,13 @@ test('genuine public BrowserAuth token exchange and OperatorPeer admission use o
     assert.equal(ctx.connection.authorizeIndex({ method: 'GET', url: url.pathname + url.search, headers: { host: url.host } }, response), false);
     assert.equal(status, 303); assert.equal(headers.location, './');
     let cookie = headers['set-cookie'].split(';')[0];
-    assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin, cookie } }).peer === ctx.connection.operator, true);
+    assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin, cookie } }).peer === ctx.connection.browserPeer, true);
     assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin } }).rejection, 401);
     assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: 'http://synthetic.invalid', cookie } }).rejection, 403);
     assert.equal(ctx.connection.admit({ headers: { host: url.host, cookie: 'synthetic=forged' } }).rejection, 401);
     await fiber.dispose(); await ctx.plugin(Connection);
     assert.equal(digest(readFileSync(path)), initialDigest, 'reload reuses native signing record without printing it');
-    assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin, cookie } }).peer === ctx.connection.operator, true);
+    assert.equal(ctx.connection.admit({ headers: { host: url.host, origin: url.origin, cookie } }).peer === ctx.connection.browserPeer, true);
     cookie = undefined;
     assert.deepEqual(await provider.listRecords(), [{ key: 'client-connection/browser-session', kind: 'grant' }]);
     await ctx.fiber.dispose(); await assert.rejects(provider.readRecord('client-connection/browser-session'), { message: 'FIXTURE_CREDENTIAL_UNAVAILABLE' });
@@ -168,7 +168,7 @@ async function nativeWebComposition(mode) {
       const row = JSON.parse(runtimeProfilePatch()).find(row => row.id === 'connection');
       assert.equal(Object.hasOwn(row, 'name'), false);
       const nativePackage = JSON.parse(readFileSync(`${root}/dsh-client-connection/package.json`, 'utf8'));
-      assert.equal(nativePackage.name, '@deepseek-ai/dsh-client-connection'); assert.equal(nativePackage.version, '0.2.1-alpha.1');
+      assert.equal(nativePackage.name, '@deepseek-ai/dsh-client-connection'); assert.equal(nativePackage.version, '0.2.1-rc.2');
       assert.deepEqual(nativePackage.dsh.client, { inject: [], platform: 'web', immediately: true });
       const id = await ctx.loader.create({ name: `${root}/dsh-client-connection/lib/index.js`, inject: row.inject, config: row.config });
       await ctx.loader.await(); const entry = ctx.loader.resolve(id); connection = entry.fiber; await connection.await();
