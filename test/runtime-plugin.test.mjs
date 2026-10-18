@@ -59,7 +59,7 @@ test('actual public Cordis/Connection bridge routes owner intake, blocks carrier
   const fiber = f.ctx.plugin(createRuntimePlugin({ identity: () => identity, encryptionKey: () => key,
     forbiddenSecrets: ['synthetic-canary'], runtimeLimits: { maxMetadataBytes: 8192 } }), { databasePath: join(f.directory, 'ledger.sqlite') });
   await fiber;
-  assert.equal(f.ctx.df.diagnostics().identityBridge, 'connection-operator');
+  assert.equal(f.ctx.df.diagnostics().identityBridge, 'connection-browser-peer');
   assert.deepEqual(Object.keys(f.ctx.df), ['diagnostics']);
   assert.equal(f.ctx.df.store, undefined); assert.equal(f.ctx.df.owner, undefined);
   identity.workspaceId = 'changed-after-load';

@@ -116,12 +116,20 @@ class TestingAdapter extends llmModule.LlmAdapter {
     if (original(binding.ctx.agents.currentInitiator()) !== agent || permit.state !== 'prepared') denied();
     permit.state = 'consumed';
     permit.usage = Object.freeze({ accounting: TESTING_ACCOUNTING, inputUnits:facts.inputUnits, outputUnits:facts.outputUnits, totalUnits:facts.inputUnits+facts.outputUnits, resultDigest:hash(facts.response) });
+    // NAT05 between-chunk currentness. Any refusal or throw (including a raw
+    // authority-callback error) seals the consumed permit and surfaces only the
+    // stable WORKER_REQUEST_DENIED code, never the callback's message (H1 review).
+    const recheck = () => {
+      let current = false;
+      try { boundCurrent(binding); ownedAgent(binding,agent); current = permit.assertCurrent(options) === true; } catch { /* redacted below */ }
+      if (!current) { permit.state = 'sealed'; denied(); }
+    };
     yield {type:'text-delta',index:0,text:facts.response};
-    boundCurrent(binding);ownedAgent(binding,agent);if(permit.assertCurrent(options)!==true)denied();
+    recheck();
     yield {type:'usage',usage:{inputTokens:facts.inputUnits,outputTokens:facts.outputUnits,totalTokens:facts.inputUnits+facts.outputUnits}};
-    boundCurrent(binding);ownedAgent(binding,agent);if(permit.assertCurrent(options)!==true)denied();
+    recheck();
     yield {type:'finish',reason:{kind:'stop'}};
-    boundCurrent(binding);ownedAgent(binding,agent);if(permit.assertCurrent(options)!==true)denied();
+    recheck();
   }
 }
 export function apply(ctx,input) {

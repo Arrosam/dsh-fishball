@@ -134,6 +134,16 @@ function displayModel(value){
  const contextUnits=Number.isSafeInteger(value.context?.contextWindow)&&value.context.contextWindow>0?value.context.contextWindow:null;
  return {provider:boundedText(value.provider,128),id:boundedText(value.id,256),name:boundedText(value.name??value.id),reasoningEfforts,defaultEffort:value.reasoning?.defaultEffort===undefined?null:boundedText(value.reasoning.defaultEffort,128),maxOutputTokens,contextUnits};
 }
+// rc.2 JSONL apply() provides the service from one child plugin named
+// 'session-persistence-jsonl-service' under the Loader entry fiber. Requiring
+// that exact lineage (not just the writable `name` label) binds the service to
+// the pinned entry without relying on Cordis' single-provider invariant.
+export function providedByJsonlEntry(service,entry,original){
+ try{
+  const own=original(original(original(service)?.ctx)?.fiber),parentCtx=original(own?.parent),parent=original(parentCtx?.fiber);
+  return !!own&&own.state===2&&own.uid!==null&&own.runtime?.name==='session-persistence-jsonl-service'&&parent===original(entry.fiber)&&parent.runtime?.callback===entry.moduleNamespace?.apply&&original(service).name==='session-persistence-jsonl';
+ }catch{return false;}
+}
 // `owns(namespace)` binds the entry to the exact pinned public module. rc.2
 // JSONL persistence exports a plugin namespace (`apply`/`Config`/`name`)
 // instead of alpha.1's default service class, so callers select the binding.
@@ -154,9 +164,10 @@ export async function resolveInstalledWorkerFacts({ctx,choice,profile,isAlive,pr
   const get=name=>ctx.reflect.get(name),services={agents:get('agents'),llm:get('llm'),sessions:get('sessions'),tools:get('tools'),systemPrompt:get('systemPrompt'),agentPresets:get('agentPresets'),sessionPersistence:get('sessionPersistence'),approval:get('approval'),agentLoop:get('agentLoop'),loader:get('loader')};
   const classes={agents:m['dsh-agent'].AgentRegistry,llm:m['dsh-llm'].LlmRuntime,sessions:m['dsh-session'].SessionStore,tools:m['dsh-tools'].default,systemPrompt:m['dsh-system-prompt'].default,agentPresets:m['dsh-agent-preset-registry'].default,sessionPersistence:m['dsh-session-persistence'].SessionPersistence,approval:m['dsh-user-approval'].default,agentLoop:m['dsh-agent-loop'].default,loader:m['cordis-plugin-loader'].default};
   for(const [key,C]of Object.entries(classes))if(!(services[key] instanceof C))fail(key==='agentPresets'?'WORKER_PRESET_UNAVAILABLE':key==='sessionPersistence'?'WORKER_PERSISTENCE_UNSUPPORTED':'WORKER_SOURCE_UNAVAILABLE');
-  const Entry=m['cordis-plugin-loader'].Entry,loopEntry=locate(services.loader,Entry,ns=>ns?.default===classes.agentLoop,'agentLoop',services.agentLoop,original),persistenceEntry=locate(services.loader,Entry,ns=>ns===m['dsh-session-persistence-jsonl']&&typeof ns.apply==='function',`sessionPersistence`,services.sessionPersistence,original);
-  // The public base class alone admits any backend; also require the pinned JSONL backend label.
-  if(original(services.sessionPersistence).name!=='session-persistence-jsonl')fail('WORKER_PERSISTENCE_UNSUPPORTED');
+  const Entry=m['cordis-plugin-loader'].Entry,loopEntry=locate(services.loader,Entry,ns=>ns?.default===classes.agentLoop,'agentLoop',services.agentLoop,original),persistenceEntry=locate(services.loader,Entry,ns=>ns===m['dsh-session-persistence-jsonl'],'sessionPersistence',services.sessionPersistence,original);
+  // The public base class alone admits any backend. Bind the provider itself:
+  // the service's own fiber must be the pinned JSONL entry's direct child plugin.
+  if(!providedByJsonlEntry(services.sessionPersistence,persistenceEntry,original))fail('WORKER_PERSISTENCE_UNSUPPORTED');
   if(original(loopEntry.ctx.reflect.get('sessionPersistence'))!==original(services.sessionPersistence)||!(loopEntry.ctx.reflect.get('sessionPersistence') instanceof m['dsh-session-persistence'].SessionPersistence)||loopEntry.ctx.reflect.get('sessionPersistence').identity!==services.sessionPersistence.identity)fail('WORKER_PERSISTENCE_UNSUPPORTED');
   if(!Array.isArray(services.agentLoop.config.agents)||services.agentLoop.config.agents.some(row=>['id','sessionId','resumeSessionId'].some(key=>typeof row?.[key]==='string'&&row[key].startsWith('df-'))))fail('WORKER_SOURCE_UNAVAILABLE');
   if(services.sessionPersistence.config.root!==choice.persistence.directory||(services.sessionPersistence.config.compression??'zstd')!==choice.persistence.compression)fail('WORKER_PERSISTENCE_UNSUPPORTED');

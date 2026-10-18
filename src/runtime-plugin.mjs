@@ -510,10 +510,12 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
       // 4fea280 (BUB006-05: "installed admission seals while scoped task/memory/data
       // reads remain usable"). The carrier and plugin liveness are still required.
       const readCheck = () => { assertAlive(); return assertInstalledWorkerInvocation(ctx); };
+      // Exactly the pure owner-scoped memory reads (no write, preview, fanout or receipt).
+      const SEAL_SURVIVING_READS = new Set(['memoryRead', 'memoryStatus', 'memoryCommandStatus']);
       for (const [name, method] of Object.entries(normalOperations)) operations[name] = (input, context) => {
         record(context, ['assertCurrent'], 'SERVICE_DISPOSED');
         if (typeof context.assertCurrent !== 'function') throw new BootstrapError('SERVICE_DISPOSED');
-        const check = name === 'memoryRead' ? readCheck : checkOwner;
+        const check = SEAL_SURVIVING_READS.has(name) ? readCheck : checkOwner;
         return runInstalledWorkerInvocation(ctx, context.assertCurrent, async () => { check(); const out = await method(input); check(); return out; });
       };
       bridge = installOperatorBridge({ connection: ctx.connection, operations, isAlive: alive });
@@ -524,7 +526,7 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         return Object.freeze({ target: host.target, supported: host.supported,
           schemaVersion: store.diagnostics().schemaVersion, channel: '/df-rpc',
           ...(installed ? {installedWorkerStatus:frozenCopy(installed.status())}: {}), ...(auditInstalled ? {installedAuditStatus:frozenCopy(auditInstalled.status())}: {}),
-          identityBridge: 'connection-operator', permissionBridge: 'trusted-policy-required',
+          identityBridge: 'connection-browser-peer', permissionBridge: 'trusted-policy-required',
           automationBridge: router || normalAutomation ? 'private-installed-adapters' : 'unavailable',
           scheduleBridge: schedules || normalAutomation ? 'owner-approved-ingress-only' : 'unavailable',
           chatBridge: router ? 'provider-neutral-contract' : 'unavailable',

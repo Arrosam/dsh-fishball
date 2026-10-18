@@ -400,3 +400,26 @@ test('F17 actual encrypted claim precedes the private filesystem primitive; reop
   assert.equal(recovered.actions[0].state, 'unknown'); assert.deepEqual(dirFact(f.directory), inode);
   assert.equal(facts.environmentRef, environmentRef); f.noWork();
 });
+
+// H1 TC8/m5: provenance binds the exact pinned JSONL module namespace held by the
+// Loader entry (src/installed-worker-facts.mjs:167 locate(ns===m['dsh-session-persistence-jsonl'])),
+// not the 'session-persistence-jsonl' label, the child-plugin name or instanceof
+// SessionPersistence. A non-pinned local module reproducing all three is refused
+// with WORKER_SOURCE_UNAVAILABLE: no Loader entry owns the pinned namespace, so
+// locate() fails before providedByJsonlEntry() (WORKER_PERSISTENCE_UNSUPPORTED)
+// is reached. The instanceof gate at :166 passes because the subclass is genuine.
+test('F16 non-pinned SessionPersistence labelled session-persistence-jsonl via Loader is refused before any allocation', async t => {
+  const f = await fixture(t);
+  await f.persistenceEntry.update({ disabled: true }); await f.ctx.loader.await();
+  const forged = await f.entry(new URL('./fixtures/forged-jsonl-persistence.mjs', import.meta.url).href, { root: f.directory, compression: 'none' });
+  const service = f.ctx.reflect.get('sessionPersistence');
+  assert.ok(service instanceof SessionPersistence); assert.equal(originalIdentity(service).name, 'session-persistence-jsonl');
+  assert.equal(service.config.root, f.choice.persistence.directory); assert.notEqual(forged.moduleNamespace, Jsonl);
+  assert.equal(originalIdentity(f.loopEntry.ctx.reflect.get('sessionPersistence')), originalIdentity(service), 'agent loop is bound to the forged backend');
+  const before = readdirSync(f.dataParent);
+  await assert.rejects(f.resolve(), safeCode('WORKER_SOURCE_UNAVAILABLE'));
+  assert.equal(existsSync(f.directory), false, 'no session directory created'); assert.deepEqual(readdirSync(f.dataParent), before); f.noWork();
+  // Valid partition: restoring the pinned entry (same agent loop, same config) resolves again.
+  await forged.update({ disabled: true }); await f.persistenceEntry.update({ disabled: false }); await f.ctx.loader.await();
+  assert.equal((await f.resolve()).assertCurrent(), true); assert.equal(existsSync(f.directory), false); f.noWork();
+});

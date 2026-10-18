@@ -472,8 +472,19 @@ test('M17 captured execute carrier survives foreign ambient context; original re
   // every iterator step (src/installed-owned-stream.mjs), so the readonly check
   // count is no longer the old start+assertCurrent pair: each call still runs
   // three readonly passes, starts with start/open (3) and covers every step.
-  assert.ok(foreignEntries >= 4); assert.equal(readonlyChecks % 3, 0);
-  assert.ok(readonlyChecks / 3 >= 3 + 2 * foreignEntries + (foreignEntries - 1), String(readonlyChecks)); assert.equal(r.result.execution.state, 'committed');
+  // Exact count of requestCurrent calls (src/installed-worker.mjs:164 calls
+  // assertNativeRequestCurrent once per requestCurrent; this spy runs 3 passes):
+  //  - stream-step checks (src/installed-owned-stream.mjs): start()+check()+check()
+  //    around open = 3; each non-final step = check-before-next + check-after +
+  //    check-after-yield = 3; the final done step = 2. Total 3 + 3*(F-1) + 2 = 3F + 2,
+  //    where F = foreignEntries = iterator.next() calls (3 provider chunks + done).
+  //  - non-stream checks: the testing provider's permit.assertCurrent
+  //    (src/testing-provider.mjs:111 pre-consume, then :120/:122/:124 after
+  //    text-delta/usage/finish) = 4.
+  const PROVIDER_CHUNKS = 3, PROVIDER_PERMIT_CHECKS = 1 + PROVIDER_CHUNKS;
+  assert.equal(foreignEntries, PROVIDER_CHUNKS + 1); assert.equal(readonlyChecks % 3, 0);
+  assert.equal(readonlyChecks / 3, (3 * foreignEntries + 2) + PROVIDER_PERMIT_CHECKS, String(readonlyChecks));
+  assert.equal(readonlyChecks, 54); assert.equal(r.result.execution.state, 'committed');
   assert.equal(f.facts().intents, 1); assert.equal(f.facts().reservations, 1); assert.equal(f.facts().artifacts, 0);
   const digest = (...parts) => sha(JSON.stringify(parts));
   const actual = observations.filter(o => o.evidenceRef === digest('native', p.taskRef, r.refs.generationRef, sha('df-' + r.refs.generationRef), o.phase, o.cursor));

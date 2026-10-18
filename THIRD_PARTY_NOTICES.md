@@ -14,10 +14,10 @@ The plugin uses installed public DSH services and loads native React through the
 
 | Inspected host package | Pinned version | Declared license and actual notice |
 | --- | --- | --- |
-| `@deepseek-ai/dsh` | 0.2.1-alpha.1 | MIT; Copyright (c) 2026 DeepSeek |
-| `@deepseek-ai/cordis` | 4.0.5-alpha.1 | MIT; Copyright (c) 2021-present Shigma |
-| `@deepseek-ai/dsh-session`, `dsh-user-approval`, `dsh-agent-loop` | 0.2.1-alpha.1 each | MIT; Copyright (c) 2026 DeepSeek |
-| `@deepseek-ai/dsh-client-connection`, `dsh-client-ui-renderer`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar` | 0.2.1-alpha.1 each | MIT; Copyright (c) 2026 DeepSeek |
+| `@deepseek-ai/dsh` | 0.2.1-rc.2 | MIT; Copyright (c) 2026 DeepSeek |
+| `@deepseek-ai/cordis` | 4.0.5 | MIT; Copyright (c) 2021-present Shigma |
+| `@deepseek-ai/dsh-session`, `dsh-user-approval`, `dsh-agent-loop` | 0.2.1-rc.2 each | MIT; Copyright (c) 2026 DeepSeek |
+| `@deepseek-ai/dsh-client-connection`, `dsh-client-ui-renderer`, `dsh-client-ui-layout`, `dsh-client-ui-sidebar` | 0.2.1-rc.2 each | MIT; Copyright (c) 2026 DeepSeek |
 
 Inspected actual LICENSE SHA256: DeepSeek packages `ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be`; Cordis `034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7`. The exact host dependency lock is tracked. Development installs disable lifecycle scripts. No Kotlin/Ktor/Android or added build dependency is downloaded or linked by this project.
 
