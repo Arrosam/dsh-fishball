@@ -12,6 +12,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { RuntimeStore } from '../src/runtime-store.mjs';
 import { ContextAssembler } from '../src/context.mjs';
+import { SCHEMA_VERSION } from '../src/ledger.mjs';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
 // Independent JSON oracle: no product canonical/digest/reference helper imported.
@@ -469,8 +470,10 @@ async function genuine4(t) {
 
 test('N3F17 genuine tracked4 migration keeps exact backup and historical acknowledgements without inventing normal input origin', async t => {
   const f = await genuine4(t); f.store = new RuntimeStore({ ...f.config, auditExecutionBounds: { inputByteLimit: 65536, resultByteLimit: 65536 } });
-  assert.equal(counts(f.path).schemaVersion, 5); assert.equal(bytes(f.path + '.schema-4.backup'), f.sourceSha256);
-  assert.deepEqual(counts(f.path).tables, f.sourceRows.tables);
+  assert.equal(counts(f.path).schemaVersion, SCHEMA_VERSION); assert.equal(bytes(f.path + '.schema-4.backup'), f.sourceSha256);
+  // Schema6/7 migration appends exactly one empty sealed registry per scope (three kinds); all other row counts are unchanged.
+  assert.deepEqual(counts(f.path).tables, { ...f.sourceRows.tables, automation_records: f.sourceRows.tables.automation_records + 3 });
+  { const db = new DatabaseSync(f.path, { readOnly: true }); try { assert.deepEqual(db.prepare("SELECT kind,task FROM automation_records WHERE kind IN ('normal_provenance_registry','prepared_context_registry','normal_native_registry') ORDER BY rowid").all().map(row => [row.kind, row.task]), [['normal_provenance_registry', null], ['prepared_context_registry', null], ['normal_native_registry', null]]); } finally { db.close(); } }
   assert.deepEqual(f.store.intake(f.owner, f.intake), f.receipt);
   assert.deepEqual(f.store.memoryCommandReceipt(f.owner, { namespaceRef: f.memory.namespaceRef, commandRef: f.memory.commandRef, requestDigest: f.memory.requestDigest }), f.memoryReceipt);
   assert.equal(f.store.getMemory(f.owner, { namespaceRef: f.memory.namespaceRef }).deleted, true);

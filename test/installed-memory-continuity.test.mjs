@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { RuntimeStore, RuntimeError, reference } from '../src/runtime-store.mjs';
+// Genuine original schema5 store capsule (no readMemoryCommand seam).
+import { RuntimeStore as Schema5Store } from './fixtures/schema5-core/src/runtime-store.mjs';
 import { MemoryAdapter } from '../src/memory.mjs';
 import { ContextAssembler } from '../src/context.mjs';
 import { BootstrapError } from '../src/config.mjs';
@@ -26,13 +28,13 @@ const importing = more => ({ expectedRevision: 0, snapshotText: JSON.stringify({
 const confirming = (preview, more = {}) => ({ previewRef: preview.previewRef, planDigest: preview.planDigest, expectedRevision: preview.expectedRevision, commandRef: r('confirm'), accept: true, ...more });
 const rejects = async (promise, expected) => assert.rejects(promise, error => error.code === expected && error.message === expected && !error.message.includes('SYNTHETIC_PRIVATE_CANARY'));
 
-function fixture(t, overrides = {}, storageOverrides = {}) {
+function fixture(t, overrides = {}, storageOverrides = {}, Store = RuntimeStore) {
   const directory = mkdtempSync(join(realpathSync(tmpdir()), 'df-continuity-'));
   const owner = Object.freeze({}), coordinator = Object.freeze({}), ctx = Object.freeze({});
   const key = randomBytes(32), databasePath = join(directory, 'runtime.sqlite');
   const principals = [{ handle: owner, role: 'owner', scope }, { handle: coordinator, role: 'coordinator', scope }];
   const storeOptions = { databasePath, encryptionKey: key, principals, hostPermission: () => false, ...storageOverrides };
-  let store = new RuntimeStore(storeOptions), time = 1000, denial = null, fanout = [], listener = () => undefined;
+  let store = new Store(storeOptions), time = 1000, denial = null, fanout = [], listener = () => undefined;
   const tokenize = text => Math.ceil(text.length / 4) + 4;
   const assembler = new ContextAssembler({ store, tokenize });
   const projection = new MemoryAdapter({ store, handle: coordinator, namespaceRef, contextAssembler: assembler, tokenize, knownSecrets: ['SYNTHETIC_PRIVATE_CANARY'] });
@@ -212,8 +214,18 @@ test('post-ack asynchronous revocation wins redaction and does not imply rollbac
 });
 
 test('actual schema5 historical command status is explicitly unavailable, never reconstructed', async t => {
-  const x = fixture(t); x.seed(); await x.call('memoryCorrect', corrected());
+  const x = fixture(t, {}, {}, Schema5Store); x.seed(); await x.call('memoryCorrect', corrected());
+  assert.equal(x.store.diagnostics().schemaVersion, 5);
   assert.equal(typeof x.store.readMemoryCommand, 'undefined'); await rejects(x.call('memoryCommandStatus', { commandRef: r('correct') }), 'MEMORY_UNAVAILABLE'); assert.equal(x.projection.state().revision, 2);
+});
+
+test('current schema7 historical command status projects only the original signed receipt', async t => {
+  const x = fixture(t); x.seed(); const receipt = await x.call('memoryCorrect', corrected()); await x.call('memoryForget', forgotten({ expectedRevision: 2, expectedFactRevision: 2 }));
+  assert.equal(typeof x.store.readMemoryCommand, 'function'); const fanout = x.fanout.length;
+  const observed = await x.call('memoryCommandStatus', { commandRef: r('correct') });
+  assert.deepEqual(observed, { state: 'observed', receipt: Object.fromEntries(Object.entries(receipt).filter(([key]) => key !== 'result')) });
+  assert.deepEqual(await x.call('memoryCommandStatus', { commandRef: r('missing') }), { state: 'not_observed', receipt: null });
+  assert.equal(x.projection.state().revision, 3); assert.equal(x.fanout.length, fanout);
 });
 
 test('clock callbacks cannot publish familiar error codes as source facts', async t => {

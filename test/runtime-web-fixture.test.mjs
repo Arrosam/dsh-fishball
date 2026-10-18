@@ -192,7 +192,10 @@ async function nativeWebComposition(mode) {
     const borrowed = ctx.df, removing = first.fiber.dispose(); assert.equal((await request(oldRoute)).result.error.code, 'SERVICE_DISPOSED'); await removing;
     assert.equal(first.server.prefixes.size, 0); assert.throws(() => borrowed.diagnostics(), { code: 'SERVICE_DISPOSED' });
     const second = await mount(); await connection.await(); await parent; await runtime;
-    assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.ok, true); assert.equal((await request(oldRoute)).result.error.code, 'SERVICE_DISPOSED');
+    assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.ok, true);
+    // rc.2 Connection marks its disposed instance (bound to the removed WebServer) and
+    // refuses the stale route with 401 before any product handler runs.
+    { const stale = await request(oldRoute); assert.equal(stale.status, 401); assert.equal(Object.hasOwn(stale, 'result'), false); }
     assert.equal(digest(readFileSync(authPath)), authBefore); assert.equal(ctx.sessions.list().length, 0);
     const shutdown = parent.dispose(); assert.equal((await request(second.server.prefixes.get('/df-rpc'))).result.error.code, 'SERVICE_DISPOSED'); await shutdown;
     assert.equal(second.server.prefixes.has('/df-rpc'), false); assert.equal(second.server.server, undefined); cookie = undefined;

@@ -329,8 +329,10 @@ test('IF14 factual finish requires exact source receipt; held reservation does n
 
 test('IF15 narrowing validateResult returns boolean and does not fabricate persisted usage facts', async t => {
   const f = fixture(t), a = await f.plan(); await f.grant(a); const w = await f.dispatch(a), row = f.state.actions[0], hooks = f.composition().nativeHooks;
-  const binding = { taskRef: f.task.taskRef, actionRef: a.actionRef, actionDigest: a.actionDigest, claimRef: w.claimRef, generationRef: w.generationRef };
-  const execution = { ...binding, executionRef: ref('hook-execution'), inputDigest: f.association.digest, dataDigest: f.association.artifactDigest };
+  // Mirror the real native-adapter agent binding (src/native-adapter.mjs), which always carries sessionRef and the planned spec.
+  const binding = { taskRef: f.task.taskRef, actionRef: a.actionRef, actionDigest: a.actionDigest, claimRef: w.claimRef, generationRef: w.generationRef, sessionRef: w.sessionRef, spec: row.spec };
+  assert.equal(row.spec.nativeOriginBinding, undefined, 'IF15 exercises the non-native-origin narrowing path');
+  const execution = { taskRef: binding.taskRef, actionRef: binding.actionRef, actionDigest: binding.actionDigest, claimRef: binding.claimRef, generationRef: binding.generationRef, executionRef: ref('hook-execution'), inputDigest: f.association.digest, dataDigest: f.association.artifactDigest };
   const agent = { id: 'df-' + row.spec.executor.generationRef };
   await runInstalledWorkerInvocation(f.api.ctx, admitted.assertCurrent, () => {
     hooks.setupAgent({}, agent, binding); assert.equal(hooks.commitAgent({}, agent, binding), true);

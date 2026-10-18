@@ -81,8 +81,25 @@ test('terminal, recovery, stale and offline controls stay disabled; action hashe
     assert.equal(text(tree).includes('concrete target and data preview'), true);
   }
 });
+// rc.2 no longer installs @deepseek-ai/dsh-client-ui-slots as a Node package: it is a
+// dsh-web-frontend devDependency bundled into the shipped Web asset, which the runner
+// exposes to client plugins via the module loader. Evaluate exactly that shipped,
+// digest-pinned SlotCore class (its only free binding is a frozen empty array) in an
+// isolated VM context instead of substituting a fake slot registry.
+const SLOT_CORE_ASSET = 'dsh-web-frontend/dist/assets/index-CN7NIWNw.js';
+const SLOT_CORE_ASSET_SHA256 = '4bc914bfbb6adbdd63953a29f63835eb7127defd2a973149d64cdab489f1a9a5';
+const SLOT_CORE_SOURCE_SHA256 = 'bfd13a9e63180481d13341bc319a22245384da104e18146881cb8db4aa927206';
+async function shippedSlotCore() {
+  const [{ readFileSync }, vm] = await Promise.all([import('node:fs'), import('node:vm')]);
+  const asset = readFileSync(`${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/${SLOT_CORE_ASSET}`, 'utf8'); assert.equal(d(asset), SLOT_CORE_ASSET_SHA256);
+  const exported = 'SlotCore:$I,SlotOwnershipError:', marker = 'i1=Object.freeze([]);var $I=class{', start = asset.indexOf(marker);
+  assert.equal(asset.split(exported).length, 2); assert.equal(asset.split(marker).length, 2);
+  let depth = 0, end; for (let i = start + marker.length - 1; i < asset.length; i++) { if (asset[i] === '{') depth++; else if (asset[i] === '}' && !--depth) { end = i + 1; break; } }
+  const source = `const ${asset.slice(start, end)}; $I;`; assert.equal(d(source), SLOT_CORE_SOURCE_SHA256);
+  return vm.runInNewContext(source, { queueMicrotask }, { filename: 'dsh-client-ui-slots/SlotCore (shipped rc.2 asset)' });
+}
 test('native SlotCore registrations are additive and release with the owning fixture context', async () => {
-  const { SlotCore } = await import(`${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/dsh-client-ui-slots/lib/index.js`);
+  const SlotCore = await shippedSlotCore();
   const { Context } = await import(`${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai/cordis/lib/index.js`);
   const core = new SlotCore(), ctx = new Context(); ctx.logger.exporters?.clear?.();
   const removeRoot = core.register({ name: 'root', children: { main: { kind: 'keyed', scope: 'root' }, 'sidebar.panellist': { kind: 'list', scope: 'root' } } }, () => {});

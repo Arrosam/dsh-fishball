@@ -17,6 +17,7 @@ import { createInstalledWorker } from '../src/installed-worker.mjs';
 import { RuntimeStore } from '../src/runtime-store.mjs';
 import { NativeAdapter } from '../src/native-adapter.mjs';
 import { BootstrapError } from '../src/config.mjs';
+import { SCHEMA_VERSION } from '../src/ledger.mjs';
 import { runInstalledWorkerInvocation, captureInstalledWorkerInvocation,
   withInstalledWorkerInvocation, assertInstalledWorkerInvocation } from '../src/installed-invocation.mjs';
 
@@ -193,7 +194,7 @@ test('M01 actual normal chain: independent bytes, original receivers/receipts an
   });
   f.spy(Sessions.prototype, 'flush', fn => function (session) { flushes.push(session); return Reflect.apply(fn, this, [session]); });
   const remove = f.ctx.on('llm/stream', (options, next) => { streamRequests.push(structuredClone(options.messages)); return next(); }); t.after(remove);
-  assert.equal(f.facts().schema, 5); assert.equal(f.ctx.sessions.list().length, 0); assert.equal(streamRequests.length, 0);
+  assert.equal(f.facts().schema, SCHEMA_VERSION); assert.equal(f.ctx.sessions.list().length, 0); assert.equal(streamRequests.length, 0);
   const p = await planned(f, 'm01'), r = await running(f, p), nativeId = 'df-' + r.refs.generationRef;
   assert.equal(r.created.worker.phase, 'ready'); assert.equal(original(f.ctx.agents.get(nativeId)).status, 'idle');
   assert.equal(streamRequests.length, 0); assert.equal(f.facts().intents, 0);
@@ -467,7 +468,12 @@ test('M17 captured execute carrier survives foreign ambient context; original re
     }
   })()); t.after(remove);
   const p = await planned(f, 'm17'), r = await executed(f, p);
-  assert.equal(readonlyChecks, 6); assert.ok(foreignEntries >= 4); assert.equal(r.result.execution.state, 'committed');
+  // 4fea280 ownInstalledStream re-checks the captured request before and after
+  // every iterator step (src/installed-owned-stream.mjs), so the readonly check
+  // count is no longer the old start+assertCurrent pair: each call still runs
+  // three readonly passes, starts with start/open (3) and covers every step.
+  assert.ok(foreignEntries >= 4); assert.equal(readonlyChecks % 3, 0);
+  assert.ok(readonlyChecks / 3 >= 3 + 2 * foreignEntries + (foreignEntries - 1), String(readonlyChecks)); assert.equal(r.result.execution.state, 'committed');
   assert.equal(f.facts().intents, 1); assert.equal(f.facts().reservations, 1); assert.equal(f.facts().artifacts, 0);
   const digest = (...parts) => sha(JSON.stringify(parts));
   const actual = observations.filter(o => o.evidenceRef === digest('native', p.taskRef, r.refs.generationRef, sha('df-' + r.refs.generationRef), o.phase, o.cursor));

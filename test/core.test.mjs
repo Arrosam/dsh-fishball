@@ -7,7 +7,7 @@ import { spawnSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { Foundation, FoundationError } from '../src/foundation.mjs';
-import { legacySchemaSql } from '../src/ledger.mjs';
+import { legacySchemaSql, SCHEMA_VERSION } from '../src/ledger.mjs';
 const S={ownerId:'owner',workspaceId:'workspace'}, W={ownerId:'owner',workspaceId:'other'}, O={ownerId:'other',workspaceId:'workspace'};
 const D='1'.repeat(64), E='2'.repeat(64);
 const MODULE=fileURLToPath(new URL('../src/foundation.mjs',import.meta.url));
@@ -116,7 +116,7 @@ test('migration backs up exact supported schema and failures/future/corrupt/unav
  for(const [name,fault] of [['success',false],['failed',true]]) {
   const path=join(dir,name+'.db'),db=new DatabaseSync(path);db.exec(legacySchemaSql);db.close();const original=readFileSync(path);
   if(fault) {rejects(()=>new Foundation({databasePath:path,fixtureMode:true,migrationFault:()=>{throw Error('secret');}}),'STORAGE_UNAVAILABLE');assert.deepEqual(readFileSync(path),original);}
-  else {const core=new Foundation({databasePath:path});assert.equal(core.diagnostics().schemaVersion,4);core.close();}
+  else {const core=new Foundation({databasePath:path});assert.equal(core.diagnostics().schemaVersion,SCHEMA_VERSION);core.close();}
   assert.deepEqual(readFileSync(path+'.schema-1.backup'),original);
  }
  const wal=join(dir,'wal.db'),waldb=new DatabaseSync(wal);waldb.exec(legacySchemaSql);waldb.exec('PRAGMA journal_mode=WAL');waldb.close();const walOriginal=readFileSync(wal);rejects(()=>new Foundation({databasePath:wal}),'SCHEMA_UNSUPPORTED');assert.deepEqual(readFileSync(wal),walOriginal);assert.equal(existsSync(wal+'.schema-1.backup'),false);

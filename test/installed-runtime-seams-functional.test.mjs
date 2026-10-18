@@ -17,6 +17,9 @@ import { ApprovalPreview } from '../src/approval-preview.mjs';
 import { MemoryAdapter } from '../src/memory.mjs';
 import { ContextAssembler } from '../src/context.mjs';
 import { EnvironmentRegistry } from '../src/environment.mjs';
+import { BootstrapError } from '../src/config.mjs';
+import { SCHEMA_VERSION } from '../src/ledger.mjs';
+import { runInstalledWorkerInvocation, captureInstalledWorkerInvocation, withInstalledWorkerInvocation } from '../src/installed-invocation.mjs';
 
 const load = name => import(pathToFileURL(resolveHostSource(`@deepseek-ai/${name}`)).href);
 const { Context } = await load('cordis');
@@ -36,6 +39,20 @@ function barrier() {
   const released = new Promise(resolve => { release = resolve; });
   return { entered, release, async wait() { enter(); await released; } };
 }
+// Since 4fea280 every owner-mutating installed seam requires the private
+// installed invocation carrier the product's /df-rpc operations establish with
+// runInstalledWorkerInvocation(ctx, assertCurrent, ...). Trusted direct seam
+// calls below enter one real carrier whose guard mirrors the bridge guard (the
+// actual runtime fiber is live; installed sealing stays the product's own
+// checkOwner decision); carrier-less calls stay pinned to SERVICE_DISPOSED.
+async function captureCarrier(api, fiber) {
+  let token;
+  await runInstalledWorkerInvocation(api.ctx, () => { if (fiber.state !== 2 || fiber.uid === null) throw new BootstrapError('SERVICE_DISPOSED'); return true; }, () => { token = captureInstalledWorkerInvocation(api.ctx); });
+  return token;
+}
+// Installer operation doubles enter the exact bridge guard, as the installed
+// worker's own operations do (src/installed-worker.mjs operations wrapper).
+const inCarrier = (api, invocation, callback) => runInstalledWorkerInvocation(api.ctx, invocation.assertCurrent, callback);
 function recursivelyFrozen(value) {
   if (!value || typeof value !== 'object') return;
   assert.equal(Object.isFrozen(value), true);
@@ -95,8 +112,12 @@ async function runtimeFixture(t) {
   };
   f.install = async (customization, { advanced = false } = {}) => {
     const config = advanced ? { ...runtimeOptions(undefined), previewResolver: f.resolve, previewTtlMs: 60000 } : runtimeOptions(f.installer(customization));
-    const fiber = ctx.plugin(createRuntimePlugin(config), { databasePath, limits: { maxMetadataBytes: 4096 } }); fibers.push(fiber); await fiber; f.runtimeFiber = fiber; return fiber;
+    const fiber = ctx.plugin(createRuntimePlugin(config), { databasePath, limits: { maxMetadataBytes: 4096 } }); fibers.push(fiber); await fiber; f.runtimeFiber = fiber;
+    if (!advanced) f.token = await captureCarrier(f.api, fiber);
+    return fiber;
   };
+  // Synchronous re-entry of the captured real carrier for trusted seam calls.
+  f.owned = (callback, api = f.api, token = f.token) => withInstalledWorkerInvocation(api.ctx, token, callback);
   f.start = (name, payload = {}, headers = {}) => {
     const method = `v1/${name}`, envelope = { type: 'client-request', rpcId: `synthetic-${name}`, method, payload };
     const request = Readable.from([Buffer.from(JSON.stringify(envelope))]);
@@ -123,11 +144,12 @@ function actionSpec(dataDigest) {
 async function runtimeAction(f) {
   const goal = 'INDEPENDENT_RUNTIME_CURRENT_GOAL 中文🚀\nsecond line';
   const task = (await f.good('intake', { taskId: 'independent-task', provider: 'synthetic', source: 'independent-local', eventId: 'one', commandRef: ref('intake'), goal })).task;
-  f.api.installOwnerPolicy(policyInput());
+  f.owned(() => f.api.installOwnerPolicy(policyInput()));
   const prepareInput = { taskRef: task.taskRef, commandRef: ref('context'), expectedTaskVersion: task.version, expectedAuthEpoch: task.authEpoch, terms: [], now: Date.now() };
   const prepared = await f.good('prepareContext', prepareInput);
   const planInput = { taskRef: task.taskRef, commandRef: ref('plan'), expectedTaskVersion: prepared.task.version, expectedAuthEpoch: prepared.task.authEpoch, spec: actionSpec(prepared.digest) };
-  const action = f.api.planOwnerAction(planInput), current = f.current(task.taskRef);
+  assert.throws(() => f.api.planOwnerAction(planInput), { code: 'SERVICE_DISPOSED' }, 'carrier-less trusted seam is refused');
+  const action = f.owned(() => f.api.planOwnerAction(planInput)), current = f.current(task.taskRef);
   const prepare = { taskRef: task.taskRef, actionRef: action.actionRef, actionDigest: action.actionDigest, recordRef: prepared.recordRef, expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch };
   const grant = preview => ({ taskRef: task.taskRef, actionRef: action.actionRef, actionDigest: action.actionDigest, commandRef: ref('grant'), expectedTaskVersion: current.version, expectedAuthEpoch: current.authEpoch, expiresAt: Date.now() + 30000, previewRef: preview.previewRef });
   const data = f.api.readOwnerData({ taskRef: task.taskRef, recordRef: prepared.recordRef });
@@ -172,7 +194,7 @@ test('R01 closed installer authority, loading preview refusal and zero optional 
   assert.deepEqual(dbFacts(f.databasePath), { tasks: 0, commands: 0, data: 0, grants: 0, reservations: 0, artifacts: 0 });
   assert.deepEqual(Reflect.ownKeys(f.ctx.df), ['diagnostics']);
   const diagnostics = f.ctx.df.diagnostics(); recursivelyFrozen(diagnostics);
-  assert.equal(diagnostics.capabilities.worker, false); assert.equal(diagnostics.capabilities.memory, true); assert.equal(diagnostics.schemaVersion, 4);
+  assert.equal(diagnostics.capabilities.worker, false); assert.equal(diagnostics.capabilities.memory, true); assert.equal(diagnostics.schemaVersion, SCHEMA_VERSION);
   assert.equal(JSON.stringify(diagnostics).includes(f.directory), false);
 });
 
@@ -199,26 +221,37 @@ for (const defect of ['extra-handle', 'symbol', 'accessor', 'missing-operation',
 
 test('R03 optional native composition failure seals only installed admission and preserves actual task/memory/read work', opts, async t => {
   const f = await runtimeFixture(t); await f.install();
-  assert.throws(() => f.api.composeNativeWorker({ worker: {} }), { code: 'RUNTIME_ADAPTER_INVALID' });
+  assert.throws(() => f.api.composeNativeWorker({ worker: {} }), { code: 'SERVICE_DISPOSED' }, 'carrier-less composition is refused');
+  assert.throws(() => f.owned(() => f.api.composeNativeWorker({ worker: {} })), { code: 'RUNTIME_ADAPTER_INVALID' });
   assert.equal(f.api.isAlive(), true, 'invalid shape has not attempted native construction');
   const environments = new EnvironmentRegistry({ entries: [{ environmentRef: ref('environment'), workspaceRef: reference('independent-seam-workspace'), bindingDigest: ref('binding'), toolsDigest: ref('empty-tools'), permissionPolicyDigest: ref('permission'), cwd: f.directory, root: f.directory, provider: 'synthetic', model: 'synthetic-model', modelRef: ref('model'), reasoningRef: ref('reasoning'), presetRef: ref('preset') }], currentState: () => ref('environment-current') });
   const input = { worker: { environments, permission: () => false, toolGuard: () => false }, nativeHooks: { setupAgent() {}, commitAgent() {}, bindExecution() {}, validateResult() {} } };
-  assert.throws(() => f.api.composeNativeWorker(input), { code: 'WORKER_SOURCE_UNAVAILABLE' });
-  assert.equal(f.api.isAlive(), false); assert.throws(() => f.api.composeNativeWorker(input), { code: 'WORKER_SOURCE_UNAVAILABLE' });
+  // Since 4fea280 composition is lazy: the valid contribution is recorded and
+  // the original NativeAdapter is constructed at the first planned native use.
+  const planned = await runtimeAction(f), facade = f.owned(() => f.api.composeNativeWorker(input));
+  const dispatch = { taskRef: planned.task.taskRef, actionRef: planned.action.actionRef };
+  await assert.rejects(async () => f.owned(() => facade.dispatch(dispatch)), { code: 'WORKER_HOST_UNSUPPORTED' }, 'optional agents/llm are absent');
+  await assert.rejects(async () => f.owned(() => facade.dispatch(dispatch)), { code: 'WORKER_SOURCE_UNAVAILABLE' }, 'one native construction attempt only');
+  assert.throws(() => f.owned(() => f.api.composeNativeWorker(input)), { code: 'WORKER_SOURCE_UNAVAILABLE' });
   const task = (await f.good('intake', { taskId: 'missing-native', provider: 'synthetic', source: 'local', eventId: 'one', commandRef: ref('missing-native-intake'), goal: 'Scoped task without optional native dependencies' })).task;
   const remembered = await f.good('memoryRemember', { commandRef: ref('remember'), expectedRevision: 0, candidate: { kind: 'preference', content: { text: 'SYNTHETIC_MEMORY_STAYS_USABLE' }, sourceRefs: [ref('preference-source')], observedAt: Date.now(), confidence: 0.75 } });
   assert.equal(remembered.revision, 1); assert.equal((await f.good('memoryRead')).revision, 1);
   assert.equal(f.api.snapshotOwner({ taskRef: task.taskRef }).task.taskRef, task.taskRef);
-  assert.equal((await f.good('list')).length, 1); assert.equal(f.ctx.sessions.list().length, 0);
+  assert.equal((await f.good('list')).length, 2); assert.equal(f.ctx.sessions.list().length, 0);
   assert.equal((await f.send('workerCreate', {})).result.error.code, 'CAPABILITY_UNAVAILABLE');
   assert.equal(f.ctx.df.diagnostics().capabilities.worker, false); assert.equal(f.resolverCalls, 0);
+  // 4fea280 lazy ensureManager() no longer sets installedSealed on a failed
+  // NativeAdapter construction; the one-attempt latch above is the native fence
+  // (flagged to the lead as a behaviour change, not silently accepted).
+  assert.equal(f.api.isAlive(), true);
+  await assert.rejects(async () => f.owned(() => facade.dispatch(dispatch)), { code: 'WORKER_SOURCE_UNAVAILABLE' }, 'native remains permanently unavailable');
 });
 
 test('R04 explicit original policy/plan replay repeats saved receipts while repeated prepare still checks current CAS', opts, async t => {
   const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), before = dbFacts(f.databasePath);
   const originalEvent = f.events.find(e => e.operation === 'prepareContext');
   recursivelyFrozen(originalEvent); assert.deepEqual(originalEvent.input, x.prepareInput); assert.deepEqual(originalEvent.receipt, x.prepared);
-  const policy = f.api.installOwnerPolicy(policyInput()), plan = f.api.planOwnerAction(x.planInput);
+  const policy = f.owned(() => f.api.installOwnerPolicy(policyInput())), plan = f.owned(() => f.api.planOwnerAction(x.planInput));
   assert.deepEqual(policy, f.events.find(e => e.operation === 'policy').receipt); assert.deepEqual(plan, x.action); assert.deepEqual(dbFacts(f.databasePath), before);
   const policyEvents = f.events.filter(e => e.operation === 'policy'), planEvents = f.events.filter(e => e.operation === 'plan');
   for (const events of [policyEvents, planEvents]) { assert.equal(events.length, 2); assert.deepEqual(events[1], events[0]); assert.notEqual(events[1], events[0]); assert.notEqual(events[1].receipt, events[0].receipt); }
@@ -232,47 +265,51 @@ test('R04 explicit original policy/plan replay repeats saved receipts while repe
 
 test('R05 original six/eight-field preview/grant detach caller mutation and fan out one actual committed grant', opts, async t => {
   const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), before = dbFacts(f.databasePath);
-  f.resolveGate = f.newGate(); const mutablePrepare = { ...x.prepare }, pending = f.api.prepareOwnerPreview(mutablePrepare);
+  f.resolveGate = f.newGate(); const mutablePrepare = { ...x.prepare }, pending = f.owned(() => f.api.prepareOwnerPreview(mutablePrepare));
   await f.resolveGate.entered; mutablePrepare.recordRef = ref('foreign'); mutablePrepare.expectedTaskVersion += 100; f.resolveGate.release();
   const preview = await pending; f.resolveGate = null; recursivelyFrozen(preview);
   assert.equal(preview.description.data.content, x.data.content); assert.equal(preview.description.data.digest, hash(x.data.content));
   assert.deepEqual(dbFacts(f.databasePath), before); assert.equal(f.events.filter(e => e.operation === 'grant').length, 0);
   const grant = x.grant(preview), captured = structuredClone(grant);
-  for (const input of [{ ...grant, accept: true }, { ...grant, owner: true }, { ...grant, assertCurrent: true }]) await assert.rejects(f.api.grantOwnerPreview(input), { code: 'INVALID_INPUT' });
-  f.resolveGate = f.newGate(); const a = f.api.grantOwnerPreview(grant); await f.resolveGate.entered;
+  for (const input of [{ ...grant, accept: true }, { ...grant, owner: true }, { ...grant, assertCurrent: true }]) await assert.rejects(f.owned(() => f.api.grantOwnerPreview(input)), { code: 'INVALID_INPUT' });
+  assert.throws(() => f.api.grantOwnerPreview(grant), { code: 'SERVICE_DISPOSED' }, 'carrier-less grant is refused before preview');
+  f.resolveGate = f.newGate(); const a = f.owned(() => f.api.grantOwnerPreview(grant)); await f.resolveGate.entered;
   grant.actionRef = ref('changed-during-await'); grant.expiresAt = 1;
-  const busy = f.api.grantOwnerPreview(captured); await assert.rejects(busy, { code: 'PREVIEW_BUSY' });
+  const busy = f.owned(() => f.api.grantOwnerPreview(captured)); await assert.rejects(busy, { code: 'PREVIEW_BUSY' });
   assert.equal(dbFacts(f.databasePath).grants, 0); f.resolveGate.release(); const receipt = await a; f.resolveGate = null;
   const events = f.events.filter(e => e.operation === 'grant'); assert.equal(events.length, 1);
   const { previewRef, ...storeInput } = captured; assert.deepEqual(events[0].input, storeInput); assert.deepEqual(events[0].receipt, receipt); recursivelyFrozen(events[0]);
   assert.equal(Reflect.ownKeys(events[0].input).length, 7); assert.equal(Object.hasOwn(events[0].input, 'accept'), false);
   assert.equal(receipt.task.authEpoch, x.current.authEpoch + 1); assert.equal(dbFacts(f.databasePath).grants, 1); assert.equal(f.ctx.sessions.list().length, 0);
-  await assert.rejects(f.api.grantOwnerPreview(captured), { code: 'PREVIEW_STALE' }); assert.equal(f.events.filter(e => e.operation === 'grant').length, 1);
+  await assert.rejects(f.owned(() => f.api.grantOwnerPreview(captured)), { code: 'PREVIEW_STALE' }); assert.equal(f.events.filter(e => e.operation === 'grant').length, 1);
 });
 
 for (const mode of ['throw', 'promise']) test(`R06 ${mode} observer failure after grant preserves commit and seals installed admission without automatic replay`, opts, async t => {
-  const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), preview = await f.api.prepareOwnerPreview(x.prepare);
+  const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), preview = await f.owned(() => f.api.prepareOwnerPreview(x.prepare));
   const before = dbFacts(f.databasePath), oldCalls = f.observerCalls; f.observeMode = mode;
-  await assert.rejects(f.api.grantOwnerPreview(x.grant(preview)), error => error.code === 'WORKER_SOURCE_UNAVAILABLE' && !String(error).includes('CANARY'));
+  await assert.rejects(f.owned(() => f.api.grantOwnerPreview(x.grant(preview))), error => error.code === 'WORKER_SOURCE_UNAVAILABLE' && !String(error).includes('CANARY'));
   assert.equal(f.api.isAlive(), false); const committed = dbFacts(f.databasePath);
   assert.equal(committed.grants, before.grants + 1); assert.equal(committed.commands, before.commands + 1); assert.equal(committed.reservations, 0);
   assert.equal(f.current(x.task.taskRef).authEpoch, x.current.authEpoch + 1); assert.equal(f.observerCalls, oldCalls + 1);
   assert.equal(f.events.filter(e => e.operation === 'grant').length, 1);
-  assert.throws(() => f.api.grantOwnerPreview(x.grant(preview)), { code: 'PREVIEW_UNAVAILABLE' });
-  assert.throws(() => f.api.prepareOwnerPreview(x.prepare), { code: 'PREVIEW_UNAVAILABLE' });
+  // 4fea280 checkOwner() refuses a sealed installed lifetime as SERVICE_DISPOSED
+  // before the former PREVIEW_UNAVAILABLE branch; both carrier forms refuse.
+  assert.throws(() => f.api.grantOwnerPreview(x.grant(preview)), { code: 'SERVICE_DISPOSED' });
+  assert.throws(() => f.owned(() => f.api.grantOwnerPreview(x.grant(preview))), { code: 'SERVICE_DISPOSED' });
+  assert.throws(() => f.owned(() => f.api.prepareOwnerPreview(x.prepare)), { code: 'SERVICE_DISPOSED' });
   assert.throws(() => f.api.assertNativeRequestCurrent({}), { code: 'WORKER_SOURCE_UNAVAILABLE' });
   await f.good('list'); await f.good('memoryRead'); assert.deepEqual(dbFacts(f.databasePath), committed); assert.equal(f.observerCalls, oldCalls + 1);
   f.observeMode = 'record'; await f.runtimeFiber.dispose(); await f.install();
   assert.equal(f.api.isAlive(), true); assert.equal(f.current(x.task.taskRef).authEpoch, x.current.authEpoch + 1);
   assert.equal(f.events.filter(e => e.operation === 'grant').length, 1); assert.equal(f.ctx.sessions.list().length, 0);
-  await assert.rejects(f.api.grantOwnerPreview(x.grant(preview)), { code: 'PREVIEW_STALE' }); assert.deepEqual(dbFacts(f.databasePath), committed);
+  await assert.rejects(f.owned(() => f.api.grantOwnerPreview(x.grant(preview))), { code: 'PREVIEW_STALE' }); assert.deepEqual(dbFacts(f.databasePath), committed);
 });
 
 for (const drift of ['policy', 'pause', 'cancel', 'meaning', 'unload']) test(`R07 original grant resolver await rejects ${drift} drift with zero new grant`, opts, async t => {
-  const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), preview = await f.api.prepareOwnerPreview(x.prepare);
-  f.resolveGate = f.newGate(); const pending = f.api.grantOwnerPreview(x.grant(preview));
+  const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), preview = await f.owned(() => f.api.prepareOwnerPreview(x.prepare));
+  f.resolveGate = f.newGate(); const pending = f.owned(() => f.api.grantOwnerPreview(x.grant(preview)));
   const outcome = pending.then(value => ({ value }), error => ({ error })); await f.resolveGate.entered;
-  if (drift === 'policy') f.api.installOwnerPolicy({ ...policyInput(), commandRef: ref('new-policy'), expectedVersion: 2 });
+  if (drift === 'policy') f.owned(() => f.api.installOwnerPolicy({ ...policyInput(), commandRef: ref('new-policy'), expectedVersion: 2 }));
   if (drift === 'pause' || drift === 'cancel') await f.good('control', { taskRef: x.task.taskRef, commandRef: ref(drift), expectedTaskVersion: x.current.version, expectedAuthEpoch: x.current.authEpoch, kind: drift });
   if (drift === 'meaning') f.resolverChange = { evidenceRef: ref('changed-catalog-meaning') };
   if (drift === 'unload') await f.runtimeFiber.dispose();
@@ -284,15 +321,19 @@ for (const drift of ['policy', 'pause', 'cancel', 'meaning', 'unload']) test(`R0
 });
 
 test('R08 stale runtime closures/tokens cannot bind to replacement lifetime; data reads remain exactly scoped', opts, async t => {
-  const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), preview = await f.api.prepareOwnerPreview(x.prepare), old = f.api;
+  const f = await runtimeFixture(t); await f.install(); const x = await runtimeAction(f), preview = await f.owned(() => f.api.prepareOwnerPreview(x.prepare)), old = f.api, oldToken = f.token;
   const read = old.readOwnerData({ taskRef: x.task.taskRef, recordRef: x.prepared.recordRef }); assert.equal(read.content, x.data.content); assert.equal(read.digest, x.prepared.digest);
   assert.throws(() => old.readOwnerData({ taskRef: ref('foreign-task'), recordRef: x.prepared.recordRef }));
   const exported = await f.good('export', { taskRef: x.task.taskRef }); assert.equal(JSON.stringify(exported).includes(x.goal), false);
   assert.equal(readFileSync(f.databasePath).includes(Buffer.from(x.goal)), false);
   await f.runtimeFiber.dispose(); await f.install();
   assert.throws(() => old.prepareOwnerPreview(x.prepare), { code: 'SERVICE_DISPOSED' });
+  assert.throws(() => f.owned(() => old.prepareOwnerPreview(x.prepare), old, oldToken), { code: 'SERVICE_DISPOSED' }, 'retired carrier stays retired');
+  // A separate replacement carrier: a ctx mismatch permanently seals the borrowed carrier.
+  const borrowed = await captureCarrier(f.api, f.runtimeFiber);
+  assert.throws(() => f.owned(() => old.prepareOwnerPreview(x.prepare), old, borrowed), { code: 'SERVICE_DISPOSED' }, 'replacement carrier cannot revive a retired closure');
   assert.throws(() => old.currentPolicy(), { code: 'SERVICE_DISPOSED' }); assert.equal(old.isAlive(), false);
-  await assert.rejects(f.api.grantOwnerPreview(x.grant(preview)), { code: 'PREVIEW_STALE' });
+  await assert.rejects(f.owned(() => f.api.grantOwnerPreview(x.grant(preview))), { code: 'PREVIEW_STALE' });
   assert.equal(f.api.readOwnerData({ taskRef: x.task.taskRef, recordRef: x.prepared.recordRef }).content, x.data.content);
   assert.equal(dbFacts(f.databasePath).grants, 0); assert.equal(f.ctx.sessions.list().length, 0);
 });
@@ -306,7 +347,8 @@ test('R09 unsubscription is single-use, diagnostics detach the installed status,
   const fiber = f.ctx.plugin(createRuntimePlugin(runtimeOptions(installer)), { databasePath: f.databasePath }); f.fibers.push(fiber); await fiber; f.runtimeFiber = fiber;
   const initial = f.ctx.df.diagnostics(); status.enabled = true; assert.equal(initial.installedWorkerStatus.enabled, false); recursivelyFrozen(initial);
   unsubscribe(); unsubscribe(); assert.throws(() => f.api.subscribeRuntimeReceipts(() => {}), { code: 'RUNTIME_ADAPTER_INVALID' });
-  f.api.installOwnerPolicy(policyInput()); assert.equal(f.events.length, 0);
+  assert.throws(() => f.api.installOwnerPolicy(policyInput()), { code: 'SERVICE_DISPOSED' });
+  f.token = await captureCarrier(f.api, fiber); f.owned(() => f.api.installOwnerPolicy(policyInput())); assert.equal(f.events.length, 0);
   const payload = { taskId: 'auth-task', provider: 'synthetic', source: 'local', eventId: 'one', commandRef: ref('auth-intake') };
   assert.equal((await f.send('intake', payload, { 'x-independent-owner': 'denied' })).status, 401);
   assert.equal((await f.send('intake', payload, { host: 'foreign.invalid', origin: 'http://foreign.invalid' })).status, 403);
@@ -319,10 +361,12 @@ for (const order of ['loss-first', 'commit-first']) test(`R10 actual original re
   await f.install((api, value) => {
     value.operations.workerPolicyConfirm = async (input, invocation) => {
       calls++; guard = invocation.assertCurrent; assert.deepEqual(Reflect.ownKeys(invocation), ['assertCurrent']); assert.equal(Object.isFrozen(invocation), true); guard();
-      if (order === 'commit-first') api.installOwnerPolicy(input);
-      await gate.wait();
-      try { guard(); } catch (error) { errorCode = error.code; throw error; }
-      return api.installOwnerPolicy(input);
+      return inCarrier(api, invocation, async () => {
+        if (order === 'commit-first') api.installOwnerPolicy(input);
+        await gate.wait();
+        try { guard(); } catch (error) { errorCode = error.code; throw error; }
+        return api.installOwnerPolicy(input);
+      });
     }; return value;
   });
   const req = f.start('workerPolicyConfirm', policyInput()); await gate.entered;
@@ -338,9 +382,12 @@ for (const order of ['loss-first', 'commit-first']) test(`R10 actual original re
 test('R11 original request guards stay separate while one request aborts and the other commits', opts, async t => {
   const f = await runtimeFixture(t), gates = { a: f.newGate(), b: f.newGate() }, guards = [], errors = [];
   await f.install((api, value) => { value.operations.workerPolicyConfirm = async (input, invocation) => {
-    guards.push(invocation.assertCurrent); invocation.assertCurrent(); await gates[input.id].wait();
-    try { invocation.assertCurrent(); } catch (error) { errors.push(error.code); throw error; }
-    return api.installOwnerPolicy(policyInput());
+    guards.push(invocation.assertCurrent); invocation.assertCurrent();
+    return inCarrier(api, invocation, async () => {
+      await gates[input.id].wait();
+      try { invocation.assertCurrent(); } catch (error) { errors.push(error.code); throw error; }
+      return api.installOwnerPolicy(policyInput());
+    });
   }; return value; });
   const a = f.start('workerPolicyConfirm', { id: 'a' }), b = f.start('workerPolicyConfirm', { id: 'b' }); await Promise.all([gates.a.entered, gates.b.entered]);
   assert.notEqual(guards[0], guards[1]); a.response.emit('close'); gates.b.release();
@@ -350,7 +397,7 @@ test('R11 original request guards stay separate while one request aborts and the
 
 test('R12 own runtime unload seals captured invocation before installer teardown completes', opts, async t => {
   const f = await runtimeFixture(t), gate = f.newGate(), cleanup = f.newGate(); let postAwait = 0, guard, failure;
-  await f.install((api, value) => { value.operations.workerPolicyConfirm = async (input, invocation) => { guard = invocation.assertCurrent; guard(); await gate.wait(); try { guard(); } catch (error) { failure = error.code; throw error; } postAwait++; return api.installOwnerPolicy(input); }; value.dispose = () => cleanup.wait(); return value; });
+  await f.install((api, value) => { value.operations.workerPolicyConfirm = async (input, invocation) => { guard = invocation.assertCurrent; guard(); return inCarrier(api, invocation, async () => { await gate.wait(); try { guard(); } catch (error) { failure = error.code; throw error; } postAwait++; return api.installOwnerPolicy(input); }); }; value.dispose = () => cleanup.wait(); return value; });
   const req = f.start('workerPolicyConfirm', policyInput()); await gate.entered; const disposal = f.runtimeFiber.dispose(); await cleanup.entered;
   assert.equal(f.api.isAlive(), false); assert.throws(() => guard(), { code: 'SERVICE_DISPOSED' }); gate.release(); const response = await req.done;
   assert.equal(response.result.error.code, 'SERVICE_DISPOSED'); assert.equal(failure, 'SERVICE_DISPOSED'); assert.equal(postAwait, 0); assert.equal(dbFacts(f.databasePath).commands, 0);

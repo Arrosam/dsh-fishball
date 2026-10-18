@@ -11,6 +11,7 @@ import {RuntimeStore as Source5} from './fixtures/schema5-core/src/runtime-store
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {RuntimeStore,reference as r,canonicalDigest as d} from '../src/runtime-store.mjs';
+import {SCHEMA_VERSION} from '../src/ledger.mjs';
 const scope={ownerId:'ni6-synthetic-owner',workspaceId:'ni6-synthetic-workspace'};
 let seq=0;
 const command=()=>r('ni6-command-'+ ++seq);
@@ -141,7 +142,7 @@ function genuine5(t){
 test('genuine5 writer migrates to6 with exact backup/cipher/ack preservation; old5 refuses6 before writes',t=>{
   const x=genuine5(t),current=new RuntimeStore(x.config);
   try{
-    assert.equal(current.diagnostics().schemaVersion,6);
+    assert.equal(current.diagnostics().schemaVersion,SCHEMA_VERSION);
     assert.deepEqual(readFileSync(x.config.databasePath+'.schema-5.backup'),x.bytes);
     assert.deepEqual(encryptedRows(x.config.databasePath),x.cipher);
     assert.equal(current.readData(x.owner,{taskRef:x.ack.task.taskRef,recordRef:x.data.recordRef}).content,'synthetic genuine5 encrypted constraint');

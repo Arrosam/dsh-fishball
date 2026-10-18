@@ -50,7 +50,8 @@ test('actual original Loader registration supplies bounded detached synthetic me
   assert.equal(f.ctx.sessions.list().length,0);assert.equal(existsSync(join(f.directory,'df-sessions')),false);
   assert.equal(f.entry.fiber.state,2);assert.equal(f.binding.assertCurrent(),true);assert.equal(f.binding.accounting,TESTING_ACCOUNTING);
   const providers=f.ctx.llm.listProviders();assert.ok(providers.some(row=>row.id==='df-testing-local'));
-  const models=await f.ctx.llm.listModels('df-testing-local');assert.equal(models.length,1);models[0].name='mutated';
+  // 4fea280 intentionally added the review/repair role models (installed-role-recipes ROLE_MODELS).
+  const models=await f.ctx.llm.listModels('df-testing-local');assert.deepEqual(models.map(row=>row.id),['df-testing-worker-v1','df-testing-review-v1','df-testing-repair-v1']);models[0].name='mutated';
   const model=await f.ctx.llm.resolveModelInfo('df-testing-local','df-testing-worker-v1');assert.equal(model.context.contextWindow,135168);assert.equal(model.inputModalities[0],'text');assert.equal(model.reasoning.defaultEffort,'deterministic');assert.equal(model.name,'Synthetic local worker (no model quality)');
   const call=await f.ctx.llm.prepareCall({provider:'df-testing-local',model:'df-testing-worker-v1',maxTokens:128});assert.equal(call.config.reasoningEffort,'deterministic');assert.equal(call.retryPolicy.maxRetries,0);assert.deepEqual(call.retryPolicy.retryableCodes,[]);
 });

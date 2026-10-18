@@ -150,27 +150,32 @@ async function native(t) {
   return { ...f, ctx, server, send, good };
 }
 
+// 4fea280 widened v1/features with disabled automation/results metadata and
+// memory.continuityReady; none of these confers authority before consent.
+const closedFeatures = memory => ({ automation: { enabled: false, ready: false, automaticStart: false, choices: [] },
+  results: { enabled: false, ready: false, route: null, requires: [], notificationsEnabled: false, opening: 'unknown' }, memory });
+
 test('normal native disabled/omitted config retains exact carriers and cannot enable later features', async t => {
   for (const memory of [undefined, { enabled: false }]) {
     const f = await native(t), fiber = f.ctx.plugin(Installed, { databasePath: f.databasePath, ...(memory ? { memory } : {}) }); await fiber;
-    assert.deepEqual((await f.send('/df-setup', 'features')).value, { memory: { enabled: false, ready: false, accounting: null, bounds: null } });
+    assert.deepEqual((await f.send('/df-setup', 'features')).value, closedFeatures({ enabled: false, ready: false, continuityReady: false, accounting: null, bounds: null }));
     assert.equal(existsSync(dirname(f.databasePath)), false); const preview = (await f.send('/df-setup', 'prepare')).value;
     assert.equal((await f.send('/df-setup', 'confirm', accepted(preview))).value.phase, 'ready');
     assert.equal((await f.send('/df-rpc', 'memoryRead')).error.code, 'CAPABILITY_UNAVAILABLE');
-    assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
+    assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, memoryContinuity: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
     assert.equal(f.ctx.get('tokenMeter'), undefined); assert.equal(f.ctx.sessions.list().length, 0); await fiber.dispose();
   }
 });
 
 test('normal enabled native memory has no preconsent writes, exact owner admission, empty read and default-1024 sourced context', async t => {
   const f = await native(t), fiber = f.ctx.plugin(Installed, { databasePath: f.databasePath, memory: choice }); await fiber;
-  const expected = ready => ({ memory: { enabled: true, ready, accounting: MEMORY_ACCOUNTING, bounds: { byteLimit: 65536, tokenLimit: 8192 } } });
+  const expected = (ready, continuityReady = false) => closedFeatures({ enabled: true, ready, continuityReady, accounting: MEMORY_ACCOUNTING, bounds: { byteLimit: 65536, tokenLimit: 8192 } });
   for (let n = 0; n < 3; n++) { assert.deepEqual((await f.send('/df-setup', 'features')).value, expected(false)); assert.equal((await f.send('/df-setup', 'status')).value.phase, 'setup_required'); }
   assert.equal((await f.send('/df-setup', 'features', {}, { cookie: undefined })).status, 401);
   assert.equal((await f.send('/df-setup', 'features', { role: 'owner' })).error.code, 'SETUP_INVALID_INPUT');
   const preview = (await f.send('/df-setup', 'prepare')).value;
   assert.equal((await f.send('/df-setup', 'confirm', { ...accepted(preview), accept: false })).error.code, 'SETUP_CONFIRMATION_REQUIRED'); assert.equal(existsSync(dirname(f.databasePath)), false);
-  assert.equal((await f.send('/df-setup', 'confirm', accepted(preview))).value.phase, 'ready'); assert.deepEqual((await f.send('/df-setup', 'features')).value, expected(true));
+  assert.equal((await f.send('/df-setup', 'confirm', accepted(preview))).value.phase, 'ready'); assert.deepEqual((await f.send('/df-setup', 'features')).value, expected(true, true));
   const read = await f.good('memoryRead'); assert.equal(read.revision, 0); assert.equal(read.projection.facts.length, 0);
   const keyDigest = digest(readFileSync(`${f.databasePath}.df-setup/key.bin`)), metadataDigest = digest(readFileSync(`${f.databasePath}.df-setup/state.json`));
   const intake = await f.good('intake', { taskId: 'synthetic-ni1-task', provider: 'fixture', source: 'synthetic', eventId: 'one', commandRef: reference('ni1-intake'), goal: 'Current synthetic goal; memory never approves work.' });
@@ -196,7 +201,7 @@ test('normal enabled native memory has no preconsent writes, exact owner admissi
   const envelope = JSON.parse(detail.data.content); assert.equal(envelope.materialKind, 'execution_context'); assert.equal(envelope.memory.revision, 1); assert.ok(envelope.content.includes('Current synthetic goal')); assert.ok(envelope.content.includes('SYNTHETIC_NI1_MEMORY_PREFERENCE')); assert.equal(envelope.inputCounts.tokens, Math.ceil(envelope.content.length / 4) + 4);
   assert.equal(envelope.inputCounts.bytes, Buffer.byteLength(envelope.content)); assert.equal(digest(detail.data.content), prepared.digest); assert.equal(prepared.task.authEpoch, snapshot.task.authEpoch);
   assert.equal(readFileSync(f.databasePath).includes(Buffer.from('SYNTHETIC_NI1_MEMORY_PREFERENCE')), false);
-  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: true, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false }); assert.equal(f.ctx.sessions.list().length, 0); assert.equal(f.ctx.get('tokenMeter'), undefined);
+  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: true, memoryContinuity: true, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false }); assert.equal(f.ctx.sessions.list().length, 0); assert.equal(f.ctx.get('tokenMeter'), undefined);
   assert.equal(digest(readFileSync(`${f.databasePath}.df-setup/key.bin`)), keyDigest); assert.equal(digest(readFileSync(`${f.databasePath}.df-setup/state.json`)), metadataDigest); assert.deepEqual(readdirSync(`${f.databasePath}.df-setup`).sort(), ['key.bin', 'state.json']);
   const oldRoute = f.server.prefixes.get('/df-setup'), oldDiagnostics = f.ctx.df; const stopping = fiber.dispose(); assert.throws(() => oldDiagnostics.diagnostics(), { code: 'SERVICE_DISPOSED' }); assert.equal((await f.send('/df-setup', 'features', {}, {}, oldRoute)).error.code, 'SERVICE_DISPOSED'); await stopping;
   const disabled = f.ctx.plugin(Installed, { databasePath: f.databasePath }); await disabled; assert.equal((await f.send('/df-rpc', 'memoryRead')).error.code, 'CAPABILITY_UNAVAILABLE'); await disabled.dispose();
