@@ -119,7 +119,7 @@ test('client model crosses genuine public native owner RPC framing into encrypte
   try {
     ctx.provide('webServer', { register(route) { routes.set(route.path, route); return () => routes.delete(route.path); } });
     await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
-    await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: request => request.headers['x-synthetic-auth'] === 'approved' }); } });
+    await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], {isAuthenticated:request => request.headers['x-synthetic-auth'] === 'approved',authenticateApi:()=>undefined}); } });
     const plugin = ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => Buffer.alloc(32, 3) }), { databasePath: join(directory, 'ledger.sqlite') }); await plugin;
     await model.refresh(); assert.equal(model.getSnapshot().tasks.length, 0);
     assert.equal(await model.intake('Synthetic owner task meaning 中文'), true);
@@ -205,7 +205,7 @@ test('client concrete preview and explicit grant cross genuine native RPC into s
     const action = store.planAction(owner, { taskRef: task.taskRef, commandRef: d('preview-plan'), expectedTaskVersion: data.task.version, expectedAuthEpoch: data.task.authEpoch, spec });
     boundary = new ApprovalPreview({ store, ownerHandle: owner, ttlMs: 30000, resolve: async current => ({ targetDigest: current.targetDigest, ...current.model, environmentRef: current.executor.environmentRef, bindingDigest: current.executor.bindingDigest, toolsDigest: current.executor.toolsDigest, permissionPolicyDigest: current.executor.permissionPolicyDigest, evidenceRef: d('trusted-preview-evidence'), targetLabel: 'Owned synthetic local execution', providerLabel: 'Local mock provider', modelLabel: 'Synthetic model', reasoningLabel: 'Fixture effort', presetLabel: 'Synthetic preset', environmentLabel: 'Synthetic project', cwd: directory, toolNames: [] }) });
     ctx.provide('webServer', { register(route) { routes.set(route.path, route); return () => routes.delete(route.path); } });
-    await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: request => request.headers['x-synthetic-auth'] === 'approved' }); } });
+    await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], {isAuthenticated:request => request.headers['x-synthetic-auth'] === 'approved',authenticateApi:()=>undefined}); } });
     bridge = installOperatorBridge({ connection: ctx.connection, operations: {
       list: () => store.listTasks(owner), status: input => store.snapshot(owner, input),
       detail: input => ({ task: store.task(owner, input.taskRef), data: store.readData(owner, { taskRef: input.taskRef, recordRef: input.recordRef }) }),

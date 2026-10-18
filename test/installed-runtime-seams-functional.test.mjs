@@ -72,7 +72,7 @@ async function runtimeFixture(t) {
   const connectionFiber = ctx.plugin({ name: 'independent-synthetic-auth', inject: ['webServer'], apply(c) {
     // This one authentication callback is a double. The original service owns
     // peer creation, admission, request AbortSignal, framing and route lifetime.
-    new HostConnectionService(c, [], { isAuthenticated: request => request.headers['x-independent-owner'] === 'synthetic-approved' });
+    new HostConnectionService(c, [], { isAuthenticated: request => request.headers['x-independent-owner'] === 'synthetic-approved', authenticateApi: () => undefined });
   } }); await connectionFiber; fibers.push(connectionFiber);
   const gates = [];
   t.after(async () => { gates.forEach(g => g.release()); try { for (const fiber of [...fibers].reverse()) await fiber.dispose(); } finally { rmSync(directory, { recursive: true, force: true }); } });

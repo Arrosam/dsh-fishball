@@ -4,7 +4,7 @@ import { installOperatorBridge } from '../src/operator-bridge.mjs';
 
 function fixture(operations, options = {}) {
   const operator = Object.freeze({}), seen = {};
-  const connection = { operator, rpc: { handle(channel, handler) {
+  const connection = { browserPeer: operator, rpc: { handle(channel, handler) {
     Object.assign(seen, { channel, handler });
     return async () => { seen.disposed = true; };
   } } };
@@ -24,7 +24,7 @@ test('only the DSH admitted operator can reach trusted closures', async () => {
   }
   assert.equal(calls, 1);
   assert.equal((await f.call('mintOwner')).error.code, 'ENDPOINT_NOT_FOUND');
-  assert.equal((await f.seen.handler('status', {}, undefined, f.connection.operator)).error.code, 'ENDPOINT_NOT_FOUND');
+  assert.equal((await f.seen.handler('status', {}, undefined, f.connection.browserPeer)).error.code, 'ENDPOINT_NOT_FOUND');
 });
 
 test('payload accessors, proxies, sparse arrays and authority prototypes never run', async () => {
@@ -62,4 +62,20 @@ test('disposal closes captured handlers immediately and secret errors stay redac
     assert.equal((await uncertain.call('status')).error.code, 'SERVICE_DISPOSED');
     assert.equal(admitted, 0);
   }
+});
+
+test('rc.2 owner authority is only browserPeer; stale alpha operator shape and API-like peers fail closed', async () => {
+  const peer = Object.freeze({}), rpc = { handle() { return async () => {}; } };
+  // An alpha.1-shaped carrier exposing only `operator` must not configure a bridge.
+  assert.throws(() => installOperatorBridge({ connection: { operator: peer, rpc }, operations: { status: () => true } }), { code: 'BRIDGE_CONFIG_INVALID' });
+  let calls = 0;
+  const f = fixture({ status: () => { calls++; return true; } });
+  // A different live Peer object (e.g. a launch-token API Peer) is not the owner browser Peer.
+  for (const other of [Object.freeze({ principal: { kind: 'owner' } }), { id: 'api-peer' }]) {
+    assert.equal((await f.call('status', {}, other)).error.code, 'OPERATOR_REQUIRED');
+  }
+  // Replacing the carrier's browser Peer after installation revokes the captured authority.
+  f.connection.browserPeer = Object.freeze({});
+  assert.equal((await f.call('status')).error.code, 'OPERATOR_REQUIRED');
+  assert.equal(calls, 0);
 });

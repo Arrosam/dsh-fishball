@@ -62,7 +62,7 @@ async function actualStore(t, overrides = {}) {
 function transport(operations, isAlive) {
   const peer = {}, calls = []; let handler;
   const wrapped = Object.fromEntries(Object.entries(operations).map(([name, operation]) => [name, input => { calls.push({ name, input }); return operation(input); }]));
-  const bridge = installOperatorBridge({ connection: { operator: peer, rpc: { handle(channel, fn) { assert.equal(channel, '/df-rpc'); handler = fn; return () => {}; } } }, operations: wrapped, ...(isAlive ? { isAlive } : {}) });
+  const bridge = installOperatorBridge({ connection: { browserPeer: peer, rpc: { handle(channel, fn) { assert.equal(channel, '/df-rpc'); handler = fn; return () => {}; } } }, operations: wrapped, ...(isAlive ? { isAlive } : {}) });
   return { peer, calls, bridge, call: (endpoint, payload, caller = peer, signal) => handler(endpoint, payload, signal, caller) };
 }
 

@@ -93,7 +93,7 @@ export function startWeb() {
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const child = startWeb();
-  console.log(JSON.stringify({ host: 'DSH Web 0.2.1-alpha.1', url: 'http://127.0.0.1:3080', pid: child.pid,
+  console.log(JSON.stringify({ host: 'DSH Web 0.2.1-rc.2', url: 'http://127.0.0.1:3080', pid: child.pid,
     authentication: 'ephemeral private access file; token omitted from evidence' }));
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
   child.on('error', () => { console.error('WEB_LAUNCH_FAILED'); process.exitCode = 1; });

@@ -15,12 +15,12 @@ const modulePath = realpathSync(fileURLToPath(import.meta.url)), loadedSource = 
 const recipePath=realpathSync(fileURLToPath(new URL('./installed-role-recipes.mjs',import.meta.url))),loadedRecipeSource=hash(readFileSync(recipePath));
 const providerRecipeSourceRef=hash(canonical([loadedSource,loadedRecipeSource]));
 const sourcePins = Object.freeze({
-  'cordis':['4.0.5-alpha.1','6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e'],
-  'dsh-llm':['0.2.1-alpha.1','a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e'],
-  'cordis-plugin-loader':['1.0.6-alpha.1','638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72'],
-  'dsh-scope':['0.2.1-alpha.1','2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca'],
-  'dsh-agent':['0.2.1-alpha.1','7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93'],
-  'dsh-session':['0.2.1-alpha.1','b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b'],
+  'cordis':['4.0.5','6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e'],
+  'dsh-llm':['0.2.1-rc.2','d18d8ae4c8d961e628708c1e4698e09716a0ebb80e55a672e0bde1029bec1155'],
+  'cordis-plugin-loader':['1.0.6','638b9ad360e01236120772323f80a65570c4f3f42f4cfc6243330241025b6d72'],
+  'dsh-scope':['0.2.1-rc.2','2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca'],
+  'dsh-agent':['0.2.1-rc.2','7b59cf82c2784c25bdce4e3e24e5e5303b02b9f1003efacf50255492d17baf8b'],
+  'dsh-session':['0.2.1-rc.2','2f5dd07cb5c744a29abbb8003a8a4cefd9e582c6e2538074ca299a0ddd02a3bf'],
 });
 function publicSource(name) {
   const packageName=`@deepseek-ai/${name}`, source=resolveHostSource(packageName), [version,pin]=sourcePins[name];

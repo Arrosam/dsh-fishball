@@ -19,7 +19,8 @@ const { HostConnectionService } = await import(`${root}/dsh-client-connection/li
 const { AgentRegistry } = await import(`${root}/dsh-agent/lib/index.js`);
 const { LlmRuntime, LlmAdapter } = await import(`${root}/dsh-llm/lib/index.js`);
 const { default: SessionProjectionRegistry } = await import(`${root}/dsh-session-projection/lib/index.js`);
-const { default: JsonlSessionPersistence } = await import(`${root}/dsh-session-persistence-jsonl/lib/index.js`);
+// rc.2 JSONL persistence is a plugin namespace (apply/Config/name), not a default class.
+const JsonlSessionPersistence = await import(`${root}/dsh-session-persistence-jsonl/lib/index.js`);
 const { default: SystemPrompt } = await import(`${root}/dsh-system-prompt/lib/index.js`);
 const { default: ToolRuntime } = await import(`${root}/dsh-tools/lib/index.js`);
 const { default: AgentLoop } = await import(`${root}/dsh-agent-loop/lib/index.js`);
@@ -57,7 +58,7 @@ async function productFlow(cancelBeforeQuit) {
     }
     ctx.llm.registerAdapter(['synthetic-provider'], new LocalProvider());
     await ctx.plugin(SystemPrompt, {}); await ctx.plugin(ToolRuntime, {}); await ctx.plugin(AgentLoop, { agents: [], maxParallelToolCalls: 1 });
-    await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: request => request.headers['x-synthetic-auth'] === 'approved' }); } });
+    await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], {isAuthenticated:request => request.headers['x-synthetic-auth'] === 'approved',authenticateApi:()=>undefined}); } });
     const entry = { environmentRef: d('environment'), workspaceRef: d('synthetic-workspace'), bindingDigest: d('environment-binding'), toolsDigest: d('no-tools'), permissionPolicyDigest: d('synthetic-permission'), root: directory, cwd: directory, provider: 'synthetic-provider', model: 'synthetic-model', reasoningEffort: 'fixture-effort', modelRef: d('model'), reasoningRef: d('reasoning'), presetRef: d('preset') };
     const environments = new EnvironmentRegistry({ entries: [entry], currentState: () => d('current-environment-state') });
     plugin = ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => key, hostPermission: () => true,
@@ -129,7 +130,7 @@ async function automationFixture(t, { installer, notifications = false } = {}) {
   t.after(async () => { try { await ctx.fiber.dispose(); } finally { rmSync(directory, { recursive: true, force: true }); } });
   ctx.provide('webServer', { register(route) { routes.set(route.path, route); return () => routes.delete(route.path); } });
   await ctx.plugin(SessionStore); await ctx.plugin(ApprovalService, { policy: 'never' });
-  await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], { isAuthenticated: request => request.headers['x-synthetic-auth'] === 'approved' }); } });
+  await ctx.plugin({ apply(connectionCtx) { new HostConnectionService(connectionCtx, [], {isAuthenticated:request => request.headers['x-synthetic-auth'] === 'approved',authenticateApi:()=>undefined}); } });
   let transportCalls = 0;
   const databasePath = join(directory, 'ledger.sqlite'), key = Buffer.alloc(32, 19);
   const plugin = ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => key,

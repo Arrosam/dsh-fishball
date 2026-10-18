@@ -4,7 +4,7 @@ import { installOperatorBridge } from '../src/operator-bridge.mjs';
 
 function fixture(operation, isAlive = () => true) {
   const operator = Object.freeze({}); let handler;
-  const connection = { operator, rpc: { handle(channel, value) { assert.equal(channel, '/df-rpc'); handler = value; return () => {}; } } };
+  const connection = { browserPeer: operator, rpc: { handle(channel, value) { assert.equal(channel, '/df-rpc'); handler = value; return () => {}; } } };
   const bridge = installOperatorBridge({ connection, operations: { status: operation }, isAlive });
   return { connection, bridge, call: (signal, payload = {}) => handler('v1/status', payload, signal, operator) };
 }
@@ -28,7 +28,7 @@ for (const drift of ['abort', 'peer', 'dispose', 'alive']) test(`guarded ${drift
   const f = fixture(async (input, context) => { context.assertCurrent(); await gate.promise; context.assertCurrent(); mutations++; return true; }, () => alive);
   const result = f.call(controller.signal);
   if (drift === 'abort') controller.abort();
-  if (drift === 'peer') f.connection.operator = {};
+  if (drift === 'peer') f.connection.browserPeer = {};
   if (drift === 'dispose') f.bridge.deactivate();
   if (drift === 'alive') alive = false;
   gate.release(); assert.deepEqual(await result, denied(drift === 'abort' ? 'REQUEST_ABORTED' : drift === 'peer' ? 'OPERATOR_REQUIRED' : 'SERVICE_DISPOSED'));
@@ -56,6 +56,6 @@ test('parallel requests retain separate guards and legacy ignored context retain
 });
 
 test('replacement peer is denied before any new operation even with original admitted peer', async () => {
-  let calls = 0; const f = fixture(() => { calls++; return true; }); f.connection.operator = {};
+  let calls = 0; const f = fixture(() => { calls++; return true; }); f.connection.browserPeer = {};
   assert.deepEqual(await f.call(), denied('OPERATOR_REQUIRED')); assert.equal(calls, 0);
 });

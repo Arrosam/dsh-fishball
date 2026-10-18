@@ -95,8 +95,8 @@ test('independent portability metadata retains normal exports, preview, MIT and 
 test('independent portability metadata retains exact official peer pins', t => {
   const f = relocated(t), metadata = JSON.parse(readFileSync(join(f.installed, 'package.json'), 'utf8'));
   for (const [name, version] of Object.entries({
-    '@deepseek-ai/dsh': '0.2.1-alpha.1', '@deepseek-ai/cordis': '4.0.5-alpha.1',
-    '@deepseek-ai/dsh-session': '0.2.1-alpha.1', '@deepseek-ai/dsh-user-approval': '0.2.1-alpha.1',
+    '@deepseek-ai/dsh': '0.2.1-rc.2', '@deepseek-ai/cordis': '4.0.5',
+    '@deepseek-ai/dsh-session': '0.2.1-rc.2', '@deepseek-ai/dsh-user-approval': '0.2.1-rc.2',
   })) assert.equal(metadata.peerDependencies[name], version);
 });
 
@@ -121,7 +121,7 @@ test('independent portability missing peers cannot obtain a supported probe from
     const report = entry.probeHost({});
     assert.equal(report.supported, false);
     assert.ok(report.failures.length > 0);
-    for (const [field, pin] of Object.entries({ harness: '0.2.1-alpha.1', cordis: '4.0.5-alpha.1', sessions: '0.2.1-alpha.1', approval: '0.2.1-alpha.1' })) assert.notEqual(report.versions[field], pin, 'missing peers have no observed pinned version');
+    for (const [field, pin] of Object.entries({ harness: '0.2.1-rc.2', cordis: '4.0.5', sessions: '0.2.1-rc.2', approval: '0.2.1-rc.2' })) assert.notEqual(report.versions[field], pin, 'missing peers have no observed pinned version');
     assert.equal(existsSync(databasePath), false);
     console.log(JSON.stringify({ supported: false, observedPinnedPeers: 0, storageCreated: false }));
   `);
@@ -150,13 +150,13 @@ test('independent portability declares the complete bounded consumed peer set wi
     'dsh-client-connection', 'dsh-client-ui-renderer', 'dsh-client-ui-layout', 'dsh-client-ui-sidebar',
     'dsh-client-ui-workspace', 'dsh-agent', 'dsh-agent-loop', 'dsh-llm', 'dsh-scope', 'dsh-tools',
     'dsh-session-persistence', 'dsh-session-persistence-jsonl', 'dsh-token-meter'];
-  const expected = Object.fromEntries(alpha.map(name => [`@deepseek-ai/${name}`, '0.2.1-alpha.1']));
-  expected['@deepseek-ai/cordis'] = '4.0.5-alpha.1';
+  const expected = Object.fromEntries(alpha.map(name => [`@deepseek-ai/${name}`, '0.2.1-rc.2']));
+  expected['@deepseek-ai/cordis'] = '4.0.5';
   expected['@deepseek-ai/node-addon-system'] = expected['@deepseek-ai/node-addon-system-darwin-arm64'] = '0.1.2';
   if (Object.hasOwn(packageMetadata.exports, './testing-provider')) {
-    expected['@deepseek-ai/cordis-plugin-loader'] = '1.0.6-alpha.1';
-    expected['@deepseek-ai/dsh-system-prompt'] = '0.2.1-alpha.1';
-    expected['@deepseek-ai/dsh-agent-preset-registry'] = '0.2.1-alpha.1';
+    expected['@deepseek-ai/cordis-plugin-loader'] = '1.0.6';
+    expected['@deepseek-ai/dsh-system-prompt'] = '0.2.1-rc.2';
+    expected['@deepseek-ai/dsh-agent-preset-registry'] = '0.2.1-rc.2';
   }
   assert.deepEqual(metadata.peerDependencies, expected);
   assert.deepEqual(metadata.peerDependenciesMeta, { '@deepseek-ai/node-addon-system-darwin-arm64': { optional: true } });

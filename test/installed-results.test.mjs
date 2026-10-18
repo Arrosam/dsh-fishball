@@ -13,7 +13,7 @@ const selection = (notifications = false) => ({ enabled: true, route: 'local_dsh
 const config = value => ({ selection: value, identity, profile });
 const command = (f, name, extra = {}) => ({ taskRef: T, commandRef: H(name), expectedTaskVersion: f.state.task.version, expectedAuthEpoch: f.state.task.authEpoch, ...extra });
 function fixture(options = {}) {
-  const calls = [], peer = {}, ctx = { connection: { operator: peer }, profileContext: { ...profile } };
+  const calls = [], peer = {}, ctx = { connection: { browserPeer: peer }, profileContext: { ...profile } };
   const N = canonicalDigest(['df.installed-results/v1', identity.ownerId, identity.workspaceId, profile.dir, profile.name]);
   const route = { recipientRef: canonicalDigest([N, 'df.native-owner/v1']), channelRef: canonicalDigest([N, 'df.local-results/v1']), policyRef: canonicalDigest([N, 'notification-policy']), mergeKeyRef: canonicalDigest([N, 'progress-group']) };
   const artifacts = new Map(), data = new Map(), deliveries = new Map(), progress = new Map(); let listener, alive = true, service, subscribeCalls = 0;
@@ -105,7 +105,7 @@ test('all public operations reject getters/proxies before any callback', () => {
 });
 test('scope, captured peer/profile and disposal are current fences', () => {
   const f = fixture(), a = f.artifacts.get(A); assert.equal(f.service.readLocalResult({ taskRef: T, artifactRef: A, version: 1, digest: a.digest }).data.content, 'Synthetic exact result. 文');
-  f.ctx.connection.operator = {}; assert.throws(() => f.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED')); assert.equal(f.calls.filter(c => c[0] === 'publish').length, 0);
+  f.ctx.connection.browserPeer = {}; assert.throws(() => f.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED')); assert.equal(f.calls.filter(c => c[0] === 'publish').length, 0);
   const g = fixture(); g.ctx.profileContext.name = 'replacement'; assert.throws(() => g.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED'));
   const h = fixture(); h.service.dispose(); h.service.dispose(); assert.equal(h.calls.filter(c => c[0] === 'unsubscribe').length, 1); assert.throws(() => h.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED'));
 });
@@ -153,7 +153,7 @@ test('lost acknowledgement remains query-only and cannot blindly resend', async 
 });
 test('cancel/revoke/profile drift before publish denies, late async completion cannot represent new peer', async () => {
   const f = fixture(); f.plan(); f.grant(); const d = f.claim(); f.emit('control', { taskRef: T }, {}); await assert.rejects(f.service.recipientAdapter.send(d, f.data.get(f.artifacts.get(A).recordRef)), code('LOCAL_ADMISSION_DENIED')); assert.ok(!f.calls.some(c => c[0] === 'publish'));
-  let release; const wait = new Promise(resolve => { release = resolve; }), g = fixture({ waitPublication: () => wait }); g.plan(); g.grant(); const old = g.claim(); const sending = g.service.recipientAdapter.send(old, g.data.get(g.artifacts.get(A).recordRef)); g.ctx.connection.operator = {}; release(); await assert.rejects(sending); assert.equal(g.deliveries.get(D).state, 'outbox_committed');
+  let release; const wait = new Promise(resolve => { release = resolve; }), g = fixture({ waitPublication: () => wait }); g.plan(); g.grant(); const old = g.claim(); const sending = g.service.recipientAdapter.send(old, g.data.get(g.artifacts.get(A).recordRef)); g.ctx.connection.browserPeer = {}; release(); await assert.rejects(sending); assert.equal(g.deliveries.get(D).state, 'outbox_committed');
 });
 test('access updates current access separately, never creates publication or opening', async () => {
   const f = fixture(); assert.throws(() => f.service.localDeliveryAccess({ taskRef: T, deliveryRef: D }), code('PUBLICATION_NOT_CONFIRMED')); f.plan(); f.grant(); const d = f.claim(); await f.service.recipientAdapter.send(d, f.data.get(f.artifacts.get(A).recordRef));
@@ -270,8 +270,8 @@ test('current artifact mutation invalidates publication plan while historical au
   assert.throws(() => replacement.planLocalDelivery(command(f, 'new-plan', { deliveryRef: D })), code('ARTIFACT_STALE')); assert.equal(f.calls.filter(c => c[0] === 'publish').length, 0);
 });
 test('once observed peer/lifetime drift seals old callbacks even if original object is restored', () => {
-  const f = fixture(), original = f.ctx.connection.operator; f.plan(); f.grant(); f.ctx.connection.operator = {};
-  assert.throws(() => f.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED')); f.ctx.connection.operator = original;
+  const f = fixture(), original = f.ctx.connection.browserPeer; f.plan(); f.grant(); f.ctx.connection.browserPeer = {};
+  assert.throws(() => f.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED')); f.ctx.connection.browserPeer = original;
   assert.throws(() => f.service.localResultsStatus({ taskRef: T }), code('SERVICE_DISPOSED')); f.service.dispose(); assert.equal(f.calls.filter(c => c[0] === 'unsubscribe').length, 1);
 });
 test('private closure misrouting across owner/workspace and changed immutable intent fail closed', () => {

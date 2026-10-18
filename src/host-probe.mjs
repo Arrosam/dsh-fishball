@@ -29,12 +29,12 @@ export function resolveHostSource(packageName, source = 'lib/index.js') {
   } catch { throw new BootstrapError('HOST_CAPABILITY_UNSUPPORTED'); }
 }
 const definitions = Object.freeze({
-  harness: { root: `${packagesRoot}/dsh`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/bin.js', hash: '1a03dee18683483ff6a1b27b2a1e650230da6bcca9a0f55f7d81b3308c3f307f' },
-  cordis: { root: `${packagesRoot}/cordis`, package: 'package.json', version: '4.0.5-alpha.1', source: 'lib/index.js', hash: '6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e' },
-  sessions: { root: `${packagesRoot}/dsh-session`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: 'b847e7ec736ce4049ec40ea0b20753bad5d7c2388785b4369d2bf00baa32472b' },
-  approval: { root: `${packagesRoot}/dsh-user-approval`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: '6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b' },
-  web: { root: `${packagesRoot}/dsh-web-app`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: 'c8b9ba271bddffd052cdba8ae86f758fc1a377bc058e7d81f9cc2571a8c6ed85' },
-  webServer: { root: `${packagesRoot}/dsh-host-webserver`, package: 'package.json', version: '0.2.1-alpha.1', source: 'lib/index.js', hash: '6efea1375eadeff62d5cfb6d1f515ff75a939d40405a62e5d138e8e7a6b18df5' },
+  harness: { root: `${packagesRoot}/dsh`, package: 'package.json', version: '0.2.1-rc.2', source: 'lib/bin.js', hash: '80112efe368efb1a39720c7ada0af00442e5131fb2744edaaff8a3e8bb499e6f' },
+  cordis: { root: `${packagesRoot}/cordis`, package: 'package.json', version: '4.0.5', source: 'lib/index.js', hash: '6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e' },
+  sessions: { root: `${packagesRoot}/dsh-session`, package: 'package.json', version: '0.2.1-rc.2', source: 'lib/index.js', hash: '2f5dd07cb5c744a29abbb8003a8a4cefd9e582c6e2538074ca299a0ddd02a3bf' },
+  approval: { root: `${packagesRoot}/dsh-user-approval`, package: 'package.json', version: '0.2.1-rc.2', source: 'lib/index.js', hash: '6a5ad1ba3c3dc3abbbae52e6c8c4463970ee0c1c8988cebb0d5cf2acd17ee90b' },
+  web: { root: `${packagesRoot}/dsh-web-app`, package: 'package.json', version: '0.2.1-rc.2', source: 'lib/index.js', hash: '6662ca712368c56fb8818efa53039ef92ce215a328a76b9cdd5e1bed624a0e84' },
+  webServer: { root: `${packagesRoot}/dsh-host-webserver`, package: 'package.json', version: '0.2.1-rc.2', source: 'lib/index.js', hash: '08907285802f0edd3aeb68c91fb443be2804879ab3d41104c4600424be06f3ab' },
 });
 let installed;
 try {

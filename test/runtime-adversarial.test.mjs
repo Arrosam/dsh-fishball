@@ -214,7 +214,7 @@ test('independent assembler: query failure and forged digest expose only redacte
 function bridgeFixture(operations, options = {}) {
   const peer = Object.freeze({});
   const state = {};
-  const connection = { operator: peer, rpc: { handle(channel, handler) {
+  const connection = { browserPeer: peer, rpc: { handle(channel, handler) {
     state.channel = channel; state.handler = handler;
     return options.unregister ?? (() => { state.unregistered = true; });
   } } };

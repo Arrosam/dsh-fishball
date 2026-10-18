@@ -27,7 +27,7 @@ export async function prepareInstalledMemory(memory) {
       const manifest = JSON.parse(readFileSync(resolveHostSource(packageName, 'package.json'), 'utf8'));
       if (publicUrl !== canonicalUrl || realpathSync(fileURLToPath(publicUrl)) !== source ||
           resolveHostSource(packageName, 'lib/types/estimate.js') !== source ||
-          manifest.name !== packageName || manifest.version !== '0.2.1-alpha.1' ||
+          manifest.name !== packageName || manifest.version !== '0.2.1-rc.2' ||
           digest(readFileSync(source)) !== expectedHash ||
           digest(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`)) !== digest(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url)))) unsupported();
     };

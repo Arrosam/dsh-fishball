@@ -99,7 +99,7 @@ def main():
         rows.append({'path': name, 'bytes': len(data), 'sha256': digest})
     metadata = {'schema': 'df.initial-preview-build/v1', 'package': 'dsh-fishball', 'version': VERSION,
                 'release': 'initial-preview', 'date': args.date, 'sourceCommit': args.commit,
-                'host': 'DSH Web0.2.1-alpha.1; separately supplied flat pinned host', 'node': '22.22.2',
+                'host': 'DSH Web0.2.1-rc.2; separately supplied flat pinned host', 'node': '22.22.2',
                 'membersExcludingMetadata': rows, 'includesPrivateState': False, 'acceptedMVP': False}
     metadata_bytes = (json.dumps(metadata, indent=2, sort_keys=True) + '\n').encode()
     members.append(('BUILD-METADATA.json', metadata_bytes))

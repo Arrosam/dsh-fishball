@@ -7,7 +7,7 @@ import { installOperatorBridge } from '../src/operator-bridge.mjs';
 function fixture(names = ['memoryRemember', 'prepareContext', 'status']) {
   const peer = Object.freeze({}), calls = [], operations = {}; let handler;
   for (const name of names) operations[name] = input => { calls.push({ name, input }); return input; };
-  const connection = { operator: peer, rpc: { handle(channel, callback) { assert.equal(channel, '/df-rpc'); handler = callback; return () => {}; } } };
+  const connection = { browserPeer: peer, rpc: { handle(channel, callback) { assert.equal(channel, '/df-rpc'); handler = callback; return () => {}; } } };
   const bridge = installOperatorBridge({ connection, operations });
   return { peer, calls, bridge, call: (name, input = {}, caller = peer, signal) => handler(`v1/${name}`, input, signal, caller), endpoint: (name, input) => handler(name, input, undefined, peer) };
 }
@@ -87,7 +87,7 @@ test('fractional mode preserves accessor/Proxy/symbol/hidden/prototype/sparse/cy
 test('captured fractions detach before async closure and arbitrary exception prose stays redacted', async () => {
   const peer = {}, source = { confidence: 0.9, vectors: [[-0.125, 0.5]] }; let handler, release, seen;
   const gate = new Promise(resolve => { release = resolve; });
-  const bridge = installOperatorBridge({ connection: { operator: peer, rpc: { handle(channel, value) { handler = value; return () => {}; } } }, operations: {
+  const bridge = installOperatorBridge({ connection: { browserPeer: peer, rpc: { handle(channel, value) { handler = value; return () => {}; } } }, operations: {
     memoryRemember: async input => { seen = input; await gate; return input; },
     prepareContext: () => { throw Object.assign(Error('SYNTHETIC_NUMERIC_PRIVATE_CANARY'), { code: 'SYNTHETIC_NUMERIC_PRIVATE_CANARY' }); },
   } });

@@ -9,17 +9,17 @@ const base = fileURLToPath(new URL('../.runtime/dsh-web-runtime-fixture/', impor
 export const runtimePaths = Object.freeze({ base, home: `${base}home`, agents: `${base}agents`, workspace: `${base}workspace`, private: `${base}private`, evidence: `${base}evidence` });
 export const runtimeFiles = Object.freeze({ key: `${runtimePaths.private}/runtime-key.bin`, auth: `${runtimePaths.private}/auth-record.json`, access: `${runtimePaths.private}/access.json`, state: `${runtimePaths.evidence}/state.json`, database: `${runtimePaths.home}/runtime.sqlite` });
 const hostSources = Object.freeze({
-  'dsh-client-connection/lib/index.js': '3950f524aed44e28240140a254cd928ea40eba8e2d04cc8fd04f92a687f5c91d',
-  'dsh-credentials/lib/index.js': 'c1008e2a37c62ba13e61c2ffdd7451c886e214f131c30ced1a5a67bf06a8df5e',
-  'dsh-base/cordis.patch.yml': '9c2be64f46a193eff3cca190c26e697e8e8eee25c9b40149dfdb56f8142c252d',
-  'dsh-web-app/cordis.patch.yml': '3073a35dbb1dafd933143e7c299452256073f9f7f5f129aeeeba85a55fa85192',
+  'dsh-client-connection/lib/index.js': '0ebcca7583e082716f79b0b55bc1749d48269cc8db2989b043b321b57abd3684',
+  'dsh-credentials/lib/index.js': '1b6afdb04e966285e0732eb766eb0a12f3f9c0821c8caacfd192ce1ac88bee7a',
+  'dsh-base/cordis.patch.yml': 'a2cc57868a4d016609801e28781262515483dde29b41c2742d9a3b27a6f52f77',
+  'dsh-web-app/cordis.patch.yml': '3e1f923309612ed8551141127409d662e78758e2d0d125218a3f70514417e472',
 });
 export function verifyRuntimeFixtureHost() {
   if (process.version !== 'v22.22.2') throw new Error('RUNTIME_UNSUPPORTED');
   try {
     for (const [path, hash] of Object.entries(hostSources)) {
       const pkg = path.split('/')[0], prefix = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
-      if (JSON.parse(readFileSync(`${prefix}/${pkg}/package.json`, 'utf8')).version !== '0.2.1-alpha.1' || createHash('sha256').update(readFileSync(`${prefix}/${path}`)).digest('hex') !== hash) throw new Error();
+      if (JSON.parse(readFileSync(`${prefix}/${pkg}/package.json`, 'utf8')).version !== '0.2.1-rc.2' || createHash('sha256').update(readFileSync(`${prefix}/${path}`)).digest('hex') !== hash) throw new Error();
     }
   } catch { throw new Error('FIXTURE_HOST_PROVENANCE_UNSUPPORTED'); }
   return hostSources;
@@ -97,9 +97,9 @@ export function startRuntimeWeb() {
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--prepare')) {
-    prepareRuntimeWeb(); console.log(JSON.stringify({ result: 'prepared', target: 'DSH Web 0.2.1-alpha.1', port: 3080, profile: 'separate project synthetic runtime', privateFiles: 'key/auth/access; values omitted' }));
+    prepareRuntimeWeb(); console.log(JSON.stringify({ result: 'prepared', target: 'DSH Web 0.2.1-rc.2', port: 3080, profile: 'separate project synthetic runtime', privateFiles: 'key/auth/access; values omitted' }));
   } else {
-    const child = startRuntimeWeb(); console.log(JSON.stringify({ result: 'launched', pid: child.pid, url: 'http://127.0.0.1:3080', target: 'DSH Web 0.2.1-alpha.1' }));
+    const child = startRuntimeWeb(); console.log(JSON.stringify({ result: 'launched', pid: child.pid, url: 'http://127.0.0.1:3080', target: 'DSH Web 0.2.1-rc.2' }));
     for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
     child.on('error', () => { console.error('RUNTIME_WEB_LAUNCH_FAILED'); process.exitCode = 1; });
     child.on('exit', code => { process.exitCode = code ?? 1; });

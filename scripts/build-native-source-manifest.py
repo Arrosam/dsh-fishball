@@ -24,7 +24,7 @@ def generate(product_root,host_root):
         modules.append({'name':name,'version':peer['version'],'files':[{'path':p,'digest':digest(base/p)} for p in files]})
     if len(modules)>32:raise ValueError('SOURCE_MANIFEST_HOST_LIMIT')
     dsh=json.loads((host_root/'node_modules/@deepseek-ai/dsh/package.json').read_text())
-    if dsh['version']!='0.2.1-alpha.1':raise ValueError('SOURCE_MANIFEST_HOST_VERSION')
+    if dsh['version']!='0.2.1-rc.2':raise ValueError('SOURCE_MANIFEST_HOST_VERSION')
     return {'contractVersion':'df.native-source/v1','host':{'version':dsh['version'],'lockDigest':digest(host_root/'package-lock.json'),'modules':modules},'product':{'name':metadata['name'],'version':metadata['version'],'files':product_files}}
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--product-root',required=True);parser.add_argument('--host-root',required=True);args=parser.parse_args()

@@ -17,35 +17,39 @@ const llmModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh
 const scopeModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-scope')).href);
 const toolsModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-tools')).href);
 const persistenceModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-session-persistence-jsonl')).href);
+// rc.2 JSONL exports only its plugin namespace; the service is a pinned
+// SessionPersistence subclass carrying the JSONL backend label.
+const { SessionPersistence } = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-session-persistence')).href);
+const isJsonlPersistence = value => value instanceof SessionPersistence && value.name === persistenceModule.name && typeof persistenceModule.apply === 'function';
 const persistencePins = Object.freeze({
-  'dsh-session-persistence-jsonl/lib/index.js': '0845707017acc2b4a8a75eab2244fa3fd88587b8094ab32014321dce7ca1e31b',
+  'dsh-session-persistence-jsonl/lib/index.js': '973dd78679b2661d6f492343bc22b124ae958aa597d3b36c698a2c650f909984',
   'node-addon-system/lib/flock.js': 'e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646',
   'node-addon-system-darwin-arm64/bin/system.node': '9534cde445a865250eb7bc8cfe5e231f3f91d0fda3f4aaa694e81f3531ad1130',
 });
 export function probePersistenceHost(ctx) {
   try {
-    if (process.platform !== 'darwin' || process.arch !== 'arm64' || Number(process.versions.napi) < 8 || !(scopedService(ctx, 'sessionPersistence') instanceof persistenceModule.default)) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    if (process.platform !== 'darwin' || process.arch !== 'arm64' || Number(process.versions.napi) < 8 || !isJsonlPersistence(scopedService(ctx, 'sessionPersistence'))) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
     for (const [path, hash] of Object.entries(persistencePins)) if (createHash('sha256').update(readFileSync(resolveHostSource(`@deepseek-ai/${path.split('/')[0]}`, path.split('/').slice(1).join('/')))).digest('hex') !== hash) workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
-    for (const pkg of ['dsh-session-persistence', 'dsh-session-persistence-jsonl']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-alpha.1') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
+    for (const pkg of ['dsh-session-persistence', 'dsh-session-persistence-jsonl']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-rc.2') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
     for (const pkg of ['node-addon-system', 'node-addon-system-darwin-arm64']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.1.2') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
     for (const method of ['create', 'open', 'flush', 'stat', 'list']) if (typeof scopedService(ctx, 'sessionPersistence')[method] !== 'function') workerFail('WORKER_PERSISTENCE_UNSUPPORTED');
   } catch { workerFail('WORKER_PERSISTENCE_UNSUPPORTED'); }
-  return Object.freeze({ target: 'public-jsonl-darwin-arm64', version: '0.2.1-alpha.1', hashes: persistencePins, durability: 'explicit-flush-required' });
+  return Object.freeze({ target: 'public-jsonl-darwin-arm64', version: '0.2.1-rc.2', hashes: persistencePins, durability: 'explicit-flush-required' });
 }
 const pins = Object.freeze({
   'dsh-scope/lib/index.js': '2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca',
-  'dsh-agent/lib/index.js': '7b9aa39474de83115cf890dd7f8904cf0d59df0811cb335ab85565a04f1aac93',
-  'dsh-agent/lib/types/index.js': '7e7c47fc0b82f0718b73e1705c07ad9496cfdbc21598db94de858f718cd23490',
-  'dsh-llm/lib/index.js': 'a8a8288910c8862342cda571d096e1ea4489b01dd0f70b5db28bc86525ee283e',
-  'dsh-llm/lib/types/index.js': '825553a8446c9721ba5189f5aa2506c8dd8e0c9d04a1a28fb03751dfec59c411',
-  'dsh-agent-loop/lib/index.js': '00c4814d63f3d1e2754eb09144832d19b30499d6ea444730473f740b587948c2',
+  'dsh-agent/lib/index.js': '7b59cf82c2784c25bdce4e3e24e5e5303b02b9f1003efacf50255492d17baf8b',
+  'dsh-agent/lib/types/index.js': 'cc5de4b13b26bc1c5383c7c9300a074f267b69fe129a0bf74d1fd4ab695f1c52',
+  'dsh-llm/lib/index.js': 'd18d8ae4c8d961e628708c1e4698e09716a0ebb80e55a672e0bde1029bec1155',
+  'dsh-llm/lib/types/index.js': '03b16dc51a3e6712823d57afaf74a7663d628aefd05ae7768d2cea89d05f7197',
+  'dsh-agent-loop/lib/index.js': 'cf57e3ecd487ac5c2553455aaa5cef2c6fb41e6bd61be5aa455675d1d7193033',
 });
 export function probeWorkerHost(ctx) {
   const report = requireHost(ctx);
   try {
     if (createHash('sha256').update(readFileSync(resolveHostSource('@deepseek-ai/cordis', 'lib/types/reflect.d.ts'))).digest('hex') !== '84a46d00b1a6528add43e0f27c1f27bab158f1454d8d05c7ea120a0907a6dc7b') workerFail('WORKER_HOST_UNSUPPORTED');
     for (const [path, hash] of Object.entries(pins)) if (createHash('sha256').update(readFileSync(resolveHostSource(`@deepseek-ai/${path.split('/')[0]}`, path.split('/').slice(1).join('/')))).digest('hex') !== hash) workerFail('WORKER_HOST_UNSUPPORTED');
-    for (const pkg of ['dsh-agent', 'dsh-agent-loop', 'dsh-llm']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-alpha.1') workerFail('WORKER_HOST_UNSUPPORTED');
+    for (const pkg of ['dsh-agent', 'dsh-agent-loop', 'dsh-llm']) if (JSON.parse(readFileSync(`${root}/${pkg}/package.json`)).version !== '0.2.1-rc.2') workerFail('WORKER_HOST_UNSUPPORTED');
     if (!(scopedService(ctx, 'agents') instanceof agentModule.AgentRegistry) || !(scopedService(ctx, 'llm') instanceof llmModule.LlmRuntime)) workerFail('WORKER_HOST_UNSUPPORTED');
     for (const method of ['create', 'resume', 'get']) if (typeof scopedService(ctx, 'agents')[method] !== 'function') workerFail('WORKER_HOST_UNSUPPORTED');
     for (const method of ['resolveCallConfig', 'listProviders']) if (typeof scopedService(ctx, 'llm')[method] !== 'function') workerFail('WORKER_HOST_UNSUPPORTED');
@@ -124,7 +128,7 @@ export class NativeAdapter {
   #tools(entry, agent) {
     try {
       if (!(scopedService(this.#ctx, 'tools') instanceof toolsModule.default) || typeof scopedService(this.#ctx, 'tools').schemas !== 'function' || typeof scopedService(this.#ctx, 'tools').guard !== 'function') workerFail('WORKER_TOOLS_UNAVAILABLE');
-      if (createHash('sha256').update(readFileSync(resolveHostSource('@deepseek-ai/dsh-tools'))).digest('hex') !== '2e9b6a72ba6b917197965c08eb894d4e8d01dc6f81e0e1c9870a5ae8514687a7') workerFail('WORKER_TOOLS_UNAVAILABLE');
+      if (createHash('sha256').update(readFileSync(resolveHostSource('@deepseek-ai/dsh-tools'))).digest('hex') !== '1e53932e7c4213ea24a7d87f06960b7a7702cb21f8a5741c97242b4a470a442a') workerFail('WORKER_TOOLS_UNAVAILABLE');
       const schemas = scopedService(this.#ctx, 'tools').schemas(agent);
       // Actual nonempty tool dispatch remains unaccepted in this phase. The
       // private installation guard must attest the empty scoped surface too.
