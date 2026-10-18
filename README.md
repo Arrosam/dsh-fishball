@@ -10,7 +10,7 @@ The packaged native path passed explicit storage setup, one synthetic task/worke
 
 ## Run on this Mac
 
-Use the already installed pinned DSH Web0.2.1-alpha.1 flat host and Node22.22.2. From the repository:
+Use the already installed pinned DSH Web 0.2.1-rc.2 flat host ([rc.2 amendment](docs/owner-amendment-2026-10-18-rc2.md)) and Node22.22.2. From the repository:
 
 ```sh
 /opt/homebrew/opt/node@22/bin/node scripts/initial-preview.mjs \

@@ -2,6 +2,8 @@
 
 The owner's08:46UTC approval defers consolidated functional/visual regression until all three development stages finish; [mapping and authorization](../three-stage-development.md). The later [owner amendment](../owner-amendment-2026-10-04.md) selects dsh-fishball (df), MIT and explicitly defers actual chat software/providers. Unit/module tests and independent code/ISTQB reviews remain development gates. Deferred tests are not passed and local main integration does not accept a ticket, MVP or release.
 
+**2026-10-18 host re-baseline (H1).** The owner switched the test host to DSH Web 0.2.1-rc.2 ([amendment](../owner-amendment-2026-10-18-rc2.md)). The full module suite passes 2194/2194 on rc.2 ([H1 evidence](H1/rc2-baseline.md)). Every actual native, packaged, CLI and browser result below was obtained on alpha.1 and is now **historical for the rc.2 baseline**; each needs an rc.2 rerun before it can count toward acceptance. That covers the native Web lifecycle, normal physical-package install/quit/restart/uninstall, the initial-preview package and restart reopening, and the October 9 frontend retests. New open coverage debt from the H1 ISTQB review: TC7 (NAT05 held-reservation recovery without replay) and TC9 (exact empty-registry payloads).
+
 | Debt | Criteria | Current evidence and remaining oracle | Status |
 | --- | --- | --- | --- |
 | W1 actual rendered shell/controls | M1-09, applicable BUB001 | Official native browser opening and owner08:02 tab confirmation only; no independent screenshot/render/control review. Current agents lack callable browser observation tools. | Deferred; prior automation block preserved |

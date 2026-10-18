@@ -85,7 +85,12 @@ export function prepareRuntimeWeb() {
   }
   if (!entry(runtimeFiles.key)) writeFileSync(runtimeFiles.key, randomBytes(32), { flag: 'wx', mode: 0o600 });
   checkPrivateFile(runtimeFiles.key, 32);
-  writeFileSync(`${profile}/package.json`, JSON.stringify({ name: 'dsh-profile-web', private: true, dependencies: {}, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } } }, null, 2) + '\n', { mode: 0o600 });
+  // Fail closed: the synthetic profile selects exactly these two layers. rc.2 offers
+  // opt-in bundles (e.g. dsh-experimental-ralph-bundle, which ships tool-ralph);
+  // any other selection or a Ralph-named bundle refuses before a profile is written.
+  const bundles = Object.freeze(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']);
+  if (bundles.length !== 2 || bundles.some(name => /ralph|experimental/i.test(name))) throw new Error('FIXTURE_PROFILE_BUNDLE_INVALID');
+  writeFileSync(`${profile}/package.json`, JSON.stringify({ name: 'dsh-profile-web', private: true, dependencies: {}, dsh: { profile: { bundles } } }, null, 2) + '\n', { mode: 0o600 });
   writeFileSync(`${profile}/cordis.patch.yml`, runtimeProfilePatch(), { mode: 0o600 });
 }
 export function startRuntimeWeb() {

@@ -520,7 +520,15 @@ test('N2-10/12/A10/NAT05: revoke after first real output denies later chunks; co
   const running = f.execute(); await gate.entered;
   assert.equal(f.usage().totalUnits > 0, true); f.revoke(); gate.release();
   const observed = await running; assert.equal(observed.state, 'committed'); assert.equal(observed.result.eventType, 'assistant/attempt');
-  assert.equal(f.trace.currentChecks, 1); assert.equal(f.trace.providerRequests.length, 1); assert.notEqual(f.usage(), null);
+  assert.equal(f.trace.currentChecks, 1); assert.equal(f.trace.providerRequests.length, 1);
+  // Exact consumed charge (src/testing-provider.mjs:92/118): input = UTF-8 bytes of
+  // the whole serialized messages array, output = the fixed deterministic response.
+  const consumed = Buffer.byteLength(JSON.stringify(f.trace.providerRequests[0].messages)) + Buffer.byteLength(`Synthetic local result; approved input SHA-256: ${hash(f.contextContent)}.`);
+  t.diagnostic(`NAT05 totalUnits=${f.usage().totalUnits}`);
+  // Measured on rc.2 (H1): 3198 = whole request JSON + 113-byte response; pinned literally
+  // too so a silent change of request shape or accounting is caught.
+  assert.equal(f.usage().totalUnits, consumed); assert.equal(f.usage().inputUnits + f.usage().outputUnits, consumed);
+  assert.equal(f.usage().outputUnits, 113); assert.equal(f.usage().totalUnits, 3198);
   await assert.rejects(f.capture(), { code: 'WORKER_RESULT_UNAVAILABLE' }); assert.equal(sqlFacts(f.databasePath).artifacts, 0); held(f);
   await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' }); held(f);
 });

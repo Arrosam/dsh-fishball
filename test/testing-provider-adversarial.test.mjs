@@ -283,3 +283,34 @@ test('P15 independent aborted request and unknown string proof fields refuse bef
     assertDenied(await f.stream(agent, request), permit, callbacks);
   });
 });
+
+// Decision table over the denial index k of the private current callback
+// (src/testing-provider.mjs:111 pre-consume, :120 after text-delta, :122 after
+// usage, :124 after finish). The provider yields the chunks that precede the
+// denying check; the host LlmRuntime then terminates the stream with an error
+// finish (measured: at k=4 this follows the provider's own stop finish). Usage
+// is charged from the one-use consume (k>=2) and never reset; any second
+// stream on the same permit is refused before the callback runs again.
+test('P16 independent authority denial index k=1..4 decides yielded chunks, charged usage and single use', async t => {
+  const PROVIDER_CHUNKS = ['text-delta', 'usage', 'finish'];
+  const label = chunk => chunk.type === 'finish' ? `finish:${chunk.reason.kind}` : chunk.type;
+  for (const mode of ['false', 'throw']) for (const k of [1, 2, 3, 4]) await t.test(`${mode} at call ${k}`, async t => {
+    const f = await fixture(t), agent = await f.agent(), content = 'Synthetic per-chunk currentness', request = f.request(agent, content); let callbacks = 0;
+    const permit = f.issue(agent, content, { assertCurrent: () => { if (++callbacks !== k) return true; if (mode === 'throw') throw Error('PRIVATE_PROVIDER_CANARY'); return false; } });
+    const chunks = await f.stream(agent, request), yielded = PROVIDER_CHUNKS.slice(0, k - 1);
+    assert.equal(callbacks, k);
+    assert.deepEqual(chunks.map(label), [...yielded.map(type => type === 'finish' ? 'finish:stop' : type), 'finish:error']);
+    // H1 ISTQB TC3 found the post-consume checks leaked a throwing callback's raw
+    // message (measured failure.message 'PRIVATE_PROVIDER_CANARY' at k>=2) before
+    // src/testing-provider.mjs gained its redacting recheck(); this pins the fix.
+    assert.equal(JSON.stringify(chunks).includes('PRIVATE_PROVIDER_CANARY'), false);
+    assert.equal(chunks.at(-1).reason.failure?.message, 'WORKER_REQUEST_DENIED');
+    if (k === 1) assert.equal(permit.usage(), null);
+    else assert.deepEqual(permit.usage(), { accounting: TESTING_ACCOUNTING, inputUnits: inputBytes(request), outputUnits: outputBytes(content), totalUnits: inputBytes(request) + outputBytes(content), resultDigest: digest(responseFor(content)) });
+    if (k >= 2) assert.equal(chunks[0].text, responseFor(content));
+    if (k >= 3) assert.deepEqual(chunks[1].usage, { inputTokens: inputBytes(request), outputTokens: outputBytes(content), totalTokens: inputBytes(request) + outputBytes(content) });
+    const usage = permit.usage();
+    assertDenied(await f.stream(agent, request), undefined); assert.equal(callbacks, k, 'second stream is refused before the callback');
+    assert.equal(permit.usage(), usage);
+  });
+});

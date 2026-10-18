@@ -17,10 +17,22 @@ const llmModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh
 const scopeModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-scope')).href);
 const toolsModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-tools')).href);
 const persistenceModule = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-session-persistence-jsonl')).href);
-// rc.2 JSONL exports only its plugin namespace; the service is a pinned
-// SessionPersistence subclass carrying the JSONL backend label.
+// rc.2 JSONL exports only its plugin namespace (alpha.1 exported the class).
+// Require the pinned public base class plus provider lineage: the service's
+// own fiber is the 'session-persistence-jsonl-service' child of a plugin fiber
+// whose runtime is the pinned JSONL module's apply(). The `name` label alone is
+// a writable field and is never sufficient.
 const { SessionPersistence } = await import(pathToFileURL(resolveHostSource('@deepseek-ai/dsh-session-persistence')).href);
-const isJsonlPersistence = value => value instanceof SessionPersistence && value.name === persistenceModule.name && typeof persistenceModule.apply === 'function';
+const { symbols: cordisSymbols } = await import(pathToFileURL(resolveHostSource('@deepseek-ai/cordis')).href);
+const raw = value => value?.[cordisSymbols.original] ?? value;
+const isJsonlPersistence = value => {
+  try {
+    const service = raw(value), own = raw(raw(service?.ctx)?.fiber), parent = raw(raw(own?.parent)?.fiber);
+    return service instanceof SessionPersistence && service.name === 'session-persistence-jsonl' &&
+      own?.state === 2 && own.uid !== null && own.runtime?.name === 'session-persistence-jsonl-service' &&
+      parent?.state === 2 && parent.runtime?.callback === persistenceModule.apply;
+  } catch { return false; }
+};
 const persistencePins = Object.freeze({
   'dsh-session-persistence-jsonl/lib/index.js': '973dd78679b2661d6f492343bc22b124ae958aa597d3b36c698a2c650f909984',
   'node-addon-system/lib/flock.js': 'e42af00c298d56322c073bf7cc66485096028318ab645a2e69dc2aa7481ba646',

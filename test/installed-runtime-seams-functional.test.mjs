@@ -118,11 +118,11 @@ async function runtimeFixture(t) {
   };
   // Synchronous re-entry of the captured real carrier for trusted seam calls.
   f.owned = (callback, api = f.api, token = f.token) => withInstalledWorkerInvocation(api.ctx, token, callback);
-  f.start = (name, payload = {}, headers = {}) => {
+  f.start = (name, payload = {}, headers = {}, route = web.prefixes.get('/df-rpc')) => {
     const method = `v1/${name}`, envelope = { type: 'client-request', rpcId: `synthetic-${name}`, method, payload };
     const request = Readable.from([Buffer.from(JSON.stringify(envelope))]);
     Object.assign(request, { method: 'POST', url: `/df-rpc/${method}`, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080', 'content-type': 'application/json', 'x-independent-owner': 'synthetic-approved', ...headers } });
-    const response = new ResponseCollector(), route = web.prefixes.get('/df-rpc'); assert.ok(route);
+    const response = new ResponseCollector(); assert.ok(route);
     // Direct in-memory invocation of the original public route; no socket/HTTP
     // client/server launch, private registered handler extraction or fake peer.
     const done = Promise.resolve(route.handler(request, response)).then(() => response.result());
@@ -219,7 +219,12 @@ for (const defect of ['extra-handle', 'symbol', 'accessor', 'missing-operation',
   assert.throws(() => f.api.currentPolicy(), { code: 'SERVICE_DISPOSED' });
 });
 
-test('R03 optional native composition failure seals only installed admission and preserves actual task/memory/read work', opts, async t => {
+// Lead decision (docs/evidence/H1/rc2-baseline.md, "Explicit oracle decisions",
+// row R03): a failed lazy native construction latches native composition
+// permanently unavailable (WORKER_SOURCE_UNAVAILABLE) but intentionally does NOT
+// seal installed admission; task, memory and read work and non-native installed
+// mutations stay admitted. Before 4fea280 eager composition sealed the lifetime.
+test('R03 failed lazy native construction latches native permanently unavailable without sealing installed admission; task/memory/read and non-native mutations stay usable', opts, async t => {
   const f = await runtimeFixture(t); await f.install();
   assert.throws(() => f.api.composeNativeWorker({ worker: {} }), { code: 'SERVICE_DISPOSED' }, 'carrier-less composition is refused');
   assert.throws(() => f.owned(() => f.api.composeNativeWorker({ worker: {} })), { code: 'RUNTIME_ADAPTER_INVALID' });
@@ -244,6 +249,11 @@ test('R03 optional native composition failure seals only installed admission and
   // NativeAdapter construction; the one-attempt latch above is the native fence
   // (flagged to the lead as a behaviour change, not silently accepted).
   assert.equal(f.api.isAlive(), true);
+  // Positive "not sealed" proof: a non-native installed owner mutation through
+  // the real carrier (checkOwner -> installedAlive) is still admitted and commits.
+  const policy = f.owned(() => f.api.installOwnerPolicy({ ...policyInput(), commandRef: ref('post-native-failure-policy'), expectedVersion: 2 }));
+  assert.equal(policy.version, 3); assert.equal(f.api.currentPolicy().version, 3);
+  assert.equal(f.events.filter(e => e.operation === 'policy').length, 2);
   await assert.rejects(async () => f.owned(() => facade.dispatch(dispatch)), { code: 'WORKER_SOURCE_UNAVAILABLE' }, 'native remains permanently unavailable');
 });
 
@@ -299,10 +309,40 @@ for (const mode of ['throw', 'promise']) test(`R06 ${mode} observer failure afte
   assert.throws(() => f.owned(() => f.api.prepareOwnerPreview(x.prepare)), { code: 'SERVICE_DISPOSED' });
   assert.throws(() => f.api.assertNativeRequestCurrent({}), { code: 'WORKER_SOURCE_UNAVAILABLE' });
   await f.good('list'); await f.good('memoryRead'); assert.deepEqual(dbFacts(f.databasePath), committed); assert.equal(f.observerCalls, oldCalls + 1);
+  // Lead decision (src/runtime-plugin.mjs normalOperations): after the seal only
+  // memoryRead uses readCheck (assertAlive + carrier); every other operation
+  // keeps checkOwner (installedAlive) and refuses before reaching the store.
+  const memoryBefore = await f.good('memoryRead'), now = f.current(x.task.taskRef);
+  const refusedAfterSeal = {
+    memoryRemember: { commandRef: ref('sealed-remember'), expectedRevision: memoryBefore.revision, candidate: { kind: 'preference', content: { text: 'SYNTHETIC_SEALED_REMEMBER' }, sourceRefs: [ref('sealed-source')], observedAt: Date.now(), confidence: 0.5 } },
+    memoryCorrect: { commandRef: ref('sealed-correct'), expectedRevision: memoryBefore.revision, id: 1, expectedFactRevision: 1, candidate: { kind: 'preference', content: { text: 'SYNTHETIC_SEALED_CORRECT' }, sourceRefs: [ref('sealed-source')], observedAt: Date.now(), confidence: 0.5 }, accept: true },
+    prepareContext: { ...x.prepareInput, commandRef: ref('sealed-context'), expectedTaskVersion: now.version, expectedAuthEpoch: now.authEpoch },
+  };
+  for (const [name, payload] of Object.entries(refusedAfterSeal)) {
+    const reply = await f.send(name, payload); assert.equal(reply.status, 200); assert.equal(reply.result.ok, false, name);
+    assert.equal(reply.result.error.code, 'SERVICE_DISPOSED', name);
+  }
+  assert.deepEqual(await f.good('memoryRead'), memoryBefore, 'memory revision/projection unchanged after refused mutations');
+  assert.deepEqual(dbFacts(f.databasePath), committed); assert.equal(f.observerCalls, oldCalls + 1);
   f.observeMode = 'record'; await f.runtimeFiber.dispose(); await f.install();
   assert.equal(f.api.isAlive(), true); assert.equal(f.current(x.task.taskRef).authEpoch, x.current.authEpoch + 1);
   assert.equal(f.events.filter(e => e.operation === 'grant').length, 1); assert.equal(f.ctx.sessions.list().length, 0);
   await assert.rejects(f.owned(() => f.api.grantOwnerPreview(x.grant(preview))), { code: 'PREVIEW_STALE' }); assert.deepEqual(dbFacts(f.databasePath), committed);
+});
+
+test('R06b sealed memoryRead stays ok until runtime fiber disposal, then refuses SERVICE_DISPOSED', opts, async t => {
+  const f = await runtimeFixture(t); await f.install();
+  const x = await runtimeAction(f), preview = await f.owned(() => f.api.prepareOwnerPreview(x.prepare)); f.observeMode = 'throw';
+  await assert.rejects(f.owned(() => f.api.grantOwnerPreview(x.grant(preview))), { code: 'WORKER_SOURCE_UNAVAILABLE' });
+  assert.equal(f.api.isAlive(), false); assert.equal((await f.good('memoryRead')).namespaceRef, ref('memory'));
+  // The /df-rpc route effect unregisters first on disposal, so a fresh lookup
+  // finds no route. A retained original route object (as held by an in-flight
+  // host dispatch) still reaches the real bridge, which refuses after unload.
+  const retained = f.web.prefixes.get('/df-rpc'), facts = dbFacts(f.databasePath);
+  await f.runtimeFiber.dispose(); assert.equal(f.web.prefixes.has('/df-rpc'), false, 'no route remains after disposal');
+  const reply = await f.start('memoryRead', {}, {}, retained).done;
+  assert.equal(reply.status, 200); assert.equal(reply.result.ok, false); assert.equal(reply.result.error.code, 'SERVICE_DISPOSED');
+  assert.deepEqual(dbFacts(f.databasePath), facts);
 });
 
 for (const drift of ['policy', 'pause', 'cancel', 'meaning', 'unload']) test(`R07 original grant resolver await rejects ${drift} drift with zero new grant`, opts, async t => {
