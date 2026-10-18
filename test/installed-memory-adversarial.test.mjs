@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -122,13 +122,55 @@ test('NI1-04/09 public heuristic measures complete UTF-16 blocks and stable unam
   assert.throws(() => options.tokenize('\udfff'), stable('TOKENIZER_UNAVAILABLE'));
 });
 
+// Since 4fea280 installed-config.mjs statically imports the normal native
+// selection graph, whose modules import pinned public host packages at load.
+// The copied plugin carries that exact product closure and each synthetic host
+// carries those exact public packages (hard-linked so realpaths stay inside the
+// variant root); variants still differ only in the token-meter export origin.
+function productSourceClosure(entries) {
+  const seen = new Set(), packages = new Set(), pending = [...entries];
+  while (pending.length) {
+    const name = pending.pop(); if (seen.has(name)) continue; seen.add(name);
+    const text = readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8');
+    for (const [, target] of text.matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)['"]\.\/([^'"]+\.mjs)['"]/g)) pending.push(target);
+    for (const [, target] of text.matchAll(/new URL\(\s*['"]\.\/([^'"]+\.mjs)['"]/g)) pending.push(target);
+    for (const [, target] of text.matchAll(/resolveHostSource\(\s*'(@deepseek-ai\/[a-z0-9-]+)'/g)) packages.add(target);
+    for (const [, target] of text.matchAll(/publicModule\(\s*'([a-z0-9-]+)'\s*\)/g)) packages.add(`@deepseek-ai/${target}`);
+  }
+  return { sources: [...seen].sort(), packages: [...packages].sort() };
+}
+function hostPackageClosure(roots) {
+  const lock = JSON.parse(readFileSync(join(DSH_WEB_RUNTIME_ROOT, 'package-lock.json'), 'utf8')).packages, seen = new Set(), pending = roots.map(name => `node_modules/${name}`);
+  while (pending.length) {
+    const key = pending.pop(); if (seen.has(key)) continue; assert.ok(lock[key], key); seen.add(key);
+    for (const name of Object.keys({ ...lock[key].dependencies, ...lock[key].peerDependencies })) {
+      for (let base = key; ; base = base.slice(0, base.lastIndexOf('/node_modules/'))) {
+        if (lock[`${base}/node_modules/${name}`]) { pending.push(`${base}/node_modules/${name}`); break; }
+        if (!base.includes('/node_modules/')) { if (lock[`node_modules/${name}`]) pending.push(`node_modules/${name}`); break; }
+      }
+    }
+  }
+  return [...seen].filter(key => key.split('/node_modules/').length === 1).map(key => key.slice('node_modules/'.length)).sort();
+}
+function linkTree(from, to) {
+  mkdirSync(to, { recursive: true });
+  for (const entry of readdirSync(from, { withFileTypes: true })) {
+    if (entry.isDirectory()) linkTree(join(from, entry.name), join(to, entry.name));
+    else if (entry.isFile()) linkSync(join(from, entry.name), join(to, entry.name));
+    else symlinkSync(readlinkSync(join(from, entry.name)), join(to, entry.name));
+  }
+}
+
 test('NI1-03 independent physical public-export origins refuse executable/source alias and NODE_PATH rescue before import', async t => {
-  const directory = temporary(t);
+  const directory = temporary(t), closure = productSourceClosure(['installed-config.mjs', 'installed-memory.mjs']), shared = join(directory, 'shared-host-packages');
+  assert.equal(closure.packages.includes('@deepseek-ai/dsh-token-meter'), false);
+  for (const name of hostPackageClosure(closure.packages)) cpSync(join(DSH_WEB_RUNTIME_ROOT, 'node_modules', name), join(shared, name), { recursive: true, verbatimSymlinks: true });
   for (const variant of ['canonical', 'missing', 'altered-source', 'conditional-alias', 'metadata-symlink', 'foreign-root', 'wrong-name']) {
     await t.test(variant, () => {
       const root = join(directory, variant), host = join(root, 'host'), peers = join(host, 'node_modules/@deepseek-ai'), plugin = join(host, 'node_modules/dsh-fishball');
       mkdirSync(join(plugin, 'src'), { recursive: true }); mkdirSync(join(plugin, 'scripts'));
-      for (const name of ['config.mjs', 'installed-config.mjs', 'installed-worker-config.mjs', 'host-probe.mjs', 'installed-memory.mjs']) copyFileSync(new URL(`../src/${name}`, import.meta.url), join(plugin, 'src', name));
+      for (const name of closure.sources) copyFileSync(new URL(`../src/${name}`, import.meta.url), join(plugin, 'src', name));
+      linkTree(shared, join(host, 'node_modules'));
       copyFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url), join(plugin, 'scripts/dsh-web-runtime-lock.json'));
       for (const name of ['dsh', 'dsh-token-meter']) { mkdirSync(join(peers, name), { recursive: true }); copyFileSync(resolveHostSource('@deepseek-ai/' + name, 'package.json'), join(peers, name, 'package.json')); }
       const meter = join(peers, 'dsh-token-meter'), source = join(meter, 'lib/types/estimate.js'), metadata = join(meter, 'package.json');
@@ -364,9 +406,14 @@ async function native(t) {
   return { directory, databasePath, ctx, server, send, good };
 }
 
+// 4fea280 widened v1/features with disabled automation/results metadata and
+// memory.continuityReady; none of these confers authority before consent.
+const closedFeatures = memory => ({ automation: { enabled: false, ready: false, automaticStart: false, choices: [] },
+  results: { enabled: false, ready: false, route: null, requires: [], notificationsEnabled: false, opening: 'unknown' }, memory });
+
 test('NI1-06/07 public native features before consent are closed read-only metadata, never memory authority', async t => {
   const f = await native(t), fiber = f.ctx.plugin(Installed, { databasePath: f.databasePath, memory: choice }); await fiber;
-  const expected = { memory: { enabled: true, ready: false, accounting: MEMORY_ACCOUNTING, bounds: { byteLimit: 65536, tokenLimit: 131072 } } };
+  const expected = closedFeatures({ enabled: true, ready: false, continuityReady: false, accounting: MEMORY_ACCOUNTING, bounds: { byteLimit: 65536, tokenLimit: 131072 } });
   for (let i = 0; i < 4; i++) assert.deepEqual((await f.send('/df-setup', 'features')).value, expected);
   assert.equal((await f.send('/df-setup', 'features', {}, { cookie: undefined })).status, 401);
   assert.equal((await f.send('/df-setup', 'features', {}, { origin: 'http://synthetic-foreign.invalid' })).status, 403);
@@ -408,7 +455,7 @@ test('NI1-N02/N03 public native decimal domains, exact receipts and encrypted co
   assert.equal((await f.send('/df-rpc', 'memoryRemember', request, {}, staleRpc)).error.code, 'SERVICE_DISPOSED');
   assert.equal((await f.send('/df-setup', 'features', {}, {}, staleSetup)).error.code, 'SERVICE_DISPOSED'); await stopping;
   const disabled = f.ctx.plugin(Installed, { databasePath: f.databasePath }); await disabled;
-  assert.equal((await f.send('/df-rpc', 'memoryRead')).error.code, 'CAPABILITY_UNAVAILABLE'); assert.deepEqual((await f.send('/df-setup', 'features')).value.memory, { enabled: false, ready: false, accounting: null, bounds: null }); await disabled.dispose();
+  assert.equal((await f.send('/df-rpc', 'memoryRead')).error.code, 'CAPABILITY_UNAVAILABLE'); assert.deepEqual((await f.send('/df-setup', 'features')).value.memory, { enabled: false, ready: false, continuityReady: false, accounting: null, bounds: null }); await disabled.dispose();
   const reenabled = f.ctx.plugin(Installed, { databasePath: f.databasePath, memory: { ...choice, byteLimit: 4096, tokenLimit: 512 } }); await reenabled;
   const retained = await f.good('memoryRead'); assert.equal(retained.namespaceRef, empty.namespaceRef); assert.equal(retained.revision, 1); assert.equal(retained.projection.facts[0].confidence, 0.9);
   assert.equal((await f.send('/df-setup', 'features')).value.memory.ready, true); assert.equal(sha(readFileSync(f.databasePath + '.df-setup/key.bin')), key); assert.equal(sha(readFileSync(f.databasePath + '.df-setup/state.json')), state);

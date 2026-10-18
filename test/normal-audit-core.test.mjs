@@ -11,6 +11,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {RuntimeStore, reference as r, canonicalDigest as d} from '../src/runtime-store.mjs';
 import {ContextAssembler} from '../src/context.mjs';
+import {SCHEMA_VERSION} from '../src/ledger.mjs';
 
 const scope={ownerId:'ni3-synthetic-owner',workspaceId:'ni3-synthetic-workspace'};
 let sequence=0;
@@ -189,6 +190,18 @@ function sqlSnapshot(path){
     return {version:db.prepare('PRAGMA user_version').get().user_version,tables:Object.fromEntries(tables.map(({name})=>[name,db.prepare(`SELECT * FROM ${name} ORDER BY rowid`).all()]))};
   }finally{db.close();}
 }
+// Schema6/7 migration intentionally appends one empty sealed registry row per
+// authenticated scope (initializeMigration). Every genuine source row must remain
+// byte-identical and in order; the only additions are exactly these registries.
+const MIGRATION_REGISTRIES=['normal_provenance_registry','prepared_context_registry','normal_native_registry'];
+function assertMigratedTables(tables,source){
+  const added=tables.automation_records.filter(row=>MIGRATION_REGISTRIES.includes(row.kind));
+  assert.deepEqual({...tables,automation_records:tables.automation_records.filter(row=>!MIGRATION_REGISTRIES.includes(row.kind))},source);
+  const scopes=[...new Map(source.runtime_commands.map(row=>[row.owner+row.workspace,row])).values()];
+  assert.equal(scopes.length,1);
+  assert.deepEqual(added.map(row=>[row.kind,row.owner,row.workspace,row.id,row.task]),MIGRATION_REGISTRIES.map(kind=>[kind,scopes[0].owner,scopes[0].workspace,scopes[0].workspace,null]));
+  for(const row of added){const data=JSON.parse(row.payload).data;for(const key of Object.keys(data).filter(key=>key.endsWith('Count')))assert.equal(data[key],0,row.kind+'.'+key);}
+}
 async function seedGenuine4(){
   const Old=await genuine4(),directory=mkdtempSync(join(tmpdir(),'df-ni3-genuine4-')),owner={},host={};
   const config={databasePath:join(directory,'ledger.db'),encryptionKey:Buffer.alloc(32,57),clock:()=>1000,hostPermission:()=>true,principals:[{handle:owner,role:'owner',scope},{handle:host,role:'host',scope}]};
@@ -220,8 +233,8 @@ async function seedGenuine4(){
 
 test('genuine supported4 migrates to5 with exact backup, ciphertext, signed historical receipts, grants and tombstone dedup preserved',async()=>{
   const x=await seedGenuine4(),store=new RuntimeStore(x.config),rows=sqlSnapshot(x.config.databasePath);
-  assert.equal(rows.version,5);assert.deepEqual(readFileSync(x.config.databasePath+'.schema-4.backup'),x.sourceBytes);
-  assert.deepEqual(rows.tables,x.rows.tables);
+  assert.equal(rows.version,SCHEMA_VERSION);assert.deepEqual(readFileSync(x.config.databasePath+'.schema-4.backup'),x.sourceBytes);
+  assertMigratedTables(rows.tables,x.rows.tables);
   assert.deepEqual(store.intake(x.owner,x.intakeInput),x.intakeReceipt);
   assert.deepEqual(store.memoryCommandReceipt(x.owner,{namespaceRef:x.memoryInput.namespaceRef,commandRef:x.memoryInput.commandRef,requestDigest:x.memoryInput.requestDigest}),x.memoryReceipt);
   assert.equal(store.getMemory(x.owner,{namespaceRef:x.memoryInput.namespaceRef}).deleted,true);
@@ -258,10 +271,10 @@ test('genuine4 migration fault rolls back source and leaves a byte-exact source4
 test('actual subprocess cuts before and after migration commit preserve genuine4 backup and supported reopening semantics',async()=>{
   for(const point of ['before','after']){
     const x=await seedGenuine4();
-    const source=`import{DatabaseSync}from'node:sqlite';import{RuntimeStore}from${JSON.stringify(currentSource)};const exec=DatabaseSync.prototype.exec;let target=false;DatabaseSync.prototype.exec=function(sql){if(sql==='PRAGMA user_version=5')target=true;if(target&&sql==='COMMIT'){if(${JSON.stringify(point)}==='before')process.exit(73);const result=exec.call(this,sql);process.exit(73);return result;}return exec.call(this,sql);};const owner={},host={};new RuntimeStore({databasePath:${JSON.stringify(x.config.databasePath)},encryptionKey:Buffer.alloc(32,57),clock:()=>1000,hostPermission:()=>true,principals:[{handle:owner,role:'owner',scope:${JSON.stringify(scope)}},{handle:host,role:'host',scope:${JSON.stringify(scope)}}]});`;
+    const source=`import{DatabaseSync}from'node:sqlite';import{RuntimeStore}from${JSON.stringify(currentSource)};const exec=DatabaseSync.prototype.exec;let target=false;DatabaseSync.prototype.exec=function(sql){if(sql===${JSON.stringify(`PRAGMA user_version=${SCHEMA_VERSION}`)})target=true;if(target&&sql==='COMMIT'){if(${JSON.stringify(point)}==='before')process.exit(73);const result=exec.call(this,sql);process.exit(73);return result;}return exec.call(this,sql);};const owner={},host={};new RuntimeStore({databasePath:${JSON.stringify(x.config.databasePath)},encryptionKey:Buffer.alloc(32,57),clock:()=>1000,hostPermission:()=>true,principals:[{handle:owner,role:'owner',scope:${JSON.stringify(scope)}},{handle:host,role:'host',scope:${JSON.stringify(scope)}}]});`;
     const child=spawnSync(process.execPath,['--input-type=module','-e',source],{encoding:'utf8',timeout:10000});assert.equal(child.status,73,child.stderr);
     assert.deepEqual(readFileSync(x.config.databasePath+'.schema-4.backup'),x.sourceBytes);
-    const observed=sqlSnapshot(x.config.databasePath);assert.equal(observed.version,point==='before'?4:5);assert.deepEqual(observed.tables,x.rows.tables);
+    const observed=sqlSnapshot(x.config.databasePath);assert.equal(observed.version,point==='before'?4:SCHEMA_VERSION);if(point==='before')assert.deepEqual(observed.tables,x.rows.tables);else assertMigratedTables(observed.tables,x.rows.tables);
     if(point==='before'){const original=new x.Old.RuntimeStore(x.config);assert.deepEqual(original.intake(x.owner,x.intakeInput),x.intakeReceipt);original.close();}
     else{const reopened=new RuntimeStore(x.config);assert.equal(reopened.snapshot(x.owner,{taskRef:x.task.taskRef}).actions[0].releaseEvidenceRef,null);reopened.close();rejects('SCHEMA_FUTURE',()=>new x.Old.RuntimeStore(x.config));}
   }
@@ -280,7 +293,7 @@ test('genuine4 spilled DELETE journal validates copy first: wrong key preserves 
   const copy=new x.Old.RuntimeStore({...x.config,databasePath:copyPath});copy.close();assert.deepEqual(sqlSnapshot(copyPath),x.rows);
   const restoredBytes=readFileSync(copyPath),store=new RuntimeStore(x.config);
   assert.deepEqual(readFileSync(path+'.schema-4.backup'),restoredBytes);assert.equal(existsSync(journal),false);
-  assert.deepEqual(sqlSnapshot(path).tables,x.rows.tables);assert.equal(store.snapshot(x.owner,{taskRef:x.task.taskRef}).actions[0].releaseEvidenceRef,null);rejects('TASK_NOT_FOUND',()=>store.task(x.owner,r('unacknowledged-hot-task')));store.close();
+  assertMigratedTables(sqlSnapshot(path).tables,x.rows.tables);assert.equal(store.snapshot(x.owner,{taskRef:x.task.taskRef}).actions[0].releaseEvidenceRef,null);rejects('TASK_NOT_FOUND',()=>store.task(x.owner,r('unacknowledged-hot-task')));store.close();
 });
 
 test('two already-open independent processes race the same audit final consume: only one receives effect admission',async()=>{
@@ -358,7 +371,7 @@ test('migration exclusive lock includes an acknowledged concurrent genuine4 type
     for(const result of await Promise.all(children.map(c=>c.closed)))assert.equal(result.code,0,result.stderr);
     const writerReceipt=writer.messages.find(m=>m.receipt).receipt,migrated=migrator.messages.find(m=>m.task).task;
     assert.deepEqual(migrated,writerReceipt.task);
-    const backup=x.config.databasePath+'.schema-4.backup',backupRows=sqlSnapshot(backup);assert.equal(backupRows.version,4);assert.equal(sqlSnapshot(x.config.databasePath).version,5);assert.deepEqual(sqlSnapshot(x.config.databasePath).tables,backupRows.tables);
+    const backup=x.config.databasePath+'.schema-4.backup',backupRows=sqlSnapshot(backup);assert.equal(backupRows.version,4);assert.equal(sqlSnapshot(x.config.databasePath).version,SCHEMA_VERSION);assertMigratedTables(sqlSnapshot(x.config.databasePath).tables,backupRows.tables);
     const old=new x.Old.RuntimeStore({...x.config,databasePath:backup});assert.deepEqual(old.intake(x.owner,input),writerReceipt);old.close();
   }finally{children.forEach(c=>{if(c.child.exitCode===null)c.child.kill();});}
 });

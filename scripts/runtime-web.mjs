@@ -32,8 +32,10 @@ export function checkPrivateFile(path, length) {
   if (!entry.isFile() || (entry.mode & 0o077) !== 0 || length !== undefined && entry.size !== length) throw new Error('FIXTURE_PRIVATE_FILE_INVALID');
 }
 export function runtimeProfilePatch() {
+  // rc.2: tool-ralph moved to the opt-in dsh-experimental-ralph-bundle; base+web layers no longer ship it,
+  // so a disable row would only warn "entry not found". The profile test asserts no ralph entry is compiled.
   const disabled = ['session-title-llm', 'deepseek-account', 'llm-deepseek', 'llm-deepseek-account', 'llm-pi-ai', 'account-controller', 'shell-env', 'bash-sandbox', 'pwsh-sandbox',
-    'tool-bash', 'tool-pwsh', 'tool-jobs', 'tool-fs', 'tool-fs-search', 'tool-skill', 'tool-subagent-control', 'tool-subagent-list-agents', 'tool-subagent', 'tool-subagent-fork', 'tool-workflow', 'tool-result-pruner', 'tool-todo', 'tool-goal', 'tool-ralph', 'tool-web'];
+    'tool-bash', 'tool-pwsh', 'tool-jobs', 'tool-fs', 'tool-fs-search', 'tool-skill', 'tool-subagent-control', 'tool-subagent-list-agents', 'tool-subagent', 'tool-subagent-fork', 'tool-workflow', 'tool-result-pruner', 'tool-todo', 'tool-goal', 'tool-web'];
   return JSON.stringify([
     { id: 'web-runtime', config: { openBrowser: false, printUrl: false, surfaceContext: true, trustedHosts: [] } },
     { id: 'approval', config: { policy: 'never' } },

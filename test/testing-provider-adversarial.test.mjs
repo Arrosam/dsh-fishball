@@ -24,6 +24,10 @@ const JsonlPersistence = await load('dsh-session-persistence-jsonl'); // rc.2 pl
 const { default: SystemPrompt } = await load('dsh-system-prompt');
 const { default: ToolRuntime } = await load('dsh-tools');
 const { default: AgentLoop } = await load('dsh-agent-loop');
+// Since 4fea280 (NAT05) a successful stream checks the private current callback
+// once before the one-use consume and again after each of its three yielded
+// chunks (text-delta, usage, finish). Denials before consume still check 0 or 1.
+const SUCCESS_CURRENT_CHECKS = 4;
 const collect = async stream => { const chunks = []; for await (const chunk of stream) chunks.push(chunk); return chunks; };
 const responseFor = content => `Synthetic local result; approved input SHA-256: ${digest(content)}.`;
 const inputBytes = request => Buffer.byteLength(JSON.stringify(request.messages));
@@ -139,7 +143,7 @@ test('P04 independent UTF8 whole serialized request reaches the actual minimum r
     const permit = f.issue(agent, content, { requestBytes: 512, assertCurrent: () => { callbacks++; return true; } });
     const chunks = await f.stream(agent, request);
     if (bytes === 513) assertDenied(chunks, permit, callbacks);
-    else { assert.equal(callbacks, 1); assert.equal(chunks[0].text, responseFor(content)); assert.equal(permit.usage().inputUnits, bytes); assert.ok(bytes > Buffer.byteLength(content)); }
+    else { assert.equal(callbacks, SUCCESS_CURRENT_CHECKS); assert.equal(chunks[0].text, responseFor(content)); assert.equal(permit.usage().inputUnits, bytes); assert.ok(bytes > Buffer.byteLength(content)); }
   });
 });
 
@@ -150,7 +154,7 @@ test('P05 independent escaped UTF8 input reaches the actual upper request cap at
     const permit = f.issue(agent, content, { requestBytes: 131072, assertCurrent: () => { callbacks++; return true; } });
     const chunks = await f.stream(agent, request);
     if (bytes === 131073) assertDenied(chunks, permit, callbacks);
-    else { assert.equal(callbacks, 1); assert.equal(chunks[0].text, responseFor(content)); assert.equal(permit.usage().inputUnits, bytes); assert.equal(chunks[1].usage.totalTokens, bytes + outputBytes(content)); }
+    else { assert.equal(callbacks, SUCCESS_CURRENT_CHECKS); assert.equal(chunks[0].text, responseFor(content)); assert.equal(permit.usage().inputUnits, bytes); assert.equal(chunks[1].usage.totalTokens, bytes + outputBytes(content)); }
   });
 });
 
@@ -163,7 +167,7 @@ test('P06 independent total usage reservation is input JSON plus exact fixed out
     const chunks = await f.stream(agent, request);
     if (difference < 0) assertDenied(chunks, permit, callbacks);
     else {
-      assert.equal(callbacks, 1); assert.deepEqual(chunks.map(chunk => chunk.type), ['text-delta', 'usage', 'finish']);
+      assert.equal(callbacks, SUCCESS_CURRENT_CHECKS); assert.deepEqual(chunks.map(chunk => chunk.type), ['text-delta', 'usage', 'finish']);
       assert.deepEqual(permit.usage(), { accounting: TESTING_ACCOUNTING, inputUnits: inputBytes(request), outputUnits: outputBytes(content), totalUnits: total, resultDigest: digest(responseFor(content)) });
       assert.equal(Object.isFrozen(permit.usage()), true); assert.throws(() => { permit.usage().totalUnits = 0; }, TypeError);
       assert.deepEqual(chunks[1].usage, { inputTokens: inputBytes(request), outputTokens: outputBytes(content), totalTokens: total });
@@ -213,7 +217,7 @@ test('P09 independent issue refuses opaque input descriptor tricks without autho
   for (const value of bad) assert.throws(() => f.binding.issue(value), { code: 'INVALID_INPUT' });
   assert.equal(traps, 0); assert.equal(callbacks, 0);
   const permit = f.binding.issue(base); base.content = 'MUTATED_UNAPPROVED_CONTENT'; base.assertCurrent = () => false;
-  const chunks = await f.stream(agent, f.request(agent, content)); assert.equal(callbacks, 1); assert.equal(chunks[0].text, responseFor(content)); assert.notEqual(permit.usage(), null);
+  const chunks = await f.stream(agent, f.request(agent, content)); assert.equal(callbacks, SUCCESS_CURRENT_CHECKS); assert.equal(chunks[0].text, responseFor(content)); assert.notEqual(permit.usage(), null);
 });
 
 test('P10 independent partial consumption is already charged and cannot be retried after iterator return or abort', async t => {
@@ -251,7 +255,7 @@ test('P13 independent wrong genuine agent cannot use another native session perm
   assertDenied(await f.stream(stranger, markAgentLoopRequest(f.request(owner, content))), undefined); assert.equal(callbacks, 0); assert.equal(permit.usage(), null);
   const otherRequest = { provider: 'independent-local', model: 'independent-model', maxTokens: 128, sessionId: other.id, messages: [{ id: digest('unrelated-user'), role: 'user', source: { kind: 'input', form: 'local' }, content: [{ type: 'text', text: 'Unrelated synthetic native session' }] }], tools: [] };
   const unrelated = await f.stream(other, otherRequest); assert.equal(unrelated[0].text, 'Unrelated synthetic native route remains usable.'); assert.equal(f.unrelatedStreams, 1); assert.equal(f.binding.assertCurrent(), true);
-  const chunks = await f.stream(owner, f.request(owner, content)); assert.equal(chunks[0].text, responseFor(content)); assert.equal(callbacks, 1); assert.notEqual(permit.usage(), null);
+  const chunks = await f.stream(owner, f.request(owner, content)); assert.equal(chunks[0].text, responseFor(content)); assert.equal(callbacks, SUCCESS_CURRENT_CHECKS); assert.notEqual(permit.usage(), null);
 });
 
 test('P14 independent prepared registration cannot revive after topology reversion; explicit own reload is separate', async t => {

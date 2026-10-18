@@ -7,6 +7,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { RuntimeStore, RuntimeError } from '../src/runtime-store.mjs';
+// Genuine original schema5 store capsule (no readMemoryCommand seam); see docs/evidence/NI4/core6-promotion-source-hold.md.
+import { RuntimeStore as Schema5Store } from './fixtures/schema5-core/src/runtime-store.mjs';
 import { MemoryAdapter } from '../src/memory.mjs';
 import { ContextAssembler } from '../src/context.mjs';
 import { BootstrapError } from '../src/config.mjs';
@@ -53,7 +55,7 @@ function durable(path) {
     return { sha256: sha(readFileSync(path)), schema: db.prepare('PRAGMA user_version').get().user_version, counts };
   } finally { db.close(); }
 }
-function fixture(t, { storeOptions = {}, onMutation = () => undefined } = {}) {
+function fixture(t, { storeOptions = {}, onMutation = () => undefined, Store = RuntimeStore } = {}) {
   const directory = mkdtempSync(join(realpathSync(tmpdir()), 'df-ccf-'));
   const path = join(directory, 'runtime.sqlite'), key = randomBytes(32);
   const owner = Object.freeze({}), coordinator = Object.freeze({}), ctx = Object.freeze({});
@@ -64,7 +66,7 @@ function fixture(t, { storeOptions = {}, onMutation = () => undefined } = {}) {
   const events = [], facades = [];
   let store, projection, assembler, facade, time = 10000, listener = onMutation;
   function mount() {
-    store = new RuntimeStore(options);
+    store = new Store(options);
     assembler = new ContextAssembler({ store, tokenize: memory.tokenize });
     projection = new MemoryAdapter({ store, handle: coordinator, ...memory, contextAssembler: assembler, knownSecrets: [secret] });
     facade = createInstalledMemoryContinuity(inputs()); facades.push(facade);
@@ -147,12 +149,30 @@ test('CCF02 sourced fractional edit and historical replay after forget invalidat
   assert.equal(replay.deduplicated, true); assert.equal(Object.hasOwn(replay, 'result'), false);
   assert.equal(x.projection.state().revision, 3); assert.equal(invalidations, 3);
   assert.deepEqual(x.events[2].receipt, replay); assert.equal(x.events[2].operation, 'memoryCorrect');
-  assert.equal(typeof x.store.readMemoryCommand, 'undefined');
-  await denied(x.call('memoryCommandStatus', { commandRef: retained.commandRef }), 'MEMORY_UNAVAILABLE');
-  await denied(x.call('memoryCommandStatus', { commandRef: r('unknown') }), 'MEMORY_UNAVAILABLE');
+  // The current schema7 store implements the owner-only readonly readMemoryCommand seam
+  // (NI4 core6 lease): it projects the original signed acknowledgement, never current state.
+  assert.equal(typeof x.store.readMemoryCommand, 'function');
+  const status = await x.call('memoryCommandStatus', { commandRef: retained.commandRef });
+  assert.equal(status.state, 'observed'); assert.equal(status.receipt.revision, 2);
+  assert.equal(status.receipt.recordRef, ack.recordRef); assert.equal(status.receipt.digest, ack.digest);
+  assert.equal(Object.hasOwn(status.receipt, 'result'), false); assert.equal(x.projection.state().revision, 3);
+  assert.deepEqual(await x.call('memoryCommandStatus', { commandRef: r('unknown') }), { state: 'not_observed', receipt: null });
   assert.deepEqual(durable(x.path), afterForget);
   assert.equal(afterForget.counts.tasks, 0); assert.equal(afterForget.counts.actions, 0);
+  await schema5StatusUnavailable(t);
 });
+
+// The genuine schema5 store has no readMemoryCommand: historical command status is
+// explicitly unavailable for both known and unknown commands, with no durable write.
+async function schema5StatusUnavailable(t) {
+  const old = fixture(t, { Store: Schema5Store }); old.seed();
+  await old.call('memoryCorrect', edit());
+  assert.equal(old.store.diagnostics().schemaVersion, 5); assert.equal(typeof old.store.readMemoryCommand, 'undefined');
+  const before = durable(old.path);
+  await denied(old.call('memoryCommandStatus', { commandRef: r('edit') }), 'MEMORY_UNAVAILABLE');
+  await denied(old.call('memoryCommandStatus', { commandRef: r('unknown') }), 'MEMORY_UNAVAILABLE');
+  assert.deepEqual(durable(old.path), before); assert.equal(old.projection.state().revision, 2);
+}
 
 test('CCF03 import consent retains complete detached union and cannot be reconstructed by another instance', async t => {
   const x = fixture(t), before = durable(x.path);
@@ -295,7 +315,7 @@ test('CCF08 TYPED history seam validates old receipt facts but cannot establish 
   await x.call('memoryForget', { commandRef: r('history-forget'), expectedRevision: 2, id: 1, expectedFactRevision: 2, accept: true });
   assert.equal(x.projection.state().revision, 3); assert.equal(historical.revision, 2);
   const fakeFutureStore = delegate(x); let response = historical, hooks = 0, calls = 0;
-  // Typed seam only. The product schema5 store has NO readMemoryCommand method.
+  // Typed seam only, independent of any product store implementation.
   fakeFutureStore.readMemoryCommand = (handle, input) => {
     calls++; assert.equal(handle, x.owner); assert.deepEqual(Object.keys(input).sort(), ['commandRef', 'namespaceRef']);
     assert.equal(input.namespaceRef, namespaceRef); return response;
@@ -314,7 +334,10 @@ test('CCF08 TYPED history seam validates old receipt facts but cannot establish 
   fakeFutureStore.readMemoryCommand = () => { throw Object.defineProperty(Error(secret), 'code', { get() { hooks++; return 'IDEMPOTENCY_CONFLICT'; } }); };
   await denied(call(), 'MEMORY_UNAVAILABLE');
   assert.equal(hooks, 0); assert.equal(calls, 5); assert.deepEqual(durable(x.path), before);
-  assert.equal(typeof x.store.readMemoryCommand, 'undefined');
-  await denied(x.call('memoryCommandStatus', { commandRef: r('edit') }), 'MEMORY_UNAVAILABLE');
+  // The real schema7 seam agrees exactly with the typed contract above, without writes or events.
+  assert.equal(typeof x.store.readMemoryCommand, 'function');
+  assert.deepEqual(await x.call('memoryCommandStatus', { commandRef: r('edit') }), { state: 'observed', receipt: historical });
   assert.deepEqual(durable(x.path), before); assert.equal(x.events.length, 2);
+  // The typed seam cannot establish durable history support on a genuine schema5 store.
+  await schema5StatusUnavailable(t);
 });

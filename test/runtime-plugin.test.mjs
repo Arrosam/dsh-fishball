@@ -106,7 +106,8 @@ test('native runtime reload preserves encrypted intake and missing key/identity 
 
 test('unconfigured native product capabilities remain explicitly unavailable and cannot admit workers or raw grants', async t => {
   const f = await fixture(t), fiber = f.ctx.plugin(createRuntimePlugin({ identity: () => ({ ownerId: 'synthetic-owner', workspaceId: 'synthetic-workspace' }), encryptionKey: () => Buffer.alloc(32, 19) }), { databasePath: join(f.directory, 'unconfigured.sqlite') }); await fiber;
-  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
+  // 4fea280 added the memoryContinuity capability flag to diagnostics.
+  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, memoryContinuity: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
   for (const operation of ['prepareContext', 'memoryRead', 'preview', 'grant', 'dispatch', 'execute', 'query', 'handoff', 'captureResult', 'acceptDelivery', 'dispatchDelivery', 'configureSource', 'configureSubscription', 'source', 'subscription', 'listSources', 'listSubscriptions', 'eventReceipt', 'listEventReceipts', 'approveSchedule', 'configureNotifications', 'notificationPolicy', 'pendingNotifications', 'prepareNotification', 'acceptNotification', 'dispatchNotification', 'reconcileNotification']) {
     const result = (await f.send(operation, {})).result;
     assert.equal(result.ok, false); assert.equal(result.error.code, 'CAPABILITY_UNAVAILABLE');
@@ -162,14 +163,18 @@ test('scoped Web runtime requires real public WebServer registration and seals o
   async function request(route) {
     const req = Readable.from([Buffer.from(JSON.stringify({ type: 'client-request', rpcId: 'scoped-rpc', method: 'v1/list', payload: {} }))]);
     Object.assign(req, { method: 'POST', url: '/df-rpc/v1/list', headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080', 'content-type': 'application/json' } });
-    const response = new CapturedResponse(); await route.handler(req, response); return JSON.parse(response.text()).result;
+    const response = new CapturedResponse(); await route.handler(req, response);
+    // rc.2 Connection refuses a route of its disposed service at admission
+    // (plain 401) before the df bridge runs; never an authorized result.
+    if (response.statusCode === 401) { assert.equal(response.text(), 'unauthorized'); return { ok: false, status: 401 }; }
+    return JSON.parse(response.text()).result;
   }
   const first = await mount(); assert.equal((await request(first.route)).ok, true); const borrowed = ctx.df;
   const removal = first.fiber.dispose();
   assert.equal((await request(first.route)).error.code, 'SERVICE_DISPOSED'); assert.throws(() => borrowed.diagnostics(), { code: 'SERVICE_DISPOSED' });
   await removal; assert.equal(first.server.prefixes.size, 0); assert.equal(ctx.get('df'), undefined);
   const second = await mount(); assert.equal((await request(second.route)).ok, true);
-  assert.equal((await request(first.route)).error.code, 'SERVICE_DISPOSED', 'old scope cannot regain authority after remount');
+  assert.deepEqual(await request(first.route), { ok: false, status: 401 }, 'old scope cannot regain authority after remount');
   const shutdown = parent.dispose(); assert.equal((await request(second.route)).error.code, 'SERVICE_DISPOSED');
   await shutdown; assert.equal(second.server.prefixes.size, 0); await second.fiber.dispose();
 });

@@ -2,7 +2,11 @@
 
 The newest owner instruction selects **official DSH Web**, installed in a new project-controlled environment and tested through a loopback browser. Desktop/Electron/native-shell validation and compatibility shims for the old Desktop installation are excluded. Other existing DSH installations remain untouched. The owner's descriptions of old Desktop maintenance and Electron architecture are recorded as owner context, not independent findings.
 
-## Exact wave pin and provenance
+## Current pin (2026-10-18): 0.2.1-rc.2
+
+The owner explicitly switched the test host to official **DSH Web 0.2.1-rc.2**. See [the rc.2 amendment](owner-amendment-2026-10-18-rc2.md) for provenance, the regenerated whole lock and the breaking API adaptations (`browserPeer`, `authenticateApi`, JSONL plugin namespace). The alpha.1 record below is historical: it explains the earlier wave and is not the current pin.
+
+## Historical wave pin and provenance (alpha.1)
 
 - Canonical distribution: `@deepseek-ai/dsh`, linked by the [official README](https://github.com/deepseek-ai/deepseek-harness#readme) with `dsh web` as the Web launch mode. This is the native host launcher, not an SDK runtime.
 - Verified registry on 2026-10-04: `alpha = 0.2.1-alpha.1`, published 2026-10-03T04:53:22.343Z. The `latest` and `next` tags still name `0.2.0-rc.2`, published September 29. The newer official published preview is selected deliberately to honor the owner's latest-only requirement; dependencies will not float with any tag.

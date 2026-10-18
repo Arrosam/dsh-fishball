@@ -76,7 +76,11 @@ class OrdinaryFixtureAdapter extends LlmAdapter {
 async function fixture(t, { ledger = true, hooks = true, goal = 'CURRENT_PROTECTED_GOAL 中文🚀 "quote"\nline', usageUnits = 32768 } = {}) {
   const directory = mkdtempSync(join(realpathSync(tmpdir()), 'df-ni2-independent-native-'));
   const ctx = new Context(), fibers = [], foreignHandles = [], tickets = [];
-  const trace = { setup: [], commits: 0, binds: 0, providerRequests: [], validationReads: [], flush: [], stops: 0, ordinary: [] };
+  // Since 4fea280 the source provider rechecks currentness before consume and
+  // after each yielded chunk (NAT05). providerRequests records each distinct
+  // provider request object once; currentChecks counts every authority check.
+  const trace = { setup: [], commits: 0, binds: 0, providerRequests: [], currentChecks: 0, validationReads: [], flush: [], stops: 0, ordinary: [] };
+  const recordedRequests = new WeakSet();
   const controls = { permission: true, currentEnvironment: ref('current-environment'), commit: true, bind: true, setupGate: null, validationGate: null, stopGate: null, streamGate: null, afterTextGate: null, factsTransform: facts => facts, readOffset: 0, readLength: 128, expectedCursor: null, failCommits: false };
   const gates = [];
   let providerEntry, nativeFiber, persistenceFiber, nativeCtx, adapter, provider, manager, store, owner, host, task, prepared, spec, directTicket, directExecution, directBody;
@@ -162,6 +166,9 @@ async function fixture(t, { ledger = true, hooks = true, goal = 'CURRENT_PROTECT
       permit = provider.issue({ agent, executionRef: execution.executionRef, content: context.content, maxOutputTokens: 128, requestBytes: 32768, resultBytes: 128, usageUnits, assertCurrent(request) {
         if (ledger) store.assertNativeRequestCurrent(host, { taskRef: execution.taskRef, claimRef: execution.claimRef, generationRef: execution.generationRef, actionDigest: execution.actionDigest, executionRef: execution.executionRef });
         else if (!controls.permission) return false;
+        trace.currentChecks++;
+        if (recordedRequests.has(request)) return true;
+        recordedRequests.add(request);
         trace.providerRequests.push({ provider: request.provider, model: request.model, reasoningEffort: request.reasoningEffort, maxTokens: request.maxTokens, messages: structuredClone(request.messages), tools: structuredClone(request.tools), toolHistory: structuredClone(request.toolHistory), sessionId: request.sessionId });
         return true;
       } });
@@ -503,13 +510,19 @@ test('N2-10/12/A9: revoke after durable send but before delayed inner iterator d
   t.diagnostic(JSON.stringify({ reportedState: observed.state, receiptEventType: observed.result.eventType, sourceOwnedRequests: f.trace.providerRequests.length, sourceOwnedUsage: f.usage(), reservations: 1, artifacts: 0, ledgerExecution: state.executions[0].state, persisted }));
 });
 
-test('N2-10/12/A10: revoke after first real output preserves late committed output and permits factual captured cleanup', options, async t => {
+// H1 (2026-10-18): the Oct-5 A10 oracle ("late committed output retained, captured and
+// finished") is superseded by the NAT05 between-chunk currentness contract implemented in
+// 4fea280 (src/testing-provider.mjs rechecks after every yielded chunk): a revoke after the
+// first real output denies later chunks, keeps the consumed usage charged and the
+// reservation held, and admits no capture or finish. Recorded in docs/evidence/H1.
+test('N2-10/12/A10/NAT05: revoke after first real output denies later chunks; consumed usage stays charged, no capture, reservation held', options, async t => {
   const f = await fixture(t); await f.create(); const gate = f.gate('afterTextGate');
   const running = f.execute(); await gate.entered;
   assert.equal(f.usage().totalUnits > 0, true); f.revoke(); gate.release();
-  assert.equal((await running).state, 'committed');
-  const captured = await f.capture(); assert.equal(captured.verification, null); held(f);
-  assert.equal((await f.finish()).reservationHeld, false); assert.equal(f.trace.providerRequests.length, 1);
+  const observed = await running; assert.equal(observed.state, 'committed'); assert.equal(observed.result.eventType, 'assistant/attempt');
+  assert.equal(f.trace.currentChecks, 1); assert.equal(f.trace.providerRequests.length, 1); assert.notEqual(f.usage(), null);
+  await assert.rejects(f.capture(), { code: 'WORKER_RESULT_UNAVAILABLE' }); assert.equal(sqlFacts(f.databasePath).artifacts, 0); held(f);
+  await assert.rejects(f.finish(), { code: 'WORKER_FINISH_UNAVAILABLE' }); held(f);
 });
 
 test('N2-12/A9: cancel before delayed actual provider consumption yields no extra stream and factual stop still keeps unresolved work held', options, async t => {

@@ -45,6 +45,9 @@ test('historical name override is a skipped assertion in the actual shipped laye
 test('current shipped base/Web/runtime compilation selects exactly one synthetic provider and original Connection', () => {
   const { entries, warnings } = compile(JSON.parse(runtimeProfilePatch()));
   assert.equal(warnings.length, 0);
+  // rc.2 ships tool-ralph only in the opt-in experimental Ralph bundle, which this
+  // profile never selects: no Ralph entry (enabled or not) may enter the compiled tree.
+  assert.equal(entries.some(row => /ralph/i.test(String(row.id ?? '')) || /ralph/i.test(String(row.name ?? ''))), false);
   const original = entries.filter(row => row.name === '@deepseek-ai/dsh-credentials-local');
   assert.equal(original.length, 1); assert.equal(original[0].disabled, true);
   const provider = entries.filter(row => row.id === 'df-runtime-synthetic-credentials');

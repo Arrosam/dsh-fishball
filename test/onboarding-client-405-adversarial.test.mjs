@@ -18,7 +18,9 @@ const missing = code => `transport failure for /df-setup/v1/status: HTTP ${code}
 const ok = value => ({ ok: true, value });
 const status = phase => ({ phase, executionEnabled: false, storage: { location: '/synthetic-native-profile/df-data/runtime.sqlite' } });
 const task = name => ({ taskRef: hex(name), status: 'queued', version: 1, authEpoch: 0, updatedAt: 1000 });
-const detail = value => ({ task: value, control: 'active', data: [], actions: [], workers: [], artifacts: [], deliveries: [], audits: [], reviews: [], progress: [] });
+// Mirrors the actual owner snapshot (RuntimeStore emits executions since aab7e6f; the
+// 4fea280 Panel renders them for owner-finish recovery).
+const detail = value => ({ task: value, control: 'active', data: [], actions: [], workers: [], artifacts: [], deliveries: [], audits: [], reviews: [], progress: [], executions: [] });
 const gate = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const drain = () => new Promise(resolve => setImmediate(resolve));
 const text = value => value && typeof value === 'object' ? value.children.map(text).join(' ') : String(value);

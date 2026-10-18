@@ -9,6 +9,7 @@ import { DSH_WEB_RUNTIME_ROOT } from '../src/host-probe.mjs';
 import { createRuntimePlugin } from '../src/runtime-plugin.mjs';
 import { reference } from '../src/runtime-store.mjs';
 import { BootstrapError } from '../src/config.mjs';
+import { runInstalledWorkerInvocation, captureInstalledWorkerInvocation, withInstalledWorkerInvocation } from '../src/installed-invocation.mjs';
 
 const packages = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 const { Context } = await import(pathToFileURL(`${packages}/cordis/lib/index.js`).href);
@@ -59,6 +60,11 @@ async function fixture(t) {
 const names=['workerCatalog','workerPolicyPreview','workerPolicyConfirm','workerPlan','workerPreview','workerGrant','workerCreate','workerExecute','workerQuery','workerCapture','workerResult','workerFinish'];
 const status=()=>({enabled:false,phase:'disabled',reasonCode:null,configurationRef:null,policyVersion:null,selection:null,environment:null,persistence:null,bounds:null,accounting:null,pricing:'unknown',actionsEnabled:false});
 function installer(overrides={}) { return api=>Object.freeze({hostPermission:()=>false,previewResolver:()=>{throw Error('UNEXPECTED_BOOT_RESOLVE');},previewTtlMs:10000,operations:Object.fromEntries(names.map(name=>[name,()=>{throw Error('UNIMPLEMENTED_FIXTURE_OPERATION');}])),status,dispose(){},...overrides(api)}); }
+// Since 4fea280 owner-mutating installed seams require the private installed
+// invocation carrier that /df-rpc operations create. Trusted direct seam calls
+// enter one real carrier guarded by the actual runtime fiber liveness, exactly
+// like the bridge guard; carrier-less calls remain refused as SERVICE_DISPOSED.
+async function carrier(api,fiber){let token;await runInstalledWorkerInvocation(api.ctx,()=>{if(fiber.state!==2||fiber.uid===null)throw new BootstrapError('SERVICE_DISPOSED');return true;},()=>{token=captureInstalledWorkerInvocation(api.ctx);});return callback=>withInstalledWorkerInvocation(api.ctx,token,callback);}
 function options(installedWorkerInstaller){return{identity:()=>({ownerId:'synthetic-owner',workspaceId:'synthetic-workspace'}),encryptionKey:()=>Buffer.alloc(32,21),memory:{namespaceRef:reference('memory'),tokenize:text=>Buffer.byteLength(text),byteLimit:65536,tokenLimit:8192},installedWorkerInstaller};}
 test('lazy installed runtime receives only closed private seams and boots without optional native services or resolver work',async t=>{
  const f=await fixture(t);let captured,disposed=0,callbacks=0;
@@ -85,14 +91,17 @@ test('receipt observer failure preserves actual policy commit, exposes bounded u
  const f=await fixture(t);let api;
  const fiber=f.ctx.plugin(createRuntimePlugin(options(installer(value=>{api=value;value.subscribeRuntimeReceipts(()=>{throw Error('PRIVATE_RECEIPT_CANARY');});return{};}))),{databasePath:join(f.directory,'failed-observer.sqlite'),limits:{maxMetadataBytes:4096}});await fiber;
  const policy={commandRef:reference('policy'),expectedVersion:1,limits:{maxActive:1,maxAttempts:1,maxTotalAttempts:1},modelPolicy:{version:1,presetRefs:[reference('preset')],catalogEvidenceRef:reference('catalog')}};
- assert.throws(()=>api.installOwnerPolicy(policy),error=>error.code==='WORKER_SOURCE_UNAVAILABLE'&&!String(error).includes('PRIVATE_RECEIPT_CANARY'));
+ assert.throws(()=>api.installOwnerPolicy(policy),{code:'SERVICE_DISPOSED'});assert.equal(api.currentPolicy().version,1,'carrier-less call has no effect');
+ const owned=await carrier(api,fiber);
+ assert.throws(()=>owned(()=>api.installOwnerPolicy(policy)),error=>error.code==='WORKER_SOURCE_UNAVAILABLE'&&!String(error).includes('PRIVATE_RECEIPT_CANARY'));
  assert.equal(api.currentPolicy().version,2);assert.equal(api.isAlive(),false);assert.equal(f.ctx.df.diagnostics().capabilities.memory,true);
  await fiber.dispose();
 });
 test('lazy original preview closures refuse before construction and never mint caller accept or a boot grant',async t=>{
  const f=await fixture(t);let api;
  const fiber=f.ctx.plugin(createRuntimePlugin(options(installer(value=>{api=value;assert.throws(()=>value.prepareOwnerPreview({}),{code:'PREVIEW_UNAVAILABLE'});assert.throws(()=>value.grantOwnerPreview({}),{code:'PREVIEW_UNAVAILABLE'});return{};}))),{databasePath:join(f.directory,'preview.sqlite'),limits:{maxMetadataBytes:4096}});await fiber;
- assert.equal(api.currentPolicy().version,1);await assert.rejects(api.prepareOwnerPreview({}),{code:'INVALID_INPUT'});await assert.rejects(api.grantOwnerPreview({accept:true}),{code:'INVALID_INPUT'});assert.equal(f.ctx.sessions.list().length,0);await fiber.dispose();
+ assert.equal(api.currentPolicy().version,1);assert.throws(()=>api.prepareOwnerPreview({}),{code:'SERVICE_DISPOSED'});assert.throws(()=>api.grantOwnerPreview({accept:true}),{code:'SERVICE_DISPOSED'});
+ const owned=await carrier(api,fiber);await assert.rejects(owned(()=>api.prepareOwnerPreview({})),{code:'INVALID_INPUT'});await assert.rejects(owned(()=>api.grantOwnerPreview({accept:true})),{code:'INVALID_INPUT'});assert.equal(f.ctx.sessions.list().length,0);await fiber.dispose();
 });
 test('closed installer rejects authority-bearing extras, missing operations and mixed advanced worker/preview composition',async t=>{
  assert.throws(()=>createRuntimePlugin({...options(()=>{}),worker:{}}),{code:'RUNTIME_ADAPTER_INVALID'});assert.throws(()=>createRuntimePlugin({...options(()=>{}),previewResolver:()=>{},previewTtlMs:1000}),{code:'RUNTIME_ADAPTER_INVALID'});
@@ -106,19 +115,21 @@ test('the one original ApprovalPreview creates only the actual once-observed gra
  const f=await fixture(t),events=[];let api;
  const resolver=spec=>({targetDigest:spec.targetDigest,...spec.model,environmentRef:spec.executor.environmentRef,bindingDigest:spec.executor.bindingDigest,toolsDigest:spec.executor.toolsDigest,permissionPolicyDigest:spec.executor.permissionPolicyDigest,evidenceRef:reference('current-evidence'),targetLabel:'Synthetic owned local directory; native plaintext session; no tools',providerLabel:'Synthetic provider',modelLabel:'Synthetic model',reasoningLabel:'Synthetic reasoning',presetLabel:'Empty preset',environmentLabel:'Synthetic owned environment',cwd:f.directory,toolNames:[]});
  const fiber=f.ctx.plugin(createRuntimePlugin(options(installer(value=>{api=value;value.subscribeRuntimeReceipts(event=>{events.push(event);});return{previewResolver:resolver};}))),{databasePath:join(f.directory,'actual-preview.sqlite'),limits:{maxMetadataBytes:4096}});await fiber;
+ const owned=await carrier(api,fiber);
  const task=(await f.send('intake',{taskId:'preview-task',provider:'fixture',source:'local',eventId:'one',commandRef:reference('intake-preview'),goal:'Synthetic scoped goal'})).result.value.task;
- api.installOwnerPolicy({commandRef:reference('policy-preview'),expectedVersion:1,limits:{maxActive:1,maxAttempts:1,maxTotalAttempts:1},modelPolicy:{version:1,presetRefs:[reference('preset')],catalogEvidenceRef:reference('catalog')}});
+ owned(()=>api.installOwnerPolicy({commandRef:reference('policy-preview'),expectedVersion:1,limits:{maxActive:1,maxAttempts:1,maxTotalAttempts:1},modelPolicy:{version:1,presetRefs:[reference('preset')],catalogEvidenceRef:reference('catalog')}}));
  const prepared=(await f.send('prepareContext',{taskRef:task.taskRef,commandRef:reference('context-preview'),expectedTaskVersion:task.version,expectedAuthEpoch:task.authEpoch,terms:[],now:Date.now()})).result.value;
  const spec={actionRef:reference('action'),kind:'write',role:'worker',targetDigest:reference('target'),dataDigest:prepared.digest,units:1,charges:{runtimeMs:1,usageUnits:1,costState:'estimated',costEstimateMicros:0,costProvenanceRef:reference('source-cost')},attemptGroupRef:reference('attempt'),attemptIndex:1,resourcePolicyVersion:2,modelPolicyVersion:1,executor:{mode:'create',generationRef:reference('generation'),sessionRef:reference('df-native-id'),environmentRef:reference('environment'),bindingDigest:reference('binding'),toolsDigest:reference('tools'),permissionPolicyDigest:reference('permission')},model:{modelRef:reference('model'),reasoningRef:reference('reasoning'),presetRef:reference('preset'),catalogEvidenceRef:reference('catalog')}};
- const action=api.planOwnerAction({taskRef:task.taskRef,commandRef:reference('plan-preview'),expectedTaskVersion:prepared.task.version,expectedAuthEpoch:prepared.task.authEpoch,spec});
+ const planInput={taskRef:task.taskRef,commandRef:reference('plan-preview'),expectedTaskVersion:prepared.task.version,expectedAuthEpoch:prepared.task.authEpoch,spec};
+ assert.throws(()=>api.planOwnerAction(planInput),{code:'SERVICE_DISPOSED'});const action=owned(()=>api.planOwnerAction(planInput));
  const current=api.snapshotOwner({taskRef:task.taskRef}).task;
  const prepare={taskRef:task.taskRef,actionRef:action.actionRef,actionDigest:action.actionDigest,recordRef:prepared.recordRef,expectedTaskVersion:current.version,expectedAuthEpoch:current.authEpoch};
- const preview=await api.prepareOwnerPreview(prepare);assert.equal(events.filter(e=>e.operation==='grant').length,0);
+ const preview=await owned(()=>api.prepareOwnerPreview(prepare));assert.equal(events.filter(e=>e.operation==='grant').length,0);
  const grant={taskRef:task.taskRef,actionRef:action.actionRef,actionDigest:action.actionDigest,commandRef:reference('grant-preview'),expectedTaskVersion:current.version,expectedAuthEpoch:current.authEpoch,expiresAt:Date.now()+5000,previewRef:preview.previewRef};
- await assert.rejects(api.grantOwnerPreview({...grant,accept:true}),{code:'INVALID_INPUT'});assert.equal(events.filter(e=>e.operation==='grant').length,0);
- const [first,second]=await Promise.allSettled([api.grantOwnerPreview(grant),api.grantOwnerPreview(grant)]);assert.equal(first.status,'fulfilled');assert.equal(second.status,'rejected');assert.equal(second.reason.code,'PREVIEW_BUSY');
+ await assert.rejects(owned(()=>api.grantOwnerPreview({...grant,accept:true})),{code:'INVALID_INPUT'});assert.throws(()=>api.grantOwnerPreview(grant),{code:'SERVICE_DISPOSED'});assert.equal(events.filter(e=>e.operation==='grant').length,0);
+ const [first,second]=await Promise.allSettled([owned(()=>api.grantOwnerPreview(grant)),owned(()=>api.grantOwnerPreview(grant))]);assert.equal(first.status,'fulfilled');assert.equal(second.status,'rejected');assert.equal(second.reason.code,'PREVIEW_BUSY');
  const observed=events.filter(e=>e.operation==='grant');assert.equal(observed.length,1);const {previewRef,...originalGrant}=grant;assert.deepEqual(observed[0].input,originalGrant);assert.deepEqual(observed[0].receipt,first.value);assert.equal(Object.isFrozen(observed[0].receipt.task),true);
- await assert.rejects(api.grantOwnerPreview(grant),{code:'PREVIEW_STALE'});assert.equal(events.filter(e=>e.operation==='grant').length,1);assert.equal(f.ctx.sessions.list().length,0);await fiber.dispose();
+ await assert.rejects(owned(()=>api.grantOwnerPreview(grant)),{code:'PREVIEW_STALE'});assert.equal(events.filter(e=>e.operation==='grant').length,1);assert.equal(f.ctx.sessions.list().length,0);await fiber.dispose();
 });
 test('native normal operation failures project only the closed NI2 source and availability codes',async t=>{
  const f=await fixture(t);let selected;

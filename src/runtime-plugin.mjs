@@ -435,7 +435,10 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
         grant: value => preview ? preview.grant(value) : unavailable(),
         revoke: value => store.revokeAction(owner, value),
         policy: value => store.policy(owner, value),
-        prepareContext: value => projection ? preparing.run(true,()=>projection.prepareExecutionContext(value)) : unavailable(),
+        // Owner-carrier checks apply only where prepareContext is wrapped in the
+        // installed invocation carrier (installed worker or continuity); the
+        // advanced runtime keeps its original pre-4fea280 assertAlive-only path.
+        prepareContext: value => projection ? preparing.run(Boolean(installed||continuity),()=>projection.prepareExecutionContext(value)) : unavailable(),
         memoryRead: value => { record(value, [], 'INPUT_INVALID'); return projection ? projection.state() : unavailable(); },
         memoryRemember: value => projection ? projection.remember(value) : unavailable(),
         dispatch: value => manager ? manager.dispatch(owner, value) : unavailable(),
@@ -496,12 +499,22 @@ export function createRuntimePlugin({ identity, encryptionKey, hostPermission = 
       if (continuity) {
         normalOperations.memoryRead = value => { record(value, [], 'INPUT_INVALID'); return projection.state(); };
         normalOperations.memoryRemember = value => observe('memoryRemember', value, () => projection.remember(value));
+        // Memory-only installs have no worker wrapper above; prepareContext reads
+        // the guarded projection store, which requires the same installed invocation
+        // carrier as every other continuity operation (regression from 4fea280).
+        if (!installed) normalOperations.prepareContext = operations.prepareContext;
       }
       if (normalAutomation) normalOperations.approveSchedule = normalAutomation.approveSchedule;
+      // A sealed installed lifetime (e.g. receipt-observer uncertainty) refuses all
+      // mutations, but the read-only current memory projection stays usable as before
+      // 4fea280 (BUB006-05: "installed admission seals while scoped task/memory/data
+      // reads remain usable"). The carrier and plugin liveness are still required.
+      const readCheck = () => { assertAlive(); return assertInstalledWorkerInvocation(ctx); };
       for (const [name, method] of Object.entries(normalOperations)) operations[name] = (input, context) => {
         record(context, ['assertCurrent'], 'SERVICE_DISPOSED');
         if (typeof context.assertCurrent !== 'function') throw new BootstrapError('SERVICE_DISPOSED');
-        return runInstalledWorkerInvocation(ctx, context.assertCurrent, async () => { checkOwner(); const out = await method(input); checkOwner(); return out; });
+        const check = name === 'memoryRead' ? readCheck : checkOwner;
+        return runInstalledWorkerInvocation(ctx, context.assertCurrent, async () => { check(); const out = await method(input); check(); return out; });
       };
       bridge = installOperatorBridge({ connection: ctx.connection, operations, isAlive: alive });
       // Trusted Cordis consumers see diagnostics only. Neither a worker nor a

@@ -12,7 +12,8 @@ const safeFailure = (value, code) => {
   assert.equal(JSON.stringify(value).includes(CANARY), false);
 };
 function fixture(operations, { isAlive = () => true, unregister = () => undefined, connection: sharedConnection } = {}) {
-  const peer = sharedConnection?.operator ?? Object.freeze({ provenance: 'typed-private-peer' });
+  // rc.2 HostConnectionService exposes the owner peer as browserPeer (was operator).
+  const peer = sharedConnection?.browserPeer ?? Object.freeze({ provenance: 'typed-private-peer' });
   let handler, registrationCount = 0, unregisterCount = 0;
   const connection = sharedConnection ?? { browserPeer: peer };
   connection.rpc = { handle(channel, callback) {

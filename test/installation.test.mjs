@@ -238,7 +238,7 @@ test('original public native owner setup has zero preconsent writes, actual chil
   const preview = (await f.send('/df-setup', 'prepare')).result.value; assert.deepEqual(snapshot(f.directory), before);
   assert.equal((await f.send('/df-setup', 'confirm', { ...accepted(preview), role: 'owner' })).result.error.code, 'SETUP_INVALID_INPUT'); assert.deepEqual(snapshot(f.directory), before);
   const result = await f.send('/df-setup', 'confirm', accepted(preview)); assert.deepEqual(result.result.error, undefined); assert.equal(result.result.ok, true); assert.equal(result.result.value.phase, 'ready'); assert.equal(f.server.prefixes.has('/df-rpc'), true);
-  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
+  assert.deepEqual(f.ctx.df.diagnostics().capabilities, { memory: false, memoryContinuity: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
   const input = { taskId: 'native-installed-task', provider: 'fixture', source: 'synthetic', eventId: 'one', commandRef: reference('native-intake'), goal: 'SYNTHETIC_NATIVE_ENCRYPTED_GOAL' };
   assert.equal((await f.send('/df-rpc', 'intake', input)).result.ok, true);
   const keyDigest = digest(readFileSync(`${f.databasePath}.df-setup/key.bin`)), metadataDigest = digest(readFileSync(`${f.databasePath}.df-setup/state.json`));

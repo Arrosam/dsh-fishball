@@ -334,7 +334,7 @@ test('independent installed original native owner carrier enforces no-write auth
   assert.equal((await n.send('/df-setup', 'not-supported')).result.error.code, 'ENDPOINT_NOT_FOUND'); assert.deepEqual(facts(f.directory), before);
   const confirmed = await n.send('/df-setup', 'confirm', accepted(preview)); assert.equal(confirmed.result.ok, true); assert.equal(confirmed.result.value.phase, 'ready');
   assert.deepEqual(Object.keys(confirmed.result.value).sort(), ['executionEnabled', 'phase', 'storage']); assert.equal(confirmed.result.value.executionEnabled, false);
-  const child = n.ctx.df, setupDiagnostic = n.ctx.dfSetup; assert.deepEqual(child.diagnostics().capabilities, { memory: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
+  const child = n.ctx.df, setupDiagnostic = n.ctx.dfSetup; assert.deepEqual(child.diagnostics().capabilities, { memory: false, memoryContinuity: false, preview: false, worker: false, delivery: false, reviewer: false, automation: false, notifications: false });
   const input = { taskId: 'independent-native-task', provider: 'fixture', source: 'independent', eventId: 'native-event', commandRef: reference('native-command'), goal: 'SYNTHETIC_NATIVE_SETUP_ENCRYPTED_GOAL' };
   assert.equal((await n.send('/df-rpc', 'intake', input)).result.ok, true); assert.equal(readFileSync(f.databasePath).includes(Buffer.from(input.goal)), false);
   const oldSetupRoute = n.server.prefixes.get('/df-setup'), oldTaskRoute = n.server.prefixes.get('/df-rpc'), keyHash = digest(readFileSync(statePaths(f).key));
