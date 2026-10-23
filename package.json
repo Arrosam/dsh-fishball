@@ -57,6 +57,8 @@
     "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
     "@deepseek-ai/dsh-session-persistence": "0.2.1-rc.2",
     "@deepseek-ai/dsh-session-persistence-jsonl": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-session-projection": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-util-values": "0.2.1-rc.2",
     "@deepseek-ai/node-addon-system": "0.1.2",
     "@deepseek-ai/node-addon-system-darwin-arm64": "0.1.2",
     "@deepseek-ai/cordis-plugin-loader": "1.0.6",

@@ -149,7 +149,7 @@ test('independent portability declares the complete bounded consumed peer set wi
   const alpha = ['dsh', 'dsh-session', 'dsh-user-approval', 'dsh-web-app', 'dsh-host-webserver',
     'dsh-client-connection', 'dsh-client-ui-renderer', 'dsh-client-ui-layout', 'dsh-client-ui-sidebar',
     'dsh-client-ui-workspace', 'dsh-agent', 'dsh-agent-loop', 'dsh-llm', 'dsh-scope', 'dsh-tools',
-    'dsh-session-persistence', 'dsh-session-persistence-jsonl', 'dsh-token-meter'];
+    'dsh-session-persistence', 'dsh-session-persistence-jsonl', 'dsh-session-projection', 'dsh-util-values', 'dsh-token-meter'];
   const expected = Object.fromEntries(alpha.map(name => [`@deepseek-ai/${name}`, '0.2.1-rc.2']));
   expected['@deepseek-ai/cordis'] = '4.0.5';
   expected['@deepseek-ai/node-addon-system'] = expected['@deepseek-ai/node-addon-system-darwin-arm64'] = '0.1.2';
@@ -160,6 +160,11 @@ test('independent portability declares the complete bounded consumed peer set wi
   }
   assert.deepEqual(metadata.peerDependencies, expected);
   assert.deepEqual(metadata.peerDependenciesMeta, { '@deepseek-ai/node-addon-system-darwin-arm64': { optional: true } });
+  // A linked native profile routes only declared peers to the host graph
+  // (app-boot routeLinked), so every host package the source names must be a peer.
+  const used = new Set();
+  for (const file of readdirSync(join(f.installed, 'src'))) for (const [, name] of readFileSync(join(f.installed, 'src', file), 'utf8').matchAll(/['"`](@deepseek-ai\/[a-z0-9-]+)['"`/]/g)) used.add(name);
+  assert.deepEqual([...used].filter(name => !Object.hasOwn(metadata.peerDependencies, name)), []);
 });
 
 test('independent portability uses physical pinned peers and preserves own lifecycle, isolation and durable unknown facts', async t => {
