@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stableSource } from './normal-contracts.mjs';
 import { canonical, canonicalDigest, exact, hash } from './runtime-security.mjs';
-import { resolveHostSource, DSH_WEB_RUNTIME_ROOT } from './host-probe.mjs';
+import { resolveHostSource, hostLockMatches } from './host-probe.mjs';
 import { BootstrapError } from './config.mjs';
 
 const fail = () => { throw new BootstrapError('WORKER_SOURCE_UNAVAILABLE'); };
@@ -15,7 +15,7 @@ export function readAuthenticNativeSource(manifest, productRoot) {
   exact(manifest, ['contractVersion', 'host', 'product']);
   const descriptor = stableSource(JSON.parse(canonical(manifest)));
   if (realpathSync(productRoot) !== productRoot) fail();
-  if (hash(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`)) !== descriptor.host.lockDigest) fail();
+  if (descriptor.host.lockDigest !== hash(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url))) || !hostLockMatches()) fail();
   for (const module of descriptor.host.modules) {
     const metadata = JSON.parse(readFileSync(resolveHostSource(module.name, 'package.json'), 'utf8'));
     if (metadata.name !== module.name || metadata.version !== module.version) fail();

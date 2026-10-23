@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { types } from 'node:util';
 import { BootstrapError } from './config.mjs';
 import { canonical, canonicalDigest, hash, exact } from './runtime-security.mjs';
-import { resolveHostSource, DSH_WEB_RUNTIME_ROOT } from './host-probe.mjs';
+import { resolveHostSource, hostLockMatches } from './host-probe.mjs';
 const fail=code=>{throw new BootstrapError(code);};
 const pins=Object.freeze({
  "dsh-scope": {"version": "0.2.1-rc.2", "source": "2829df71d76e08941457d4dd173eac60783e55354921137c8b75e8b5c0d2ecca", "metadata": "3720f660ae9e868ef6eafcb04f879de6cc5ee26572b2b41edda3182e98a618e6", "types": "203beba1f2b00636990eefa4fe763207c1d657987a16531ca89dc6de3713f96e"},
@@ -98,7 +98,7 @@ const directoryBindings=new WeakMap();
 function lifetime(value){let nonce=lifetimes.get(value);if(!nonce){nonce=hash(randomUUID());lifetimes.set(value,nonce);}return nonce;}
 async function originalModules(){
  assertSources();
- if(process.version!=='v22.22.2'||digest(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`))!==digest(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json',import.meta.url))))fail('WORKER_SOURCE_UNAVAILABLE');
+ if(process.version!=='v22.22.2'||!hostLockMatches())fail('WORKER_SOURCE_UNAVAILABLE');
  const modules={};
  for(const [name,pin] of Object.entries(pins)){
   const pkg='@deepseek-ai/'+name,source=resolveHostSource(pkg),metadata=resolveHostSource(pkg,'package.json');
@@ -110,7 +110,7 @@ async function originalModules(){
  return modules;
 }
 function assertSources(){
- if(process.version!=='v22.22.2'||digest(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`))!==digest(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json',import.meta.url))))fail('WORKER_SOURCE_UNAVAILABLE');
+ if(process.version!=='v22.22.2'||!hostLockMatches())fail('WORKER_SOURCE_UNAVAILABLE');
  for(const[name,pin]of Object.entries(pins))for(const[file,expected]of [['lib/index.js',pin.source],['package.json',pin.metadata],['lib/types/index.d.ts',pin.types]])if(digest(readFileSync(resolveHostSource('@deepseek-ai/'+name,file)))!==expected)fail('WORKER_SOURCE_UNAVAILABLE');
  for(const[path,pin]of Object.entries(declarationPins)){const [name,...rest]=path.split('/');if(digest(readFileSync(resolveHostSource('@deepseek-ai/'+name,rest.join('/'))))!==pin)fail('WORKER_SOURCE_UNAVAILABLE');}
 }

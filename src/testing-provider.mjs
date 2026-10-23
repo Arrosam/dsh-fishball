@@ -7,7 +7,7 @@ import { message as nativeMessage } from './normal-contracts.mjs';
 import { workerChoiceRecord } from './installed-worker-config.mjs';
 import { canonical, exact, ref, integer } from './runtime-security.mjs';
 import { ROLE_PROMPTS, ROLE_MODELS, roleRecipe } from './installed-role-recipes.mjs';
-import { DSH_WEB_RUNTIME_ROOT, resolveHostSource } from './host-probe.mjs';
+import { hostLockMatches, resolveHostSource } from './host-probe.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const denied = () => { throw new BootstrapError('WORKER_REQUEST_DENIED'); };
@@ -51,7 +51,7 @@ function checkHost(ctx) {
   try {
     for(const name of Object.keys(sourcePins))publicSource(name);
     if(hash(readFileSync(resolveHostSource('@deepseek-ai/cordis','lib/types/utils.d.ts'))) !== '87149646f2227b818f9bdef4980fedc0539572b4574b63d75e1bbb7702390acb')denied();
-    if (process.version !== 'v22.22.2' || !(ctx instanceof Context) || !(ctx.llm instanceof llmModule.LlmRuntime) || hash(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`)) !== hash(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url)))) denied();
+    if (process.version !== 'v22.22.2' || !(ctx instanceof Context) || !(ctx.llm instanceof llmModule.LlmRuntime) || !hostLockMatches()) denied();
   } catch { denied(); }
 }
 function boundCurrent(binding) {

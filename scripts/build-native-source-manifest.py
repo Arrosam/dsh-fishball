@@ -25,7 +25,7 @@ def generate(product_root,host_root):
     if len(modules)>32:raise ValueError('SOURCE_MANIFEST_HOST_LIMIT')
     dsh=json.loads((host_root/'node_modules/@deepseek-ai/dsh/package.json').read_text())
     if dsh['version']!='0.2.1-rc.2':raise ValueError('SOURCE_MANIFEST_HOST_VERSION')
-    return {'contractVersion':'df.native-source/v1','host':{'version':dsh['version'],'lockDigest':digest(host_root/'package-lock.json'),'modules':modules},'product':{'name':metadata['name'],'version':metadata['version'],'files':product_files}}
+    return {'contractVersion':'df.native-source/v1','host':{'version':dsh['version'],'lockDigest':digest(product_root/'scripts/dsh-web-runtime-lock.json'),'modules':modules},'product':{'name':metadata['name'],'version':metadata['version'],'files':product_files}}
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--product-root',required=True);parser.add_argument('--host-root',required=True);args=parser.parse_args()
     product=pathlib.Path(args.product_root).resolve();out=generate(product,pathlib.Path(args.host_root))

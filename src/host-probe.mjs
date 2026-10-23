@@ -15,6 +15,31 @@ try {
   if (metadata.name === '@deepseek-ai/dsh') resolvedHostRoot = resolve(dirname(manifest), '../../..');
 } catch { /* Missing peers fail the capability gate without path disclosure. */ }
 export const DSH_WEB_RUNTIME_ROOT = resolvedHostRoot;
+// Owner decision 2026-10-23 (docs/owner-amendment-2026-10-23-live-install.md):
+// the host graph is identified per package, not by lock-file bytes. Each
+// installed package must match the pinned name/version/integrity/flags, with
+// no extra or missing package. Only the download URL (`resolved`, a mirror
+// choice) and the install-root row ("") are ignored. The lock is read from the
+// npm root `package-lock.json`, else npm's `node_modules/.package-lock.json`.
+const lockProjection = text => {
+  const lock = JSON.parse(text);
+  if (lock === null || typeof lock !== 'object' || lock.lockfileVersion !== 3 || lock.packages === null || typeof lock.packages !== 'object') throw new Error();
+  const rows = Object.keys(lock.packages).filter(key => key !== '').sort().map(key => {
+    const { resolved, ...row } = lock.packages[key];
+    return [key, Object.fromEntries(Object.keys(row).sort().map(field => [field, row[field]]))];
+  });
+  return JSON.stringify(rows);
+};
+let pinnedLock;
+export function hostLockMatches(root = resolvedHostRoot) {
+  try {
+    pinnedLock ??= lockProjection(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url), 'utf8'));
+    let text;
+    try { text = readFileSync(`${root}/package-lock.json`, 'utf8'); }
+    catch (error) { if (error?.code !== 'ENOENT') throw error; text = readFileSync(`${root}/node_modules/.package-lock.json`, 'utf8'); }
+    return typeof root === 'string' && lockProjection(text) === pinnedLock;
+  } catch { return false; }
+}
 const packagesRoot = `${DSH_WEB_RUNTIME_ROOT}/node_modules/@deepseek-ai`;
 export function resolveHostSource(packageName, source = 'lib/index.js') {
   try {
@@ -71,11 +96,7 @@ export function probeHost(ctx) {
     for (const method of ['request', 'effectivePolicy']) checks[`approval.${method}`] = typeof ctx?.approval?.[method] === 'function';
   } catch { checks.nativeContext = false; }
   checks.runtimeVersion = process.version === 'v22.22.2';
-  try {
-    const digest = value => createHash('sha256').update(value).digest('hex');
-    hashes.runtimeLock = digest(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`));
-    checks.runtimeLock = hashes.runtimeLock === digest(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url)));
-  } catch { checks.runtimeLock = false; }
+  checks.runtimeLock = hostLockMatches();
   let sqliteVersion;
   try {
     const db = new DatabaseSync(':memory:');
