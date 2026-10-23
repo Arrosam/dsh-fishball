@@ -308,9 +308,9 @@ test('independent portability uses physical pinned peers and preserves own lifec
     } finally {renameSync(held,packageDir);}
   });
 
-  await t.test('strict whole-lock policy rejects valid root metadata edits before identity and storage', () => {
+  await t.test('per-package lock policy rejects a changed package integrity before identity and storage', () => {
     const file=join(host,'package-lock.json'),before=readFileSync(file),metadata=JSON.parse(before);
-    metadata.name='synthetic-harmless-install-root';writeFileSync(file,JSON.stringify(metadata));
+    const key=Object.keys(metadata.packages).find(k=>k.endsWith('/@deepseek-ai/cordis'));metadata.packages[key].integrity='sha512-'+'C'.repeat(86)+'==';writeFileSync(file,JSON.stringify(metadata));
     try {
       const value=child(f,native(`
         const report=p.probeHost(ctx);assert.equal(report.checks.runtimeLock,false);

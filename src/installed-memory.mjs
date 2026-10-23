@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { BootstrapError, record } from './config.mjs';
-import { DSH_WEB_RUNTIME_ROOT, resolveHostSource } from './host-probe.mjs';
+import { hostLockMatches, resolveHostSource } from './host-probe.mjs';
 
 export const MEMORY_ACCOUNTING = 'dsh-fixed-density-text/v1';
 const packageName = '@deepseek-ai/dsh-token-meter';
@@ -29,7 +29,7 @@ export async function prepareInstalledMemory(memory) {
           resolveHostSource(packageName, 'lib/types/estimate.js') !== source ||
           manifest.name !== packageName || manifest.version !== '0.2.1-rc.2' ||
           digest(readFileSync(source)) !== expectedHash ||
-          digest(readFileSync(`${DSH_WEB_RUNTIME_ROOT}/package-lock.json`)) !== digest(readFileSync(new URL('../scripts/dsh-web-runtime-lock.json', import.meta.url)))) unsupported();
+          !hostLockMatches()) unsupported();
     };
     verify();
     const { estimateContent } = await import(publicUrl);

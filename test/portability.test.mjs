@@ -48,10 +48,34 @@ test('physical portable package uses exact normal peer graph and rejects missing
         assert.deepEqual(result, { rootAbsent: true, code: 'HOST_CAPABILITY_UNSUPPORTED', runtimeCode: 'HOST_CAPABILITY_UNSUPPORTED' });
       } finally { rmSync(join(plugin, '.runtime'), { recursive: true }); symlinkSync(join(host, 'node_modules/@deepseek-ai'), namespace); }
     });
-    await t.test('whole host lock remains byte-exact even for harmless root metadata changes', () => {
-      const file = join(host, 'package-lock.json'), before = readFileSync(file); writeFileSync(file, Buffer.concat([before, Buffer.from('\n')]));
+    await t.test('host lock is compared per package: root metadata, whitespace and mirror URL are ignored', () => {
+      const file = join(host, 'package-lock.json'), before = readFileSync(file), metadata = JSON.parse(before);
+      metadata.name = 'dsh-version'; for (const row of Object.values(metadata.packages)) if (row.resolved) row.resolved = row.resolved.replace('https://registry.npmjs.org/', 'https://registry.npmmirror.com/');
+      writeFileSync(file, JSON.stringify(metadata, null, 1) + '\n');
+      try { assert.equal(run(prelude + native + 'console.log(JSON.stringify(p.probeHost(ctx).checks.runtimeLock));' + close), true); }
+      finally { writeFileSync(file, before); }
+    });
+    for (const [label, mutate] of [
+      ['changed integrity', packages => { const key = Object.keys(packages).find(k => packages[k].integrity); packages[key].integrity = 'sha512-' + 'A'.repeat(86) + '=='; }],
+      ['changed version', packages => { const key = Object.keys(packages).find(k => k.endsWith('/@deepseek-ai/cordis')); packages[key].version = '4.0.4'; }],
+      ['extra package', packages => { packages['node_modules/df-unreviewed-extra'] = { version: '1.0.0', integrity: 'sha512-' + 'B'.repeat(86) + '==' }; }],
+      ['missing package', packages => { delete packages[Object.keys(packages).find(k => k.endsWith('/@deepseek-ai/dsh-session'))]; }],
+      ['dropped package metadata', packages => { const key = Object.keys(packages).find(k => k && Object.keys(packages[k]).length > 3); packages[key] = { version: packages[key].version, integrity: packages[key].integrity }; }],
+    ]) await t.test(`host lock with ${label} is rejected`, () => {
+      const file = join(host, 'package-lock.json'), before = readFileSync(file), metadata = JSON.parse(before); mutate(metadata.packages); writeFileSync(file, JSON.stringify(metadata));
       try { assert.equal(run(prelude + native + 'console.log(JSON.stringify(p.probeHost(ctx).checks.runtimeLock));' + close), false); }
       finally { writeFileSync(file, before); }
+    });
+    await t.test('npm hidden lock is used only when the root lock is absent', () => {
+      const file = join(host, 'package-lock.json'), hidden = join(host, 'node_modules/.package-lock.json'), before = readFileSync(file), hadHidden = existsSync(hidden), previous = hadHidden ? readFileSync(hidden) : undefined;
+      const metadata = JSON.parse(before); delete metadata.name; delete metadata.packages['']; writeFileSync(hidden, JSON.stringify(metadata)); rmSync(file);
+      try {
+        assert.equal(run(prelude + native + 'console.log(JSON.stringify(p.probeHost(ctx).checks.runtimeLock));' + close), true);
+        writeFileSync(file, '{"lockfileVersion":3,"packages":{}}');
+        assert.equal(run(prelude + native + 'console.log(JSON.stringify(p.probeHost(ctx).checks.runtimeLock));' + close), false);
+        rmSync(file); rmSync(hidden);
+        assert.equal(run(prelude + native + 'console.log(JSON.stringify(p.probeHost(ctx).checks.runtimeLock));' + close), false);
+      } finally { writeFileSync(file, before); if (hadHidden) writeFileSync(hidden, previous); else rmSync(hidden, { force: true }); }
     });
     await t.test('same source with wrong host version is rejected', () => {
       const file = join(host, 'node_modules/@deepseek-ai/dsh/package.json'), before = readFileSync(file), metadata = JSON.parse(before); metadata.version = '0.2.1-alpha.2'; writeFileSync(file, JSON.stringify(metadata));
