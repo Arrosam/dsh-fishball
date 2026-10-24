@@ -102,6 +102,20 @@ window.__ModuleLoader__.load({
       bodyColor: 'currentColor',
       eyeColor: '#EC0A6E',
     })
+    /**
+     * The word logo from the fishball repo. The repo ships no image for it: it is the string
+     * `wordmark` ("FISHBALL", strings.xml) set in the display face at weight 900 with -0.5px
+     * tracking (docs/preview/designs.html `.brand .wm`, Theme.kt displaySmall). The face is
+     * the repo's stack and is not downloaded here, so a machine without Archivo falls back to
+     * the next family, as the app's own dummy does.
+     */
+    const WORDMARK = Object.freeze({
+      fontFamily: '"Archivo","Helvetica Neue",sans-serif',
+      fontWeight: 900,
+      letterSpacing: '-0.5px',
+    })
+    /** The "Deepseek Harness" tag pinned to the word logo's bottom-right corner, superscript-sized. */
+    const BRAND_TAG = Object.freeze({ fontSize: '7px', letterSpacing: '0.2px', right: '-4px', bottom: '-7px' })
     const STYLE_ID = 'fishball-style'
     /**
      * Fishball's own session is reached through the brand (or its Plugins page), not the
@@ -111,10 +125,11 @@ window.__ModuleLoader__.load({
      * grouped and the flat list; if a DSH update renames it the row simply shows again.
      */
     const OWN_ROW = Object.freeze({ styleId: 'fishball-own-row', selector: (sessionId) => `[data-row-key="session:${CSS.escape(sessionId)}"]{display:none}` })
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
-      brandName: 'Fishball',
+      brandName: 'FISHBALL',
+      brandTag: 'Deepseek Harness',
       brandLabel: 'Open Fishball',
       status: 'Status',
       session: 'Session',
@@ -274,7 +289,8 @@ window.__ModuleLoader__.load({
       readOnly: 'This deployment stores settings read-only.',
     }
     const zh = {
-      brandName: 'Fishball',
+      brandName: 'FISHBALL',
+      brandTag: 'Deepseek Harness',
       brandLabel: '打开 Fishball',
       status: '状态',
       session: '会话',
@@ -442,7 +458,9 @@ window.__ModuleLoader__.load({
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
       `.${CLS.list}{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}`,
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
-      `.${CLS.name}{font-weight:600}`,
+      `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing}}`,
+      // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
+      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 2px;border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-tertiary);font:600 ${BRAND_TAG.fontSize}/1.3 var(--ds-font-family-ui, sans-serif);letter-spacing:${BRAND_TAG.letterSpacing};white-space:nowrap;pointer-events:none}`,
       `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
@@ -559,7 +577,9 @@ window.__ModuleLoader__.load({
             else button.setAttribute('aria-label', previous)
           }
         }, [])
-        return h('span', { ref, className: CLS.name, 'data-fishball-name': true }, t('brandName'))
+        return h('span', { ref, className: CLS.name, 'data-fishball-name': true },
+          t('brandName'),
+          h('span', { className: CLS.tag, 'data-fishball-tag': true }, t('brandTag')))
       }
     }
 
