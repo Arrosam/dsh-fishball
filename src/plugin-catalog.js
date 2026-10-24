@@ -75,6 +75,8 @@ export class PluginCatalog {
   #readLimits
   #onChange
   #mountRows
+  #adjustRows
+  #onApplied
   #pendingRowIds
   #ownsDefinition
   #agentOf = () => undefined
@@ -105,17 +107,24 @@ export class PluginCatalog {
    * @param options.readLimits - () => current limits.
    * @param options.mountRows - (rows) => Promise<{ failed, pending, leaked }> (row-id keyed),
    *   replacing every plugin row of the private tree.
+   * @param options.adjustRows - (pluginKey, rows, { listing }) => rows, before ids are
+   *   prefixed (the context window sets the compaction row's config this way; default
+   *   unchanged). listing is true for a mid-turn listing mount.
+   * @param options.onApplied - called after an idle-phase apply mounted the tree (not after a
+   *   listing mount, and not when the apply failed).
    * @param options.pendingRowIds - () => Promise<Set> of private-tree row ids still waiting.
    * @param options.ownsDefinition - (definition) => whether it lives in the private tree's
    *   layer (scope P): only those can belong to a built-in or Fishball-only plugin.
    * @param options.onChange - called after the applied snapshot changes.
    */
-  constructor(ctx, store, logger, { readLimits, mountRows, pendingRowIds, ownsDefinition, onChange }) {
+  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {} }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
     this.#readLimits = readLimits
     this.#mountRows = mountRows
+    this.#adjustRows = adjustRows
+    this.#onApplied = onApplied
     this.#pendingRowIds = pendingRowIds
     this.#ownsDefinition = ownsDefinition
     this.#onChange = onChange
@@ -372,7 +381,7 @@ export class PluginCatalog {
    */
   async mountForListing(key) {
     this.#listing.add(key)
-    const broken = await this.#remount(this.#appliedTreePlugins())
+    const broken = await this.#remount(this.#appliedTreePlugins(), { listing: true })
     this.#onChange()
     return broken.get(key)
   }
@@ -380,7 +389,7 @@ export class PluginCatalog {
   /** Unmount a plugin mounted only for listing (Reject, or any failure in the prompt). */
   async endListing(key) {
     if (!this.#listing.delete(key)) return
-    await this.#remount(this.#appliedTreePlugins())
+    await this.#remount(this.#appliedTreePlugins(), { listing: true })
     this.#onChange()
   }
 
@@ -441,6 +450,7 @@ export class PluginCatalog {
     const broken = await this.#remount(desired)
     this.#appliedOn = new Map([...this.#entries.keys()].map((key) => [key, this.desiredOn(key) && !broken.has(key)]))
     this.#appliedAllowed = new Set(this.#store.toolApprovals.keys())
+    this.#onApplied()
     this.#onChange()
   }
 
@@ -449,10 +459,13 @@ export class PluginCatalog {
     return this.#treePlugins().filter((entry) => this.#appliedOn.get(entry.key) === true || this.#listing.has(entry.key))
   }
 
-  /** Rows of one tree-mounted plugin, with private-tree ids. @throws CatalogError. */
-  #rowsOf(entry) {
+  /**
+   * Rows of one tree-mounted plugin, with private-tree ids. @throws CatalogError.
+   * @param purpose - { listing } passed to adjustRows (a mid-turn listing mount).
+   */
+  #rowsOf(entry, purpose = {}) {
     try {
-      if (entry.kind === PLUGIN_KIND.builtin) return prefixRows(entry.rows, entry.prefix)
+      if (entry.kind === PLUGIN_KIND.builtin) return prefixRows(this.#adjustRows(entry.key, entry.rows, purpose), entry.prefix)
       return prefixRows(readBundleRows(entry.bundle, this.#ctx.get(PROFILE_CONTEXT)), entry.prefix)
     } catch (error) {
       if (error instanceof BundleRowsError) throw new CatalogError(error.code)
@@ -478,10 +491,10 @@ export class PluginCatalog {
    *   until the next apply; the plugin runs either way (review R3, R4).
    * @returns Map key -> PLUGIN_ERROR for the plugins turned off.
    */
-  async #remount(plugins) {
+  async #remount(plugins, purpose = {}) {
     const broken = new Map()
     const rowsFor = (entries) => entries.flatMap((entry) => {
-      try { return this.#rowsOf(entry) } catch (error) {
+      try { return this.#rowsOf(entry, purpose) } catch (error) {
         broken.set(entry.key, error instanceof CatalogError ? error.code : PLUGIN_ERROR.rowFailed)
         return []
       }

@@ -4,7 +4,7 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3 keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3 and P4 keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
@@ -12,7 +12,19 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings' })
+
+/** A positive whole number of tokens (context-window settings). */
+export const tokenCount = z.number().int().positive()
+
+/** The context-window setting (DESIGN §6); an absent field is unset. */
+const settingsRecord = z.object({
+  /** The assistant session it was made for; another (adopted) session ignores it. */
+  sessionId: z.string().min(1),
+  contextWindowTokens: tokenCount.optional(),
+  maxOutputTokens: tokenCount.optional(),
+  changedAt: z.string(),
+})
 
 const assistantRecord = z.object({
   /** The one assistant session; null before the first successful creation. */
@@ -58,6 +70,7 @@ export const fishballDomain = defineDomain({
     [TABLE.plugins]: domainTable(pluginRecord),
     [TABLE.toolApprovals]: domainTable(toolApprovalRecord),
     [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
+    [TABLE.settings]: domainTable(settingsRecord),
   },
 })
 
@@ -91,4 +104,5 @@ export class Store {
   get plugins() { return this.#domain.table(TABLE.plugins) }
   get toolApprovals() { return this.#domain.table(TABLE.toolApprovals) }
   get pluginChanges() { return this.#domain.table(TABLE.pluginChanges) }
+  get settings() { return this.#domain.table(TABLE.settings) }
 }

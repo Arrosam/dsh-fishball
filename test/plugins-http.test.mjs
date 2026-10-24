@@ -24,7 +24,8 @@ import { HOOK, T, allowFixtures, listPlugins, nextTools, pluginIn, settle, toolI
 import { bootLive, newHome, until } from './support/host.mjs'
 
 const FIX = FIXTURE_BUNDLE.name
-const STATE_KEYS = ['catalog', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
+// P4 adds 'contextWindow' (see context-window.test.mjs for its content).
+const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
 
 describe('P3 settings-page API', () => {
   let host

@@ -25,28 +25,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { API, CONFLICT_CODE, ERROR_CODE, SETTLED, STATUS, STORE, assistantDir } from './support/constants.mjs'
-import { HOOK, T, sessionArtifacts } from './support/expect.mjs'
+import { HOOK, T, moveArtifacts } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
-
-/** Move a session's stored artifacts aside (or back), so the store can lose and regain it. */
-function moveArtifacts(home, sessionId, direction) {
-  const aside = path.join(home, 'aside')
-  if (direction === 'away') {
-    const moved = []
-    for (const p of sessionArtifacts(home, sessionId)) {
-      const rel = path.relative(home, p)
-      const target = path.join(aside, rel)
-      fs.mkdirSync(path.dirname(target), { recursive: true })
-      fs.renameSync(p, target)
-      moved.push(rel)
-    }
-    fs.writeFileSync(path.join(aside, 'moved.json'), JSON.stringify(moved))
-    return moved
-  }
-  const moved = JSON.parse(fs.readFileSync(path.join(aside, 'moved.json'), 'utf8'))
-  for (const rel of moved) fs.renameSync(path.join(aside, rel), path.join(home, rel))
-  return moved
-}
 
 describe('R-SINGLETON recovery', () => {
   let host

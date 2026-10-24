@@ -7,18 +7,20 @@
  * - src/composition.js     scope P, persona, private tree, tool mask, bsk_inspect copy, guards
  * - src/plugin-catalog.js  Fishball's own plugin states and tool decisions
  * - src/plugin-tools.js    list_plugins, set_plugin_enabled, add_plugin
+ * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
  * - src/http.js            /api/fishball/* for the settings page and the brand button
  */
 // Evaluated first, so the register() wrapper sees every tool registered after this row loads.
 import './src/tool-attribution.js'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
 import { AssistantComposition } from './src/composition.js'
 import { CatalogError, PluginCatalog } from './src/plugin-catalog.js'
+import { ContextWindow } from './src/context-window.js'
 import { registerPluginTools } from './src/plugin-tools.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -39,17 +41,19 @@ export async function apply(ctx, config) {
   const feed = new StateFeed((error) => logger.warn('state listener failed (%s)', diagnosticOf(error)))
   let lifecycle = new InactiveLifecycle(STATUS.starting)
   let catalogView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView() })
+  let contextView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView() })
   const publish = () => feed.publish(snapshot())
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removeAllowance: unavailable }
+  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
     recover: (action) => lifecycle.recover(action),
     setPlugin: (plugin, on) => commands.setPlugin(plugin, on),
     removeAllowance: (toolKey) => commands.removeAllowance(toolKey),
+    setContextWindow: (setting) => commands.setContextWindow(setting),
   })
   // A limit edited on the Plugins page reaches this row without a remount (spike S21).
   ctx.on(EVENT.volatileUpdate, publish)
@@ -63,9 +67,19 @@ export async function apply(ctx, config) {
   }
 
   const composition = new AssistantComposition(ctx, logger)
+  // Boot mounts the tree once with the first evaluation; later policy changes remount through
+  // the catalog's idle-phase apply (a change mid-turn waits for the turn to end).
+  let booted = false
+  const contextWindow = new ContextWindow(ctx, store, logger, {
+    onChange: () => publish(),
+    onPolicyChange: () => { if (booted) void catalog.schedule() },
+    isCompactionRunning: () => catalog.isRunning(CONTEXT.compactionPlugin),
+  })
   const catalog = new PluginCatalog(ctx, store, logger, {
     readLimits: limits,
     mountRows: (rows) => composition.mountRows(rows),
+    adjustRows: (key, rows, purpose) => (key === CONTEXT.compactionPlugin ? contextWindow.compactionRows(rows, purpose) : rows),
+    onApplied: () => contextWindow.confirmApplied(catalog.isRunning(CONTEXT.compactionPlugin)),
     pendingRowIds: () => composition.pendingRowIds(),
     ownsDefinition: (definition) => composition.ownsDefinition(definition),
     onChange: () => { composition.refreshMasks(); publish() },
@@ -73,8 +87,13 @@ export async function apply(ctx, config) {
   try {
     await composition.mount()
     await catalog.refresh()
+    await contextWindow.evaluate()
     await catalog.apply()
     composition.attachCatalog(catalog)
+    composition.addAgentSetup((agentCtx, agent) => contextWindow.installAgent(agentCtx, agent))
+    booted = true
+    // An evaluation that finished while boot was mounting (llm/adapters-updated) is caught here.
+    contextWindow.reconcile()
   } catch (error) {
     logger.warn('composition failed (%s)', diagnosticOf(error))
     return use(new InactiveLifecycle(STATUS.failed, ERROR.composeFailed, store.assistant()))
@@ -90,6 +109,7 @@ export async function apply(ctx, config) {
     logger,
   })
   catalogView = () => catalog.snapshot(composition.decisions())
+  contextView = () => contextWindow.snapshot()
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
   /** A row waiting for a service may run now; its tools may have appeared too. */
   const recheck = () => void catalog.recheckWaiting().catch(logged('waiting re-audit'))
@@ -108,12 +128,14 @@ export async function apply(ctx, config) {
       throw error
     }
   }
+  commands.setContextWindow = (setting) => contextWindow.save(setting)
   commands.removeAllowance = async (toolKey) => {
     if (!(await catalog.removeAllowance(toolKey))) throw new LifecycleStateError(API_CODE.unknown)
   }
 
   const assistant = new AssistantLifecycle(ctx, store, composition, logger, publish)
   catalog.agentOf = () => assistant.agent
+  contextWindow.agentOf = () => assistant.agent
   ctx.effect(() => () => assistant.stop(), 'fishball: assistant session')
   use(assistant)
   // Start without blocking the host tree: a slow resume must not delay other rows.

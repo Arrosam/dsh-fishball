@@ -83,6 +83,10 @@ export const FAKE_LLM_MODULE = path.join(SUPPORT, 'fixtures', 'fake-llm.mjs')
 
 /** The scripted model route. */
 export const FAKE = { provider: 'fishball-test', model: 'test-model' }
+/** P4: further fake models on the same provider: b has another window, nowin reports none. */
+export const FAKE_MODELS = { b: 'test-model-b', nowin: 'test-model-nowin' }
+/** P4: fake model windows and the adapter's default reply cap (defaultMaxTokens). */
+export const FAKE_WINDOW = { default: 128000, b: 300000, defaultMaxTokens: 4096 }
 
 /** Ordinary presets used for comparison sessions. */
 export const PRESET = {
@@ -171,7 +175,19 @@ export const STORE = { file: (home) => path.join(home, 'storages', 'fishball.jso
 export const API = {
   state: '/api/fishball/state', events: '/api/fishball/events', recovery: '/api/fishball/recovery',
   plugins: '/api/fishball/plugins', removeApproval: '/api/fishball/tool-approvals/remove',
+  contextWindow: '/api/fishball/context-window',
 }
+
+/** P4 C1: keys of state.contextWindow, and its refusal codes (C3, C7). */
+export const CONTEXT_WINDOW_KEYS = ['compactionOff', 'contextWindowTokens', 'effectiveWindow', 'error', 'maxOutputTokens', 'modelWindow', 'outputCap', 'pressureTokens', 'threshold']
+export const CW_CODE = { windowTooSmall: 'window-too-small', outputTooLarge: 'output-too-large', modelWindowUnknown: 'model-window-unknown', unavailable: 'unavailable', badBody: 'bad-body' }
+/** P4 C2/C4/C5: DSH's default compaction policy constants and the summary headings Fishball's compaction asks for. */
+export const DSH_COMPACTION = { thresholdRatio: 0.8, headroom: 65536, retainRatio: 0.16 }
+/** P4 review: a smaller window below this is always window-too-small; the summary word budget is floor(H * ratio). */
+export const MIN_WINDOW = 4096
+export const SUMMARY_WORDS_PER_TOKEN = 0.75
+export const OUTPUT_CAP_MAX = 32000
+export const SUMMARY_HEADINGS = ['## Standing permissions', '## Commitments', '## Open loops', '## Watches', '## Preferences', '## Sources', '## Current conversation']
 
 /** P3 R1: Fishball's own model tools. */
 export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin']
