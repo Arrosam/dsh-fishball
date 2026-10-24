@@ -1,0 +1,6 @@
+# Fishball's only profile footprint: one host row. Its id is also the settings namespace
+# the Plugins page edits (client.js ENTRY_ID).
+- insert:
+    - id: fishball
+      name: 'dsh-fishball'
+      config: {}
