@@ -11,6 +11,7 @@
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
+ * - src/approvals.js       other sessions' permission requests go to Fishball first
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
  * - src/http.js            /api/fishball/* for the settings page and the brand button
  */
@@ -28,6 +29,7 @@ import { IntakeError, IntakeLedger } from './src/intake.js'
 import { registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { Watches, WatchError } from './src/watches.js'
+import { ApprovalBroker } from './src/approvals.js'
 import { registerPluginTools } from './src/plugin-tools.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -52,7 +54,8 @@ export async function apply(ctx, config) {
   let intakeView = () => null
   let outboxView = () => null
   let watchesView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView() })
+  let approvalsView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView() })
   const publish = () => feed.publish(snapshot())
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
@@ -149,6 +152,15 @@ export async function apply(ctx, config) {
   const related = (sessionId) => watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)) || outbound.contacted(sessionId)
   watches.registerTools((definition) => composition.registerOwnTool(definition), related)
   watchesView = () => watches.snapshot()
+  // Other sessions' permission requests go to Fishball first (DESIGN §7a).
+  const broker = new ApprovalBroker(ctx, store, logger, {
+    ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
+    startedByFishball: (sessionId) => outbound.started(sessionId), agentOf: () => assistantAgent(), onChange: () => publish(),
+  })
+  broker.registerTools((definition) => composition.registerOwnTool(definition))
+  approvalsView = () => broker.snapshot()
+  // When Fishball can no longer answer, waiting requests go to you at once (P7 review M1).
+  ctx.effect(() => () => broker.releaseAll(), 'fishball: release permission requests')
   const asApiError = (ErrorClass) => async (task) => {
     try { return await task() } catch (error) {
       if (error instanceof ErrorClass) throw new LifecycleStateError(error.code)
@@ -197,7 +209,13 @@ export async function apply(ctx, config) {
   // Each time Fishball goes live: settle the intake queue (restart, adopt), then tell Fishball
   // about unchecked tools of plugins already on (DESIGN §7, §11 steps 4-6).
   const onLive = () => void ledger.reconcile().then(() => watches.catchUp()).then(() => notifyUnchecked()).catch(logged('intake reconcile'))
-  const assistant = new AssistantLifecycle(ctx, store, composition, logger, publish, onLive)
+  // Every lifecycle change publishes; when Fishball is no longer live, its waiting permission
+  // requests go to you at once instead of timing out (P7 review M1).
+  const onLifecycleChange = () => {
+    if (assistantAgent() === undefined) broker.releaseAll()
+    publish()
+  }
+  const assistant = new AssistantLifecycle(ctx, store, composition, logger, onLifecycleChange, onLive)
   catalog.agentOf = () => assistant.agent
   contextWindow.agentOf = () => assistant.agent
   ledger.agentOf = () => assistant.agent

@@ -9,7 +9,7 @@
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
 const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches' })
@@ -108,8 +108,24 @@ const outboxRecord = z.object({
   errorCode: z.string().optional(),
 })
 
+/** One permission request Fishball was asked (DESIGN §9 approvals); never the arguments. */
+const approvalRecord = z.object({
+  sessionId: z.string().min(1),
+  toolName: z.string().min(1),
+  callId: z.string().optional(),
+  argumentsDigest: z.string().min(1),
+  argumentsStatus: z.enum(Object.values(ARGUMENTS_STATUS)),
+  /** When it was routed to Fishball (the audit key's time). */
+  at: z.string(),
+  answer: z.enum(Object.values(APPROVAL_ANSWER)),
+  risk: z.enum(Object.values(APPROVAL_RISK)).optional(),
+  rationale: z.string().optional(),
+  finalOutcome: z.enum(Object.values(APPROVAL_OUTCOME)),
+  decidedAt: z.string(),
+})
+
 /** Tables of the intake domain. */
-const INTAKE_TABLE = Object.freeze({ items: 'items', outbox: 'outbox' })
+const INTAKE_TABLE = Object.freeze({ items: 'items', outbox: 'outbox', approvals: 'approvals' })
 
 /**
  * The intake domain: frequent writes, so each record is its own document (per-record layout),
@@ -122,6 +138,7 @@ export const intakeDomain = defineDomain({
   tables: {
     [INTAKE_TABLE.items]: domainTable(intakeItemRecord),
     [INTAKE_TABLE.outbox]: domainTable(outboxRecord),
+    [INTAKE_TABLE.approvals]: domainTable(approvalRecord),
   },
 })
 
@@ -176,4 +193,5 @@ export class Store {
   get watches() { return this.#domain.table(TABLE.watches) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
+  get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }
 }

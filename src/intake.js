@@ -39,8 +39,12 @@ import { INTAKE_ERROR, INTAKE_KIND, INTAKE_OUTCOME, INTAKE_STATUS, AGENT_IDLE, E
 import { diagnosticOf } from './errors.js'
 /** Rows still waiting to be read by Fishball (they count toward maxQueuedInputs). */
 const OPEN = new Set([INTAKE_STATUS.pending, INTAKE_STATUS.accepted])
-/** Kinds whose wake-ups are not capped: you yourself acted ("Send to Fishball"). */
-const UNCAPPED = new Set([INTAKE_KIND.user])
+/**
+ * Kinds whose wake-ups are not capped: you yourself acted ("Send to Fishball"), or a permission
+ * request is waiting (DESIGN §16: wakeupsPerHour excludes permission requests; a held one
+ * would only time out to you).
+ */
+const UNCAPPED = new Set([INTAKE_KIND.user, INTAKE_KIND.approval])
 const INBOX_TARGET = Object.freeze({ step: 'next-step' })
 const USER_MESSAGE_EVENT = 'user/message'
 

@@ -307,6 +307,8 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     snapshot: () => ({ entries: outbox.recent(OUTBOX_SHOWN) }),
     /** Whether Fishball messaged or started this session (kept outbox entries). */
     contacted: (sessionId) => [...store.outbox.entries()].some(([, entry]) => entry.targetSessionId === sessionId),
+    /** Whether Fishball started this session (a kept start_session entry). */
+    started: (sessionId) => [...store.outbox.entries()].some(([, entry]) => entry.kind === OUTBOX_KIND.start && entry.targetSessionId === sessionId),
   }
 }
 

@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 + P5 + P6 black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 + P6 + P7 black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -445,6 +445,62 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | INT-01 | ST (target turn open → SIGKILL → resume closes it interrupted) | W3 | no notice; active; firedCount 0 |
 | QFL-01 | ST (queue full → finishes → release; restart if still missing) | W8 | exactly one notice later |
 
+## P7 cases (ApprovalBroker; P1-P13 and the review update)
+
+**Harness additions.** With `FBTEST_APPROVER_AFTER=1` the scripted answerer stands in for the browser prompt **after** the broker: fbtest-tools (mounted before dsh-fishball) prepends an `approval/request` listener at boot, so Fishball's broker, prepended later, runs first and its `next()` reaches the stand-in. Without the flag the worker's own listener answers first, as before. The root then also registers `fbtest_ask` for ordinary sessions: its body calls `ctx.approval.request` with its own call id (`nocall` omits it, `fakecall` names an id not in the log, `as` asks under another tool name) and records the outcome (`asks`). Fishball's model answers a request from its text through a **plan** (`planApproval`: the newest request message containing a needle is answered once with `answer_approval` and the id read from it). New worker operations: `asks`, `approvalEvents`, `setApprovalPolicy` (DSH's policy switch), `askInNewAgents` (switch every new agent to `ask`, see A76), `planApproval`, `planState`, `clearPlans`; `driveStart` takes a message `source`. Fixed: the logged `tool/result` summary read `message.callId`, but DSH names it `toolCallId`, so `callId` was always null (A86).
+
+### [approvals-broker.test.mjs](approvals-broker.test.mjs): P1-P6, P8-P10, P13
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| APR-01 | EP (first request, no allowance) | P1 | one fishball-notice, summary `Permission request: "fbtest_ask"`; text starts `[permission request apr_<hex>]`; answer time 120 s; `Arguments: complete`; started by and turn by `the user`; the "expired is normal" line; the 9 block fields once each, with session_id, folder, tool, reason, the call's JSON arguments and the latest user message; no subagent or call_was_to_tool field; Fishball woke |
+| APR-02 | EP | P1 | permission_mode = the session's sandbox mode (read-only after a switch); approval_policy "ask" |
+| APR-03 | EP | P2 | answer_approval in every Fishball request only; not global; an ordinary session's call is a tool error |
+| APR-04 | DT (allow, low, reason) | P2, P3 | `{ok:true, requestId, decision:'allow'}`; outcome allowed-once; exactly one approval/decided allowed-once for that call; the next answerer never asked |
+| APR-05 ×4 | DT (allow+high, '' reason, whitespace reason, allow on truncated) | P2 | the code; the request stays pending and X waits; a later valid answer works |
+| APR-06 ×2 | DT (unknown id, answered id) | P2 | `expired` (timed-out id in APR-08, withdrawn id in APR-10) |
+| APR-07 | ST (escalate → stand-in holds → allows) | P4 | the stand-in is asked; X gets its outcome allowed-once; no Fishball request since; one non-waking note naming the outcome, in the next turn's request; audit escalate/high/allowed-once |
+| APR-08 ×2 | BVA (approvalAnswerSeconds 2 and 1) | P5 | the header names n s; the stand-in is asked no earlier than n s − 150 ms and within n s + 2.5 s; its outcome stands; note "got no answer in time" in the next turn; a late answer is `expired`; audit timeout |
+| APR-09 | ST (Fishball held in a turn when the request arrives) | P5, update | the stand-in is asked about 2 s after arrival while Fishball is still held |
+| APR-10 | ST (cancel after Fishball idled) | P6 | cancelled; the stand-in not asked; note "was withdrawn" in the next turn; a later answer `expired`; audit withdrawn/cancelled |
+| APR-11 | ST (cancel while Fishball is held, before it reads the notice) | P6 update | the same, without the note check |
+| APR-12 | ST (cancel while the escalated request waits at the stand-in) | P6 update | cancelled; audit finalOutcome cancelled (answer is a diagnostic; observed `withdrawn`) |
+| APR-13 ×4 | BVA (argumentExcerptBytes L, L+1, L−1, L−8; L = the arguments' JSON bytes, with 2-byte characters) | P1 | complete and whole at L and L+1; below: truncated, "alone makes it high risk", ends with …, a prefix of the JSON within the limit, no broken character; audit argumentsStatus |
+| APR-14 ×3 | EP (no call id / id not in the log / call to another tool) | P1, update | unavailable with the high-risk line; no arguments shown; call_was_to_tool = the real tool only in the third (and summary names the asked tool); allow → `arguments-incomplete`, still pending |
+| APR-15 ×3 | BVA (2048 / 2049 / 3000 bytes) | P1 | whole at 2048; above it at most 2048 bytes and a prefix |
+| APR-16 ×5 | DT (provenance) | P1 update | relay from Fishball → user / Fishball (message_session); relay from another agent → user / another agent or a notice, and latest_user_message stays the user's; start_session → Fishball (start_session) / Fishball (message_session); a blank session whose first message is Fishball's relay → Fishball (start_session); a first message from another agent → "another agent or a notice" or "unknown", never "the user" |
+| APR-17 | EP (subagent of a standard session, its policy switched to ask) | P1 update | session_id = the parent; asked_by_subagent_session = the child; the parent's latest user message; audited under the parent |
+| APR-18 | EP (wakeupsPerHour = current count) | P1 | a message is parked (control); a request still wakes Fishball and is answered |
+| APR-19 | EP (policy never) | P7 | rejected; no request message; stand-in not asked; not recorded |
+| APR-20 | EP (stand-in throws) | P13 | unavailable; audited with finalOutcome unavailable |
+| APR-21 | EP | P8 | approvals has pending and recent; a waiting request is pending with exactly id, sessionId, toolName, at; after it, recent entries have exactly the 10 keys with the enums, newest first; neither the state nor any audit file holds the arguments |
+| APR-22 | BVA (21 requests) | P8 | 20 listed, newest first |
+| APR-23 | BVA (auditEntriesKept 2, 3 requests) | P8 | at most 2 audit files, the newest among them |
+| APR-24 | EP | P9 | the rubric phrases in Fishball's system prompt |
+| APR-25 | EP | P10 | the client bundle has "Permission requests" |
+
+### [approvals-routing.test.mjs](approvals-routing.test.mjs): P7 bypass and P12 (one host, in order)
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| RTE-01 ×2 | EP (set_plugin_enabled with unchecked tools, add_plugin) | P7a | the stand-in is asked for Fishball's session; no request message; not recorded |
+| RTE-02 | BVA (maxPendingApprovals 2, 1 pending, Fishball held) | P7c | the second is pending and not at the stand-in (routed) |
+| RTE-03 | BVA (2 pending = limit) | P7c | bypass: the stand-in within 1 s, no request message, not recorded; still 2 pending |
+| RTE-04 | BVA (maxQueuedInputs 1, filled while Fishball is held) | P7d | bypass |
+| RTE-05 | ST (2 waiting → Fishball archived) | P12 | both go to the stand-in within 5 s (observed ~50 ms); audit answer timeout, finalOutcome rejected |
+| RTE-06 | EP (archived) | P7b | bypass |
+| RTE-07 | ST (unarchive + retry → live) | P7b | requests reach Fishball again |
+
+### [approvals-ptc.test.mjs](approvals-ptc.test.mjs): P11
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| PTA-01 | EP (PTC host, run_code calls fbtest_ask) | P11 | arguments = the inner call's JSON, complete; the inner call id has `:ptc:`; allow → allowed-once |
+
+### Cases changed by P7
+
+- **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 13 state keys (`approvals`), from `STATE_KEYS`.
+
 ### Cases changed by P6
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 12 state keys (`watches`), from `STATE_KEYS`.
@@ -556,4 +612,15 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 - **A73. read_session byte bound (finding).** "At most 12288 bytes in total" is measured as the sum of the messages' text bytes. With one 16 KB answer, TOL-07b sees 2 messages totalling 12290 bytes, 2 over. That fits a cut to 12288 plus a 3-byte '…', or a bound counted another way. TOL-07, with many messages, stays at 12288 exactly. Please confirm what the 12288 bytes count (text, the JSON array, or the whole block) and whether the ellipsis is inside the bound.
 - **A74. target-missing (finding at the time of the run).** DWT-05 deletes the target's session directory and projection-cache file while DSH is stopped (`sessionPersistence.stat` then returns null). After the restart the watch stays `active` for 10 s and never becomes `target-missing`. The re-review says only DSH's "session not found" closes it, so how session-query reports a deleted session needs checking.
 - **A75. What cannot be driven black-box.** W8: a notice refused for any reason other than a full queue. W7: a crash between firing and recording the watermark (the "never two notices across restarts" guard is only tested across clean restarts and a SIGKILL during a target turn). W3: the `forked` reason. W5: relatedness through pruned *intake* rows (TOL-09 covers the outbox only), and the exact excerpt rule beyond the bounds.
+- **A76. Subagent requests need the ask policy (P1 update).** DSH pins every subagent's approval policy to `never` at delegation (dsh-subagent `captureDelegatedPolicyOverrides`), so by default a subagent's request is rejected before any answerer and never reaches the broker. APR-17 switches every new agent back to `ask` through DSH's policy switch on `agent/created`. Attribution to the parent is then observed as required. So the subagent rule only matters when something widens a child's policy; please confirm this is expected.
+- **A77. Unavailable arguments are an empty string.** With no call id, an id not in the log, or a call to another tool, the block has `arguments: ""`, not an absent field. APR-14 only asserts that nothing of the call is shown.
+- **A78. Where the ellipsis counts.** Observed for both bounds: the shown text including '…' fits the limit (argumentExcerptBytes 92: an 89-byte prefix plus '…' = 92; latest_user_message 3000 bytes: 2047 shown). The tests assert the weaker rule "the prefix is within the limit" plus "the latest message is at most 2048 bytes".
+- **A79. Wording the tests parse.** The provenance line is read as `Session started by: <X>; its current turn started by: <Y>.`, the answer time as "<n> s", and the notes by the strings in `APR_NOTE`. The summary is JSON-quoted per the review update (the first brief had it unquoted).
+- **A80. Non-waking notes.** The escalated, timeout and withdrawn notes are injected, so they appear only in Fishball's next turn (in its request and log). The tests assert: no Fishball request for 1.5 s, then the next turn's request carries the note. The note for a request cancelled before Fishball read it (APR-11) is not asserted.
+- **A81. Timing tolerance.** Answer-time cases measure from the asking tool's call to the stand-in's question: at least n s − 150 ms, at most n s + 2.5 s (APR-08), and 1.85-4.5 s for 2 s while Fishball is busy (APR-09). "At once" for a bypass is under 1 s; for P12 under 5 s (observed about 50 ms).
+- **A82. A routed request while Fishball is held.** While Fishball is inside a held model request, the request message waits in its inbox and is not yet in its log, so RTE-02 proves routing by "pending and not at the stand-in", not by the message.
+- **A83. Not driven black-box.** P7b and P12 only with Fishball archived: `stopped`, `recovery` and a row unload while requests wait are not driven. The real browser prompt (DSH's gateway forwarder) is replaced by the stand-in. An escalate handed on at the exact moment of a cancel (P6 update, second half) is covered only as "cancelled while waiting at the stand-in" (APR-12, audit answer observed `withdrawn`). A turn started by "Fishball (message_session)" vs a session started by start_session whose later turn is the user's is not driven. Requests from ordinary sessions arise only from the fixture tool `fbtest_ask`, not from a real sandbox escalation.
+- **A84. Audit record files.** "Audit kept to auditEntriesKept" is checked on the per-record files under `storages/fishball_intake/approvals` (DESIGN §9). The state's `recent` follows the pruning (observed 2 after pruning to 2).
+- **A85. Bypassed or policy-never requests in the audit.** P8 says bypassed requests are not recorded; RTE-01..06 and APR-19 assert that the newest audit key is unchanged. A request that went to the stand-in after Fishball stopped (P12) is recorded with answer `timeout`, as the update says.
+- **A86. Harness fix: tool-result call ids.** The worker's `tool/result` summary read `message.callId`, but DSH's ToolResultMessage names the field `toolCallId`, so every summary's `callId` was null. Only the new P7 helper `resultOfCall` uses it. The worker now reads `toolCallId` and falls back to `callId`.
 - **A66. Runs while the implementation changes.** One full run made while the working tree was being edited gave 7 failures in the older lifecycle and context files (boots that never became ready). Rerun alone, those files passed 120/120, and the next full run passed 486/486.

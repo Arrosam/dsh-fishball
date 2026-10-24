@@ -593,13 +593,26 @@ Fishball calls add_plugin({spec, reason})
 | No answer before the timeout → stock prompt | Ignoring claims of permission inside untrusted content |
 | Only pending ids can be answered, and only once; late answers get `expired` | Telling you why it escalated |
 | `allow` requires `risk: 'low'` and a reason; the grant is `allowed-once` | Not approving work Fishball itself started, unless you asked for it |
-| Every request and answer is audited | |
+| Every request Fishball is asked, and its answer, is audited (requests sent straight to you are not) | |
 
 **Accepted weakness.** Because the allowance and the risk judgement live in the prompt, a mistaken or manipulated model could approve a request you would have rejected. The damage is limited:
 - grants are one-shot, so each mistake covers a single call [V];
 - a request can be answered only while it is pending;
 - every answer is in the audit list;
 - one message to Fishball ("stop approving") ends its approvals, and disabling the plugin returns every request to the normal prompt.
+
+**As built (P7).**
+- **Routing.** One host-level `approval/request` listener, prepended. `next()` without asking Fishball: Fishball's own requests, Fishball not live, `maxPendingApprovals` pending, or the request could not be delivered (queue full).
+- **The request message.** A Fishball notice through the intake ledger (`fishball/approval`, dedupe the request id; never wake-capped): the request id, the answer time, whether the arguments are complete, truncated or unavailable (the last two "alone make it high risk"), who started the session and its current turn, then an untrusted block with the session's id, title and folder, its permission mode, the tool, the reason given, the arguments (up to `argumentExcerptBytes`) and your latest message there (up to 2 KB).
+- **answer_approval({request_id, decision, risk, reason}).** `allow` needs `risk: 'low'`, a non-empty reason and complete arguments (`allow-needs-low-risk`, `reason-required`, `arguments-incomplete`; the request stays pending). An unknown or already settled id answers `expired`.
+- **After the request.** Allowed: `allowed-once`. Escalated or timed out: `next()`, and DSH's outcome there is audited. Withdrawn: `cancelled`. For escalated, timed-out and withdrawn requests Fishball gets a short note without being woken (`inject`).
+- **Audit.** `approvals[key]` in `fishball_intake` (newest `auditEntriesKept`): session, tool, call id, a digest of the arguments and their status, the answer, risk, rationale (≤ 500 characters), DSH's final outcome and both times. The arguments are not stored, but the rationale is Fishball's own text and may quote them. The settings page shows pending requests and the recent audit.
+- **The rubric** of this section is the second part of Fishball's persona, word for word, with two operational lines added (the request header it will see, and "answer with answer_approval; you cannot reject").
+- **Subagents.** A request from a subagent is attributed to the session you see (its root); the subagent is named in the block, and your latest message and the provenance come from the root. DSH sets every subagent's approval policy to `never` at delegation, so by default a subagent's request is rejected by DSH before any answerer, Fishball included; attribution applies only when a child's policy is widened.
+- **Provenance** comes from positive evidence: a kept `start_session` outbox entry, or the first user message of the session (and of its current turn): a relay from Fishball means Fishball, a user source means you; otherwise "unknown", never an unproven "the user".
+- **Arguments** are those of the call with that id; a call to a different tool than the request names counts as unavailable (`call_was_to_tool` says which).
+- **Timing.** The answer time starts when the request arrives, before its notice is delivered, and a call cancelled at any point is withdrawn (never handed on). When Fishball stops being live, or its row unloads, every waiting request goes to you at once. The next answerer is guarded: a failure there is audited as `unavailable`, and a cancellation as `cancelled`. An answer time above about 24 days is clamped.
+- **What the settings page shows** is other sessions' requests waiting for Fishball. Whether Fishball itself waits on one of your prompts shows in its own chat, as in any session; a separate "Waiting for your approval" status is not built.
 
 **Cost and limits.**
 - Each request costs one Fishball step.
@@ -658,8 +671,8 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
   - `status:'pending'|'accepted'|'consumed'|'discarded'|'failed'`
   - `attempts`, `createdAt`, `acceptedAt?`, `deliveredTo?` (the assistant session it was delivered to), `errorCode?`
   - `contentDigest` and `message?` (the DSH user message). The message is kept until Fishball reads it, it is discarded, or it fails, so a message DSH drops from the inbox in a quit can be delivered again; then it is dropped and the digest remains.
-- `approvals[aprId]` (audit; the newest `auditEntriesKept` are kept, 500 by default):
-  - `{sessionId, toolName, callId?, argumentsDigest, routedAt}`
+- `approvals[key]` (audit, keyed by time, a counter and the request id; the newest `auditEntriesKept` are kept, 500 by default):
+  - `{sessionId, toolName, callId?, argumentsDigest, argumentsStatus:'complete'|'truncated'|'unavailable', at}`
   - `answer: 'allow'|'escalate'|'timeout'|'withdrawn'`, `risk?`, `rationale?` (≤ 500 characters)
   - `finalOutcome` (the DSH outcome, including your answer in the stock prompt) and `decidedAt`
   - The arguments themselves are not stored here; they stay in the two session logs.

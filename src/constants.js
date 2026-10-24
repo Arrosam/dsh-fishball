@@ -191,6 +191,8 @@ export const INTAKE_KIND = Object.freeze({
   system: 'system',
   /** A watched session finished (DESIGN §5c). */
   watch: 'watch',
+  /** Another session's permission request (DESIGN §7a); never wake-capped (§16). */
+  approval: 'approval',
 })
 
 /** Stable codes an intake call answers with (never message text). */
@@ -227,6 +229,41 @@ export const WATCH = Object.freeze({
   readBytes: 12288,
   turnEndEvent: 'turn/end',
   sourcePrefix: 'fishball/watch/',
+})
+
+/** Permission requests from other sessions (DESIGN §7a). */
+export const APPROVAL = Object.freeze({
+  /** Request id prefix Fishball sees (apr_<id>). */
+  idPrefix: 'apr_',
+  /** Bytes of the asking session's latest user message shown with a request. */
+  userMessageBytes: 2048,
+  /** Characters of a rationale kept in the audit (DESIGN §9). */
+  rationaleChars: 500,
+  /** setTimeout's limit (2^31-1 ms): a longer answer time is clamped to it. */
+  maxTimerMs: 2147483647,
+  /** Audit entries shown on the settings page. */
+  shown: 20,
+  waterfall: 'approval/request',
+  assistantEvent: 'assistant/message',
+  ptcDispatchEvent: 'tool/ptc-dispatch-start',
+  toolCallBlock: 'tool-call',
+  turnStartEvent: 'turn/start',
+  userEvent: 'user/message',
+  userSources: Object.freeze(['user', 'user-rpc']),
+})
+/** Fishball's answer (answer_approval) and what else ended a request. */
+export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', escalate: 'escalate' })
+export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn' })
+export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
+/** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
+export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
+/** DSH approval outcomes (dsh-user-approval). */
+export const APPROVAL_OUTCOME = Object.freeze({ allowedOnce: 'allowed-once', rejected: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable' })
+export const APPROVAL_ERROR = Object.freeze({
+  expired: 'expired',
+  allowNeedsLowRisk: 'allow-needs-low-risk',
+  reasonRequired: 'reason-required',
+  argumentsIncomplete: 'arguments-incomplete',
 })
 
 /** One hour, for the hourly caps (wake-ups, messages, sessions). */
