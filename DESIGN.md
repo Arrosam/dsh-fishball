@@ -844,6 +844,7 @@ Each phase ends with:
 | P7 | ApprovalBroker, `answer_approval`, persona rubric, approval audit in settings | Requirement 4 approval criteria |
 | P8 | `ctx.fishball`, example plugin, author guide | Requirement 5 criteria |
 | P9 | Install into the profile you choose and retire the old `fishball` profile (§15), then a live browser check | Live acceptance |
+| P9 rehearsal (2026-10-25) | Done, without touching `~/.dsh` | `spikes/p9-rehearsal.mjs`: the owner's `web` profile's 24 plugin packages linked read-only into a throwaway home, plus dsh-fishball. Fishball went live with no failed row; 41 catalog plugins; the experimental terminal tools listed as unchecked; `message_fishball` hidden. Browser check in real Chromium: Fishball mark and name in the sidebar, clicking it opens the assistant session (Read Only, composer enabled), "Fishball settings" opens the Plugins page with every section; an ordinary session's row menu offers "Send to Fishball" and "Tell Fishball when finished" (then "Fishball is watching"), Fishball's own row offers neither; the Send dialog's note reached Fishball. The live install into a real profile waits for the owner's choice of profile |
 
 **Acceptance criteria (observable):**
 - **R1:**
