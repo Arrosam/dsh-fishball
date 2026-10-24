@@ -1,9 +1,0 @@
-{
-  "result": "reheld",
-  "files": 88,
-  "changedPaths": [
-    "test/rename-adversarial.test.mjs"
-  ],
-  "manifestSha256": "29c53e4e76b26cdc9b9f841346b6279f6b60c85a691c08207aaad34f9dc55041",
-  "productSourceUnchanged": true
-}

@@ -1,8 +1,0 @@
---- .runtime/ollama-dsh-functional-fixtures-r1/installed-source.mjs
-+++ .runtime/ollama-corrected-one-call-r1/installed-source.mjs
-@@ -1,4 +1,4 @@
- // Loader owns this actual module and the unchanged installed-entry setup chain.
--import { createApprovedInstalledPlugin } from '../ollama-dsh-memory-continuity-source/installed-entry.mjs';
-+import { createApprovedInstalledPlugin } from './installed-entry.mjs';
- import { cloudAdmission } from './admission.mjs';
- export default createApprovedInstalledPlugin({ cloudAdmission });

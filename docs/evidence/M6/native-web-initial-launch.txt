@@ -1,7 +1,0 @@
-{"result":"launched","pid":50460,"url":"http://127.0.0.1:3080","target":"DSH Web 0.2.1-alpha.1"}
-(node:50458) ExperimentalWarning: SQLite is an experimental feature and might change at any time
-(Use `node --trace-warnings ...` to show where the warning was created)
-(node:50460) ExperimentalWarning: SQLite is an experimental feature and might change at any time
-(Use `node --trace-warnings ...` to show where the warning was created)
-dsh: warning: 1 entry did not activate
-permission (@deepseek-ai/dsh-permission-presets): pending (waiting for service: shell)

@@ -1,4 +1,0 @@
-921d8946bd76c76f08fd6a21dbd73254c75716abcb86d6d2aadd33694ab3aa30  src/approval-preview.mjs
-222197415eaed758d4e66dc81c2966854e93c05eca73359ec78f627017d9119a  test/approval-preview.test.mjs
-d817fb87346a324c6a425ac37cc1e8b96bb4b0752c1cf0adbb92e866ff527eb7  test/approval-preview-adversarial.test.mjs
-494ae6f4a0ef9835188b0df8fdc25e605c339eba42dfed44771325cdd40d61e9  docs/native-preview-api.md

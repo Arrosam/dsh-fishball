@@ -1,5 +1,0 @@
-{
-  "src/client-entry.cjs": "6bae1b62801348ef8c3cdd489b624882ceaeb7fdd1c5e2e061573551a0474620",
-  "test/native-runtime-client.test.mjs": "6ae5613fc5b948f7e2e9fdba4368dcf967f8a0b302a71022e46706450af065a4",
-  "execution-closure.json": "e3e85593f1e1f010138492a2b9356ffe6fa3dbb816d8b758eaea2ceb981f198c"
-}

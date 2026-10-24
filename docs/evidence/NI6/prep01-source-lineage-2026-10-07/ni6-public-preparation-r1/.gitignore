@@ -1,6 +1,0 @@
-private-runtime/
-package/node_modules
-package/lib/
-package/native-source-manifest.json
-build-attempt.json
-build-readback.json

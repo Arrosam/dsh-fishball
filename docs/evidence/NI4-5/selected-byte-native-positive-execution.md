@@ -1,9 +1,0 @@
-# First selected-byte native execution
-
-Root reviewed the complete BP01 fixture, original public host/import graph and finite effects before one execution on the frozen48-module byte-review source `5d69a802…`. This run uses the genuine original Cordis/Loader/session/provider interfaces with a finite local synthetic provider. It constructs the original WebServer directly; no Service.init, HTTP server or listener is started. Its in-process synthetic header authentication is not actual browser authentication evidence.
-
-Six syntax checks passed. The one BP01 test failed at its first `readLocalResult` call, fixture line168, with original `SERVICE_DISPOSED`;0PASS/1FAIL/0SKIP in2.785083s. Earlier producer execution, original persisted transcript, capture and finish assertions completed. The test stopped before the reviewer, publication, dropped acknowledgement and read-only query assertions, so those later behaviors are NOT_RUN. No approved audit input was captured for independent pure fixtures.
-
-All83 root inputs and the complete27577-file/12-link original host graph remained unchanged. Raw TAP is1633B, SHA-256 `ddb83bcc5e7d502aaa3e34b09dd9832763b35d2a8f02d01311ba9e01612cb0d1`, and stderr is empty. The [raw results](selected-byte-native-positive-execution/command-results.json), [TAP](selected-byte-native-positive-execution/command-07.stdout.txt), complete frozen source and before/after verification preserve this failure.
-
-Source tracing and a separate results-lifetime correction are pending. The independent pure context admission F-AM01 blocker is separate and remains open; a later healthy native pass cannot close it. No synthetic result implies semantic review or model quality. All87, finalCODE, browser/UI and aggregate acceptance remain HOLD. The independent QA a58c522 package/profile/listener plan is unchanged.

@@ -1,1 +1,0 @@
-{"index":9,"command":"/opt/homebrew/opt/node@22/bin/node --test --test-name-pattern='^(durable submitted|execution)' test/worker.test.mjs","chunk_id":"e7be26","wall_time_seconds":0.120568048,"exit_code":0,"original_token_count":0,"output":""}

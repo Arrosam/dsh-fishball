@@ -1,2 +1,0 @@
-# Original compiled profile root: bundle patches then own patch.
-[]

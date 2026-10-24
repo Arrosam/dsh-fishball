@@ -1,7 +1,0 @@
-# NI4 read-only clock status implementation decision
-
-Root holds the separate [clock-status addendum](clock-status-addendum.md) SHA256 `66737dfd6c88b26ba3174dfcdef329ad3cd4c6644652b56be6ee715e9acd3293` and [independent design](clock-status-test-addendum.md) SHA256 `21cd49ae5db448ca81393d66be11fb5f92fa6c0287271bff61aa8450cff54325`. Original NI4 contract/design hashes remain unchanged. Root read both additions and verified these exact hashes.
-
-Root grants `prep_messages_results` affected new-module status implementation and authored typed tests under the existing exclusive `src/installed-events.mjs` lease. The one added private closure is the original same-ledger, host-bound `eventClock` read. Stopped/boot status must preserve actual readable historical cursor/pending/decision/revisions independently of current source/template success; it must not register, start, approve, tick, write or repair to display history. Closed fields distinguish missing, historical/not-current and unavailable.
-
-The separate source-pair and stored-plan approval findings remain required serial core work, subject to their own exact contract/design freeze. A fake clock/status closure cannot prove those same-lock predicates or actual restart preservation. The independent addendum retains10 planned families and25 original source-AC contributions; only actually executed oracles may later be credited. No native process, browser/CODE retry, external provider/account or full AC/MVP acceptance is granted.
