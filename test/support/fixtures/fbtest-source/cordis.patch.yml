@@ -1,0 +1,9 @@
+- insert:
+    - id: fbtest-source
+      name: 'fbtest-source'
+      config:
+        label: src-a
+    - id: fbtest-source-b
+      name: 'fbtest-source'
+      config:
+        label: src-b

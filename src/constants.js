@@ -193,6 +193,8 @@ export const INTAKE_KIND = Object.freeze({
   watch: 'watch',
   /** Another session's permission request (DESIGN §7a); never wake-capped (§16). */
   approval: 'approval',
+  /** An event from a plugin source (ctx.fishball, DESIGN §8). */
+  plugin: 'plugin',
 })
 
 /** Stable codes an intake call answers with (never message text). */
@@ -230,6 +232,32 @@ export const WATCH = Object.freeze({
   turnEndEvent: 'turn/end',
   sourcePrefix: 'fishball/watch/',
 })
+
+/** ctx.fishball, the extension service (DESIGN §8). */
+export const SOURCES = Object.freeze({
+  /** The service name plugins inject. */
+  service: 'fishball',
+  /** A source id: letters, digits, '-', '_' and '.', 1-64 characters. */
+  idPattern: /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,
+  /** Bytes of a dedupe key and of a source description. */
+  dedupeKeyBytes: 256,
+  descriptionBytes: 1024,
+  /** Bytes of a source title (shown in notices). */
+  sourceTitleBytes: 200,
+  separator: '/',
+})
+/** Stable codes ctx.fishball throws or rejects with (the error's code). */
+export const SOURCE_ERROR = Object.freeze({
+  duplicate: 'FISHBALL_SOURCE_DUPLICATE',
+  limit: 'FISHBALL_LIMIT',
+  invalid: 'FISHBALL_INVALID',
+  tooLarge: 'FISHBALL_TOO_LARGE',
+  queueFull: 'FISHBALL_QUEUE_FULL',
+  disposed: 'FISHBALL_SOURCE_DISPOSED',
+  unknownPlugin: 'FISHBALL_UNKNOWN_PLUGIN',
+})
+/** A source event's outcome (DESIGN §8). */
+export const SOURCE_STATUS = Object.freeze({ accepted: 'accepted', duplicate: 'duplicate', disabled: 'disabled' })
 
 /** Permission requests from other sessions (DESIGN §7a). */
 export const APPROVAL = Object.freeze({

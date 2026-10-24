@@ -153,6 +153,19 @@ export class AssistantComposition {
     return { failed: byRowId(audit.failed), pending: byRowId(audit.pending), leaked }
   }
 
+  /** Whether a context runs inside Fishball's private tree (its fiber descends from P's tree). */
+  inPrivateTree(ctx) {
+    const rows = new Set([...this.#tree.entries()].map((entry) => entry.fiber).filter(Boolean))
+    let fiber = ctx?.fiber
+    while (fiber !== undefined) {
+      if (rows.has(fiber)) return true
+      const parent = fiber.parent?.fiber
+      if (parent === undefined || parent === fiber) return false
+      fiber = parent
+    }
+    return false
+  }
+
   /** Row ids of the private tree still waiting for a service (a read-only re-audit). */
   async pendingRowIds() {
     return new Set(byRowId((await auditRows(this.#tree)).pending).keys())

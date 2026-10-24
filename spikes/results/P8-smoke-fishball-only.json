@@ -1,0 +1,19 @@
+{
+  "id": "P8-smoke",
+  "started": "2026-10-24T18:34:34.295Z",
+  "finished": "2026-10-24T18:34:38.380Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "onlyFishball": true,
+  "runningBefore": false,
+  "runningWhenOn": true,
+  "sourceWhenOn": {
+    "identity": "fishball-source-example/fishball-source-example/notes",
+    "plugin": "fishball-source-example",
+    "title": "Example notes",
+    "enabled": true
+  },
+  "runningWhenOff": false,
+  "sourceWhenOff": null
+}

@@ -629,6 +629,7 @@ interface FishballService {
   /** Effect-scoped: disposed with the calling plugin. Throws FISHBALL_SOURCE_DUPLICATE, FISHBALL_LIMIT. */
   registerSource(def: { id: string; title: string; description?: string }): FishballSource
 }
+// As built (P8): FishballSource also has onEnabled(listener: () => void): () => void.
 interface FishballSource {
   readonly enabled: boolean     // false while Fishball is in recovery or has turned this plugin off
   publish(event: {
@@ -645,7 +646,13 @@ interface FishballSource {
   - **For everyone.** Installed and enabled in the profile like any plugin. Its events reach Fishball while Fishball has it on. When Fishball turns it off, its events are refused with `disabled`, but its code keeps running for other sessions.
   - **Fishball only.** Installed but left off in the profile, and mounted by Fishball in its private tree (§4). Its code runs only while Fishball has it on.
 - **Every event wakes Fishball** (§7). There are no urgency levels, so a plugin should batch frequent events.
-- **Package.** An ordinary DSH plugin bundle. A template and a tested example source plugin ship in `examples/`.
+- **Package.** An ordinary DSH plugin bundle. A tested example source plugin ships in `examples/fishball-source-example`, and the author guide is `docs/plugin-author-guide.md`.
+- **As built (P8).**
+  - **The service.** The fishball row provides `fishball` in the root realm. `registerSource` identifies the caller from its Cordis context (the service is passed the caller's context), finds the caller's loader row, and names the source `<bundle>/<entry id>/<source id>`. The bundle is the catalog plugin owning the row (a profile bundle's row id, or a private-tree row prefix); a row no catalog plugin owns uses its module name. A caller outside any loader row is refused (`FISHBALL_UNKNOWN_PLUGIN`).
+  - **Checks.** Source id `[A-Za-z0-9][A-Za-z0-9._-]{0,63}`, title ≤ 200 bytes, description ≤ 1 KB; one row may not register the same id twice (`FISHBALL_SOURCE_DUPLICATE`); one bundle may register at most `maxSourcesPerPlugin` sources (`FISHBALL_LIMIT`); malformed input is `FISHBALL_INVALID`. An event: dedupe key 1-256 bytes, title ≤ 120 characters (`FISHBALL_TOO_LARGE`), body non-empty and ≤ `maxMessageBytes` (`FISHBALL_TOO_LARGE`), `occurredAt` ISO 8601 with an offset. A full queue rejects with `FISHBALL_QUEUE_FULL`; a source whose plugin unloaded, `FISHBALL_SOURCE_DISPOSED`.
+  - **Enabled.** A source is enabled while Fishball is live and its plugin is on for Fishball as applied (always, for a row no catalog plugin owns). Disabled publishes answer `disabled` and store nothing. `onEnabled(listener)` (an addition to the interface above) runs each time a source becomes enabled, so a plugin loaded before Fishball was live publishes then; dedupe keys make republishing safe.
+  - **Identity (after review).** `<bundle>/<row>/<source id>`: the row is the plugin row's own id as a slug without Fishball's private-tree prefix, so a plugin keeps its identity (and dedupe space) when moved between "for everyone" and "Fishball only", and two rows of one bundle are separate sources. The owning catalog plugin is resolved at each check. A detached call or a call from an unloaded context is `FISHBALL_UNKNOWN_PLUGIN`; plugins are in-process and trusted (§11), so identity is not a boundary between plugins.
+  - **Delivery.** Through the ledger (kind `plugin`, counted toward `wakeupsPerHour`), once per (identity, dedupe key) while the intake row is kept (the newest `auditEntriesKept` finished rows plus open ones), as a Fishball notice whose summary is `Plugin event: "<source title>"`, with the event's title, time and body in an untrusted block. Titles must be one line. The settings page lists sources and whether each is enabled. `onEnabled` listener errors are logged, never fatal. While Fishball's core has failed, the service is not provided at all.
 - **Deliberately out of v1:** intake interception waterfalls and output relay hooks. Per the coding principles, these extension points are not prebuilt for hypothetical uses.
 
 ## 9. Data model

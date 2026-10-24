@@ -12,6 +12,7 @@
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
  * - src/approvals.js       other sessions' permission requests go to Fishball first
+ * - src/sources.js         ctx.fishball: plugins publish events to Fishball (DESIGN §8)
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
  * - src/http.js            /api/fishball/* for the settings page and the brand button
  */
@@ -30,6 +31,7 @@ import { registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { Watches, WatchError } from './src/watches.js'
 import { ApprovalBroker } from './src/approvals.js'
+import { SourceRegistry } from './src/sources.js'
 import { registerPluginTools } from './src/plugin-tools.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -55,8 +57,11 @@ export async function apply(ctx, config) {
   let outboxView = () => null
   let watchesView = () => null
   let approvalsView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView() })
-  const publish = () => feed.publish(snapshot())
+  let sourcesView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView() })
+  /** Called on every published change once ctx.fishball exists (sources may become enabled). */
+  let refreshSources = () => {}
+  const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
   const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable }
@@ -159,6 +164,14 @@ export async function apply(ctx, config) {
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   approvalsView = () => broker.snapshot()
+  // ctx.fishball (DESIGN §8): plugins publish events to Fishball through the ledger.
+  const sources = new SourceRegistry(ctx, {
+    ledger, catalog, readLimits: limits, isLive: () => assistantAgent() !== undefined,
+    privateTree: (callerCtx) => composition.inPrivateTree(callerCtx), onChange: () => publish(), logger,
+  })
+  sourcesView = () => sources.snapshot()
+  // A change of Fishball's state or of a plugin's on/off may enable sources (their onEnabled).
+  refreshSources = () => sources.refresh()
   // When Fishball can no longer answer, waiting requests go to you at once (P7 review M1).
   ctx.effect(() => () => broker.releaseAll(), 'fishball: release permission requests')
   const asApiError = (ErrorClass) => async (task) => {

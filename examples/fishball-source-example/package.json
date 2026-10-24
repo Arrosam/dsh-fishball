@@ -1,0 +1,25 @@
+{
+  "name": "fishball-source-example",
+  "version": "0.1.0",
+  "description": "Example ctx.fishball source: publishes one event per note dropped into its config, to show how a plugin feeds Fishball.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

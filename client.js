@@ -200,6 +200,11 @@ window.__ModuleLoader__.load({
       'outboxStatus.unconfirmed': 'Delivered, not confirmed',
       'outboxStatus.failed': 'Failed',
       nothingYet: 'Nothing yet.',
+      sources: 'Plugin sources',
+      sourcesHint: 'Plugins that send Fishball events through ctx.fishball. A source is off while Fishball is not running or has its plugin turned off.',
+      sourceOn: 'Accepting events',
+      sourceOff: 'Off',
+      'intakeKind.plugin': 'Plugin event',
       approvals: 'Permission requests',
       approvalsHint: 'Other sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you in that session.',
       approvalsWaiting: 'Waiting for Fishball',
@@ -355,6 +360,11 @@ window.__ModuleLoader__.load({
       'outboxStatus.unconfirmed': '已送达，未确认',
       'outboxStatus.failed': '失败',
       nothingYet: '暂无。',
+      sources: '插件信息源',
+      sourcesHint: '通过 ctx.fishball 向 Fishball 发送事件的插件。Fishball 未运行或关闭了该插件时，信息源处于关闭状态。',
+      sourceOn: '正在接收事件',
+      sourceOff: '已关闭',
+      'intakeKind.plugin': '插件事件',
       approvals: '权限请求',
       approvalsHint: '其他会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你在该会话中决定。',
       approvalsWaiting: '等待 Fishball 处理',
@@ -870,6 +880,22 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** Plugin sources (DESIGN §8, §10): each registered source and whether it accepts events. */
+    function makeSources(t) {
+      return function FishballSources() {
+        const state = useFishball()
+        const view = state.sources
+        if (!view) return null
+        return h('div', { className: CLS.section, 'data-fishball-sources': true },
+          h('h3', null, t('sources')),
+          h('p', { className: CLS.muted }, t('sourcesHint')),
+          view.sources.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.sources.map((source) => h('li', { key: source.identity },
+            h('span', { className: CLS.name }, source.title), ' ',
+            h('span', { className: CLS.code }, source.identity), ' ',
+            h(Tag, { tone: source.enabled ? 'info' : 'neutral' }, t(source.enabled ? 'sourceOn' : 'sourceOff'))))))
+      }
+    }
+
     /** Permission requests (DESIGN §10): waiting ones, then the recent audit. Never the arguments. */
     function makeApprovals(t) {
       return function FishballApprovals() {
@@ -906,7 +932,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ContextWindow, Intake, Watches, Approvals, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -920,6 +946,7 @@ window.__ModuleLoader__.load({
           h(Intake),
           h(Watches),
           h(Approvals),
+          h(Sources),
           h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
@@ -984,7 +1011,7 @@ window.__ModuleLoader__.load({
       }), 'fishball: dialogs')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

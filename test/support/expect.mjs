@@ -368,5 +368,23 @@ export const approvalsNow = async (host) => (await host.state()).approvals
 /** UTF-8 byte length. */
 export const bytes = (s) => Buffer.byteLength(String(s), 'utf8')
 
+// ---- P8 helpers (ctx.fishball sources) ----
+
+export const sourcesNow = async (host) => (await host.state()).sources
+export const sourceIn = async (host, identity) => (await sourcesNow(host))?.sources?.find((s) => s.identity === identity)
+/** Fishball's plugin-event notices (fishball-notice user messages) containing needle. */
+export async function pluginNotices(host, fb, needle) {
+  const events = (await host.call('inspect', { sessionId: fb, events: true })).events ?? []
+  return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(needle))
+}
+/** Register a source as a fixture row; throws when the precondition (a captured context) is missing. */
+export async function register(host, label, def, key) {
+  const r = await host.call('sourceRegister', { label, def, ...(key ? { key } : {}) })
+  if (r.error?.code === 'FBTEST_NO_CONTEXT') throw new Error('precondition: ' + r.error.message)
+  return r
+}
+/** publish on a kept source: {ok, value} or {ok:false, error:{code}}. */
+export const publish = (host, key, event) => host.call('sourcePublish', { key, event })
+
 export const T = { timeout: 55000 }
 export const HOOK = { timeout: 60000 }
