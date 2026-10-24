@@ -23,7 +23,9 @@
  * ping-pong between Fishball and a session it started is bounded only by these caps and
  * wakeupsPerHour.
  *
- * notify_when_finished (a watch) arrives in P6; until then the tools do not offer it.
+ * notify_when_finished: true also sets up a watch (DESIGN §5c, src/watches.js): on the
+ * caller's own session for message_fishball, on the target for message_session and
+ * start_session. The message is still delivered when the watch is refused; the result says why.
  *
  * Untrusted content (DESIGN §7): text from another session, and its title and folder, are
  * JSON-quoted inside a block whose fence carries a random marker, so the text cannot close
@@ -34,7 +36,7 @@ import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
+import { WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
 import { AuditLog } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, rootSessionOf } from './session-info.js'
@@ -42,27 +44,17 @@ import { byteLength } from './text.js'
 import { digestOf } from './digest.js'
 import { diagnosticOf } from './errors.js'
 import { SELF_MESSAGE_TOOL } from './tool-rules.js'
+import { untrustedBlock, sessionFields } from './framing.js'
 
 export const MESSAGING_TOOL = Object.freeze({ inbound: SELF_MESSAGE_TOOL, send: 'message_session', start: 'start_session' })
 
 /** Source identity prefixes (DESIGN §8: the host works the identity out, never the payload). */
-const SOURCE_ID = Object.freeze({ session: 'session/', user: 'user/forward/' })
+export const SOURCE_ID = Object.freeze({ session: 'session/', user: 'user/forward/' })
 /** Outbox entries shown on the settings page. */
 const OUTBOX_SHOWN = 20
 /** Statuses that count toward an hourly cap: the call reached the other session. */
 const COUNTED = new Set([OUTBOX_STATUS.delivered, OUTBOX_STATUS.unconfirmed, OUTBOX_STATUS.failed])
 
-/**
- * An untrusted block: a fence with a random marker, then each field as a JSON string. Nothing
- * inside can end the block (it would need the marker) or pass as Fishball's own words.
- */
-function untrustedBlock(fields) {
-  const marker = randomUUID()
-  return [`<untrusted-${marker}>`, ...Object.entries(fields).map(([name, value]) => `${name}: ${JSON.stringify(value ?? '')}`), `</untrusted-${marker}>`].join('\n')
-}
-
-/** Session facts as untrusted fields: the title and folder come from that session too. */
-const sessionFields = (info) => ({ session_id: info.id, session_title: info.title, session_folder: info.cwd })
 
 /** Model-facing texts (stable; no secrets). */
 export const TEXT = Object.freeze({
@@ -76,6 +68,8 @@ export const TEXT = Object.freeze({
   messageArg: 'What the session should do or know, self-contained.',
   startDescription: 'Start a new ordinary DSH session in an existing workspace or folder and give it a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
   folderArg: 'A DSH workspace id, or an absolute path of an existing folder.',
+  notifyInboundArg: 'true to have Fishball told when this session finishes its current work. From a subagent, that is the top-level session the user sees, not the subagent.',
+  notifyOutboundArg: 'true to be told when that session finishes the work (sets up a watch).',
   unconfirmed: 'The session has the message, but saving it could not be confirmed. Do not send it again.',
   /** A message from another session (untrusted data, DESIGN §7). */
   fromSession: (info, child, text) => [
@@ -116,15 +110,19 @@ const messageOf = (text, source) => createUserMessage({ content: [{ type: 'text'
  * @param deps.readLimits - () => limits.
  * @param deps.assistantId - () => the assistant session id, or null.
  * @param deps.isLive - () => whether Fishball's agent is running now.
+ * @param deps.watch - (sessionId, by) => Promise<{ watch } | { watchError }> (a watch result).
  * @returns { forward(sessionId, note) } for the HTTP route.
  */
-export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive }) {
+export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, watch }) {
   ctx.effect(() => ctx.tools.register(defineTool({
     name: MESSAGING_TOOL.inbound,
     description: TEXT.inboundDescription,
-    parameters: { message: { type: 'string', required: true, description: TEXT.inboundArg } },
+    parameters: {
+      message: { type: 'string', required: true, description: TEXT.inboundArg },
+      notify_when_finished: { type: 'boolean', description: TEXT.notifyInboundArg },
+    },
     output: JSON_OUTPUT,
-    async execute({ message }, exec) {
+    async execute({ message, notify_when_finished: notify }, exec) {
       const caller = exec.agent?.id
       if (caller === undefined) return refused(INTAKE_ERROR.unknownSession)
       // Checked on the sender's text: Fishball's framing around it is never empty.
@@ -150,7 +148,8 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive }
         throw error
       }
       if (result.status === INTAKE_OUTCOME.duplicate) return ok({ duplicate: true, note: TEXT.inboundDuplicate })
-      return ok({ note: isLive() ? TEXT.inboundOk : TEXT.inboundQueued })
+      const watched = notify === true ? await watch(sender, { kind: WATCH_BY.agent, id: caller }) : {}
+      return ok({ note: isLive() ? TEXT.inboundOk : TEXT.inboundQueued, ...watched })
     },
   })), 'fishball: message_fishball')
 
@@ -187,9 +186,10 @@ class UnconfirmedDelivery extends Error {}
  * @param deps.assistantId - () => the assistant session id.
  * @param deps.logger - plugin logger.
  * @param deps.onChange - called after the outbox changed.
+ * @param deps.watch - (sessionId, by, since?) => Promise<{ watch } | { watchError }>.
  * @returns { snapshot() } for the settings page.
  */
-export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange }) {
+export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch }) {
   const outbox = new AuditLog(() => store.outbox, () => readLimits().auditEntriesKept)
   /**
    * Calls this hour, counted in memory as well as from the outbox: the outbox is pruned to
@@ -245,15 +245,22 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     return ok(success)
   }
 
+  /**
+   * After a delivery (ok), add the requested watch on the target, with the watermark read
+   * BEFORE the delivery, so a fast turn the message starts is not missed (P6 review H1).
+   */
+  const withWatch = async (result, sessionId, notify, since) => (notify === true && result.ok ? { ...result, ...(await watch(sessionId, { kind: WATCH_BY.assistant }, since)) } : result)
+
   register(defineTool({
     name: MESSAGING_TOOL.send,
     description: TEXT.sendDescription,
     parameters: {
       session_id: { type: 'string', required: true, description: TEXT.sessionArg },
       message: { type: 'string', required: true, description: TEXT.messageArg },
+      notify_when_finished: { type: 'boolean', description: TEXT.notifyOutboundArg },
     },
     output: JSON_OUTPUT,
-    async execute({ session_id: sessionId, message }) {
+    async execute({ session_id: sessionId, message, notify_when_finished: notify }) {
       const bad = badMessage(message)
       if (bad !== undefined) return refused(bad)
       if (sessionId === assistantId()) return refused(OUTBOUND_ERROR.isFishball)
@@ -262,7 +269,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (info === undefined) return refused(OUTBOUND_ERROR.unknownSession)
       if (info.archived) return refused(OUTBOUND_ERROR.archived)
       const entry = { kind: OUTBOX_KIND.message, targetSessionId: sessionId, messageDigest: digestOf(message) }
-      return deliverAndRecord(entry, sessionId, message, { sessionId, title: info.title })
+      return withWatch(await deliverAndRecord(entry, sessionId, message, { sessionId, title: info.title }), sessionId, notify, info.lastSeq)
     },
   }))
 
@@ -272,9 +279,10 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     parameters: {
       folder: { type: 'string', required: true, description: TEXT.folderArg },
       message: { type: 'string', required: true, description: TEXT.messageArg },
+      notify_when_finished: { type: 'boolean', description: TEXT.notifyOutboundArg },
     },
     output: JSON_OUTPUT,
-    async execute({ folder, message }) {
+    async execute({ folder, message, notify_when_finished: notify }) {
       const bad = badMessage(message)
       if (bad !== undefined) return refused(bad)
       if (overCap(OUTBOX_KIND.start, readLimits().sessionsPerHour)) return refused(OUTBOUND_ERROR.hourlyCap)
@@ -289,13 +297,22 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
         logger.warn('session start failed (%s)', diagnosticOf(error))
         return refused(OUTBOUND_ERROR.deliveryFailed)
       }
-      return deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder })
+      // A new session: every turn end in it counts (its log before the message has none).
+      const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
+      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder }), sessionId, notify, since)
     },
   }))
 
   return {
     snapshot: () => ({ entries: outbox.recent(OUTBOX_SHOWN) }),
+    /** Whether Fishball messaged or started this session (kept outbox entries). */
+    contacted: (sessionId) => [...store.outbox.entries()].some(([, entry]) => entry.targetSessionId === sessionId),
   }
+}
+
+/** The last seq of a session just created, before its first message (its header events only). */
+async function watermarkOfNew(ctx, sessionId) {
+  return (await describeSession(ctx, sessionId))?.lastSeq ?? -1
 }
 
 /** Whether a path is an existing directory (following symlinks, as DSH's realpath does). */

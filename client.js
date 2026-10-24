@@ -46,7 +46,13 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove' })
+    /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
+    const WATCH_MENU = Object.freeze({ id: 'fishball-watch', order: 425 })
+    const WATCH_HEADER = Object.freeze({ id: 'fishball-watch', order: 3 })
+    const WATCH_ERRORS = new Set(['unknown-session', 'archived', 'is-fishball', 'limit-reached', 'unknown-watch', 'unavailable'])
+    const WATCH_ACTIVE = 'active'
+    const WATCH_BY_USER = 'user'
     /** "Send to Fishball" refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
     const SEND_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'unknown-session', 'unavailable'])
     /** Session-row menu entry and its place (after DSH's own pin/rename/fork/archive, before the id). */
@@ -151,6 +157,26 @@ window.__ModuleLoader__.load({
       'sendError.unknown-session': 'This session could not be read.',
       'sendError.unavailable': 'Fishball is not running.',
       sendFailed: 'That did not work.',
+      watchSession: 'Tell Fishball when finished',
+      watching: 'Fishball is watching',
+      watchFailed: 'Fishball could not watch this session.',
+      'watchError.unknown-session': 'This session could not be read.',
+      'watchError.archived': 'This session is archived.',
+      'watchError.is-fishball': 'This is Fishball\'s own session.',
+      'watchError.limit-reached': 'Fishball is watching as many sessions as it may.',
+      'watchError.unknown-watch': 'That watch is already closed.',
+      'watchError.unavailable': 'Fishball is not running.',
+      watches: 'Watches',
+      watchesHint: 'Sessions Fishball tells you about when they finish. Set one up from a session\'s menu.',
+      'watchBy.user': 'You',
+      'watchBy.assistant': 'Fishball',
+      'watchBy.agent': 'The session itself',
+      'watchCondition.finished': 'When finished',
+      'watchCondition.per-turn': 'Every turn',
+      'watchStatus.active': 'Active',
+      'watchStatus.closed': 'Closed',
+      'watchStatus.target-missing': 'Session gone',
+      watchFired: 'Told {count}×',
       intake: 'Queue',
       intakeHint: 'Inputs that wake Fishball: messages from other sessions, sessions you forward, and notices.',
       intakeQueued: 'Waiting to be read',
@@ -159,6 +185,7 @@ window.__ModuleLoader__.load({
       'intakeKind.session': 'From a session',
       'intakeKind.user': 'From you',
       'intakeKind.system': 'Notice',
+      'intakeKind.watch': 'Watched session',
       'intakeStatus.pending': 'Waiting',
       'intakeStatus.accepted': 'Queued',
       'intakeStatus.consumed': 'Read',
@@ -273,6 +300,26 @@ window.__ModuleLoader__.load({
       'sendError.unknown-session': '无法读取此会话。',
       'sendError.unavailable': 'Fishball 未在运行。',
       sendFailed: '操作未成功。',
+      watchSession: '完成时通知 Fishball',
+      watching: 'Fishball 正在关注',
+      watchFailed: 'Fishball 无法关注此会话。',
+      'watchError.unknown-session': '无法读取此会话。',
+      'watchError.archived': '此会话已归档。',
+      'watchError.is-fishball': '这是 Fishball 自己的会话。',
+      'watchError.limit-reached': 'Fishball 关注的会话已达上限。',
+      'watchError.unknown-watch': '该关注已关闭。',
+      'watchError.unavailable': 'Fishball 未在运行。',
+      watches: '关注',
+      watchesHint: '这些会话完成时 Fishball 会告诉你。可在会话菜单中设置。',
+      'watchBy.user': '你',
+      'watchBy.assistant': 'Fishball',
+      'watchBy.agent': '会话自己',
+      'watchCondition.finished': '完成时',
+      'watchCondition.per-turn': '每个回合',
+      'watchStatus.active': '进行中',
+      'watchStatus.closed': '已关闭',
+      'watchStatus.target-missing': '会话已不存在',
+      watchFired: '已通知 {count} 次',
       intake: '队列',
       intakeHint: '会唤醒 Fishball 的输入：其他会话的消息、你转发的会话和通知。',
       intakeQueued: '等待读取',
@@ -281,6 +328,7 @@ window.__ModuleLoader__.load({
       'intakeKind.session': '来自会话',
       'intakeKind.user': '来自你',
       'intakeKind.system': '通知',
+      'intakeKind.watch': '关注的会话',
       'intakeStatus.pending': '等待中',
       'intakeStatus.accepted': '已排队',
       'intakeStatus.consumed': '已读取',
@@ -713,6 +761,91 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * Whether YOU have an active watch on a session (the entries then say so). A watch Fishball
+     * or the session set up (e.g. per-turn) is separate: yours is still offered.
+     */
+    const isWatched = (state, sessionId) => (state.watches?.watches ?? []).some((watch) => watch.targetSessionId === sessionId && watch.status === WATCH_ACTIVE && watch.createdBy?.kind === WATCH_BY_USER)
+
+    /**
+     * Watch requests and their refusal, in one store outside the menu: a menu entry unmounts when
+     * the menu closes, so the refusal is shown by the overlay (makeWatchNotice), not by the entry.
+     */
+    const watchNotice = (() => {
+      let current = null
+      const listeners = new Set()
+      const set = (next) => { current = next; for (const listener of listeners) listener() }
+      return {
+        async watch(sessionId) {
+          const { ok, code } = await send(API.watches, { sessionId })
+          set(ok ? null : WATCH_ERRORS.has(code) ? 'watchError.' + code : 'watchFailed')
+        },
+        dismiss: () => set(null),
+        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
+        get: () => current,
+      }
+    })()
+
+    function makeWatchMenuItem(t) {
+      return function FishballWatchMenuItem({ sessionId, useMenuOpenState }) {
+        const state = useFishball()
+        const [, setMenuOpen] = useMenuOpenState()
+        if (!canSend(state, sessionId)) return null
+        // Already watched: the entry says so; choosing it again returns the same watch.
+        const watched = isWatched(state, sessionId)
+        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void watchNotice.watch(sessionId) } }, watched ? t('watching') : t('watchSession'))
+      }
+    }
+
+    function makeWatchHeaderAction(t) {
+      return function FishballWatchHeaderAction({ sessionId }) {
+        const state = useFishball()
+        if (!canSend(state, sessionId)) return null
+        const watched = isWatched(state, sessionId)
+        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: watched, onClick: () => void watchNotice.watch(sessionId) }, watched ? t('watching') : t('watchSession'))
+      }
+    }
+
+    /** The refusal of the last watch request, as a dialog in the shell overlay. */
+    function makeWatchNotice(t) {
+      return function FishballWatchNotice() {
+        const problem = React.useSyncExternalStore(watchNotice.subscribe, watchNotice.get)
+        if (problem === null) return null
+        return h(Modal, {
+          open: true,
+          onClose: watchNotice.dismiss,
+          closeLabel: t('close'),
+          title: t('watchSession'),
+          footer: h(Button, { type: 'button', variant: 'primary', onClick: watchNotice.dismiss }, t('close')),
+        }, h('div', { role: 'alert' }, t(problem)))
+      }
+    }
+
+    /** The watches section (DESIGN §10): each watch with who set it up, and Remove. */
+    function makeWatches(t) {
+      return function FishballWatches() {
+        const state = useFishball()
+        const [problem, setProblem] = React.useState(null)
+        const view = state.watches
+        if (!view) return null
+        const remove = async (watchId) => {
+          const { ok, code } = await send(API.watchesRemove, { watchId })
+          setProblem(ok ? null : WATCH_ERRORS.has(code) ? 'watchError.' + code : 'watchFailed')
+        }
+        return h('div', { className: CLS.section, 'data-fishball-watches': true },
+          h('h3', null, t('watches')),
+          h('p', { className: CLS.muted }, t('watchesHint')),
+          problem ? h('div', { role: 'alert' }, t(problem)) : null,
+          view.watches.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.watches.map((watch) => h('li', { key: watch.id },
+            h('span', { className: CLS.code }, watch.targetSessionId), ' ',
+            h(Tag, { tone: 'neutral' }, t('watchCondition.' + watch.condition)), ' ',
+            h(Tag, { tone: 'neutral' }, t('watchBy.' + watch.createdBy.kind)), ' ',
+            h(Tag, { tone: watch.status === WATCH_ACTIVE ? 'info' : 'neutral' }, t('watchStatus.' + watch.status)), ' ',
+            watch.firedCount > 0 ? h('span', { className: CLS.muted }, t('watchFired', { count: watch.firedCount })) : null, ' ',
+            watch.status === WATCH_ACTIVE ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void remove(watch.id) }, t('remove')) : null))))
+      }
+    }
+
     function makeHeaderAction(ctx, t) {
       return function FishballHeaderAction({ sessionId }) {
         const state = useFishball()
@@ -729,7 +862,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ContextWindow, Intake, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, ContextWindow, Intake, Watches, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -741,6 +874,7 @@ window.__ModuleLoader__.load({
           h(Status),
           h(ContextWindow),
           h(Intake),
+          h(Watches),
           h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
@@ -793,12 +927,19 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.headerActions, function* () {
         yield ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)
         yield ctx.slots.register({ name: SLOT.headerActions, id: SEND_HEADER_ID, order: SEND_HEADER_ORDER, locale: NS }, makeSendHeaderAction(t))
+        yield ctx.slots.register({ name: SLOT.headerActions, id: WATCH_HEADER.id, order: WATCH_HEADER.order, locale: NS }, makeWatchHeaderAction(t))
       }), 'fishball: header actions')
-      ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, () => ctx.slots.register({ name: SLOT.sessionMenu, id: SEND_MENU.id, order: SEND_MENU.order, locale: NS }, makeSendMenuItem(t))), 'fishball: session menu')
-      ctx.effect(() => ctx.slots.inject(SLOT.overlay, () => ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))), 'fishball: send dialog')
+      ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, function* () {
+        yield ctx.slots.register({ name: SLOT.sessionMenu, id: SEND_MENU.id, order: SEND_MENU.order, locale: NS }, makeSendMenuItem(t))
+        yield ctx.slots.register({ name: SLOT.sessionMenu, id: WATCH_MENU.id, order: WATCH_MENU.order, locale: NS }, makeWatchMenuItem(t))
+      }), 'fishball: session menu')
+      ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
+        yield ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))
+        yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeWatchNotice(t))
+      }), 'fishball: dialogs')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makeWatches(t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

@@ -66,12 +66,19 @@ function auxDigest(options) {
   return { sessionId: options.sessionId ?? null, purpose: options.purpose, at: Date.now(), model: options.model ?? null, maxTokens: options.maxTokens ?? null, messageCount: (options.messages ?? []).length, chars: charsOf(options), lastUserText: textOf(last?.content).slice(0, 20000) }
 }
 
-/** Build stream chunks from a script: [{text}] or [{tool, args, id}]. */
+/**
+ * Build stream chunks from a script: [{text}] or [{tool, args, id}].
+ * P6: {fail: code} ends the response with an error finish (a code DSH's retry does not retry, so
+ * the turn ends 'error'); {text, finish: 'max-tokens'} ends it at the output ceiling ('max-tokens').
+ */
 export function chunksFor(steps) {
   const out = []
   let index = 0
   let toolCalls = false
+  let finish = null
   for (const step of steps) {
+    if (step.fail !== undefined) { finish = { kind: 'error', failure: { message: 'fbtest model failure', code: step.fail } }; continue }
+    if (step.finish === 'max-tokens') finish = { kind: 'max-tokens' }
     if (step.text !== undefined) {
       out.push({ type: 'block-start', index, blockType: 'text' }, { type: 'text-delta', index, text: step.text }, { type: 'block-end', index, block: { type: 'text', text: step.text } })
     } else {
@@ -82,7 +89,7 @@ export function chunksFor(steps) {
     }
     index++
   }
-  out.push({ type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } }, { type: 'finish', reason: { kind: toolCalls ? 'tool-calls' : 'stop' } })
+  out.push({ type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } }, { type: 'finish', reason: finish ?? { kind: toolCalls ? 'tool-calls' : 'stop' } })
   return out
 }
 

@@ -189,6 +189,8 @@ export const INTAKE_KIND = Object.freeze({
   user: 'user',
   /** A Fishball notice from Fishball itself (e.g. plugins already on with unchecked tools). */
   system: 'system',
+  /** A watched session finished (DESIGN §5c). */
+  watch: 'watch',
 })
 
 /** Stable codes an intake call answers with (never message text). */
@@ -199,6 +201,32 @@ export const INTAKE_ERROR = Object.freeze({
   fromFishball: 'from-fishball',
   unknownSession: 'unknown-session',
   deliveryFailed: 'delivery-failed',
+})
+
+/** Watches (DESIGN §5c, §9 watches). */
+export const WATCH_CONDITION = Object.freeze({ finished: 'finished', perTurn: 'per-turn' })
+export const WATCH_MODE = Object.freeze({ once: 'once', repeat: 'repeat' })
+export const WATCH_STATUS = Object.freeze({ active: 'active', closed: 'closed', targetMissing: 'target-missing' })
+/** Who set a watch up: you (GUI), Fishball (watch_session), or another agent (message_fishball). */
+export const WATCH_BY = Object.freeze({ user: 'user', assistant: 'assistant', agent: 'agent' })
+/** Turn-end reasons that never count as finished (crash closers and fork seeds). */
+export const WATCH_IGNORED_REASONS = Object.freeze(['interrupted', 'forked'])
+export const WATCH_ERROR = Object.freeze({
+  unknownSession: 'unknown-session',
+  archived: 'archived',
+  isFishball: 'is-fishball',
+  limitReached: 'limit-reached',
+  unknownWatch: 'unknown-watch',
+  notRelated: 'not-related',
+})
+export const WATCH = Object.freeze({
+  /** Watches shown on the settings page and by list_watches. */
+  shown: 50,
+  /** read_session: recent messages and their byte bound. */
+  readMessages: 12,
+  readBytes: 12288,
+  turnEndEvent: 'turn/end',
+  sourcePrefix: 'fishball/watch/',
 })
 
 /** One hour, for the hourly caps (wake-ups, messages, sessions). */
@@ -232,6 +260,8 @@ export const SESSION_INFO = Object.freeze({
   excerptBytes: 3072,
   ellipsis: '…',
   assistantEvent: 'assistant/message',
+  userEvent: 'user/message',
+  roles: Object.freeze({ user: 'user', assistant: 'assistant' }),
   textBlock: 'text',
   /** Session header marking a subagent's session, and how far up its parents are followed. */
   subagentOrigin: 'subagent',
@@ -269,6 +299,10 @@ export const API = Object.freeze({
   contextWindow: '/api/fishball/context-window',
   /** POST { sessionId, note }: you forward a session to Fishball ("Send to Fishball"). */
   send: '/api/fishball/send',
+  /** POST { sessionId }: "Tell Fishball when finished". */
+  watches: '/api/fishball/watches',
+  /** POST { watchId }: remove a watch. */
+  watchesRemove: '/api/fishball/watches/remove',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -345,6 +379,9 @@ export const EVENT = Object.freeze({
   /** dsh-llm: every model call (the hard ceiling answers Fishball's own requests). */
   llmStream: 'llm/stream',
   agentStatus: 'agent/status',
+  /** Every event appended to any session (watches), and the turn start it watches for. */
+  sessionEvent: 'session/event',
+  turnStart: 'turn/start',
   /** Inbox events of Fishball's agent (intake ledger bookkeeping). */
   inboxClaimed: 'agent/inbox/claimed',
   inboxDiscarded: 'agent/inbox/discarded',

@@ -5,7 +5,7 @@
  *
  * | id     | technique | req | expected |
  * |--------|-----------|-----|----------|
- * | MSG-01 | EP (bare / standard preset) | M1 | every ordinary request lists message_fishball with exactly one required string property 'message' |
+ * | MSG-01 | EP (bare / standard preset) | M1, P6 W6 | every ordinary request lists message_fishball with the required string 'message' and the optional boolean 'notify_when_finished' |
  * | MSG-02 | EP (Fishball / ordinary) | M14 | Fishball's requests never list message_fishball and always list message_session and start_session; ordinary requests never list those two |
  * | MSG-03 | EP (valid message, Fishball idle) | M1, M9 | {ok:true, note:'Delivered to Fishball.'}; exactly one relay message from the caller; trusted header, one untrusted block with session_id, session_title, session_folder and the JSON-quoted text; Fishball wakes and reads it; intake item session/<id> ends consumed; state never holds the text |
  * | MSG-04 | EP (hostile text) | M1 review | a fake closing tag and a fake forward stay inside the block as one JSON string; one closing tag; one session_id line |
@@ -71,8 +71,10 @@ describe('P5 message_fishball', () => {
       const req = (await turn(host, sid, [[{ text: 'list' }]])).requests.at(-1)
       assert.ok(toolNames(req).includes(INBOUND_TOOL), sid + ' lacks ' + INBOUND_TOOL)
       const schema = toolSchema(req, INBOUND_TOOL)
-      assert.deepEqual(Object.keys(schema.properties ?? {}), ['message'])
+      // P6: an optional boolean notify_when_finished joined; message stays the only required argument.
+      assert.deepEqual(Object.keys(schema.properties ?? {}).sort(), ['message', 'notify_when_finished'])
       assert.equal(schema.properties.message.type, 'string')
+      assert.equal(schema.properties.notify_when_finished.type, 'boolean')
       assert.deepEqual(schema.required, ['message'])
     }
   })

@@ -120,6 +120,13 @@ export async function bootHost(home, { timeoutMs = MS.boot, env = {} } = {}) {
       })()
       return stream
     },
+    /** P6: kill the DSH process without a shutdown (a crash). */
+    async kill() {
+      if (exited) return
+      child.kill('SIGKILL')
+      await until(() => exited, 5000, 50)
+      child.stdin.destroy()
+    },
     async stop() {
       if (exited) return
       try { await handle.call('shutdown', {}, MS.stop) } catch { /* fall through to kill */ }

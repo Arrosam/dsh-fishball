@@ -316,5 +316,25 @@ export async function fishballClientBundle(host) {
   return { found: true, status: res.status, text: res.text }
 }
 
+// ---- P6 helpers (watches) ----
+
+export const watchesNow = async (host) => (await host.state()).watches
+export const watchById = async (host, id) => (await watchesNow(host))?.watches.find((w) => w.id === id)
+export const watchesOn = async (host, sessionId) => ((await watchesNow(host))?.watches ?? []).filter((w) => w.targetSessionId === sessionId)
+
+/** Fishball's watch notices: fishball-notice user messages that name the watch id. */
+export async function watchNotices(host, fb, watchId) {
+  const events = (await host.call('inspect', { sessionId: fb, events: true })).events ?? []
+  return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(watchId))
+}
+
+/** Wait until at least n notices for the watch exist, then until Fishball and the count are quiet; returns the notices. */
+export async function noticesSettled(host, fb, watchId, n, { timeoutMs = 12000, quietMs = 1500 } = {}) {
+  if (n > 0) await until(async () => (await watchNotices(host, fb, watchId)).length >= n, timeoutMs, 150)
+  await new Promise((resolve) => setTimeout(resolve, quietMs))
+  await settledIdle(host, fb)
+  return watchNotices(host, fb, watchId)
+}
+
 export const T = { timeout: 55000 }
 export const HOOK = { timeout: 60000 }

@@ -184,6 +184,18 @@ export class IntakeLedger {
     })
   }
 
+  /**
+   * Whether a kept row came from or was about this session (read_session relatedness): its
+   * source identity is one of the session prefixes plus the id (rows pruned beyond
+   * auditEntriesKept no longer count).
+   * @param prefixes - source identity prefixes naming a session (src/messaging.js SOURCE_ID).
+   */
+  hasSource(sessionId, prefixes) {
+    const identities = new Set(prefixes.map((prefix) => prefix + sessionId))
+    for (const [, row] of this.#store.intakeItems.entries()) if (identities.has(row.sourceIdentity)) return true
+    return false
+  }
+
   /** Detached view for the settings page: counts and the newest rows (no message content). */
   snapshot() {
     const rows = [...this.#store.intakeItems.entries()].map(([intakeId, row]) => ({ intakeId, ...row }))
