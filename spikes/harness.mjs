@@ -34,14 +34,18 @@ export function writePatch(dir, name, rows) {
  * @param options.bundles - extra profile dependencies { name: spec } and bundles to enable.
  */
 export async function bootDsh(id, extraRows = [], { args = ['--no-open', '--port', '0'], setupProfile } = {}) {
-  const home = path.join(SPIKE_ROOT, `${id}-${Date.now()}`)
+  // SPIKE_REUSE_HOME boots an existing home again (restart checks).
+  const reuse = process.env.SPIKE_REUSE_HOME
+  const home = reuse ?? path.join(SPIKE_ROOT, `${id}-${Date.now()}`)
   fs.mkdirSync(home, { recursive: true })
   process.env.DSH_HOME = home
   const { runProfile, initializeProfileFromDefault } = await host('@deepseek-ai/dsh/lib/profile-boot.js')
   const { loadLayeredEnv } = await hostPkg('dsh-app-boot')
-  initializeProfileFromDefault('spike', 'web', home)
   const profileDir = path.join(home, 'profiles', 'spike')
-  if (setupProfile) await setupProfile(profileDir)
+  if (!reuse) {
+    initializeProfileFromDefault('spike', 'web', home)
+    if (setupProfile) await setupProfile(profileDir)
+  }
   const patch = writePatch(home, 'spike.patch.yml', [
     { id: 'agent-default-model', config: { provider: FAKE_PROVIDER, model: FAKE_MODEL } },
     { insert: [{ id: 'spike-llm', name: path.join(REPO, 'spikes', 'fake-llm.mjs') }] },

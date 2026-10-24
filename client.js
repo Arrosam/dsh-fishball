@@ -1,0 +1,397 @@
+/**
+ * Fishball browser half (DESIGN §10).
+ *
+ * 1. Brand: fills sidebar.brand.mark / sidebar.brand.name at slot priority -1 (a single
+ *    slot renders its LOWEST priority; the shipped brand uses 0 — spike S14). The name
+ *    occupant takes over its enclosing button's click (capture phase, so it runs before
+ *    the shell's New Session handler) and opens the assistant session. On macOS Desktop
+ *    the brand row is a drag region without a button; there Fishball opens from its
+ *    pinned session and its Plugins page.
+ * 2. Settings live on Fishball's own page under Plugins (owner's choice, P2): the
+ *    page's `plugins.bundle.config` entry shows status and recovery actions, the live
+ *    limits form (DSH's staged settings form; the Host schema decides validity) and the
+ *    tools Fishball never uses. There is no separate settings panel.
+ * 3. Header action in Fishball's own session: opens that Plugins page.
+ *
+ * The mark is FishMark from the owner's fishball app (assets/icon.svg, THIRD_PARTY_NOTICES).
+ *
+ * State comes from GET /api/fishball/events (server-sent snapshots).
+ */
+window.__ModuleLoader__.load({
+  id: 'dsh-fishball',
+  factory(require) {
+    const module = { exports: {} }
+    const exports = module.exports
+    const React = require('react')
+    const { Button, SettingsForm, SettingsFormModel, SettingsValueField, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const h = React.createElement
+
+    const PACKAGE_NAME = 'dsh-fishball'
+    /** Host row id; also the settings namespace configForms serves (cordis.patch.yml). */
+    const ENTRY_ID = 'fishball'
+    const NS = 'fishball'
+    const BRAND_PRIORITY = -1
+    const HEADER_ACTION_ORDER = 5
+    /** Plugins page main-panel id (dsh-client-ui-plugin-manager PANEL_ID) and its navigation service. */
+    const PLUGINS_PANEL = 'plugins'
+    /** Client services read on demand (not injected: Fishball works without each of them). */
+    const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', uiWorkspace: 'uiWorkspace' })
+    const SUMMARY_VIEW = 'summary'
+    const HEADER_ACTION_ID = 'fishball-settings'
+    /** Host statuses (src/constants.js STATUS) and the recovery actions each one offers. */
+    const STATUS = Object.freeze({ starting: 'starting', live: 'live', recovery: 'recovery', archived: 'archived', stopped: 'stopped', failed: 'failed' })
+    const ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
+    const OFFERED = Object.freeze({
+      [STATUS.recovery]: Object.freeze([ACTION.retry, ACTION.adopt]),
+      [STATUS.archived]: Object.freeze([ACTION.retry]),
+      [STATUS.stopped]: Object.freeze([ACTION.retry]),
+    })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery' })
+    const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
+    const SLOT = Object.freeze({
+      mark: 'sidebar.brand.mark',
+      name: 'sidebar.brand.name',
+      bundleConfig: 'plugins.bundle.config',
+      headerActions: 'conversation.session.header.actions',
+    })
+    /**
+     * The limit fields, in the order the Host declares them (src/config.js LIMITS). The
+     * form model needs its fields before the first state frame arrives, so the browser keeps
+     * this list; the Host schema still decides validity on save.
+     */
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept'])
+    /**
+     * FishMark (fishball app, Surfaces.kt): body and eye on a 24-unit grid. In the sidebar the
+     * body takes the text colour so it reads on light and dark themes; the eye keeps the
+     * app's magenta, the one colour the mark spends.
+     */
+    const FISH_MARK = Object.freeze({
+      viewBox: '0 0 24 24',
+      body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+      eye: 'M14.6 7.4 h2 v2 h-2 Z',
+      bodyColor: 'currentColor',
+      eyeColor: '#EC0A6E',
+    })
+    const STYLE_ID = 'fishball-style'
+    const CLS = Object.freeze({ section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark' })
+
+    const en = {
+      brandName: 'Fishball',
+      brandLabel: 'Open Fishball',
+      status: 'Status',
+      session: 'Session',
+      folder: 'Folder',
+      error: 'Problem',
+      'status.starting': 'Starting',
+      'status.live': 'Running',
+      'status.recovery': 'Needs your decision',
+      'status.archived': 'Archived',
+      'status.stopped': 'Stopped',
+      'status.failed': 'Could not start (restart DSH)',
+      recoverFailed: 'That did not work. Check the status above and try again.',
+      retry: 'Try again',
+      adopt: 'Start a new Fishball session',
+      openChat: 'Open chat',
+      hiddenTools: 'Tools Fishball never uses',
+      hiddenToolsHint: 'They save files, change the profile, or start agents inside Fishball\'s own session.',
+      limits: 'Safety limits',
+      openSettings: 'Fishball settings',
+      'field.maxQueuedInputs': 'Queued inputs not yet read',
+      'field.maxActiveWatches': 'Active "tell me when finished" watches',
+      'field.maxSourcesPerPlugin': 'Feeds per plugin',
+      'field.maxFishballOnlyPlugins': 'Plugins running only for Fishball',
+      'field.wakeupsPerHour': 'Wake-ups per hour from non-user inputs (0 = no cap)',
+      'field.messagesPerHour': 'Messages Fishball sends per hour (0 = no cap)',
+      'field.sessionsPerHour': 'Sessions Fishball starts per hour (0 = no cap)',
+      'field.maxPendingApprovals': 'Permission requests Fishball decides at once',
+      'field.approvalAnswerSeconds': 'Seconds Fishball has to answer a request',
+      'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
+      'field.maxMessageBytes': 'Bytes in one message',
+      'field.auditEntriesKept': 'Entries kept in each audit list',
+      reset: 'Reset to default',
+      overridden: 'Custom',
+      save: 'Save',
+      saving: 'Saving…',
+      saveFailed: 'The values were not accepted. Use whole numbers: at least 1, or at least 0 for the hourly caps.',
+      invalid: 'Enter a whole number.',
+      unavailable: 'Fishball is not loaded, so its limits cannot be changed right now.',
+      readOnly: 'This deployment stores settings read-only.',
+    }
+    const zh = {
+      brandName: 'Fishball',
+      brandLabel: '打开 Fishball',
+      status: '状态',
+      session: '会话',
+      folder: '文件夹',
+      error: '问题',
+      'status.starting': '启动中',
+      'status.live': '运行中',
+      'status.recovery': '需要你的决定',
+      'status.archived': '已归档',
+      'status.stopped': '已停止',
+      'status.failed': '无法启动（请重启 DSH）',
+      recoverFailed: '操作未成功。请查看上方状态后重试。',
+      retry: '重试',
+      adopt: '新建 Fishball 会话',
+      openChat: '打开对话',
+      hiddenTools: 'Fishball 永不使用的工具',
+      hiddenToolsHint: '它们会保存文件、修改配置，或在 Fishball 自己的会话里启动代理。',
+      limits: '安全限制',
+      openSettings: 'Fishball 设置',
+      'field.maxQueuedInputs': '尚未读取的排队输入',
+      'field.maxActiveWatches': '进行中的“完成时通知我”',
+      'field.maxSourcesPerPlugin': '每个插件的信息源',
+      'field.maxFishballOnlyPlugins': '仅为 Fishball 运行的插件',
+      'field.wakeupsPerHour': '每小时非用户输入唤醒次数（0 = 不限）',
+      'field.messagesPerHour': 'Fishball 每小时发送的消息（0 = 不限）',
+      'field.sessionsPerHour': 'Fishball 每小时新建的会话（0 = 不限）',
+      'field.maxPendingApprovals': 'Fishball 同时处理的权限请求',
+      'field.approvalAnswerSeconds': 'Fishball 回答请求的秒数',
+      'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
+      'field.maxMessageBytes': '单条消息字节数',
+      'field.auditEntriesKept': '每个审计列表保留的条目',
+      reset: '恢复默认',
+      overridden: '已自定义',
+      save: '保存',
+      saving: '保存中…',
+      saveFailed: '这些值未被接受。请使用整数：至少为 1，每小时上限至少为 0。',
+      invalid: '请输入整数。',
+      unavailable: 'Fishball 当前未加载，暂时无法修改限制。',
+      readOnly: '本部署的设置为只读。',
+    }
+
+    const css = [
+      `.${CLS.section}{display:flex;flex-direction:column;gap:12px;margin:0 0 24px;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
+      `.${CLS.mark}{color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
+      `.${CLS.label}{min-width:120px;color:var(--dsw-alias-label-tertiary)}`,
+      `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
+      `.${CLS.list}{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}`,
+      `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
+      `.${CLS.name}{font-weight:600}`,
+    ].join('')
+
+    const apiUrl = (path) => new URL(path, document.baseURI).toString()
+
+    /** One shared EventSource for all components; reconnects by itself. */
+    const stateSource = (() => {
+      let snapshot = { status: STATUS.starting, sessionId: null, error: null, limits: {}, hiddenTools: [] }
+      const listeners = new Set()
+      let source
+      const open = () => {
+        if (source) return
+        source = new EventSource(apiUrl(API.events))
+        source.onmessage = (event) => {
+          try { snapshot = JSON.parse(event.data) } catch { return }
+          for (const listener of listeners) listener()
+        }
+      }
+      return {
+        subscribe(listener) {
+          listeners.add(listener)
+          open()
+          return () => {
+            listeners.delete(listener)
+            if (listeners.size === 0 && source) { source.close(); source = undefined }
+          }
+        },
+        get: () => snapshot,
+      }
+    })()
+    const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
+
+    /** @returns whether the Host accepted the recovery action. */
+    async function recover(action) {
+      try {
+        const response = await fetch(apiUrl(API.recovery), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action }) })
+        return response.ok
+      } catch {
+        return false
+      }
+    }
+
+    function Mark({ size }) {
+      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: CLS.mark, 'aria-hidden': true, 'data-fishball-mark': true },
+        h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
+        h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
+    }
+
+    /** How to open Fishball's page under Plugins, or undefined when no service can. */
+    function settingsOpener(ctx) {
+      const navigation = ctx.get(SERVICE.pluginNavigation)
+      if (navigation !== undefined) return () => navigation.openBundle(PACKAGE_NAME)
+      const layout = ctx.get(SERVICE.layout)
+      return layout === undefined ? undefined : () => layout.selectPanel(PLUGINS_PANEL)
+    }
+
+    function openSettings(ctx) {
+      settingsOpener(ctx)?.()
+    }
+
+    /** Statuses in which a running agent holds the session, so the brand opens its chat. */
+    const CHAT_STATUSES = Object.freeze([STATUS.live, STATUS.starting])
+
+    /**
+     * How to open Fishball now: its chat while an agent holds the session (live, or still
+     * running its setup turn, whose approval prompts appear only in that chat), else its
+     * settings. Undefined when the service that would do it is missing, so the brand leaves
+     * the click to the shell.
+     */
+    function fishballOpener(ctx) {
+      const state = stateSource.get()
+      if (!CHAT_STATUSES.includes(state.status) || !state.sessionId) return settingsOpener(ctx)
+      const workspace = ctx.get(SERVICE.uiWorkspace)
+      return workspace === undefined ? undefined : () => workspace.openSession(state.sessionId)
+    }
+
+    function openFishball(ctx) {
+      fishballOpener(ctx)?.()
+    }
+
+    function makeBrandName(ctx, t) {
+      return function FishballBrandName() {
+        const ref = React.useRef(null)
+        // Subscribed only to keep the shared state stream open while the brand is shown:
+        // the click handler reads the latest snapshot when it runs.
+        useFishball()
+        React.useEffect(() => {
+          const button = ref.current?.closest('button')
+          if (!button) return undefined
+          const previous = button.getAttribute('aria-label')
+          button.setAttribute('aria-label', t('brandLabel'))
+          const onClick = (event) => {
+            const open = fishballOpener(ctx)
+            if (open === undefined) return
+            event.preventDefault()
+            event.stopPropagation()
+            event.stopImmediatePropagation()
+            open()
+          }
+          button.addEventListener('click', onClick, true)
+          return () => {
+            button.removeEventListener('click', onClick, true)
+            if (previous === null) button.removeAttribute('aria-label')
+            else button.setAttribute('aria-label', previous)
+          }
+        }, [])
+        return h('span', { ref, className: CLS.name, 'data-fishball-name': true }, t('brandName'))
+      }
+    }
+
+    /** Status, recovery actions and hidden tools; rendered above the limits on Fishball's Plugins page. */
+    function makeStatus(ctx, t) {
+      return function FishballStatus() {
+        const state = useFishball()
+        const [recoverFailed, setRecoverFailed] = React.useState(false)
+        const status = state.status ?? STATUS.starting
+        const offered = OFFERED[status] ?? []
+        const run = async (action) => { setRecoverFailed(!(await recover(action))) }
+        return h('div', { className: CLS.section, 'data-fishball-settings': true },
+          h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('status')), h('span', { 'data-fishball-status': status }, t('status.' + status))),
+          state.sessionId ? h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('session')), h('span', { className: CLS.code }, state.sessionId)) : null,
+          state.cwd ? h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('folder')), h('span', { className: CLS.code }, state.cwd)) : null,
+          state.error ? h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('error')), h('span', { className: CLS.code }, state.error.code)) : null,
+          h('div', { className: CLS.row },
+            status === STATUS.live ? h(Button, { type: 'button', size: 'sm', onClick: () => openFishball(ctx) }, t('openChat')) : null,
+            offered.includes(ACTION.retry) ? h(Button, { type: 'button', size: 'sm', onClick: () => run(ACTION.retry) }, t('retry')) : null,
+            offered.includes(ACTION.adopt) ? h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: () => run(ACTION.adopt) }, t('adopt')) : null),
+          recoverFailed ? h('div', { role: 'alert' }, t('recoverFailed')) : null)
+      }
+    }
+
+    /** The tools Fishball never uses, as data from the Host. */
+    function makeHiddenTools(t) {
+      return function FishballHiddenTools() {
+        const state = useFishball()
+        return h('div', { className: CLS.section },
+          h('h3', null, t('hiddenTools')),
+          h('p', null, t('hiddenToolsHint')),
+          h('ul', { className: CLS.list }, (state.hiddenTools ?? []).map((name) => h('li', { key: name }, name))))
+      }
+    }
+
+    function makeHeaderAction(ctx, t) {
+      return function FishballHeaderAction({ sessionId }) {
+        const state = useFishball()
+        if (!sessionId || sessionId !== state.sessionId) return null
+        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => openSettings(ctx) }, t('openSettings'))
+      }
+    }
+
+    /** DSH's staged form over the row's live config; Save writes through ctx.settings. */
+    function limitsSection(scope) {
+      const form = new SettingsFormModel(scope, LIMIT_FIELDS.map((field) => settingsNumberField(field)))
+      const store = form.bind(() => ({ ...form.shell(), fields: Object.fromEntries(LIMIT_FIELDS.map((field) => [field, form.field(field)])) }))
+      return { store, actions: form.actions(), dispose: () => form.dispose() }
+    }
+
+    /** Fishball's whole settings page: status, limits form, hidden tools. */
+    function makeSettingsPage(section, Status, HiddenTools, t) {
+      const subscribe = section.store.subscribe.bind(section.store)
+      const getSnapshot = () => section.store.getSnapshot()
+      return function FishballSettings(props) {
+        const state = React.useSyncExternalStore(subscribe, getSnapshot)
+        const baseId = React.useId()
+        if (props.view === SUMMARY_VIEW) return null
+        const disabled = !state.writable || state.saving
+        return h(React.Fragment, null,
+          h(Status),
+          h('h3', null, t('limits')),
+          h(SettingsForm, {
+            labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
+            state,
+            onSave: section.actions.save,
+            onDiscard: section.actions.discard,
+          }, LIMIT_FIELDS.map((field) => {
+            const value = state.fields[field]
+            return h(SettingsValueField, {
+              key: field,
+              id: `${baseId}-${field}`,
+              label: t('field.' + field),
+              text: value.text,
+              overridden: value.overridden,
+              invalid: value.invalid,
+              overriddenLabel: t('overridden'),
+              resetLabel: t('reset'),
+              invalidLabel: t('invalid'),
+              disabled,
+              numeric: true,
+              onEdit: (text) => section.actions.edit(field, text),
+              onReset: () => section.actions.resetField(field),
+            })
+          })),
+          h(HiddenTools))
+      }
+    }
+
+    function mountStyles() {
+      const style = document.createElement('style')
+      style.id = STYLE_ID
+      style.textContent = css
+      document.head.appendChild(style)
+      return () => style.remove()
+    }
+
+    exports.name = PACKAGE_NAME
+    exports.inject = ['slots', 'locale', 'configForms']
+    exports.apply = function apply(ctx) {
+      const t = ctx.locale.bind(NS)
+      ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
+      ctx.effect(mountStyles, 'fishball: styles')
+      const BrandName = makeBrandName(ctx, t)
+      ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
+        yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, Mark)
+        yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
+      })), 'fishball: brand')
+      const HeaderAction = makeHeaderAction(ctx, t)
+      ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)), 'fishball: header action')
+      ctx.effect(() => {
+        const section = limitsSection(ctx.configForms.get(ENTRY_ID))
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeHiddenTools(t), t)
+        const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
+        return () => { stopServing(); section.dispose() }
+      }, 'fishball: settings page')
+    }
+    return module.exports
+  },
+})
