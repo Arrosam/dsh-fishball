@@ -1,0 +1,76 @@
+{
+  "id": "S11-S12-S17",
+  "started": "2026-10-24T01:47:37.155Z",
+  "finished": "2026-10-24T01:47:42.950Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "S11": {
+    "ptcHasRunCode": true,
+    "innerResult": "outcome=allowed-once",
+    "seen": [
+      {
+        "tool": "ask_me",
+        "callId": "call_native_1",
+        "reason": "spike asks: native",
+        "args": {
+          "kind": "native",
+          "name": "ask_me",
+          "arguments": "{\"what\":\"native\"}"
+        }
+      },
+      {
+        "tool": "ask_me",
+        "callId": "call_ptc_1:ptc:1",
+        "reason": "spike asks: inner",
+        "args": {
+          "kind": "ptc",
+          "name": "ask_me",
+          "arguments": {
+            "what": "inner"
+          }
+        }
+      },
+      {
+        "tool": "pass_me",
+        "callId": "call_pass_1",
+        "reason": "spike asks: pass",
+        "args": {
+          "kind": "native",
+          "name": "pass_me",
+          "arguments": "{\"what\":\"pass\"}"
+        }
+      }
+    ]
+  },
+  "S12": {
+    "afterNext": {
+      "asked": true,
+      "decided": false,
+      "status": "running",
+      "laterSeen": []
+    },
+    "afterCancel": {
+      "decided": [
+        "cancelled"
+      ],
+      "result": "Error: tool call aborted"
+    },
+    "never": {
+      "reachedBroker": false,
+      "result": "outcome=rejected"
+    }
+  },
+  "S17": {
+    "nativeResult": "outcome=allowed-once"
+  },
+  "verdict": {
+    "S11_native": true,
+    "S11_inner": true,
+    "S12_prepended_first": true,
+    "S12_next_reaches_forwarder": true,
+    "S12_never": true,
+    "S17_body_ask_despite_allow": true
+  },
+  "innerCallId": "call_ptc_1:ptc:1"
+}

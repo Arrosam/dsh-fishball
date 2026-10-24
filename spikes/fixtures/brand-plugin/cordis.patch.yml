@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-brand
+      name: 'fishball-spike-brand'
+      config: {}

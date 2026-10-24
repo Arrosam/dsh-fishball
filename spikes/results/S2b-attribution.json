@@ -1,0 +1,25 @@
+{
+  "id": "S2b-attribution",
+  "started": "2026-10-24T02:09:55.753Z",
+  "finished": "2026-10-24T02:09:59.071Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "note": "prototype wrapper installed before boot; in production the fishball row loads after other rows, so see verdict",
+  "attributed": [
+    [
+      "demo_echo",
+      {
+        "id": "include:spike-demo",
+        "name": "fishball-spike-demo"
+      }
+    ],
+    [
+      "working_directory",
+      {
+        "id": "include:tool-working-directory",
+        "name": "@deepseek-ai/dsh-tool-working-directory"
+      }
+    ]
+  ]
+}
