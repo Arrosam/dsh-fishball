@@ -113,9 +113,17 @@ window.__ModuleLoader__.load({
       fontFamily: '"Archivo","Helvetica Neue",sans-serif',
       fontWeight: 900,
       letterSpacing: '-0.5px',
+      lineHeight: 1,
     })
-    /** The "Deepseek Harness" tag pinned to the word logo's bottom-right corner, superscript-sized. */
-    const BRAND_TAG = Object.freeze({ fontSize: '7px', letterSpacing: '0.2px', right: '-4px', bottom: '-7px' })
+    /**
+     * The "Deepseek Harness" tag, overlaid on the word logo's bottom-right corner. The shell clips
+     * the brand name to a 24px-high box (dsh-client-ui-sidebar `.brandName`/`.brand`), and the
+     * word, with its line height tightened to 1, ends its letters about 6px above that edge. So
+     * the tag is small enough (the shell's own build badge is 6px too) to fit in that gap under
+     * the last letters; anything taller or lower is clipped (the first version was invisible).
+     * `bottom` is negative because the word's box ends above the 24px edge.
+     */
+    const BRAND_TAG = Object.freeze({ fontSize: '6px', lineHeight: '7px', letterSpacing: '0.2px', right: '0', bottom: '-3px' })
     const STYLE_ID = 'fishball-style'
     /**
      * Fishball's own session is reached through the brand (or its Plugins page), not the
@@ -458,9 +466,9 @@ window.__ModuleLoader__.load({
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
       `.${CLS.list}{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}`,
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
-      `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing}}`,
+      `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
-      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 2px;border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-tertiary);font:600 ${BRAND_TAG.fontSize}/1.3 var(--ds-font-family-ui, sans-serif);letter-spacing:${BRAND_TAG.letterSpacing};white-space:nowrap;pointer-events:none}`,
+      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};color:var(--dsw-alias-label-secondary);font:600 ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;letter-spacing:${BRAND_TAG.letterSpacing};white-space:nowrap;pointer-events:none}`,
       `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
