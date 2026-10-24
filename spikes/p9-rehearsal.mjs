@@ -23,7 +23,8 @@ await runSpike('P9-rehearsal', async () => {
   const skipped = []
   const { ctx, home } = await bootDsh('p9rehearsal', [], { args: ['--no-open', '--port', String(port)], setupProfile: (dir) => {
     const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
-    for (const name of deps) {
+    // dsh-fishball itself is linked to this checkout below, even once the web profile lists it.
+    for (const name of deps.filter((d) => d !== 'dsh-fishball')) {
       const source = path.join(WEB, 'node_modules', name)
       if (!fs.existsSync(source) || pkg.dependencies?.[name] !== undefined) { skipped.push(name); continue }
       const target = fs.realpathSync(source)
@@ -34,7 +35,7 @@ await runSpike('P9-rehearsal', async () => {
     }
     for (const b of bundles) if (!pkg.dsh.profile.bundles.includes(b)) pkg.dsh.profile.bundles.push(b)
     pkg.dependencies['dsh-fishball'] = 'link:' + REPO
-    pkg.dsh.profile.bundles.push('dsh-fishball')
+    if (!pkg.dsh.profile.bundles.includes('dsh-fishball')) pkg.dsh.profile.bundles.push('dsh-fishball')
     fs.symlinkSync(REPO, path.join(dir, 'node_modules', 'dsh-fishball'))
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg, null, 2))
   } })

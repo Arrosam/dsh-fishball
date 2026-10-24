@@ -5,8 +5,8 @@
  *   the never-registered preset id, read-only with approval policy `ask`.
  * - No DSH workspace is registered for the folder. DSH's New Session flow reuses a blank
  *   session that belongs to a workspace and rebinds its preset; for Fishball's session
- *   that fails, and could turn it into a coding session (browser check, P2). Pinned, the
- *   session is still listed at the top of the sidebar.
+ *   that fails, and could turn it into a coding session (browser check, P2). The sidebar
+ *   row itself is hidden by the client half; the brand opens the session (P9).
  * - Every start: resume the recorded session eagerly. A failed resume never creates a
  *   second session silently; the state becomes `recovery` until the user chooses.
  * - After every create or resume, before it is published live, the session is pinned and,
