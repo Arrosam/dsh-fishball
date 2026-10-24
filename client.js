@@ -114,16 +114,19 @@ window.__ModuleLoader__.load({
       fontWeight: 900,
       letterSpacing: '-0.5px',
       lineHeight: 1,
+      /** Lifts the word so the tag below can cover its bottom edge without hiding the letters. */
+      lift: '-2px',
     })
     /**
-     * The "Deepseek Harness" tag, overlaid on the word logo's bottom-right corner. The shell clips
-     * the brand name to a 24px-high box (dsh-client-ui-sidebar `.brandName`/`.brand`), and the
-     * word, with its line height tightened to 1, ends its letters about 6px above that edge. So
-     * the tag is small enough (the shell's own build badge is 6px too) to fit in that gap under
-     * the last letters; anything taller or lower is clipped (the first version was invisible).
-     * `bottom` is negative because the word's box ends above the 24px edge.
+     * The "Deepseek Harness" tag: a solid badge overlapping the word logo's bottom-right corner
+     * and covering the foot of the last letters, which is deliberate: the 6px outline-free text it
+     * replaced could not be read at sidebar size. The shell clips the brand name to a 24px-high box
+     * (dsh-client-ui-sidebar `.brandName`/`.brand`), so the badge must stay inside it; `bottom`
+     * is negative because the word, lifted and at line height 1, ends above that edge. The fill is
+     * the mark's eye magenta (FISH_MARK.eyeColor), the one colour the brand spends, so it reads on
+     * both light and dark themes and as part of the logo.
      */
-    const BRAND_TAG = Object.freeze({ fontSize: '6px', lineHeight: '7px', letterSpacing: '0.2px', right: '0', bottom: '-3px' })
+    const BRAND_TAG = Object.freeze({ fontSize: '9px', lineHeight: '11px', fontWeight: 700, letterSpacing: '0.1px', paddingX: '3px', radius: '2px', right: '-2px', bottom: '-5px', textColor: '#fff' })
     const STYLE_ID = 'fishball-style'
     /**
      * Fishball's own session is reached through the brand (or its Plugins page), not the
@@ -466,9 +469,9 @@ window.__ModuleLoader__.load({
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
       `.${CLS.list}{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}`,
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
-      `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight}}`,
+      `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
-      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};color:var(--dsw-alias-label-secondary);font:600 ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;letter-spacing:${BRAND_TAG.letterSpacing};white-space:nowrap;pointer-events:none}`,
+      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${FISH_MARK.eyeColor};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;letter-spacing:${BRAND_TAG.letterSpacing};white-space:nowrap;pointer-events:none}`,
       `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
