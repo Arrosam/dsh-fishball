@@ -5,8 +5,8 @@
  * its dedupe key, so restarting DSH or saving the same list again sends nothing twice. Its list
  * is short; a source with a long history should publish only items newer than what it last sent
  * (dedupe covers the recent past, not everything ever sent; see the author guide).
- * Edit the notes on this plugin's page under Plugins: saving reloads the plugin (the list is not
- * a live setting), and each new id reaches Fishball as one event.
+ * The notes come from this plugin's row config and are read when the plugin loads: the list is
+ * not a live (.volatile()) setting, so a change takes effect after a restart or reload.
  *
  * The 'fishball' service is optional here: the plugin declares no static inject for it and
  * waits with ctx.inject(['fishball'], …), so without Fishball (or before it is loaded) it does
