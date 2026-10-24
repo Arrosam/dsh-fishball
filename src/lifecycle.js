@@ -111,6 +111,11 @@ export class AssistantLifecycle {
     return this.#handle?.agent
   }
 
+  /** The held agent, for work that must run in its idle phase (plugin changes); else undefined. */
+  get agent() {
+    return this.#running
+  }
+
   snapshot() {
     return assistantSnapshot(this.#status, this.#store.assistant(), this.#error)
   }

@@ -8,6 +8,7 @@
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
+    "./attribution": "./src/tool-attribution.js",
     "./client": "./client.js",
     "./package.json": "./package.json"
   },
@@ -38,6 +39,7 @@
     "@deepseek-ai/dsh-sandbox-policy": "*",
     "@deepseek-ai/dsh-scope": "*",
     "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/dsh-user-approval": "*",
     "@deepseek-ai/schemastery": "*",
     "zod": "*"

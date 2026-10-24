@@ -2,7 +2,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
+import { FIXTURE_BUNDLE, OUTCOME, PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
+import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
 export const toolSchema = (request, name) => (request?.tools ?? []).find((t) => t.name === name)?.parameters
@@ -66,6 +67,100 @@ export async function callTool(host, sessionId, tool, args) {
   const r = await turn(host, sessionId, callScript(tool, args))
   if (r.results.length !== 1) throw new Error('expected one tool result for ' + tool + ', got ' + JSON.stringify(r.results))
   return { result: r.results[0], asked: r.asked, requests: r.requests }
+}
+
+// ---- P3 helpers ----
+
+/** A Fishball tool's JSON answer: the result text parsed, or undefined when it is not JSON. */
+export function jsonOf(result) {
+  const text = result?.text ?? ''
+  try { return JSON.parse(text) } catch { /* fall through */ }
+  const start = text.indexOf('{')
+  if (start < 0) return undefined
+  try { return JSON.parse(text.slice(start, text.lastIndexOf('}') + 1)) } catch { return undefined }
+}
+
+/**
+ * Call one Fishball tool with the scripted approver set to `outcome` (default: reject, so an
+ * unexpected prompt cannot pass). Returns the parsed answer, the raw result, the approval
+ * questions this call raised, the turn's requests and the number of approval/asked events.
+ */
+export async function fishballTool(host, sessionId, tool, args, outcome = OUTCOME.reject) {
+  // outcome may be one answer, or a list answered in order (later questions get the last one).
+  const answers = [].concat(outcome)
+  await host.call('setApprover', { outcome: answers.at(-1), queue: answers.slice(0, -1) })
+  const before = (await host.call('approvals', { sessionId })).length
+  try {
+    const { result, asked, requests } = await callTool(host, sessionId, tool, args)
+    const approvals = (await host.call('approvals', { sessionId })).slice(before)
+    return { json: jsonOf(result), result, asked, approvals, requests }
+  } finally {
+    await host.call('setApprover', { outcome: OUTCOME.reject })
+  }
+}
+
+export const setPlugin = (host, sessionId, plugin, on, outcome) => fishballTool(host, sessionId, 'set_plugin_enabled', { plugin, on }, outcome)
+
+/** Fishball's catalog through list_plugins. */
+export async function listPlugins(host, sessionId) {
+  const r = await fishballTool(host, sessionId, 'list_plugins', {})
+  if (!r.json) throw new Error('list_plugins did not answer JSON: ' + r.result.text.slice(0, 500))
+  return r.json
+}
+
+export const pluginIn = (catalog, key) => catalog?.plugins?.find((p) => p.plugin === key)
+export const toolIn = (catalog, key, name) => pluginIn(catalog, key)?.tools?.find((t) => t.name === name)
+/** Status of a tool anywhere in the catalog (under a plugin or in otherTools). */
+export function statusIn(catalog, name) {
+  for (const p of catalog?.plugins ?? []) { const t = p.tools?.find((x) => x.name === name); if (t) return t.status }
+  return catalog?.otherTools?.find((t) => t.name === name)?.status
+}
+
+/**
+ * Wait until the catalog reports every plugin's choice as in effect (applied === on, as
+ * observed: an off plugin reports applied false; CASES.md A20). Never fails: a refused or
+ * broken plugin can stay unapplied, and the test then checks the request itself.
+ */
+export async function settle(host, timeoutMs = 3000) {
+  await until(async () => {
+    const catalog = (await host.state())?.catalog
+    return catalog && catalog.plugins.every((p) => p.applied === p.on)
+  }, timeoutMs, 50)
+}
+
+/** The tool names of Fishball's next request (one plain turn after the plugin changes settled). */
+export async function nextTools(host, sessionId) {
+  await settle(host)
+  return toolNames((await turn(host, sessionId, [[{ text: 'next' }]])).requests.at(-1))
+}
+
+/** Make the fbtest-tools fixture tools visible to Fishball the supported way: set_plugin_enabled answered Allow once. */
+export async function allowFixtures(host, sessionId, plugin = FIXTURE_BUNDLE.name) {
+  const r = await setPlugin(host, sessionId, plugin, true, OUTCOME.allow)
+  if (r.json?.ok !== true) throw new Error('precondition: allowing ' + plugin + ' failed: ' + r.result.text.slice(0, 500))
+  await settle(host)
+  return r
+}
+
+/**
+ * Drive one Fishball turn made of several scripted steps with the approver answering `outcome`;
+ * returns the turn record and the approval questions it raised.
+ */
+export async function scriptedTurn(host, sessionId, script, outcome = OUTCOME.reject) {
+  await host.call('setApprover', { outcome })
+  const before = (await host.call('approvals', { sessionId })).length
+  try {
+    const r = await turn(host, sessionId, script)
+    return { ...r, approvals: (await host.call('approvals', { sessionId })).slice(before) }
+  } finally {
+    await host.call('setApprover', { outcome: OUTCOME.reject })
+  }
+}
+
+/** Profile files Fishball's toggles must leave byte-identical (R5). */
+export function profileFiles(home) {
+  const dir = path.join(home, 'profiles', PROFILE)
+  return { packageJson: fs.readFileSync(path.join(dir, 'package.json'), 'utf8'), patch: fs.readFileSync(path.join(dir, 'cordis.patch.yml'), 'utf8') }
 }
 
 export const T = { timeout: 55000 }

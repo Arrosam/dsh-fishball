@@ -14,8 +14,9 @@
 import { bindScopeParent, createScope, scopeOf } from '@deepseek-ai/dsh-scope'
 import { EntryTree } from '@deepseek-ai/cordis-plugin-loader'
 import { prepareProfileEntries } from '@deepseek-ai/dsh-app-boot'
-import { auditRows } from '@deepseek-ai/dsh-agent-preset-registry'
-import { ASSISTANT, EVENT } from './constants.js'
+import { RUN_CODE_NAME } from '@deepseek-ai/dsh-tools'
+import { auditRows, leakedServices } from '@deepseek-ai/dsh-agent-preset-registry'
+import { ASSISTANT, EVENT, TOOL_STATUS } from './constants.js'
 import { deferLogged } from './errors.js'
 import { HIDDEN_PROMPT_ENTRIES, PERSONA_ROW } from './persona.js'
 import { BSK_INSPECT, FILE_WRITE_TOOLS, HIDDEN_TOOLS, REFUSAL, SAFE_SANDBOX_MODE, SANDBOX_ESCALATION_ARG, SHELL_TOOLS } from './tool-rules.js'
@@ -80,12 +81,22 @@ export function guardDecision(name, args, sandboxMode) {
   return sandboxMode === SAFE_SANDBOX_MODE ? undefined : REFUSAL.notReadOnly(name, sandboxMode)
 }
 
+/** auditRows lines start with the row id ("<id> (<module>): <detail>"). */
+const byRowId = (lines) => new Map(lines.map((line) => [line.slice(0, line.indexOf(' ')), line]))
+
+/** Tool statuses the mask denies (everything but visible). */
+const MASKED = new Set([TOOL_STATUS.hidden, TOOL_STATUS.pluginOff, TOOL_STATUS.unchecked])
+
 export class AssistantComposition {
   #rowCtx
   #logger
   #key = {}
   #pctx
   #tree
+  /** Catalog deciding each tool; until attached, only the §7 hidden list is denied. */
+  #catalog
+  /** Rebuild the mask of every agent set up under P (one per live agent). */
+  #maskRefreshers = new Set()
 
   /**
    * @param rowCtx - the fishball row's plugin context (needs tools, sandboxPolicy, systemPrompt).
@@ -110,14 +121,112 @@ export class AssistantComposition {
     const pctx = (this.#pctx = createScope(this.#rowCtx, this.#key).ctx.extend({ baseUrl: this.#rowCtx.baseUrl }))
     const tree = (this.#tree = new PrivateTree(pctx))
     pctx.effect(() => () => tree.root.stop(), 'fishball: private tree')
-    await tree.root.update(prepareProfileEntries(pctx, [structuredClone(PERSONA_ROW)], pctx.baseUrl))
-    const audit = await auditRows(tree)
-    const unusable = [...audit.failed, ...audit.pending]
-    if (unusable.length > 0) throw new Error(unusable.join('\n'))
+    // The persona is core: a failure here fails the mount (catalog rows are audited per plugin).
+    const audit = await this.mountRows([])
+    const core = [...audit.failed.values(), ...audit.pending.values(), ...audit.leaked]
+    if (core.length > 0) throw new Error(core.join('\n'))
     this.#shadowPromptEntries(pctx)
     // Nearest scope wins, so this one declaration in P covers the agent joined under it.
     pctx.tools.presentAs(ASSISTANT.toolPresentation)
     this.#installBskCopy(pctx)
+  }
+
+  /**
+   * Replace the private tree's plugin rows: the persona row plus `rows` (catalog plugins,
+   * already given private-tree ids). DSH's compatibility checks apply (`prepareProfileEntries`).
+   * @returns per-row audit, each keyed by row id: failed (import or activation failed),
+   *   pending (waiting for a service that may still arrive) and leaked (published a service
+   *   outside P).
+   */
+  async mountRows(rows) {
+    const pctx = this.#pctx
+    const tree = this.#tree
+    await tree.root.update(prepareProfileEntries(pctx, [structuredClone(PERSONA_ROW), ...rows], pctx.baseUrl))
+    const audit = await auditRows(tree)
+    const leaked = new Set()
+    for (const entry of tree.entries()) {
+      if (entry.fiber !== undefined && leakedServices(this.#rowCtx, entry.fiber).length > 0) leaked.add(entry.options.id)
+    }
+    return { failed: byRowId(audit.failed), pending: byRowId(audit.pending), leaked }
+  }
+
+  /** Row ids of the private tree still waiting for a service (a read-only re-audit). */
+  async pendingRowIds() {
+    return new Set(byRowId((await auditRows(this.#tree)).pending).keys())
+  }
+
+  /**
+   * Whether a tool definition lives in P's own layer (the private tree or Fishball's own
+   * tools), not in the global layer. Only those can belong to a built-in or Fishball-only
+   * plugin; a host row choosing a matching id prefix does not qualify (review M4).
+   */
+  ownsDefinition(definition) {
+    if (definition === undefined) return false
+    const name = definition.name
+    const tools = this.#rowCtx.tools
+    // P's view of that name is this definition and the global view is not: it is P's own.
+    return tools.get(name, this.#key) === definition && tools.get(name) !== definition
+  }
+
+  /**
+   * Let the catalog decide the mask (P3). Until then only the §7 hidden list is denied.
+   * @param catalog - PluginCatalog (evaluate(tools, scopeKey)).
+   */
+  attachCatalog(catalog) {
+    this.#catalog = catalog
+    this.refreshMasks()
+  }
+
+  /** Recompute every live agent's mask now (after the catalog's applied snapshot changed). */
+  refreshMasks() {
+    for (const refresh of this.#maskRefreshers) deferLogged(refresh, this.#logger, 'tool mask')
+  }
+
+  /**
+   * Register one of Fishball's own tools in P (only Fishball's agent sees it).
+   * @returns the disposer.
+   */
+  registerOwnTool(definition) {
+    return this.#pctx.tools.register(definition)
+  }
+
+  /** Tool decisions for P's view (what the agent inherits). */
+  decisions() {
+    return this.#catalog?.evaluate(this.#rowCtx.tools, this.#key) ?? new Map()
+  }
+
+  /**
+   * The guard's catalog check, DEFAULT-DENY (review H2): a call runs only when the tool is
+   * visible in P's view right now (decided live, not from the last mask rebuild), or it is
+   * the reserved `run_code` transport, whose inner calls pass this guard one by one. A tool
+   * registered in the agent's OWN scope (agent-team does this on agent/created) is not in
+   * P's view and cannot be restricted, so it is refused here.
+   *
+   * The decision is about P's definition, but the call runs the definition the CALLING scope
+   * resolves (dsh-tools resolveExecution(name, exec.agent)), where an agent-own tool shadows
+   * an inherited one of the same name. So the call is also refused unless both resolve to the
+   * same definition: an agent-own `web_search` cannot borrow the visible one's decision (N1).
+   * @param name - the called tool.
+   * @param callerScope - `exec.agent`, the scope the executor resolves the call in.
+   */
+  #allows(name, callerScope) {
+    if (this.#catalog === undefined) return !HIDDEN.has(name)
+    if (name === RUN_CODE_NAME) return true
+    const tools = this.#rowCtx.tools
+    if (tools.get(name, callerScope) !== tools.get(name, this.#key)) return false
+    return this.decisionFor(name)?.status === TOOL_STATUS.visible
+  }
+
+  /** One tool's live decision in P's view, or undefined when P does not see it. */
+  decisionFor(name) {
+    return this.#catalog?.evaluateOne(this.#rowCtx.tools, this.#key, name)
+  }
+
+  /** Names the mask denies right now, among the tools A inherits. */
+  #maskedNames() {
+    const tools = this.#rowCtx.tools
+    if (this.#catalog === undefined) return HIDDEN_TOOLS.filter((name) => tools.get(name, this.#key) !== undefined)
+    return [...this.decisions()].filter(([, decision]) => MASKED.has(decision.status)).map(([name]) => name).sort()
   }
 
   /** Empty scoped entries with the same names hide the global ones for Fishball only (spike S9). */
@@ -168,13 +277,15 @@ export class AssistantComposition {
       this.#maintainMask(agentCtx)
       agentCtx.tools.guard((exec) => {
         const mode = this.#rowCtx.sandboxPolicy.resolve({ session: agent.session }).mode
-        return guardDecision(exec.name, exec.arguments, mode)
+        return guardDecision(exec.name, exec.arguments, mode) ?? (this.#allows(exec.name, exec.agent) ? undefined : REFUSAL.masked(exec.name))
       })
     }
   }
 
   /**
-   * Deny every hidden name A inherits; rebuild on tools/change.
+   * Deny every masked name A inherits; rebuild on tools/change and when the catalog's
+   * applied snapshot changes. (The guard decides live, so a mask rebuild that runs a
+   * microtask late never lets a call through.)
    *
    * Names are read from P's view, never A's: P carries no restriction, so it shows exactly
    * what A inherits (global plus P's own tools). A's own view drops names A already denies,
@@ -185,11 +296,10 @@ export class AssistantComposition {
    * moves only on success, so a failing restrict() keeps the previous mask.
    */
   #maintainMask(agentCtx) {
-    const tools = this.#rowCtx.tools
     let lift
     let applied = ''
     const apply = () => {
-      const names = HIDDEN_TOOLS.filter((name) => tools.get(name, this.#key) !== undefined)
+      const names = this.#maskedNames()
       const signature = names.join(',')
       if (signature === applied) return
       const next = names.length > 0 ? agentCtx.tools.restrict({ deny: names }) : undefined
@@ -198,6 +308,8 @@ export class AssistantComposition {
       applied = signature
     }
     agentCtx.on(EVENT.toolsChange, () => deferLogged(apply, this.#logger, 'tool mask'))
+    this.#maskRefreshers.add(apply)
+    agentCtx.effect(() => () => { this.#maskRefreshers.delete(apply) }, 'fishball: mask refresher')
     // A failure here fails the agent's setup, so the assistant never starts unmasked.
     apply()
   }

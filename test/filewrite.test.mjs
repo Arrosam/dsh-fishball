@@ -18,7 +18,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { FILE_TOOLS, FIXTURE_SHELL_TOOLS, PRESET, SANDBOX_MODES } from './support/constants.mjs'
-import { HOOK, T, callTool, toolNames } from './support/expect.mjs'
+import { HOOK, T, allowFixtures, callTool, toolNames } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
 
 const shellArgs = (extra = {}) => ({ command: 'echo fbtest', description: 'fbtest', ...extra })
@@ -32,6 +32,8 @@ describe('R-FILEWRITE', () => {
     const booted = await bootLive(newHome('filewrite'))
     host = booted.host
     fb = booted.state?.sessionId
+    // P3: the shell fixtures are unchecked for Fishball; allow them so FW-03/05 exercise the shell rule, not the mask.
+    await allowFixtures(host, fb)
     const created = await host.call('ordinary', { preset: PRESET.bare, folder: 'other' })
     assert.equal(created.error, null)
     other = created.sessionId

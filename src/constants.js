@@ -77,6 +77,45 @@ export const ERROR = Object.freeze({
 /** Recovery actions the settings view may request. */
 export const RECOVERY_ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
 
+/** Where a catalog plugin runs (DESIGN §4 "Plugin states"). */
+export const PLUGIN_KIND = Object.freeze({
+  /** Enabled in the profile: runs for every session; Fishball can only mask it. */
+  profile: 'profile',
+  /** Installed but off in the profile: runs in Fishball's private tree when on. */
+  fishballOnly: 'fishball-only',
+  /** A DSH capability package Fishball mounts in its private tree when on. */
+  builtin: 'builtin',
+})
+
+/** Who last changed a plugin's Fishball state. */
+export const CHANGED_BY = Object.freeze({ fishball: 'fishball', user: 'user' })
+
+/** Plugin change audit actions. */
+export const PLUGIN_ACTION = Object.freeze({ on: 'on', off: 'off', add: 'add' })
+
+/** Why a tool is not shown to Fishball, or that it is (list_plugins, settings). */
+export const TOOL_STATUS = Object.freeze({
+  visible: 'visible',
+  hidden: 'hidden',
+  pluginOff: 'plugin-off',
+  unchecked: 'unchecked',
+})
+
+/** Stable plugin diagnostics (catalog `lastError`, tool results); never message text. */
+export const PLUGIN_ERROR = Object.freeze({
+  unknownPlugin: 'unknown-plugin',
+  limitReached: 'limit-reached',
+  editsOtherRows: 'edits-other-rows',
+  noRows: 'no-rows',
+  rowIdConflict: 'row-id-conflict',
+  rowFailed: 'row-failed',
+  leaksService: 'leaks-service',
+  noProfile: 'no-profile',
+  rejected: 'rejected',
+  installFailed: 'install-failed',
+  restartRequired: 'restart-required',
+})
+
 /** Storage domain names and versions (fail closed on mismatch). */
 export const DOMAIN = Object.freeze({ main: 'fishball', version: 1 })
 
@@ -85,6 +124,10 @@ export const API = Object.freeze({
   state: '/api/fishball/state',
   events: '/api/fishball/events',
   recovery: '/api/fishball/recovery',
+  /** POST { plugin, on }: your own on/off choice for one catalog plugin. */
+  plugins: '/api/fishball/plugins',
+  /** POST { toolKey }: withdraw an allowance for a tool nobody had checked. */
+  toolApprovals: '/api/fishball/tool-approvals/remove',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -92,6 +135,10 @@ export const REQUEST_BODY_BUFFERED = 'buffered'
 export const API_CODE = Object.freeze({
   badBody: 'bad-body',
   notInRecovery: 'not-in-recovery',
+  /** The named plugin or tool allowance does not exist. */
+  unknown: 'unknown',
+  /** The change was refused (a limit, or the plugin cannot run Fishball-only). */
+  refused: 'refused',
   /** No assistant lifecycle runs: before the store opens, or after a core failure. */
   unavailable: 'unavailable',
   failed: 'failed',
@@ -121,6 +168,10 @@ export const SERVICE = Object.freeze({
   sessionPersistence: 'sessionPersistence',
   sessionProjections: 'sessionProjections',
   sessionController: 'sessionController',
+  /** Catalog (listBundles) and add_plugin's install. */
+  pluginManager: 'pluginManager',
+  /** Permission prompts for add_plugin and tools nobody has checked (DESIGN §7). */
+  approval: 'approval',
 })
 
 /** Host events this plugin listens to. */
@@ -130,4 +181,11 @@ export const EVENT = Object.freeze({
   sessionStop: 'workspace/session-stop',
   volatileUpdate: 'loader/volatile-update',
   agentDisposed: 'agent/disposed',
+  /** Cordis: a service was provided or removed (a row waiting for one may now run). */
+  service: 'internal/service',
+  /** dsh-plugin-manager: a bundle was installed, removed, enabled or disabled. */
+  pluginManagerChanged: 'plugin-manager/changed',
 })
+
+/** Approval outcome that grants the request; every other outcome refuses (dsh-user-approval). */
+export const APPROVAL_GRANTED = 'allowed-once'

@@ -179,7 +179,7 @@ One component per responsibility; each is a module with an explicit contract:
 | Schedule, approval, token meter, session controller, plugin manager | Global persona prefix/suffix, `harness:*` sections, optional runtime context (shadowed or suppressed) |
 | Global policy listeners: spill, timeouts, checkpointing. Cannot be hidden [V], and are harmless | Plugins that run for Fishball only (private tree) |
 
-**Plugin states.** Fishball's catalog lists every plugin bundle installed in the profile (`pluginManager.listBundles()` [V]), plus DSH built-in capability packages: web, time, reminders, ask-user, MCP client, skills, and read-only shell and code tools. Each has a Fishball-only on/off state:
+**Plugin states.** Fishball's catalog lists every plugin bundle installed in the profile (`pluginManager.listBundles()` [V]), plus DSH built-in capability packages: compaction, web, time, reminders, ask-user, skills and the read-only shell. Each has a Fishball-only on/off state:
 
 | Where the plugin is | Fishball "on" | Fishball "off" | Effect on other sessions |
 |---|---|---|---|
@@ -191,7 +191,7 @@ One component per responsibility; each is a module with an explicit contract:
 - compaction, web search and page opening, time awareness and reminders;
 - every profile-wide plugin; their file-writing tools stay hidden (§7).
 
-The read-only shell and code tools are in the catalog but start off.
+Ask-user, skills and the read-only shell are in the catalog but start off. DSH's MCP client is not a catalog entry: each MCP server is one row with its own server settings, which an on/off switch cannot supply. MCP servers configured in the profile are host rows, so their tools reach Fishball as profile tools, checked or allowed like any other. The catalog lists bundles you installed or DSH offers as optional; the installation's own surface bundles are not plugins.
 
 **Who changes what.**
 - **Turning plugins on and off: Fishball (Q-toggle).** It uses `set_plugin_enabled({plugin, on})`, when you ask or on its own judgement. `list_plugins` shows the catalog and the states. You can make the same changes in Fishball settings.
@@ -213,7 +213,7 @@ The read-only shell and code tools are in the catalog but start off.
    - `message_fishball`, so that Fishball never messages itself.
 
    How it is maintained:
-   - **Which plugin a tool came from.** DSH records no owner for a tool. The package therefore wraps `ToolRuntime.prototype.register` when its module is evaluated, and records the plugin row of the registering context (S2b). A tool registered before that, which has no recorded owner, is treated as unchecked and stays hidden (§7), so a gap fails closed.
+   - **Which plugin a tool came from.** DSH records no owner for a tool. The package therefore wraps `ToolRuntime.prototype.register` when its module is evaluated, and records the plugin row of the registering context (S2b). DSH's loader imports plugin modules in parallel and applies each as soon as it loads, so the wrapper lives in its own tiny row (`dsh-fishball/attribution`, the `fishball-attribution` row), which loads before small plugins register (P3 found the main row loads ~70 ms too late). A tool that still registers first has no recorded owner. It is attributed only to a module that already claims that exact tool (a checked entry, or one of your allowances, with the same parameter digest) while that module runs; otherwise it stays unchecked and hidden (§7), so a gap fails closed.
    - Fishball's own tools, which our row registers in P, are never in the deny set.
    - The rule is recomputed on `tools/change`, because unknown names throw [V].
    - A `tools.guard` enforces the file-write rule from §7 and denies anything masked (defence in depth).
@@ -224,9 +224,12 @@ The read-only shell and code tools are in the catalog but start off.
 **The private tree.**
 - **Structure.** An in-memory `EntryTree` subclass under P, modelled on the preset registry's `PresetTree`. Its `write()` does nothing, and the owner's subtree is restored.
 - **Mounting a Fishball-only plugin.** Its rows are read from its bundle patch (`listBundles` returns them [V]) and go through app-boot `prepareProfileEntries`, which applies DSH's compatibility checks [V]. A bundle whose patch edits other rows, instead of adding its own, cannot run Fishball-only, and the catalog says so (S1).
-- **Auditing.** After each change the tree is audited with `auditRows` and `leakedServices` [V exported]. A failing row is reverted and marked broken with its diagnostic; other rows keep running.
-- **Storage.** Rows `{bundle, entry, config, on}` are stored in domain `fishball`.
-- **When changes apply.** Inside `agent.runMaintenance()`, the idle phase, so a toggle never lands in the middle of a turn. A toggle Fishball makes takes effect when its current turn ends.
+- **Auditing.** After each change the tree is audited with `auditRows` and `leakedServices` [V exported]. A plugin whose rows fail, publish a host service, collide on a row id, or cannot be read is turned off for Fishball with a stable diagnostic, and the tree is mounted again without it; other plugins keep running. A row that only waits for a host service still starting is not broken: DSH activates it once the service arrives, so the plugin stays on, shown as starting, and is audited again whenever a service or tool changes, which clears "starting" once its rows run (P3 review: a slow service at boot must not switch a built-in off for good). The tree is mounted again until a mount breaks no further plugin. The catalog is read again when the plugin manager reports a change (`plugin-manager/changed`), so a bundle installed while DSH runs shows on the settings page without a turn.
+- **Mid-turn listing.** To list a Fishball-only plugin's tools in a prompt, that one plugin is mounted inside the tool call with all its tools masked; every other plugin keeps its applied rows. The listing ends on every path that does not turn the plugin on.
+- **Guard.** The guard is default-deny: a call runs only when its tool is visible in P's view at that moment (or it is the `run_code` transport, whose inner calls each pass the guard). A tool registered in the agent's own scope, such as the agent team's tools, is never in P's view and cannot be restricted, so the guard refuses it.
+- **Storage.** Fishball's on/off choice per plugin is stored in domain `fishball` (table `plugins`, §9); the rows themselves are re-read from the bundle or the built-in list.
+- **Row ids.** Every row a plugin mounts gets a per-plugin id prefix (`fb-<builtin>--`, `fbo-<bundle>--`), so rows never collide and a tool's registering row names its plugin.
+- **When changes apply.** Inside `agent.runMaintenance()`, the idle phase, so a toggle never lands in the middle of a turn. A toggle Fishball makes takes effect when its current turn ends. One exception, from your own profile action: moving a bundle between "everyone" and "Fishball only" on the Plugins page mid-turn reclassifies its tools at once. That fails closed, because its tools then stand only on checked or allowed until the apply.
   - DSH then logs the header change and the tool addition or removal itself [V `dsh-agent-loop/lib/index.js:1225-1260`].
   - A toggle invalidates the provider's KV cache from the first changed token; this cost is accepted.
 
@@ -392,7 +395,8 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
   - For a plugin Fishball has just installed, this is the second prompt, right after the install prompt.
 - **Allow once.** The tools become visible. The allowance is stored in `toolApprovals` (§9), keyed by plugin, tool name and parameter digest, so you are not asked again until the tool changes.
 - **Reject.** Nothing changes. A plugin that was off stays off, and a Fishball-only plugin is unmounted again. The unchecked tools stay hidden.
-- **Plugins already on.** A profile-wide plugin you install later is on for Fishball by default, but its unchecked tools stay hidden. Fishball receives a notice listing them, which wakes it like any input, and it can ask you with `set_plugin_enabled`.
+- **Plugins already on.** A profile-wide plugin you install later is on for Fishball by default, but its unchecked tools stay hidden, and `list_plugins` shows them as unchecked; Fishball can ask you with `set_plugin_enabled`. The notice that tells Fishball about them arrives with the intake ledger in P5, which owns every input that wakes it.
+- **Tools with no recorded owner.** A tool registered before Fishball's attribution row loaded, and not claimed by a checked entry or one of your allowances, cannot be tied to a plugin, so it can never be listed in a prompt; it stays hidden and shows under "other tools". Lazily registered tools (browser-skill) appear when first registered and are then allowed by asking for their plugin again.
 - **Withdrawing an allowance.** Fishball settings list the tools you allowed; removing one hides it again.
 - **The `bsk_inspect` copy** is built from the original's current parameters minus the save options. If the original's parameters change, it counts as unchecked like any other tool.
 
@@ -618,7 +622,7 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
 - `settings['assistant']`:
   - `contextWindowTokens?`, `maxOutputTokens?`. There is no model field, because the model follows DSH's settings (§6).
   - `hiddenPromptSections[]`
-- `plugins[pluginKey]`: `{bundle, entry?, kind:'profile'|'fishball-only'|'builtin', on, config?, order, changedBy:'fishball'|'user', lastError?}`
+- `plugins[pluginKey]`: `{kind:'profile'|'fishball-only'|'builtin', on, changedBy:'fishball'|'user', changedAt, lastError?}`. Absent means the default. A stored choice whose `kind` no longer matches (you moved the plugin between "everyone" and "Fishball only") is ignored. Table names are snake case (`tool_approvals`, `plugin_changes`), as DSH requires.
 - `watches[watchId]`:
   - `{targetSessionId, condition:'finished'|'per-turn', mode:'once'|'repeat'}`
   - `createdBy {kind:'user'|'assistant'|'agent', id?}`, `createdAt`
@@ -636,8 +640,8 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
   - `finalOutcome` (the DSH outcome, including your answer in the stock prompt) and `decidedAt`
   - The arguments themselves are not stored here; they stay in the two session logs.
 - `outbox[msgId]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{kind:'message'|'start', targetSessionId, folder?, messageDigest, sentAt, status:'delivered'|'failed', errorCode?}`
-- `toolApprovals[toolKey]`: `{bundle, toolName, paramsDigest, allowedAt}`, recording that you allowed a tool nobody had checked (§7). The hidden and checked sets are constants in code and are not stored.
-- `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add', by:'fishball'|'user', at, outcome}`
+- `toolApprovals[toolKey]`: `{module, toolName, paramsDigest, allowedAt}`, keyed by module, tool name and parameter digest (each segment encoded to storage-safe characters, joined by `__`), recording that you allowed a tool nobody had checked (§7). The hidden and checked sets are constants in code and are not stored.
+- `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add', by:'fishball'|'user', at, outcome}`. These three tables keep domain version 1: the single-file layout reads a missing table as empty.
 
 No custom session event types are added: persistence refuses logs containing unknown event types that are not marked ignorable [V `dsh-session/lib/types/known-event-types.d.ts`].
 
@@ -668,7 +672,7 @@ No custom session event types are added: persistence refuses logs containing unk
      - the safety limits as a form, one field per limit, with each limit's current use, for example "queue 12 of 200" (later phases).
        - The form saves through DSH's settings service, which validates the values, refuses stale writes and saves them in the profile's patch [V `dsh-settings/README.md`, `dsh-config-editor/README.md`]; verified in the browser in P2.
   3. Session-row and session-header actions: **Send to Fishball** and **Tell Fishball when finished** (P5, P6); P2 adds a header action in Fishball's own session that opens its Plugins page.
-- **Host API.** `GET /api/fishball/state` (JSON snapshot), `GET /api/fishball/events` (server-sent snapshots: one at once, then one per change) and `POST /api/fishball/recovery` (`{action: 'retry'|'adopt'}`; 400 `bad-body`, 409 with the reason `not-in-recovery` or `unavailable`). Later phases add `POST /api/fishball/{plugins, watches, send}`; limits are saved through DSH's settings service, not a Fishball route.
+- **Host API.** `GET /api/fishball/state` (JSON snapshot), `GET /api/fishball/events` (server-sent snapshots: one at once, then one per change) and `POST /api/fishball/recovery` (`{action: 'retry'|'adopt'}`; 400 `bad-body`, 409 with the reason `not-in-recovery` or `unavailable`). P3 adds `POST /api/fishball/plugins` (`{plugin, on}`, your own choice) and `POST /api/fishball/tool-approvals/remove` (`{toolKey}`); 409 `unknown` or `refused`. Later phases add `POST /api/fishball/{watches, send}`; limits are saved through DSH's settings service, not a Fishball route.
   - These routes are behind DSH's browser authentication and same-origin fence [V pattern], and bodies are validated at the boundary.
   - The browser never names the source identity or the sender.
 
@@ -676,8 +680,8 @@ No custom session event types are added: persistence refuses logs containing unk
 
 - **Quitting and restarting.** A full DSH quit stops the assistant. On start, in order:
   1. Open the domains; fail closed and report in Fishball settings if they cannot be read.
-  2. Resume the assistant session, retrying `writer-held` a bounded number of times.
-  3. Remount the private tree.
+  2. Mount the private tree (persona, then the plugins as last applied), so the resumed agent's first request already has Fishball's world. A plugin row waiting for a slow host service stays on and activates when the service arrives.
+  3. Resume the assistant session, retrying `writer-held` a bounded number of times.
   4. Reconcile the intake ledger.
   5. Catch up watches.
   6. Publish state.
@@ -924,7 +928,7 @@ Each phase ends with:
 | `maxQueuedInputs` | Messages, finished-session notices and plugin events that have arrived but Fishball has not read yet | New inputs are refused, and the sender is told "Fishball's queue is full" | 200 |
 | `maxActiveWatches` | Open "tell Fishball when this session finishes" requests | New watches are refused | 50 |
 | `maxSourcesPerPlugin` | Separate feeds one plugin can register, for example "inbox" and "calendar" | Further registrations fail | 8 |
-| `maxFishballOnlyPlugins` | Plugins mounted in Fishball's private tree at the same time | Turning on another fails until one is turned off | 32 |
+| `maxFishballOnlyPlugins` | Fishball-only plugins (installed but off in the profile) running in Fishball's private tree at the same time; the built-ins are a fixed set and do not count | Turning on another fails until one is turned off | 32 |
 | `wakeupsPerHour` | Times an input other than your message or a permission request starts a new Fishball turn from idle. Inputs that arrive while Fishball is already working steer that turn and do not count | Further inputs wait in the queue and arrive together at the next allowed wake-up | 60 (0 = no cap) |
 | `messagesPerHour` | `message_session` calls | Further sends fail, and Fishball tells you | 30 (0 = no cap) |
 | `sessionsPerHour` | `start_session` calls | Further starts fail, and Fishball tells you | 10 (0 = no cap) |

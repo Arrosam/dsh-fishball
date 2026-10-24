@@ -3,7 +3,7 @@
  *
  * | id     | technique          | requirement                                          | expected |
  * |--------|--------------------|------------------------------------------------------|----------|
- * | HTP-01 | EP                 | GET state returns the JSON snapshot                  | 200 application/json; exactly the 7 documented keys with the documented types |
+ * | HTP-01 | EP                 | GET state returns the JSON snapshot                  | 200 application/json; exactly the 8 documented keys (P3 adds catalog) with the documented types |
  * | HTP-02 | EP                 | hiddenTools is the documented list (18 names), sorted | deepEqual(the 18 names, in this literal sorted order) |
  * | HTP-03 | EP (no cookie)     | routes sit behind DSH browser auth                   | GET state without cookie is not 200 |
  * | HTP-04 | EP                 | events is an SSE stream; first frame immediately      | 200 text/event-stream; a frame within 3 s equal to GET state |
@@ -21,11 +21,12 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CONFLICT_CODE, HIDDEN_TOOLS, LIMITS, MS, STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CONFLICT_CODE, HIDDEN_TOOLS, LIMITS, MS, STATUS } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
-const STATE_KEYS = ['cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
+// P3 adds 'catalog' (shape of list_plugins); see plugins-http.test.mjs for its content.
+const STATE_KEYS = ['catalog', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
 
 describe('R-HTTP', () => {
   let host
@@ -52,6 +53,7 @@ describe('R-HTTP', () => {
     assert.equal(s.error, null)
     assert.deepEqual(Object.keys(s.limits).sort(), Object.keys(LIMITS).sort())
     for (const v of Object.values(s.limits)) assert.ok(Number.isInteger(v))
+    assert.deepEqual(Object.keys(s.catalog ?? {}).sort(), CATALOG_KEYS, 'catalog is not null while live')
   })
 
   it('HTP-02 hiddenTools lists exactly the hidden names, sorted', T, async () => {
@@ -73,7 +75,10 @@ describe('R-HTTP', () => {
       assert.equal(stream.status, 200)
       assert.match(stream.contentType, /^text\/event-stream/)
       assert.ok(await until(() => stream.frames.length > 0, MS.sseFirstFrame, 20), 'first frame arrives immediately')
-      assert.deepEqual(stream.frames[0], (await host.get(API.state)).json)
+      // P3: tool changes also emit frames, so compare the first frame without the live catalog churn.
+      const { catalog: _c, ...first } = stream.frames[0]
+      const { catalog: _n, ...now } = (await host.get(API.state)).json
+      assert.deepEqual(first, now)
       const count = stream.frames.length
       const r = await host.call('settingsUpdate', { patch: { maxActiveWatches: 7 } })
       assert.equal(r.ok, true, JSON.stringify(r.error))
