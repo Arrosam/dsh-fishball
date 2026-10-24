@@ -1,0 +1,9 @@
+{
+  "id": "P9-rehearsal",
+  "started": "2026-10-24T19:05:11.574Z",
+  "finished": "2026-10-24T19:06:41.575Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": false,
+  "error": "deadline at stage undefined"
+}
