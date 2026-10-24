@@ -241,8 +241,9 @@ Ask-user, skills and the read-only shell are in the catalog but start off. DSH's
   2. Store `{sessionId}` in the domain first, so a crash cannot leave an unrecorded second session.
   3. `ctx.agents.create({sessionId, meta:{cwd: dir, agentPreset: SENTINEL}, agentOptions, setup})`, with `setup` writing sandbox `read-only` and approval `ask` before publication.
   4. Pin the session, and while it is still blank (no turn started), run one **setup turn**: a `fishball-notice` that states "Fishball has just been set up"; the persona tells the model to greet the user briefly. DSH's GUI disables the composer of a blank session that belongs to no workspace, so this one model call per lifetime makes the chat usable. The status stays "starting" until that turn ends, but the wait never holds recovery or archive handling.
-  - Step 4 runs after every create and resume and is idempotent, so Retry repairs a start that stopped between them. As a result the pin is restored on every start: Fishball always sits at the top of the sidebar.
-  - **No workspace is registered** for the folder. DSH's New Session flow reuses a blank session that belongs to a workspace and rebinds its preset; with Fishball's session that failed in the browser (P2). The pinned session is listed at the top of the sidebar.
+  - Step 4 runs after every create and resume and is idempotent, so Retry repairs a start that stopped between them. As a result the pin is restored on every start.
+  - **No workspace is registered** for the folder. DSH's New Session flow reuses a blank session that belongs to a workspace and rebinds its preset; with Fishball's session that failed in the browser (P2).
+  - **Not in the session list** (owner's choice, P9 install). Fishball's session row is hidden from the sidebar's session list, grouped or flat; it is opened from the brand, or "Open chat" on its Plugins page. DSH has no hidden flag for a session, so the client half adds a style rule on the row's `data-row-key="session:<id>"` (dsh-client-ui-workspace markup, rc.2). If a DSH update renames that key the row shows again. Sidebar search still lists it.
 - **Every start:** resume eagerly with `ctx.agents.resume({resumeSessionId, setup})`. The agent stays live for the life of the `fishball` row, which is what makes it always-on.
 - **Why there is never a second session:**
   - No preset exists, so the picker cannot offer the assistant.
@@ -701,7 +702,7 @@ No custom session event types are added: persistence refuses logs containing unk
        - This covers both mouse and keyboard, and the button's label becomes "Open Fishball".
        - The **New Session** button below is unchanged, and the mark in the collapsed rail still expands the sidebar.
        - If a DSH update changes the sidebar's markup, the click falls back to New Session. The live check in each phase catches this.
-     - **macOS Desktop.** There the brand row is a window-drag area with no click [V]. Fishball is opened from its pinned session in the sidebar and from its Plugins page there.
+     - **macOS Desktop.** There the brand row is a window-drag area with no click [V]. Fishball's session row is hidden there too, so it is opened from its Plugins page ("Open chat").
   2. **Fishball settings live on its page under Plugins** (owner's choice, P2), through `plugins.bundle.config`. There is no separate settings panel. The page opens from the header action in the assistant session and from the brand while the assistant needs attention. It shows, as the phases add them:
      - status and recovery actions;
      - the context window (`W_eff`, threshold, pressure);

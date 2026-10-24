@@ -12,6 +12,7 @@
  *    limits form (DSH's staged settings form; the Host schema decides validity) and the
  *    tools Fishball never uses. There is no separate settings panel.
  * 3. Header action in Fishball's own session: opens that Plugins page.
+ * 4. Fishball's own session row is hidden from the sidebar's session list; the brand opens it.
  *
  * The mark is FishMark from the owner's fishball app (assets/icon.svg, THIRD_PARTY_NOTICES).
  *
@@ -102,6 +103,14 @@ window.__ModuleLoader__.load({
       eyeColor: '#EC0A6E',
     })
     const STYLE_ID = 'fishball-style'
+    /**
+     * Fishball's own session is reached through the brand (or its Plugins page), not the
+     * session list (owner's choice, P9). DSH has no per-session hidden flag, so the row is
+     * hidden by a style rule on the workspace browser's row key. The key is
+     * dsh-client-ui-workspace markup (`data-row-key="session:<id>"`, rc.2), used by both the
+     * grouped and the flat list; if a DSH update renames it the row simply shows again.
+     */
+    const OWN_ROW = Object.freeze({ styleId: 'fishball-own-row', selector: (sessionId) => `[data-row-key="session:${CSS.escape(sessionId)}"]{display:none}` })
     const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
@@ -984,12 +993,27 @@ window.__ModuleLoader__.load({
       return () => style.remove()
     }
 
+    /** Keep the hide rule for Fishball's own row in step with the session id the Host reports. */
+    function hideOwnRow() {
+      const style = document.createElement('style')
+      style.id = OWN_ROW.styleId
+      document.head.appendChild(style)
+      const update = () => {
+        const { sessionId } = stateSource.get()
+        style.textContent = sessionId ? OWN_ROW.selector(sessionId) : ''
+      }
+      update()
+      const unsubscribe = stateSource.subscribe(update)
+      return () => { unsubscribe(); style.remove() }
+    }
+
     exports.name = PACKAGE_NAME
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {
       const t = ctx.locale.bind(NS)
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
+      ctx.effect(hideOwnRow, 'fishball: hide own session row')
       const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
         yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, Mark)
