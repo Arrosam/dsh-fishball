@@ -1,10 +1,11 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
-**Status: proposal for owner review, revision 6 (2026-10-24).** Nothing has been deleted or implemented. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+**Status: approved 2026-10-24; revision 7.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
 
-Revision 6 works in your answer on the safety limits. Every limit is now a field in this plugin's config, which you change on DSH's Plugins page (§16). Every design question is now answered.
+Revision 7 records the spike results (§13a) and the four amendments they forced: the brand registers at a lower slot priority (§10), `start_session` checks that the folder exists before DSH sees it and does not register a workspace (§5d), tools are attributed to plugins by a registration hook (§4), and Fishball sets its own session read-only (§7).
 
 Earlier revisions:
+- Revision 6 put every safety limit into this plugin's config (§16).
 - Revision 5 kept tools nobody has checked hidden until you allow them (§7), and moved the tool mask into Fishball's agent scope (§4).
 - Revision 4 added starting new sessions (§5d), the fixed list of hidden file-writing tools and the role prompt (§7), and plugin adds as normal permission requests (§7a).
 - Revision 3 let Fishball act through tools and plugins, added messaging in both directions, sent every permission request to Fishball, and let it manage its own plugins.
@@ -212,11 +213,12 @@ The read-only shell and code tools are in the catalog but start off.
    - `message_fishball`, so that Fishball never messages itself.
 
    How it is maintained:
+   - **Which plugin a tool came from.** DSH records no owner for a tool. The package therefore wraps `ToolRuntime.prototype.register` when its module is evaluated, and records the plugin row of the registering context (S2b). A tool registered before that, which has no recorded owner, is treated as unchecked and stays hidden (§7), so a gap fails closed.
    - Fishball's own tools, which our row registers in P, are never in the deny set.
    - The rule is recomputed on `tools/change`, because unknown names throw [V].
    - A `tools.guard` enforces the file-write rule from §7 and denies anything masked (defence in depth).
 2. **Persona.** A `dsh-persona` row with Fishball's persona (role, §7; permission rubric, §7a) as `prefix`, an empty `suffix` and `includeRuntimeContext:false`.
-3. **Named sections.** Empty-text shadows for named global sections listed in the setting `hiddenPromptSections`. The initial list comes from spike S9, run against your live profile.
+3. **Named sections.** Empty-text shadows for named global sections listed in the setting `hiddenPromptSections`. S9 found these sections in a Web profile: `harness:identity`, `deployment:persona-prefix`, `context:file-reference`, `mcp-resource-servers`, `ui:deliverable-file-references`, `harness:source`, `app:web-surface`, `deployment:persona-suffix`. The initial list is `harness:source`, which describes the DSH source checkout and has no use for Fishball; the persona row replaces both persona sections.
 4. **Tool presentation.** `tools.presentAs('native')`, so a process-wide PTC mode does not leak in (configurable).
 
 **The private tree.**
@@ -290,7 +292,9 @@ Both tools hand work to other sessions. The work then happens there, under that 
 
 `start_session({folder, message, notify_when_finished?})` starts a new session:
 - **Creation.** `sessionController.create({workspaceId | cwd})` with no preset named, so the session runs DSH's configured default preset and starts in DSH's default permission mode for new sessions [V API; behaviour → S18]. It is never created with Fishball's composition.
-- **Folder.** An existing DSH workspace, or an existing folder on disk. Fishball cannot create folders, since that would be a file write. A folder that is not yet a workspace is registered by DSH, as the New Session page does [I → S18].
+- **Folder.** An existing DSH workspace, or an existing folder on disk. Fishball cannot create folders, since that would be a file write.
+  - DSH's `create` makes the folder when it is missing [V `agent.js:565-571`], so the tool checks that the folder exists first and refuses otherwise (S18).
+  - A folder that is not a workspace is not registered: the session appears under Ungrouped, as DSH shows any session without a workspace (S18).
 - **First message.** Delivered the same way as `message_session`, with the relay source naming Fishball as the sender, so the new session starts working at once.
 - **Title.** DSH titles it as usual. Fishball settings list the session in the outbox.
 
@@ -339,7 +343,7 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
 | DSH file tools (`write`, `edit`, str-replace editor) and `plugin_manager` | Never in Fishball's catalog; the guard also refuses them by name | Hard |
 | Plugin tools that write files (table below) | Never exposed. Masked in Fishball's scope; turning their plugin on does not expose them, and neither you nor Fishball can switch this off | Hard |
 | Tools that start agents inside Fishball's session (subagents, `ralph`, `code_review_report`) | Never exposed. Those child agents would carry their own tools outside this rule. Fishball hands work to ordinary sessions instead (§5d) | Hard |
-| Shell and code tools (bash, `run_code`, terminal), if Fishball turns them on | The guard lets them run only while Fishball's session sandbox is `read-only`, where DSH confines processes so that they cannot write files [V]. Any call with `sandbox_permissions` is refused, so they can never ask to widen it. Under any other permission mode, these tools are refused instead | Hard (S15) |
+| Shell and code tools (bash, `run_code`, terminal), if Fishball turns them on | Fishball sets its own session's sandbox to `read-only` when it is created, because the Web default is `workspace-write` (S15). The guard lets these tools run only while that mode holds, where DSH confines processes so that they cannot write files [V]; with no usable sandbox backend DSH refuses to run them at all. Any call with `sandbox_permissions` is refused, so they can never ask to widen it. Under any other permission mode, these tools are refused instead | Hard (S15) |
 | Tools nobody has checked (from plugins added or updated later) | Hidden until you allow them in a normal permission prompt that lists them (N4). Once you allow a tool, only the role prompt governs how it is used | Hard until you allow them |
 | Browser and computer use (a download, or "Save" in an app) | No tool is involved, so only the role prompt forbids it | Prompt |
 | DSH recording Fishball's session, settings and queue; reminders; workspace-registry changes made through DSH | Allowed: this is DSH keeping its own records, not Fishball writing files | — |
@@ -638,7 +642,8 @@ No custom session event types are added: persistence refuses logs containing unk
   1. **Fishball brand button (Q3).**
      - **Look.** It fills `sidebar.brand.mark` with a Fishball mark and `sidebar.brand.name` with the word "Fishball", replacing the DeepSeek Harness art [V slot ranking]. The collapsed rail shows the same mark. The mark is a simple SVG drawn for the plugin; artwork you supply replaces it.
      - **Click.** Clicking the expanded brand opens the assistant session (`uiWorkspace.openSession`), or the settings view while the assistant needs recovery.
-     - **How the click is taken over.** The shell owns the button and its New Session click [V]. The name occupant therefore attaches a native click listener to its enclosing button that stops the shell's handler [I → S14].
+     - **Winning the slot.** A single slot renders its lowest-priority entry, and the shipped brand uses the default 0, so Fishball registers at priority −1. The client half must inject `@deepseek-ai/dsh-client-ui-renderer`, which provides the slot service (S14).
+     - **How the click is taken over.** The shell owns the button and its New Session click [V]. The name occupant therefore attaches a capture-phase click listener to its enclosing button that stops the shell's handler, and opens the session with `uiWorkspace.openSession(sessionId)` (S14).
        - This covers both mouse and keyboard, and the button's label becomes "Open Fishball".
        - The **New Session** button below is unchanged, and the mark in the collapsed rail still expands the sidebar.
        - If a DSH update changes the sidebar's markup, the click falls back to New Session. The live check in each phase catches this.
@@ -737,6 +742,35 @@ No custom session event types are added: persistence refuses logs containing unk
 | S19 | Does a scoped copy of `bsk_inspect` without `output` and the `save` video action replace the global tool for Fishball only, and pass other calls through unchanged? Are the other hidden tools absent from Fishball's requests? | Fishball's tool list matches §7; other sessions keep the full `bsk_inspect` |
 | S20 | Can a Fishball-only plugin be mounted with its tools hidden so the prompt can list them, then shown on Allow once and unmounted on Reject? Does a changed parameter schema make a checked tool unchecked? | All of these, with a test plugin |
 | S21 | Does changing a `.volatile()` limit on the Plugins page reach the running `fishball` row without remounting it, so that no Fishball turn is cancelled and the agent is not disposed? Does an invalid value leave the file and the running value unchanged? | Both, verified in a real browser |
+
+## 13a. Spike results (P1, 2026-10-24)
+
+Every spike ran in-process against the installed rc.2 runtime, on a throwaway `DSH_HOME` under `.runtime/spikes/`, with a scripted model and no network calls. Code is in [spikes/](spikes/), evidence in [spikes/results/](spikes/results/). Browser checks used an isolated DSH Web on port 3096 and real Chromium.
+
+| # | Result | Evidence and what it changed |
+|---|---|---|
+| S1 | **Pass** | A private `EntryTree` under a plugin fiber mounted `dsh-persona`, `dsh-tool-web`, `dsh-time-context` and a bundle that is installed but off in the profile. `auditRows` and `leakedServices` were clean. `listBundles` reports such a bundle with `enabled:false`, `installed:true` and its rows. The tree must be mounted from a plugin fiber, not from the root context |
+| S2 | **Pass** | `restrict({deny})` in A's `setup` hid a global tool and a tool registered by P's tree. Fishball's request carried Fishball's persona and no "coding agent" text; another session kept its tools and persona |
+| S2b | **Pass, amended** | DSH keeps no owner per tool. A wrapper on `ToolRuntime.prototype.register`, installed when the package's module is evaluated, attributed every global tool to its plugin row even when the package loads last. §4 amended |
+| S3 | **Pass** | `create` accepts the never-registered preset id `fishball:assistant`. The controller reuses the live agent. GUI cold resume fails closed ("Unknown agent preset") without taking the writer, and our resume succeeds afterwards. In the browser, the live session chats normally |
+| S4 | **Pass** | A custom source `{kind:'fishball-notice', form:'notice', summary}` is accepted, reaches the model and survives a resume. The chat renders `notice` and `relay` forms structurally; other forms are shown opaquely. `boundContextSummary` caps summaries at 120 characters |
+| S5 | **Pass** | A private compaction group in P with the derived policy (`W_eff` 20,000 of a 200,000 model window) compacted the assistant at the derived threshold, through a `summarize()` subclass. An `agent/request` listener capped `maxTokens`. A normal session with the same load did not compact |
+| S6 | **Pass** | A synthetic `CONTEXT_WINDOW_EXCEEDED` from an `llm/stream` listener triggered DSH's overflow compaction and a successful retry in the same turn |
+| S7 | **Pass** | A GUI resolve racing our resume left no `writer-held` error |
+| S8 | **Pass** | A linked package resolved `zod`, `dsh-storage-domain`, `dsh-scope` and `schemastery` as peers; the domain file is `$DSH_HOME/storages/<name>.json` |
+| S9 | **Pass** | Section names listed in §4. An empty scoped shadow removes a global section for that agent only |
+| S10 | **Pass** | A message appended to an idle agent's inbox stays stranded. Removing it and steering the same message wakes the agent, and the id is consumed exactly once |
+| S11 | **Pass** | The broker found the arguments by `callId`: native calls in `assistant/message` tool-call blocks; inner `run_code` calls in `tool/ptc-dispatch-start` (call id `<parent>:ptc:<n>`) |
+| S12 | **Pass** | A prepended host-level listener sees requests first. Its `next()` reaches the browser forwarder, and in the browser the stock Allow once / Reject prompt appeared; Allow once completed the call. A session with policy `never` never reaches the broker, and a cancelled turn yields `cancelled` |
+| S13 | **Partly run** | The mechanism passed: the subclass's summary becomes the checkpoint the model sees (S5). Whether a real model keeps "Standing permissions" through compaction needs the live-model run in P7 |
+| S14 | **Pass, amended** | The brand registers at slot priority −1 and the client half injects `dsh-client-ui-renderer`. In the browser, the sidebar shows the Fishball mark and name; mouse click and Enter open the assistant; New Session is unchanged; the collapsed rail shows the mark and still expands. §10 amended |
+| S15 | **Pass, amended** | The guard refused `sandbox_permissions` with no prompt, and refused bash under `workspace-write`. New Web sessions default to `workspace-write`, so Fishball sets its own session `read-only` at creation. Where no sandbox backend is usable, DSH refuses read-only commands instead of running them unconfined. Seatbelt could not be exercised here because the harness itself runs inside a macOS sandbox; the live install in P9 re-checks the write block. §7 amended |
+| S16 | **Pass** | Resolving and steering an idle session with the `agent-message` relay source delivers it once; the browser shows "Task message received" with the text. A tool registered by a host row reaches standard-preset agents and their subagents |
+| S17 | **Pass** | A tool body's `approval.request` reached the waterfall although a `tools/pre-execute` listener had allowed the call first. A session under `never` got `rejected` |
+| S18 | **Pass, amended** | `sessionController.create({cwd})` runs the default preset and the first relay message starts work; the session shows in the sidebar. DSH creates a missing folder and registers no workspace, so §5d now checks existence first |
+| S19 | **Pass** | A scoped `bsk_inspect` copy without `output` replaced the global tool for Fishball only; another session kept the full schema |
+| S20 | **Pass** | A Fishball-only plugin mounted with its tool masked can be listed (name, first description line, parameter digest); Allow lifts the mask; Reject unmounts the row; a changed parameter schema changes the digest |
+| S21 | **Pass** | `ctx.settings.update` changed a `.volatile()` field in the running row without remounting it and wrote the profile patch. An invalid value was refused, and the file and the live value were unchanged. A stale revision gives `SETTINGS_CONFLICT` |
 
 ## 14. Delivery phases (after approval)
 

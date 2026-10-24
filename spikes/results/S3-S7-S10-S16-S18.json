@@ -1,0 +1,62 @@
+{
+  "id": "S3-S7-S10-S16-S18",
+  "started": "2026-10-24T01:57:45.217Z",
+  "finished": "2026-10-24T01:57:48.228Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "S3": {
+    "created": true,
+    "liveReused": true,
+    "header": "fishball:assistant",
+    "coldResume": {
+      "error": {
+        "code": "gateway/internal",
+        "message": "resume failed for session \"session-fishball-s3\": RemoteError: Unknown agent preset: fishball:assistant"
+      },
+      "agentLive": false
+    },
+    "resumedAfterRefusal": true
+  },
+  "S7": {
+    "gui": "agent",
+    "ours": "agent"
+  },
+  "S10": {
+    "strandedStill": true,
+    "consumedCount": 1,
+    "inboxEmpty": true
+  },
+  "S16": {
+    "targetPreset": "standard",
+    "targetHasMessageFishball": true,
+    "delivered": {
+      "requestSawText": true,
+      "loggedSource": {
+        "kind": "agent-message",
+        "form": "relay",
+        "senderSessionId": "session-fishball-s3"
+      }
+    },
+    "subagent": {
+      "childSeen": true,
+      "childHasMessageFishball": true
+    }
+  },
+  "S18": {
+    "preset": "standard",
+    "ran": true,
+    "workspaceRegistered": false,
+    "byPath": null,
+    "sandbox": "n/a"
+  },
+  "verdict": {
+    "S3_create": true,
+    "S3_cold_refused": true,
+    "S7_no_writer_held": true,
+    "S10_once": true,
+    "S16_relay": true,
+    "S16_tool_everywhere": true,
+    "S18_runs_default": true
+  }
+}

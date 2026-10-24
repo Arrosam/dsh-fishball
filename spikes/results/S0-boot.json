@@ -1,0 +1,93 @@
+{
+  "id": "S0-boot",
+  "started": "2026-10-24T01:18:26.065Z",
+  "finished": "2026-10-24T01:18:29.341Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "services": [
+    [
+      "agents",
+      true
+    ],
+    [
+      "sessionController",
+      true
+    ],
+    [
+      "agentPresets",
+      true
+    ],
+    [
+      "tools",
+      true
+    ],
+    [
+      "approval",
+      true
+    ],
+    [
+      "pluginManager",
+      true
+    ],
+    [
+      "storageDomain",
+      true
+    ],
+    [
+      "settings",
+      true
+    ],
+    [
+      "workspaceRegistry",
+      true
+    ],
+    [
+      "sessionQuery",
+      true
+    ],
+    [
+      "sandboxPolicy",
+      true
+    ],
+    [
+      "connection",
+      true
+    ],
+    [
+      "systemPrompt",
+      true
+    ],
+    [
+      "loader",
+      true
+    ],
+    [
+      "agentDefaultModel",
+      true
+    ]
+  ],
+  "created": {
+    "sessionId": "session-f7dfc40d-25fa-49d1-97ca-fdbe570c5ef9",
+    "agentPreset": "standard"
+  },
+  "controllerKeys": [
+    "ctx",
+    "name",
+    "typertRemote",
+    "agents",
+    "commands",
+    "controlState",
+    "history",
+    "listState",
+    "openPath",
+    "fileApplications",
+    "openFileApplication",
+    "revealPath",
+    "canOpenPath",
+    "promotions"
+  ],
+  "resolved": [
+    "agent"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "id": "S5-S6-S2b",
+  "started": "2026-10-24T02:03:07.309Z",
+  "finished": "2026-10-24T02:03:11.189Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "derived": {
+    "thresholdRatio": 0.08,
+    "headroomTokens": 1000,
+    "retainTokens": 2800,
+    "maxTokens": 2500,
+    "threshold": 16000
+  },
+  "audit": {
+    "failed": [],
+    "pending": []
+  },
+  "S5": {
+    "compactions": 1,
+    "summarizerUsed": 1,
+    "maxTokensSeen": [
+      2500
+    ],
+    "measured": 13177,
+    "otherCompactions": 0
+  },
+  "S6": {
+    "injected": 1,
+    "compactedOnOverflow": true,
+    "retriedAndAnswered": true,
+    "tail": [
+      "turn/start",
+      "agent/inbox/spliced",
+      "step/start",
+      "user/message",
+      "assistant/attempt",
+      "compaction/start",
+      "compaction/summary",
+      "user/message",
+      "compaction/end",
+      "user/message",
+      "request/header",
+      "assistant/message",
+      "step/end",
+      "turn/end"
+    ]
+  },
+  "S2b": {
+    "entriesWithToolEffects": 1,
+    "sample": [
+      [
+        "tool-working-directory",
+        "@deepseek-ai/dsh-tool-working-directory"
+      ]
+    ]
+  },
+  "verdict": {
+    "S5_compacts_at_derived": true,
+    "S5_other_untouched": true,
+    "S6_overflow_recovery": true
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "S15-S20",
+  "started": "2026-10-24T02:19:38.138Z",
+  "finished": "2026-10-24T02:19:40.549Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "S15": {
+    "defaultMode": "workspace-write",
+    "mode": "read-only",
+    "readOnlyRead": "Error: sandbox mode \"read-only\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — ot",
+    "readOnlyWrite": "Error: sandbox mode \"read-only\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — ot",
+    "fileCreated": false,
+    "escalation": "Error: Fishball never widens its sandbox",
+    "escalationAsked": false,
+    "underWorkspaceWrite": "Error: shell tools run only while Fishball is read-only (now workspace-write)"
+  },
+  "S20": {
+    "listedWhileHidden": [
+      {
+        "name": "demo_echo",
+        "firstLine": "Echo the text back (spike fixture).",
+        "digest": "f3a1e2d34406faeb"
+      }
+    ],
+    "hiddenFromA": true,
+    "visibleAfterAllow": true,
+    "goneAfterReject": true,
+    "digestChangesWithSchema": true
+  },
+  "verdict": {
+    "S15_escalation_refused": true,
+    "S15_refused_other_mode": true,
+    "S15_readonly_blocks_write": true,
+    "S20": true
+  }
+}
