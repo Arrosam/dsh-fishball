@@ -17,13 +17,13 @@
  * | CAT-12 | EP                     | tools of built-ins that are on                             | status visible under their built-in |
  * | CAT-13 | EP (guard)             | direct call of an unchecked / unattributable tool          | tool error; the body never runs |
  * | CAT-14 | DT (built-in with no unchecked tools: ask-user, skills, shell) | on without a prompt | {ok:true}; no approval; tool appears after the turn ends; off again removes it |
- * | CAT-15 | ST (everything on)     | hidden list unchanged and enforced whatever is on (R13)     | state.hiddenTools is the 18 names; no hidden name in Fishball's request; hidden names keep status hidden; direct call refused |
+ * | CAT-15 | ST (everything on)     | hidden list unchanged and enforced whatever is on (R13)     | state.hiddenTools is the 18 names plus message_fishball (P5); no hidden name in Fishball's request; hidden names keep status hidden; direct call refused |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
   BUILTINS, CATALOG_KEYS, CHANGED_BY, CHECKED_HOST_TOOLS, FISHBALL_TOOLS, FIXTURE_BUNDLE, FIXTURE_HIDDEN, FIXTURE_UNCHECKED,
-  HIDDEN_TOOLS, KIND, LAST_ERRORS, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PLUGIN_KEYS, PRESET, TOOL_STATUS,
+  HIDDEN_TOOLS, KIND, LAST_ERRORS, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PLUGIN_KEYS, PRESET, STATE_HIDDEN_TOOLS, TOOL_STATUS,
 } from './support/constants.mjs'
 import { HOOK, T, allowFixtures, callTool, listPlugins, nextTools, pluginIn, setPlugin, settle, toolIn, toolNames, turn } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
@@ -222,7 +222,8 @@ describe('P3 catalog and default tools', () => {
     for (const n of HIDDEN_TOOLS) assert.equal(names.includes(n), false, 'Fishball request lists hidden ' + n)
     assert.ok(names.includes('demo_echo'), 'precondition: allowed fixture tools are visible')
     const state = await host.state()
-    assert.deepEqual(state.hiddenTools, [...HIDDEN_TOOLS].sort())
+    // P5: the state also lists message_fishball, Fishball's own inbound tool.
+    assert.deepEqual(state.hiddenTools, [...STATE_HIDDEN_TOOLS].sort())
     for (const n of FIXTURE_HIDDEN) assert.equal(toolIn(state.catalog, FIXTURE_BUNDLE.name, n)?.status, TOOL_STATUS.hidden, n)
     const before = (await host.call('fixtureCalls', { name: 'subagent', sessionId: fb })).length
     const { result } = await callTool(host, fb, 'subagent', { text: 'x' })

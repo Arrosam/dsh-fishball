@@ -120,6 +120,11 @@ export const HIDDEN_TOOLS = [
   'plugin_manager', 'subagent', 'subagent_fork', 'workflow', 'send_message', 'interrupt_agent',
   'spawn_teammate',
 ]
+/**
+ * P5: the state's hiddenTools also lists message_fishball (Fishball's own inbound tool, hidden from
+ * Fishball). It is not a fixture name: fbtest-tools never registers it.
+ */
+export const STATE_HIDDEN_TOOLS = [...HIDDEN_TOOLS, 'message_fishball']
 
 /** R-FILEWRITE: refused by name for Fishball. */
 export const FILE_TOOLS = ['write', 'edit', 'str_replace_editor', 'plugin_manager']
@@ -176,7 +181,46 @@ export const API = {
   state: '/api/fishball/state', events: '/api/fishball/events', recovery: '/api/fishball/recovery',
   plugins: '/api/fishball/plugins', removeApproval: '/api/fishball/tool-approvals/remove',
   contextWindow: '/api/fishball/context-window',
+  send: '/api/fishball/send',
 }
+
+// ---- P5 (messaging, intake, outbox) ----
+/** P5: the state snapshot's 11 keys. */
+export const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'status', 'workspaceId']
+/** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
+export const INBOUND_TOOL = 'message_fishball'
+export const OUTBOUND_TOOLS = ['message_session', 'start_session']
+export const RELAY = { kind: 'agent-message', form: 'relay' }
+export const NOTICE = { kind: 'fishball-notice', form: 'notice' }
+/** P5 result and route codes. */
+export const P5_CODE = {
+  empty: 'empty', tooLarge: 'too-large', queueFull: 'queue-full', unknownSession: 'unknown-session', fromFishball: 'from-fishball',
+  unavailable: 'unavailable', badBody: 'bad-body', isFishball: 'is-fishball', archived: 'archived', hourlyCap: 'hourly-cap',
+  deliveryFailed: 'delivery-failed', noFolder: 'no-folder', notAbsolute: 'not-absolute',
+}
+export const INTAKE_KEYS = ['failed', 'items', 'queued', 'wakeupsThisHour']
+export const INTAKE_ITEM_KEYS = ['createdAt', 'errorCode', 'intakeId', 'kind', 'sourceIdentity', 'status']
+export const INTAKE_KINDS = ['session', 'user', 'system']
+export const INTAKE_STATUSES = ['pending', 'accepted', 'consumed', 'discarded', 'failed']
+/** Required outbox entry keys; folder and errorCode are optional (M8). */
+export const OUTBOX_KEYS = ['at', 'key', 'kind', 'messageDigest', 'status', 'targetSessionId']
+export const OUTBOX_OPTIONAL = ['errorCode', 'folder']
+/** M8/M9: at most this many entries/items in the state. */
+export const STATE_LIST_MAX = 20
+/** M4 (review update): the forwarded session's last answer is cut to at most this many UTF-8 bytes, ending with '…' when cut. */
+export const FORWARD_ANSWER_MAX_BYTES = 3072
+export const ELLIPSIS = '…'
+export const NO_NOTE = 'The user added no note.'
+/** M1/M4 (review update): the trusted first lines of a relayed message and of a forward, and the forward's notice summary. */
+export const RELAY_HEADER = 'Fishball: a message from another session follows.'
+export const FORWARD_HEADER = "Fishball: the user forwarded a session to you from DSH's sidebar."
+export const NOTE_PREFIX = "The user's note: "
+export const FORWARD_SUMMARY = 'The user forwarded a session'
+/** M1 result notes (review update). */
+export const NOTE_TEXT = { delivered: 'Delivered to Fishball.', queuedPrefix: 'Queued for Fishball' }
+export const IDENTITY = { session: (id) => 'session/' + id, forward: (id) => 'user/forward/' + id, unchecked: 'fishball/unchecked-tools' }
+/** M10: the intake store (per-record files). */
+export const INTAKE_DIR = (home) => path.join(home, 'storages', 'fishball_intake')
 
 /** P4 C1: keys of state.contextWindow, and its refusal codes (C3, C7). */
 export const CONTEXT_WINDOW_KEYS = ['compactionOff', 'contextWindowTokens', 'effectiveWindow', 'error', 'maxOutputTokens', 'modelWindow', 'outputCap', 'pressureTokens', 'threshold']

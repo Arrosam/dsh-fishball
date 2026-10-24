@@ -15,7 +15,23 @@ export const model = (globalThis.__fbtestModel ??= {
   aux: [],
   queues: new Map(),
   queue(sessionId, ...responses) { const q = this.queues.get(sessionId) ?? []; q.push(...responses); this.queues.set(sessionId, q) },
-  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? [{ text: 'ok' }] },
+  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byMarker(options) ?? [{ text: 'ok' }] },
+  /**
+   * P5: answers for sessions whose id a test cannot know in advance (subagents, sessions Fishball
+   * starts). A request of another session than `except` whose user messages contain a registered
+   * marker takes that marker's next scripted answer. Context snapshots may follow the message, so
+   * every user message is searched, not only the last one.
+   */
+  markers: new Map(),
+  byMarker(options) {
+    const users = (options.messages ?? []).filter((m) => m.role === 'user').map((m) => textOf(m.content)).join('\n')
+    for (const [marker, entry] of this.markers) {
+      if (entry.except === options.sessionId || entry.script.length === 0 || !users.includes(marker)) continue
+      entry.sessions.add(options.sessionId)
+      return entry.script.shift()
+    }
+    return undefined
+  },
 })
 
 const textOf = (content) => (Array.isArray(content) ? content.map((b) => b?.text ?? '').join('') : String(content ?? ''))
@@ -33,8 +49,13 @@ function digest(options) {
     model: options.model ?? null,
     maxTokens: options.maxTokens ?? null,
     chars: charsOf(options),
+    // P5: the tail of every message's text, so a test can tell whether an input reached the model.
+    texts: (options.messages ?? []).map((m) => textOf(m.content)).join('\n').slice(-TEXTS_TAIL),
   }
 }
+
+/** P5: characters of message text kept per request digest (bounded for the P4 load tests). */
+const TEXTS_TAIL = 60000
 
 /** P4: total text characters across a request's messages (does a long user message reach the model?). */
 const charsOf = (options) => (options.messages ?? []).reduce((n, m) => n + textOf(m.content).length, 0)

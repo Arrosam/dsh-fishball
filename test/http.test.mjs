@@ -3,8 +3,8 @@
  *
  * | id     | technique          | requirement                                          | expected |
  * |--------|--------------------|------------------------------------------------------|----------|
- * | HTP-01 | EP                 | GET state returns the JSON snapshot                  | 200 application/json; exactly the 9 documented keys (P3 adds catalog, P4 contextWindow) with the documented types |
- * | HTP-02 | EP                 | hiddenTools is the documented list (18 names), sorted | deepEqual(the 18 names, in this literal sorted order) |
+ * | HTP-01 | EP                 | GET state returns the JSON snapshot                  | 200 application/json; exactly the 11 documented keys (P3 catalog, P4 contextWindow, P5 intake and outbox) with the documented types |
+ * | HTP-02 | EP                 | hiddenTools is the documented list (19 names with message_fishball), sorted | deepEqual(the 19 names, in this literal sorted order) |
  * | HTP-03 | EP (no cookie)     | routes sit behind DSH browser auth                   | GET state without cookie is not 200 |
  * | HTP-04 | EP                 | events is an SSE stream; first frame immediately      | 200 text/event-stream; a frame within 3 s equal to GET state |
  * | HTP-05 | State (change)     | a new frame follows each change                       | after a limit update, a frame with the new limit arrives |
@@ -21,13 +21,11 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CATALOG_KEYS, CONFLICT_CODE, HIDDEN_TOOLS, LIMITS, MS, STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, MS, STATE_HIDDEN_TOOLS, STATE_KEYS, STATUS } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
-// P3 adds 'catalog' (shape of list_plugins); see plugins-http.test.mjs for its content.
-// P4 adds 'contextWindow' (see context-window.test.mjs for its content).
-const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
+// P3 adds 'catalog', P4 'contextWindow', P5 'intake' and 'outbox' (STATE_KEYS; see messaging.test.mjs for their content).
 
 describe('R-HTTP', () => {
   let host
@@ -59,9 +57,9 @@ describe('R-HTTP', () => {
 
   it('HTP-02 hiddenTools lists exactly the hidden names, sorted', T, async () => {
     const s = (await host.get(API.state)).json
-    assert.deepEqual(s.hiddenTools, [...HIDDEN_TOOLS].sort())
-    // The literal list from the requirement, so a typo in the shared constant cannot hide a gap.
-    assert.deepEqual(s.hiddenTools, ['code_review_report', 'create_worktree', 'diff_approval_annotate', 'edit', 'git_worktree', 'image_generate', 'interrupt_agent', 'mover_move_session', 'plugin_manager', 'ralph', 'send_message', 'spawn_teammate', 'str_replace_editor', 'subagent', 'subagent_fork', 'video_generate', 'workflow', 'write'])
+    assert.deepEqual(s.hiddenTools, [...STATE_HIDDEN_TOOLS].sort())
+    // The literal list from the requirement, so a typo in the shared constant cannot hide a gap (P5 adds message_fishball).
+    assert.deepEqual(s.hiddenTools, ['code_review_report', 'create_worktree', 'diff_approval_annotate', 'edit', 'git_worktree', 'image_generate', 'interrupt_agent', 'message_fishball', 'mover_move_session', 'plugin_manager', 'ralph', 'send_message', 'spawn_teammate', 'str_replace_editor', 'subagent', 'subagent_fork', 'video_generate', 'workflow', 'write'])
   })
 
   it('HTP-03 GET state without the browser cookie is refused', T, async () => {

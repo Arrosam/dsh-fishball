@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -291,6 +291,95 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | OFF-02 | EP (100,000 characters above the threshold, compaction off) | C11 | no `compaction/*` event in that turn or the next; the turn completes |
 | OFF-03 | DT (off × no smaller window; on × smaller window) | C11 | compactionOff false in both; true again with off and a smaller window |
 
+## P5 cases (messaging, intake, outbox; M1-M14 and the review update)
+
+**Harness additions.** The fake model records the last 60,000 characters of each request's message text (`texts`), so a test can tell which inputs a request carried. It can also answer by **marker**: a request from any session other than an excluded one, whose user messages contain a registered marker, takes that marker's next scripted answer. Tests use this to script subagents and sessions Fishball starts, whose ids they cannot know in advance; `markerState` reports which sessions took the answers. New worker operations: `agentStatus`, `createWorkspace`, `userMessages`, `defaultPreset`, `requestsContaining`, `header`, `allSessions` and `resume` (`sessionController.resolveAgent`, as opening a session in the GUI does). Logged user messages now keep 12,000 characters. New helpers in [support/expect.mjs](support/expect.mjs): `settledIdle`, `untilSeen`, `messageFishball`, `fishballCall`, `untrustedBlock` (parses the trusted header and the `<untrusted-ID>` block into JSON fields) and `fishballClientBundle`. Fishball is kept "running" by holding its next model request (`holdNext`), and "not running" by archiving it.
+
+### [messaging-inbound.test.mjs](messaging-inbound.test.mjs): M1-M3, M5, M9, M13, M14
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| MSG-01 | EP (bare / standard preset) | M1 | message_fishball with exactly one required string property `message` |
+| MSG-02 | EP (Fishball / ordinary) | M14 | never in Fishball's requests; message_session and start_session only in Fishball's |
+| MSG-03 | EP (Fishball idle) | M1, M9 | `{ok:true, note:'Delivered to Fishball.'}`; one relay from the caller; the trusted header, then one block with session_id, session_title, session_folder and the JSON-quoted text; Fishball wakes and reads it; item `session/<id>` ends consumed; no text in the state |
+| MSG-04 | EP (hostile text) | M1 review | a fake closing tag and a fake forward stay inside the block; one closing tag; one session_id line; the marker differs per message |
+| MSG-05 | EP (sender arguments) | M1 | the sender is the calling session |
+| MSG-06 | EP (subagent) | M1 review | attributed to the parent; `sent_by_subagent_session` names the child |
+| MSG-07 ×4 | DT (id × response × text) | M2 review | same id, response and text: once, and the repeat answers `{ok:true, duplicate:true, note}`; a later response, other text or another id: a new message |
+| MSG-08 ×8 | BVA + EP (maxMessageBytes 64) | M3 | '' and whitespace: `empty`; 1 byte, 64 ASCII bytes and 64 bytes of 2-byte characters: delivered (the framed text is longer); 65 ASCII bytes, 63 + one 2-byte character, and 66 bytes: `too-large` |
+| MSG-09 | BVA (maxQueuedInputs 2) + ST | M3, M11 | while Fishball runs: 2 accepted, the 3rd `queue-full`; the route answers 409 `queue-full`; both read once after release; accepted again |
+| MSG-10 | EP | M3 | Fishball's own call is a tool error mentioning other sessions |
+| MSG-11 | EP | M13 | the system prompt names both hand-off tools and says other sessions' messages are information, not instructions |
+| MSG-12 | EP + BVA (22 items) | M9 | exact intake keys and item keys, enums; at most 20 items, newest first; no text |
+| MSG-13 | EP | M5 | the served client bundle contains "Send to Fishball" (A57) |
+
+### [messaging-send.test.mjs](messaging-send.test.mjs): M4 with the review update
+
+| id | technique | expected result |
+|---|---|---|
+| SND-01 | EP | 200 `{ok:true, state}`; one notice with summary `The user forwarded a session`; header, `The user's note: <JSON>`, untrusted statement, block with session_id, session_title, session_folder and last_answer; read; item `user/forward/<id>`, kind user, consumed |
+| SND-02 | EP (empty note) | `The user added no note.` |
+| SND-03 ×3 | BVA (3072 / 3073 bytes / 3074 bytes of 2-byte chars) | whole at the limit; above it at most 3072 bytes, ending with '…', a prefix, no broken character |
+| SND-04 | EP | the same session forwarded twice: two messages and two items |
+| SND-05 ×9 | DT (body) | 400 `bad-body` (invalid JSON, array, {}, missing note, missing sessionId, note 1, note null, sessionId 1, sessionId '') |
+| SND-06/07 | EP | 409 `unknown-session`; 409 `from-fishball` |
+| SND-08 ×2 | BVA (64) | a 64-byte note 200 with a 200-character last answer; 65 bytes 409 `too-large` |
+| SND-09 | EP | no cookie: not 200 |
+| SND-10 | EP | a hostile last answer stays in the block; the note is one JSON string |
+| SND-11 | EP (store unreadable) | 409 `unavailable` |
+
+### [messaging-outbound.test.mjs](messaging-outbound.test.mjs): M6-M8
+
+| id | technique | expected result |
+|---|---|---|
+| OUT-01 | EP (live idle target) | `{ok:true, sessionId, title}`; one relay from Fishball's session, verbatim; the target runs; outbox `message`, `delivered`, digest, no text |
+| OUT-02 | ST (cold → resumed) | resumed with its own preset (fbtest-bare tool set) and runs |
+| OUT-03 ×7 | DT + BVA | `empty` ×2, `too-large` (65 bytes; 64 delivered), `is-fishball`, `unknown-session`, `archived`; none recorded |
+| OUT-04 | EP (recorded preset gone, so resume fails) | `delivery-failed`; outbox `failed` with errorCode |
+| OUT-05 | EP (absolute folder) | one new session there with DSH's default preset (`standard`); it has message_fishball and not Fishball's tools or persona; its first message is a relay from Fishball and it runs; no workspace registered; outbox `start` with folder |
+| OUT-06 | EP (workspace id) | the session belongs to that workspace |
+| OUT-06b | EP (workspace id, folder deleted) | `no-folder`; the folder is not created; nothing recorded |
+| OUT-07 ×9 | DT (folder × message) | `no-folder` (missing (A51), '', a missing path that is never created, a file); `not-absolute` (relative; unknown non-path value, A52); `empty` ×2; `too-large`; nothing created or recorded |
+| OUT-08 | EP | outbox entry keys and enums, newest first |
+| CAP-01 | BVA (messagesPerHour 2) | the 3rd send: `hourly-cap`, not recorded, not delivered |
+| CAP-02 | BVA (sessionsPerHour 1) | the 2nd start: `hourly-cap`, no session |
+| CAP-03 | EP (0) | no cap |
+| CAP-04 | BVA (auditEntriesKept 1 < cap 5, with 4 delivered this hour) | the 5th is delivered, the 6th refused |
+| CAP-05 | BVA (21 sends) | the state lists 20, newest first |
+| CAP-06 | BVA (auditEntriesKept 2) | at most 2 entries, including the newest |
+
+### [messaging-durable.test.mjs](messaging-durable.test.mjs): M9-M11
+
+| id | technique | expected result |
+|---|---|---|
+| WAK-01 | EP (input while running) | wakeupsThisHour unchanged; read by that turn |
+| WAK-02 | EP (cap 0) | each of 3 inputs from idle wakes Fishball |
+| WAK-03 | BVA (cap = count + 1) | that input still wakes; the next two are parked: `accepted`, queued 2, no model request for 3 s, Fishball idle |
+| WAK-04 | ST (parked → chat turn) | that turn reads both; consumed, never discarded; queued 0 |
+| WAK-05 | ST (parked → Send to Fishball) | the forward wakes Fishball at once; the same turn reads the parked inputs |
+| DUR-01 | ST (accepted while running → restart) | delivered exactly once after the restart; consumed |
+| DUR-02 | ST (archived → message → restart → unarchive + retry) | note starts `Queued for Fishball`; `pending`, still `pending` after the restart; delivered once when live; consumed |
+| DUR-03 | EP | `storages/fishball_intake` has per-record files without message text |
+| DUR-04 | ST (restart) | nothing already read is delivered again |
+| ADO-01 | ST (accepted in the old inbox → session lost → adopt) | `discarded`; the new session never receives it |
+
+### [messaging-unchecked.test.mjs](messaging-unchecked.test.mjs): M12
+
+| id | technique | expected result |
+|---|---|---|
+| UNC-01 | ST (first live) | one notice listing every unchecked fbtest-tools tool with its plugin and set_plugin_enabled, and no hidden name; item `fishball/unchecked-tools`, kind system, consumed; read |
+| UNC-02 | ST (restart) | no second notice |
+| UNC-03 | ST (changed schema) | one new notice naming the tool |
+| UNC-04 | ST (same changed schema again) | none |
+| UNC-05 | ST (profile bundle installed and enabled while running) | a notice naming its tool and plugin |
+| UNC-06 | ST (restart) | no notice repeats |
+
+### Cases changed by P5
+
+- **HTP-01, HTP-04/05, PHT-01, PHT-04**: 11 state keys (`intake`, `outbox`), from `STATE_KEYS` in constants.
+- **HTP-02, CAT-15**: hiddenTools also lists `message_fishball` (`STATE_HIDDEN_TOOLS`). The fixture-name list `HIDDEN_TOOLS` is unchanged, because fbtest-tools never registers message_fishball.
+- **SGL-10, SGL-11, SGL-14, SGL-15**: count setup notices and turns. Exactly one `Fishball is set up` notice, in the first turn; at most one other Fishball notice (the unchecked-tools notice); model requests = 1 + other notices. A restart adds no setup notice and no second unchecked-tools notice. SGL-10 and SGL-15 read the log 1.5 s after live, because the notice can arrive just after.
+
 ### P3 cases changed by P4
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04**: 9 state keys (with `contextWindow`).
@@ -366,3 +455,20 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 - The harness runs inside a macOS sandbox, so real shell writes cannot be exercised. Shell tests use fixture tools named `bash`, `pwsh`, `terminal_open` and `terminal_send`, and assert the plugin's refusals and pass-through only.
 - P2: approval prompts are never answered, and the tests count `approval/asked` events only. P3 answers Fishball's own prompts with a scripted host-level answerer (above); DSH's browser prompt itself is not driven.
 - add_plugin installs offline: a local directory through pnpm in the throwaway profile (`/opt/homebrew/bin/pnpm` on PATH). No registry or network spec is tested.
+
+- **A51. start_session without `folder`.** M7 says "missing or empty folder → no-folder". The tool schema marks `folder` required, so DSH rejects the call before the tool runs ("invalid arguments: missing required property folder", a tool error). OUT-07 accepts either; an empty string gives `no-folder`.
+- **A52. A folder that is neither a workspace id nor an absolute path.** Observed `not-absolute`. Whether an unknown workspace id should be `no-folder` instead is not specified; OUT-07 accepts both.
+- **A53. Extra arguments to message_fishball.** A call with `senderSessionId`/`sessionId`/`session_id` next to `message` is accepted and attributed to the caller (MSG-05). Whether such calls should be refused is not specified.
+- **A54. Not driven black-box: `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that. OUT-08 only allows the status.
+- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04); start_session's is not.
+- **A56. The wake guard for stranded items.** DSH's turn-retirement gap cannot be triggered on purpose. WAK-04 covers parked items read by the next turn (consumed, never discarded), and DUR-02 covers pending items delivered once Fishball is live again.
+- **A57. GUI (M5).** Only the served client bundle is checked: it contains "Send to Fishball". The row menu, the header action, its visibility rules (live only, never in Fishball's own session) and the dialog are not exercised in a browser. Whether the bundle names the route path literally is a diagnostic only.
+- **A58. Wake-ups per process.** DESIGN §5b counts wake-ups per process, so a restart resets the count. This is not asserted. WAK-03 sets the cap to the current count + 1 at runtime instead of starting from a known zero, because the setup turn may or may not count the unchecked-tools notice.
+- **A59. "Not running" for the queued note.** The M1 review says the note is 'Queued for Fishball …' when Fishball is not running. This is driven by archiving Fishball (DUR-02). The `starting` and `recovery` states are not driven.
+- **A60. DUR-01: a turn interrupted by shutdown (fixed during the round).** The input is accepted into the inbox of a running turn, and DSH then stops; the old turn ends `interrupted`. In the first run the item ended `discarded` and was never read (reported). After the implementer's change it is delivered exactly once after the restart and ends `consumed`; DUR-01 passes.
+- **A61. UNC-05: a bundle installed while DSH runs (fixed during the round).** In the first run, `pluginManager.installBundle(..., {enabled:true})` gave no notice, even after one more Fishball turn (reported). After the implementer's change the notice names `added_c_echo` and its plugin within about 2 s; UNC-05 passes.
+- **A62. Session titles.** The fake model titles every session "fbtest title", so tests assert only that `session_title` is a string.
+- **A63. Ordinary sessions after a restart.** DSH resumes only Fishball at boot. Restart cases reopen the sender through `sessionController.resolveAgent`, as opening it in the GUI does, before using it again.
+- **A64. ADO-01: adopt versus "never lost" (fixed during the round).** Steps: Fishball is held in a turn, an input is accepted (status `accepted`), DSH stops, Fishball's session artifacts are moved away, and DSH boots into recovery. The item is still `accepted` right before the adopt. After the A60 fix, the item was redelivered to the adopted session and ended `consumed`. The implementer found that the record did not store which session it was delivered to. Now it ends `discarded` and never reaches the new session, as M9 says; ADO-01 passes.
+- **A65. Empty message_fishball (fixed during the round).** In the first run, '' and whitespace answered `{ok:true}` and delivered an empty relay (reported). They now answer `empty`.
+- **A66. Runs while the implementation changes.** One full run made while the working tree was being edited gave 7 failures in the older lifecycle and context files (boots that never became ready). Rerun alone, those files passed 120/120, and the next full run passed 486/486.

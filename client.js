@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -46,7 +46,14 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send' })
+    /** "Send to Fishball" refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
+    const SEND_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'unknown-session', 'unavailable'])
+    /** Session-row menu entry and its place (after DSH's own pin/rename/fork/archive, before the id). */
+    const SEND_MENU = Object.freeze({ id: 'fishball-send', order: 420 })
+    const SEND_HEADER_ID = 'fishball-send'
+    /** Just before Fishball's own settings action. */
+    const SEND_HEADER_ORDER = 4
     /** The two context-window settings (src/constants.js API.contextWindow body). */
     const CONTEXT_FIELDS = Object.freeze(['contextWindowTokens', 'maxOutputTokens'])
     /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
@@ -67,6 +74,8 @@ window.__ModuleLoader__.load({
       name: 'sidebar.brand.name',
       bundleConfig: 'plugins.bundle.config',
       headerActions: 'conversation.session.header.actions',
+      sessionMenu: 'sidebar.workspaces.session.menu.item',
+      overlay: 'shell.overlay',
     })
     /**
      * The limit fields, in the order the Host declares them (src/config.js LIMITS). The
@@ -87,7 +96,7 @@ window.__ModuleLoader__.load({
       eyeColor: '#EC0A6E',
     })
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
       brandName: 'Fishball',
@@ -128,6 +137,41 @@ window.__ModuleLoader__.load({
       'contextError.model-window-unknown': 'The model does not report its window, so a smaller one cannot be set.',
       contextSaveFailed: 'That value was not accepted.',
       contextInvalid: 'Enter a whole number, or leave it empty.',
+      sendToFishball: 'Send to Fishball',
+      sendTitle: 'Send "{title}" to Fishball',
+      sendNoteLabel: 'Note for Fishball (optional)',
+      sendHint: 'Fishball reads this session\'s last answer and your note.',
+      send: 'Send',
+      cancel: 'Cancel',
+      close: 'Close',
+      sending: 'Sending…',
+      'sendError.queue-full': 'Fishball\'s queue is full. Try again later.',
+      'sendError.too-large': 'The note is too long.',
+      'sendError.from-fishball': 'This is Fishball\'s own session.',
+      'sendError.unknown-session': 'This session could not be read.',
+      'sendError.unavailable': 'Fishball is not running.',
+      sendFailed: 'That did not work.',
+      intake: 'Queue',
+      intakeHint: 'Inputs that wake Fishball: messages from other sessions, sessions you forward, and notices.',
+      intakeQueued: 'Waiting to be read',
+      intakeFailed: 'Could not be delivered',
+      intakeWakeups: 'Wake-ups this hour',
+      'intakeKind.session': 'From a session',
+      'intakeKind.user': 'From you',
+      'intakeKind.system': 'Notice',
+      'intakeStatus.pending': 'Waiting',
+      'intakeStatus.accepted': 'Queued',
+      'intakeStatus.consumed': 'Read',
+      'intakeStatus.discarded': 'Cleared',
+      'intakeStatus.failed': 'Failed',
+      outbox: 'Sent by Fishball',
+      outboxHint: 'Messages Fishball sent to other sessions and sessions it started.',
+      'outboxKind.message': 'Message',
+      'outboxKind.start': 'New session',
+      'outboxStatus.delivered': 'Delivered',
+      'outboxStatus.unconfirmed': 'Delivered, not confirmed',
+      'outboxStatus.failed': 'Failed',
+      nothingYet: 'Nothing yet.',
       plugins: 'Plugins for Fishball',
       pluginsHint: 'Fishball\'s own on/off choice. Other sessions and the profile are not changed. A change applies when Fishball\'s current turn ends.',
       pluginToggle: 'Use {name} in Fishball',
@@ -215,6 +259,41 @@ window.__ModuleLoader__.load({
       'contextError.model-window-unknown': '模型没有报告其窗口，因此无法设置更小的窗口。',
       contextSaveFailed: '该值未被接受。',
       contextInvalid: '请输入整数，或留空。',
+      sendToFishball: '发送给 Fishball',
+      sendTitle: '把“{title}”发送给 Fishball',
+      sendNoteLabel: '给 Fishball 的备注（可选）',
+      sendHint: 'Fishball 会读取此会话的最后一条回复和你的备注。',
+      send: '发送',
+      cancel: '取消',
+      close: '关闭',
+      sending: '发送中…',
+      'sendError.queue-full': 'Fishball 的队列已满，请稍后再试。',
+      'sendError.too-large': '备注太长。',
+      'sendError.from-fishball': '这是 Fishball 自己的会话。',
+      'sendError.unknown-session': '无法读取此会话。',
+      'sendError.unavailable': 'Fishball 未在运行。',
+      sendFailed: '操作未成功。',
+      intake: '队列',
+      intakeHint: '会唤醒 Fishball 的输入：其他会话的消息、你转发的会话和通知。',
+      intakeQueued: '等待读取',
+      intakeFailed: '无法送达',
+      intakeWakeups: '本小时唤醒次数',
+      'intakeKind.session': '来自会话',
+      'intakeKind.user': '来自你',
+      'intakeKind.system': '通知',
+      'intakeStatus.pending': '等待中',
+      'intakeStatus.accepted': '已排队',
+      'intakeStatus.consumed': '已读取',
+      'intakeStatus.discarded': '已清除',
+      'intakeStatus.failed': '失败',
+      outbox: 'Fishball 发出的',
+      outboxHint: 'Fishball 发给其他会话的消息和它新建的会话。',
+      'outboxKind.message': '消息',
+      'outboxKind.start': '新会话',
+      'outboxStatus.delivered': '已送达',
+      'outboxStatus.unconfirmed': '已送达，未确认',
+      'outboxStatus.failed': '失败',
+      nothingYet: '暂无。',
       plugins: 'Fishball 的插件',
       pluginsHint: '仅 Fishball 自己的开关，不影响其他会话和配置。更改在 Fishball 当前回合结束后生效。',
       pluginToggle: '在 Fishball 中使用 {name}',
@@ -276,6 +355,9 @@ window.__ModuleLoader__.load({
       `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
+      `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
+      `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--dsw-alias-border-primary);border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;resize:vertical}`,
+      `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
     ].join('')
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
@@ -526,6 +608,111 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * "Send to Fishball" (DESIGN §5b): one request store shared by the session-row menu entry
+     * and the header action; the dialog lives in the shell overlay so it outlives the menu.
+     */
+    const sendRequest = (() => {
+      let current = null
+      const listeners = new Set()
+      const set = (next) => { current = next; for (const listener of listeners) listener() }
+      return {
+        open: (sessionId, title) => set({ sessionId, title }),
+        close: () => set(null),
+        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
+        get: () => current,
+      }
+    })()
+    const useSendRequest = () => React.useSyncExternalStore(sendRequest.subscribe, sendRequest.get)
+
+    /** Whether a session can be sent: Fishball runs, and it is not Fishball's own session. */
+    const canSend = (state, sessionId) => state.status === STATUS.live && Boolean(sessionId) && sessionId !== state.sessionId
+
+    function makeSendMenuItem(t) {
+      return function FishballSendMenuItem({ sessionId, displayTitle, useMenuOpenState }) {
+        const state = useFishball()
+        const [, setMenuOpen] = useMenuOpenState()
+        if (!canSend(state, sessionId)) return null
+        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); sendRequest.open(sessionId, displayTitle) } }, t('sendToFishball'))
+      }
+    }
+
+    function makeSendHeaderAction(t) {
+      return function FishballSendHeaderAction({ sessionId }) {
+        const state = useFishball()
+        if (!canSend(state, sessionId)) return null
+        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => sendRequest.open(sessionId, '') }, t('sendToFishball'))
+      }
+    }
+
+    function makeSendDialog(t) {
+      return function FishballSendDialog() {
+        const request = useSendRequest()
+        if (request === null) return null
+        return h(SendForm, { key: request.sessionId, request, t })
+      }
+    }
+
+    /** One request's dialog: the note and in-flight state die with it. */
+    function SendForm({ request, t }) {
+      const [note, setNote] = React.useState('')
+      const [sending, setSending] = React.useState(false)
+      const [problem, setProblem] = React.useState(null)
+      const close = () => { if (!sending) sendRequest.close() }
+      const confirm = async () => {
+        setSending(true)
+        const { ok, code } = await send(API.send, { sessionId: request.sessionId, note })
+        setSending(false)
+        if (ok) sendRequest.close()
+        else setProblem(SEND_ERRORS.has(code) ? 'sendError.' + code : 'sendFailed')
+      }
+      return h(Modal, {
+        open: true,
+        onClose: close,
+        closeLabel: t('close'),
+        title: request.title ? t('sendTitle', { title: request.title }) : t('sendToFishball'),
+        footer: h(React.Fragment, null,
+          h(Button, { type: 'button', variant: 'outline', disabled: sending, onClick: close }, t('cancel')),
+          h(Button, { type: 'button', variant: 'primary', disabled: sending, onClick: confirm }, sending ? t('sending') : t('send'))),
+      },
+        h('p', { className: CLS.muted }, t('sendHint')),
+        h('label', { className: CLS.field },
+          h('span', null, t('sendNoteLabel')),
+          h('textarea', { className: CLS.note, value: note, rows: 4, 'data-modal-autofocus': true, disabled: sending, onChange: (event) => { setNote(event.target.value); setProblem(null) } })),
+        problem ? h('div', { role: 'alert' }, t(problem)) : null)
+    }
+
+    /** The queue and the outbox (DESIGN §10): counts and recent entries, no message text. */
+    function makeIntake(t) {
+      return function FishballIntake() {
+        const state = useFishball()
+        const intake = state.intake
+        const outbox = state.outbox
+        if (!intake || !outbox) return null
+        const row = (label, value) => h('div', { className: CLS.row }, h('span', { className: CLS.label }, t(label)), h('span', null, String(value)))
+        return h(React.Fragment, null,
+          h('div', { className: CLS.section, 'data-fishball-intake': true },
+            h('h3', null, t('intake')),
+            h('p', { className: CLS.muted }, t('intakeHint')),
+            row('intakeQueued', intake.queued),
+            row('intakeFailed', intake.failed),
+            row('intakeWakeups', intake.wakeupsThisHour),
+            intake.items.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, intake.items.map((item) => h('li', { key: item.intakeId },
+              h(Tag, { tone: 'neutral' }, t('intakeKind.' + item.kind)), ' ',
+              h('span', { className: CLS.code }, item.sourceIdentity), ' ',
+              h(Tag, { tone: item.status === 'failed' ? 'danger' : 'info' }, t('intakeStatus.' + item.status)), ' ',
+              h('span', { className: CLS.muted }, item.createdAt))))),
+          h('div', { className: CLS.section, 'data-fishball-outbox': true },
+            h('h3', null, t('outbox')),
+            h('p', { className: CLS.muted }, t('outboxHint')),
+            outbox.entries.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, outbox.entries.map((entry) => h('li', { key: entry.key },
+              h(Tag, { tone: 'neutral' }, t('outboxKind.' + entry.kind)), ' ',
+              h('span', { className: CLS.code }, entry.targetSessionId ?? entry.folder ?? ''), ' ',
+              h(Tag, { tone: entry.status === 'failed' ? 'danger' : 'info' }, t('outboxStatus.' + entry.status)), ' ',
+              h('span', { className: CLS.muted }, entry.at))))))
+      }
+    }
+
     function makeHeaderAction(ctx, t) {
       return function FishballHeaderAction({ sessionId }) {
         const state = useFishball()
@@ -542,7 +729,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ContextWindow, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, ContextWindow, Intake, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -553,6 +740,7 @@ window.__ModuleLoader__.load({
         return h(React.Fragment, null,
           h(Status),
           h(ContextWindow),
+          h(Intake),
           h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
@@ -602,10 +790,15 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
       })), 'fishball: brand')
       const HeaderAction = makeHeaderAction(ctx, t)
-      ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)), 'fishball: header action')
+      ctx.effect(() => ctx.slots.inject(SLOT.headerActions, function* () {
+        yield ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)
+        yield ctx.slots.register({ name: SLOT.headerActions, id: SEND_HEADER_ID, order: SEND_HEADER_ORDER, locale: NS }, makeSendHeaderAction(t))
+      }), 'fishball: header actions')
+      ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, () => ctx.slots.register({ name: SLOT.sessionMenu, id: SEND_MENU.id, order: SEND_MENU.order, locale: NS }, makeSendMenuItem(t))), 'fishball: session menu')
+      ctx.effect(() => ctx.slots.inject(SLOT.overlay, () => ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))), 'fishball: send dialog')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

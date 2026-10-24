@@ -107,7 +107,7 @@ function liveAgent(sessionId) {
 /** JSON-safe summary of one session event. */
 function eventSummary(e) {
   const out = { type: e.type }
-  if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 2000); out.textLength = textOf(e.data?.content ?? e.data?.message?.content).length }
+  if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 12000); out.textLength = textOf(e.data?.content ?? e.data?.message?.content).length }
   if (e.type === 'sandbox/mode') out.mode = e.data?.mode
   if (e.type === 'approval/policy') out.policy = e.data?.policy
   if (e.type === 'tool/result') out.result = { callId: e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
@@ -334,6 +334,35 @@ const ops = {
   },
   /** The last turn/end reason of a session. */
   lastTurnEnd({ sessionId }) { const e = liveAgent(sessionId).session.snapshotEvents().filter((x) => x.type === 'turn/end').at(-1); return e?.data?.reason ?? null },
+
+  // ---- P5 operations ----
+  /** Queue scripted answers for any request whose latest user message contains marker. */
+  queueMarker({ marker, script = [], except = null }) { model.markers.set(marker, { script: [...script], except, sessions: new Set() }); return true },
+  /** The sessions that took a marker's answers, and how many answers are left. */
+  markerState({ marker }) { const e = model.markers.get(marker); return e ? { sessions: [...e.sessions], left: e.script.length } : null },
+  /** Every recorded conversation request whose message text contains a needle (any session). */
+  requestsContaining({ needle }) { return model.requests.filter((r) => r.texts.includes(needle)).map((r) => ({ sessionId: r.sessionId, tools: r.tools.map((t) => t.name), system: r.system.slice(0, 300) })) },
+  /** Make a stored session live again through DSH's session controller (as opening it in the GUI does). */
+  async resume({ sessionId }) {
+    // Right after a boot the session controller service may not be provided yet.
+    await until(() => ctx.sessionController, 15000, 50)
+    const r = await ctx.sessionController.resolveAgent(sessionId); return { live: Boolean(ctx.agents.get(sessionId)), error: r.error ? errorInfo(r.error) : null } },
+  /** Stored header of any session (live or not). */
+  async header({ sessionId }) { const s = await ctx.sessionPersistence.stat(sessionId); return s ? JSON.parse(JSON.stringify(s.header)) : null },
+  /** Every stored session id. */
+  async allSessions() { return (await ctx.sessionPersistence.list()).map((s) => ({ id: s.header.id, cwd: s.header.cwd ?? null, agentPreset: s.header.agentPreset ?? null })) },
+  /** The live agent's status, or null when the session has no live agent. */
+  agentStatus({ sessionId }) { return ctx.agents.get(sessionId)?.status ?? null },
+  /** Register a DSH workspace for an existing folder (start_session may name it by id). */
+  async createWorkspace({ dir }) { fs.mkdirSync(dir, { recursive: true }); const w = await ctx.workspaceRegistry.create(dir); return { id: w.id, path: w.path } },
+  /** Every user/message of a session's stored log (live or not), summarized. */
+  async userMessages({ sessionId }) {
+    const agent = ctx.agents.get(sessionId)
+    if (agent) return agent.session.snapshotEvents().filter((e) => e.type === 'user/message').map(eventSummary)
+    return null
+  },
+  /** DSH's configured default preset id, as an ordinary create with no preset reports it. */
+  defaultPreset() { return ctx.agentPresets.defaultId },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])
