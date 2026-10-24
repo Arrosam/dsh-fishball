@@ -118,15 +118,31 @@ window.__ModuleLoader__.load({
       lift: '-2px',
     })
     /**
-     * The "Deepseek Harness" tag: a solid badge overlapping the word logo's bottom-right corner
-     * and covering the foot of the last letters, which is deliberate: the 6px outline-free text it
-     * replaced could not be read at sidebar size. The shell clips the brand name to a 24px-high box
-     * (dsh-client-ui-sidebar `.brandName`/`.brand`), so the badge must stay inside it; `bottom`
-     * is negative because the word, lifted and at line height 1, ends above that edge. The fill is
-     * the mark's eye magenta (FISH_MARK.eyeColor), the one colour the brand spends, so it reads on
-     * both light and dark themes and as part of the logo.
+     * The "Deepseek Harness" tag: a tilted sticker overlapping the word logo's bottom-right corner
+     * (design 8 of the owner's pick), with a hard magenta drop shadow. It covers the foot of the
+     * last letters on purpose: the small plain text it replaced could not be read at sidebar size.
+     * The tilt pivots on the bottom-right corner, so the left end swings down below the word.
+     * The shell clips the brand name to a 24px-high box (dsh-client-ui-sidebar `.brand`), which
+     * cut that end off, so releaseClip() opens the box while the brand is shown. Squeezing the
+     * sticker inside the box instead (pivot on the left, or a smaller tilt) covered nearly the
+     * whole word, which is worse. The fill and text swap the sidebar's own label colours so the
+     * sticker reads on light and dark themes; the ring is the sidebar ground and separates the
+     * sticker from the letters it covers; the shadow is the mark's eye magenta
+     * (FISH_MARK.eyeColor), the one colour the brand spends.
      */
-    const BRAND_TAG = Object.freeze({ fontSize: '9px', lineHeight: '11px', fontWeight: 700, letterSpacing: '0.1px', paddingX: '3px', radius: '2px', right: '-2px', bottom: '-5px', textColor: '#fff' })
+    const BRAND_TAG = Object.freeze({
+      fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px',
+      right: '0', bottom: '-2px', rotate: '-5deg', origin: 'right bottom',
+      fill: 'var(--dsw-alias-label-primary)', textColor: 'var(--dsw-alias-label-primary-inverted)',
+      ring: '0 0 0 1.5px var(--dsw-alias-label-primary-inverted)', shadow: '2px 2px 0 1.5px ' + FISH_MARK.eyeColor,
+    })
+    /**
+     * How many ancestors above the brand name releaseClip() searches for the clipping box. The
+     * shell nests it brandName > brandIdentity > brand (a button, or a span on macOS Desktop), so
+     * 4 leaves one spare level. The bound keeps a shell change from making this open a distant
+     * container (the sidebar or the app root) that was meant to clip.
+     */
+    const CLIP_SEARCH_DEPTH = 4
     const STYLE_ID = 'fishball-style'
     /**
      * Fishball's own session is reached through the brand (or its Plugins page), not the
@@ -471,7 +487,7 @@ window.__ModuleLoader__.load({
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
       `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
-      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${FISH_MARK.eyeColor};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;letter-spacing:${BRAND_TAG.letterSpacing};white-space:nowrap;pointer-events:none}`,
+      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;transform:rotate(${BRAND_TAG.rotate});transform-origin:${BRAND_TAG.origin};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
       `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
@@ -530,6 +546,20 @@ window.__ModuleLoader__.load({
         h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
     }
 
+    /**
+     * Lets the tag overhang the shell's brand box: opens the nearest clipping ancestor of the
+     * brand name and returns a function that puts back its inline overflow. The row above it is
+     * 60px tall (40px with the Windows titlebar), so the few pixels of overhang stay visible.
+     */
+    function releaseClip(node) {
+      let box = node?.parentElement
+      for (let depth = 1; box && depth < CLIP_SEARCH_DEPTH && getComputedStyle(box).overflowX === 'visible'; depth += 1) box = box.parentElement
+      if (!box || getComputedStyle(box).overflowX === 'visible') return undefined
+      const previous = box.style.overflow
+      box.style.overflow = 'visible'
+      return () => { box.style.overflow = previous }
+    }
+
     /** How to open Fishball's page under Plugins, or undefined when no service can. */
     function settingsOpener(ctx) {
       const navigation = ctx.get(SERVICE.pluginNavigation)
@@ -568,6 +598,7 @@ window.__ModuleLoader__.load({
         // Subscribed only to keep the shared state stream open while the brand is shown:
         // the click handler reads the latest snapshot when it runs.
         useFishball()
+        React.useEffect(() => releaseClip(ref.current), [])
         React.useEffect(() => {
           const button = ref.current?.closest('button')
           if (!button) return undefined
