@@ -15,7 +15,25 @@ export const model = (globalThis.__fbtestModel ??= {
   aux: [],
   queues: new Map(),
   queue(sessionId, ...responses) { const q = this.queues.get(sessionId) ?? []; q.push(...responses); this.queues.set(sessionId, q) },
-  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byMarker(options) ?? [{ text: 'ok' }] },
+  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byPlan(options) ?? this.byMarker(options) ?? [{ text: 'ok' }] },
+  /**
+   * P7: a permission request wakes Fishball before a test could queue an answer, so Fishball's model
+   * answers from the request text: a plan {sessionId, needle, args, callId} answers the newest
+   * '[permission request apr_…]' user message containing needle once, with answer_approval(args)
+   * and request_id taken from that message.
+   */
+  plans: [],
+  byPlan(options) {
+    const users = (options.messages ?? []).filter((m) => m.role === 'user').map((m) => textOf(m.content))
+    for (const plan of this.plans) {
+      if (plan.used || plan.sessionId !== options.sessionId) continue
+      const text = users.filter((t) => t.includes(plan.needle)).map((t) => /\[permission request (apr_[0-9a-f]+)\]/.exec(t)).filter(Boolean).at(-1)
+      if (!text) continue
+      plan.used = { requestId: text[1], at: Date.now() }
+      return [{ tool: 'answer_approval', id: plan.callId ?? 'call_plan_' + Math.random().toString(36).slice(2, 8), args: { request_id: text[1], ...plan.args } }]
+    }
+    return undefined
+  },
   /**
    * P5: answers for sessions whose id a test cannot know in advance (subagents, sessions Fishball
    * starts). A request of another session than `except` whose user messages contain a registered

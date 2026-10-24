@@ -336,5 +336,37 @@ export async function noticesSettled(host, fb, watchId, n, { timeoutMs = 12000, 
   return watchNotices(host, fb, watchId)
 }
 
+// ---- P7 helpers (ApprovalBroker) ----
+
+/** Fishball's permission-request messages (fishball-notice user messages starting '[permission request') containing needle. */
+export async function requestMessages(host, fb, needle = '') {
+  const events = (await host.call('inspect', { sessionId: fb, events: true })).events ?? []
+  return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.startsWith('[permission request') && e.text.includes(needle))
+}
+/** Wait for the one request message containing needle; returns it with its id and parsed block (or undefined). */
+export async function waitRequest(host, fb, needle, timeoutMs = 10000) {
+  await until(async () => (await requestMessages(host, fb, needle)).length > 0, timeoutMs, 50)
+  const m = (await requestMessages(host, fb, needle)).at(-1)
+  if (!m) return undefined
+  return { ...m, id: /^\[permission request (apr_[0-9a-f]+)\]/.exec(m.text)?.[1], block: untrustedBlock(m.text) }
+}
+/** Start a turn in session sid whose model calls the asking tool once with args (does not wait). */
+export const startAsk = (host, sid, tool, args, text = 'fbtest ask turn', source) => host.call('driveStart', { sessionId: sid, text, script: callScript(tool, args), ...(source ? { source } : {}) })
+/** Wait until the asking tool's call with this text has an outcome; returns its record. */
+export async function askSettled(host, text, timeoutMs = 15000) {
+  await until(async () => (await host.call('asks', {})).find((a) => a.text === text && a.outcome !== null), timeoutMs, 50)
+  return (await host.call('asks', {})).find((a) => a.text === text)
+}
+/** The parsed result of Fishball's tool call with this call id (a planned answer_approval), or undefined. */
+export async function resultOfCall(host, fb, callId, timeoutMs = 10000) {
+  const find = async () => ((await host.call('inspect', { sessionId: fb, events: true })).events ?? []).find((e) => e.type === 'tool/result' && e.result.callId === callId)
+  await until(find, timeoutMs, 50)
+  const e = await find()
+  return e ? { json: jsonOf(e.result), isError: e.result.isError, text: e.result.text } : undefined
+}
+export const approvalsNow = async (host) => (await host.state()).approvals
+/** UTF-8 byte length. */
+export const bytes = (s) => Buffer.byteLength(String(s), 'utf8')
+
 export const T = { timeout: 55000 }
 export const HOOK = { timeout: 60000 }

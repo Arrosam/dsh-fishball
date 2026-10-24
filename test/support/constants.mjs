@@ -185,8 +185,8 @@ export const API = {
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12). */
-export const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'status', 'watches', 'workspaceId']
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'status', 'watches', 'workspaceId']
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
@@ -296,5 +296,47 @@ export const OUTCOME = { allow: 'allowed-once', reject: 'rejected', cancelled: '
 export const APPROVER_THROWS = 'throw'
 /** Not an outcome: the scripted answerer holds the question open until the test releases it (race cases). */
 export const APPROVER_HOLDS = 'hold'
+
+// ---- P7 (ApprovalBroker) ----
+/**
+ * P7: with FBTEST_APPROVER_AFTER=1 the scripted answerer stands in for the browser prompt AFTER the
+ * broker (see worker.mjs), and the root registers this asking tool for ordinary sessions.
+ */
+export const ASK_TOOL = 'fbtest_ask'
+export const ASK_REASON = (text) => 'fbtest asks for ' + text
+export const APPROVER_AFTER_ENV = { FBTEST_APPROVER_AFTER: '1' }
+/** P1: the request message. */
+/** P1 (review update): the tool name is JSON-quoted in the summary. */
+export const APPROVAL_SUMMARY = (tool) => 'Permission request: ' + JSON.stringify(tool)
+export const APPROVAL_ID = /^apr_[0-9a-f]+$/
+export const APPROVAL_PREFIX = /^\[permission request (apr_[0-9a-f]+)\]/
+/** P1 block fields (review update adds approval_policy); the optional ones appear only in their cases. */
+export const APPROVAL_FIELDS = ['session_id', 'session_title', 'session_folder', 'permission_mode', 'approval_policy', 'tool', 'reason_given', 'arguments', 'latest_user_message']
+export const APPROVAL_OPTIONAL_FIELDS = ['asked_by_subagent_session', 'call_was_to_tool']
+export const ARGS_STATUS = { complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' }
+export const STARTED_BY = { user: 'the user', fishball: 'Fishball (start_session)' }
+export const TURN_BY = { user: 'the user', fishball: 'Fishball (message_session)', other: 'another agent or a notice' }
+/** Provenance update: a session not started by the user or Fishball. */
+export const STARTED_BY_OTHER = ['another agent or a notice', 'unknown']
+/** P1: latest_user_message is cut to at most this many UTF-8 bytes. */
+export const LATEST_USER_MAX_BYTES = 2048
+/** P2: answer_approval and its codes. */
+export const ANSWER_TOOL = 'answer_approval'
+export const APR_CODE = { lowRisk: 'allow-needs-low-risk', reason: 'reason-required', incomplete: 'arguments-incomplete', expired: 'expired' }
+/** P4-P6: the non-waking notes Fishball gets. */
+export const APR_NOTE = {
+  escalated: (id, outcome) => 'Fishball notice: permission request ' + id + " was escalated; the user's answer in that session: " + outcome,
+  timeout: 'got no answer in time and went to the user',
+  withdrawn: 'was withdrawn',
+}
+/** P8: state.approvals. */
+export const APPROVALS_KEYS = ['pending', 'recent']
+export const PENDING_KEYS = ['at', 'id', 'sessionId', 'toolName']
+export const RECENT_KEYS = ['answer', 'argumentsStatus', 'at', 'decidedAt', 'finalOutcome', 'key', 'rationale', 'risk', 'sessionId', 'toolName']
+export const RECENT_ANSWERS = ['allow', 'escalate', 'timeout', 'withdrawn']
+export const FINAL_OUTCOMES = ['allowed-once', 'rejected', 'cancelled', 'unavailable']
+export const RECENT_MAX = 20
+/** P9: rubric phrases in Fishball's system prompt. */
+export const RUBRIC = ['**Permission requests.**', 'Approve only if the user has allowed you to', 'With no such allowance, escalate at once', 'Low risk:', 'High risk:', 'When unsure, it is high risk', 'answer_approval', 'You cannot reject']
 
 export const MS = { boot: 45000, live: 20000, turn: 20000, stop: 20000, poll: 100, sseFirstFrame: 3000, sseChange: 8000 }

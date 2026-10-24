@@ -12,6 +12,12 @@ export const inject = ['tools']
 export function apply(ctx) {
   store.fixtureCtx = ctx
   ctx.effect(() => registerFixtures(ctx, BOOT_TOOLS.filter((n) => !LATE_TOOLS.includes(n)), store.fixtureRegs), 'fbtest fixture tools')
+  // P7 (FBTEST_APPROVER_AFTER=1): the browser prompt's stand-in. This row mounts before dsh-fishball and
+  // prepends, so Fishball's broker (prepended later) runs first and its next() reaches this listener,
+  // which answers through the worker's scripted answerer. Before the worker sets it up: rejected.
+  if (process.env.FBTEST_APPROVER_AFTER === '1') {
+    ctx.on('approval/request', (req) => (store.answerQuestion ? store.answerQuestion(req) : 'rejected'), { prepend: true })
+  }
   ctx.on('agent/created', ({ agent, source }) => { store.lifecycle.push({ type: 'created', id: agent.id, source: source?.kind ?? String(source), at: Date.now() }) })
   ctx.on('agent/disposed', ({ agent }) => { store.lifecycle.push({ type: 'disposed', id: agent.id, at: Date.now() }) })
   // Post-review change 2: a plugin that registers a tool straight into each new agent's own scope.

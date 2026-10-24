@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { fixtureTool, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
@@ -16,6 +16,7 @@ const host = (spec) => import(pathToFileURL(path.join(RUNTIME, spec)).href)
 const hostPkg = (name) => host(path.join('@deepseek-ai', name, 'lib', 'index.js'))
 
 const home = process.env.DSH_HOME
+const APPROVER_AFTER = process.env.FBTEST_APPROVER_AFTER === '1'
 if (!home || !home.includes(path.join('.runtime', 'test-homes'))) throw new Error('worker refuses a DSH_HOME outside .runtime/test-homes: ' + home)
 
 const { runProfile, initializeProfileFromDefault } = await host('@deepseek-ai/dsh/lib/profile-boot.js')
@@ -80,7 +81,7 @@ const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'),
  * unexpected prompt never hangs a turn.
  */
 const approver = { outcome: process.env.FBTEST_APPROVAL ?? OUTCOME.reject, queue: [], held: [], seen: [] }
-ctx.on('approval/request', (req) => {
+function answerQuestion(req) {
   // A queued answer (one per question, in order) wins over the standing outcome.
   const answer = approver.queue.length > 0 ? approver.queue.shift() : approver.outcome
   approver.seen.push({ sessionId: req.agent?.id ?? null, toolName: req.toolName, callId: req.callId ?? null, reason: req.reason ?? null, answered: answer, at: Date.now() })
@@ -88,7 +89,40 @@ ctx.on('approval/request', (req) => {
   // Hold the question open until the test calls releaseApproval (a person who has not clicked yet).
   if (answer === APPROVER_HOLDS) return new Promise((resolve) => approver.held.push(resolve))
   return answer
-}, { prepend: true })
+}
+/**
+ * P7: with FBTEST_APPROVER_AFTER=1 the scripted answerer stands in for the browser prompt AFTER
+ * Fishball's broker: fbtest-tools (mounted before dsh-fishball) registers the prepended listener at
+ * boot and calls this function, so the broker (prepended later) runs first and its next() reaches it.
+ * Otherwise the worker's own listener, prepended after every row, answers before the broker.
+ */
+if (APPROVER_AFTER) store.answerQuestion = answerQuestion
+else ctx.on('approval/request', (req) => answerQuestion(req), { prepend: true })
+
+/**
+ * P7: an asking tool for ordinary sessions, registered from the root (unattributed, so Fishball never
+ * sees it). Its body asks through ctx.approval.request with its own call id, as DSH's sandbox
+ * escalation does. nocall omits the call id, fakecall names a call id that is not in the log, and
+ * as asks under another tool name than the call's (the call was to a different tool).
+ */
+if (APPROVER_AFTER) {
+  store.asks ??= []
+  ctx.tools.register({
+    name: ASK_TOOL,
+    description: 'fbtest asking tool. Asks for permission in its body.',
+    parameters: { type: 'object', properties: { text: { type: 'string' }, pad: { type: 'string' }, nocall: { type: 'boolean' }, fakecall: { type: 'boolean' }, as: { type: 'string' } }, required: ['text'] },
+    output: { schema: { type: 'string' }, render: (_a, v) => [{ type: 'text', text: String(v) }] },
+    async execute(args, exec) {
+      const callId = args.nocall ? undefined : args.fakecall ? 'call_fbtest_nowhere' : exec.callId
+      const entry = { sessionId: exec.agent?.id ?? null, callId: exec.callId, text: args.text, askedAt: Date.now(), outcome: null }
+      store.asks.push(entry)
+      const outcome = await ctx.get('approval').request({ agent: exec.agent, toolName: args.as ?? ASK_TOOL, ...(callId ? { callId } : {}), reason: ASK_REASON(args.text), signal: exec.signal })
+      entry.outcome = outcome
+      entry.decidedAt = Date.now()
+      return 'outcome=' + outcome
+    },
+  })
+}
 
 const tags = new WeakMap()
 let tagCounter = 0
@@ -109,9 +143,10 @@ function eventSummary(e) {
   const out = { type: e.type }
   if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 12000); out.textLength = textOf(e.data?.content ?? e.data?.message?.content).length }
   if (e.type === 'sandbox/mode') out.mode = e.data?.mode
+  if (e.type === 'tool/result') out.result = { callId: e.data.message.toolCallId ?? e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
+  if (e.type === 'approval/asked') { out.toolName = e.data?.toolName ?? null; out.id = e.data?.id ?? null; out.callId = e.data?.callId ?? null }
+  if (e.type === 'approval/decided') { out.id = e.data?.id ?? null; out.outcome = e.data?.outcome ?? null }
   if (e.type === 'approval/policy') out.policy = e.data?.policy
-  if (e.type === 'tool/result') out.result = { callId: e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
-  if (e.type === 'approval/asked') out.toolName = e.data?.toolName ?? null
   if (e.type === 'turn/end') out.reason = e.data?.reason ?? null
   if (e.type === 'step/end') out.data = JSON.parse(JSON.stringify(e.data ?? null))
   if (e.type === 'assistant/message') out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 2000)
@@ -320,11 +355,12 @@ const ops = {
   isHeld({ sessionId }) { return typeof model.holds?.get(sessionId) === 'function' },
   releaseHold({ sessionId }) { const r = model.holds?.get(sessionId); model.holds?.delete(sessionId); if (typeof r === 'function') r(); return typeof r === 'function' },
   /** Steer a message without waiting; pair with waitIdle. */
-  driveStart({ sessionId, text = 'fbtest turn', script = [] }) {
+  driveStart({ sessionId, text = 'fbtest turn', script = [], source = { kind: 'user' } }) {
     const agent = liveAgent(sessionId)
     model.queues.delete(sessionId)
     for (const step of script) model.queue(sessionId, step)
-    agent.steer(createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } }))
+    // P7: source lets a test start a turn that the user did not start (an agent relay).
+    agent.steer(createUserMessage({ content: [{ type: 'text', text }], source }))
     return true
   },
   async waitIdle({ sessionId, timeoutMs = 20000 }) {
@@ -382,6 +418,28 @@ const ops = {
   async flush({ sessionId }) { await ctx.sessions.flush(liveAgent(sessionId).session); return true },
   /** Every turn/end reason of a live session. */
   turnEnds({ sessionId }) { const a = ctx.agents.get(sessionId); return a ? a.session.snapshotEvents().filter((e) => e.type === 'turn/end').map((e) => e.data?.reason?.kind ?? null) : null },
+
+  // ---- P7 operations ----
+  /** Every call of the asking tool: session, call id, text, outcome (null while waiting) and times. */
+  asks({ sessionId } = {}) { return (store.asks ?? []).filter((a) => !sessionId || a.sessionId === sessionId) },
+  /** Every approval/asked and approval/decided event of a live session. */
+  approvalEvents({ sessionId }) { return liveAgent(sessionId).session.snapshotEvents().filter((e) => e.type.startsWith('approval/')).map(eventSummary) },
+  /** Switch a live session's approval policy the way DSH's policy switch does ('ask' or 'never'). */
+  setApprovalPolicy({ sessionId, policy }) { ctx.get('approval').setPolicy(liveAgent(sessionId), policy); return ctx.get('approval').effectivePolicy(liveAgent(sessionId).session) },
+  /** Let Fishball's model answer the next permission request whose text contains needle with answer_approval(args). */
+  planApproval({ sessionId, needle, args, callId }) { model.plans.push({ sessionId, needle, args, callId, used: null }); return true },
+  /**
+   * DSH pins every subagent's approval policy to 'never' at delegation, so its requests never reach
+   * any answerer. With on, every agent created from now on is switched back to 'ask' (DSH's policy
+   * switch), so a subagent's request reaches the broker (P1 review: subagent attribution).
+   */
+  askInNewAgents({ on }) {
+    store.askInNewAgentsOff?.()
+    store.askInNewAgentsOff = on ? ctx.on('agent/created', ({ agent }) => { try { ctx.get('approval').setPolicy(agent, 'ask') } catch (e) { store.registerErrors.push({ name: 'askInNewAgents', error: String(e?.message ?? e) }) } }) : undefined
+    return true
+  },
+  clearPlans() { model.plans.length = 0; return true },
+  planState() { return model.plans.map((p) => ({ needle: p.needle, callId: p.callId, used: p.used })) },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])

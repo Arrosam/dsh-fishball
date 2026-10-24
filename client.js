@@ -186,6 +186,7 @@ window.__ModuleLoader__.load({
       'intakeKind.user': 'From you',
       'intakeKind.system': 'Notice',
       'intakeKind.watch': 'Watched session',
+      'intakeKind.approval': 'Permission request',
       'intakeStatus.pending': 'Waiting',
       'intakeStatus.accepted': 'Queued',
       'intakeStatus.consumed': 'Read',
@@ -199,6 +200,17 @@ window.__ModuleLoader__.load({
       'outboxStatus.unconfirmed': 'Delivered, not confirmed',
       'outboxStatus.failed': 'Failed',
       nothingYet: 'Nothing yet.',
+      approvals: 'Permission requests',
+      approvalsHint: 'Other sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you in that session.',
+      approvalsWaiting: 'Waiting for Fishball',
+      'approvalAnswer.allow': 'Approved by Fishball',
+      'approvalAnswer.escalate': 'Sent to you',
+      'approvalAnswer.timeout': 'No answer in time; sent to you',
+      'approvalAnswer.withdrawn': 'Withdrawn',
+      'approvalOutcome.allowed-once': 'allowed once',
+      'approvalOutcome.rejected': 'rejected',
+      'approvalOutcome.cancelled': 'cancelled',
+      'approvalOutcome.unavailable': 'no answer',
       plugins: 'Plugins for Fishball',
       pluginsHint: 'Fishball\'s own on/off choice. Other sessions and the profile are not changed. A change applies when Fishball\'s current turn ends.',
       pluginToggle: 'Use {name} in Fishball',
@@ -329,6 +341,7 @@ window.__ModuleLoader__.load({
       'intakeKind.user': '来自你',
       'intakeKind.system': '通知',
       'intakeKind.watch': '关注的会话',
+      'intakeKind.approval': '权限请求',
       'intakeStatus.pending': '等待中',
       'intakeStatus.accepted': '已排队',
       'intakeStatus.consumed': '已读取',
@@ -342,6 +355,17 @@ window.__ModuleLoader__.load({
       'outboxStatus.unconfirmed': '已送达，未确认',
       'outboxStatus.failed': '失败',
       nothingYet: '暂无。',
+      approvals: '权限请求',
+      approvalsHint: '其他会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你在该会话中决定。',
+      approvalsWaiting: '等待 Fishball 处理',
+      'approvalAnswer.allow': 'Fishball 已批准',
+      'approvalAnswer.escalate': '已转交给你',
+      'approvalAnswer.timeout': '超时未答复，已转交给你',
+      'approvalAnswer.withdrawn': '已撤回',
+      'approvalOutcome.allowed-once': '允许一次',
+      'approvalOutcome.rejected': '已拒绝',
+      'approvalOutcome.cancelled': '已取消',
+      'approvalOutcome.unavailable': '无人答复',
       plugins: 'Fishball 的插件',
       pluginsHint: '仅 Fishball 自己的开关，不影响其他会话和配置。更改在 Fishball 当前回合结束后生效。',
       pluginToggle: '在 Fishball 中使用 {name}',
@@ -846,6 +870,26 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** Permission requests (DESIGN §10): waiting ones, then the recent audit. Never the arguments. */
+    function makeApprovals(t) {
+      return function FishballApprovals() {
+        const state = useFishball()
+        const view = state.approvals
+        if (!view) return null
+        return h('div', { className: CLS.section, 'data-fishball-approvals': true },
+          h('h3', null, t('approvals')),
+          h('p', { className: CLS.muted }, t('approvalsHint')),
+          view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
+            h(Tag, { tone: 'info' }, t('approvalsWaiting')), ' ', h('span', { className: CLS.code }, p.toolName), ' ', h('span', { className: CLS.muted }, p.sessionId)))) : null,
+          view.recent.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.recent.map((entry) => h('li', { key: entry.key },
+            h(Tag, { tone: entry.answer === 'allow' ? 'danger' : 'neutral' }, t('approvalAnswer.' + entry.answer)), ' ',
+            h('span', { className: CLS.code }, entry.toolName), ' ',
+            h('span', { className: CLS.muted }, entry.sessionId), ' ',
+            h('span', { className: CLS.muted }, t('approvalOutcome.' + entry.finalOutcome)), ' ',
+            entry.rationale ? h('span', null, entry.rationale) : null))))
+      }
+    }
+
     function makeHeaderAction(ctx, t) {
       return function FishballHeaderAction({ sessionId }) {
         const state = useFishball()
@@ -862,7 +906,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ContextWindow, Intake, Watches, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, ContextWindow, Intake, Watches, Approvals, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -875,6 +919,7 @@ window.__ModuleLoader__.load({
           h(ContextWindow),
           h(Intake),
           h(Watches),
+          h(Approvals),
           h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
@@ -939,7 +984,7 @@ window.__ModuleLoader__.load({
       }), 'fishball: dialogs')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makeWatches(t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')
