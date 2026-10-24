@@ -14,8 +14,8 @@
  * | SGL-07 | State (start->live)    | agent live right after start                            | ctx.agents.get defined; status live; error null |
  * | SGL-08 | EP                     | controller resolves the live Fishball agent             | sessionController.resolveAgent(id).agent === live agent |
  * | SGL-09 | Decision (no stopActivity) | archive guard while live                            | WorkspaceActiveSessionError, activity kind fishball; not archived; still live |
- * | SGL-10 | State (first creation) | one setup turn at first creation                        | 1 model request; turn/start, turn/end; user/message source fishball-notice/notice/'Fishball is set up', text says set up |
- * | SGL-11 | State (restart)        | restart resumes the same session, no setup turn         | same id; 1 sentinel session; no new notice; 0 model requests |
+ * | SGL-10 | State (first creation) | one setup turn at first creation (P5 amended)          | one turn/start..turn/end; one user/message source fishball-notice/notice/'Fishball is set up', text says set up; model requests = 1 + other Fishball notices (P5: the unchecked-tools notice of the fixture tools wakes one more request), at most 1 such notice |
+ * | SGL-11 | State (restart)        | restart resumes the same session, no setup turn         | same id; 1 sentinel session; no new setup notice and no second unchecked-tools notice (same tool version); 0 model requests |
  * | SGL-12 | BVA (N = 3 boots)      | still exactly one session across N restarts             | 1 sentinel session, same id; still pinned, read-only, ask |
  * | SGL-13 | State (starting->live), EP (folder exists) | live only after setup turn ended; existing folder reused | status != live while setup request is held; live after; cwd is the existing folder |
  * | SGL-16 | State (restart -> live -> turn) | the resumed agent is usable (inferred, CASES.md A13) | a turn after a restart makes 1 model request and ends with reason completed |
@@ -29,6 +29,18 @@ import { after, before, describe, it } from 'node:test'
 import { API, ATTRIBUTION_ROW, MS, PACKAGE_NAME, REPO, ROW_ID, SENTINEL_PRESET, SETUP_SOURCE, STATUS, STORE, assistantDir } from './support/constants.mjs'
 import { HOOK, T, realpath } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
+
+/**
+ * P5: the fixture bundle registers unchecked profile-wide tools, so when Fishball goes live it also
+ * receives one "unchecked tools" Fishball notice (once per tool version, ever), which costs one more
+ * model request. Setup cases therefore count setup notices and turns, and allow exactly one model
+ * request per other Fishball notice.
+ */
+const isNotice = (e) => e.type === 'user/message' && e.source?.kind === SETUP_SOURCE.kind
+const isSetup = (e) => isNotice(e) && e.source?.summary === SETUP_SOURCE.summary
+function noticeCounts(events) {
+  return { setup: events.filter(isSetup).length, other: events.filter((e) => isNotice(e) && !isSetup(e)).length, turns: events.filter((e) => e.type === 'turn/start').length }
+}
 
 describe('R-SINGLETON first start', () => {
   let host
@@ -118,12 +130,21 @@ describe('R-SINGLETON first start', () => {
   })
 
   it('SGL-10 first creation runs exactly one setup turn with a fishball-notice message', T, async () => {
+    // P5: the unchecked-tools notice may land just after live; read the log once it has settled.
+    await sleep(1500)
+    first = await host.call('inspect', { sessionId: sid, events: true })
     const requests = await host.call('requests', { sessionId: sid })
-    assert.equal(requests.length, 1, 'model requests for Fishball at first creation')
+    const counts = noticeCounts(first.events)
+    assert.ok(counts.other <= 1, 'at most one other Fishball notice (unchecked tools): ' + counts.other)
+    assert.equal(requests.length, 1 + counts.other, 'model requests: one for setup, one per other notice')
     const types = first.events.map((e) => e.type)
-    assert.ok(types.includes('turn/start'))
-    assert.ok(types.includes('turn/end'), 'setup turn ended before live')
-    const notices = first.events.filter((e) => e.type === 'user/message' && e.source?.kind === SETUP_SOURCE.kind)
+    // The setup turn is one turn holding the setup notice; the unchecked-tools notice may join it or start one more.
+    const starts = types.filter((t) => t === 'turn/start').length
+    assert.ok(starts >= 1 && starts <= 1 + counts.other, 'turns: ' + starts)
+    const firstEnd = types.indexOf('turn/end')
+    const setupAt = first.events.findIndex(isSetup)
+    assert.ok(types.indexOf('turn/start') < setupAt && setupAt < firstEnd, 'the setup notice belongs to the first turn')
+    const notices = first.events.filter(isSetup)
     assert.equal(notices.length, 1)
     assert.deepEqual({ kind: notices[0].source.kind, form: notices[0].source.form, summary: notices[0].source.summary }, SETUP_SOURCE)
     assert.match(notices[0].text, /set up/i)
@@ -150,8 +171,8 @@ describe('R-SINGLETON first start', () => {
       await sleep(500)
       const now = await host.call('inspect', { sessionId: sid, events: true })
       assert.equal(now.live, true)
-      const notices = now.events.filter((e) => e.type === 'user/message' && e.source?.kind === SETUP_SOURCE.kind)
-      assert.equal(notices.length, 1, 'no second setup notice')
+      assert.equal(noticeCounts(now.events).setup, 1, 'no second setup notice')
+      assert.equal(noticeCounts(now.events).other, noticeCounts(first.events).other, 'no second unchecked-tools notice for the same tool version')
       assert.deepEqual(await host.call('requests', { sessionId: sid }), [], 'no model request at resume')
       assert.deepEqual((await host.call('sentinelSessions')).map((s) => s.id), [sid])
     })
@@ -242,9 +263,11 @@ describe('R-SINGLETON recovery retry during the setup turn', () => {
     const st = await host.waitStatus(STATUS.live)
     assert.equal(st?.sessionId, during.sessionId)
     assert.deepEqual((await host.call('sentinelSessions')).map((x) => x.id), [during.sessionId])
-    assert.equal((await host.call('requests', { sessionId: during.sessionId })).length, 1, 'one setup request')
     const events = (await host.call('inspect', { sessionId: during.sessionId, events: true })).events
-    assert.equal(events.filter((e) => e.type === 'user/message' && e.source?.kind === SETUP_SOURCE.kind).length, 1)
+    const counts = noticeCounts(events)
+    assert.equal(counts.setup, 1, 'one setup notice')
+    assert.ok(counts.other <= 1, 'at most one unchecked-tools notice')
+    assert.equal((await host.call('requests', { sessionId: during.sessionId })).length, 1 + counts.other, 'one setup request, plus one per other notice')
   })
 })
 
@@ -275,13 +298,17 @@ describe('R-SINGLETON resume of a session that never had a turn', () => {
     assert.equal(st?.status, STATUS.live, 'state: ' + JSON.stringify(st))
     assert.equal(st.sessionId, BLANK_ID, 'the stored session is resumed, not replaced')
     assert.deepEqual((await host.call('sentinelSessions')).map((x) => x.id), [BLANK_ID])
+    // Wait out the unchecked-tools notice, which may arrive just after live.
+    await sleep(1500)
     const now = await host.call('inspect', { sessionId: BLANK_ID, events: true })
-    assert.equal((await host.call('requests', { sessionId: BLANK_ID })).length, 1, 'one setup request; turn ends: ' + JSON.stringify(now.events.filter((e) => e.type === 'turn/end').map((e) => e.reason)))
+    const counts = noticeCounts(now.events)
+    assert.ok(counts.other <= 1, 'at most one unchecked-tools notice')
+    assert.equal((await host.call('requests', { sessionId: BLANK_ID })).length, 1 + counts.other, 'one setup request plus one per other notice; turn ends: ' + JSON.stringify(now.events.filter((e) => e.type === 'turn/end').map((e) => e.reason)))
     const types = now.events.map((e) => e.type)
     assert.ok(types.includes('turn/start') && types.includes('turn/end'), 'the setup turn ended before live')
-    assert.deepEqual(now.events.filter((e) => e.type === 'turn/end').map((e) => e.reason?.kind), ['completed'], 'the setup turn completed')
-    const notices = now.events.filter((e) => e.type === 'user/message' && e.source?.kind === SETUP_SOURCE.kind)
-    assert.equal(notices.length, 1)
+    assert.equal(now.events.filter((e) => e.type === 'turn/end')[0]?.reason?.kind, 'completed', 'the setup turn completed')
+    for (const e of now.events.filter((x) => x.type === 'turn/end')) assert.equal(e.reason?.kind, 'completed')
+    assert.equal(counts.setup, 1)
     assert.ok((await host.call('workspaces')).pinned.includes(BLANK_ID), 'pinned after resume')
   })
 })

@@ -165,7 +165,96 @@ export const CONTEXT_ERROR = Object.freeze({
 export const CONTEXT_PROJECTION = Object.freeze({ breakdown: 'contextBreakdown' })
 
 /** Storage domain names and versions (fail closed on mismatch). */
-export const DOMAIN = Object.freeze({ main: 'fishball', version: 1 })
+export const DOMAIN = Object.freeze({ main: 'fishball', version: 1, intake: 'fishball_intake' })
+
+/** Lifecycle of one intake item (DESIGN §5b, §9 fishball_intake.items). */
+export const INTAKE_STATUS = Object.freeze({
+  /** Recorded durably, not yet in Fishball's inbox. */
+  pending: 'pending',
+  /** In the inbox and flushed to the session log. */
+  accepted: 'accepted',
+  /** Fishball's turn took it. */
+  consumed: 'consumed',
+  /** DSH discarded it from the inbox (a cancel cleared it). */
+  discarded: 'discarded',
+  /** Could not be delivered; errorCode says why. */
+  failed: 'failed',
+})
+
+/** Who an intake item came from (the part of its source identity the host works out). */
+export const INTAKE_KIND = Object.freeze({
+  /** message_fishball from another session's agent. */
+  session: 'session',
+  /** "Send to Fishball" in the GUI: you forward a session with a note. */
+  user: 'user',
+  /** A Fishball notice from Fishball itself (e.g. plugins already on with unchecked tools). */
+  system: 'system',
+})
+
+/** Stable codes an intake call answers with (never message text). */
+export const INTAKE_ERROR = Object.freeze({
+  queueFull: 'queue-full',
+  tooLarge: 'too-large',
+  empty: 'empty',
+  fromFishball: 'from-fishball',
+  unknownSession: 'unknown-session',
+  deliveryFailed: 'delivery-failed',
+})
+
+/** One hour, for the hourly caps (wake-ups, messages, sessions). */
+export const HOUR_MS = 60 * 60 * 1000
+
+/** Intake ledger parameters (src/intake.js). */
+export const INTAKE = Object.freeze({
+  /** Joins source identity and dedupe key before hashing them into the row key. */
+  keySeparator: '\n',
+  /** Delivery attempts before a row is marked failed (each restart or reconcile retries). */
+  maxAttempts: 3,
+  /** Rows shown on the settings page. */
+  snapshotRows: 20,
+})
+
+/** Outcome of handing one item to the ledger. */
+export const INTAKE_OUTCOME = Object.freeze({ accepted: 'accepted', duplicate: 'duplicate' })
+
+/** Message sources Fishball uses (spike S4; DSH's agent-message relay is S16). */
+export const SOURCE = Object.freeze({
+  relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
+  notice: Object.freeze({ kind: 'fishball-notice', form: 'notice' }),
+})
+
+/**
+ * Reading another session for a notice (src/session-info.js). The excerpt bound keeps a
+ * notice small however long the other session's last answer was.
+ */
+export const SESSION_INFO = Object.freeze({
+  /** Bytes of a session's last answer in a forward (Fishball's own bound, not the sender's). */
+  excerptBytes: 3072,
+  ellipsis: '…',
+  assistantEvent: 'assistant/message',
+  textBlock: 'text',
+  /** Session header marking a subagent's session, and how far up its parents are followed. */
+  subagentOrigin: 'subagent',
+  maxSubagentDepth: 8,
+})
+
+/** What Fishball sent or started (DESIGN §9 outbox). */
+export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start' })
+/** unconfirmed: the session has the message, but its flush to disk could not be confirmed. */
+export const OUTBOX_STATUS = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed', failed: 'failed' })
+
+/** Stable codes message_session and start_session answer with. */
+export const OUTBOUND_ERROR = Object.freeze({
+  hourlyCap: 'hourly-cap',
+  tooLarge: 'too-large',
+  empty: 'empty',
+  unknownSession: 'unknown-session',
+  archived: 'archived',
+  isFishball: 'is-fishball',
+  noFolder: 'no-folder',
+  notAbsolute: 'not-absolute',
+  deliveryFailed: 'delivery-failed',
+})
 
 /** Host API under DSH's authenticated /api channel. */
 export const API = Object.freeze({
@@ -178,6 +267,8 @@ export const API = Object.freeze({
   toolApprovals: '/api/fishball/tool-approvals/remove',
   /** POST { contextWindowTokens, maxOutputTokens }: each a positive whole number or null (unset). */
   contextWindow: '/api/fishball/context-window',
+  /** POST { sessionId, note }: you forward a session to Fishball ("Send to Fishball"). */
+  send: '/api/fishball/send',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -224,6 +315,8 @@ export const SERVICE = Object.freeze({
   approval: 'approval',
   /** The model's context window (resolveModelInfo) for the context-window setting (DESIGN §6). */
   llm: 'llm',
+  /** Durable session flush after an inbox write (intake ledger, outbound messages). */
+  sessions: 'sessions',
 })
 
 /** Optional services read with ctx.get (Fishball works without them, with less shown). */
@@ -252,6 +345,9 @@ export const EVENT = Object.freeze({
   /** dsh-llm: every model call (the hard ceiling answers Fishball's own requests). */
   llmStream: 'llm/stream',
   agentStatus: 'agent/status',
+  /** Inbox events of Fishball's agent (intake ledger bookkeeping). */
+  inboxClaimed: 'agent/inbox/claimed',
+  inboxDiscarded: 'agent/inbox/discarded',
 })
 
 /** Agent status after a turn ends (dsh-agent). */

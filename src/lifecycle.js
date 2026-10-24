@@ -82,6 +82,7 @@ export class AssistantLifecycle {
   #composition
   #logger
   #onChange
+  #onLive
   #handle
   #status = STATUS.starting
   #error = null
@@ -94,13 +95,17 @@ export class AssistantLifecycle {
    * @param composition - AssistantComposition providing `setup()`.
    * @param logger - plugin logger (codes and ids only).
    * @param onChange - called after every state change.
+   * @param onLive - called with the agent each time it goes live (create, resume, retry,
+   *   adopt), after the blank check and any setup turn: the intake ledger reconciles then
+   *   (DESIGN §11).
    */
-  constructor(ctx, store, composition, logger, onChange) {
+  constructor(ctx, store, composition, logger, onChange, onLive = () => {}) {
     this.#ctx = ctx
     this.#store = store
     this.#composition = composition
     this.#logger = logger
     this.#onChange = onChange
+    this.#onLive = onLive
     ctx.on(EVENT.sessionActivity, (request, next) => this.#activity(request, next))
     ctx.on(EVENT.sessionStop, (request) => this.#onStop(request))
     ctx.effect(() => () => { this.#stopping = true }, 'fishball: lifecycle stop flag')
@@ -237,20 +242,31 @@ export class AssistantLifecycle {
     } catch (error) {
       this.#logger.warn('assistant %s could not be pinned (%s)', agent.id, diagnosticOf(error))
     }
+    // Announced after the blank check and setup turn, so a queued input never starts a turn
+    // before the setup decision (it then joins the setup turn or the next one).
     try {
-      if (!this.#isBlank(agent)) return this.#set(STATUS.live)
+      if (!this.#isBlank(agent)) { this.#announceLive(agent); return this.#set(STATUS.live) }
       this.#setupTurn(agent)
     } catch (error) {
       // The assistant still runs; at worst its composer stays disabled until a restart.
       this.#logger.warn('assistant %s setup turn could not start (%s)', agent.id, diagnosticOf(error))
+      this.#announceLive(agent)
       return this.#set(STATUS.live)
     }
+    this.#announceLive(agent)
     this.#set(STATUS.starting)
     const settle = () => {
       // The agent may have been stopped or replaced while the turn ran.
       if (this.#running === agent) this.#set(STATUS.live)
     }
     void agent.whenIdle().then(settle, settle)
+  }
+
+  /** Tell the owner the agent is live; a failing listener never fails the start. */
+  #announceLive(agent) {
+    queueMicrotask(() => {
+      try { this.#onLive(agent) } catch (error) { this.#logger.warn('live hook failed (%s)', diagnosticOf(error)) }
+    })
   }
 
   /**

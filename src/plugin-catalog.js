@@ -28,11 +28,13 @@ import { ownerOf } from './tool-attribution.js'
 import { BSK_INSPECT, HIDDEN_TOOLS } from './tool-rules.js'
 import { builtinPrefix, fishballOnlyPrefix, prefixRows, RowIdConflictError } from './row-ids.js'
 import { diagnosticOf } from './errors.js'
+import { AuditLog } from './audit.js'
+import { compoundKey } from './keys.js'
 import { CHANGED_BY, PLUGIN, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, TOOL_STATUS } from './constants.js'
 
 const HIDDEN = new Set(HIDDEN_TOOLS)
-/** Separator of compound store keys; storage keys allow only [A-Za-z0-9_-] (see keyOf). */
-const KEY_SEPARATOR = '__'
+/** Separator of the catalog's shape signature (not a storage key). */
+const SHAPE_SEPARATOR = '__'
 /** Cordis fiber state of an active plugin (cordis Fiber._getState). */
 const FIBER_ACTIVE = 2
 /** Optional service the profile launcher provides (absent in non-profile hosts). */
@@ -44,18 +46,9 @@ const REVIEW = Object.freeze({ trusted: 'trusted', checked: 'checked', allowed: 
 const MISSING = 'missing'
 /** Stable codes a plugin can store as lastError; anything else is reported as rowFailed. */
 const STORED_ERRORS = new Set(Object.values(PLUGIN_ERROR))
-/** Width of the audit key's per-process counter (sorts as text). */
-const AUDIT_SEQ_DIGITS = 8
 
-/**
- * One storage-safe key segment: storage keys must match /^[a-zA-Z0-9_-]+$/ (dsh-storage-json),
- * so every other character becomes its code point (e.g. '@' -> 'x40'). Injective, because
- * 'x' itself is encoded too.
- */
-const keyOf = (text) => String(text).replace(/[^a-wyzA-Z0-9]|x/g, (ch) => 'x' + ch.codePointAt(0).toString(16) + 'x')
-
-/** Stable key of one tool allowance: module, name and parameter digest. */
-export const toolKeyOf = (module, toolName, digest) => [module, toolName, digest].map(keyOf).join(KEY_SEPARATOR)
+/** Stable key of one tool allowance: module, name and parameter digest (src/keys.js). */
+export const toolKeyOf = (module, toolName, digest) => compoundKey([module, toolName, digest])
 
 /** First line of a tool description, for prompts and the catalog view. */
 const firstLine = (text) => String(text ?? '').split('\n')[0]
@@ -95,8 +88,8 @@ export class PluginCatalog {
   #applying
   /** Tail of the serialized on/off choices (setDesired). */
   #choices = Promise.resolve()
-  /** Per-process counter keeping two audit entries of one millisecond apart. */
-  #auditSeq = 0
+  /** Plugin change audit (src/audit.js). */
+  #changes
   /** Bumped whenever #waiting is replaced, so a stale re-audit is dropped. */
   #waitingRevision = 0
 
@@ -122,6 +115,7 @@ export class PluginCatalog {
     this.#store = store
     this.#logger = logger
     this.#readLimits = readLimits
+    this.#changes = new AuditLog(() => store.pluginChanges, () => readLimits().auditEntriesKept)
     this.#mountRows = mountRows
     this.#adjustRows = adjustRows
     this.#onApplied = onApplied
@@ -162,7 +156,7 @@ export class PluginCatalog {
       })
     }
     this.#entries = entries
-    const shape = [...entries.values()].map((entry) => entry.key + KEY_SEPARATOR + entry.kind).join('\n')
+    const shape = [...entries.values()].map((entry) => entry.key + SHAPE_SEPARATOR + entry.kind).join('\n')
     const changed = this.#shape !== '' && shape !== this.#shape
     this.#shape = shape
     if (changed) this.schedule()
@@ -264,7 +258,8 @@ export class PluginCatalog {
   /**
    * One tool's decision. `review` is the tool's own standing, independent of its plugin's
    * on/off state; `status` combines it with that state:
-   * - hidden: on the §7 hidden list (or a bsk_inspect that is not Fishball's save-less copy);
+   * - hidden: on the §7 hidden list (or a bsk_inspect that is not Fishball's save-less copy),
+   *   or one of Fishball's own host-row tools, which serve other sessions (message_fishball);
    * - trusted: Fishball's own tool, or a tool of a DSH built-in Fishball mounts;
    * - checked / allowed: in the checked constants, or allowed by you, for these parameters;
    * - unchecked: anything else, including a tool whose registering row is unknown.
@@ -279,6 +274,9 @@ export class PluginCatalog {
     const { key, own } = this.#pluginOfOwner(owner, judged)
     const review = (() => {
       if (HIDDEN.has(name) || (name === BSK_INSPECT.name && !isCopy)) return TOOL_STATUS.hidden
+      // Fishball's own HOST-row tools serve other sessions (message_fishball); only the tools
+      // it registers in its own scope P are for Fishball itself.
+      if (own && !isCopy && !this.#ownsDefinition(judged)) return TOOL_STATUS.hidden
       if ((own && !isCopy) || this.#entries.get(key)?.kind === PLUGIN_KIND.builtin) return REVIEW.trusted
       if (owner === undefined) return TOOL_STATUS.unchecked
       if (isChecked(name, owner.module, digest)) return REVIEW.checked
@@ -318,6 +316,21 @@ export class PluginCatalog {
       if (claims.includes(entry.options.name) && !entry.disabled && entry.fiber?.state === FIBER_ACTIVE) return { rowId: entry.options.id, module: entry.options.name }
     }
     return undefined
+  }
+
+  /**
+   * Unchecked tools of plugins that run for everyone (kind profile), with a known owner, from
+   * the applied view: the ones Fishball must be told about (DESIGN §7 "Plugins already on").
+   * @returns [{ plugin, name, module, digest }].
+   */
+  uncheckedProfileTools(decisions) {
+    const out = []
+    for (const [name, decision] of decisions) {
+      if (decision.status !== TOOL_STATUS.unchecked || decision.module === null || decision.plugin === null) continue
+      if (this.#entries.get(decision.plugin)?.kind !== PLUGIN_KIND.profile) continue
+      out.push({ plugin: decision.plugin, name, module: decision.module, digest: decision.digest })
+    }
+    return out
   }
 
   /**
@@ -395,13 +408,7 @@ export class PluginCatalog {
 
   /** Append one plugin change to the audit, keeping the newest `auditEntriesKept`. */
   async audit(plugin, action, by, outcome) {
-    const table = this.#store.pluginChanges
-    const at = new Date().toISOString()
-    // Time first so keys sort by age; a counter keeps two changes in one millisecond apart.
-    const id = [at, String(this.#auditSeq++).padStart(AUDIT_SEQ_DIGITS, '0'), plugin, action].map(keyOf).join(KEY_SEPARATOR)
-    await table.put(id, { plugin, action, by, at, outcome })
-    const keys = [...table.keys()].sort()
-    for (const old of keys.slice(0, Math.max(0, keys.length - this.#readLimits().auditEntriesKept))) await table.delete(old)
+    await this.#changes.append({ plugin, action, by, at: new Date().toISOString(), outcome }, [plugin, action])
   }
 
   /**

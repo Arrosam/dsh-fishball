@@ -19,13 +19,12 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CATALOG_KEYS, CHANGED_BY, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, LIMITS, MS, ONLY_BUNDLES, PACKAGE_NAME, TOOL_STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CHANGED_BY, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, LIMITS, MS, ONLY_BUNDLES, PACKAGE_NAME, STATE_KEYS, TOOL_STATUS } from './support/constants.mjs'
 import { HOOK, T, allowFixtures, listPlugins, nextTools, pluginIn, settle, toolIn } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
 const FIX = FIXTURE_BUNDLE.name
-// P4 adds 'contextWindow' (see context-window.test.mjs for its content).
-const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
+// P4 adds 'contextWindow', P5 'intake' and 'outbox' (STATE_KEYS, 11 keys).
 
 describe('P3 settings-page API', () => {
   let host

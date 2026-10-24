@@ -9,6 +9,7 @@
  * POST tool-approvals/remove  -> { toolKey: string } (withdraw an allowance, DESIGN §7)
  * POST context-window         -> { contextWindowTokens, maxOutputTokens } (DESIGN §6; each a
  *                                positive whole number, or null for unset)
+ * POST send                   -> { sessionId: string, note: string } ("Send to Fishball", DESIGN §5b)
  */
 import { isSettingInput } from './context-window.js'
 import { API, API_CODE, HTTP, HTTP_METHOD, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
@@ -26,6 +27,7 @@ const BODY = Object.freeze({
   recovery: (body) => (isRecord(body) && ACTIONS.has(body.action) ? body.action : undefined),
   plugin: (body) => (isRecord(body) && isName(body.plugin) && typeof body.on === 'boolean' ? { plugin: body.plugin, on: body.on } : undefined),
   toolApproval: (body) => (isRecord(body) && isName(body.toolKey) ? body.toolKey : undefined),
+  send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
   contextWindow: (body) => (isRecord(body) && isSettingInput(body.contextWindowTokens) && isSettingInput(body.maxOutputTokens)
     ? { contextWindowTokens: body.contextWindowTokens, maxOutputTokens: body.maxOutputTokens }
     : undefined),
@@ -35,7 +37,7 @@ const BODY = Object.freeze({
  * Register the routes; they are removed with the plugin context.
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on),
- *   removeAllowance(toolKey), setContextWindow(setting) }; the commands reject
+ *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }) }; the commands reject
  *   LifecycleStateError for a 409.
  */
 export function registerRoutes(ctx, state) {
@@ -93,6 +95,7 @@ export function registerRoutes(ctx, state) {
     { path: API.plugins, methods: [HTTP_METHOD.post], fetch: command(BODY.plugin, ({ plugin, on }) => state.setPlugin(plugin, on)) },
     { path: API.toolApprovals, methods: [HTTP_METHOD.post], fetch: command(BODY.toolApproval, (toolKey) => state.removeAllowance(toolKey)) },
     { path: API.contextWindow, methods: [HTTP_METHOD.post], fetch: command(BODY.contextWindow, (setting) => state.setContextWindow(setting)) },
+    { path: API.send, methods: [HTTP_METHOD.post], fetch: command(BODY.send, (input) => state.send(input)) },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)

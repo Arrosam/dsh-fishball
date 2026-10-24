@@ -8,6 +8,9 @@
 /** DSH file and profile editors. The guard refuses them by name even if a hiding gap ever exposed them. */
 export const FILE_WRITE_TOOLS = Object.freeze(['write', 'edit', 'str_replace_editor', 'plugin_manager'])
 
+/** Fishball's own host tool that other sessions use to reach it (src/messaging.js). */
+export const SELF_MESSAGE_TOOL = 'message_fishball'
+
 /** Every hidden tool (see HIDDEN above): masked for Fishball and refused by the guard. */
 export const HIDDEN_TOOLS = Object.freeze([
   ...FILE_WRITE_TOOLS,
@@ -23,6 +26,8 @@ export const HIDDEN_TOOLS = Object.freeze([
   'ralph', 'code_review_report', 'subagent', 'subagent_fork', 'workflow', 'send_message', 'interrupt_agent',
   // dsh-experimental-tool-agent-team: starts teammate agents inside the calling session
   'spawn_teammate',
+  // Fishball's own host tool for OTHER sessions: Fishball messaging itself would loop
+  SELF_MESSAGE_TOOL,
 ].sort())
 
 /** The only sandbox mode in which Fishball's shell tools may run, and the mode its session is created in. */
@@ -49,6 +54,8 @@ export const BSK_INSPECT = Object.freeze({
 
 /** Guard and refusal texts the model sees (stable, no secrets). */
 export const REFUSAL = Object.freeze({
+  /** Fishball's own host tool for other sessions (message_fishball). */
+  selfMessage: (name) => `"${name}" is how other sessions reach Fishball; you are Fishball, so tell the user directly instead.`,
   hidden: (name) => `Fishball does not use "${name}": it would write files or start work inside Fishball's own session. Hand the work to another session instead.`,
   fileWrite: (name) => `Fishball never writes local files, so "${name}" is refused. Hand the change to another session.`,
   escalation: (name) => `Fishball never widens its sandbox, so this "${name}" call with sandbox_permissions is refused.`,

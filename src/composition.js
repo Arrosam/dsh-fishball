@@ -19,7 +19,7 @@ import { auditRows, leakedServices } from '@deepseek-ai/dsh-agent-preset-registr
 import { ASSISTANT, EVENT, TOOL_STATUS } from './constants.js'
 import { deferLogged } from './errors.js'
 import { HIDDEN_PROMPT_ENTRIES, PERSONA_ROW } from './persona.js'
-import { BSK_INSPECT, FILE_WRITE_TOOLS, HIDDEN_TOOLS, REFUSAL, SAFE_SANDBOX_MODE, SANDBOX_ESCALATION_ARG, SHELL_TOOLS } from './tool-rules.js'
+import { BSK_INSPECT, FILE_WRITE_TOOLS, HIDDEN_TOOLS, REFUSAL, SAFE_SANDBOX_MODE, SANDBOX_ESCALATION_ARG, SELF_MESSAGE_TOOL, SHELL_TOOLS } from './tool-rules.js'
 
 const HIDDEN = new Set(HIDDEN_TOOLS)
 const FILE_WRITE = new Set(FILE_WRITE_TOOLS)
@@ -75,6 +75,7 @@ export function asksToSave(args, rule = BSK_INSPECT) {
  */
 export function guardDecision(name, args, sandboxMode) {
   if (FILE_WRITE.has(name)) return REFUSAL.fileWrite(name)
+  if (name === SELF_MESSAGE_TOOL) return REFUSAL.selfMessage(name)
   if (HIDDEN.has(name)) return REFUSAL.hidden(name)
   if (!SHELL.has(name)) return undefined
   if (args !== null && typeof args === 'object' && args[SANDBOX_ESCALATION_ARG] !== undefined) return REFUSAL.escalation(name)

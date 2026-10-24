@@ -237,5 +237,84 @@ export function profileFiles(home) {
   return { packageJson: fs.readFileSync(path.join(dir, 'package.json'), 'utf8'), patch: fs.readFileSync(path.join(dir, 'cordis.patch.yml'), 'utf8') }
 }
 
+// ---- P5 helpers (messaging, intake, outbox) ----
+
+/** Wait until a session's live agent has been idle for two polls in a row (no turn running or starting). */
+export async function settledIdle(host, sessionId, timeoutMs = 20000) {
+  let idleSeen = 0
+  return Boolean(await until(async () => {
+    idleSeen = (await host.call('agentStatus', { sessionId })) === 'idle' ? idleSeen + 1 : 0
+    return idleSeen >= 3
+  }, timeoutMs, 150))
+}
+
+/** Fishball's user/message events whose text contains needle. */
+export async function fishballMessages(host, fb, needle) {
+  const events = (await host.call('inspect', { sessionId: fb, events: true })).events ?? []
+  return events.filter((e) => e.type === 'user/message' && e.text.includes(needle))
+}
+
+/** Fishball's model requests whose message text contains needle. */
+export const requestsWith = async (host, sessionId, needle) => (await host.call('requests', { sessionId })).filter((r) => r.texts.includes(needle))
+
+/** Wait until one of Fishball's model requests contains needle, then until Fishball is idle again. */
+export async function untilSeen(host, fb, needle, timeoutMs = 15000) {
+  const seen = await until(async () => (await requestsWith(host, fb, needle)).length > 0, timeoutMs, 100)
+  await settledIdle(host, fb)
+  return Boolean(seen)
+}
+
+/** One message_fishball call from a session; returns the parsed answer and the raw result. */
+export async function messageFishball(host, sessionId, args, callId) {
+  const r = await turn(host, sessionId, callScript('message_fishball', args, callId))
+  if (r.results.length !== 1) throw new Error('expected one message_fishball result, got ' + JSON.stringify(r.results))
+  return { json: jsonOf(r.results[0]), result: r.results[0], requests: r.requests }
+}
+
+/** One of Fishball's own tools called in a Fishball turn (waits for Fishball to be idle first). */
+export async function fishballCall(host, fb, tool, args) {
+  await settledIdle(host, fb)
+  const { result, requests } = await callTool(host, fb, tool, args)
+  return { json: jsonOf(result), result, requests }
+}
+
+/**
+ * P5 framing (review update): a trusted header, then one block <untrusted-ID> ... </untrusted-ID>
+ * whose lines are `key: <JSON value>`. Returns the parts, or null when the text has no block.
+ */
+export function untrustedBlock(text) {
+  const open = /<untrusted-([^>\s]+)>/.exec(text)
+  if (!open) return null
+  const id = open[1]
+  const close = '</untrusted-' + id + '>'
+  const end = text.indexOf(close)
+  if (end < 0) return { id, header: text.slice(0, open.index), fields: {}, closes: 0, inner: null }
+  const inner = text.slice(open.index + open[0].length, end)
+  const fields = {}
+  const raw = {}
+  for (const line of inner.split('\n')) {
+    const m = /^([a-z_]+): (.*)$/.exec(line)
+    if (!m) continue
+    raw[m[1]] = (raw[m[1]] ?? 0) + 1
+    try { fields[m[1]] = JSON.parse(m[2]) } catch { fields[m[1]] = { unparsed: m[2] } }
+  }
+  return { id, header: text.slice(0, open.index), inner, fields, counts: raw, closes: text.split(close).length - 1, opens: text.split(open[0]).length - 1, after: text.slice(end + close.length) }
+}
+
+export const intakeNow = async (host) => (await host.state()).intake
+export const outboxNow = async (host) => (await host.state()).outbox.entries
+/** A string of exactly n UTF-8 bytes made of 2-byte characters (n even), or ASCII when ascii is set. */
+export const bytesOf = (n, ascii = false) => (ascii ? 'b'.repeat(n) : 'é'.repeat(n / 2))
+
+/** The served client combo script that carries dsh-fishball/client.js, read like a browser (M5). */
+export async function fishballClientBundle(host) {
+  const index = await host.get('/')
+  // Bootstrap batches load with <script src>, application batches are preloaded with <link href>.
+  const urls = [...index.text.matchAll(/(?:src|href)="([^"]*dsh-fishball\/client\.js[^"]*)"/g)].map((m) => m[1].replaceAll('&amp;', '&'))
+  if (urls.length === 0) return { found: false, status: index.status }
+  const res = await host.get('/' + urls[0])
+  return { found: true, status: res.status, text: res.text }
+}
+
 export const T = { timeout: 55000 }
 export const HOOK = { timeout: 60000 }

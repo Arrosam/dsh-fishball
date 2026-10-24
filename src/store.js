@@ -9,7 +9,7 @@
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
 const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings' })
@@ -61,6 +61,55 @@ const pluginChangeRecord = z.object({
   outcome: z.string().min(1),
 })
 
+/**
+ * One intake item (DESIGN §9 fishball_intake.items). The message is kept only until it is in
+ * Fishball's inbox; its digest stays.
+ */
+const intakeItemRecord = z.object({
+  kind: z.enum(Object.values(INTAKE_KIND)),
+  sourceIdentity: z.string().min(1),
+  dedupeKey: z.string().min(1),
+  messageId: z.string().min(1),
+  status: z.enum(Object.values(INTAKE_STATUS)),
+  attempts: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  acceptedAt: z.string().optional(),
+  /** The assistant session the item was delivered to (an adopted session does not inherit it). */
+  deliveredTo: z.string().min(1).optional(),
+  errorCode: z.string().optional(),
+  contentDigest: z.string().min(1),
+  /** The UserMessage to deliver (DSH's own shape; validated by DSH when it is steered). */
+  message: z.record(z.string(), z.unknown()).optional(),
+})
+
+/** One message Fishball sent or session it started (DESIGN §9 outbox). */
+const outboxRecord = z.object({
+  kind: z.enum(Object.values(OUTBOX_KIND)),
+  targetSessionId: z.string().nullable(),
+  folder: z.string().optional(),
+  messageDigest: z.string().min(1),
+  at: z.string(),
+  status: z.enum(Object.values(OUTBOX_STATUS)),
+  errorCode: z.string().optional(),
+})
+
+/** Tables of the intake domain. */
+const INTAKE_TABLE = Object.freeze({ items: 'items', outbox: 'outbox' })
+
+/**
+ * The intake domain: frequent writes, so each record is its own document (per-record layout),
+ * and its keys are path-safe digests or compound keys.
+ */
+export const intakeDomain = defineDomain({
+  name: DOMAIN.intake,
+  version: DOMAIN.version,
+  layout: 'per-record',
+  tables: {
+    [INTAKE_TABLE.items]: domainTable(intakeItemRecord),
+    [INTAKE_TABLE.outbox]: domainTable(outboxRecord),
+  },
+})
+
 /** Domain spec. A changed record shape must bump `version` or list compatible versions. */
 export const fishballDomain = defineDomain({
   name: DOMAIN.main,
@@ -81,12 +130,15 @@ export const fishballDomain = defineDomain({
  */
 export class Store {
   #domain
+  #intake
 
-  /** @param ctx - plugin context with `storageDomain`. */
+  /** @param ctx - plugin context with `storageDomain`. Opens both domains or rejects. */
   static async open(ctx) {
     const store = new Store()
     store.#domain = await ctx.storageDomain.open(fishballDomain)
     ctx.effect(() => () => store.#domain.close(), 'fishball: store')
+    store.#intake = await ctx.storageDomain.open(intakeDomain)
+    ctx.effect(() => () => store.#intake.close(), 'fishball: intake store')
     return store
   }
 
@@ -105,4 +157,6 @@ export class Store {
   get toolApprovals() { return this.#domain.table(TABLE.toolApprovals) }
   get pluginChanges() { return this.#domain.table(TABLE.pluginChanges) }
   get settings() { return this.#domain.table(TABLE.settings) }
+  get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
+  get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
 }

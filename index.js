@@ -8,6 +8,8 @@
  * - src/plugin-catalog.js  Fishball's own plugin states and tool decisions
  * - src/plugin-tools.js    list_plugins, set_plugin_enabled, add_plugin
  * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
+ * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
+ * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
  * - src/http.js            /api/fishball/* for the settings page and the brand button
  */
@@ -21,6 +23,9 @@ import { Store } from './src/store.js'
 import { AssistantComposition } from './src/composition.js'
 import { CatalogError, PluginCatalog } from './src/plugin-catalog.js'
 import { ContextWindow } from './src/context-window.js'
+import { IntakeError, IntakeLedger } from './src/intake.js'
+import { registerInbound, registerOutbound } from './src/messaging.js'
+import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { registerPluginTools } from './src/plugin-tools.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -42,11 +47,13 @@ export async function apply(ctx, config) {
   let lifecycle = new InactiveLifecycle(STATUS.starting)
   let catalogView = () => null
   let contextView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView() })
+  let intakeView = () => null
+  let outboxView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView() })
   const publish = () => feed.publish(snapshot())
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable }
+  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -54,6 +61,7 @@ export async function apply(ctx, config) {
     setPlugin: (plugin, on) => commands.setPlugin(plugin, on),
     removeAllowance: (toolKey) => commands.removeAllowance(toolKey),
     setContextWindow: (setting) => commands.setContextWindow(setting),
+    send: (input) => commands.send(input),
   })
   // A limit edited on the Plugins page reaches this row without a remount (spike S21).
   ctx.on(EVENT.volatileUpdate, publish)
@@ -110,15 +118,41 @@ export async function apply(ctx, config) {
   })
   catalogView = () => catalog.snapshot(composition.decisions())
   contextView = () => contextWindow.snapshot()
+
+  // Inputs (DESIGN §5b) and handing work off (§5d).
+  const assistantId = () => store.assistant().sessionId
+  /** The assistant's running agent; read through a function, the lifecycle is created below. */
+  let assistantAgent = () => undefined
+  const ledger = new IntakeLedger(ctx, store, logger, { readLimits: limits, onChange: () => publish() })
+  composition.addAgentSetup((agentCtx, agent) => ledger.installAgent(agentCtx, agent))
+  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined })
+  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish() })
+  intakeView = () => ledger.snapshot()
+  outboxView = () => outbound.snapshot()
+  const notifyUnchecked = uncheckedToolsNotifier({ ledger, catalog, decisions: () => composition.decisions(), store, logger })
+  commands.send = async ({ sessionId, note }) => {
+    try {
+      await inbound.forward(sessionId, note)
+    } catch (error) {
+      if (error instanceof IntakeError) throw new LifecycleStateError(error.code)
+      throw error
+    }
+  }
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
   /** A row waiting for a service may run now; its tools may have appeared too. */
   const recheck = () => void catalog.recheckWaiting().catch(logged('waiting re-audit'))
-  // A tool registered or removed anywhere can change Fishball's catalog view.
-  ctx.on(EVENT.toolsChange, () => { queueMicrotask(publish); recheck() })
+  // A tool registered or removed anywhere can change Fishball's catalog view, and may bring
+  // unchecked tools Fishball must be told about.
+  ctx.on(EVENT.toolsChange, () => { queueMicrotask(publish); recheck(); if (assistantAgent() !== undefined) notifyUnchecked() })
   ctx.on(EVENT.service, recheck)
   // A bundle installed or toggled while DSH runs joins the catalog at once (refresh schedules
   // the apply when the catalog's shape changed); the state feed shows it without a turn.
-  ctx.on(EVENT.pluginManagerChanged, () => void catalog.refresh().then(publish).catch(logged('catalog refresh')))
+  // A tool registered by a bundle installed at runtime arrives BEFORE the catalog knows the
+  // bundle, so it cannot be tied to a profile plugin yet; re-check once the catalog has it.
+  ctx.on(EVENT.pluginManagerChanged, () => void catalog.refresh().then(() => {
+    publish()
+    if (assistantAgent() !== undefined) notifyUnchecked()
+  }).catch(logged('catalog refresh')))
   commands.setPlugin = async (plugin, on) => {
     await catalog.refresh()
     try {
@@ -133,10 +167,15 @@ export async function apply(ctx, config) {
     if (!(await catalog.removeAllowance(toolKey))) throw new LifecycleStateError(API_CODE.unknown)
   }
 
-  const assistant = new AssistantLifecycle(ctx, store, composition, logger, publish)
+  // Each time Fishball goes live: settle the intake queue (restart, adopt), then tell Fishball
+  // about unchecked tools of plugins already on (DESIGN §7, §11 steps 4-6).
+  const onLive = () => void ledger.reconcile().then(() => notifyUnchecked()).catch(logged('intake reconcile'))
+  const assistant = new AssistantLifecycle(ctx, store, composition, logger, publish, onLive)
   catalog.agentOf = () => assistant.agent
   contextWindow.agentOf = () => assistant.agent
-  ctx.effect(() => () => assistant.stop(), 'fishball: assistant session')
+  ledger.agentOf = () => assistant.agent
+  assistantAgent = () => assistant.agent
+  ctx.effect(() => () => { ledger.stopping(); return assistant.stop() }, 'fishball: assistant session')
   use(assistant)
   // Start without blocking the host tree: a slow resume must not delay other rows.
   void assistant.start().catch((error) => logger.warn('assistant start failed (%s)', diagnosticOf(error)))

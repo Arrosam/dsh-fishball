@@ -253,7 +253,7 @@ Ask-user, skills and the read-only shell are in the catalog but start off. DSH's
 - **Chat** uses the standard DSH conversation view, which reuses the live agent [V `agent.js:209-212`].
 - **Archiving.** A `workspace/session-activity` provider reports the session as active, so a plain archive is refused. A forced archive is your explicit choice; it leaves the assistant dormant. DSH announces no unarchive (the registry only writes its state), so after unarchiving you press **Try again** on Fishball's Plugins page, or restart DSH.
 
-**5b. Receiving messages from other sessions.** Three entry points, all through the IntakeLedger:
+**5b. Receiving messages from other sessions.** Three entry points, all through the IntakeLedger (P5 built the first two; `ctx.fishball` is P8):
 1. **Model tool `message_fishball({message, notify_when_finished?})`**. Our host row registers it so that every session's agent has it (Q-exposure: yes); it is masked for Fishball itself.
    - The sender is `exec.agent.id`, never a tool argument.
    - The name avoids the existing `send_message`.
@@ -269,6 +269,14 @@ How the ledger handles each item:
 5. Follow `agent/inbox/claimed` (marks `consumed`) and `discarded` (marks `discarded`).
 
 On restart, `pending` and `accepted` rows are checked against the assistant's inbox and log by `MessageId` before anything is resent. Delivery is at-least-once with deduplication by id; nothing is ever replayed blindly.
+
+**As built (P5).**
+- **Source identity and dedupe.** `message_fishball`: `session/<sender>`, where the sender is the session the user sees: a subagent's message is attributed to its root session, and the child is named as detail. It is deduplicated by the calling session, the tool call id, the response that made the call and the text, so a retried call is one message while a provider that reuses call ids cannot merge two messages; a duplicate answers `duplicate: true`. "Send to Fishball": `user/forward/<session id>`; each forward is its own input. Fishball notices: `fishball/<topic>`. The row key is the full SHA-256 of identity plus dedupe key.
+- **Framing.** Every text from another session (its message, its title and folder, a forwarded answer) is JSON-quoted inside an `<untrusted-<random id>>` block, after Fishball's statement that nothing in the block is from the user even if it says so; text inside cannot close the block or imitate the framing. A session's message uses DSH's `agent-message` relay source. A forward is a Fishball notice with your note (trusted, quoted) and the session's last answer, bounded to 3 KB.
+- **Bounds.** `maxMessageBytes` bounds the sender's own text (message or note); Fishball's framing and bounded excerpts do not count. `maxQueuedInputs` counts rows not yet read (`pending` and `accepted`). Finished rows are kept up to `auditEntriesKept`.
+- **Wake-ups.** An input from a session or a notice that would start a turn from idle counts toward `wakeupsPerHour`; above the cap it is parked in the inbox without waking, and the wake guard wakes Fishball when the hour allows (an item from you, never capped, is woken first). A forward from you is not capped. Wake-ups are counted per process. The guard's own remove-and-steer is not recorded as a discard.
+- **Retries and failure.** Each time Fishball goes idle, pending rows are delivered again and the wake guard runs; accepted rows are settled against the inbox and log only when Fishball goes live. A message a turn has claimed counts as read from that moment (it is briefly in neither the inbox nor the log). An accepted message that a quit dropped from this session's inbox is delivered again after the restart (same id); discards DSH reports while Fishball stops are not recorded. A row that reached the inbox but whose flush failed is accepted from the inbox on the next pass. Three failed deliveries mark a row `failed` with `delivery-failed`; the settings page shows the queue, failed items and the wake-up count. After an adopt, rows that were in the old session's inbox are marked discarded: the new session does not inherit them.
+- **Self.** `message_fishball` is hidden from Fishball and refused by its guard with its own reason.
 
 The ledger also has a wake guard. If any of our accepted items are still pending while the agent is idle, it requeues them, because DSH's resume does not wake a pending inbox and the turn-retirement gap can strand messages [V; mechanism → S10].
 
@@ -302,6 +310,8 @@ Both tools hand work to other sessions. The work then happens there, under that 
   - A folder that is not a workspace is not registered: the session appears under Ungrouped, as DSH shows any session without a workspace (S18).
 - **First message.** Delivered the same way as `message_session`, with the relay source naming Fishball as the sender, so the new session starts working at once.
 - **Title.** DSH titles it as usual. Fishball settings list the session in the outbox.
+
+**As built (P5).** Both tools refuse an empty or oversized message and calls over the hourly cap; `message_session` also refuses an unknown or archived session and Fishball's own. The caps count every recorded call in the last hour (delivered, unconfirmed or failed delivery; a `start_session` whose session could not be created at all is neither recorded nor counted), in memory as well as from the outbox, so a low `auditEntriesKept` cannot disable them. A message that was steered but whose flush could not be confirmed answers `ok` with `unconfirmed: true` and "do not send it again", so the target never gets it twice. `start_session` takes a workspace id whose folder still exists, or an absolute path of an existing folder (`not-absolute`, `no-folder`); a folder that is a registered workspace starts the session in that workspace. A folder removed between that check and DSH's create would be created by DSH; closing that window needs host support. The outbox stores a digest of each message, never its text. The ping-pong between Fishball and a session it started is bounded by `messagesPerHour` and `wakeupsPerHour`. `notify_when_finished` arrives with watches in P6.
 
 **Common rules for both tools:**
 - **Permission requests that follow.** If the session then asks for permission, the request comes back to Fishball like any other (§7a). The request says whether Fishball started that session or its current turn. The rubric does not let Fishball approve work it handed off unless you asked for that work.
@@ -371,6 +381,7 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
 | `code_review_report` | @michengai/dsh-code-review | Starts a review agent inside the calling session |
 | `write`, `edit`, str-replace editor, `plugin_manager`, `subagent`, `subagent_fork`, workflow tools | DSH built-ins mounted by presets | Never placed in Fishball's catalog |
 | `spawn_teammate`, and the agent-team `send_message` and `interrupt_agent` | dsh-experimental-tool-agent-team (installed in the runtime; a profile can enable it) | Starts teammate agents inside the calling session (P2 review) |
+| `message_fishball` | dsh-fishball (its own host tool for other sessions, §5b) | Fishball messaging itself would loop; the guard refuses it with its own reason (P5) |
 
 **Checked and left visible:**
 - `x_search`: searches X.
@@ -399,7 +410,7 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
   - For a plugin Fishball has just installed, this is the second prompt, right after the install prompt.
 - **Allow once.** The tools become visible. The allowance is stored in `toolApprovals` (§9), keyed by plugin, tool name and parameter digest, so you are not asked again until the tool changes.
 - **Reject.** Nothing changes. A plugin that was off stays off, and a Fishball-only plugin is unmounted again. The unchecked tools stay hidden.
-- **Plugins already on.** A profile-wide plugin you install later is on for Fishball by default, but its unchecked tools stay hidden, and `list_plugins` shows them as unchecked; Fishball can ask you with `set_plugin_enabled`. The notice that tells Fishball about them arrives with the intake ledger in P5, which owns every input that wakes it.
+- **Plugins already on.** A profile-wide plugin you install later is on for Fishball by default, but its unchecked tools stay hidden, and `list_plugins` shows them as unchecked; Fishball can ask you with `set_plugin_enabled`. A Fishball notice through the intake ledger tells Fishball about them: once per tool version (module, name, parameter digest), when Fishball goes live, whenever the tool set changes and after the plugin manager reports a change (a runtime install registers its tools before the catalog knows the bundle). Like every input it wakes Fishball, within the hourly wake-up cap.
 - **Tools with no recorded owner.** A tool registered before Fishball's attribution row loaded, and not claimed by a checked entry or one of your allowances, cannot be tied to a plugin, so it can never be listed in a prompt; it stays hidden and shows under "other tools". Lazily registered tools (browser-skill) appear when first registered and are then allowed by asking for their plugin again.
 - **Withdrawing an allowance.** Fishball settings list the tools you allowed; removing one hides it again.
 - **The `bsk_inspect` copy** is built from the original's current parameters minus the save options. If the original's parameters change, it counts as unchecked like any other tool.
@@ -633,17 +644,17 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
   - `lastSeenSeq`, `status:'active'|'closed'|'target-missing'`
 
 **`fishball_intake`** (per-record layout, for frequent writes):
-- `items[intakeId]`:
-  - `{sourceIdentity, dedupeKey, messageId}`
+- `items[intakeId]` (key: SHA-256 of source identity and dedupe key):
+  - `{kind:'session'|'user'|'system', sourceIdentity, dedupeKey, messageId}`
   - `status:'pending'|'accepted'|'consumed'|'discarded'|'failed'`
-  - `attempts`, `createdAt`, `acceptedAt?`, `errorCode?`
-  - `contentDigest` and `content?`. The content is kept only until the item is accepted, then dropped; the digest remains.
+  - `attempts`, `createdAt`, `acceptedAt?`, `deliveredTo?` (the assistant session it was delivered to), `errorCode?`
+  - `contentDigest` and `message?` (the DSH user message). The message is kept until Fishball reads it, it is discarded, or it fails, so a message DSH drops from the inbox in a quit can be delivered again; then it is dropped and the digest remains.
 - `approvals[aprId]` (audit; the newest `auditEntriesKept` are kept, 500 by default):
   - `{sessionId, toolName, callId?, argumentsDigest, routedAt}`
   - `answer: 'allow'|'escalate'|'timeout'|'withdrawn'`, `risk?`, `rationale?` (≤ 500 characters)
   - `finalOutcome` (the DSH outcome, including your answer in the stock prompt) and `decidedAt`
   - The arguments themselves are not stored here; they stay in the two session logs.
-- `outbox[msgId]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{kind:'message'|'start', targetSessionId, folder?, messageDigest, sentAt, status:'delivered'|'failed', errorCode?}`
+- `outbox[key]` (audit, keyed by time and a counter; the newest `auditEntriesKept` are kept, 500 by default): `{kind:'message'|'start', targetSessionId (null only if no session exists), folder?, messageDigest, at, status:'delivered'|'unconfirmed'|'failed', errorCode?}`
 - `toolApprovals[toolKey]`: `{module, toolName, paramsDigest, allowedAt}`, keyed by module, tool name and parameter digest (each segment encoded to storage-safe characters, joined by `__`), recording that you allowed a tool nobody had checked (§7). The hidden and checked sets are constants in code and are not stored.
 - `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add', by:'fishball'|'user', at, outcome}`. These three tables keep domain version 1: the single-file layout reads a missing table as empty.
 
