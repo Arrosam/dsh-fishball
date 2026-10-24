@@ -1,0 +1,474 @@
+{
+  "id": "P3-tool-digests",
+  "started": "2026-10-24T06:48:20.512Z",
+  "finished": "2026-10-24T06:48:26.802Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "global": [
+    [
+      "bsk_assist",
+      {
+        "row": "browserskill",
+        "module": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+        "digest": "25fd6a432ddbdfe8",
+        "firstLine": "Display and human-assistance operations. Actions: resize, emulate, request-help. resize requires width/height; emulate a"
+      }
+    ],
+    [
+      "bsk_inspect",
+      {
+        "row": "browserskill",
+        "module": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+        "digest": "33bac8bbd5196f31",
+        "firstLine": "Inspect page state and explicitly control task-scoped debugging. Actions: observe, snapshot, html, screenshot, console, "
+      }
+    ],
+    [
+      "bsk_interact",
+      {
+        "row": "browserskill",
+        "module": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+        "digest": "7cabee9eb94dcfc1",
+        "firstLine": "Interact with the active Agent Window tab. Actions: click, hover, wheel, scroll-to, focus, blur, fill, select, press. cl"
+      }
+    ],
+    [
+      "bsk_page",
+      {
+        "row": "browserskill",
+        "module": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+        "digest": "eb5660bd35dac722",
+        "firstLine": "Navigate and wait on the active Agent Window tab. Actions: navigate, back, forward, reload, wait, wait-for-element. navi"
+      }
+    ],
+    [
+      "bsk_session",
+      {
+        "row": "browserskill",
+        "module": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+        "digest": "5426c6d7054445aa",
+        "firstLine": "Manage plugin-owned browser sessions. Actions: start opens an Agent Window; stop closes an owned session; list returns o"
+      }
+    ],
+    [
+      "bsk_tabs",
+      {
+        "row": "browserskill",
+        "module": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+        "digest": "02ca8f7916223be5",
+        "firstLine": "Manage tabs visible to an owned session. Actions: list, create, select, close, borrow, return. select/close/borrow/retur"
+      }
+    ],
+    [
+      "create_worktree",
+      {
+        "row": "tool-worktree",
+        "module": "@deepseek-ai/dsh-experimental-tool-worktree",
+        "digest": "56f0678806f5c50f",
+        "firstLine": "Create a new Git branch and worktree from a local commit, branch, or tag, then change this session's working directory t"
+      }
+    ],
+    [
+      "diff_approval_annotate",
+      {
+        "row": "diff-approval",
+        "module": "dsh-diff-approval",
+        "digest": "7539563b1a079d32",
+        "firstLine": "Annotate a few lines of a file in the review panel: the note becomes a card the user sees on those exact lines, and they"
+      }
+    ],
+    [
+      "image_generate",
+      {
+        "row": "llm-subscriptions",
+        "module": "dsh-plugin-subscriptions",
+        "digest": "228f49a17f5bf23a",
+        "firstLine": "Generate an image with the ChatGPT subscription (gpt-image-2) or the Grok subscription (grok-imagine-image-2.0) and save"
+      }
+    ],
+    [
+      "list_mcp_resource_templates",
+      {
+        "row": "mcp-resources",
+        "module": "@deepseek-ai/dsh-mcp-resources",
+        "digest": "13d12c6c47e494a3",
+        "firstLine": "List parameterized resource URI templates from an MCP server."
+      }
+    ],
+    [
+      "list_mcp_resources",
+      {
+        "row": "mcp-resources",
+        "module": "@deepseek-ai/dsh-mcp-resources",
+        "digest": "13d12c6c47e494a3",
+        "firstLine": "List resources available from an MCP server."
+      }
+    ],
+    [
+      "mover_create_workspace",
+      {
+        "row": "workspace-mover",
+        "module": "dsh-workspace-mover",
+        "digest": "d50372b668aae55f",
+        "firstLine": "Create a new DSH workspace group with the given name over an existing folder. The directory must be an absolute path to "
+      }
+    ],
+    [
+      "mover_doctor",
+      {
+        "row": "workspace-mover",
+        "module": "dsh-workspace-mover",
+        "digest": "99334726611ccf58",
+        "firstLine": "Run the workspace-mover self-check (read-only diagnostics): host services (registry / persistence / projection cache / a"
+      }
+    ],
+    [
+      "mover_list_sessions",
+      {
+        "row": "workspace-mover",
+        "module": "dsh-workspace-mover",
+        "digest": "99334726611ccf58",
+        "firstLine": "List DSH workspace groups and their sessions for the workspace-mover plugin. Read-only. Returns workspace ids/titles/pat"
+      }
+    ],
+    [
+      "mover_move_session",
+      {
+        "row": "workspace-mover",
+        "module": "dsh-workspace-mover",
+        "digest": "17d230d8277095b5",
+        "firstLine": "Move one DSH session into another workspace group with full protection: byte-level backup is taken before anything chang"
+      }
+    ],
+    [
+      "mover_rename_workspace",
+      {
+        "row": "workspace-mover",
+        "module": "dsh-workspace-mover",
+        "digest": "5822983c4bdbed46",
+        "firstLine": "Rename one DSH workspace group (display name only; its folder and sessions are untouched). The new name must not match a"
+      }
+    ],
+    [
+      "mover_repair_sessions",
+      {
+        "row": "workspace-mover",
+        "module": "dsh-workspace-mover",
+        "digest": "99334726611ccf58",
+        "firstLine": "Run one workspace-mover repair pass across all detected session issues: misfiled sessions are re-homed to the group matc"
+      }
+    ],
+    [
+      "ralph",
+      {
+        "row": "tool-ralph",
+        "module": "@deepseek-ai/dsh-tool-ralph",
+        "digest": "b315f57b9695e704",
+        "firstLine": "Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks f"
+      }
+    ],
+    [
+      "read_mcp_resource",
+      {
+        "row": "mcp-resources",
+        "module": "@deepseek-ai/dsh-mcp-resources",
+        "digest": "e3d13ceab174becd",
+        "firstLine": "Read an MCP resource by URI from the named server. Use a listed URI or an expanded resource template."
+      }
+    ],
+    [
+      "session_event_read",
+      {
+        "row": "optional-tool-session-query",
+        "module": "@deepseek-ai/dsh-tool-session-query",
+        "digest": "792c057f9e838a5d",
+        "firstLine": "Read one full unabridged event and optional neighboring raw-event summaries from an authorized session."
+      }
+    ],
+    [
+      "session_event_search",
+      {
+        "row": "optional-tool-session-query",
+        "module": "@deepseek-ai/dsh-tool-session-query",
+        "digest": "5423439d08cc0b92",
+        "firstLine": "Search prior events in one authorized session; the current session excludes the step performing this call."
+      }
+    ],
+    [
+      "session_event_trace",
+      {
+        "row": "optional-tool-session-query",
+        "module": "@deepseek-ai/dsh-tool-session-query",
+        "digest": "17261487fdc7c5f4",
+        "firstLine": "Read every direct replacement and relationship to a cited source event for one event in an authorized session."
+      }
+    ],
+    [
+      "session_search",
+      {
+        "row": "optional-tool-session-query",
+        "module": "@deepseek-ai/dsh-tool-session-query",
+        "digest": "4fdff6d6b2f88a01",
+        "firstLine": "Search prior sessions in the caller workspace and return the strongest matching event from each session."
+      }
+    ],
+    [
+      "session_trace",
+      {
+        "row": "optional-tool-session-query",
+        "module": "@deepseek-ai/dsh-tool-session-query",
+        "digest": "37e77b5068d7738c",
+        "firstLine": "Read the authorized session lineage around one session, including complete visible ancestor and descendant relationships"
+      }
+    ],
+    [
+      "terminal_close",
+      {
+        "row": "optional-tool-terminal",
+        "module": "@deepseek-ai/dsh-tool-terminal",
+        "digest": "91d014acef5761d4",
+        "firstLine": "Close one persistent terminal and wait until its captured owned process tree is gone."
+      }
+    ],
+    [
+      "terminal_list",
+      {
+        "row": "optional-tool-terminal",
+        "module": "@deepseek-ai/dsh-tool-terminal",
+        "digest": "efddc7bd8bbcef73",
+        "firstLine": "List persistent terminal sessions owned by the current agent."
+      }
+    ],
+    [
+      "terminal_open",
+      {
+        "row": "optional-tool-terminal",
+        "module": "@deepseek-ai/dsh-tool-terminal",
+        "digest": "21294a32529215cf",
+        "firstLine": "Create a persistent, owner-isolated terminal session from a registered backend type. Use this for shell or REPL state th"
+      }
+    ],
+    [
+      "terminal_read",
+      {
+        "row": "optional-tool-terminal",
+        "module": "@deepseek-ai/dsh-tool-terminal",
+        "digest": "fde02ee357d97ea5",
+        "firstLine": "Read a bounded page of retained output from a persistent terminal without sending input."
+      }
+    ],
+    [
+      "terminal_send",
+      {
+        "row": "optional-tool-terminal",
+        "module": "@deepseek-ai/dsh-tool-terminal",
+        "digest": "97d3ba82aa1ca7f4",
+        "firstLine": "Send text to a persistent terminal. By default Enter is submitted and the call waits for a prompt, stdin wait, output si"
+      }
+    ],
+    [
+      "terminal_signal",
+      {
+        "row": "optional-tool-terminal",
+        "module": "@deepseek-ai/dsh-tool-terminal",
+        "digest": "3a3be2961f3810cc",
+        "firstLine": "Send an allowed signal to the current foreground process group of a persistent terminal."
+      }
+    ],
+    [
+      "video_generate",
+      {
+        "row": "llm-subscriptions",
+        "module": "dsh-plugin-subscriptions",
+        "digest": "623909617e573172",
+        "firstLine": "Generate a short video (1-15 seconds) with the grok subscription (grok-imagine-video-1.5) and save it as an MP4 file. Ge"
+      }
+    ],
+    [
+      "working_directory",
+      {
+        "row": "tool-working-directory",
+        "module": "@deepseek-ai/dsh-tool-working-directory",
+        "digest": "740d5b289d998dbf",
+        "firstLine": "Read the current working directory, or change it with cd. Relative paths use the current directory. Existing shells and "
+      }
+    ],
+    [
+      "x_search",
+      {
+        "row": "llm-subscriptions",
+        "module": "dsh-plugin-subscriptions",
+        "digest": "44b0b822d894be34",
+        "firstLine": "Search X (Twitter) posts, profiles, and threads using the grok subscription's hosted xAI x_search. Use this for current "
+      }
+    ]
+  ],
+  "registeredAnywhere": [
+    [
+      "read",
+      "@deepseek-ai/dsh-tool-fs",
+      "9cabe85832433696"
+    ],
+    [
+      "write",
+      "@deepseek-ai/dsh-tool-fs",
+      "49fbe74f9befe21b"
+    ],
+    [
+      "edit",
+      "@deepseek-ai/dsh-tool-fs",
+      "ac1e9398b099da71"
+    ],
+    [
+      "glob",
+      "@deepseek-ai/dsh-tool-fs-search",
+      "6fc211b136b27b6e"
+    ],
+    [
+      "grep",
+      "@deepseek-ai/dsh-tool-fs-search",
+      "804115a2c3219c3e"
+    ],
+    [
+      "job_output",
+      "@deepseek-ai/dsh-tool-jobs",
+      "9588354d52a4e2ac"
+    ],
+    [
+      "job_list",
+      "@deepseek-ai/dsh-tool-jobs",
+      "efddc7bd8bbcef73"
+    ],
+    [
+      "job_kill",
+      "@deepseek-ai/dsh-tool-jobs",
+      "b4a840be75957d6e"
+    ],
+    [
+      "skill",
+      "@deepseek-ai/dsh-tool-skill",
+      "a3bd9d437c3651c8"
+    ],
+    [
+      "web_search",
+      "@deepseek-ai/dsh-tool-web",
+      "a07f0fdab2692bdf"
+    ],
+    [
+      "web_fetch",
+      "@deepseek-ai/dsh-tool-web",
+      "86eeab91f0aea56a"
+    ],
+    [
+      "present",
+      "@deepseek-ai/dsh-tool-present",
+      "37f18373c49b11af"
+    ],
+    [
+      "cordis_inspect_list",
+      "@deepseek-ai/dsh-tool-cordis",
+      "efddc7bd8bbcef73"
+    ],
+    [
+      "cordis_inspect_query",
+      "@deepseek-ai/dsh-tool-cordis",
+      "2c861285acf3a880"
+    ],
+    [
+      "plugin_manager",
+      "@deepseek-ai/dsh-plugin-manager/tools",
+      "5cede44969cb335e"
+    ],
+    [
+      "bash",
+      "@deepseek-ai/dsh-tool-bash-persistent",
+      "3921a30417dd97b7"
+    ],
+    [
+      "read_image",
+      "@deepseek-ai/dsh-tool-fs",
+      "d044cc739c128ab0"
+    ],
+    [
+      "plugin_market",
+      "@deepseek-ai/dsh-plugin-market/tools",
+      "6f11c0518ffe38fa"
+    ],
+    [
+      "send_message",
+      "@deepseek-ai/dsh-tool-subagent-control",
+      "b2c8e2c0fe913fb1"
+    ],
+    [
+      "interrupt_agent",
+      "@deepseek-ai/dsh-tool-subagent-control",
+      "45381e3c878e921e"
+    ],
+    [
+      "list_agents",
+      "@deepseek-ai/dsh-tool-subagent-control/list-agents",
+      "2196642292347267"
+    ],
+    [
+      "workflow",
+      "@deepseek-ai/dsh-tool-workflow",
+      "29c6f9f3ba45aab0"
+    ],
+    [
+      "get_goal",
+      "@deepseek-ai/dsh-tool-goal",
+      "efddc7bd8bbcef73"
+    ],
+    [
+      "create_goal",
+      "@deepseek-ai/dsh-tool-goal",
+      "05a0a626e43fbcaf"
+    ],
+    [
+      "update_goal",
+      "@deepseek-ai/dsh-tool-goal",
+      "2a558a36778f7df8"
+    ],
+    [
+      "ask_user_question",
+      "@deepseek-ai/dsh-tool-ask-user",
+      "ccb791d54709118a"
+    ],
+    [
+      "todo_write",
+      "@deepseek-ai/dsh-tool-todo",
+      "822cf26d74189368"
+    ],
+    [
+      "exit_plan_mode",
+      "@deepseek-ai/dsh-plan-mode",
+      "7fa0d9224336b841"
+    ],
+    [
+      "subagent_fork",
+      "@deepseek-ai/dsh-tool-subagent",
+      "be7ffe0bcb65e8dc"
+    ],
+    [
+      "schedule_create",
+      "@deepseek-ai/dsh-tool-schedule",
+      "76858efb9d6751d0"
+    ],
+    [
+      "schedule_list",
+      "@deepseek-ai/dsh-tool-schedule",
+      "efddc7bd8bbcef73"
+    ],
+    [
+      "schedule_delete",
+      "@deepseek-ai/dsh-tool-schedule",
+      "5bb844bc8c764b76"
+    ],
+    [
+      "schedule_update",
+      "@deepseek-ai/dsh-tool-schedule",
+      "9a8deb3f2141cfd9"
+    ]
+  ]
+}

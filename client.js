@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, SettingsForm, SettingsFormModel, SettingsValueField, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -46,7 +46,16 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove' })
+    /** Host tool statuses (src/constants.js TOOL_STATUS) shown as tags, and the plugin kinds. */
+    const TOOL_STATUS = Object.freeze({ visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked' })
+    /** Tag tones used by DSH's own plugin page (neutral, info, danger). */
+    const TAG_TONE = Object.freeze({ [TOOL_STATUS.unchecked]: 'danger', [TOOL_STATUS.hidden]: 'neutral', [TOOL_STATUS.pluginOff]: 'neutral' })
+    /**
+     * Plugin diagnostics with their own text; any other code shows the generic one. A separate
+     * client bundle cannot import the host's list: keep it in step with src/constants.js PLUGIN_ERROR.
+     */
+    const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached'])
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     const SLOT = Object.freeze({
       mark: 'sidebar.brand.mark',
@@ -73,7 +82,7 @@ window.__ModuleLoader__.load({
       eyeColor: '#EC0A6E',
     })
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark' })
+    const CLS = Object.freeze({ section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
       brandName: 'Fishball',
@@ -96,6 +105,33 @@ window.__ModuleLoader__.load({
       hiddenToolsHint: 'They save files, change the profile, or start agents inside Fishball\'s own session.',
       limits: 'Safety limits',
       openSettings: 'Fishball settings',
+      plugins: 'Plugins for Fishball',
+      pluginsHint: 'Fishball\'s own on/off choice. Other sessions and the profile are not changed. A change applies when Fishball\'s current turn ends.',
+      pluginToggle: 'Use {name} in Fishball',
+      'kind.profile': 'Everyone',
+      'kind.fishball-only': 'Fishball only',
+      'kind.builtin': 'Built in',
+      pending: 'Applies after this turn',
+      waiting: 'Starting…',
+      'pluginError.row-id-conflict': 'Two of its parts have the same name, so it cannot run for Fishball',
+      'pluginError.limit-reached': 'Too many plugins running only for Fishball',
+      pluginErrorOther: 'Could not start for Fishball',
+      changedByfishball: 'Changed by Fishball',
+      changedByuser: 'Changed by you',
+      'tool.unchecked': 'Not checked',
+      'tool.hidden': 'Hidden',
+      'tool.plugin-off': 'Off',
+      allowedTools: 'Tools you allowed',
+      allowedToolsHint: 'Nobody had checked these tools; you allowed them for Fishball. Removing one hides it again until you allow it.',
+      remove: 'Remove',
+      noAllowed: 'None.',
+      otherTools: 'Other tools not shown to Fishball',
+      'pluginError.edits-other-rows': 'Changes other plugins, so it cannot run for Fishball only',
+      'pluginError.no-rows': 'Adds nothing Fishball can run',
+      'pluginError.row-failed': 'Failed to start for Fishball',
+      'pluginError.leaks-service': 'Would change DSH for every session, so it was stopped',
+      'pluginError.no-profile': 'Needs a DSH profile',
+      changeFailed: 'That change was not accepted.',
       'field.maxQueuedInputs': 'Queued inputs not yet read',
       'field.maxActiveWatches': 'Active "tell me when finished" watches',
       'field.maxSourcesPerPlugin': 'Feeds per plugin',
@@ -138,6 +174,33 @@ window.__ModuleLoader__.load({
       hiddenToolsHint: '它们会保存文件、修改配置，或在 Fishball 自己的会话里启动代理。',
       limits: '安全限制',
       openSettings: 'Fishball 设置',
+      plugins: 'Fishball 的插件',
+      pluginsHint: '仅 Fishball 自己的开关，不影响其他会话和配置。更改在 Fishball 当前回合结束后生效。',
+      pluginToggle: '在 Fishball 中使用 {name}',
+      'kind.profile': '所有会话',
+      'kind.fishball-only': '仅 Fishball',
+      'kind.builtin': '内置',
+      pending: '本回合结束后生效',
+      waiting: '启动中…',
+      'pluginError.row-id-conflict': '它有两个部分同名，不能仅为 Fishball 运行',
+      'pluginError.limit-reached': '仅为 Fishball 运行的插件过多',
+      pluginErrorOther: '为 Fishball 启动失败',
+      changedByfishball: '由 Fishball 更改',
+      changedByuser: '由你更改',
+      'tool.unchecked': '未检查',
+      'tool.hidden': '已隐藏',
+      'tool.plugin-off': '已关闭',
+      allowedTools: '你允许的工具',
+      allowedToolsHint: '这些工具未经检查，是你允许 Fishball 使用的。移除后会再次隐藏，直到你重新允许。',
+      remove: '移除',
+      noAllowed: '无。',
+      otherTools: '未向 Fishball 显示的其他工具',
+      'pluginError.edits-other-rows': '它会修改其他插件，不能仅为 Fishball 运行',
+      'pluginError.no-rows': '没有可为 Fishball 运行的内容',
+      'pluginError.row-failed': '为 Fishball 启动失败',
+      'pluginError.leaks-service': '会影响所有会话，因此已停止',
+      'pluginError.no-profile': '需要 DSH 配置',
+      changeFailed: '该更改未被接受。',
       'field.maxQueuedInputs': '尚未读取的排队输入',
       'field.maxActiveWatches': '进行中的“完成时通知我”',
       'field.maxSourcesPerPlugin': '每个插件的信息源',
@@ -169,6 +232,9 @@ window.__ModuleLoader__.load({
       `.${CLS.list}{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}`,
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
       `.${CLS.name}{font-weight:600}`,
+      `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
+      `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
+      `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
     ].join('')
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
@@ -200,15 +266,16 @@ window.__ModuleLoader__.load({
     })()
     const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
 
-    /** @returns whether the Host accepted the recovery action. */
-    async function recover(action) {
+    /** POST one command to the Host. @returns whether it was accepted. */
+    async function post(path, body) {
       try {
-        const response = await fetch(apiUrl(API.recovery), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action }) })
+        const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
         return response.ok
       } catch {
         return false
       }
     }
+    const recover = (action) => post(API.recovery, { action })
 
     function Mark({ size }) {
       return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: CLS.mark, 'aria-hidden': true, 'data-fishball-mark': true },
@@ -299,6 +366,50 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** A status tag for one tool, in DSH's Tag primitive. */
+    function ToolTag({ name, status, t }) {
+      return h('li', { key: name }, name, status === TOOL_STATUS.visible ? null : h(Tag, { tone: TAG_TONE[status] }, t('tool.' + status)))
+    }
+
+    /**
+     * Fishball's plugin catalog (DESIGN §10): one row per plugin with your on/off switch,
+     * where it runs, who changed it last and the state of its tools; then the tools you
+     * allowed (each with Remove) and other tools Fishball cannot see.
+     */
+    function makePlugins(t) {
+      return function FishballPlugins() {
+        const state = useFishball()
+        const [failed, setFailed] = React.useState(false)
+        const catalog = state.catalog
+        if (!catalog) return null
+        const run = async (path, body) => { setFailed(!(await post(path, body))) }
+        return h('div', { className: CLS.section },
+          h('h3', null, t('plugins')),
+          h('p', { className: CLS.muted }, t('pluginsHint')),
+          failed ? h('div', { role: 'alert' }, t('changeFailed')) : null,
+          catalog.plugins.map((plugin) => h('div', { key: plugin.plugin, className: CLS.plugin, 'data-fishball-plugin': plugin.plugin },
+            h('div', { className: CLS.grow },
+              h('div', { className: CLS.row },
+                h('span', { className: CLS.name }, plugin.title),
+                h(Tag, { tone: 'neutral' }, t('kind.' + plugin.kind)),
+                plugin.on !== plugin.applied ? h(Tag, { tone: 'info' }, t('pending')) : null,
+                plugin.waiting ? h(Tag, { tone: 'info' }, t('waiting')) : null),
+              plugin.changedBy ? h('span', { className: CLS.muted }, t('changedBy' + plugin.changedBy)) : null,
+              plugin.lastError ? h('span', { role: 'status' }, PLUGIN_ERRORS.has(plugin.lastError) ? t('pluginError.' + plugin.lastError) : t('pluginErrorOther')) : null,
+              plugin.tools.length > 0 ? h('ul', { className: CLS.list }, plugin.tools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t }))) : null),
+            h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: plugin.title }), onChange: (on) => run(API.plugins, { plugin: plugin.plugin, on }) }))),
+          h('h3', null, t('allowedTools')),
+          h('p', { className: CLS.muted }, t('allowedToolsHint')),
+          catalog.allowedTools.length === 0 ? h('p', null, t('noAllowed')) : catalog.allowedTools.map((tool) => h('div', { key: tool.key, className: CLS.row },
+            h('span', { className: CLS.code }, tool.toolName),
+            h('span', { className: CLS.muted }, tool.module),
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => run(API.toolApprovals, { toolKey: tool.key }) }, t('remove')))),
+          catalog.otherTools.length > 0 ? h(React.Fragment, null,
+            h('h3', null, t('otherTools')),
+            h('ul', { className: CLS.list }, catalog.otherTools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t })))) : null)
+      }
+    }
+
     /** The tools Fishball never uses, as data from the Host. */
     function makeHiddenTools(t) {
       return function FishballHiddenTools() {
@@ -325,8 +436,8 @@ window.__ModuleLoader__.load({
       return { store, actions: form.actions(), dispose: () => form.dispose() }
     }
 
-    /** Fishball's whole settings page: status, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, HiddenTools, t) {
+    /** Fishball's whole settings page: status, plugins, limits form, hidden tools. */
+    function makeSettingsPage(section, Status, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -336,6 +447,7 @@ window.__ModuleLoader__.load({
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
           h(Status),
+          h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
@@ -387,7 +499,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)), 'fishball: header action')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

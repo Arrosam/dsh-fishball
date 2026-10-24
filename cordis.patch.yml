@@ -1,6 +1,11 @@
-# Fishball's only profile footprint: one host row. Its id is also the settings namespace
-# the Plugins page edits (client.js ENTRY_ID).
+# Fishball's profile footprint: two host rows.
+# - fishball: the assistant. Its id is also the settings namespace the Plugins page edits
+#   (client.js ENTRY_ID).
+# - fishball-attribution: a tiny module that records which plugin registers each tool. It is
+#   its own row so it evaluates before other plugins register (src/tool-attribution.js).
 - insert:
+    - id: fishball-attribution
+      name: 'dsh-fishball/attribution'
     - id: fishball
       name: 'dsh-fishball'
       config: {}

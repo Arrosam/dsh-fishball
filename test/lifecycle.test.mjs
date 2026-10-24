@@ -237,6 +237,7 @@ describe('R-SINGLETON unreadable store', () => {
         const st = await host.waitStatus(SETTLED)
         assert.equal(st?.status, STATUS.failed, 'state: ' + JSON.stringify(st))
         assert.equal(st.error?.code, ERROR_CODE.storeUnreadable)
+        assert.equal(st.catalog, null, 'P3: catalog is null while the core is not running')
         await sleep(500)
         assert.deepEqual(await host.call('sentinelSessions'), [])
         assert.deepEqual(await host.call('sessionsInDir', { dir: assistantDir(home) }), [])

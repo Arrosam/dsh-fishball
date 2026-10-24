@@ -53,5 +53,6 @@ export const REFUSAL = Object.freeze({
   fileWrite: (name) => `Fishball never writes local files, so "${name}" is refused. Hand the change to another session.`,
   escalation: (name) => `Fishball never widens its sandbox, so this "${name}" call with sandbox_permissions is refused.`,
   notReadOnly: (name, mode) => `"${name}" runs for Fishball only while its session is read-only (it is now ${mode}).`,
+  masked: (name) => `"${name}" is not available to Fishball now: its plugin is off for Fishball, or nobody has checked it yet. Use list_plugins to see why.`,
   bskSave: () => 'Fishball cannot save browser output to disk: the "output" option and videoAction "save" are not available.',
 })

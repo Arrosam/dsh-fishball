@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, PACKAGE_NAME, PRESET, PROFILE, REPO, ROW_ID, RUNTIME, SENTINEL_PRESET } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { fixtureTool, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
@@ -25,12 +25,12 @@ const { setSandboxMode } = await hostPkg('dsh-sandbox-policy')
 const { WorkspaceActiveSessionError } = await hostPkg('dsh-workspace')
 const { model } = await import(pathToFileURL(FAKE_LLM_MODULE).href)
 
-/** Add one linked bundle to the profile, as a user-installed plugin would be. */
-function link(profileDir, name, target) {
+/** Add one linked bundle to the profile, as a user-installed plugin would be; enabled=false leaves it installed but off. */
+function link(profileDir, name, target, enabled = true) {
   const file = path.join(profileDir, 'package.json')
   const pkg = JSON.parse(fs.readFileSync(file, 'utf8'))
   pkg.dependencies = { ...pkg.dependencies, [name]: 'link:' + target }
-  pkg.dsh.profile.bundles.push(name)
+  if (enabled) pkg.dsh.profile.bundles.push(name)
   fs.writeFileSync(file, JSON.stringify(pkg, null, 2))
   fs.mkdirSync(path.join(profileDir, 'node_modules'), { recursive: true })
   fs.symlinkSync(target, path.join(profileDir, 'node_modules', name))
@@ -42,6 +42,10 @@ if (!fs.existsSync(profileDir)) {
   initializeProfileFromDefault(PROFILE, 'web', home)
   link(profileDir, FIXTURE_BUNDLE.name, FIXTURE_BUNDLE.dir)
   link(profileDir, PACKAGE_NAME, REPO)
+  // P3: installed in the profile but not enabled there, so they are Fishball-only candidates.
+  for (const b of Object.values(ONLY_BUNDLES)) link(profileDir, b.name, b.dir, false)
+  // Post-review: the defective Fishball-only candidates, only in homes that ask for them.
+  if (process.env.FBTEST_REVIEW_BUNDLES === '1') for (const b of Object.values(REVIEW_BUNDLES)) link(profileDir, b.name, b.dir, false)
 }
 // FBTEST_PLUGIN=off boots this home with the plugin installed but its bundle not selected (used to seed state).
 setBundleSelected(profileDir, PACKAGE_NAME, process.env.FBTEST_PLUGIN !== 'off')
@@ -62,15 +66,35 @@ fs.writeFileSync(overlay, JSON.stringify([
     { id: 'fbtest-llm', name: FAKE_LLM_MODULE },
     // An ordinary preset with no tools of its own, so the global fixture tools are what its sessions see.
     { id: 'preset-fbtest-bare', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.bare, order: 90, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }] } },
+    // Post-review change 11: host rows whose ids look like private-tree ids.
+    ...(process.env.FBTEST_SPOOF_ROWS === '1' ? SPOOF_ROWS.map((r) => ({ id: r.id, name: SPOOF_MODULE, config: { tool: r.tool } })) : []),
   ] },
 ], null, 2))
 
 const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'), profile: PROFILE, patchFiles: [overlay], args: ['--no-open', '--port', '0'] })
 
+/**
+ * Scripted approver standing in for the person at DSH's stock prompt: a prepended
+ * host-level approval/request answerer (the S12 position) that records every
+ * question and answers with the current outcome. Default 'rejected', so an
+ * unexpected prompt never hangs a turn.
+ */
+const approver = { outcome: process.env.FBTEST_APPROVAL ?? OUTCOME.reject, queue: [], held: [], seen: [] }
+ctx.on('approval/request', (req) => {
+  // A queued answer (one per question, in order) wins over the standing outcome.
+  const answer = approver.queue.length > 0 ? approver.queue.shift() : approver.outcome
+  approver.seen.push({ sessionId: req.agent?.id ?? null, toolName: req.toolName, callId: req.callId ?? null, reason: req.reason ?? null, answered: answer, at: Date.now() })
+  if (answer === APPROVER_THROWS) throw new Error('fbtest approver failed')
+  // Hold the question open until the test calls releaseApproval (a person who has not clicked yet).
+  if (answer === APPROVER_HOLDS) return new Promise((resolve) => approver.held.push(resolve))
+  return answer
+}, { prepend: true })
+
 const tags = new WeakMap()
 let tagCounter = 0
 const tagOf = (agent) => { if (!tags.has(agent)) tags.set(agent, 'agent-' + ++tagCounter); return tags.get(agent) }
 const globalDisposers = new Map()
+const serviceDisposers = new Map()
 const scopedDisposers = new Map()
 const errorInfo = (e) => ({ name: e?.name ?? null, ctor: e?.constructor?.name ?? null, code: e?.code ?? null, message: String(e?.message ?? e).slice(0, 400) })
 
@@ -86,7 +110,7 @@ function eventSummary(e) {
   if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 2000) }
   if (e.type === 'sandbox/mode') out.mode = e.data?.mode
   if (e.type === 'approval/policy') out.policy = e.data?.policy
-  if (e.type === 'tool/result') out.result = { callId: e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 2000) }
+  if (e.type === 'tool/result') out.result = { callId: e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
   if (e.type === 'approval/asked') out.toolName = e.data?.toolName ?? null
   if (e.type === 'turn/end') out.reason = e.data?.reason ?? null
   if (e.type === 'step/end') out.data = JSON.parse(JSON.stringify(e.data ?? null))
@@ -181,8 +205,11 @@ const ops = {
     return { sessionId: created.sessionId, agentPreset: created.agentPreset ?? null, error: found.error ? errorInfo(found.error) : null }
   },
 
-  registerGlobal({ names }) {
-    for (const name of names) globalDisposers.set(name, registerFixtures(ctx, [name]))
+  /** Register fixture tools globally; asFixture registers them as the fbtest-tools plugin (attributable), else from the root (no plugin). */
+  registerGlobal({ names, asFixture = false }) {
+    const owner = asFixture ? store.fixtureCtx : ctx
+    if (!owner) throw new Error('fbtest-tools context not captured')
+    for (const name of names) globalDisposers.set(name, registerFixtures(owner, [name]))
     return names
   },
   unregisterGlobal({ names }) {
@@ -225,6 +252,38 @@ const ops = {
   requests({ sessionId }) { return model.requests.filter((r) => r.sessionId === sessionId) },
   modelTimes() { return { delayStartedAt: model.delayStartedAt ?? null, delayReleasedAt: model.delayReleasedAt ?? null } },
   globalToolNames() { return ctx.tools.schemas().map((t) => t.name).sort() },
+
+  // ---- P3 operations ----
+  /** Answer the oldest held approval question; returns false when none is held. */
+  releaseApproval({ outcome }) { const resolve = approver.held.shift(); resolve?.(outcome); return Boolean(resolve) },
+  heldApprovals() { return approver.held.length },
+  setApprover({ outcome, queue = [] }) { approver.outcome = outcome; approver.queue = [...queue]; return outcome },
+  approvals({ sessionId } = {}) { return approver.seen.filter((a) => !sessionId || a.sessionId === sessionId) },
+  agentScoped() { return store.agentScoped ?? [] },
+  bundleEvents({ bundle } = {}) { return store.bundleEvents.filter((e) => !bundle || e.bundle === bundle) },
+
+  /** Every bundle DSH's plugin manager lists, with the fields the catalog requirement refers to. */
+  async allBundles() {
+    return (await ctx.pluginManager.listBundles()).map((b) => ({ name: b.name, enabled: b.enabled, installed: b.installed, optional: b.optional, availability: b.availability, overrides: b.overrides, rows: b.rows.map((r) => r.rowId) }))
+  },
+
+  /** Provide a host service from the root context (post-review change 1: rows waiting for it can start). */
+  provideService({ name }) { serviceDisposers.set(name, ctx.provide(name, { fbtest: true })); return true },
+
+  /** Install a local package through DSH's own plugin manager while DSH runs (post-review change 13). */
+  async installBundle({ spec, enabled }) {
+    const r = await ctx.pluginManager.installBundle(spec, { enabled })
+    return { changed: r.changed, application: r.application, stage: r.stage, bundle: r.bundle ?? null, enabled: r.enabled ?? null, error: r.error ? JSON.parse(JSON.stringify(r.error)) : null }
+  },
+
+  /** Re-register one fbtest-tools tool AS that plugin, with other parameters (R7: a plugin update changing a schema). */
+  reregisterFixture({ name, parameters }) {
+    const fixtureCtx = store.fixtureCtx
+    if (!fixtureCtx) throw new Error('fbtest-tools context not captured')
+    store.fixtureRegs.get(name)?.()
+    store.fixtureRegs.set(name, fixtureCtx.tools.register(fixtureTool(name, parameters)))
+    return true
+  },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])

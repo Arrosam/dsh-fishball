@@ -4,7 +4,7 @@
  * | id     | technique              | requirement                                             | expected |
  * |--------|------------------------|---------------------------------------------------------|----------|
  * | PKG-01 | EP                     | repo is an ESM npm package named dsh-fishball           | package.json name/type |
- * | PKG-02 | EP                     | bundle patch inserts one host row fishball/dsh-fishball | listBundles row list == [{fishball, dsh-fishball}] |
+ * | PKG-02 | EP                     | bundle patch inserts two host rows (P3 amendment)       | listBundles rows == [fishball-attribution/dsh-fishball/attribution, fishball/dsh-fishball]; exports './attribution' |
  * | SGL-01 | EP (first start)       | exactly one Fishball session is created                 | 1 session with agentPreset fishball:assistant; 1 session in the folder; state.sessionId matches |
  * | SGL-02 | EP (folder missing)    | cwd is <DSH_HOME>/fishball/assistant, created if missing | folder exists; header cwd and state.cwd equal it |
  * | SGL-03 | EP                     | no DSH workspace registered for the folder              | no workspace path == realpath(folder); state.workspaceId null |
@@ -26,7 +26,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, MS, PACKAGE_NAME, REPO, ROW_ID, SENTINEL_PRESET, SETUP_SOURCE, STATUS, STORE, assistantDir } from './support/constants.mjs'
+import { API, ATTRIBUTION_ROW, MS, PACKAGE_NAME, REPO, ROW_ID, SENTINEL_PRESET, SETUP_SOURCE, STATUS, STORE, assistantDir } from './support/constants.mjs'
 import { HOOK, T, realpath } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
@@ -52,11 +52,13 @@ describe('R-SINGLETON first start', () => {
     assert.equal(pkg.type, 'module')
   })
 
-  it('PKG-02 the bundle patch inserts exactly one host row fishball with module dsh-fishball', T, async () => {
+  it('PKG-02 the bundle patch inserts the attribution row, then the fishball row (P3)', T, async () => {
     const bundles = await host.call('bundles')
     assert.equal(bundles.length, 1, 'bundle dsh-fishball listed once')
     assert.equal(bundles[0].enabled, true)
-    assert.deepEqual(bundles[0].rows.map((r) => [r.rowId, r.moduleName]), [[ROW_ID, PACKAGE_NAME]])
+    assert.deepEqual(bundles[0].rows.map((r) => [r.rowId, r.moduleName]), [[ATTRIBUTION_ROW.id, ATTRIBUTION_ROW.module], [ROW_ID, PACKAGE_NAME]])
+    const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
+    assert.ok(Object.hasOwn(pkg.exports ?? {}, './attribution'), 'exports ./attribution')
   })
 
   it('SGL-07 Fishball is live right after start without user action', T, async () => {
