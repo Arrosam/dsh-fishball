@@ -9,6 +9,7 @@
   "exports": {
     ".": "./index.js",
     "./attribution": "./src/tool-attribution.js",
+    "./compaction": "./src/compaction.js",
     "./client": "./client.js",
     "./package.json": "./package.json"
   },
@@ -34,6 +35,7 @@
     "@deepseek-ai/cordis-plugin-loader": "*",
     "@deepseek-ai/dsh-agent-preset-registry": "*",
     "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-compaction-basic": "*",
     "@deepseek-ai/dsh-home-paths": "*",
     "@deepseek-ai/dsh-llm": "*",
     "@deepseek-ai/dsh-sandbox-policy": "*",

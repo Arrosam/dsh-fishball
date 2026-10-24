@@ -1,4 +1,4 @@
-# Fishball P2 + P3 black-box test catalogue
+# Fishball P2 + P3 + P4 black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -236,6 +236,65 @@ Host D boots with `FBTEST_REVIEW_BUNDLES=1` and with `FBTEST_AGENT_SCOPE_SHADOW=
 
 REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-id-conflict` with lastError null. REV-06 also asserts lastError null.
 
+## P4 cases (context window, C1-C14)
+
+**Harness additions.** The fake model now records each request's `model`, `maxTokens` and total message characters. It records each auxiliary call's purpose, `maxTokens` and final user message, and answers a `compaction` call with a summary text. One provider serves three models: `test-model` (window 128000, or `FBTEST_MODEL_WINDOW`, where `none` means no window), `test-model-b` (300000) and `test-model-nowin` (no window), each with `defaultMaxTokens` 4096. The worker can change a model's window and re-commit the adapter's routes, which publishes `llm/adapters-updated`. It can pick a model through `sessionController.selectModel` (the model picker's API), hold one conversation request open, and list a session's `compaction/*` events and auxiliary calls. Expected values come from the formulas in C2, C4 and C5 ([support/expect.mjs](support/expect.mjs)). `moveArtifacts` moved from lifecycle.test.mjs to support/expect.mjs so that P4 can reuse it.
+
+### [context-window.test.mjs](context-window.test.mjs): C1-C4, C6-C9 through the HTTP API
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| CTX-01 | EP | C1 | GET state and the first SSE frame have `contextWindow` with exactly the 9 keys; each number field is null or a whole number; `error` is null or one of the 3 codes; `compactionOff` is a boolean |
+| CTX-02 | EP (nothing set) | C2, C13 | modelWindow = effectiveWindow = 128000; the setting fields and outputCap are null; threshold = floor(min(W·0.8, W−4096−65536)) = 58368; pressureTokens is a positive integer after the setup turn |
+| CTX-03 | EP | C2 | every Fishball request carries maxTokens 4096 (the adapter default) |
+| CTX-04 ×20 | DT (body) | C3 | invalid JSON, array, string, number, null, `{}`, either key missing, 0, −1, a fraction, a string, a boolean, an array or an object as a value: 400 `bad-body`; state unchanged |
+| CTX-05 ×13 | DT + BVA (accepted) | C3, C4, C6 | 200 `{ok:true,state}`; the answer and GET show the values and the derived fields. Rows: N 40000 (cap 5000, threshold 30000); 40000/10000; 40000/1; 24000; 127999 (W−1); 128000 (= W, acts as unset); 1e9; O alone at 1000, 1, 32000 (the update's example) and 49980 (the engine's largest); 200000 with O 1000; both null |
+| CTX-06 ×16 | DT + BVA (refused) | C3, C7 (review update) | 409 with the code; state unchanged. `output-too-large`: 20000/30000; 40000/40000 (O = N); 4096/4096; O alone at 128000, 128001, 70000, 62464 (W−O−65536 = 0), 62463 and 49981 (the engine's largest + 1). `window-too-small`: 40000/39999 (O = N−1); N 1000, 5000 and 1; 1/1; 4095; 4095/1 |
+| CTX-07 | BVA (bisection) | C7 | the smallest accepted N (O null) is accepted with the C4/C5 values; N−1 is `window-too-small`. **Observed: 6418** (A46) |
+| CTX-07b | BVA (bisection, O alone) | C6, C7 (review update) | the largest O accepted alone equals the engine rule's: O < W, W−O−65536 > 0, and floor((W−O)·0.16) < threshold. That gives 49980; 49981 is `output-too-large` |
+| PRE-01 ×5 | BVA + DT (no request measured yet: the first call is held before its request is prepared) | C7 (review update) | N 4095, 4095/1, 1, 1/1 and 8: `window-too-small` |
+| PRE-02 | ST (N 6000 accepted early → prompt measured) | C7 (review update) | 200 or `window-too-small` early; after live a turn completes; the state is consistent (A49); saving 6000 again is refused |
+| CTX-08 ×7 | ST unset → 24000 → clear → 40000/2000 → 200000 → 24000 → clear | C4, C6, C8 | Fishball's next request has maxTokens 4096, ≤3000, 4096, ≤2000, 4096, ≤3000, 4096; an ordinary session keeps 4096 throughout |
+| CTX-09 | ST (SSE) | C1, C3 | a frame with the saved value follows a save |
+| CTX-10 | EP (no cookie) | C3 | not 200; nothing changes |
+| CTX-11 | EP (model with no window, nothing set) | C1 | modelWindow, effectiveWindow and threshold are null; error null |
+| CTX-12 ×3 | DT (no window × N / O / both) | C7 | 409 `model-window-unknown`; state unchanged |
+| CTX-13 | EP (no window, clear) | C8 | both null: 200 |
+| CTX-14 | ST (24000/2000 –restart→) | C9 | same session; the values survive; the next request has maxTokens ≤2000 |
+| CTX-16 | ST (recovery, save) | C3 | diagnostic (A40): a save while in recovery is accepted (200) |
+| CTX-15 | ST (setting stored → recovery → adopt) | C9 | the new session's state is at defaults; its setup request and a later request carry 4096 |
+| CTX-17 | DT (failed store × save) | C3 | 409 `unavailable`; `contextWindow` is null while failed (A41) |
+
+### [context-compaction.test.mjs](context-compaction.test.mjs): C4, C5, C10-C14 in Fishball's session
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| CMPN-01 | BVA (pressure below / at threshold(N)) | C5 | N 40000 (threshold 30000) with turns of 40,000 characters (about 10k tokens): no compaction in a turn that ends more than 1000 tokens below the threshold; the session compacts no later than the first turn that starts at or above the threshold; this is below DSH's default threshold for the model (58368); every turn ends completed. Observed pressure: 3414 → 13431 → 23448 → 33465, then a compaction (23443). The compaction comes in the turn that starts above the threshold, not in the turn that crosses it (A50) |
+| CMPN-02 | EP | C5 (review update) | each `compaction` call has maxTokens H = min(65536, N/8) = 5000; its final user message contains all 7 headings and "Keep the whole checkpoint under about 3750 words" (floor(H·0.75)) |
+| CMPN-03 | EP | C13 | after the compaction, pressureTokens < threshold |
+| CMPN-04 | EP (standard-preset session, same turns) | C5, C4 | no `compaction/*` event and no compaction call; its requests keep 4096 |
+| CMPN-05 | EP | C4 | every Fishball request of the load has maxTokens ≤ outputCap |
+| MOD-01 | ST (model a –pick b, turn→) | C10 | the request went to b; modelWindow and effectiveWindow 300000; threshold = DSH default for (300000, 4096); outputCap null |
+| MOD-02 | ST (adapters-updated) | C10 | b's window becomes 200000 and the state follows without a turn |
+| MOD-03 | DT (N 200000 between 128000 and 300000) | C6, C10 | on a: effective 128000, cap null; on b: effective 200000, cap 25000, request ≤25000; back on a: effective 128000, the stored value kept |
+| MOD-04 | ST (the model's window disappears with N set) | C7, C10 | `error: model-window-unknown`, modelWindow null, the stored value kept; the next turn completes; when the window returns, error null and effective 40000 |
+| MID-01 | ST (save while a request is held) | C14 | the save answers 200; the held turn ends completed; the next request has maxTokens ≤3000 |
+| OVF-01 | EP (one 100,000-character message, N 24000, W_eff−O = 21000) | C12 | the turn ends completed with an assistant answer and a compaction; the message is logged in full (A44). Per the C12 update, whether it reached the model verbatim is only a diagnostic |
+| OVF-03 | EP (oversized message, summary call answers no text) | C12 (review update) | the turn completes with an answer and no `compaction/summary`; the request carried the whole message; it is logged in full; the next turn completes |
+| LKP-01 | ST (N 40000; lookups throw; adapters-updated announces window 60000) | C10 (review update) | a lookup was attempted; the state is unchanged (window 128000, cap 5000, threshold 30000, error null); a turn completes with maxTokens ≤5000 |
+| LKP-02 | ST (lookups hang 15 s) | C10 (review update) | the same, during and after the hang |
+| LKP-03 | ST (lookups work again) | C10 | modelWindow 60000, effective 40000, error null |
+| BOOT-01 ×2 | ST (window 128000 → 200000 during boot, announced by adapters-updated: on adapter registration, or right after the first lookup answered 128000) | C15 | N 150000 was stored on the 128000 model, where it acts as unset; after boot the state shows effective 150000, cap 18750, threshold 112500, error null |
+| BOOT-02 ×2 | ST (→ next idle → load of about 20k tokens per turn) | C15 | the session compacts at 112500, not at the stale 58368 (old policy) or 130368 (DSH default for 200000); caps ≤18750; summary maxTokens 18750 (A50) |
+| OVF-02 | ST (next turn) | C13 | completed; pressureTokens < threshold (A43) |
+| OFF-01 | ST (user turns builtin:compaction off, N set) | C11 | compactionOff true; the next request has maxTokens ≤3000 |
+| OFF-02 | EP (100,000 characters above the threshold, compaction off) | C11 | no `compaction/*` event in that turn or the next; the turn completes |
+| OFF-03 | DT (off × no smaller window; on × smaller window) | C11 | compactionOff false in both; true again with off and a smaller window |
+
+### P3 cases changed by P4
+
+- **HTP-01, HTP-04/05, PHT-01, PHT-04**: 9 state keys (with `contextWindow`).
+
 ### P2 cases changed by P3 (requirement changes from the implementer, not regressions)
 
 - **PKG-02**: the patch inserts `fishball-attribution` (module `dsh-fishball/attribution`) and then `fishball`; package exports has `./attribution`.
@@ -287,6 +346,20 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 - **A36. Shadowing fixture and the run_code exemption.** The same-name tool is registered by fbtest-tools on `agent/created` through `agent.ctx.tools`, for every agent. SHD-01 cannot tell which definition the refusal blocked. It asserts that no recorded fixture body ran for Fishball, and both definitions record the same name. The `run_code` exemption is not tested: `run_code` cannot be a fixture (A2), and Fishball has no working `run_code` (A30).
 - **A37. Racing the enable (ATM-01).** "Refused between the prompt and the write" is produced by holding the prompt open. Meanwhile a user toggle turns a second Fishball-only plugin on, and the limit is lowered to 1. Allow once is then given. Observed: the racing toggle answers 200, and the enable answers `ok:false`.
 - **A38. "The second only fails after the first is removed" (BRK-01).** Black-box, the order in which one apply detects failures cannot be controlled. BRK-01 applies two independently failing plugins (each provides its own service) at one idle and checks the end state required: both off with lastError set, and everything else running. It does not prove that the second failure was found only after the first plugin was removed.
+
+- **A39. Threshold when maxOutputTokens is set alone (C6).** C2 defines R as "the request's reply cap", so with O set and no smaller window the expected threshold is floor(min(W·0.8, W−O−65536)), using O as R. Observed so.
+- **A40. Saving while in recovery.** C3 says "before the assistant session exists → 409 unavailable". In `recovery` a session record exists, but its session cannot be resumed. Observed: the save answers 200 and is stored for the old session id, and `contextWindow` shows the old session's value (pressureTokens null). CTX-16 records this as a diagnostic and accepts 200 or 409 `unavailable`. Please confirm which is intended.
+- **A41. State while no session exists.** C1 does not say what `contextWindow` is while `failed`. Observed: `null`. CTX-17 accepts null or the full shape.
+- **A42. Driving a model change (C10).** The model is picked through `sessionController.selectModel`, the API behind DSH's model picker; this also saves DSH's default model. `llm/adapters-updated` is produced by re-committing the fake adapter's routes after changing a model's window. A model that loses its window while a value is set (MOD-04) is read as `error: model-window-unknown`, keeping the stored value; turns keep completing.
+- **A43. Pressure after an overflow compaction (C13).** Right after the OVF-01 turn, pressureTokens was 28425, above the threshold 18000. The oversized user message is the latest message, so it stays in the retained tail. C13 is therefore checked after the next turn (OVF-02), where it holds. Whether "after a compaction it is below the threshold" should also hold right after an overflow turn needs a decision.
+- **A44. Which mechanism handled the oversized message.** With N 24000, a 25k-token message is also above the pressure threshold, so step-pressure compaction or the synthetic overflow (C12) could each produce the compaction. Black-box, the two cannot be told apart. OVF-01 checks only the required outcome.
+- **A45. Refusal code for a large maxOutputTokens alone (answered).** The review update says O alone is refused `output-too-large` exactly when DSH's engine would refuse it. CTX-07b now asserts that the boundary equals the engine rule (49980 accepted, 49981 refused) and that the code is `output-too-large`.
+- **A46. Boundaries depend on the prompt.** The smallest accepted N (6418) and the largest O accepted alone (49980) depend on the size of Fishball's system prompt and tools in this test profile, about 3,400 tokens. Tests find them by bisection and assert only that the neighbouring values are accepted and refused. "Noticeably earlier" (C5) is read as: below DSH's default threshold for the model.
+- **A47. Unknown extra keys in the body.** C3 lists what is bad; an extra key is not mentioned. Observed: `{contextWindowTokens:40000, maxOutputTokens:null, extra:1}` is accepted. Not asserted.
+- **A48. "Other sessions' requests are unchanged" (C4).** Checked as: a session of the `fbtest-bare` preset (CTX-08) and of the standard preset (CMPN-04) keep maxTokens 4096. A standard-preset session runs DSH's own compaction at threshold 58368, which the CMPN load (about 33k tokens) stays below.
+
+- **A49. A window accepted before the prompt is measured.** Per the update, only N < 4096 and zero caps are refused before any request has been measured. A window that fits the 4096 floor but not the real prompt (N 6000) is accepted early: 200, state effective 6000. Once the setup request has measured the prompt (about 3.4k tokens), the state shows `error: window-too-small`, effectiveWindow 128000, outputCap and threshold null, and requests carry 4096 with no smaller-window cap. The stored value is kept. PRE-02 accepts this end state, or a cap-consistent one. Whether a stored value that turns out too small should fall back to the full window this way needs confirming.
+- **A50. When the compaction runs.** Observed in every load: the session compacts in the first turn that *starts* at or above the threshold. The turn whose new message takes it across the threshold does not compact. C5 says "once its measured request size reaches the threshold", and the measured size between turns is the previous request's. The tests assert the observed rule and allow up to one load turn of slack. C15's boot-flip fake changes the window at two moments (adapter registration, right after the first lookup); whether a remount was actually in progress at that moment cannot be observed black-box.
 
 ## Environment limits
 

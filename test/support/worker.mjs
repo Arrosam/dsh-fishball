@@ -107,13 +107,14 @@ function liveAgent(sessionId) {
 /** JSON-safe summary of one session event. */
 function eventSummary(e) {
   const out = { type: e.type }
-  if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 2000) }
+  if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 2000); out.textLength = textOf(e.data?.content ?? e.data?.message?.content).length }
   if (e.type === 'sandbox/mode') out.mode = e.data?.mode
   if (e.type === 'approval/policy') out.policy = e.data?.policy
   if (e.type === 'tool/result') out.result = { callId: e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
   if (e.type === 'approval/asked') out.toolName = e.data?.toolName ?? null
   if (e.type === 'turn/end') out.reason = e.data?.reason ?? null
   if (e.type === 'step/end') out.data = JSON.parse(JSON.stringify(e.data ?? null))
+  if (e.type === 'assistant/message') out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 2000)
   return out
 }
 
@@ -188,6 +189,10 @@ const ops = {
     model.queues.delete(sessionId)
     return {
       idle: Boolean(idle),
+      // P4: compaction events of this turn, and the auxiliary calls made for this session during it.
+      compactions: events.filter((e) => e.type.startsWith('compaction/')).map((e) => e.type),
+      assistantTexts: events.filter((e) => e.type === 'assistant/message').map((e) => e.text),
+      userLengths: events.filter((e) => e.type === 'user/message').map((e) => e.textLength),
       requests: model.requests.slice(before).filter((r) => r.sessionId === sessionId),
       results: events.filter((e) => e.type === 'tool/result').map((e) => e.result),
       asked: events.filter((e) => e.type === 'approval/asked').length,
@@ -284,6 +289,51 @@ const ops = {
     store.fixtureRegs.set(name, fixtureCtx.tools.register(fixtureTool(name, parameters)))
     return true
   },
+
+  // ---- P4 operations ----
+  aux({ sessionId, purpose } = {}) { return model.aux.filter((a) => (!sessionId || a.sessionId === sessionId) && (!purpose || a.purpose === purpose)) },
+  /** Every compaction/* event type in a session's log so far. */
+  compactionEvents({ sessionId }) {
+    const agent = ctx.agents.get(sessionId)
+    return agent ? agent.session.snapshotEvents().filter((e) => e.type.startsWith('compaction/')).map((e) => e.type) : null
+  },
+  /** Change a fake model's window (null = no window); replace() publishes llm/adapters-updated. */
+  setModelWindow({ model: id = FAKE.model, window }) {
+    model.windows[id] = window ?? undefined
+    model.adapterHandle?.replace([FAKE.provider])
+    return true
+  },
+  /** C10: make exact-model lookups of one model fail ('throw'), hang ('hang') or work again (null). */
+  setLookupFailure({ model: id = FAKE.model, mode, hangMs }) { if (mode) model.lookupFailure[id] = mode; else delete model.lookupFailure[id]; model.lookupHangMs = hangMs; return true },
+  lookupCount() { return model.lookups },
+  prepareDelay() { return model.prepareDelayed ?? null },
+  /** C12: make compaction summary calls answer no text (DSH then fails the summary). */
+  setCompactionFailure({ on }) { model.compactionFails = Boolean(on); return true },
+  /** C15: when the boot-time window flip happened, if at all. */
+  windowFlip() { return model.flipped ?? null },
+  /** Pick another model for a session the way DSH's model picker does (also saves DSH's default). */
+  async selectModel({ sessionId, model: id }) {
+    try { return { ok: true, value: await ctx.sessionController.selectModel({ sessionId, provider: FAKE.provider, model: id }) } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** Hold the next conversation request of a session until releaseHold (a turn in progress). */
+  holdNext({ sessionId }) { model.holds ??= new Map(); model.holds.set(sessionId, null); return true },
+  isHeld({ sessionId }) { return typeof model.holds?.get(sessionId) === 'function' },
+  releaseHold({ sessionId }) { const r = model.holds?.get(sessionId); model.holds?.delete(sessionId); if (typeof r === 'function') r(); return typeof r === 'function' },
+  /** Steer a message without waiting; pair with waitIdle. */
+  driveStart({ sessionId, text = 'fbtest turn', script = [] }) {
+    const agent = liveAgent(sessionId)
+    model.queues.delete(sessionId)
+    for (const step of script) model.queue(sessionId, step)
+    agent.steer(createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } }))
+    return true
+  },
+  async waitIdle({ sessionId, timeoutMs = 20000 }) {
+    const agent = liveAgent(sessionId)
+    await until(() => agent.status === 'running', 2000, 5)
+    return Boolean(await until(() => agent.status === 'idle', timeoutMs, 20))
+  },
+  /** The last turn/end reason of a session. */
+  lastTurnEnd({ sessionId }) { const e = liveAgent(sessionId).session.snapshotEvents().filter((x) => x.type === 'turn/end').at(-1); return e?.data?.reason ?? null },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])

@@ -116,6 +116,54 @@ export const PLUGIN_ERROR = Object.freeze({
   restartRequired: 'restart-required',
 })
 
+/**
+ * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults
+ * (lib/index.js DEFAULT_THRESHOLD_RATIO, DEFAULT_RETAIN_RATIO, headroomTokens ?? 65536),
+ * which it does not export; they price the threshold shown when no smaller window is set.
+ */
+export const CONTEXT = Object.freeze({
+  dshDefaults: Object.freeze({ thresholdRatio: 0.8, retainRatio: 0.16, headroomTokens: 65536 }),
+  /**
+   * Headroom (and the summary's own token cap, which DSH ties to it) for a smaller window:
+   * one eighth of it, at most DSH's 65,536, which alone would not fit a small window. At
+   * 20,000 that is 2,500, as in spike S5, so a summary of that length fits.
+   */
+  headroomShare: 8,
+  /** Default reply-length cap with a smaller window: one eighth of it, at most 32,000 (Q-defaults). */
+  outputShare: 8,
+  outputMax: 32000,
+  /**
+   * Smallest window accepted, whatever the prompt: below it the reply and summary caps would
+   * be a few hundred tokens. It bounds a save made before any request has measured the
+   * prompt and tools (review M2); with them measured the fit check is usually stricter.
+   */
+  minWindowTokens: 4096,
+  /** Smallest reply or summary cap: DSH requires a positive summary cap, a 0 reply is none. */
+  minCapTokens: 1,
+  /** Bound on asking the model adapter for its window, so a slow discovery never stalls boot. */
+  modelInfoTimeoutMs: 5000,
+  /** Settings record key in the settings table (DESIGN §9). */
+  settingsKey: 'assistant',
+  /** Catalog key of the built-in compaction plugin and its engine row's own id (src/builtins.js). */
+  compactionPlugin: 'builtin:compaction',
+  compactionRow: 'compaction-basic',
+  /** Fishball's compaction engine (DSH's, with an assistant-oriented summary). */
+  compactionModule: 'dsh-fishball/compaction',
+})
+
+/** Why a context-window value is refused, or why a stored one cannot apply now. */
+export const CONTEXT_ERROR = Object.freeze({
+  /** The window cannot hold the reply cap, headroom, retained tail and prompt-plus-tools. */
+  windowTooSmall: 'window-too-small',
+  /** The reply-length cap does not fit inside the window. */
+  outputTooLarge: 'output-too-large',
+  /** The model reports no window, so a smaller one cannot be derived from it. */
+  modelWindowUnknown: 'model-window-unknown',
+})
+
+/** DSH session projection with the latest request's system-prompt and tool sizes (dsh-token-meter). */
+export const CONTEXT_PROJECTION = Object.freeze({ breakdown: 'contextBreakdown' })
+
 /** Storage domain names and versions (fail closed on mismatch). */
 export const DOMAIN = Object.freeze({ main: 'fishball', version: 1 })
 
@@ -128,6 +176,8 @@ export const API = Object.freeze({
   plugins: '/api/fishball/plugins',
   /** POST { toolKey }: withdraw an allowance for a tool nobody had checked. */
   toolApprovals: '/api/fishball/tool-approvals/remove',
+  /** POST { contextWindowTokens, maxOutputTokens }: each a positive whole number or null (unset). */
+  contextWindow: '/api/fishball/context-window',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -172,6 +222,14 @@ export const SERVICE = Object.freeze({
   pluginManager: 'pluginManager',
   /** Permission prompts for add_plugin and tools nobody has checked (DESIGN §7). */
   approval: 'approval',
+  /** The model's context window (resolveModelInfo) for the context-window setting (DESIGN §6). */
+  llm: 'llm',
+})
+
+/** Optional services read with ctx.get (Fishball works without them, with less shown). */
+export const OPTIONAL_SERVICE = Object.freeze({
+  /** Measures a request's size for the context window's hard ceiling (DESIGN §6). */
+  tokenMeter: 'tokenMeter',
 })
 
 /** Host events this plugin listens to. */
@@ -185,7 +243,25 @@ export const EVENT = Object.freeze({
   service: 'internal/service',
   /** dsh-plugin-manager: a bundle was installed, removed, enabled or disabled. */
   pluginManagerChanged: 'plugin-manager/changed',
+  /** dsh-llm: adapters or their models changed (a model window may have changed). */
+  adaptersUpdated: 'llm/adapters-updated',
+  /** Agent request waterfall: the final call config of each model request. */
+  agentRequest: 'agent/request',
+  /** Agent request-error waterfall: decides whether a failed model request is retried. */
+  agentRequestError: 'agent/request-error',
+  /** dsh-llm: every model call (the hard ceiling answers Fishball's own requests). */
+  llmStream: 'llm/stream',
+  agentStatus: 'agent/status',
 })
+
+/** Agent status after a turn ends (dsh-agent). */
+export const AGENT_IDLE = 'idle'
+
+/** agent/request-error action that retries the request (dsh-agent-loop). */
+export const REQUEST_RETRY = 'retry'
+
+/** dsh-llm stream finish chunk and finish kinds. */
+export const LLM_FINISH = Object.freeze({ chunk: 'finish', error: 'error', aborted: 'aborted', maxTokens: 'max-tokens' })
 
 /** Approval outcome that grants the request; every other outcome refuses (dsh-user-approval). */
 export const APPROVAL_GRANTED = 'allowed-once'

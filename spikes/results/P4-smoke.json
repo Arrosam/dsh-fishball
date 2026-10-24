@@ -1,0 +1,722 @@
+{
+  "id": "P4-smoke",
+  "started": "2026-10-24T12:21:30.591Z",
+  "finished": "2026-10-24T12:21:35.905Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "unset": {
+    "contextWindowTokens": null,
+    "maxOutputTokens": null,
+    "modelWindow": 200000,
+    "effectiveWindow": 200000,
+    "outputCap": null,
+    "threshold": 130368,
+    "pressureTokens": 3410,
+    "error": null,
+    "compactionOff": false
+  },
+  "tooSmall": {
+    "status": 409,
+    "body": {
+      "ok": false,
+      "code": "window-too-small"
+    }
+  },
+  "outputTooLarge": {
+    "status": 409,
+    "body": {
+      "ok": false,
+      "code": "output-too-large"
+    }
+  },
+  "badBody": {
+    "status": 400,
+    "body": {
+      "ok": false,
+      "code": "bad-body"
+    }
+  },
+  "set": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "state": {
+        "status": "live",
+        "sessionId": "session-fishball-3ef267e7-cdcd-4c87-8ff6-fb29601434ce",
+        "workspaceId": null,
+        "cwd": "/Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/p4smoke-1792844490592/fishball/assistant",
+        "error": null,
+        "limits": {
+          "maxQueuedInputs": 200,
+          "maxActiveWatches": 50,
+          "maxSourcesPerPlugin": 8,
+          "maxFishballOnlyPlugins": 32,
+          "wakeupsPerHour": 60,
+          "messagesPerHour": 30,
+          "sessionsPerHour": 10,
+          "maxPendingApprovals": 8,
+          "approvalAnswerSeconds": 120,
+          "argumentExcerptBytes": 8192,
+          "maxMessageBytes": 65536,
+          "auditEntriesKept": 500
+        },
+        "hiddenTools": [
+          "code_review_report",
+          "create_worktree",
+          "diff_approval_annotate",
+          "edit",
+          "git_worktree",
+          "image_generate",
+          "interrupt_agent",
+          "mover_move_session",
+          "plugin_manager",
+          "ralph",
+          "send_message",
+          "spawn_teammate",
+          "str_replace_editor",
+          "subagent",
+          "subagent_fork",
+          "video_generate",
+          "workflow",
+          "write"
+        ],
+        "catalog": {
+          "plugins": [
+            {
+              "plugin": "builtin:compaction",
+              "title": "Compaction",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:web",
+              "title": "Web search and page opening",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": [
+                {
+                  "name": "web_fetch",
+                  "status": "visible"
+                },
+                {
+                  "name": "web_search",
+                  "status": "visible"
+                }
+              ]
+            },
+            {
+              "plugin": "builtin:time",
+              "title": "Time awareness",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:reminders",
+              "title": "Reminders",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": [
+                {
+                  "name": "schedule_create",
+                  "status": "visible"
+                },
+                {
+                  "name": "schedule_delete",
+                  "status": "visible"
+                },
+                {
+                  "name": "schedule_list",
+                  "status": "visible"
+                },
+                {
+                  "name": "schedule_update",
+                  "status": "visible"
+                }
+              ]
+            },
+            {
+              "plugin": "builtin:ask-user",
+              "title": "Ask you a question",
+              "kind": "builtin",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:skills",
+              "title": "Skills",
+              "kind": "builtin",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:shell",
+              "title": "Read-only shell",
+              "kind": "builtin",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-agent-team-profile",
+              "title": "@deepseek-ai/dsh-experimental-agent-team-profile",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-inspector-profile",
+              "title": "@deepseek-ai/dsh-experimental-inspector-profile",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+              "title": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-auto-review",
+              "title": "@deepseek-ai/dsh-experimental-auto-review",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+              "title": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+              "title": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-ralph-bundle",
+              "title": "@deepseek-ai/dsh-experimental-ralph-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+              "title": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+              "title": "@deepseek-ai/dsh-experimental-terminal-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-session-search",
+              "title": "@deepseek-ai/dsh-experimental-session-search",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-tool-worktree",
+              "title": "@deepseek-ai/dsh-experimental-tool-worktree",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+              "title": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            }
+          ],
+          "allowedTools": [],
+          "otherTools": []
+        },
+        "contextWindow": {
+          "contextWindowTokens": 20000,
+          "maxOutputTokens": null,
+          "modelWindow": 200000,
+          "effectiveWindow": 20000,
+          "outputCap": 2500,
+          "threshold": 15000,
+          "pressureTokens": 3410,
+          "error": null,
+          "compactionOff": false
+        }
+      }
+    }
+  },
+  "afterSet": {
+    "contextWindowTokens": 20000,
+    "maxOutputTokens": null,
+    "modelWindow": 200000,
+    "effectiveWindow": 20000,
+    "outputCap": 2500,
+    "threshold": 15000,
+    "pressureTokens": 3410,
+    "error": null,
+    "compactionOff": false
+  },
+  "maxTokensSeen": [
+    2500
+  ],
+  "summaryCalls": 2,
+  "summaryUsedFishballPrompt": true,
+  "compactions": 2,
+  "afterTurns": {
+    "contextWindowTokens": 20000,
+    "maxOutputTokens": null,
+    "modelWindow": 200000,
+    "effectiveWindow": 20000,
+    "outputCap": 2500,
+    "threshold": 15000,
+    "pressureTokens": 11444,
+    "error": null,
+    "compactionOff": false
+  },
+  "otherCompactions": 0,
+  "otherMaxTokens": [
+    4096
+  ],
+  "cleared": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "state": {
+        "status": "live",
+        "sessionId": "session-fishball-3ef267e7-cdcd-4c87-8ff6-fb29601434ce",
+        "workspaceId": null,
+        "cwd": "/Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/p4smoke-1792844490592/fishball/assistant",
+        "error": null,
+        "limits": {
+          "maxQueuedInputs": 200,
+          "maxActiveWatches": 50,
+          "maxSourcesPerPlugin": 8,
+          "maxFishballOnlyPlugins": 32,
+          "wakeupsPerHour": 60,
+          "messagesPerHour": 30,
+          "sessionsPerHour": 10,
+          "maxPendingApprovals": 8,
+          "approvalAnswerSeconds": 120,
+          "argumentExcerptBytes": 8192,
+          "maxMessageBytes": 65536,
+          "auditEntriesKept": 500
+        },
+        "hiddenTools": [
+          "code_review_report",
+          "create_worktree",
+          "diff_approval_annotate",
+          "edit",
+          "git_worktree",
+          "image_generate",
+          "interrupt_agent",
+          "mover_move_session",
+          "plugin_manager",
+          "ralph",
+          "send_message",
+          "spawn_teammate",
+          "str_replace_editor",
+          "subagent",
+          "subagent_fork",
+          "video_generate",
+          "workflow",
+          "write"
+        ],
+        "catalog": {
+          "plugins": [
+            {
+              "plugin": "builtin:compaction",
+              "title": "Compaction",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:web",
+              "title": "Web search and page opening",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": [
+                {
+                  "name": "web_fetch",
+                  "status": "visible"
+                },
+                {
+                  "name": "web_search",
+                  "status": "visible"
+                }
+              ]
+            },
+            {
+              "plugin": "builtin:time",
+              "title": "Time awareness",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:reminders",
+              "title": "Reminders",
+              "kind": "builtin",
+              "on": true,
+              "applied": true,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": [
+                {
+                  "name": "schedule_create",
+                  "status": "visible"
+                },
+                {
+                  "name": "schedule_delete",
+                  "status": "visible"
+                },
+                {
+                  "name": "schedule_list",
+                  "status": "visible"
+                },
+                {
+                  "name": "schedule_update",
+                  "status": "visible"
+                }
+              ]
+            },
+            {
+              "plugin": "builtin:ask-user",
+              "title": "Ask you a question",
+              "kind": "builtin",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:skills",
+              "title": "Skills",
+              "kind": "builtin",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "builtin:shell",
+              "title": "Read-only shell",
+              "kind": "builtin",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-agent-team-profile",
+              "title": "@deepseek-ai/dsh-experimental-agent-team-profile",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-inspector-profile",
+              "title": "@deepseek-ai/dsh-experimental-inspector-profile",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+              "title": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-auto-review",
+              "title": "@deepseek-ai/dsh-experimental-auto-review",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+              "title": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+              "title": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-ralph-bundle",
+              "title": "@deepseek-ai/dsh-experimental-ralph-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+              "title": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+              "title": "@deepseek-ai/dsh-experimental-terminal-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-session-search",
+              "title": "@deepseek-ai/dsh-experimental-session-search",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-tool-worktree",
+              "title": "@deepseek-ai/dsh-experimental-tool-worktree",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            },
+            {
+              "plugin": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+              "title": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+              "kind": "fishball-only",
+              "on": false,
+              "applied": false,
+              "waiting": false,
+              "changedBy": null,
+              "lastError": null,
+              "tools": []
+            }
+          ],
+          "allowedTools": [],
+          "otherTools": []
+        },
+        "contextWindow": {
+          "contextWindowTokens": null,
+          "maxOutputTokens": null,
+          "modelWindow": 200000,
+          "effectiveWindow": 200000,
+          "outputCap": null,
+          "threshold": 130368,
+          "pressureTokens": 11444,
+          "error": null,
+          "compactionOff": false
+        }
+      }
+    }
+  },
+  "afterClear": {
+    "contextWindowTokens": null,
+    "maxOutputTokens": null,
+    "modelWindow": 200000,
+    "effectiveWindow": 200000,
+    "outputCap": null,
+    "threshold": 130368,
+    "pressureTokens": 11444,
+    "error": null,
+    "compactionOff": false
+  },
+  "capAfterClear": 4096,
+  "capAt40000": 5000,
+  "capAt7000": 7000,
+  "tiny": {
+    "status": 409,
+    "body": {
+      "ok": false,
+      "code": "window-too-small"
+    }
+  },
+  "ceilingTail": [
+    "user/message",
+    "request/header",
+    "assistant/attempt",
+    "compaction/start",
+    "compaction/summary",
+    "user/message",
+    "compaction/end",
+    "user/message",
+    "request/header",
+    "assistant/message",
+    "step/end",
+    "turn/end"
+  ],
+  "ceilingAnswer": "done",
+  "ceilingKeptMessage": true,
+  "ceilingCompacted": true,
+  "ceilingAnswered": true,
+  "ceilingTurnError": {
+    "turn": 11,
+    "reason": {
+      "kind": "completed"
+    }
+  },
+  "stored": {
+    "assistant": {
+      "sessionId": "session-fishball-3ef267e7-cdcd-4c87-8ff6-fb29601434ce",
+      "contextWindowTokens": 20000,
+      "changedAt": "2026-10-24T12:21:35.315Z"
+    }
+  }
+}

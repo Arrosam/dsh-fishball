@@ -97,6 +97,8 @@ export class AssistantComposition {
   #catalog
   /** Rebuild the mask of every agent set up under P (one per live agent). */
   #maskRefreshers = new Set()
+  /** Further per-agent setups other features add (the context window's reply cap). */
+  #agentSetups = []
 
   /**
    * @param rowCtx - the fishball row's plugin context (needs tools, sandboxPolicy, systemPrompt).
@@ -267,8 +269,14 @@ export class AssistantComposition {
     sync()
   }
 
+  /** Add a per-agent setup (agentCtx, agent) that runs after the scope, mask and guard. */
+  addAgentSetup(setup) {
+    this.#agentSetups.push(setup)
+  }
+
   /**
-   * Agent setup: bind A under P, keep the mask current, and install the guard.
+   * Agent setup: bind A under P, keep the mask current, install the guard, then the setups
+   * other features added (addAgentSetup).
    * @returns setup(agentCtx, agent) for ctx.agents.create/resume.
    */
   setup() {
@@ -279,6 +287,7 @@ export class AssistantComposition {
         const mode = this.#rowCtx.sandboxPolicy.resolve({ session: agent.session }).mode
         return guardDecision(exec.name, exec.arguments, mode) ?? (this.#allows(exec.name, exec.agent) ? undefined : REFUSAL.masked(exec.name))
       })
+      for (const extra of this.#agentSetups) extra(agentCtx, agent)
     }
   }
 

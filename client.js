@@ -46,7 +46,12 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window' })
+    /** The two context-window settings (src/constants.js API.contextWindow body). */
+    const CONTEXT_FIELDS = Object.freeze(['contextWindowTokens', 'maxOutputTokens'])
+    /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
+    const CONTEXT_ERRORS = new Set(['window-too-small', 'output-too-large', 'model-window-unknown'])
+    const WHOLE_NUMBER = /^[1-9][0-9]*$/
     /** Host tool statuses (src/constants.js TOOL_STATUS) shown as tags, and the plugin kinds. */
     const TOOL_STATUS = Object.freeze({ visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked' })
     /** Tag tones used by DSH's own plugin page (neutral, info, danger). */
@@ -105,6 +110,24 @@ window.__ModuleLoader__.load({
       hiddenToolsHint: 'They save files, change the profile, or start agents inside Fishball\'s own session.',
       limits: 'Safety limits',
       openSettings: 'Fishball settings',
+      contextWindow: 'Context window',
+      contextHint: 'Leave the window empty to use the model\'s full window. A smaller window makes Fishball summarise its conversation sooner; only Fishball\'s session is affected.',
+      'contextField.contextWindowTokens': 'Context window (tokens)',
+      'contextField.maxOutputTokens': 'Reply length cap (tokens)',
+      contextModel: 'Model window',
+      contextEffective: 'Window in use',
+      contextThreshold: 'Summarises at',
+      contextPressure: 'In use now',
+      contextOutput: 'Reply cap',
+      contextUnknown: 'unknown',
+      contextNone: 'none',
+      contextDefault: 'Default',
+      contextCompactionOff: 'Compaction is off for Fishball, so only the reply cap applies. Turn it on under Plugins for Fishball.',
+      'contextError.window-too-small': 'That window is too small: it cannot hold Fishball\'s instructions, tools, a summary and recent messages.',
+      'contextError.output-too-large': 'The reply cap does not fit in the window.',
+      'contextError.model-window-unknown': 'The model does not report its window, so a smaller one cannot be set.',
+      contextSaveFailed: 'That value was not accepted.',
+      contextInvalid: 'Enter a whole number, or leave it empty.',
       plugins: 'Plugins for Fishball',
       pluginsHint: 'Fishball\'s own on/off choice. Other sessions and the profile are not changed. A change applies when Fishball\'s current turn ends.',
       pluginToggle: 'Use {name} in Fishball',
@@ -174,6 +197,24 @@ window.__ModuleLoader__.load({
       hiddenToolsHint: '它们会保存文件、修改配置，或在 Fishball 自己的会话里启动代理。',
       limits: '安全限制',
       openSettings: 'Fishball 设置',
+      contextWindow: '上下文窗口',
+      contextHint: '留空则使用模型的完整窗口。窗口越小，Fishball 越早总结对话；只影响 Fishball 的会话。',
+      'contextField.contextWindowTokens': '上下文窗口（token）',
+      'contextField.maxOutputTokens': '回复长度上限（token）',
+      contextModel: '模型窗口',
+      contextEffective: '当前使用的窗口',
+      contextThreshold: '总结阈值',
+      contextPressure: '当前占用',
+      contextOutput: '回复上限',
+      contextUnknown: '未知',
+      contextNone: '无',
+      contextDefault: '默认',
+      contextCompactionOff: 'Fishball 的压缩已关闭，因此只有回复上限生效。请在“Fishball 的插件”中开启。',
+      'contextError.window-too-small': '窗口太小：放不下 Fishball 的指令、工具、总结和最近的消息。',
+      'contextError.output-too-large': '回复上限超出了窗口。',
+      'contextError.model-window-unknown': '模型没有报告其窗口，因此无法设置更小的窗口。',
+      contextSaveFailed: '该值未被接受。',
+      contextInvalid: '请输入整数，或留空。',
       plugins: 'Fishball 的插件',
       pluginsHint: '仅 Fishball 自己的开关，不影响其他会话和配置。更改在 Fishball 当前回合结束后生效。',
       pluginToggle: '在 Fishball 中使用 {name}',
@@ -266,15 +307,19 @@ window.__ModuleLoader__.load({
     })()
     const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
 
-    /** POST one command to the Host. @returns whether it was accepted. */
-    async function post(path, body) {
+    /** POST one command to the Host. @returns { ok, code } (code: the Host's refusal code, if any). */
+    async function send(path, body) {
       try {
         const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
-        return response.ok
+        if (response.ok) return { ok: true, code: null }
+        const answer = await response.json().catch(() => ({}))
+        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null }
       } catch {
-        return false
+        return { ok: false, code: null }
       }
     }
+    /** POST one command. @returns whether it was accepted. */
+    const post = async (path, body) => (await send(path, body)).ok
     const recover = (action) => post(API.recovery, { action })
 
     function Mark({ size }) {
@@ -410,6 +455,66 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** A token count for display, or a fallback word. */
+    const countText = (value, t, fallback) => (value === null || value === undefined ? t(fallback) : Number(value).toLocaleString())
+
+    /**
+     * The context window (DESIGN §6): your two values, what is in use, the threshold and
+     * the current size. Empty fields mean unset; the Host checks a value against the model.
+     */
+    function makeContextWindow(t) {
+      return function FishballContextWindow() {
+        const state = useFishball()
+        const view = state.contextWindow
+        const baseId = React.useId()
+        const stored = (field) => (view?.[field] == null ? '' : String(view[field]))
+        const [draft, setDraft] = React.useState(null)
+        const [saving, setSaving] = React.useState(false)
+        const [problem, setProblem] = React.useState(null)
+        if (!view) return null
+        const text = (field) => (draft?.[field] ?? stored(field))
+        // Digits only and within the safe-integer range, which the Host's check also requires.
+        const invalid = (field) => text(field).trim() !== '' && !(WHOLE_NUMBER.test(text(field).trim()) && Number.isSafeInteger(Number(text(field).trim())))
+        const dirty = draft !== null && CONTEXT_FIELDS.some((field) => text(field) !== stored(field))
+        const save = async () => {
+          setSaving(true)
+          const body = Object.fromEntries(CONTEXT_FIELDS.map((field) => [field, text(field).trim() === '' ? null : Number(text(field).trim())]))
+          const { ok, code } = await send(API.contextWindow, body)
+          setSaving(false)
+          if (ok) { setDraft(null); setProblem(null) } else setProblem(CONTEXT_ERRORS.has(code) ? 'contextError.' + code : 'contextSaveFailed')
+        }
+        const info = (label, value, fallback) => h('div', { className: CLS.row }, h('span', { className: CLS.label }, t(label)), h('span', null, countText(value, t, fallback)))
+        return h('div', { className: CLS.section, 'data-fishball-context': true },
+          h('h3', null, t('contextWindow')),
+          h('p', { className: CLS.muted }, t('contextHint')),
+          info('contextModel', view.modelWindow, 'contextUnknown'),
+          info('contextEffective', view.effectiveWindow, 'contextUnknown'),
+          info('contextThreshold', view.threshold, 'contextUnknown'),
+          info('contextPressure', view.pressureTokens, 'contextUnknown'),
+          info('contextOutput', view.outputCap, 'contextNone'),
+          view.error ? h('div', { role: 'status' }, CONTEXT_ERRORS.has(view.error) ? t('contextError.' + view.error) : t('contextSaveFailed')) : null,
+          view.compactionOff ? h('div', { role: 'status' }, t('contextCompactionOff')) : null,
+          CONTEXT_FIELDS.map((field) => h(SettingsValueField, {
+            key: field,
+            id: `${baseId}-${field}`,
+            label: t('contextField.' + field),
+            text: text(field),
+            overridden: stored(field) !== '',
+            invalid: invalid(field),
+            overriddenLabel: t('overridden'),
+            resetLabel: t('contextDefault'),
+            invalidLabel: t('contextInvalid'),
+            disabled: saving,
+            numeric: true,
+            onEdit: (next) => setDraft({ ...(draft ?? {}), [field]: next }),
+            onReset: () => setDraft({ ...(draft ?? {}), [field]: '' }),
+          })),
+          problem ? h('div', { role: 'alert' }, t(problem)) : null,
+          h('div', { className: CLS.row },
+            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || saving || CONTEXT_FIELDS.some(invalid), onClick: save }, saving ? t('saving') : t('save'))))
+      }
+    }
+
     /** The tools Fishball never uses, as data from the Host. */
     function makeHiddenTools(t) {
       return function FishballHiddenTools() {
@@ -436,8 +541,8 @@ window.__ModuleLoader__.load({
       return { store, actions: form.actions(), dispose: () => form.dispose() }
     }
 
-    /** Fishball's whole settings page: status, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, Plugins, HiddenTools, t) {
+    /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
+    function makeSettingsPage(section, Status, ContextWindow, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -447,6 +552,7 @@ window.__ModuleLoader__.load({
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
           h(Status),
+          h(ContextWindow),
           h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
@@ -499,7 +605,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)), 'fishball: header action')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

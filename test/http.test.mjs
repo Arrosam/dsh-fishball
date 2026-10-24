@@ -3,7 +3,7 @@
  *
  * | id     | technique          | requirement                                          | expected |
  * |--------|--------------------|------------------------------------------------------|----------|
- * | HTP-01 | EP                 | GET state returns the JSON snapshot                  | 200 application/json; exactly the 8 documented keys (P3 adds catalog) with the documented types |
+ * | HTP-01 | EP                 | GET state returns the JSON snapshot                  | 200 application/json; exactly the 9 documented keys (P3 adds catalog, P4 contextWindow) with the documented types |
  * | HTP-02 | EP                 | hiddenTools is the documented list (18 names), sorted | deepEqual(the 18 names, in this literal sorted order) |
  * | HTP-03 | EP (no cookie)     | routes sit behind DSH browser auth                   | GET state without cookie is not 200 |
  * | HTP-04 | EP                 | events is an SSE stream; first frame immediately      | 200 text/event-stream; a frame within 3 s equal to GET state |
@@ -26,7 +26,8 @@ import { HOOK, T } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
 // P3 adds 'catalog' (shape of list_plugins); see plugins-http.test.mjs for its content.
-const STATE_KEYS = ['catalog', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
+// P4 adds 'contextWindow' (see context-window.test.mjs for its content).
+const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'limits', 'sessionId', 'status', 'workspaceId']
 
 describe('R-HTTP', () => {
   let host

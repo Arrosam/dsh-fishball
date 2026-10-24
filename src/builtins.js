@@ -13,6 +13,8 @@
  * an on/off catalog cannot supply; MCP servers configured in the profile are host rows, so
  * their tools reach Fishball as profile tools (checked or allowed like any other).
  */
+import { CONTEXT } from './constants.js'
+
 const IS_WINDOWS = process.platform === 'win32'
 
 /** Key prefix that marks a catalog key as a built-in. */
@@ -32,7 +34,9 @@ export const BUILTIN_PLUGINS = Object.freeze([
     group: true,
     isolate: { compaction: true, toolResultPruner: true },
     config: [
-      { id: 'compaction-basic', name: '@deepseek-ai/dsh-compaction-basic' },
+      // DSH's engine with Fishball's summary (src/compaction.js); its config is the derived
+      // context-window policy (src/context-window.js), {} meaning DSH's defaults.
+      { id: CONTEXT.compactionRow, name: CONTEXT.compactionModule, config: {} },
       { id: 'command-compact', name: '@deepseek-ai/dsh-command-compact' },
       { id: 'tool-result-pruner', name: '@deepseek-ai/dsh-compaction-tool-result-pruner', config: { thresholdChars: 8192, headChars: 4096, tailChars: 1024 } },
     ],
