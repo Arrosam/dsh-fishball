@@ -1,9 +1,0 @@
-# Isolated schema6 author execution lease
-
-Root read the complete schema5→6 Ledger/RuntimeStore diff, the eight-family draft, and the typed delivery/report admission addendum and independent design. On2026-10-05 root verified all eight candidate/support rows and both copies of the five genuine schema5 source rows in manifest `06631a28c47315f087aba2b9976233f002feb4338947984c580501f511f9a2c6`. The shared schema5 remains unchanged.
-
-The isolated author may now import and execute the candidate under `.runtime/ni4-core6/candidate/`, run the held eight-family draft, and add affected public-API synthetic fixtures for genuine5→6 migration, original receipt/cipher preservation, future-schema refusal and the already frozen source/report/delivery oracles. Preserve the first source/test/TAP and every failure before any necessary candidate-only repair. Run appropriate affected tests after changes. Record exact final pins and distinguish typed/core/native evidence.
-
-This lease permits only built-in Node modules and the five held local core modules, own synthetic temporary databases and the supported existing fault seams. It does not permit protected-row or ciphertext tampering, the rejected CR02 experiment, raw SQL mutation, artificial PRAGMA schema relabeling, shared-source promotion, source7, host launch, credentials, provider/model/tool calls, browser access, publication, or a CODE retry. Any runtime-policy denial stops that action.
-
-The original addendum `1b6c8477c6554dcd6d30f78f5e0a158019bf43fcc1ad54449032b71fdeb07b2c`, independent design `d82827ed5bcc4aa66c66b3650d0ae5155b26df559b8148152e4c2ddc8ac8991d` and checks `a254055bcbb0a188bf0d0c1be8957669dccac95d7d099b7e6fc8de4c3714d519` remain frozen. All87 acceptance criteria, actual native provenance/usage/preview wiring, independent CODE review, browser acceptance, full MVP and publication remain HOLD. This is an executable author lease, not promotion or acceptance.

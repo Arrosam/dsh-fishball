@@ -1,9 +1,0 @@
-# Native UI consistency correction checkpoint
-
-Independent test reviewer `/root/istqb_review` reproduced two UI consistency findings on acdc0c6, not backend authority bypasses. **UI-T02:** inspectAudit's final status reread accepted another taskRef with equal version/authEpoch and published a report. **UI-T03:** approveSchedule accepted a selected subscription whose sourceRef differed from the displayed clock source and submitted the mutation; core would reject it. The client must preserve exact snapshot identity and catch the mismatch before publication/submission.
-
-The separate host author added exact taskRef and subscription/source association checks plus two direct retained regressions, regenerated the bundle and froze a new [correction manifest](native-ui-corrections.sha256). The historical acdc0c6/21-file native-ui.sha256 and73-test TAP are preserved, not overwritten.
-
-Original independent34probes32PASS/2FAIL are retained as JSON. Unchanged probes then34/34passed. Repository-safe [34-case independent test](../../../test/client-feature-adversarial.test.mjs) is held at1a16cff79b85aa399f7c91e44eb430cb4a426ce529c5e1cce7c0f860a5607a5f. Affected native/client command passed **109/109,0FAIL,0SKIP**,757.516209ms:34independent +75author including the two new regressions. Bundle --check passed and23derived exact file entries were unchanged before/after. Raw independent retest SHA2562212d4222edef815d674c06341b9d7e23682aab152289de7f26b4e94a177e6f0. These counts overlap prior checkpoints and cannot be added.
-
-All data/peers/renderer objects are synthetic; actual encrypted ledger and genuine public native library/Slot/AgentLoop oracles remain separately labelled. No actual rendered browser/navigation/focus/resize/Chinese layout pass occurred. A real-Web runtime-export fixture is a later separate backend/profile unit, not a visual substitute. Independent final CODE remains [blocked](review-session-blocker.md); source-ticket/MVP/release HOLD.

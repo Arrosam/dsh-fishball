@@ -1,7 +1,0 @@
-# R12 checkpoint clarification: finish trace 51B
-
-The root-authored R12 checkpoint at commit4edf16c1671c6fe7dd6eb8f8e669f65500be7de5 incorrectly describes the guarded finish as having returned "checked51 bytes". The authoritative fixture field is `finishTrace: "51B"`: a three-character closed diagnostic code selected after the guarded finish value/type check. It is not a response byte count. No response byte count is established by that field.
-
-The consumed R12 fixture/executor records, root actual-return proof and original supported driver exit1 remain unchanged. Independent R12 assessments and the R13 source review distinguish functional-stage PASS from overall driver FAILED_HOLD. This descriptive correction changes no runtime source, fixture oracle, result, approval, ledger fact, timeout, pin or execution selection. The current R13 source already uses the unchanged finite finishTrace domain and requires the exact code51B for positive/PASS. Its supported actual run remains pending until both final affected reviews and the root plan are complete.
-
-Keep the historical checkpoint bytes conserved in R13's reviewed input closure. Read this append-only root clarification with that checkpoint in the current handoff. A successful successor must still independently establish every worker/result/release/owned cleanup guard and a separately captured original driver return0; this wording correction establishes none of them.

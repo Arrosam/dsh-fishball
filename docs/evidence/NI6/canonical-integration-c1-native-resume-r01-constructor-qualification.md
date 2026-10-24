@@ -1,3 +1,0 @@
-# R01 constructor spelling qualification
-
-2026-10-08. The source selection's constructor total-attempt allowance of2 means the supported limits.maxAttempts=2 field. It does not add limits.maxTotalAttempts. The fresh accepted worker-policy/continuation maxTotalAttempts=2 and maxContinuations=1 remain separately consented; maxAttemptsPerGroup=1,maxActive=1 remain. Original installed-worker public configuration/selection maps constructor allowance to the accepted policy limit. Author reported this supported mapping before writes and root confirmed it. Sealed proposal/selection remain historical and unchanged. This corrects a configuration-key description, introduces no new API or effect and grants no runtime GO.

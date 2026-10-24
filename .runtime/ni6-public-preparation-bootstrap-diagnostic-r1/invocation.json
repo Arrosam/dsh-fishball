@@ -1,8 +1,0 @@
-{
-  "contractVersion": "df.ni6-prep01-bootstrap-diagnostic-invocation/v1",
-  "failureCode": "EXECUTOR_AGGREGATE_DEADLINE",
-  "finalized": false,
-  "finishedAt": "2026-10-07T19:44:00.321608+00:00",
-  "startedAt": "2026-10-07T19:43:52.335513+00:00",
-  "state": "FAILED_HOLD"
-}

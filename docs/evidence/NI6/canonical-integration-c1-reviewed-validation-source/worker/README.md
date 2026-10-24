@@ -1,5 +1,0 @@
-# Fresh canonical worker source
-
-SOURCE_ONLY_NOT_RUN. Root-reviewed original canonical build proof is present; this worker has not run. Original R13 fixture/executor are forked to the canonical product root; all original controls and factual/currentness/cleanup oracles remain. N01 adds one acknowledged duplicate-execute refusal before capture, exact WORKER_EXECUTION_ALREADY_SUBMITTED, with requests/streams/turns/steps still1 and tools0. HTTP26 maximum,39 named groups,36 result fields/56 finite phases; independently sized compact878/pretty1023 including newline, cap1024/read1025.
-
-The root owns the exclusive plan, final four affected reviews, GO and once supported execution. Proposed GO flags false/pins empty. Existing full-host graph authority and original bounded guards are retained; compact measured public closure includes current canonical65, selected host metadata and the fresh root build proof/closed records. No ancestor evidence copying, product alteration, runtime/private content inspection or author execution. Standalone Cordis root cleanup means verified RESTARTED, not full application quit.

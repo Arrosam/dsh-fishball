@@ -1,7 +1,0 @@
-# Canonical C1 worker source author packet
-
-SOURCE_ONLY_NOT_RUN; gpt-6.1-sol high; author starts0, all proposed GO=false/pins empty. Compact closure: 171 measured public inputs/8117392 bytes; 181 selected future pins including six owned source files and four affected reviews. Canonical65/1952632 bytes conserved; no ancestor evidence copies. Root fresh actual build proof is sealed prerequisite authority.
-
-Original C01–C23/F01–F05/G01–G05/L01–L05 and cleanup oracle conserved, with import namespace normalization only. N01 adds literal DUPLICATE_EXECUTE after acknowledged execute and before capture: exact WORKER_EXECUTION_ALREADY_SUBMITTED, no second request/stream/turn/step.39 groups, HTTP26,36 fields/56 phases. All55 ancestor phases remain in order; the new phase is shorter than STORED_PROJECTION_CONTRACT, so independent longest-value bounds remain878 compact/1023 pretty including newline, cap1024/read1025, one-byte pretty headroom. Every original functional/factual/currentness/cleanup gate and timeout remains; standalone root RESTARTED is distinct from whole CLI quit.
-
-All owned artifacts fully read back inertly; complete literal delta regenerated exactly. Input/owned rows, measured counts, topology and future path absence verified without evaluating any candidate. Final reviews/root supported once execution remain; no worker/CLI/provider/model/browser execution or acceptance claim. Companion JSON gives exact artifact seals and source-only qualifications.

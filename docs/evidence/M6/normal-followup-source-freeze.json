@@ -1,9 +1,0 @@
-{
-  "sourceHead": "270dfa89fafc4a59ae0c2cda3a56e866814c2670",
-  "executableFiles": 91,
-  "freezeSha256": "3c04ada75d2f2db36ab244376a69453bd9a1e2b88f089ea7d45ce8b40ff75605",
-  "hostWholeLockSha256": "68d3847884edf5b2c21d9d254bc059c3beb8105baec50c6d637c3328bbf187a3",
-  "hostLockScope": "external isolated existing public host; not plugin source/package content",
-  "firstFreezeRecipeErrorPreserved": true,
-  "scope": "current held executables after T01; no new integration source mutation during regression"
-}

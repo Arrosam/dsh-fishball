@@ -1,5 +1,0 @@
-39776f4994fb7c3434286ae91c877093ed629b50c450114e1070e5c00dee5c0b  src/client-entry.cjs
-077e7dc6d445039d04db7153ea84c04e14d4ac93933dfffaaa4c3cfe09d9519d  lib/client.js
-95492bd9d8de24cb15704b322d68c104512df1e852e265d276a43ff0ef434d8c  test/client-features.test.mjs
-d8e41eb5e200fe2d50e9ca4a9e5dc02f532879da75bc3e82808eabb4493cdb67  docs/evidence/S3/native-client.md
-bf08126eeadf793312e88d036e9de5a1908b9ece0b3b9d65573f66533d0c708a  docs/evidence/S3/native-ui-corrections.tap

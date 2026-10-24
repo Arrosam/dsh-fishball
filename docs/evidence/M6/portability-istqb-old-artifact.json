@@ -1,9 +1,0 @@
-{
-  "artifactSha256": "3fda3dbe8e69b06ee9b819f925c03f68c2e34221b127fb9767b49b321d744edb",
-  "physicalPackageRegular": true,
-  "regularTarFiles": 381,
-  "forbiddenEntries": 0,
-  "publicEntryFilesMatched": 45,
-  "testSha256": "217cc28e9ecb8d55af4bf894fa9a49a0ca65ccc5ad2743dabdf856cdfee63e1d",
-  "evidenceLevel": "actual old emitted artifact public metadata and relocated missing-peer negatives; native installation remains failed"
-}

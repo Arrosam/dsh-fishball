@@ -1,8 +1,0 @@
-c42893e85399836ad2bb41f96627104455c5bc31de576a4c993e41d487c0a258  .runtime/ni4-core6/candidate/src/ledger.mjs
-1742b0f3ffb190f285ac0a915e8efd0fde2fde42d62ecd22a4e75a86930ad27f  .runtime/ni4-core6/candidate/src/runtime-store.mjs
-66fd91b6042eadf7de89c22d18e12a68ed27aec67a87aa4aaf7e5c6df0eda820  .runtime/ni4-core6/candidate/src/runtime-security.mjs
-6fd7ba5b84353382fe5d3656af8717d1d4200c309dd808d79c52fe20728f3700  .runtime/ni4-core6/candidate/src/context.mjs
-d4c28785b5ab867daef94476547044b67b9861631c1f27326438bd58188fa154  .runtime/ni4-core6/candidate/src/foundation.mjs
-6198f03837cb8c68d043136e2ceb0105febe9e99fc1805a9a2548648d16066f9  .runtime/ni4-core6/candidate/test/normal-provenance-core.test.mjs
-a94d4cb057916e87a0a327736535956df4f4640eebd8a45f064ff5a5d7acf615  docs/evidence/NI4/core6-author-progress.md
-1b6c8477c6554dcd6d30f78f5e0a158019bf43fcc1ad54449032b71fdeb07b2c  docs/evidence/NI5/core6-admission-addendum.md

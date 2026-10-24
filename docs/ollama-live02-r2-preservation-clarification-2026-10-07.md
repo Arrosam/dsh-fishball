@@ -1,5 +1,0 @@
-# LIVE02 r2 copied-source preservation clarification
-
-The [r2 remediation freeze](ollama-corrected-one-call-r2-remediation-2026-10-07.md),9966B / SHA256 `7ae5f6e264deb301072d8e1fc493e111912958853545806ce6d62213dff12dbf`, retains all11 byte-exact copied outputs. They include `stable-error-code.mjs` and `source-pins.json` as well as the provider/helper/worker/binding/import outputs. Keep every copied output and six original literals unchanged in r2. The freeze's later mention of correcting the stable-error helper "as needed" is bounded by this preservation requirement and selects no helper delta.
-
-The fixture itself can classify the new scopedGoal PASS/FAIL/NOT_OBSERVED directly through its allowlisted status/outcome record and wrapper verdict. It can use the existing DEADLINE_UNKNOWN refusal for inadequate time. Do not mutate original error handling to admit a new model/host code, add an application module or increase the15 syntax commands. Include this implementation-free clarification as a pinned successor input. Source/runtime GO remains false; all other source corrections, histories, private boundaries and acceptance holds remain unchanged.

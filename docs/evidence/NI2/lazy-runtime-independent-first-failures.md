@@ -1,7 +1,0 @@
-# Preserved first independent outcome
-
-First source SHA256337ae0ba22a8a825ec1b08fb45aca8f1a886efa506546157f7c6cdd70a364bf4; original raw TAP contains34 tests,33pass/1fail/0skip. R01 failed at installer loading: fixture called api.currentPolicy() before the original Cordis fiber was active. Runtime caught the installer callback exception and exposed RUNTIME_ADAPTER_INVALID at src/runtime-plugin.mjs:184.
-
-Held assertAlive requires active && ctx.fiber.state===2 && uid!==null. Loading preview closures separately check preview existence first and correctly produce PREVIEW_UNAVAILABLE. The first fixture incorrectly assumed loading-time owner reads were available. The affected R01 repair now asserts api.isAlive()===false and currentPolicy() throws SERVICE_DISPOSED while loading, then reads unchanged policy version1 after activation. Grant/reservation/command/data/task/artifact counts remain zero after boot; original optional native services are absent, original SessionStore length0, receipt/resolver calls0. This is a disclosed fixture-phase taxonomy correction, not a source repair or relaxed success oracle.
-
-The first source/TAP stay unchanged. Remediation source is retained separately. Only R01 reran:1/1pass/0skip. The other33 passing independent cases were not repeated. The requested unchanged authored/runtime/transport compatibility executed once:24/24pass/0skip. No blocked CODE experiment, raw-row mutation, product repair, native model, browser, profile/CLI or physical host acceptance occurred.

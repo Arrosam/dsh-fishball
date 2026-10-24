@@ -1,7 +1,0 @@
-{
-  "src/runtime-plugin.mjs": "a266fca5409ca81f91686a8c5f6227eb1cf1e84edc57fd59db7f51791127a83d",
-  "execution-closure.json": "31f94af21440b1281dc4ac38a2357c72f789551806beb42d71566ed683834438",
-  "literal-runtime-diff.patch": "d5b1b4b17885b6d694887f7f183ddd0152549878777522b9cbcc82bfe1f0f698",
-  "native-runtime-resumed-source-hold.json": "dcba294037cea126b8f844bb056a3a9aacf2ba4ecce30486f83a80ebcdcc9938",
-  "native-runtime-resumed-source-hold.md": "f1cd870b915b8e9f8c6df7385dcf36bda16d435fd5b83adb350b34bbaca120b5"
-}

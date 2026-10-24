@@ -1,9 +1,0 @@
-Author capture of the tool-output excerpt; not a full raw stdout log.
-Command: node --test test/runtime-plugin.test.mjs test/runtime-web-fixture.test.mjs test/runtime-web-fixture-adversarial.test.mjs
-Result at the intermediate Web-required consumer checkpoint: tests46, pass45, fail1, skipped0.
-Failing newly drafted independent case: independent genuine scoped WebServer route registration and remount retain original native authentication
-Location: test/runtime-web-fixture-adversarial.test.mjs:162
-Error: Cannot read properties of undefined (reading 'diagnostics')
-Frame: TestContext.<anonymous> at test/runtime-web-fixture-adversarial.test.mjs:178:52
-Cause: that new draft still expected headless activation after root authorized the required WebServer product boundary. The original19 independent credential probes remained unchanged and passed. This run also included the newly drafted path/lock cases; it is distinct from the independent original16/19 provider failure and from root's actual process failure.
-No listener/browser/HTTP, owned runtime fixture preparation, credentials or external provider/model action occurred.

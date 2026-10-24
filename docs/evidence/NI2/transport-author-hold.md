@@ -1,9 +1,0 @@
-# NI2 private transport guard author hold
-
-Author: onboarding_ui; source GO: root's frozen transport clarification, local commit76b1aaa. This is authored functional implementation, not independent CODE review or native/browser acceptance.
-
-The bridge passes exactly one immutable private `{assertCurrent}` second argument. Calling it opts that invocation into a final after-await authority check. The captured bridge lifetime, literal active predicate, original connection peer, admitted peer and AbortSignal are checked synchronously. Bounded SERVICE_DISPOSED, OPERATOR_REQUIRED and REQUEST_ABORTED errors reveal no captured peer/signal or raw failure. Replacement connection peers are denied at initial admission as well. Existing ignored-context operations retain the admitted asynchronous abort response behavior.
-
-Command: `/opt/homebrew/bin/node --test test/operator-bridge.test.mjs test/operator-invocation.test.mjs > docs/evidence/NI2/transport-author-first.tap 2>&1`. Node22.22.2; first run12/12 PASS,0failure/skip. The original four tests are unchanged. Eight additive cases cover exact private context, callable payload rejection, after-await abort/peer/disposal/lifetime partitions, committed-effect response loss, separate concurrent request guards, legacy ignored-context behavior and initial replacement-peer denial.
-
-HOLD: src/operator-bridge.mjs and test/operator-invocation.test.mjs at the manifest bytes. Normal operation propagation remains in the continuing composer unit. Typed bridge doubles do not prove actual native authenticated transport; no host/profile/listener/browser/inference was launched. Durable schema4 native result adoption remains unavailable until the separately specified signed origin/capture/finish graph. CODE/browser/aggregate acceptance/release remain HOLD.

@@ -1,9 +1,0 @@
-# NR-OLLAMA-RESP01 source successor
-
-This source-only candidate preserves the exact requested provider, loopback endpoint and `deepseek-v4.1-flash:cloud` route. Its pure envelope helper accepts only the two pinned response names, records finite shape/refusal enums, and returns no usage, billing, grant or effect evidence. The complete provider calls the helper at the original response guard; every other provider byte is preserved by the two sealed literals.
-
-`ollama-provider.before.txt` and `source-pins.json` are exact copies of the executed r1 public source inputs. The former is evidence and never imported. The latter remains the constructor's unchanged public catalog/thinking input. Original SDK imports still resolve to the same sibling `.runtime/dsh-web` installation. No binding, fixture entry, active installation or old attempt marker points to this successor.
-
-`response-envelope.test.mjs` declares one test file with 36 internal UNIT_ONLY cells and exactly 36 pure helper calls. It imports only the helper and Node test/assert built-ins. The three prospective syntax checks and one Node test command are enumerated in `root-plan.json`; root must first approve the exact independent code and ISTQB reviews and verify the sealed inputs. Stop after the first unexpected failure or pin drift. The author executed no JavaScript parse, import, test, provider or model action.
-
-The original HTTP200 R01 failure does not record its failing response predicate. This correction addresses a published cloud response-name incompatibility; it does not explain that historical reply, replay it, release its uncertain hold, replenish expired positions or establish cloud completion/usage. Full provider import/stream, original native composition and future live cases remain separate HOLD gates. All87 and protected final CODE remain HOLD.
