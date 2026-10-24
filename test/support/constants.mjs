@@ -185,8 +185,8 @@ export const API = {
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys. */
-export const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'status', 'workspaceId']
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12). */
+export const STATE_KEYS = ['catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'status', 'watches', 'workspaceId']
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
@@ -221,6 +221,32 @@ export const NOTE_TEXT = { delivered: 'Delivered to Fishball.', queuedPrefix: 'Q
 export const IDENTITY = { session: (id) => 'session/' + id, forward: (id) => 'user/forward/' + id, unchecked: 'fishball/unchecked-tools' }
 /** M10: the intake store (per-record files). */
 export const INTAKE_DIR = (home) => path.join(home, 'storages', 'fishball_intake')
+
+// ---- P6 (watches) ----
+export const WATCH_API = { add: '/api/fishball/watches', remove: '/api/fishball/watches/remove' }
+/** W1: keys of state.watches and of one watch. */
+export const WATCHES_KEYS = ['active', 'watches']
+export const WATCH_KEYS = ['condition', 'createdAt', 'createdBy', 'firedCount', 'id', 'lastFiredAt', 'lastReason', 'mode', 'status', 'targetSessionId']
+export const WATCH_CONDITIONS = ['finished', 'per-turn']
+export const WATCH_MODES = ['once', 'repeat']
+export const WATCH_STATUS = { active: 'active', closed: 'closed', targetMissing: 'target-missing' }
+export const WATCH_CREATORS = ['user', 'assistant', 'agent']
+/** W1: the state lists at most this many watches, newest first. */
+export const WATCH_LIST_MAX = 50
+/** W3: reasons that count as finished; 'interrupted' never fires. */
+export const FINISH_REASONS = ['completed', 'error', 'aborted', 'blocked', 'max-tokens']
+export const WATCH_CODE = {
+  badBody: 'bad-body', unknownSession: 'unknown-session', isFishball: 'is-fishball', archived: 'archived',
+  limit: 'limit-reached', unavailable: 'unavailable', unknownWatch: 'unknown-watch', notRelated: 'not-related',
+}
+/** W3/W4: notice source summary and the wording of its first line. */
+export const WATCH_SUMMARY = (reason) => 'A watched session finished (' + reason + ')'
+export const WATCH_TEXT = { finished: 'a session you are watching finished', perTurn: 'ended a turn' }
+/** W5: Fishball's watch tools (only Fishball has them). */
+export const WATCH_TOOLS = ['watch_session', 'list_watches', 'unwatch_session', 'read_session']
+/** W5: read_session bounds. */
+export const READ_MAX = { messages: 12, bytes: 12288 }
+export const READ_ROLES = ['user', 'assistant']
 
 /** P4 C1: keys of state.contextWindow, and its refusal codes (C3, C7). */
 export const CONTEXT_WINDOW_KEYS = ['compactionOff', 'contextWindowTokens', 'effectiveWindow', 'error', 'maxOutputTokens', 'modelWindow', 'outputCap', 'pressureTokens', 'threshold']

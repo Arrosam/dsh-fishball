@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 + P5 black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 + P6 black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -374,6 +374,82 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | UNC-05 | ST (profile bundle installed and enabled while running) | a notice naming its tool and plugin |
 | UNC-06 | ST (restart) | no notice repeats |
 
+## P6 cases (watches; W1-W11 and the review changes)
+
+**Harness additions.** The fake model can end a response with an error finish (`{fail: code}`, a code DSH's retry does not retry, so the turn ends `error`) or at the output ceiling (`{text, finish:'max-tokens'}`). New worker operations: `cancel` (the GUI's Stop: `aborted`), `rejectNextStep` (one `agent/pre-step` reject: `blocked`), `followup` (a queued turn that starts before the agent is idle), `flush` and `turnEnds`. The host handle can `kill()` DSH (SIGKILL, a crash), so the target's open turn is closed `interrupted` at resume. New helpers: `watchesNow`, `watchById`, `watchesOn`, `watchNotices` (Fishball notices naming a watch id) and `noticesSettled` (waits for n notices, then for quiet). Every notice count is taken after Fishball and the target are idle and a quiet period.
+
+### [watches-http.test.mjs](watches-http.test.mjs): W1, W2, W9, W11
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| WCH-01 | EP | W1 | state and first SSE frame: `watches` {active, watches}; fresh home {0, []} |
+| WCH-02 | EP | W1, W2 | 200 {ok, state}; the 10 keys; finished, once, createdBy {kind:'user'}, active, 0, null, null |
+| WCH-03 | ST (same session while active) | W2 | no second watch |
+| WCH-04 ×7 | DT (body) | W2 | 400 bad-body |
+| WCH-05 ×3 | DT (target) | W2 | 409 unknown-session / is-fishball / archived |
+| WCH-06/07 | BVA (limit 2: 1 accepted, 2 refused; limit 1) + ST (closed frees a place) | W2 | 409 limit-reached at the limit |
+| WCH-08 | ST (active → closed → remove again) | W2 | 200 closed; then 409 unknown-watch; unknown id unknown-watch |
+| WCH-09 ×5 | DT (remove body) | W2 | 400 bad-body |
+| WCH-10 | ST (removed, target finishes) | W2 | no notice |
+| WCH-11 | BVA (52) | W1, W11 | 50 listed; active first, each group newest first |
+| WCH-12 | EP (no cookie) | W2 | not 200 |
+| WCH-13 | ST (SSE) | W1 | a frame shows the new watch |
+| WCH-14 | EP | W9 | bundle has 'Tell Fishball when finished', 'Watches', 'Remove', 'Watched session', 'Fishball is watching' |
+| WCH-15 | EP (Fishball archived) | W2 | 409 unavailable |
+| WCH-16 | EP (store unreadable) | W2 | 409 unavailable |
+| WCH-17 | BVA (auditEntriesKept 3, 5 closed) | W11 | at most 3 closed, newest kept, oldest gone; the (oldest) active watch is listed first |
+| WCH-18 | ST (target archived), observed | review | the watch stays active (A70) |
+
+### [watches-fire.test.mjs](watches-fire.test.mjs): W3-W6, W8, W10
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| FIR-01 | EP (completed) | W3 | one notice: source {fishball-notice, notice, 'A watched session finished (completed)'}; text: finished, JSON reason, watch id, 'user'; block session_id/title/folder/last_answer; Fishball woke; closed, firedCount 1, lastReason, lastFiredAt |
+| FIR-02 | ST (closed once, more turns) | W3 | no more notices |
+| FIR-03 ×4 | EP (error / max-tokens / aborted / blocked) | W3 | one notice with that reason |
+| FIR-04 | ST (turn + queued follow-up before idle; finished repeat) | W3 | one notice after it settles, with the final answer |
+| FIR-05 | ST (per-turn repeat ×3) | W4 | 3 notices saying 'ended a turn'; active; firedCount 3 |
+| FIR-06 | ST (per-turn, turn + follow-up) | W4 | 2 notices |
+| TOL-01 | EP | W5 | the four tools only in Fishball's requests, not global |
+| TOL-02 | EP (defaults) | W5 | finished, once, createdBy assistant |
+| TOL-03 ×4 | DT | W5 | unknown-session, is-fishball, archived, limit-reached |
+| TOL-04 | EP | W5 | list_watches equals the state |
+| TOL-05 | ST | W5 | {ok, watchId, status:'closed'}; again unknown-watch |
+| TOL-06 ×12 | DT (relation) | W5 + review | ok: watched now / before, messaged Fishball, forwarded, messaged by and started by Fishball; not-related or unknown-session for a topic, an intake identity, a forward identity, a watch id; not-related for unrelated; is-fishball; unknown-session for an unknown id |
+| TOL-07 | BVA (20 turns, 1.5 KB each side) | W5 | ≤ 12 messages, roles user/assistant, ≤ 12288 text bytes, newest kept |
+| TOL-07b | BVA (one 16 KB answer) | W5 | ≤ 12288 text bytes, no broken character |
+| TOL-08 | EP (hostile answer) | W5 | one closing tag; one messages line |
+| TOL-09 | ST (outbox entry pruned at auditEntriesKept 1) | W5 review | ok while kept, not-related after |
+| NTF-01/02 | EP (message_session / start_session + flag) | W6 | watch createdBy assistant; one notice |
+| NTF-03 | DT (flag × limit) | W6 | ok, watchError limit-reached, no watch, delivered |
+| NTF-04 | EP (message_fishball + flag) | W6 | watch on the caller, createdBy {agent, caller}; one notice |
+| NTF-05 | EP (subagent) | W6 | watch on the root; createdBy.id = the child |
+| NTF-06 ×3 | EP (no flag) | W6 | no watch, no 'watch' key |
+| NTF-07/08 | EP (fast turn: first call fails) | W3 review | one notice, reason error |
+| QFL-02 | ST (queue full → finishes → idle) | W8 review | arrives once without a restart |
+| QFL-03 | ST (per-turn, queue full, 3 turns) | W4 review | 3 notices, in order, each with its own answer |
+| WKC-01 | EP | W10 | a waking notice counts one wake-up |
+| WKC-02 | BVA (at the cap) + ST (chat turn) | W10 | parked; the next chat turn reads it |
+
+### [watches-durable.test.mjs](watches-durable.test.mjs): W3 (interrupted), W7, W8
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| DWT-01 | ST (restart) | W7 | same watch; fires once after |
+| DWT-02 | ST (archived → finishes → live) | W7 | one notice |
+| DWT-03 | ST (per-turn; archived → turn → DSH restart → live → restart) | W7 | one notice, never two; firedCount 1 |
+| DWT-04 | ST (per-turn; 2 turns while archived) | W7, re-review | 2 notices, in order, each with its own answer |
+| DWT-05 | ST (target files deleted while DSH is down) | W7, re-review | target-missing; no notice |
+| DWT-06 | ST (row off → 3 turns, last max-tokens → row on) | W7 review | ONE notice, last answer, lastReason max-tokens |
+| DWT-06b | ST (Fishball archived, row running, 3 turns) | W7 review | one notice (which turn: diagnostic, A69) |
+| INT-01 | ST (target turn open → SIGKILL → resume closes it interrupted) | W3 | no notice; active; firedCount 0 |
+| QFL-01 | ST (queue full → finishes → release; restart if still missing) | W8 | exactly one notice later |
+
+### Cases changed by P6
+
+- **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 12 state keys (`watches`), from `STATE_KEYS`.
+- **MSG-01**: message_fishball has `message` (required string) and `notify_when_finished` (optional boolean).
+
 ### Cases changed by P5
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04**: 11 state keys (`intake`, `outbox`), from `STATE_KEYS` in constants.
@@ -471,4 +547,13 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 - **A63. Ordinary sessions after a restart.** DSH resumes only Fishball at boot. Restart cases reopen the sender through `sessionController.resolveAgent`, as opening it in the GUI does, before using it again.
 - **A64. ADO-01: adopt versus "never lost" (fixed during the round).** Steps: Fishball is held in a turn, an input is accepted (status `accepted`), DSH stops, Fishball's session artifacts are moved away, and DSH boots into recovery. The item is still `accepted` right before the adopt. After the A60 fix, the item was redelivered to the adopted session and ended `consumed`. The implementer found that the record did not store which session it was delivered to. Now it ends `discarded` and never reaches the new session, as M9 says; ADO-01 passes.
 - **A65. Empty message_fishball (fixed during the round).** In the first run, '' and whitespace answered `{ok:true}` and delivered an empty relay (reported). They now answer `empty`.
+- **A67. W2 while Fishball is archived (finding).** W2 says "Fishball not running → 409 unavailable". With Fishball archived (`status: archived`) POST watches answers 200 and adds an active watch (WCH-15 fails). With the store unreadable it answers 409 unavailable (WCH-16 passes), and `state.watches` is null while failed. Either archived should count as "not running" for watches, or W2 should be narrowed to "core failed". Please decide.
+- **A68. read_session on an unknown id (finding).** W5 lists `unknown-session` for an unknown id. Observed: `not-related`, which the relatedness check gives before the existence check. The review note allows either for non-session strings (TOL-06b accepts both), but a well-formed unknown session id still gets `not-related` (TOL-06 fails). Please decide which code is intended.
+- **A69. "While Fishball was down".** Archiving Fishball stops its agent, but the `fishball` row keeps running and watching. So in DWT-06b the first settled turn end already counts, and it is reported when Fishball is live again (observed: turn 1 of 3). The review rule ("several turns while down → one notice for the LAST end") is tested where nothing of Fishball runs: DWT-06 boots DSH with the row off (`FBTEST_PLUGIN=off`) while the target runs three turns, and passes.
+- **A70. Archiving a watched session (observed, per the implementer).** The watch stays active (WCH-18). Not a requirement.
+- **A71. Order of deferred per-turn notices.** Answered in the re-review: each notice carries the answer as of its own turn end, so QFL-03 and DWT-04 check order through `last_answer`. Both pass.
+- **A72. GUI (W9).** Only the served bundle's strings are checked. The menu and header placement, the "Fishball is live / other session" visibility, "Fishball is watching" only for your own active watch, the refusal dialog and Remove are not driven in a browser.
+- **A73. read_session byte bound (finding).** "At most 12288 bytes in total" is measured as the sum of the messages' text bytes. With one 16 KB answer, TOL-07b sees 2 messages totalling 12290 bytes, 2 over. That fits a cut to 12288 plus a 3-byte '…', or a bound counted another way. TOL-07, with many messages, stays at 12288 exactly. Please confirm what the 12288 bytes count (text, the JSON array, or the whole block) and whether the ellipsis is inside the bound.
+- **A74. target-missing (finding at the time of the run).** DWT-05 deletes the target's session directory and projection-cache file while DSH is stopped (`sessionPersistence.stat` then returns null). After the restart the watch stays `active` for 10 s and never becomes `target-missing`. The re-review says only DSH's "session not found" closes it, so how session-query reports a deleted session needs checking.
+- **A75. What cannot be driven black-box.** W8: a notice refused for any reason other than a full queue. W7: a crash between firing and recording the watermark (the "never two notices across restarts" guard is only tested across clean restarts and a SIGKILL during a target turn). W3: the `forked` reason. W5: relatedness through pruned *intake* rows (TOL-09 covers the outbox only), and the exact excerpt rule beyond the bounds.
 - **A66. Runs while the implementation changes.** One full run made while the working tree was being edited gave 7 failures in the older lifecycle and context files (boots that never became ready). Rerun alone, those files passed 120/120, and the next full run passed 486/486.

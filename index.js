@@ -10,13 +10,14 @@
  * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
+ * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
  * - src/http.js            /api/fishball/* for the settings page and the brand button
  */
 // Evaluated first, so the register() wrapper sees every tool registered after this row loads.
 import './src/tool-attribution.js'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -24,8 +25,9 @@ import { AssistantComposition } from './src/composition.js'
 import { CatalogError, PluginCatalog } from './src/plugin-catalog.js'
 import { ContextWindow } from './src/context-window.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
-import { registerInbound, registerOutbound } from './src/messaging.js'
+import { registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
+import { Watches, WatchError } from './src/watches.js'
 import { registerPluginTools } from './src/plugin-tools.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -49,11 +51,12 @@ export async function apply(ctx, config) {
   let contextView = () => null
   let intakeView = () => null
   let outboxView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView() })
+  let watchesView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView() })
   const publish = () => feed.publish(snapshot())
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable }
+  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -62,6 +65,8 @@ export async function apply(ctx, config) {
     removeAllowance: (toolKey) => commands.removeAllowance(toolKey),
     setContextWindow: (setting) => commands.setContextWindow(setting),
     send: (input) => commands.send(input),
+    addWatch: (input) => commands.addWatch(input),
+    removeWatch: (input) => commands.removeWatch(input),
   })
   // A limit edited on the Plugins page reaches this row without a remount (spike S21).
   ctx.on(EVENT.volatileUpdate, publish)
@@ -125,19 +130,41 @@ export async function apply(ctx, config) {
   let assistantAgent = () => undefined
   const ledger = new IntakeLedger(ctx, store, logger, { readLimits: limits, onChange: () => publish() })
   composition.addAgentSetup((agentCtx, agent) => ledger.installAgent(agentCtx, agent))
-  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined })
-  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish() })
-  intakeView = () => ledger.snapshot()
-  outboxView = () => outbound.snapshot()
-  const notifyUnchecked = uncheckedToolsNotifier({ ledger, catalog, decisions: () => composition.decisions(), store, logger })
-  commands.send = async ({ sessionId, note }) => {
-    try {
-      await inbound.forward(sessionId, note)
-    } catch (error) {
-      if (error instanceof IntakeError) throw new LifecycleStateError(error.code)
+  // Watches (DESIGN §5c): set up by you, by Fishball, or by another agent for its own session.
+  const watches = new Watches(ctx, store, logger, { ledger, readLimits: limits, assistantId, onChange: () => publish() })
+  // When Fishball goes idle its queue has room again: retry watch notices refused earlier.
+  composition.addAgentSetup((agentCtx, agent) => agentCtx.on(EVENT.agentStatus, ({ agent: changed, status }) => {
+    if (changed === agent && status === AGENT_IDLE) void watches.retry()
+  }))
+  /** A watch for a tool result: { watch } or { watchError } (the message itself still went out). */
+  const watchFor = async (sessionId, by, since) => {
+    try { return { watch: await watches.add({ sessionId, by, since }) } } catch (error) {
+      if (error instanceof WatchError) return { watchError: error.code }
       throw error
     }
   }
+  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor })
+  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor })
+  /** Sessions related to Fishball (read_session, DESIGN §5c): watched, messaged it, messaged or started by it, or forwarded by you. */
+  const related = (sessionId) => watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)) || outbound.contacted(sessionId)
+  watches.registerTools((definition) => composition.registerOwnTool(definition), related)
+  watchesView = () => watches.snapshot()
+  const asApiError = (ErrorClass) => async (task) => {
+    try { return await task() } catch (error) {
+      if (error instanceof ErrorClass) throw new LifecycleStateError(error.code)
+      throw error
+    }
+  }
+  // A watch from the GUI needs a running Fishball to report to (DESIGN §5c; P6 test A67).
+  commands.addWatch = ({ sessionId }) => {
+    if (assistantAgent() === undefined) return unavailable()
+    return asApiError(WatchError)(() => watches.add({ sessionId, by: { kind: WATCH_BY.user } }))
+  }
+  commands.removeWatch = ({ watchId }) => asApiError(WatchError)(() => watches.remove(watchId))
+  intakeView = () => ledger.snapshot()
+  outboxView = () => outbound.snapshot()
+  const notifyUnchecked = uncheckedToolsNotifier({ ledger, catalog, decisions: () => composition.decisions(), store, logger })
+  commands.send = ({ sessionId, note }) => asApiError(IntakeError)(() => inbound.forward(sessionId, note))
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
   /** A row waiting for a service may run now; its tools may have appeared too. */
   const recheck = () => void catalog.recheckWaiting().catch(logged('waiting re-audit'))
@@ -169,7 +196,7 @@ export async function apply(ctx, config) {
 
   // Each time Fishball goes live: settle the intake queue (restart, adopt), then tell Fishball
   // about unchecked tools of plugins already on (DESIGN §7, §11 steps 4-6).
-  const onLive = () => void ledger.reconcile().then(() => notifyUnchecked()).catch(logged('intake reconcile'))
+  const onLive = () => void ledger.reconcile().then(() => watches.catchUp()).then(() => notifyUnchecked()).catch(logged('intake reconcile'))
   const assistant = new AssistantLifecycle(ctx, store, composition, logger, publish, onLive)
   catalog.agentOf = () => assistant.agent
   contextWindow.agentOf = () => assistant.agent

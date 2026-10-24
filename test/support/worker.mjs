@@ -364,6 +364,25 @@ const ops = {
   /** DSH's configured default preset id, as an ordinary create with no preset reports it. */
   defaultPreset() { return ctx.agentPresets.defaultId },
 
+  // ---- P6 operations ----
+  /** Cancel a live agent's running turn the way the GUI's Stop does (the turn ends 'aborted'). */
+  cancel({ sessionId }) { liveAgent(sessionId).cancel({ kind: 'user' }); return true },
+  /** Reject the next proposed step of one session once (an agent/pre-step reject: the turn ends 'blocked'). */
+  rejectNextStep({ sessionId }) {
+    let armed = true
+    const dispose = ctx.on('agent/pre-step', (payload, next) => {
+      if (armed && payload.agent?.id === sessionId) { armed = false; queueMicrotask(() => dispose()); return Promise.resolve({ kind: 'reject' }) }
+      return next()
+    })
+    return true
+  },
+  /** Queue an ordinary follow-up turn (it runs after the current turn, before the agent goes idle). */
+  followup({ sessionId, text }) { liveAgent(sessionId).followup(createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })); return true },
+  /** Flush a live session's log to disk (before a hard kill). */
+  async flush({ sessionId }) { await ctx.sessions.flush(liveAgent(sessionId).session); return true },
+  /** Every turn/end reason of a live session. */
+  turnEnds({ sessionId }) { const a = ctx.agents.get(sessionId); return a ? a.session.snapshotEvents().filter((e) => e.type === 'turn/end').map((e) => e.data?.reason?.kind ?? null) : null },
+
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])
     return true

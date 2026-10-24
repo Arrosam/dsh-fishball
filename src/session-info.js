@@ -6,7 +6,7 @@
  */
 import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
 import { SESSION_INFO } from './constants.js'
-import { cutToBytes } from './text.js'
+import { byteLength, cutToBytes } from './text.js'
 
 /** The text of the last assistant message among events, cut to SESSION_INFO.excerptBytes. */
 export function lastAnswerExcerpt(events) {
@@ -57,11 +57,54 @@ export async function describeSession(ctx, sessionId) {
   } catch {
     return undefined
   }
+  return describeFrom(ctx, sessionId, read)
+}
+
+/** Describe a session from events and header already read. */
+function describeFrom(ctx, sessionId, read) {
   return {
     id: sessionId,
     title: foldSessionTitle(read.events)?.title ?? '',
     cwd: read.header.cwd ?? null,
     archived: ctx.workspaceRegistry.archivedSessionIds.includes(sessionId),
     excerpt: lastAnswerExcerpt(read.events),
+    lastSeq: read.events.at(-1)?.seq ?? -1,
   }
+}
+
+/** The text of one message event, or '' (tool calls and other blocks are not text). */
+const textOfEvent = (event) => {
+  const content = event.type === SESSION_INFO.assistantEvent ? event.data?.message?.content : event.data?.content
+  return (content ?? []).filter((block) => block.type === SESSION_INFO.textBlock).map((block) => block.text).join('\n').trim()
+}
+
+/**
+ * The last user and assistant messages of a session, newest last, within maxBytes in total
+ * (older ones are dropped first; one longer message is cut).
+ * @returns { info, messages: [{ role, text }] }, or undefined when the session does not exist.
+ */
+export async function readSessionMessages(ctx, sessionId, count, maxBytes) {
+  let read
+  try {
+    read = await eventsOf(ctx, sessionId)
+  } catch {
+    return undefined
+  }
+  const info = describeFrom(ctx, sessionId, read)
+  const picked = []
+  let used = 0
+  for (let i = read.events.length - 1; i >= 0 && picked.length < count; i--) {
+    const event = read.events[i]
+    const role = event.type === SESSION_INFO.assistantEvent ? SESSION_INFO.roles.assistant : event.type === SESSION_INFO.userEvent ? SESSION_INFO.roles.user : undefined
+    if (role === undefined) continue
+    const text = textOfEvent(event)
+    if (text.length === 0) continue
+    const room = maxBytes - used
+    // Too little room for even the ellipsis: stop rather than exceed the bound (P6 test A73).
+    if (room <= byteLength(SESSION_INFO.ellipsis)) break
+    const cut = cutToBytes(text, room, SESSION_INFO.ellipsis)
+    picked.unshift({ role, text: cut })
+    used += byteLength(cut)
+  }
+  return { info, messages: picked }
 }

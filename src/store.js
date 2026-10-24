@@ -4,15 +4,30 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3 and P4 keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4 and P6 keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches' })
+
+/** One watch (DESIGN §5c, §9). */
+const watchRecord = z.object({
+  targetSessionId: z.string().min(1),
+  condition: z.enum(Object.values(WATCH_CONDITION)),
+  mode: z.enum(Object.values(WATCH_MODE)),
+  createdBy: z.object({ kind: z.enum(Object.values(WATCH_BY)), id: z.string().min(1).optional() }),
+  createdAt: z.string(),
+  /** Seq of the last target event already considered; only later turn ends fire. */
+  lastSeenSeq: z.number().int(),
+  status: z.enum(Object.values(WATCH_STATUS)),
+  firedCount: z.number().int().nonnegative(),
+  lastFiredAt: z.string().optional(),
+  lastReason: z.string().optional(),
+})
 
 /** A positive whole number of tokens (context-window settings). */
 export const tokenCount = z.number().int().positive()
@@ -120,6 +135,7 @@ export const fishballDomain = defineDomain({
     [TABLE.toolApprovals]: domainTable(toolApprovalRecord),
     [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
     [TABLE.settings]: domainTable(settingsRecord),
+    [TABLE.watches]: domainTable(watchRecord),
   },
 })
 
@@ -157,6 +173,7 @@ export class Store {
   get toolApprovals() { return this.#domain.table(TABLE.toolApprovals) }
   get pluginChanges() { return this.#domain.table(TABLE.pluginChanges) }
   get settings() { return this.#domain.table(TABLE.settings) }
+  get watches() { return this.#domain.table(TABLE.watches) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
 }
