@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { fixtureTool, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
@@ -17,6 +17,23 @@ const hostPkg = (name) => host(path.join('@deepseek-ai', name, 'lib', 'index.js'
 
 const home = process.env.DSH_HOME
 const APPROVER_AFTER = process.env.FBTEST_APPROVER_AFTER === '1'
+const SOURCES = process.env.FBTEST_SOURCES === '1'
+const EXAMPLE_MODE = process.env.FBTEST_EXAMPLE ?? null
+/**
+ * P8 R5: the example is linked from a folder in the home that holds the example's own files, with
+ * its notes (FBTEST_EXAMPLE_NOTES) written into the row config of its bundle patch: a Fishball-only
+ * plugin's rows are read from its bundle patch, so a profile edit could not reach them. index.js is
+ * a symlink, so Node resolves it (and its imports) at its real path in examples/.
+ */
+function exampleDir() {
+  const dir = path.join(home, 'example-plugin')
+  fs.mkdirSync(dir, { recursive: true })
+  for (const f of ['index.js', 'package.json', 'README.md']) if (!fs.existsSync(path.join(dir, f))) fs.symlinkSync(path.join(EXAMPLE.dir, f), path.join(dir, f))
+  // Rewritten at every boot, so a restart can carry other notes (the user edited the config while DSH was down).
+  const notes = JSON.parse(process.env.FBTEST_EXAMPLE_NOTES ?? '[]')
+  fs.writeFileSync(path.join(dir, 'cordis.patch.yml'), JSON.stringify([{ insert: [{ id: EXAMPLE.row, name: EXAMPLE.name, config: { notes } }] }], null, 2))
+  return dir
+}
 if (!home || !home.includes(path.join('.runtime', 'test-homes'))) throw new Error('worker refuses a DSH_HOME outside .runtime/test-homes: ' + home)
 
 const { runProfile, initializeProfileFromDefault } = await host('@deepseek-ai/dsh/lib/profile-boot.js')
@@ -47,7 +64,11 @@ if (!fs.existsSync(profileDir)) {
   for (const b of Object.values(ONLY_BUNDLES)) link(profileDir, b.name, b.dir, false)
   // Post-review: the defective Fishball-only candidates, only in homes that ask for them.
   if (process.env.FBTEST_REVIEW_BUNDLES === '1') for (const b of Object.values(REVIEW_BUNDLES)) link(profileDir, b.name, b.dir, false)
-}
+  // P8: the source fixtures (profile-wide, static inject, Fishball-only), only in homes that ask for them.
+  if (SOURCES) for (const [kind, b] of Object.entries(SOURCE_BUNDLES)) link(profileDir, b.name, b.dir, kind !== 'only')
+  // P8 R5: the example plugin, for everyone or Fishball-only (FBTEST_EXAMPLE), with its notes (see exampleDir).
+  if (EXAMPLE_MODE) link(profileDir, EXAMPLE.name, exampleDir(), EXAMPLE_MODE === 'everyone')
+} else if (EXAMPLE_MODE) exampleDir()
 // FBTEST_PLUGIN=off boots this home with the plugin installed but its bundle not selected (used to seed state).
 setBundleSelected(profileDir, PACKAGE_NAME, process.env.FBTEST_PLUGIN !== 'off')
 
@@ -69,6 +90,8 @@ fs.writeFileSync(overlay, JSON.stringify([
     { id: 'preset-fbtest-bare', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.bare, order: 90, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }] } },
     // Post-review change 11: host rows whose ids look like private-tree ids.
     ...(process.env.FBTEST_SPOOF_ROWS === '1' ? SPOOF_ROWS.map((r) => ({ id: r.id, name: SPOOF_MODULE, config: { tool: r.tool } })) : []),
+    // P8: a plain host row (no catalog plugin owns it) that uses ctx.fishball.
+    ...(SOURCES ? [{ id: SOURCE_ROW.id, name: SOURCE_ROW.module, config: { label: SOURCE_ROW.label } }] : []),
   ] },
 ], null, 2))
 
@@ -130,6 +153,8 @@ const tagOf = (agent) => { if (!tags.has(agent)) tags.set(agent, 'agent-' + ++ta
 const globalDisposers = new Map()
 const serviceDisposers = new Map()
 const scopedDisposers = new Map()
+/** P8: sources registered through sourceRegister, by key. */
+const sources = new Map()
 const errorInfo = (e) => ({ name: e?.name ?? null, ctor: e?.constructor?.name ?? null, code: e?.code ?? null, message: String(e?.message ?? e).slice(0, 400) })
 
 function liveAgent(sessionId) {
@@ -440,6 +465,69 @@ const ops = {
   },
   clearPlans() { model.plans.length = 0; return true },
   planState() { return model.plans.map((p) => ({ needle: p.needle, callId: p.callId, used: p.used })) },
+
+  // ---- P8 operations (ctx.fishball sources) ----
+  /** Call registerSource as the fixture row captured under label; the source is kept under key. */
+  sourceRegister({ label, def, key = label + ':' + def?.id }) {
+    const fc = store.sourceCtxs?.get(label)
+    if (!fc) return { ok: false, error: { code: 'FBTEST_NO_CONTEXT', message: 'no fishball context captured for ' + label } }
+    try {
+      const source = fc.fishball.registerSource(def)
+      const entry = { source, enabledCalls: 0 }
+      // X7: count onEnabled calls from the moment of registration.
+      entry.offEnabled = source.onEnabled(() => { entry.enabledCalls++ })
+      sources.set(key, entry)
+      return { ok: true, key, enabled: source.enabled, keys: Object.keys(source).sort() }
+    } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** publish(event) on a kept source; resolves to the answer or the rejection's code. */
+  async sourcePublish({ key, event }) {
+    const entry = sources.get(key)
+    if (!entry) throw new Error('no source kept under ' + key)
+    try { return { ok: true, value: await entry.source.publish(event) } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  sourceState({ key }) {
+    const entry = sources.get(key)
+    return entry ? { enabled: entry.source.enabled, enabledCalls: entry.enabledCalls ?? null } : null
+  },
+  /** P8: any row's settings entry (ns = row id), and an update of it through DSH's settings service. */
+  settingsOf({ ns }) { const d = ctx.settings.describe().find((x) => x.ns === ns); return d ? { value: JSON.parse(JSON.stringify(d.value ?? null)), revision: d.revision, applies: d.applies } : null },
+  async settingsUpdateNs({ ns, patch }) {
+    const rev = ctx.settings.describe().find((x) => x.ns === ns)?.revision
+    try { await ctx.settings.update(ns, patch, rev); return { ok: true } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** Call the function onEnabled returned for a kept source (stop counting its calls). */
+  sourceOffEnabled({ key }) { const entry = sources.get(key); entry?.offEnabled?.(); return Boolean(entry) },
+  /** registerSource taken off the service object and called detached (the guide: FISHBALL_UNKNOWN_PLUGIN). */
+  sourceRegisterDetached({ label, def }) {
+    const fc = store.sourceCtxs?.get(label)
+    if (!fc) return { ok: false, error: { code: 'FBTEST_NO_CONTEXT', message: 'no fishball context captured for ' + label } }
+    const { registerSource } = fc.fishball
+    try { registerSource(def); return { ok: true } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** registerSource on the service object a row kept from before it unloaded (the guide: FISHBALL_UNKNOWN_PLUGIN). */
+  sourceRegisterStale({ label, def }) {
+    const service = store.staleServices?.get(label)
+    if (!service) return { ok: false, error: { code: 'FBTEST_NO_CONTEXT', message: 'no released service for ' + label } }
+    try { service.registerSource(def); return { ok: true } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** Add an onEnabled listener that throws (mode 'throw') or rejects ('reject'); counts its calls. */
+  sourceBadListener({ key, mode }) {
+    const entry = sources.get(key)
+    if (!entry) throw new Error('no source kept under ' + key)
+    entry.badCalls = 0
+    entry.source.onEnabled(() => { entry.badCalls++; if (mode === 'throw') throw new Error('fbtest listener throws'); return Promise.reject(new Error('fbtest listener rejects')) })
+    return true
+  },
+  sourceBadCalls({ key }) { return sources.get(key)?.badCalls ?? null },
+  /** registerSource called from the root context (no loader row). */
+  sourceRegisterRoot({ def }) {
+    try { ctx.get('fishball').registerSource(def); return { ok: true } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** Whether a fishball context is captured for label, and the row's recorded apply/dispose/inject/release. */
+  sourceRow({ label }) { return { captured: store.sourceCtxs?.has(label) ?? false, events: (store.sourceEvents ?? []).filter((e) => e.label === label).map((e) => e.type) } },
+  /** The root realm's fishball service: present, and its own keys. */
+  fishballService() { const s = ctx.get('fishball'); return { present: s !== undefined && s !== null, hasRegister: typeof s?.registerSource === 'function' } },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])

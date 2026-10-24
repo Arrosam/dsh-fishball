@@ -1,0 +1,41 @@
+{
+  "id": "P8-smoke",
+  "started": "2026-10-24T18:29:09.937Z",
+  "finished": "2026-10-24T18:29:13.187Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "onlyFishball": false,
+  "delivered": 2,
+  "direct": {
+    "ran": true,
+    "first": {
+      "intakeId": "a9d1bbb379179086dd0c295213b3a04430c26cee4f5b28a0137af16e26796f9c",
+      "status": "accepted"
+    },
+    "again": {
+      "intakeId": "a9d1bbb379179086dd0c295213b3a04430c26cee4f5b28a0137af16e26796f9c",
+      "status": "duplicate"
+    },
+    "dup": "FISHBALL_SOURCE_DUPLICATE",
+    "longTitle": "FISHBALL_TOO_LARGE",
+    "noKey": "FISHBALL_INVALID",
+    "badTime": "FISHBALL_INVALID",
+    "badId": "FISHBALL_INVALID",
+    "limit": "FISHBALL_LIMIT",
+    "done": true
+  },
+  "sourceBefore": {
+    "identity": "fishball-source-example/fishball-source-example/notes",
+    "plugin": "fishball-source-example",
+    "title": "Example notes",
+    "enabled": true
+  },
+  "sourceAfterOff": {
+    "identity": "fishball-source-example/fishball-source-example/notes",
+    "plugin": "fishball-source-example",
+    "title": "Example notes",
+    "enabled": false
+  },
+  "runningAfterOff": true
+}

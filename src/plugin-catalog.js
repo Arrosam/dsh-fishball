@@ -232,6 +232,23 @@ export class PluginCatalog {
   }
 
   /**
+   * The catalog plugin a loader row belongs to (ctx.fishball sources, DESIGN §8): a profile
+   * bundle's row by its id, or a private-tree row by its plugin prefix; else undefined.
+   * @param rowId - the loader entry's id; @param inTree - whether the row runs in the private tree.
+   */
+  pluginOfRow(rowId, inTree) {
+    for (const entry of this.#entries.values()) {
+      if (entry.kind === PLUGIN_KIND.profile ? !inTree && entry.rowIds.has(rowId) : inTree && rowId?.startsWith(entry.prefix)) return entry.key
+    }
+    return undefined
+  }
+
+  /** Whether a plugin is on for Fishball as applied now (its sources are accepted). */
+  isAppliedOn(key) {
+    return this.#appliedOn.get(key) === true
+  }
+
+  /**
    * Decide every tool Fishball could see.
    * Reads the CURRENT catalog entries: a bundle moved between "everyone" and "Fishball only"
    * on the Plugins page mid-turn is reclassified at once, before the idle-phase apply. That

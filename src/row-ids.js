@@ -9,6 +9,8 @@
 const PREFIX = Object.freeze({ builtin: 'fb-', fishballOnly: 'fbo-' })
 const SEPARATOR = '-'
 const BOUNDARY = '--'
+/** The end of a private-tree row-id prefix (ctx.fishball strips it for a stable source identity). */
+export const ROW_PREFIX_BOUNDARY = BOUNDARY
 
 /** Two rows of one plugin map to the same private-tree id (review M9). */
 export class RowIdConflictError extends Error {}

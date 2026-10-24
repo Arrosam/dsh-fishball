@@ -1,0 +1,5 @@
+- insert:
+    - id: fbtest-source-static
+      name: 'fbtest-source-static'
+      config:
+        label: src-static

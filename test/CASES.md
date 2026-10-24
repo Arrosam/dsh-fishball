@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 + P5 + P6 + P7 black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -497,6 +497,94 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 |---|---|---|---|
 | PTA-01 | EP (PTC host, run_code calls fbtest_ask) | P11 | arguments = the inner call's JSON, complete; the inner call id has `:ptc:`; allow → allowed-once |
 
+## P8 cases (ctx.fishball sources; X1-X10 and the review update)
+
+**Harness additions.** With `FBTEST_SOURCES=1` the profile links three source fixtures, and the overlay adds one host row:
+- [fbtest-source](support/fixtures/fbtest-source/index.js): enabled, with two rows on one module, `fbtest-source` (label src-a) and `fbtest-source-b` (src-b).
+- [fbtest-source-static](support/fixtures/fbtest-source-static/index.js): enabled, with a static `inject: ['fishball']`.
+- [fbtest-source-only](support/fixtures/fbtest-source-only/index.js): installed but off in the profile.
+- The overlay row `fbtest-source-row` ([source-row.mjs](support/fixtures/source-row.mjs)), named by an absolute path. No catalog plugin owns it.
+
+Each row records apply and dispose. It captures the context in which it gets the `fishball` service, so the worker can call `registerSource` *as that row* and keep each source under a key.
+
+New worker operations: `sourceRegister`, `sourcePublish`, `sourceState` (`enabled` and the count of onEnabled calls), `sourceOffEnabled`, `sourceRow`, `fishballService`, `sourceRegisterRoot`, `sourceRegisterDetached`, `sourceRegisterStale`, `sourceBadListener`/`sourceBadCalls`, `settingsOf`/`settingsUpdateNs`.
+
+`FBTEST_EXAMPLE=everyone|only` links the real example plugin from a folder in the home. That folder symlinks the example's `index.js`, `package.json` and README, and writes a bundle patch whose row config holds `FBTEST_EXAMPLE_NOTES`. The patch is rewritten at every boot, so a restart can carry a changed list of notes.
+
+New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `STATE_KEYS` has 14 keys (`sources`).
+
+### [sources-register.test.mjs](sources-register.test.mjs): X1-X3, X9, X10
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| SRC-01 | EP (ctx.inject / static inject / host row) | X1 | the root realm has `fishball` with registerSource; every fixture row gets it; a source has publish and onEnabled and a boolean `enabled` |
+| SRC-02 ×15 | EP + BVA | X2 | ids `a`, `Z`, `0`, `a.b_c-d` and 64 characters are accepted; `''`, 65 characters, `.a`, `_a`, `-a`, `a b`, `a/b`, `é`, 1 and a missing id are FISHBALL_INVALID |
+| SRC-03 ×7 | EP + BVA (bytes) | X2 | titles of 1 byte, 200 ASCII bytes and 200 bytes of 2-byte characters are accepted; `''`, missing, 201 bytes and 199 + one 2-byte character are FISHBALL_INVALID |
+| SRC-04 ×5 | EP + BVA | X2 | a description that is absent, or exactly 1024 bytes (ASCII or 2-byte characters), is accepted; 1025 bytes and 1023 + one 2-byte character are FISHBALL_INVALID |
+| SRC-05a-d | DT (caller) | X2, X3 | the same id twice from one row gives FISHBALL_SOURCE_DUPLICATE; from the bundle's other row, from another bundle and from a host row it is accepted, each with its own identity |
+| SRC-06 | BVA (default 8) | X2 | the 8th source of a bundle is accepted, the 9th gives FISHBALL_LIMIT and is not listed |
+| SRC-07 | BVA (limit n+2, two rows) | X2 | one more from each row is accepted; then FISHBALL_LIMIT from either row |
+| SRC-08 | EP | X3 | identities are `fbtest-source/fbtest-source/<id>`, `fbtest-source/fbtest-source-b/<id>`, `fbtest-source-static/fbtest-source-static/<id>` and `<module>/fbtest-source-row/<id>` (A87) |
+| SRC-09 | EP | X9 | `sources` = `{sources}`; each entry has exactly identity, plugin, title and enabled; plugin is a catalog key and the identity's bundle part, or null for the host row; identities are unique |
+| SRC-10 | ST (SSE) | X9 | a frame shows a new source |
+| SRC-11 | EP (root context) | §8 as built | FISHBALL_UNKNOWN_PLUGIN |
+| SRC-12 | EP | X9 | the client bundle has "Plugin sources" and "Plugin event" |
+| SRC-13 | EP (detached `registerSource`) | X10 (guide) | FISHBALL_UNKNOWN_PLUGIN |
+
+### [sources-publish.test.mjs](sources-publish.test.mjs): X4-X6
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| PUB-01 | EP | X4, X5 | `{intakeId, status:'accepted'}`; ONE notice whose source is `{fishball-notice, notice, summary:'Plugin event: "<source title>"'}` (review update, A92); the header names the source title and identity, JSON-quoted; one block with source, title, occurred_at and body, once each; Fishball wakes; +1 wake-up; the item has kind `plugin` and the identity, and ends consumed |
+| PUB-02 | EP | X5 | occurred_at is the given value |
+| PUB-03 ×16 | DT + BVA | X4, X10 | the dedupeKey is missing, `''`, 257 bytes, or 255 bytes + one 2-byte character; the title is missing, `''`, blanks, or contains \n or \r (guide, A90); the body is missing, `''` or blanks; occurredAt has no offset, is not a date, is a date only, or is a number. Each gives FISHBALL_INVALID, and nothing is stored or delivered |
+| PUB-04 ×4 | BVA | X4 | accepted: a 256-byte dedupeKey (ASCII, or mostly 2-byte characters); a 120-character title, which reaches the block whole and is not in the summary; occurredAt in the `Z` form |
+| PUB-05 ×3 | BVA | X4 | a 121-character title, a body of maxMessageBytes + 1 bytes, and maxMessageBytes − 1 bytes + one 2-byte character: FISHBALL_TOO_LARGE, nothing stored |
+| PUB-06 ×2 | BVA (maxMessageBytes 256) | X4 | a body of exactly 256 bytes (ASCII or 2-byte characters) is accepted and delivered whole |
+| PUB-07 | EP (hostile) | X5 | a fake closing tag stays inside the block; one closing tag; one source line; nothing after the block |
+| DED-01 | ST | X6 | the same key, also with another title and body: `duplicate` with the same intakeId; nothing delivered again |
+| DED-02 ×2 | EP | X6 | the same key from another source, or another key from the same source: accepted with a new intakeId |
+| QUE-01 | BVA (maxQueuedInputs 2, Fishball held) | X4 | 2 accepted, the 3rd FISHBALL_QUEUE_FULL; both read once; the refused event never arrives and is accepted once there is room |
+| SUM-01 | BVA (200-character source title) | X5 review | the summary has at most 120 characters (observed: 119 + '…'), and apart from the '…' it is a prefix of the full summary |
+| WKP-01 | BVA (cap reached) | X5 | parked: no request for 3 s; the next chat turn reads it |
+| DED-03 | ST (restart, register again) | X6 | `duplicate` with the same intakeId; still one notice |
+
+### [sources-enabled.test.mjs](sources-enabled.test.mjs): X2 (unload), X7
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| ENA-01 | EP | X7 | enabled, and listed enabled |
+| ENA-02 | ST on → user off | X7 | `enabled` false for both rows; publish answers `{intakeId:null, status:'disabled'}`; nothing is stored or delivered; listed disabled; the code keeps running; a host row's source stays enabled |
+| ENA-03 | ST (register while off) | X7 | it starts disabled |
+| ENA-04 | ST off → user on | X7 | enabled; onEnabled once per source of the plugin and not for the host row; the key refused earlier is now accepted |
+| ENA-05 | ST (set_plugin_enabled off, then on) | X7 | disabled after Fishball's turn, then enabled; onEnabled +1 |
+| ENA-06 | EP | X7 | after the function onEnabled returned is called, the listener is not called again |
+| ENA-07 | ST live → archived → live | X7 | every source disabled and listed disabled; publish `disabled`; once live they are enabled, onEnabled +1, and an event arrives |
+| ENA-09 | EP (listener throws / rejects) | X7 review | not fatal: DSH and Fishball keep running, the other listeners run, publish works |
+| ONL-01 | ST (Fishball-only, off) | X8 | its row never ran; no source |
+| ONL-02 | ST off → on | X2, X3 | the row runs; identity `fbtest-source-only/fbtest-source-only/<id>` (the same as for everyone, A89); plugin = the bundle; accepted, delivered, kind `plugin` |
+| ONL-03 | ST on → off | X2 | the row is disposed; the source leaves the state; publish gives FISHBALL_SOURCE_DISPOSED; enabled false |
+| ONL-03b | EP (a kept service object after the unload) | X10 guide | FISHBALL_UNKNOWN_PLUGIN (A91) |
+| ONL-04 | ST off → on | X2, X6 | the same id registers again; the earlier key is `duplicate` |
+| ENA-08 | ST starting → live (first request held 6 s) | X7 | while starting: enabled false and publish `disabled`; once live: enabled, onEnabled once |
+
+### [sources-example.test.mjs](sources-example.test.mjs): X8 (R5)
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| EXA-01 | ST (first boot; the plugin loads before Fishball is live) | X8, X5 | each of 3 notes arrives exactly once and is read; summary `Plugin event: "Example notes"`; identity `fishball-source-example/fishball-source-example/notes`; items kind `plugin`, consumed; listed `{identity, plugin:'fishball-source-example', title:'Example notes', enabled:true}` |
+| EXA-02 | ST (restart) | X6, X8 | nothing twice |
+| EXA-03 | ST (user off for Fishball; restart with a 4th note) | X7, X8 | its code keeps running: the source is registered again after the restart and listed disabled; the 4th note is neither stored nor delivered |
+| EXA-04 | ST off → on | X7, X8 | onEnabled makes it republish: the 4th note arrives once, and the others are not delivered again |
+| EXO-01 | ST (installed, off) | X8 | its code never ran: no source, nothing arrives; catalog `fishball-only`, off |
+| EXO-02 | ST off → on for Fishball | X8 | each note arrives once |
+| EXO-03 | ST on → off; restart with a 4th note | X8 | the source is removed; after the restart it is still not running, and the 4th note does not arrive |
+| EXO-04 | ST off → on | X8 | the 4th note arrives once; nothing twice |
+
+### Cases changed by P8
+
+- **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 14 state keys (`sources`), from `STATE_KEYS`.
+
 ### Cases changed by P7
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 13 state keys (`approvals`), from `STATE_KEYS`.
@@ -623,4 +711,13 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 - **A84. Audit record files.** "Audit kept to auditEntriesKept" is checked on the per-record files under `storages/fishball_intake/approvals` (DESIGN §9). The state's `recent` follows the pruning (observed 2 after pruning to 2).
 - **A85. Bypassed or policy-never requests in the audit.** P8 says bypassed requests are not recorded; RTE-01..06 and APR-19 assert that the newest audit key is unchanged. A request that went to the stand-in after Fishball stopped (P12) is recorded with answer `timeout`, as the update says.
 - **A86. Harness fix: tool-result call ids.** The worker's `tool/result` summary read `message.callId`, but DSH's ToolResultMessage names the field `toolCallId`, so every summary's `callId` was null. Only the new P7 helper `resultOfCall` uses it. The worker now reads `toolCallId` and falls back to `callId`.
+- **A87. A host row's identity.** X3 says that a plain host row's bundle is "its module name". The overlay names the fixture row by an absolute file path. SRC-08 accepts either that path or its `file://` URL as the bundle part, followed by `/fbtest-source-row/<id>`. In the first probe (07:13) the identity was `file:///…/source-row.mjs/fbtest-source-row/q`. After the 07:21 change it was `file:/file:///…/source-row.mjs/q`, which lost the entry id; this was reported and fixed. Whether the bundle part should be the path as written in the patch or the loader's URL is not specified.
+- **A88. Fishball's states not driven for X7.** Covered: `starting` (ENA-08), `archived` (ENA-07), and the profile plugin turned off by the user or by `set_plugin_enabled`. `stopped` and `recovery` are not driven with a registered source. With the store unreadable (`failed`), the root realm has **no** `fishball` service at all (probe: `ctx.get('fishball')` undefined, and the fixture rows never got a context). So "enabled false while failed" cannot be observed: there is no source.
+- **A89. A Fishball-only plugin's identity.** X3 says the bundle name. The entry id of a private-tree row is not stated in X3. The updated guide says that the identity is the same for everyone and for Fishball only, so ONL-02 expects the bundle's own row id (`fbtest-source-only/fbtest-source-only/<id>`, observed), not the private row id `fbo-…--…`.
+- **A90. A title with a line break.** X4 lists only missing and blank titles. The guide says "one line (no line breaks)", and the review update makes a line break FISHBALL_INVALID. PUB-03 tests \n and \r.
+- **A91. A call after the plugin unloaded.** Cordis itself refuses `ctx.fishball` on an inactive context ("cannot get required service … in inactive context"), before Fishball sees the call. ONL-03b therefore calls `registerSource` on the service object the row kept from before the unload, and gets FISHBALL_UNKNOWN_PLUGIN.
+- **A92. Notice summary (requirement change).** X5 said the summary is the event title, bounded to 120. The review update (P8 L2: no plugin text outside the untrusted block) changed it to `Plugin event: "<source title>"`, bounded by DSH to 120 characters. Observed: 119 characters + '…'. PUB-01, PUB-04, EXA-01 and SUM-01 follow the update. The source title is also plugin-chosen text outside the block, both in the summary and in the header. It is JSON-quoted, and the plugin registers it rather than taking it from an event.
+- **A93. Not driven black-box.** FISHBALL_SOURCE_DISPOSED for a profile-wide plugin that reloads (driven only by unmounting a Fishball-only plugin, which disposes its row). A source registered before the catalog knew its bundle, after a runtime install (review update). That a throwing onEnabled is *logged* (ENA-09 checks only that it is not fatal). Dedupe after the intake rows are pruned (`auditEntriesKept`, per the updated guide): not tested, because it is "remembered while kept" and not a promise. A full queue during `onEnabled` republishing.
+- **A94. The example's notes cannot be edited live.** The example's `notes` config is not `.volatile()`: DSH's settings service refuses an update ("Plugin entry … has no volatile fields"). The README's "add notes on its Plugins page" therefore takes effect when the row remounts. EXA-03/EXO-03 add a note across a restart instead. Whether the example should declare its notes volatile, so that a new note arrives without a restart, needs a decision.
+- **A95. A host row is always enabled.** Observed, and stated in the guide: a source of a row no catalog plugin owns stays enabled while Fishball is live, whatever plugin is turned off (ENA-02). It follows Fishball's state (ENA-07).
 - **A66. Runs while the implementation changes.** One full run made while the working tree was being edited gave 7 failures in the older lifecycle and context files (boots that never became ready). Rerun alone, those files passed 120/120, and the next full run passed 486/486.

@@ -185,8 +185,8 @@ export const API = {
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'status', 'watches', 'workspaceId']
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'sources', 'status', 'watches', 'workspaceId']
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
@@ -338,5 +338,46 @@ export const FINAL_OUTCOMES = ['allowed-once', 'rejected', 'cancelled', 'unavail
 export const RECENT_MAX = 20
 /** P9: rubric phrases in Fishball's system prompt. */
 export const RUBRIC = ['**Permission requests.**', 'Approve only if the user has allowed you to', 'With no such allowance, escalate at once', 'Low risk:', 'High risk:', 'When unsure, it is high risk', 'answer_approval', 'You cannot reject']
+
+// ---- P8 (ctx.fishball sources) ----
+/**
+ * P8: with FBTEST_SOURCES=1 the profile links fbtest-source (enabled; two rows, labels src-a and
+ * src-b), fbtest-source-static (enabled; static inject) and fbtest-source-only (installed, off),
+ * and the overlay inserts the plain host row SOURCE_ROW. Each row captures its fishball context
+ * under its label, so the worker can call the service as that row.
+ */
+export const SOURCES_ENV = { FBTEST_SOURCES: '1' }
+export const SOURCE_BUNDLES = {
+  profile: { name: 'fbtest-source', dir: fixtureDir('fbtest-source'), rows: { a: { id: 'fbtest-source', label: 'src-a' }, b: { id: 'fbtest-source-b', label: 'src-b' } } },
+  static: { name: 'fbtest-source-static', dir: fixtureDir('fbtest-source-static'), rows: { a: { id: 'fbtest-source-static', label: 'src-static' } } },
+  only: { name: 'fbtest-source-only', dir: fixtureDir('fbtest-source-only'), rows: { a: { id: 'fbtest-source-only', label: 'src-only' } } },
+}
+export const SOURCE_ROW = { id: 'fbtest-source-row', module: path.join(SUPPORT, 'fixtures', 'source-row.mjs'), label: 'src-row' }
+/**
+ * P8 R5: the example plugin. FBTEST_EXAMPLE=everyone links it enabled, =only links it installed
+ * and off; FBTEST_EXAMPLE_NOTES (JSON) is its notes config, given by the overlay as an edit of its row.
+ */
+export const EXAMPLE = { name: 'fishball-source-example', dir: path.join(REPO, 'examples', 'fishball-source-example'), row: 'fishball-source-example', source: { id: 'notes', title: 'Example notes' } }
+export const SOURCE_ERR = {
+  invalid: 'FISHBALL_INVALID', duplicate: 'FISHBALL_SOURCE_DUPLICATE', limit: 'FISHBALL_LIMIT', tooLarge: 'FISHBALL_TOO_LARGE',
+  queueFull: 'FISHBALL_QUEUE_FULL', disposed: 'FISHBALL_SOURCE_DISPOSED',
+}
+export const PUBLISH_STATUS = { accepted: 'accepted', duplicate: 'duplicate', disabled: 'disabled' }
+/** X3: '<bundle>/<entry id>/<source id>'. */
+export const SOURCE_IDENTITY = (bundle, entry, id) => bundle + '/' + entry + '/' + id
+/** X9: keys of state.sources and of one source. */
+export const SOURCES_KEYS = ['sources']
+export const SOURCE_KEYS = ['enabled', 'identity', 'plugin', 'title']
+/** X4/X5: the title bound in characters, the dedupe key bound in bytes, the source title and description bounds in bytes. */
+export const SOURCE_BOUNDS = { eventTitleChars: 120, dedupeKeyBytes: 256, sourceTitleBytes: 200, descriptionBytes: 1024, idChars: 64 }
+export const PLUGIN_INTAKE_KIND = 'plugin'
+/**
+ * X5 (review update, P8 L2): the notice summary names the source's registered title, JSON-quoted;
+ * DSH bounds a summary to 120 characters. The event title stays inside the untrusted block only.
+ */
+export const SOURCE_SUMMARY = (sourceTitle) => 'Plugin event: ' + JSON.stringify(sourceTitle)
+export const SUMMARY_MAX_CHARS = 120
+/** X9: client strings. */
+export const SOURCE_UI = { section: 'Plugin sources', queueLabel: 'Plugin event' }
 
 export const MS = { boot: 45000, live: 20000, turn: 20000, stop: 20000, poll: 100, sseFirstFrame: 3000, sseChange: 8000 }

@@ -27,8 +27,8 @@ const WRAPPED = Symbol.for('dsh-fishball.tool-attribution.wrapped')
 export const name = 'dsh-fishball-attribution'
 export function apply() {}
 
-/** The nearest loader entry owning a context's fiber. */
-function entryOf(ctx) {
+/** The nearest loader entry owning a context's fiber (also used by ctx.fishball, src/sources.js). */
+export function entryOf(ctx) {
   let fiber = ctx?.fiber
   while (fiber !== undefined) {
     if (fiber.entry !== undefined) return fiber.entry
