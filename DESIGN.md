@@ -673,6 +673,10 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
   - `createdBy {kind:'user'|'assistant'|'agent', id?}`, `createdAt`
   - `lastSeenSeq`, `status:'active'|'closed'|'target-missing'`, `firedCount`, `lastFiredAt?`, `lastReason?`
 
+- `unread['assistant']`: `{sessionId, count, changedAt}`, the replies from Fishball you have not seen, for the assistant session it was made for (an adopted session starts from 0). Same version 1 rule as the other added tables.
+
+- `preferences['display']`: `{brandStyle:'fishball'|'deepseek', changedAt}`, your sidebar icon choice (default `fishball`). Stored in the Host so every browser shows the same one. Same version 1 rule.
+
 **`fishball_intake`** (per-record layout, for frequent writes):
 - `items[intakeId]` (key: SHA-256 of source identity and dedupe key):
   - `{kind:'session'|'user'|'system', sourceIdentity, dedupeKey, messageId}`
@@ -703,6 +707,13 @@ No custom session event types are added: persistence refuses logs containing unk
        - The **New Session** button below is unchanged, and the mark in the collapsed rail still expands the sidebar.
        - If a DSH update changes the sidebar's markup, the click falls back to New Session. The live check in each phase catches this.
      - **macOS Desktop.** There the brand row is a window-drag area with no click [V]. Fishball's session row is hidden there too, so it is opened from its Plugins page ("Open chat").
+  1a. **Unread replies on the mark.** A reply is an assistant message in Fishball's own session that has text (tool-call-only messages do not count). The Host counts them (`src/unread.js`) and publishes `unread: {count}` in the state snapshot.
+     - **Look (your pick: designs 3 + 5).** A magenta count pill on the mark's top-right corner, capped at "99+", and a short tail wag. Both repeat every 2.2 s while anything is unread, and stop under `prefers-reduced-motion` (the pill and count stay). The brand button's label also carries the count.
+     - **Read.** The count clears while Fishball's chat is on screen in a visible tab, and replies arriving then are read at once. The browser reports this with `POST /api/fishball/read`, sent by a render-nothing session-header action that mounts only for the session being shown. Clicking the brand opens the chat, which clears it. A hidden tab does not count as reading.
+  1b. **Switch back to DeepSeek's icon.** A switch at the top of Fishball's settings page ("Use the DeepSeek icon") stores `brandStyle` through `POST /api/fishball/brand` (`{style}`; 400 `bad-body` for any other value).
+     - **What changes.** In `deepseek` mode the mark is DSH's orca (`FishLogo`'s path) and the name is DSH's own word logo (`BrandWordmark`), with no Fishball tag. Clicking the brand still opens Fishball, and the stock New Session button is unchanged.
+     - **Unread in this mode.** The count pill is the same as for the fish. The tail wag is replaced by the orca's swim, the animation DSH's new-session window plays on hover: the body morphs through the tail-up and tail-down shapes while the mark sways. It plays once per 2.2 s unread cycle, then rests, so both icons repeat at the same pace. Reduced motion shows the still orca with the pill.
+     - **Borrowed from DSH.** The two swim shapes and the sway are not exported by `dsh-client-ui-conversation`, so `client.js` keeps a copy of them (`ORCA_SWIM`); the resting shape comes from the primitives. A DSH update that changes its hero animation does not change ours.
   2. **Fishball settings live on its page under Plugins** (owner's choice, P2), through `plugins.bundle.config`. There is no separate settings panel. The page opens from the header action in the assistant session and from the brand while the assistant needs attention. It shows, as the phases add them:
      - status and recovery actions;
      - the context window (`W_eff`, threshold, pressure);
@@ -717,7 +728,7 @@ No custom session event types are added: persistence refuses logs containing unk
      - the safety limits as a form, one field per limit, with each limit's current use, for example "queue 12 of 200" (later phases).
        - The form saves through DSH's settings service, which validates the values, refuses stale writes and saves them in the profile's patch [V `dsh-settings/README.md`, `dsh-config-editor/README.md`]; verified in the browser in P2.
   3. Session-row and session-header actions: **Send to Fishball** and **Tell Fishball when finished** (P5, P6); P2 adds a header action in Fishball's own session that opens its Plugins page.
-- **Host API.** `GET /api/fishball/state` (JSON snapshot), `GET /api/fishball/events` (server-sent snapshots: one at once, then one per change) and `POST /api/fishball/recovery` (`{action: 'retry'|'adopt'}`; 400 `bad-body`, 409 with the reason `not-in-recovery` or `unavailable`). P3 adds `POST /api/fishball/plugins` (`{plugin, on}`, your own choice) and `POST /api/fishball/tool-approvals/remove` (`{toolKey}`); 409 `unknown` or `refused`. P4 adds `POST /api/fishball/context-window`, P5 `POST /api/fishball/send` (`{sessionId, note}`), and P6 `POST /api/fishball/watches` (`{sessionId}`) and `POST /api/fishball/watches/remove` (`{watchId}`); a refusal answers 409 with its code. Limits are saved through DSH's settings service, not a Fishball route.
+- **Host API.** `GET /api/fishball/state` (JSON snapshot), `GET /api/fishball/events` (server-sent snapshots: one at once, then one per change) and `POST /api/fishball/recovery` (`{action: 'retry'|'adopt'}`; 400 `bad-body`, 409 with the reason `not-in-recovery` or `unavailable`). P3 adds `POST /api/fishball/plugins` (`{plugin, on}`, your own choice) and `POST /api/fishball/tool-approvals/remove` (`{toolKey}`); 409 `unknown` or `refused`. P4 adds `POST /api/fishball/context-window`, P5 `POST /api/fishball/send` (`{sessionId, note}`), and P6 `POST /api/fishball/watches` (`{sessionId}`) and `POST /api/fishball/watches/remove` (`{watchId}`); a refusal answers 409 with its code. The unread count adds `POST /api/fishball/read` (`{}`), and the icon choice `POST /api/fishball/brand`. Limits are saved through DSH's settings service, not a Fishball route.
   - These routes are behind DSH's browser authentication and same-origin fence [V pattern], and bodies are validated at the boundary.
   - The browser never names the source identity or the sender.
 

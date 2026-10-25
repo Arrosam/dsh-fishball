@@ -4,15 +4,15 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4 and P6 keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread and preferences tables keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -27,6 +27,19 @@ const watchRecord = z.object({
   firedCount: z.number().int().nonnegative(),
   lastFiredAt: z.string().optional(),
   lastReason: z.string().optional(),
+})
+
+/** Fishball's replies you have not seen yet; made for one assistant session, as the settings are. */
+const unreadRecord = z.object({
+  sessionId: z.string().min(1),
+  count: z.number().int().nonnegative(),
+  changedAt: z.string(),
+})
+
+/** Your display choices; one record, the brand icon for now. */
+const preferencesRecord = z.object({
+  brandStyle: z.enum(Object.values(BRAND_STYLE)),
+  changedAt: z.string(),
 })
 
 /** A positive whole number of tokens (context-window settings). */
@@ -153,6 +166,8 @@ export const fishballDomain = defineDomain({
     [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
     [TABLE.settings]: domainTable(settingsRecord),
     [TABLE.watches]: domainTable(watchRecord),
+    [TABLE.unread]: domainTable(unreadRecord),
+    [TABLE.preferences]: domainTable(preferencesRecord),
   },
 })
 
@@ -191,6 +206,8 @@ export class Store {
   get pluginChanges() { return this.#domain.table(TABLE.pluginChanges) }
   get settings() { return this.#domain.table(TABLE.settings) }
   get watches() { return this.#domain.table(TABLE.watches) }
+  get unread() { return this.#domain.table(TABLE.unread) }
+  get preferences() { return this.#domain.table(TABLE.preferences) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

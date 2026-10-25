@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Fishball unread notification: 10 designs</title>
+<style>
+:root{--magenta:#EC0A6E;--ink:#101010;--paper:#F2F2EE}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 -apple-system,"Helvetica Neue",sans-serif;background:#e9e9e4;color:var(--ink);padding:24px}
+h1{font-size:20px;margin:0 0 4px}p.lead{margin:0 0 20px;color:#555}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.card{border-radius:10px;overflow:hidden;border:1px solid #d0d0c8;background:#fff}
+.card h2{font-size:13px;margin:0;padding:10px 12px 2px}.card p{font-size:12px;color:#666;margin:0;padding:0 12px 10px;min-height:48px}
+.stage{display:grid;grid-template-columns:1fr 1fr}
+.pane{padding:18px 14px;display:flex;align-items:center;gap:8px;height:84px}
+.light{background:#f7f7f4;color:var(--ink)}.dark{background:#1b1b1b;color:var(--paper)}
+.brand{display:flex;align-items:center;gap:8px}
+.icon{position:relative;width:28px;height:28px;display:inline-grid;place-items:center;flex:none}
+.icon svg{width:28px;height:28px;display:block;overflow:visible}
+.wm{font:900 17px/1 "Archivo","Helvetica Neue",sans-serif;letter-spacing:-.5px}
+.fb-body{fill:currentColor}.fb-eye{fill:var(--magenta)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+/* 1 sonar ring */
+.d1 .icon::before,.d1 .icon::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--magenta);animation:d1 1.6s ease-out infinite;opacity:0}
+.d1 .icon::after{animation-delay:.8s}
+@keyframes d1{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+/* 2 dot badge with ping */
+.dot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--magenta);box-shadow:0 0 0 2px var(--ring,#f7f7f4)}
+.dark .dot{--ring:#1b1b1b}
+.dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--magenta);animation:d2 1.4s ease-out infinite}
+@keyframes d2{to{transform:scale(2.8);opacity:0}}
+/* 3 count pill pop */
+.count{position:absolute;top:-7px;right:-9px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--magenta);color:#fff;font:800 10px/16px sans-serif;text-align:center;box-shadow:0 0 0 2px var(--ring,#f7f7f4);animation:d3 1.8s ease-in-out infinite}
+.dark .count{--ring:#1b1b1b}
+@keyframes d3{0%,60%,100%{transform:scale(1)}70%{transform:scale(1.35)}80%{transform:scale(.95)}90%{transform:scale(1.1)}}
+/* 4 eye flash */
+.d4 .fb-eye{animation:d4 .9s steps(1) infinite;transform-box:fill-box;transform-origin:center}
+@keyframes d4{0%{fill:var(--magenta);transform:scale(1)}50%{fill:transparent;transform:scale(1)}}
+.d4 .icon::after{content:"";position:absolute;left:62%;top:30%;width:6px;height:6px;border-radius:50%;background:var(--magenta);filter:blur(5px);animation:d4g .9s ease-in-out infinite}
+@keyframes d4g{50%{transform:scale(4);opacity:.0}0%,100%{transform:scale(1);opacity:.9}}
+/* 5 tail wag */
+.d5 .icon svg{animation:d5 2.2s ease-in-out infinite;transform-origin:70% 40%}
+@keyframes d5{0%,55%,100%{transform:rotate(0)}62%{transform:rotate(-14deg)}70%{transform:rotate(12deg)}78%{transform:rotate(-9deg)}86%{transform:rotate(5deg)}}
+/* 6 breathing glow */
+.d6 .icon{border-radius:50%;animation:d6 1.8s ease-in-out infinite}
+@keyframes d6{0%,100%{box-shadow:0 0 0 0 rgba(236,10,110,0)}50%{box-shadow:0 0 14px 5px rgba(236,10,110,.75)}}
+/* 7 tile invert */
+.d7 .icon{border-radius:6px;animation:d7 1.2s steps(1) infinite}
+.d7 .icon .fb-body{animation:d7b 1.2s steps(1) infinite}
+@keyframes d7{0%{background:var(--magenta)}50%{background:transparent}}
+@keyframes d7b{0%{fill:#fff}50%{fill:currentColor}}
+.d7 .icon .fb-eye{animation:d7e 1.2s steps(1) infinite}
+@keyframes d7e{0%{fill:var(--ink)}50%{fill:var(--magenta)}}
+/* 8 bubbles */
+.bub{position:absolute;left:55%;top:2px;width:5px;height:5px;border-radius:50%;border:1.5px solid var(--magenta);opacity:0;animation:d8 2s ease-in infinite}
+.bub:nth-child(2){left:70%;animation-delay:.7s;width:4px;height:4px}.bub:nth-child(3){left:45%;animation-delay:1.3s}
+@keyframes d8{0%{transform:translateY(6px);opacity:0}20%{opacity:1}100%{transform:translateY(-22px) translateX(5px);opacity:0}}
+/* 9 shimmer sweep */
+.d9 .brand{position:relative;overflow:hidden;padding:4px 6px;border-radius:6px}
+.d9 .brand::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(236,10,110,.55) 50%,transparent 65%);transform:translateX(-120%);animation:d9 1.9s ease-in-out infinite}
+@keyframes d9{60%,100%{transform:translateX(120%)}}
+/* 10 sticker tag */
+.sticker{position:absolute;left:12px;top:-12px;padding:1px 4px;background:var(--magenta);color:#fff;font:800 8.5px/11px sans-serif;border-radius:1px;transform:rotate(-8deg);box-shadow:0 0 0 1.5px var(--ring,#f7f7f4),2px 2px 0 1.5px var(--ink);white-space:nowrap;animation:d10 1.6s ease-in-out infinite;transform-origin:left bottom}
+.dark .sticker{--ring:#1b1b1b;box-shadow:0 0 0 1.5px #1b1b1b,2px 2px 0 1.5px var(--paper)}
+@keyframes d10{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(-4deg) translateY(-3px)}}
+</style></head><body>
+<h1>Fishball unread notification: 10 designs</h1>
+<p class="lead">Each is shown on the sidebar brand (mark + word) in light and dark. All animate in magenta #EC0A6E, the brand's one accent, and stop under <code>prefers-reduced-motion</code>.</p>
+<div class="grid" id="g"></div>
+<script>
+const mark='<svg viewBox="0 0 24 24" aria-hidden="true"><path class="fb-body" d="M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z"/><path class="fb-eye" d="M14.6 7.4 h2 v2 h-2 Z"/></svg>';
+const D=[
+['1. Sonar rings','Two magenta rings expand from the mark and fade, like a sonar ping. Calm but clearly alive.','d1','',''],
+['2. Pulsing dot','Classic unread dot on the corner with an outward ping. Smallest and least intrusive.','d2','<i class="dot"></i>',''],
+['3. Count pill','Numbered badge that pops every few seconds. Shows how many unread messages there are.','d3','<i class="count">3</i>',''],
+['4. Eye flash','Only the fish\'s magenta eye blinks with a glow. Brand-native; very subtle, so it can be missed.','d4','',''],
+['5. Tail wag','The whole fish wiggles briefly, then rests, repeating. Playful and no new colours.','d5','',''],
+['6. Breathing glow','A magenta halo breathes in and out around the mark. Reads well even in the peripheral view.','d6','',''],
+['7. Tile invert flash','The mark sits on a magenta tile that alternates with the normal look. Strongest attention-grabber.','d7','',''],
+['8. Rising bubbles','Small magenta bubbles float up from the fish. Fits the fish theme, with low visual weight.','d8','<i class="bub"></i><i class="bub"></i><i class="bub"></i>',''],
+['9. Shimmer sweep','A magenta light sweeps across the whole brand (mark and word). Covers more area without a badge.','d9','',''],
+['10. NEW sticker','A tilted magenta "NEW" sticker with a hard shadow bounces on the mark, echoing the Deepseek Harness tag.','d10','','<i class="sticker">NEW</i>']];
+const pane=(cls,d)=>'<div class="pane '+cls+' '+d[2]+'"><div class="brand"><span class="icon">'+mark+d[3]+d[4]+'</span><span class="wm">FISHBALL</span></div></div>';
+g.innerHTML=D.map(d=>'<div class="card"><h2>'+d[0]+'</h2><p>'+d[1]+'</p><div class="stage">'+pane('light',d)+pane('dark',d)+'</div></div>').join('');
+</script></body></html>

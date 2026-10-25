@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 + unread-replies black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -669,6 +669,47 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 
 - **A49. A window accepted before the prompt is measured.** Per the update, only N < 4096 and zero caps are refused before any request has been measured. A window that fits the 4096 floor but not the real prompt (N 6000) is accepted early: 200, state effective 6000. Once the setup request has measured the prompt (about 3.4k tokens), the state shows `error: window-too-small`, effectiveWindow 128000, outputCap and threshold null, and requests carry 4096 with no smaller-window cap. The stored value is kept. PRE-02 accepts this end state, or a cap-consistent one. Whether a stored value that turns out too small should fall back to the full window this way needs confirming.
 - **A50. When the compaction runs.** Observed in every load: the session compacts in the first turn that *starts* at or above the threshold. The turn whose new message takes it across the threshold does not compact. C5 says "once its measured request size reaches the threshold", and the measured size between turns is the previous request's. The tests assert the observed rule and allow up to one load turn of slack. C15's boot-flip fake changes the window at two moments (adapter registration, right after the first lookup); whether a remount was actually in progress at that moment cannot be observed black-box.
+
+### [unread.test.mjs](unread.test.mjs): Unread replies from Fishball (R1-R8)
+
+Replies are made by the scripted model in Fishball's own session (`drive`); `nReplies(n)` scripts n assistant messages (n-1 with text plus a tool call, then a closing text). Persistence cases edit `storages/fishball.json` while DSH is stopped. Fishball's setup turn already makes replies, so every case first reads (`resetUnread`) to start from 0, except UNR-02. "Stable" means the count is checked again 400 ms after it first matches.
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| UNR-01 | EP | R1 | state and every SSE frame have `unread` with exactly the key `count`, a non-negative integer |
+| UNR-02 | EP (oracle) | R2 | in a fresh home count = number of non-blank assistant messages in Fishball's log |
+| UNR-03 ×4 | BVA (1, 2, 3, 5 replies in one turn) | R2 | count = n |
+| UNR-04 ×10 | DT (content × delta) | R2, R3 | non-empty text (also " a ", text + tool call, blank block + text, two text blocks in one message): +1; tool call only, '', ' ', '\n\t  \n', blank text + tool call: +0 |
+| UNR-05 | EP (user message, turn events) | R3 | a non-empty user message and turn events with a blank answer add 0 |
+| UNR-06 | EP (other sessions) | R3 | replies in a bare session, a standard session and a subagent add 0 |
+| UNR-07 | EP (real flow) | R2 | another session's message_fishball wakes Fishball; its one reply adds 1 |
+| UNR-10 | EP (body {}) | R4 | 200 `{ok:true,state}`, count 0 in the answer and in GET state |
+| UNR-11 ×2 | EP (other objects) | R4 | `{extra:1}` and `{count:5}` give 200 and 0 |
+| UNR-12 ×8 | DT (body kind) | R4 | malformed, empty, `[]`, `[{}]`, string, number, null, true: 400 `{ok:false,code:'bad-body'}`; count unchanged |
+| UNR-13 | ST (0 –read→ 0) | R4 | 200, state count 0, no new SSE frame in 1.5 s |
+| UNR-14 | ST (n –read→ 0 –reply→ 1) | R4 | replies after a read count from 0 |
+| UNR-15 | EP (no cookie) | R4 | not 200; count unchanged |
+| UNR-20 | ST (SSE, 3 replies) | R7 | frames show 0,1,2,3 in order |
+| UNR-21 | ST (SSE, read) | R7 | frames show 2,0 |
+| UNR-22 | ST (reply, read ×5) | R7 | frames show 0,1,0,1,0,1,0,1,0,1,0: nothing lost or double counted |
+| UNR-23 | ST (3 replies, read, 1 reply) | R7 | frames show 0,1,2,3,0,1; final 1 |
+| UNR-30 | ST (restart) | R5 | count 3 survives; stored record has exactly sessionId, count, changedAt (date string), sessionId = Fishball's |
+| UNR-31 | ST (read, restart) | R5 | 0 after restart; stored record, if any, says 0 |
+| UNR-32 ×9 | BVA (stored 0, 1, 2, 98, 99, 100, 101, 1000000, MAX_SAFE_INTEGER) | R1, R5 | state, first SSE frame and the stable count show the stored number |
+| UNR-33 ×2 | BVA (99 → 100, 100 → 101) | R2, R5 | one reply adds exactly 1 |
+| UNR-34 | EP (no record) | R5, R6 | 0 |
+| UNR-35 | EP (record of another session) | R6 | 0; later replies count (2) and survive a restart |
+| UNR-36 | EP (record with count 0) | R5 | 0; a reply gives 1 |
+| UNR-40 | ST (recovery –retry→ same session) | R1, R5, R6 | recovery state still has a valid `unread`; after retry the count 7 is kept |
+| UNR-41 | ST (recovery –adopt→ new session) | R6 | count equals the new session's own replies (not the old 7); +2 replies counted; survives a restart |
+| UNR-50 | EP (client bundle) | R8 | served bundle contains `data-fishball-badge`, `Open Fishball` and `prefers-reduced-motion` |
+
+- **A96. R8 browser half is not driven.** The harness has no browser, so these are manual cases: (1) count 0 shows no pill and no wag class; (2) 1, 2, 98, 99 show that number; 100 and a large value (e.g. 1000000) show "99+"; (3) the pill is `[data-fishball-badge]` on the brand mark, with the wag class only when count > 0; (4) aria-label "Open Fishball, N unread" for N>0 (also N=1) and "Open Fishball" for 0; (5) with prefers-reduced-motion the animation is none and the pill stays; (6) Fishball's session in a visible tab with count > 0 sends POST /api/fishball/read; a hidden tab or another session's tab does not; (7) the POST is not repeated at count 0. The bundle is minified/bundled by DSH and does not contain the literal "99+" nor the route path, so UNR-50 checks only the three strings above.
+- **A97. UNR-02.** The setup turn's replies are counted at first start (observed 2, matches the log). The requirements do not say whether the first-start setup reply should count; UNR-02 asserts only count = replies in the log.
+- **A98. "Publishes nothing new" (R4).** UNR-13 checks no SSE frame in 1.5 s after a read at 0.
+- **A99. Subagent case (UNR-06).** A subagent is a separate session, so its replies are excluded; its parent's own reply is made in an ordinary session, also excluded.
+- **A100. Stored count validity.** R5 does not say what a stored negative, fractional or non-numeric count does; not tested. MAX_SAFE_INTEGER is accepted as stored.
+- **A101. Stale/failed states.** R1 says unread is in every snapshot; only live and recovery are checked (UNR-01, UNR-40). Failed/archived are not asserted (STATE_KEYS now includes `unread`, so HTP-01 checks the key set).
 
 ## Environment limits
 

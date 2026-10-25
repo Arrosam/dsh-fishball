@@ -11,6 +11,8 @@
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
+ * - src/unread.js          unread replies from Fishball (the sidebar mark's count)
+ * - src/preferences.js    your display choices (the sidebar brand icon)
  * - src/approvals.js       other sessions' permission requests go to Fishball first
  * - src/sources.js         ctx.fishball: plugins publish events to Fishball (DESIGN §8)
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
@@ -30,6 +32,8 @@ import { IntakeError, IntakeLedger } from './src/intake.js'
 import { registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { Watches, WatchError } from './src/watches.js'
+import { Unread } from './src/unread.js'
+import { Preferences } from './src/preferences.js'
 import { ApprovalBroker } from './src/approvals.js'
 import { SourceRegistry } from './src/sources.js'
 import { registerPluginTools } from './src/plugin-tools.js'
@@ -58,13 +62,15 @@ export async function apply(ctx, config) {
   let watchesView = () => null
   let approvalsView = () => null
   let sourcesView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView() })
+  let unreadView = () => null
+  let preferencesView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView() })
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable }
+  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -75,6 +81,8 @@ export async function apply(ctx, config) {
     send: (input) => commands.send(input),
     addWatch: (input) => commands.addWatch(input),
     removeWatch: (input) => commands.removeWatch(input),
+    markRead: () => commands.markRead(),
+    setBrandStyle: (style) => commands.setBrandStyle(style),
   })
   // A limit edited on the Plugins page reaches this row without a remount (spike S21).
   ctx.on(EVENT.volatileUpdate, publish)
@@ -157,6 +165,13 @@ export async function apply(ctx, config) {
   const related = (sessionId) => watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)) || outbound.contacted(sessionId)
   watches.registerTools((definition) => composition.registerOwnTool(definition), related)
   watchesView = () => watches.snapshot()
+  // Replies you have not seen (the mark's count); cleared when the browser shows Fishball's chat.
+  const unread = new Unread(ctx, store, logger, { assistantId, onChange: () => publish() })
+  unreadView = () => unread.snapshot()
+  commands.markRead = () => unread.markRead()
+  const preferences = new Preferences(store, { onChange: () => publish() })
+  preferencesView = () => preferences.snapshot()
+  commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
   // Other sessions' permission requests go to Fishball first (DESIGN §7a).
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,

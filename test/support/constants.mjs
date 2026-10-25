@@ -182,11 +182,12 @@ export const API = {
   plugins: '/api/fishball/plugins', removeApproval: '/api/fishball/tool-approvals/remove',
   contextWindow: '/api/fishball/context-window',
   send: '/api/fishball/send',
+  read: '/api/fishball/read',
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'sources', 'status', 'watches', 'workspaceId']
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
@@ -381,3 +382,9 @@ export const SUMMARY_MAX_CHARS = 120
 export const SOURCE_UI = { section: 'Plugin sources', queueLabel: 'Plugin event' }
 
 export const MS = { boot: 45000, live: 20000, turn: 20000, stop: 20000, poll: 100, sseFirstFrame: 3000, sseChange: 8000 }
+
+// ---- Unread replies from Fishball ----
+/** R1/R5: the snapshot's unread object, and the stored record (domain fishball, table 'unread', key 'assistant'). */
+export const UNREAD = { keys: ['count'], table: 'unread', key: 'assistant', recordKeys: ['changedAt', 'count', 'sessionId'] }
+/** R8: strings the served client bundle must carry (the browser half is otherwise manual, see CASES.md). */
+export const UNREAD_UI = { badgeAttr: 'data-fishball-badge', openLabel: 'Open Fishball', reducedMotion: 'prefers-reduced-motion' }

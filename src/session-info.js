@@ -73,7 +73,7 @@ function describeFrom(ctx, sessionId, read) {
 }
 
 /** The text of one message event, or '' (tool calls and other blocks are not text). */
-const textOfEvent = (event) => {
+export const textOfEvent = (event) => {
   const content = event.type === SESSION_INFO.assistantEvent ? event.data?.message?.content : event.data?.content
   return (content ?? []).filter((block) => block.type === SESSION_INFO.textBlock).map((block) => block.text).join('\n').trim()
 }

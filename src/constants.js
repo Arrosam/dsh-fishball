@@ -294,6 +294,16 @@ export const APPROVAL_ERROR = Object.freeze({
   argumentsIncomplete: 'arguments-incomplete',
 })
 
+/** Unread replies from Fishball (src/unread.js): the one stored record's key. */
+export const UNREAD = Object.freeze({ recordKey: 'assistant' })
+
+/**
+ * Your display choices (src/preferences.js). The brand icon is Fishball's own mark, or DSH's
+ * orca; the default is Fishball's, as before the choice existed.
+ */
+export const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
+export const PREFERENCE = Object.freeze({ recordKey: 'display', defaultBrandStyle: BRAND_STYLE.fishball })
+
 /** One hour, for the hourly caps (wake-ups, messages, sessions). */
 export const HOUR_MS = 60 * 60 * 1000
 
@@ -368,6 +378,10 @@ export const API = Object.freeze({
   watches: '/api/fishball/watches',
   /** POST { watchId }: remove a watch. */
   watchesRemove: '/api/fishball/watches/remove',
+  /** POST {}: Fishball's chat is on screen, so its unread replies are read. */
+  read: '/api/fishball/read',
+  /** POST { style }: which brand icon the sidebar shows (BRAND_STYLE). */
+  brand: '/api/fishball/brand',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })

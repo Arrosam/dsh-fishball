@@ -12,12 +12,15 @@
  * POST send                   -> { sessionId: string, note: string } ("Send to Fishball", DESIGN §5b)
  * POST watches                -> { sessionId: string } ("Tell Fishball when finished", DESIGN §5c)
  * POST watches/remove         -> { watchId: string }
+ * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
+ * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
  */
 import { isSettingInput } from './context-window.js'
-import { API, API_CODE, HTTP, HTTP_METHOD, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
+import { API, API_CODE, BRAND_STYLE, HTTP, HTTP_METHOD, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
 import { LifecycleStateError } from './errors.js'
 
 const ACTIONS = new Set(Object.values(RECOVERY_ACTION))
+const BRAND_STYLES = new Set(Object.values(BRAND_STYLE))
 const json = (status, payload) => new Response(JSON.stringify(payload), { status, headers: RESPONSE_HEADERS.json })
 const frame = (payload) => `data: ${JSON.stringify(payload)}\n\n`
 
@@ -31,6 +34,8 @@ const BODY = Object.freeze({
   toolApproval: (body) => (isRecord(body) && isName(body.toolKey) ? body.toolKey : undefined),
   watch: (body) => (isRecord(body) && isName(body.sessionId) ? { sessionId: body.sessionId } : undefined),
   unwatch: (body) => (isRecord(body) && isName(body.watchId) ? { watchId: body.watchId } : undefined),
+  brand: (body) => (isRecord(body) && BRAND_STYLES.has(body.style) ? body.style : undefined),
+  read: (body) => (isRecord(body) ? {} : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
   contextWindow: (body) => (isRecord(body) && isSettingInput(body.contextWindowTokens) && isSettingInput(body.maxOutputTokens)
     ? { contextWindowTokens: body.contextWindowTokens, maxOutputTokens: body.maxOutputTokens }
@@ -42,7 +47,7 @@ const BODY = Object.freeze({
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
- *   addWatch({ sessionId }), removeWatch({ watchId }) }; the commands reject
+ *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style) }; the commands reject
  *   LifecycleStateError for a 409.
  */
 export function registerRoutes(ctx, state) {
@@ -102,7 +107,9 @@ export function registerRoutes(ctx, state) {
     { path: API.contextWindow, methods: [HTTP_METHOD.post], fetch: command(BODY.contextWindow, (setting) => state.setContextWindow(setting)) },
     { path: API.send, methods: [HTTP_METHOD.post], fetch: command(BODY.send, (input) => state.send(input)) },
     { path: API.watches, methods: [HTTP_METHOD.post], fetch: command(BODY.watch, (input) => state.addWatch(input)) },
+    { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
+    { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)
