@@ -4,7 +4,7 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread and preferences tables keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences and plugin_defaults tables keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
@@ -12,7 +12,7 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -70,6 +70,21 @@ const pluginRecord = z.object({
   changedAt: z.string(),
   /** Stable diagnostic when the plugin's rows could not run for Fishball. */
   lastError: z.string().optional(),
+  /**
+   * A Fishball-installed plugin you or Fishball chose to uninstall; the uninstall runs after the
+   * next idle-phase apply, and a restart before it finishes it then. Absent on older records.
+   */
+  removing: z.boolean().optional(),
+})
+
+/**
+ * Which DSH plugins keep the old default for Fishball (src/plugin-defaults.js). dshPlugins is
+ * null until the first successful bundle listing.
+ */
+const pluginDefaultsRecord = z.object({
+  existingInstall: z.boolean(),
+  dshPlugins: z.array(z.string().min(1)).nullable(),
+  recordedAt: z.string(),
 })
 
 /** You allowed a tool nobody had checked, for exactly these parameters (DESIGN §7). */
@@ -168,6 +183,7 @@ export const fishballDomain = defineDomain({
     [TABLE.watches]: domainTable(watchRecord),
     [TABLE.unread]: domainTable(unreadRecord),
     [TABLE.preferences]: domainTable(preferencesRecord),
+    [TABLE.pluginDefaults]: domainTable(pluginDefaultsRecord),
   },
 })
 
@@ -208,6 +224,7 @@ export class Store {
   get watches() { return this.#domain.table(TABLE.watches) }
   get unread() { return this.#domain.table(TABLE.unread) }
   get preferences() { return this.#domain.table(TABLE.preferences) }
+  get pluginDefaults() { return this.#domain.table(TABLE.pluginDefaults) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

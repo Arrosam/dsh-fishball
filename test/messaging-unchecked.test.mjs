@@ -3,18 +3,22 @@
  *
  * | id     | technique | expected |
  * |--------|-----------|----------|
- * | UNC-01 | ST (first start → live) | exactly one notice (fishball-notice/notice) listing every unchecked fbtest-tools tool with its plugin and naming set_plugin_enabled; never a hidden name; intake item fishball/unchecked-tools, kind system, consumed; Fishball read it |
+ * Plugin statuses: the notice covers only plugins enabled in the DSH profile AND on for Fishball (implementer's answer).
+ * DSH plugins start off on a new install, so the first live gives none; the user then turns fbtest-tools on.
+ * | UNC-00 | ST (first start → live, fbtest-tools off for Fishball) | no unchecked-tools notice |
+ * | UNC-01 | ST (user turns fbtest-tools on → applied) | exactly one notice (fishball-notice/notice) listing every unchecked fbtest-tools tool with its plugin and naming set_plugin_enabled; never a hidden name; intake item fishball/unchecked-tools, kind system, consumed; Fishball read it |
  * | UNC-02 | ST (restart, same tools) | no second notice |
  * | UNC-03 | ST (changed parameter schema at runtime) | one new notice naming the changed tool |
  * | UNC-04 | ST (the same changed schema registered again) | no further notice (same tool version) |
- * | UNC-05 | ST (a profile bundle installed and enabled while DSH runs) | one new notice naming its tool and plugin |
+ * | UNC-05 | ST (a profile bundle installed and enabled while DSH runs: off for Fishball) -user on-> | no notice while off; after the user turns it on, one new notice naming its tool and plugin |
+ * | UNC-07 | EP (a fishball-only plugin turned on with an unchecked tool) | no notice for it |
  * | UNC-06 | ST (restart after the changes) | no notice repeats |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ADDED_BUNDLE_C, FIXTURE_BUNDLE, FIXTURE_HIDDEN, FIXTURE_UNCHECKED, IDENTITY, NOTICE, STATUS } from './support/constants.mjs'
+import { ADDED_BUNDLE_C, API, FIXTURE_BUNDLE, FIXTURE_HIDDEN, FIXTURE_UNCHECKED, IDENTITY, NOTICE, ONLY_BUNDLES, STATUS } from './support/constants.mjs'
 import { GENERIC_PARAMETERS } from './support/fixture-tools.mjs'
-import { HOOK, T, intakeNow, settledIdle, turn } from './support/expect.mjs'
+import { HOOK, T, intakeNow, settle, settledIdle, turn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
 const LONG = { timeout: 150000 }
@@ -36,7 +40,16 @@ describe('P5 unchecked-tools notice', () => {
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('UNC-01 going live gives one notice listing every unchecked tool and its plugin', T, async () => {
+  it('UNC-00 going live with fbtest-tools off for Fishball gives no unchecked-tools notice', T, async () => {
+    assert.deepEqual((await notices()).map((n) => n.source), [])
+  })
+
+  it('UNC-01 the user turning fbtest-tools on gives one notice listing every unchecked tool and its plugin', T, async () => {
+    assert.equal((await host.post(API.plugins, { plugin: FIXTURE_BUNDLE.name, on: true })).status, 200)
+    await settle(host)
+    assert.ok(await until(async () => (await notices()).length >= 1, 15000, 200), 'a notice after the change applied')
+    await sleep(1500)
+    await settledIdle(host, fb)
     const got = await notices()
     assert.equal(got.length, 1, JSON.stringify(got.map((n) => n.source)))
     assert.equal(got[0].source.form, NOTICE.form)
@@ -76,10 +89,14 @@ describe('P5 unchecked-tools notice', () => {
     assert.equal((await notices()).length, 2)
   })
 
-  it('UNC-05 a profile plugin installed while DSH runs gives a notice naming its tool', LONG, async () => {
+  it('UNC-05 a profile plugin installed while DSH runs: no notice while off for Fishball; one once the user turns it on', LONG, async () => {
     const r = await host.call('installBundle', { spec: ADDED_BUNDLE_C.dir, enabled: true }, 120000)
     assert.equal(r.error, null, JSON.stringify(r))
     const named = async () => (await notices()).some((n) => n.text.includes(ADDED_BUNDLE_C.tool))
+    assert.ok(await until(async () => (await host.state()).catalog.plugins.some((p) => p.plugin === ADDED_BUNDLE_C.name), 15000, 200), 'precondition: listed')
+    await sleep(4000)
+    assert.equal(await named(), false, 'no notice while it is off for Fishball (plugin statuses: it starts off)')
+    assert.equal((await host.post(API.plugins, { plugin: ADDED_BUNDLE_C.name, on: true })).status, 200)
     if (!(await until(named, 30000, 250))) {
       // Diagnose: does a Fishball turn (which refreshes its catalog, A34) produce the notice?
       await turn(host, fb, [[{ text: 'ok' }]], 'any news?')
@@ -90,6 +107,16 @@ describe('P5 unchecked-tools notice', () => {
     const n = (await notices()).find((x) => x.text.includes(ADDED_BUNDLE_C.tool))
     assert.ok(n.text.split('\n').some((l) => l.includes(ADDED_BUNDLE_C.tool) && l.includes(ADDED_BUNDLE_C.name)), 'with its plugin')
     await settledIdle(host, fb)
+  })
+
+  it('UNC-07 a fishball-only plugin turned on with its tool unchecked brings no notice', T, async () => {
+    const before = (await notices()).length
+    assert.equal((await host.post(API.plugins, { plugin: ONLY_BUNDLES.a.name, on: true })).status, 200)
+    await settle(host)
+    await sleep(4000)
+    await settledIdle(host, fb)
+    const now = await notices()
+    assert.equal(now.length, before, 'no new notice: ' + now.slice(before).map((n) => n.text.slice(0, 200)).join(' | '))
   })
 
   it('UNC-06 a restart after the changes repeats no notice', LONG, async () => {

@@ -21,7 +21,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, MS, STATE_HIDDEN_TOOLS, STATE_KEYS, STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, MS, PREFERENCES, STATE_HIDDEN_TOOLS, STATE_KEYS, STATUS } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -53,6 +53,9 @@ describe('R-HTTP', () => {
     assert.deepEqual(Object.keys(s.limits).sort(), Object.keys(LIMITS).sort())
     for (const v of Object.values(s.limits)) assert.ok(Number.isInteger(v))
     assert.deepEqual(Object.keys(s.catalog ?? {}).sort(), CATALOG_KEYS, 'catalog is not null while live')
+    // Brand icon feature: preferences = {brandStyle}, 'fishball' by default.
+    assert.deepEqual(Object.keys(s.preferences ?? {}).sort(), PREFERENCES.keys)
+    assert.equal(s.preferences.brandStyle, PREFERENCES.defaultStyle)
   })
 
   it('HTP-02 hiddenTools lists exactly the hidden names, sorted', T, async () => {

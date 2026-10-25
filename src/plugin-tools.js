@@ -1,44 +1,64 @@
 /**
  * Fishball's plugin tools (DESIGN §4 "Who changes what"): list_plugins, set_plugin_enabled,
- * add_plugin. They are registered in scope P, so only Fishball has them.
+ * add_plugin, remove_plugin. They are registered in scope P, so only Fishball has them.
  *
  * - set_plugin_enabled changes Fishball's own state only; the change applies when the
  *   current turn ends (the catalog applies it in the idle phase).
  * - Turning on a plugin with tools nobody has checked raises a normal DSH permission
- *   request listing them (N4). A Fishball-only plugin is mounted first, with its tools
+ *   request listing them (N4). A package plugin (DSH plugin off in the profile, or one installed
+ *   in Fishball only) is mounted first, with its tools
  *   masked, so they can be listed. Reject changes nothing and unmounts it again.
- * - add_plugin installs only after you click Allow once (N3), with its bundle left off in
- *   the profile, then turns it on for Fishball through the same path.
+ * - add_plugin installs only after you click Allow once (N3), into Fishball's own package
+ *   folder (src/fishball-packages.js), never the DSH profile, then turns it on for Fishball
+ *   through the same path.
+ * - remove_plugin uninstalls a plugin installed in Fishball only, after you click Allow once;
+ *   a DSH plugin can never be uninstalled from Fishball (refused before any prompt).
  *
  * A plugin that registers its tools lazily (browser-skill reveals bsk_* on first use) has no
  * tools to list when it is turned on; they appear later as unchecked and are allowed the same
  * way, by asking for the plugin again (set_plugin_enabled on), which then lists them.
  *
- * Results are structured JSON with stable codes; nothing here writes the profile's
- * package.json or cordis.patch.yml except DSH's own installer in add_plugin.
+ * Results are structured JSON with stable codes; nothing here writes the DSH profile's
+ * package.json, lockfile or cordis.patch.yml.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL_GRANTED, CHANGED_BY, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND } from './constants.js'
-import { CatalogError } from './plugin-catalog.js'
+import { randomUUID } from 'node:crypto'
+import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
+import { APPROVAL_GRANTED, CHANGED_BY, INTAKE_ERROR, INTAKE_KIND, PLUGIN_INSTALL_REQUEST, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, SOURCE } from './constants.js'
+import { IntakeError } from './intake.js'
+import { byteLength } from './text.js'
+import { CatalogError, fishballInstalledKey } from './plugin-catalog.js'
+import { PackageError } from './fishball-packages.js'
 import { diagnosticOf } from './errors.js'
 import { digestOf } from './digest.js'
 
 /** Audit key of an install request: a digest, never the raw spec. */
 const SPEC_AUDIT_PREFIX = 'spec:'
 
-export const PLUGIN_TOOL = Object.freeze({ list: 'list_plugins', set: 'set_plugin_enabled', add: 'add_plugin' })
+export const PLUGIN_TOOL = Object.freeze({ list: 'list_plugins', set: 'set_plugin_enabled', add: 'add_plugin', remove: 'remove_plugin' })
 
 /** Model-facing texts (stable; no secrets). */
 const TEXT = Object.freeze({
-  listDescription: 'List the plugins Fishball can use, with each one\'s Fishball-only on/off state, who last changed it, and why any of its tools are not available (hidden, plugin off, or unchecked).',
-  setDescription: 'Turn one plugin on or off for Fishball only. Other sessions are not affected and the profile is not changed. The change takes effect when your current turn ends. Turning on a plugin with tools nobody has checked asks the user first.',
-  addDescription: 'Install a plugin package into the profile for Fishball, after the user allows it in a permission prompt. Its bundle stays off for other sessions; Fishball then turns it on for itself.',
+  listDescription: 'List the plugins Fishball can use: each one\'s status (installed-in-fishball, dsh-enabled, dsh-disabled, builtin), the actions it offers, who last changed it, and why any of its tools are not available (hidden, plugin off, or unchecked).',
+  setDescription: 'Turn one plugin on or off for Fishball only. Other sessions are not affected and the DSH profile is not changed. The change takes effect when your current turn ends. Turning on a plugin with tools nobody has checked asks the user first.',
+  addDescription: 'Install a plugin package for Fishball only, after the user allows it in a permission prompt. It goes into Fishball\'s own package folder, not the DSH profile, so other sessions never see it; Fishball then turns it on for itself.',
+  removeDescription: 'Uninstall a plugin installed in Fishball only (status installed-in-fishball), after the user allows it in a permission prompt. Plugins installed in DSH cannot be uninstalled from Fishball; turn them off instead. The uninstall happens when your current turn ends.',
+  removeReasonArg: 'Why Fishball wants to uninstall this plugin, shown to the user in the permission prompt.',
+  removesLater: 'Allowed. It is uninstalled when this turn ends.',
+  /** You asked on the settings page; your own request, so it is not framed as untrusted. */
+  installRequest: (spec) => [
+    'Fishball: the user asked, on your settings page, to install this plugin for you only:',
+    JSON.stringify(spec),
+    'Call add_plugin with exactly this spec; the user is then asked to allow it in the permission prompt.',
+  ].join('\n'),
+  installRequestSummary: 'The user asked to install a plugin',
+  removePrompt: (plugin, reason) => `Fishball asks to uninstall "${plugin}", a plugin installed for Fishball only. Reason: ${reason}`,
   pluginArg: 'The plugin key exactly as list_plugins shows it.',
   onArg: 'true to turn the plugin on for Fishball, false to turn it off.',
   specArg: 'One package spec: a registry name, an absolute path, a git address or a tarball URL.',
   reasonArg: 'Why Fishball needs this plugin, shown to the user in the permission prompt.',
   appliesLater: 'Saved. It takes effect when this turn ends.',
-  addPrompt: (spec, reason) => `Fishball asks to install the plugin "${spec}" into this profile, with its bundle off for other sessions. Reason: ${reason}`,
+  addPrompt: (spec, reason) => `Fishball asks to install the plugin "${spec}" for Fishball only, in its own package folder; the DSH profile and other sessions are not changed. Reason: ${reason}`,
   uncheckedPrompt: (plugin, unchecked) => [
     `Fishball wants to turn on "${plugin}" for itself. Nobody has checked these tools yet; allowing shows them to Fishball:`,
     ...unchecked.map((tool) => `- ${tool.name}: ${tool.description}`),
@@ -49,16 +69,40 @@ const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, va
 const ok = (fields = {}) => ({ ok: true, ...fields })
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
 
+
+/**
+ * "Install" on the settings page (DESIGN §10): DSH asks for a permission only inside a running
+ * turn of the asking session, so the page cannot raise add_plugin's prompt itself. It hands the
+ * request to Fishball through the intake ledger, which wakes it; Fishball calls add_plugin.
+ * @param deps.ledger - IntakeLedger; deps.readLimits - () => limits; deps.packages - FishballPackages.
+ * @returns (spec) => Promise; rejects IntakeError(tooLarge | queueFull) or PackageError(invalidSpec |
+ *   alreadyInstalled). The spec is checked first, so an invalid one never wakes Fishball (review M3).
+ */
+export function installRequester({ ledger, readLimits, packages }) {
+  return async (spec) => {
+    packages.check(spec)
+    // maxMessageBytes bounds your own text (the spec), as for "Send to Fishball"; Fishball's framing does not count.
+    if (byteLength(spec) > readLimits().maxMessageBytes) throw new IntakeError(INTAKE_ERROR.tooLarge)
+    const text = TEXT.installRequest(spec)
+    await ledger.publish({
+      kind: INTAKE_KIND.user,
+      sourceIdentity: PLUGIN_INSTALL_REQUEST.sourceIdentity,
+      dedupeKey: randomUUID(),
+      message: createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.installRequestSummary) } }),
+    })
+  }
+}
+
 /**
  * Register the tools.
  * @param deps.register - (definition) => disposer, registering in scope P.
  * @param deps.catalog - PluginCatalog.
  * @param deps.composition - AssistantComposition (decisions()).
  * @param deps.tools - tools service; deps.scope - scope key P.
- * @param deps.approval - approval service; deps.pluginManager - plugin manager.
+ * @param deps.approval - approval service; deps.packages - FishballPackages.
  * @param deps.logger - plugin logger.
  */
-export function registerPluginTools({ register, catalog, composition, tools, scope, approval, pluginManager, logger }) {
+export function registerPluginTools({ register, catalog, composition, tools, scope, approval, packages, logger }) {
   /** Ask the user through DSH's normal prompt; only Allow once grants. */
   const ask = async (exec, toolName, reason) => {
     const outcome = await approval.request({ agent: exec.agent, toolName, callId: exec.callId, reason, signal: exec.signal })
@@ -67,13 +111,14 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
 
   /**
    * Turn a plugin on for Fishball, asking about unchecked tools first (shared by set and add).
-   * A Fishball-only plugin that is not running yet is mounted for listing first; the listing
+   * A package plugin (a DSH plugin off in the profile, or a Fishball-installed one) that is not
+   * running yet is mounted for listing first; the listing
    * ends on EVERY path that does not turn it on, a thrown prompt included (review M3). A
    * plugin already running is not remounted (review M2): only its unchecked tools are asked.
    */
   const enable = async (plugin, exec, toolName) => {
     catalog.assertCanEnable(plugin)
-    const listing = catalog.kindOf(plugin) === PLUGIN_KIND.fishballOnly && !catalog.isRunning(plugin)
+    const listing = catalog.mountsPackage(plugin) && !catalog.isRunning(plugin)
     let turnedOn = false
     try {
       // Inside the try: a mount that throws still ends the listing (review N4).
@@ -104,6 +149,7 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
       return await body(args, exec)
     } catch (error) {
       if (error instanceof CatalogError) return refused(error.code)
+      if (error instanceof PackageError) return refused(PLUGIN_ERROR.installFailed, { reason: error.code })
       logger.warn('plugin tool failed (%s)', diagnosticOf(error))
       throw error
     }
@@ -145,7 +191,8 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
       },
       output: JSON_OUTPUT,
       execute: guarded(async ({ spec, reason }, exec) => {
-        if (spec.trim().length === 0) return refused(PLUGIN_ERROR.installFailed)
+        // A spec DSH's parser refuses is refused before the user is asked (PackageError via guarded).
+        packages.check(spec)
         // The audit stores a digest of the spec, never the spec: a git or tarball URL can carry
         // credentials, and DESIGN §11 stores no secrets (review M10).
         const specKey = SPEC_AUDIT_PREFIX + digestOf(spec)
@@ -153,14 +200,16 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
           await catalog.audit(specKey, PLUGIN_ACTION.add, CHANGED_BY.fishball, PLUGIN_ERROR.rejected)
           return refused(PLUGIN_ERROR.rejected)
         }
-        const result = await pluginManager.installBundle(spec, { enabled: false })
-        const installed = result.bundle
-        if (result.error !== undefined || installed === undefined) {
-          const code = result.error?.code ?? PLUGIN_ERROR.installFailed
-          await catalog.audit(specKey, PLUGIN_ACTION.add, CHANGED_BY.fishball, code)
-          return refused(PLUGIN_ERROR.installFailed, { reason: code })
+        let name
+        try {
+          ({ name } = await packages.install(spec))
+        } catch (error) {
+          if (!(error instanceof PackageError)) throw error
+          await catalog.audit(specKey, PLUGIN_ACTION.add, CHANGED_BY.fishball, error.code)
+          return refused(PLUGIN_ERROR.installFailed, { reason: error.code })
         }
-        await catalog.audit(installed, PLUGIN_ACTION.add, CHANGED_BY.fishball, result.application)
+        const installed = fishballInstalledKey(name)
+        await catalog.audit(installed, PLUGIN_ACTION.add, CHANGED_BY.fishball, OUTCOME_OK)
         await catalog.refresh()
         if (!catalog.has(installed)) return refused(PLUGIN_ERROR.restartRequired, { installed })
         // Installed either way: the result names it even when turning it on is refused (L5).
@@ -170,6 +219,29 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
           if (error instanceof CatalogError) return refused(error.code, { installed })
           throw error
         }
+      }),
+    })),
+    register(defineTool({
+      name: PLUGIN_TOOL.remove,
+      description: TEXT.removeDescription,
+      parameters: {
+        plugin: { type: 'string', required: true, description: TEXT.pluginArg },
+        reason: { type: 'string', required: true, description: TEXT.removeReasonArg },
+      },
+      output: JSON_OUTPUT,
+      execute: guarded(async ({ plugin, reason }, exec) => {
+        await catalog.refresh()
+        if (!catalog.has(plugin)) return refused(PLUGIN_ERROR.unknownPlugin)
+        // DSH plugins and built-ins: refused before the user is asked (Fishball never changes the DSH profile).
+        if (catalog.kindOf(plugin) !== PLUGIN_KIND.fishballInstalled) return refused(PLUGIN_ERROR.notRemovable)
+        // Already being uninstalled: nothing to ask the user (review L1).
+        if (catalog.isRemoving(plugin)) return refused(PLUGIN_ERROR.removing)
+        if (!(await ask(exec, PLUGIN_TOOL.remove, TEXT.removePrompt(plugin, reason)))) {
+          await catalog.audit(plugin, PLUGIN_ACTION.remove, CHANGED_BY.fishball, PLUGIN_ERROR.rejected)
+          return refused(PLUGIN_ERROR.rejected)
+        }
+        await catalog.requestRemove(plugin, CHANGED_BY.fishball)
+        return ok({ plugin, removing: true, note: TEXT.removesLater })
       }),
     })),
   ]

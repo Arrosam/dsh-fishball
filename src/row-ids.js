@@ -6,7 +6,7 @@
  * The prefix ends in a double separator; a slug never contains one, so no plugin's prefix
  * is a prefix of another plugin's row ids.
  */
-const PREFIX = Object.freeze({ builtin: 'fb-', fishballOnly: 'fbo-' })
+const PREFIX = Object.freeze({ builtin: 'fb-', fishballOnly: 'fbo-', fishballInstalled: 'fbi-' })
 const SEPARATOR = '-'
 const BOUNDARY = '--'
 /** The end of a private-tree row-id prefix (ctx.fishball strips it for a stable source identity). */
@@ -21,6 +21,8 @@ export const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, 
 /** Row-id prefix of one catalog plugin's rows. */
 export const builtinPrefix = (name) => PREFIX.builtin + slug(name) + BOUNDARY
 export const fishballOnlyPrefix = (bundleName) => PREFIX.fishballOnly + slug(bundleName) + BOUNDARY
+/** A Fishball-installed package has its own prefix, apart from a DSH plugin of the same name. */
+export const fishballInstalledPrefix = (packageName) => PREFIX.fishballInstalled + slug(packageName) + BOUNDARY
 
 /**
  * Detached rows with every id (group children included) under `prefix`.

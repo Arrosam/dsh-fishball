@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 + unread-replies black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 + unread-replies + plugin-statuses black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -127,10 +127,10 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
-| CAT-01 | EP (Fishball / ordinary session) | the three plugin tools exist only for Fishball | listed in every Fishball request; absent from an ordinary request and from the global tool list |
+| CAT-01 | EP (Fishball / ordinary session) | the four plugin tools (with remove_plugin) exist only for Fishball | listed in every Fishball request; absent from an ordinary request and from the global tool list |
 | CAT-02 | EP | list_plugins shape | exact keys `{plugins, allowedTools, otherTools}`; each plugin has exactly the 8 fields with the documented enums and types; unique keys; tool and allowance entries have exactly their keys |
 | CAT-03 ×7 | DT (one row per built-in) | built-in keys and defaults | kind builtin; on for compaction, web, time and reminders; off for ask-user, skills and shell; changedBy null; lastError null |
-| CAT-04 | EP (enabled in the profile) | fbtest-tools | kind profile, on, changedBy null |
+| CAT-04 | EP (enabled in the profile, new install) | fbtest-tools | kind profile, **off** (dsh-disabled), changedBy null (plugin statuses) |
 | CAT-05 ×3 | EP (installed, not enabled) | fbtest-only, -b, -edits | kind fishball-only, off |
 | CAT-06 | EP (DSH-optional, not enabled) | listed | each such bundle from listBundles is fishball-only and off |
 | CAT-07 | EP | dsh-fishball never appears; nothing else appears | no dsh-fishball entry; every bundle entry is a profile dependency or DSH-optional; every profile dependency is listed, with its kind matching `enabled` |
@@ -190,8 +190,9 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | PER-02 | EP | storage | fishball.json `tables` has plugins, tool_approvals and plugin_changes, each non-empty |
 | PER-03 | BVA (auditEntriesKept 2, three changes) | audit retention | at most 2 plugin_changes rows, including the newest; the oldest of the three is gone |
 | ADD-01 | DT (Reject) | nothing installed | one approval with toolName add_plugin whose reason contains the spec and the reason; `{ok:false, code:'rejected'}`; profile package.json byte-identical; nothing in node_modules |
-| ADD-02 | DT (Allow once) | installed with its bundle off | dependency added; bundle not in dsh.profile.bundles; not in the global list or an ordinary request; listed fishball-only |
-| ADD-03 | ST added→on (Allow) | follows R6/R8 | its code runs; its tool in Fishball's next request only |
+| ADD-02 | DT (Allow once) | installed into Fishball's own folder (plugin statuses) | in `profiles/.fishball-plugins`; profile package.json byte-identical; listBundles unchanged; not in the global list or an ordinary request; listed fishball:fbtest-added, kind fishball-installed, on |
+| ADD-03 | ST added→on (by add_plugin) | follows R6/R8 | its code runs; its tool in Fishball's next request only |
+| ADD-04 | ST (restart) | plugin statuses | the Fishball-installed plugin is still listed, on and running |
 
 ### [plugins-review.test.mjs](plugins-review.test.mjs): post-review changes 1-13
 
@@ -581,6 +582,10 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 | EXO-03 | ST on → off; restart with a 4th note | X8 | the source is removed; after the restart it is still not running, and the 4th note does not arrive |
 | EXO-04 | ST off → on | X8 | the 4th note arrives once; nothing twice |
 
+### Cases changed by the brand icon feature
+
+- **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 16 state keys (`preferences`, from `STATE_KEYS`). HTP-01 also checks that `preferences` is exactly `{brandStyle}`, `'fishball'` by default (implementer's contract, DESIGN §9/§10 1b). POST /api/fishball/brand is not covered here.
+
 ### Cases changed by P8
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 14 state keys (`sources`), from `STATE_KEYS`.
@@ -710,6 +715,110 @@ Replies are made by the scripted model in Fishball's own session (`drive`); `nRe
 - **A99. Subagent case (UNR-06).** A subagent is a separate session, so its replies are excluded; its parent's own reply is made in an ordinary session, also excluded.
 - **A100. Stored count validity.** R5 does not say what a stored negative, fractional or non-numeric count does; not tested. MAX_SAFE_INTEGER is accepted as stored.
 - **A101. Stale/failed states.** R1 says unread is in every snapshot; only live and recovery are checked (UNR-01, UNR-40). Failed/archived are not asserted (STATE_KEYS now includes `unread`, so HTP-01 checks the key set).
+
+## Plugin statuses cases (three statuses; DSH plugins default off in Fishball)
+
+**Requirement summary.** A catalog entry has `status` (`installed-in-fishball`, `dsh-enabled`, `dsh-disabled`, `builtin`), `actions` (in order) and `removing`. Kinds: `profile`, `fishball-only`, `builtin` and `fishball-installed` (key `fishball:<name>`). Every case uses this decision table (`expectedStatus` and `expectedActions` in [support/expect.mjs](support/expect.mjs)):
+
+| kind | on | removing | status | actions |
+|---|---|---|---|---|
+| builtin | true / false | false | builtin | [disable] / [enable] |
+| profile or fishball-only | true | false | dsh-enabled | [disable] |
+| profile or fishball-only | false | false | dsh-disabled | [enable] |
+| fishball-installed | true / false | false | installed-in-fishball | [disable, uninstall] / [enable, uninstall] |
+| fishball-installed | any | true | installed-in-fishball | [] (implementer's clarification) |
+
+Defaults decision table (install × when the DSH plugin appeared × enabled in the profile × stored choice):
+
+| install | DSH plugin appeared | profile | stored choice | on in Fishball | case |
+|---|---|---|---|---|---|
+| new | before the first start | enabled / disabled / DSH-optional | none | off | DEF-01, DEF-02 |
+| new | any | any | user on | on, survives a restart | DEF-05 |
+| new | installed while running | enabled / disabled | none | off | DEF-06, DEF-07 |
+| new | installed while DSH was down | enabled | none | off | DEF-08 |
+| new | removed, then installed again | enabled | was on | off, changedBy null | DEF-09 |
+| existing | present at the upgrade | enabled | none | on | UPG-01 |
+| existing | present at the upgrade | disabled | none | off | UPG-02 |
+| existing | present at the upgrade | enabled | off | off | UPG-03 |
+| existing | present at the upgrade | disabled | on | on | UPG-04 |
+| existing | installed after the upgrade (while running / while down) | enabled | none | off | UPG-06, UPG-08 |
+| existing | present at the upgrade, removed, then installed again | enabled | none (was on) | off | UPG-09 |
+
+**Harness additions.** The worker re-points the profile's `dsh-fishball` link on every boot (`FBTEST_PLUGIN_DIR`, default the repo root). One home can therefore boot the previous version (commit f368ad2, extracted with `git archive` under `.runtime/`; no worktree, branch or tag is touched) and then this one. `FBTEST_LINK` links more bundles on a later boot (installed while DSH was down). New worker operation `removeBundle` (DSH's plugin manager). New fixture [fbtest-notbundle](support/fixtures/fbtest-notbundle/package.json): a package with no bundle patch. Fishball's own folder is `<DSH_HOME>/profiles/.fishball-plugins` (implementer's answer). `inFishballFolder` checks its node_modules and package.json; `profileSnapshot` checks the profile's package.json, cordis.patch.yml and lockfile.
+
+### [plugins-status.test.mjs](plugins-status.test.mjs): statuses, actions, add and remove, the two new routes
+
+| id | technique | expected result |
+|---|---|---|
+| STA-01 | EP | every entry in list_plugins, GET state and the first SSE frame has the 12 keys and follows the decision table; removing false |
+| STA-02 ×9 | DT (kind × on, at defaults) | the 7 built-ins keep their defaults, status builtin, [disable] or [enable]; fbtest-tools (profile) and fbtest-only (fishball-only) are off, dsh-disabled, [enable] |
+| STA-03 | ST dsh-disabled → dsh-enabled → dsh-disabled | user on, then set_plugin_enabled off; actions follow; no prompt; profile files and listBundles flags unchanged; an ordinary session keeps the tools |
+| STA-04 ×12 | DT (remove route × entry) | DSH plugin on or off, built-in on or off: 409 refused; unknown key, `fishball:<unknown>`, dsh-fishball: 409 unknown; invalid JSON, array, {}, plugin 1, plugin null: 400 bad-body; nothing changes |
+| STA-05 ×5 | DT (remove_plugin × entry) | unknown keys: unknown-plugin; DSH plugin on or off, built-in: not-removable; no prompt |
+| STA-06 ×4 | EP + BVA (spec '', blanks, ./rel, ../rel) | install-failed / invalid-spec; no prompt; profile unchanged |
+| STA-07 | DT (Reject) | one add_plugin prompt naming the spec and the reason; rejected; nothing in Fishball's folder or the profile |
+| STA-08 | DT (Allow) | `{ok:true, plugin, on:true, installed}` = fishball:fbtest-added; in Fishball's folder; profile files and listBundles unchanged; entry fishball-installed, installed-in-fishball, on, [disable, uninstall]; no entry under the bare name |
+| STA-09 | EP | its code runs; its tool is in Fishball's request and runs; not global; not in an ordinary session |
+| STA-10 | EP (same package again) | install-failed / already-installed; one entry |
+| STA-11 | ST on → off → on | [enable, uninstall], then [disable, uninstall]; disposed, then applied; off keeps the package |
+| STA-12 | BVA (maxFishballOnlyPlugins 1) | a Fishball-installed plugin that is on fills the limit: a fishball-only plugin gets 409 refused / limit-reached; with it off, accepted |
+| STA-13 | DT (remove_plugin, Reject) | one prompt (remove_plugin); rejected; nothing changes |
+| STA-14 | ST on → removing → gone | `{ok:true, plugin, removing:true}`; list_plugins later in the same turn shows removing and actions []; after the turn the entry, the package and the tool are gone; profile untouched; audit action `remove` |
+| STA-15 | ST gone → added again | succeeds |
+| STA-16 | EP (no bundle patch) | install-failed / not-bundle; not kept; no entry |
+| STA-17 ×7 | DT (install body) | invalid JSON, array, {}, spec 1, spec null, '', blanks: 400 bad-body |
+| STA-18 ×2 | BVA (maxMessageBytes 64) | a 65-byte spec: 409 too-large; 64 bytes: 200, delivered (A106) |
+| STA-19 | ST (install route) | 200 `{ok, state}`; Fishball gets a message with the spec, calls add_plugin (scripted by marker), and the add_plugin prompt is in Fishball's session; fishball:fbtest-added-b ends on |
+| STA-20 | ST (user uninstall while Fishball runs) | 200, no prompt; removing true and actions [] in the answer, GET state and an SSE frame while the turn is held; the package stays until the turn ends, then the entry and the package go |
+| STA-21 | ST (user uninstall while idle) | gone at once, with no Fishball model request |
+| STA-22 | DT (same name as a DSH plugin) | fishball:fbtest-added-c and fbtest-added-c are separate entries; the DSH one stays fishball-only and off; the route refuses the DSH one; removing the Fishball one leaves the DSH one installed |
+| STA-23 | BVA (maxQueuedInputs 1, Fishball held) | the 1st install request 200, the 2nd 409 queue-full |
+| STA-24 | EP (no cookie) | neither new route answers 200 |
+| STA-25 | EP (store unreadable) | the install route answers 409 unavailable |
+
+### [plugins-defaults.test.mjs](plugins-defaults.test.mjs): defaults on a new install
+
+| id | technique | expected result |
+|---|---|---|
+| DEF-01 ×3 | DT (present at first start × enabled / disabled) | fbtest-tools (profile) and fbtest-only (fishball-only) are off, dsh-disabled, changedBy null; listBundles still has fbtest-tools enabled |
+| DEF-02 | DT (DSH-optional) | each is off |
+| DEF-03 | EP | fbtest-tools' tools are absent from Fishball's setup request and later ones; an ordinary session has them |
+| DEF-04 | ST (restart) | still off |
+| DEF-05 | ST (user on → restart) | on, dsh-enabled, changedBy user |
+| DEF-06 | DT (installed and enabled while running) | off; its tool not in Fishball's request; an ordinary session has it |
+| DEF-07 | DT (installed, not enabled, while running) | off |
+| DEF-08 | DT (installed and enabled while down) | off |
+| DEF-09 | ST (on → removed → installed again) | off, changedBy null |
+
+### [plugins-upgrade.test.mjs](plugins-upgrade.test.mjs): defaults on an existing install
+
+| id | technique | expected result |
+|---|---|---|
+| UPG-00 | precondition | the old version shows profile-enabled bundles on and the user's two choices; its entries have no status field |
+| UPG-01..04 | DT (see the defaults table) | the four combinations keep their previous state; fbtest-tools' tool statuses are as before; fbtest-only runs |
+| UPG-05 | EP | every entry follows the status/actions table |
+| UPG-06 | ST | a bundle installed and enabled while running starts off |
+| UPG-07 | ST (restart) | every state above is kept |
+| UPG-08 | ST | a bundle linked while DSH was down starts off |
+| UPG-09 | ST | a bundle present at the upgrade, removed and installed again, starts off with changedBy null |
+
+### Cases changed by plugin statuses
+
+- **CAT-01**: four Fishball plugin tools (with `remove_plugin`, `FISHBALL_TOOLS`). **CAT-02**: 12 keys (`PLUGIN_KEYS`) and the status/actions table, at defaults and after fbtest-tools is on. **CAT-03/05/06** read the default catalog. **CAT-04**: fbtest-tools is **off** (dsh-disabled) on a new install. **CAT-07**: fishball-installed entries are not DSH bundles. **CAT-09/10/15** first turn fbtest-tools on through POST plugins.
+- **TOG-01..10, PHT-02..04, PHT-10**: the file's `before` turns fbtest-tools on through the user route (no allowance, no prompt), so the cases still start from "on with unchecked tools". Cases that already turn it on through `allowFixtures` (CMP, FW, PER, REV host B, review2) are unchanged: set_plugin_enabled on works from off.
+- **ADD-02/03**: add_plugin installs into Fishball's folder, not the profile, and turns the plugin on itself (key fishball:fbtest-added). **ADD-04** (new): it survives a restart.
+- **REV-15/16**: the add entry may name fishball:<name>. REV-16's `installed` is fishball:fbtest-added-b, installed in Fishball's folder. **REV-17a/b**: a bundle installed and enabled while DSH runs is listed **off**. Its tool stays hidden (unchecked or plugin-off, A22) until set_plugin_enabled on is answered Allow.
+- **UNC-00** (new): no notice at first live. **UNC-01**: the notice comes after the user turns fbtest-tools on. **UNC-05**: no notice while the late bundle is off, one after the user turns it on. **UNC-07** (new): a fishball-only plugin brings no notice. This follows the implementer's answer: the notice covers profile-enabled plugins that are on for Fishball.
+- **ENA-01..07, PUB-*, DED-***: fbtest-source is turned on for Fishball first. **ENA-08**: once live, the source stays disabled until the user turns the plugin on. **EXA-00** (new): the profile-enabled example starts disabled and nothing is delivered. EXA-01..04 follow after the user turns it on.
+
+### Ambiguities (plugin statuses)
+
+- **A102. Uninstall in the audit.** "Records action remove" is checked as at least one plugin_changes row with `action: 'remove'` after an allowed remove_plugin. The row's other fields are not asserted.
+- **A103. Limit refusal codes (STA-12).** The route answers 409 `refused` and the tool `limit-reached`, as for fishball-only plugins before.
+- **A104. "Immediately if idle" (STA-21).** Checked as: the entry leaves GET state within 60 s with no Fishball model request.
+- **A105. Upgrade fixture.** "Existing install" is a home that ran f368ad2 until live. At that point the bundles enabled in the profile are fbtest-tools, fbtest-added and fbtest-added-b (linked at the first boot). The user's choices were made through POST plugins with the old version.
+- **A107. PTA-01 is a known environment failure.** During the plugin-statuses round the inner run_code request never reaches Fishball (10 s timeout). It fails the same way with the previous version (f368ad2), under both the current harness and that version's own unchanged harness, while earlier recorded runs (p8, p9) passed. So something outside this plugin changed (the environment or the DSH install). It was not investigated in this round.
+- **A106. What maxMessageBytes bounds for the install route.** Read as in P5: the user's own text (the spec), not Fishball's framing around it. So a 64-byte spec fits maxMessageBytes 64.
 
 ## Environment limits
 

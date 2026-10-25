@@ -4,7 +4,8 @@
  *
  * | id     | technique | req | expected |
  * |--------|-----------|-----|----------|
- * | EXA-01 | ST (first boot: the plugin loads before Fishball is live) | X8, X5 | each note reaches Fishball exactly once, as a notice (summary 'Plugin event: "Example notes"') whose block has the note's title and body and whose identity is fishball-source-example/fishball-source-example/notes; Fishball's model reads each; items kind plugin, consumed; the source is listed with plugin fishball-source-example, enabled |
+ * | EXA-00 | ST (first boot of a new install; plugin statuses) | X7, X8 | the profile-enabled example starts off in Fishball: its source is listed disabled and no note arrives; the user then turns it on for Fishball |
+ * | EXA-01 | ST (off -user on-> on: onEnabled republishes) | X8, X5 | each note reaches Fishball exactly once, as a notice (summary 'Plugin event: "Example notes"') whose block has the note's title and body and whose identity is fishball-source-example/fishball-source-example/notes; Fishball's model reads each; items kind plugin, consumed; the source is listed with plugin fishball-source-example, enabled |
  * | EXA-02 | ST (restart) | X6, X8 | nothing is delivered twice; the source is listed again |
  * | EXA-03 | ST on -user off for Fishball-> off -restart with a new note-> | X7, X8 | its code keeps running (the source is registered again after the restart and listed disabled); the new note's publish is 'disabled': nothing stored or delivered |
  * | EXA-04 | ST off -on-> on | X7, X8 | enabled again; onEnabled makes the example republish: the new note arrives exactly once, the earlier notes are not delivered twice |
@@ -58,7 +59,17 @@ describe('P8 R5: the example plugin enabled for everyone', () => {
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('EXA-01 each note reaches Fishball once and wakes it, although the plugin loaded before Fishball was live', T, async () => {
+  it('EXA-00 a new install starts the example off in Fishball: listed disabled, nothing delivered; the user turns it on', T, async () => {
+    assert.ok(await until(async () => (await exampleListed(host)) !== undefined, 15000, 100), 'its code runs for everyone: the source is registered')
+    assert.equal((await exampleListed(host)).enabled, false)
+    await sleep(2000)
+    assert.deepEqual(await noteCounts(host, fb, 0), NOTES.map(() => 0), 'no note delivered while off for Fishball')
+    assert.equal((await pluginItems(host)).length, 0, 'nothing stored')
+    const res = await host.post(API.plugins, { plugin: EXAMPLE.name, on: true })
+    assert.equal(res.status, 200, res.text)
+  })
+
+  it('EXA-01 each note reaches Fishball once and wakes it, once the example is on for Fishball', T, async () => {
     for (const n of NOTES) assert.ok(await untilSeen(host, fb, n.body, 15000), n.id + ' reached Fishball\'s model')
     assert.deepEqual(await noteCounts(host, fb), NOTES.map(() => 1))
     for (const n of NOTES) {

@@ -1,10 +1,13 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
-**Status: approved 2026-10-24; revision 7.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+**Status: approved 2026-10-24; revision 8.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
 
 Revision 7 records the spike results (§13a) and the four amendments they forced: the brand registers at a lower slot priority (§10), `start_session` checks that the folder exists before DSH sees it and does not register a workspace (§5d), tools are attributed to plugins by a registration hook (§4), and Fishball sets its own session read-only (§7).
 
+Revision 8 (2026-10-25, owner's request) gives every plugin one of three statuses with its own actions, lets Fishball install and uninstall plugins in its own package folder instead of the DSH profile, and turns DSH plugins off in Fishball by default (§4, §7a, §9, §10, Q-plugin-status).
+
 Earlier revisions:
+- Revision 7 recorded the spike results (§13a).
 - Revision 6 put every safety limit into this plugin's config (§16).
 - Revision 5 kept tools nobody has checked hidden until you allow them (§7), and moved the tool mask into Fishball's agent scope (§4).
 - Revision 4 added starting new sessions (§5d), the fixed list of hidden file-writing tools and the role prompt (§7), and plugin adds as normal permission requests (§7a).
@@ -21,11 +24,11 @@ Evidence markers:
 
 - **One package, one profile row.** `dsh-fishball` is a single DSH plugin bundle. It is installed like any other plugin, into whichever profile you choose (Q1), and serves the sessions in the same DSH process.
   - Its patch inserts one host row, `fishball`, and the same package ships a Web client half.
-  - This row is the only change the product makes to that profile, apart from plugins you approve Fishball adding (§4) and the limits you set in its config (§16).
+  - This row is the only change the product makes to that profile, apart from the limits you set in its config (§16). Plugins Fishball installs go to its own package folder, not the profile (§4).
 - **Private composition, not a preset.** Fishball is a normal DSH agent and session. Our row creates and resumes it with a private `setup` instead of through an agent preset. It therefore never appears in the new-session picker, and nobody can open a second session with it.
-- **Plugins chosen by Fishball, for Fishball.** Fishball turns plugins on and off for itself. Adding a new plugin raises a normal DSH permission request that you answer.
-  - A plugin the whole profile uses can be hidden from Fishball alone.
-  - A plugin can run for Fishball alone: it is installed but left off in the profile, and Fishball mounts it in its private plugin tree.
+- **Plugins chosen by Fishball, for Fishball.** Every plugin shows one of three statuses (§4): installed in Fishball only (enable, disable, uninstall), installed in DSH and enabled in Fishball (disable), installed in DSH and disabled in Fishball (enable). Fishball never uninstalls a DSH plugin.
+  - Installing a plugin for Fishball raises a normal DSH permission request that you answer, and puts it in Fishball's own package folder, never the DSH profile.
+  - DSH plugins start off in Fishball. On a Fishball install that existed before revision 8, the DSH plugins present then keep their state.
   - These choices are stored in our own storage domain and never change what other sessions see.
 - **One durable intake path; every input wakes Fishball.** Messages from other sessions, session-finish notices, permission requests and plugin events all reach Fishball's inbox with `steer`. Each carries its sender, duplicates are dropped, and nothing is lost across a restart.
   - "Tell me when session X finishes" is a durable watch table over DSH's `turn/end` and `agent/status` events.
@@ -179,30 +182,60 @@ One component per responsibility; each is a module with an explicit contract:
 | Schedule, approval, token meter, session controller, plugin manager | Global persona prefix/suffix, `harness:*` sections, optional runtime context (shadowed or suppressed) |
 | Global policy listeners: spill, timeouts, checkpointing. Cannot be hidden [V], and are harmless | Plugins that run for Fishball only (private tree) |
 
-**Plugin states.** Fishball's catalog lists every plugin bundle installed in the profile (`pluginManager.listBundles()` [V]), plus DSH built-in capability packages: compaction, web, time, reminders, ask-user, skills and the read-only shell. Each has a Fishball-only on/off state:
+**Plugin states.** Fishball's catalog lists every DSH plugin (a bundle installed in the profile or offered by the installation, `pluginManager.listBundles()` [V]), the plugins installed in Fishball only (its own package folder, below), and DSH built-in capability packages: compaction, web, time, reminders, ask-user, skills and the read-only shell. Each has a Fishball-only on/off state:
 
 | Where the plugin is | Fishball "on" | Fishball "off" | Effect on other sessions |
 |---|---|---|---|
-| Enabled in the profile (runs for every session) | Its tools are visible to Fishball, except those hidden or unchecked (§7), and its `ctx.fishball` sources are accepted (default) | Its tools are masked for Fishball and its sources are refused. Its code keeps running for other sessions | None |
-| Installed but off in the profile ("Fishball-only") | Its rows are mounted in Fishball's private tree, so its code runs for Fishball alone. Hidden tools stay hidden, and unchecked ones wait for your approval (§7) | Not running anywhere | None |
+| DSH plugin, enabled in the profile (runs for every session) | Its tools are visible to Fishball, except those hidden or unchecked (§7), and its `ctx.fishball` sources are accepted | Its tools are masked for Fishball and its sources are refused. Its code keeps running for other sessions | None |
+| DSH plugin, installed but off in the profile ("Fishball-only") | Its rows are mounted in Fishball's private tree, so its code runs for Fishball alone. Hidden tools stay hidden, and unchecked ones wait for your approval (§7) | Not running anywhere | None |
+| Installed in Fishball only (Fishball's package folder) | Mounted in the private tree, as above | Not running anywhere | None: DSH does not know the package |
 | DSH built-in capability package | Mounted in the private tree | Not mounted | None |
+
+**Plugin statuses (revision 8).** Each catalog entry shows one status and offers only its actions. The state snapshot and `list_plugins` carry `status`, `actions` and `removing`:
+
+| Status | Which plugins | Actions |
+|---|---|---|
+| `installed-in-fishball` | Installed in Fishball's own package folder (key `fishball:<package>`). A package of the same name may also be a DSH plugin; they are separate entries | enable or disable, uninstall |
+| `dsh-enabled` | DSH plugin (enabled or off in the DSH profile), on in Fishball | disable |
+| `dsh-disabled` | DSH plugin, off in Fishball | enable |
+| `builtin` | DSH built-in capability package (unchanged) | enable or disable |
+
+- **No uninstall of DSH plugins.** Fishball offers no action, route or tool that removes a DSH plugin; installing and removing DSH plugins stays on DSH's Plugins page.
+- **While uninstalling** an entry offers no actions (`removing: true`) until it is gone.
+
+**Installed in Fishball only: Fishball's package folder.**
+- **Where.** `<DSH profiles directory>/.fishball-plugins`, a pnpm project laid out like a profile (DSH's `initProfile` with no bundles); nothing boots it. Inside the profiles directory, DSH's runtime resolution gives its packages the host installation's packages as peers, and not the active profile's packages (S22). The DSH profile's `package.json`, lockfile and `cordis.patch.yml` never change.
+- **How.** DSH's own pnpm runner (`dsh-plugin-manager/operations` `runPluginCommand`: lock, scrubbed environment, captured output, silence bound, DSH-version check of new dependencies) and DSH's spec parser. A local folder is installed as a copy (`file:`), because a link would leave it outside the profiles directory. A package without a DSH bundle patch is removed again (`not-bundle`).
+- **Mounting.** Its rows are read from its patch with the same rules as a Fishball-only bundle, and bare module names are resolved from the package's own folder, so the private tree imports this package and not a DSH plugin of the same name.
+- **Uninstall.** Marked `removing` and turned off at once (durable); the next idle-phase apply unmounts it, then `pnpm remove` runs, so its code has stopped before its files go. A restart in between finishes the uninstall at the next start. A failed removal leaves it installed and off with `remove-failed`.
+- **Limitations.** Node keeps a loaded module cached, so a package removed and installed again at another version runs the first-loaded code until DSH restarts (DSH's plugin manager has the same limit).
+  - Mounting resolves module names through Node's internal module loader, as DSH's own loader does. Where it is unavailable, every plugin installed in Fishball only fails to mount with `row-failed`.
+  - Installing a package name already in Fishball's folder is refused before the prompt (`already-installed`); a git or tarball spec names its package only after the fetch, so that case is refused after it.
+  - `.fishball-plugins` is a valid name for `dsh --profile`; nothing in DSH scans the profiles directory, so the folder is never booted unless someone names it.
 
 **On at first start:**
 - compaction, web search and page opening, time awareness and reminders;
-- every profile-wide plugin; their file-writing tools stay hidden (§7).
+- no DSH plugin (revision 8). Fishball turns one on when you ask or when it judges it useful; its file-writing tools stay hidden (§7).
+- **Existing installs keep their state.** "Existing" means Fishball's session already existed when revision 8 first started; this is decided once and stored (`plugin_defaults`, §9). On such an install the DSH plugins enabled in the DSH profile at that start keep their old default, on; every other DSH plugin is off, and a stored choice still wins. A plugin that was installed but off in the DSH profile then stays off in Fishball even if you later enable it in DSH. Nothing is migrated or turned off.
+  - **When the baseline is taken.** From the first bundle listing that works, which boot runs at that first start. If that listing fails, the next working one is used, so a DSH plugin enabled in between would keep the old default.
+  - **What counts as reinstalled.** A plugin that a listing sees missing from the DSH profile loses its choice and its place in the baseline. A removal and reinstall that no listing sees (both while DSH is stopped, or an in-place upgrade) keeps both.
+- **DSH plugins installed later start off**, on every install. One removed from the DSH profile and installed again counts as new: its earlier choice is forgotten and it starts off.
+- **Installed in Fishball only:** off when installed; `add_plugin` turns it on right after.
 
 Ask-user, skills and the read-only shell are in the catalog but start off. DSH's MCP client is not a catalog entry: each MCP server is one row with its own server settings, which an on/off switch cannot supply. MCP servers configured in the profile are host rows, so their tools reach Fishball as profile tools, checked or allowed like any other. The catalog lists bundles you installed or DSH offers as optional; the installation's own surface bundles are not plugins.
 
 **Who changes what.**
-- **Turning plugins on and off: Fishball (Q-toggle).** It uses `set_plugin_enabled({plugin, on})`, when you ask or on its own judgement. `list_plugins` shows the catalog and the states. You can make the same changes in Fishball settings.
-- **Adding a plugin: Fishball, after a normal DSH permission request to you (N3).**
-  1. `add_plugin({spec, reason})` raises a permission request in Fishball's chat, the same Allow once / Reject prompt any session shows (§7a).
-  2. Only after you allow it does it call `pluginManager.installBundle(spec, {enabled: false})` [V]. The package joins the profile's dependencies with its bundle left off, so nothing runs for other sessions.
+- **Turning plugins on and off: Fishball (Q-toggle).** It uses `set_plugin_enabled({plugin, on})`, when you ask or on its own judgement. `list_plugins` shows the catalog, statuses and actions. You can make the same changes in Fishball settings.
+- **Installing a plugin for Fishball: Fishball, after a normal DSH permission request to you (N3).**
+  1. `add_plugin({spec, reason})` checks the spec with DSH's parser (an invalid spec is refused without a prompt), then raises a permission request in Fishball's chat, the same Allow once / Reject prompt any session shows (§7a).
+  2. Only after you allow it does it install the package into Fishball's package folder (above). The DSH profile is not changed, so nothing runs for other sessions.
   3. Fishball then turns the plugin on for itself. If the plugin brings tools nobody has checked, that raises a second prompt listing them (§7, N4).
+  - **From the settings page.** "Install a plugin for Fishball only" sends the spec to Fishball as an input (`POST /api/fishball/plugins/install`), which wakes it to call `add_plugin`. DSH asks only inside a running turn of the asking session, so the page cannot raise the prompt itself.
 
   Like any DSH prompt, the request waits for your answer. A click is required, not a chat message, because installed code runs in-process with host authority.
+- **Uninstalling a plugin installed in Fishball only.** Fishball calls `remove_plugin({plugin, reason})`, which asks you through the same normal permission request; a DSH plugin or built-in is refused before any prompt (`not-removable`). Your own Uninstall on the settings page needs no prompt.
 - **Moving a plugin between "everyone" and "Fishball only"** changes the profile for every session, so only you do it, on DSH's Plugins page. Fishball can suggest it.
-- **Profile files.** Fishball's toggles never write the profile's `package.json` or `cordis.patch.yml`. Adding a plugin writes one dependency to `package.json` and the lockfile, through DSH's plugin manager.
+- **Profile files.** Fishball never writes the DSH profile's `package.json`, lockfile or `cordis.patch.yml`: toggles are stored in our domain, and installs go to Fishball's package folder.
 - **Limits.** The safety limits are this plugin's own config (§16). Only you change them, on DSH's Plugins page. DSH saves them as the `fishball` row's config in the profile's `cordis.patch.yml`, as it does for any plugin. Fishball has no tool that edits plugin config.
 
 **Masking, applied in agent A's `setup`.** A restriction hides what a scope inherits, never what that scope registered itself [V `dsh-tools/lib/types/index.d.ts:660-681`]. Fishball-only plugins register their tools in P. The restriction is therefore applied one level down, in A, where P's tools and the global tools are both inherited and can be hidden:
@@ -420,7 +453,7 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
   - For a plugin Fishball has just installed, this is the second prompt, right after the install prompt.
 - **Allow once.** The tools become visible. The allowance is stored in `toolApprovals` (§9), keyed by plugin, tool name and parameter digest, so you are not asked again until the tool changes.
 - **Reject.** Nothing changes. A plugin that was off stays off, and a Fishball-only plugin is unmounted again. The unchecked tools stay hidden.
-- **Plugins already on.** A profile-wide plugin you install later is on for Fishball by default, but its unchecked tools stay hidden, and `list_plugins` shows them as unchecked; Fishball can ask you with `set_plugin_enabled`. A Fishball notice through the intake ledger tells Fishball about them: once per tool version (module, name, parameter digest), when Fishball goes live, whenever the tool set changes and after the plugin manager reports a change (a runtime install registers its tools before the catalog knows the bundle). Like every input it wakes Fishball, within the hourly wake-up cap.
+- **Plugins already on.** A profile-wide plugin that is on for Fishball (one kept on from before revision 8, or one turned on without allowing its unchecked tools, as your own settings switch does) keeps its unchecked tools hidden, and `list_plugins` shows them as unchecked; Fishball can ask you with `set_plugin_enabled`. A Fishball notice through the intake ledger tells Fishball about them: once per tool version (module, name, parameter digest), when Fishball goes live, whenever the tool set changes, after each apply and after the plugin manager reports a change. A plugin off for Fishball brings no notice. Like every input it wakes Fishball, within the hourly wake-up cap.
 - **Tools with no recorded owner.** A tool registered before Fishball's attribution row loaded, and not claimed by a checked entry or one of your allowances, cannot be tied to a plugin, so it can never be listed in a prompt; it stays hidden and shows under "other tools". Lazily registered tools (browser-skill) appear when first registered and are then allowed by asking for their plugin again.
 - **Withdrawing an allowance.** Fishball settings list the tools you allowed; removing one hides it again.
 - **The `bsk_inspect` copy** is built from the original's current parameters minus the save options. If the original's parameters change, it counts as unchecked like any other tool.
@@ -536,7 +569,7 @@ The assistant cannot reject a request. It can approve within your allowance, or 
 - **No allowance means no approval.** With no allowance in the conversation, it escalates every request without a risk analysis.
 - **Compaction.** After compaction, the original message may be gone. The assistant's compaction summary therefore keeps a "Standing permissions" section with your exact words, the time, the scope and any revocation. The prompt treats that section as the record (S13).
 
-**Fishball's own requests (N3).** Adding a plugin is a normal DSH permission request. It uses the same path as any session's request, with Fishball as the asking session:
+**Fishball's own requests (N3).** Adding a plugin, and uninstalling one installed in Fishball only (`remove_plugin`), is a normal DSH permission request. It uses the same path as any session's request, with Fishball as the asking session:
 
 ```
 Fishball calls add_plugin({spec, reason})
@@ -548,7 +581,7 @@ Fishball calls add_plugin({spec, reason})
             1. ApprovalBroker: the asking agent is Fishball → next()
                (code rule: Fishball never answers its own requests)
             2. dsh-api-remotes → Allow once / Reject in Fishball's chat
-               ├─ Allow once → installBundle(spec, {enabled: false}); Fishball turns the plugin on
+               ├─ Allow once → install into Fishball's package folder (§4); Fishball turns the plugin on
                └─ Reject, cancelled, or no approval channel → nothing installed; Fishball is told
   ← audit approval/decided in Fishball's log
 ```
@@ -667,7 +700,8 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
 - `settings['assistant']`:
   - `contextWindowTokens?`, `maxOutputTokens?`. There is no model field, because the model follows DSH's settings (§6).
   - `hiddenPromptSections[]`
-- `plugins[pluginKey]`: `{kind:'profile'|'fishball-only'|'builtin', on, changedBy:'fishball'|'user', changedAt, lastError?}`. Absent means the default. A stored choice whose `kind` no longer matches (you moved the plugin between "everyone" and "Fishball only") is ignored. Table names are snake case (`tool_approvals`, `plugin_changes`), as DSH requires.
+- `plugins[pluginKey]`: `{kind:'profile'|'fishball-only'|'builtin'|'fishball-installed', on, changedBy:'fishball'|'user', changedAt, lastError?, removing?}`. Absent means the default. A stored choice whose `kind` no longer matches (you moved the plugin between "everyone" and "Fishball only") is ignored. The choice of a DSH plugin no longer installed is deleted, so a reinstall starts off (§4). `removing` marks an uninstall waiting for the next apply. Table names are snake case (`tool_approvals`, `plugin_changes`), as DSH requires.
+- `plugin_defaults['dsh']` (revision 8): `{existingInstall, dshPlugins: string[] | null, recordedAt}`. Written once at the first start of revision 8: `existingInstall` is whether Fishball's session already existed; `dshPlugins` is the DSH plugins listed then (empty on a new install), which keep the old default; a plugin that leaves the profile leaves this list. Same version 1 rule as the other added tables.
 - `watches[watchId]`:
   - `{targetSessionId, condition:'finished'|'per-turn', mode:'once'|'repeat'}`
   - `createdBy {kind:'user'|'assistant'|'agent', id?}`, `createdAt`
@@ -690,7 +724,7 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
   - The arguments themselves are not stored here; they stay in the two session logs.
 - `outbox[key]` (audit, keyed by time and a counter; the newest `auditEntriesKept` are kept, 500 by default): `{kind:'message'|'start', targetSessionId (null only if no session exists), folder?, messageDigest, at, status:'delivered'|'unconfirmed'|'failed', errorCode?}`
 - `toolApprovals[toolKey]`: `{module, toolName, paramsDigest, allowedAt}`, keyed by module, tool name and parameter digest (each segment encoded to storage-safe characters, joined by `__`), recording that you allowed a tool nobody had checked (§7). The hidden and checked sets are constants in code and are not stored.
-- `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add', by:'fishball'|'user', at, outcome}`. These three tables keep domain version 1: the single-file layout reads a missing table as empty.
+- `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add'|'remove', by:'fishball'|'user', at, outcome}`. These three tables keep domain version 1: the single-file layout reads a missing table as empty.
 
 No custom session event types are added: persistence refuses logs containing unknown event types that are not marked ignorable [V `dsh-session/lib/types/known-event-types.d.ts`].
 
@@ -717,7 +751,7 @@ No custom session event types are added: persistence refuses logs containing unk
   2. **Fishball settings live on its page under Plugins** (owner's choice, P2), through `plugins.bundle.config`. There is no separate settings panel. The page opens from the header action in the assistant session and from the brand while the assistant needs attention. It shows, as the phases add them:
      - status and recovery actions;
      - the context window (`W_eff`, threshold, pressure);
-     - the plugin catalog with each plugin's Fishball state and who last changed it;
+     - the plugin catalog: each plugin's status (§4) with only its actions (a switch for enable/disable, Uninstall for plugins installed in Fishball only), who last changed it, and "Install a plugin for Fishball only";
      - the tools hidden from Fishball because they write files (read-only, §7);
      - unchecked tools waiting for your approval, and the tools you allowed, each with a Remove action;
      - sources;
@@ -728,7 +762,7 @@ No custom session event types are added: persistence refuses logs containing unk
      - the safety limits as a form, one field per limit, with each limit's current use, for example "queue 12 of 200" (later phases).
        - The form saves through DSH's settings service, which validates the values, refuses stale writes and saves them in the profile's patch [V `dsh-settings/README.md`, `dsh-config-editor/README.md`]; verified in the browser in P2.
   3. Session-row and session-header actions: **Send to Fishball** and **Tell Fishball when finished** (P5, P6); P2 adds a header action in Fishball's own session that opens its Plugins page.
-- **Host API.** `GET /api/fishball/state` (JSON snapshot), `GET /api/fishball/events` (server-sent snapshots: one at once, then one per change) and `POST /api/fishball/recovery` (`{action: 'retry'|'adopt'}`; 400 `bad-body`, 409 with the reason `not-in-recovery` or `unavailable`). P3 adds `POST /api/fishball/plugins` (`{plugin, on}`, your own choice) and `POST /api/fishball/tool-approvals/remove` (`{toolKey}`); 409 `unknown` or `refused`. P4 adds `POST /api/fishball/context-window`, P5 `POST /api/fishball/send` (`{sessionId, note}`), and P6 `POST /api/fishball/watches` (`{sessionId}`) and `POST /api/fishball/watches/remove` (`{watchId}`); a refusal answers 409 with its code. The unread count adds `POST /api/fishball/read` (`{}`), and the icon choice `POST /api/fishball/brand`. Limits are saved through DSH's settings service, not a Fishball route.
+- **Host API.** `GET /api/fishball/state` (JSON snapshot), `GET /api/fishball/events` (server-sent snapshots: one at once, then one per change) and `POST /api/fishball/recovery` (`{action: 'retry'|'adopt'}`; 400 `bad-body`, 409 with the reason `not-in-recovery` or `unavailable`). P3 adds `POST /api/fishball/plugins` (`{plugin, on}`, your own choice) and `POST /api/fishball/tool-approvals/remove` (`{toolKey}`); 409 `unknown` or `refused`. Revision 8 adds `POST /api/fishball/plugins/remove` (`{plugin}`; 409 `unknown`, or `refused` for anything not installed in Fishball only) and `POST /api/fishball/plugins/install` (`{spec}`, handed to Fishball; 409 `too-large`, `queue-full` or `unavailable`). P4 adds `POST /api/fishball/context-window`, P5 `POST /api/fishball/send` (`{sessionId, note}`), and P6 `POST /api/fishball/watches` (`{sessionId}`) and `POST /api/fishball/watches/remove` (`{watchId}`); a refusal answers 409 with its code. The unread count adds `POST /api/fishball/read` (`{}`), and the icon choice `POST /api/fishball/brand`. Limits are saved through DSH's settings service, not a Fishball route.
   - These routes are behind DSH's browser authentication and same-origin fence [V pattern], and bodies are validated at the boundary.
   - The browser never names the source identity or the sender.
 
@@ -806,6 +840,8 @@ No custom session event types are added: persistence refuses logs containing unk
 | S19 | Does a scoped copy of `bsk_inspect` without `output` and the `save` video action replace the global tool for Fishball only, and pass other calls through unchanged? Are the other hidden tools absent from Fishball's requests? | Fishball's tool list matches §7; other sessions keep the full `bsk_inspect` |
 | S20 | Can a Fishball-only plugin be mounted with its tools hidden so the prompt can list them, then shown on Allow once and unmounted on Reject? Does a changed parameter schema make a checked tool unchecked? | All of these, with a test plugin |
 | S21 | Does changing a `.volatile()` limit on the Plugins page reach the running `fishball` row without remounting it, so that no Fishball turn is cancelled and the agent is not disposed? Does an invalid value leave the file and the running value unchanged? | Both, verified in a real browser |
+| S22 | Can a package installed in a folder under DSH's profiles directory import with the host's peer packages? | It imports, and its `@deepseek-ai/dsh-scope` is the host's instance |
+| S23 | A package in Fishball's folder with the same name as one the DSH installation ships: which copy is read and imported? | Fishball's copy is imported; the bundle check reads Fishball's copy |
 
 ## 13a. Spike results (P1, 2026-10-24)
 
@@ -835,6 +871,8 @@ Every spike ran in-process against the installed rc.2 runtime, on a throwaway `D
 | S19 | **Pass** | A scoped `bsk_inspect` copy without `output` replaced the global tool for Fishball only; another session kept the full schema |
 | S20 | **Pass** | A Fishball-only plugin mounted with its tool masked can be listed (name, first description line, parameter digest); Allow lifts the mask; Reject unmounts the row; a changed parameter schema changes the digest |
 | S21 | **Pass** | `ctx.settings.update` changed a `.volatile()` field in the running row without remounting it and wrote the profile patch. An invalid value was refused, and the file and the live value were unchanged. A stale revision gives `SETTINGS_CONFLICT` |
+| S22 | **Pass** (2026-10-25, revision 8) | A local package installed with plain `pnpm add file:` into a hand-made pnpm folder `<profiles>/.fishball` imported from there, and its `@deepseek-ai/dsh-scope` was the host's instance (`spikes/s22-fishball-packages.mjs`). The built code uses `<profiles>/.fishball-plugins`, DSH's `initProfile` and `runPluginCommand`; `spikes/p10-smoke.mjs` covers that path end to end |
+| S23 | **Pass, with a fix** (2026-10-25, review H3) | For `@deepseek-ai/dsh-experimental-agent-team-profile` installed in Fishball's folder, a bare-name resolve from the package selects Fishball's copy, but DSH's `bundleManifest` reads the installation's copy first. The bundle check therefore reads the manifest from Fishball's copy directly (`spikes/s23-same-name.mjs`) |
 
 ## 14. Delivery phases (after approval)
 
@@ -847,7 +885,7 @@ Each phase ends with:
 | Phase | Content | Exit |
 |---|---|---|
 | P0 | Archive the old code and create the skeleton (§15) | Clean tree, new README/AGENTS |
-| P1 | Spikes S1–S21; update this document | All spikes pass, or the design is amended |
+| P1 | Spikes S1–S21 (S22–S23 added in revision 8); update this document | All spikes pass, or the design is amended |
 | P2 | Store, plugin config (limits), AssistantLifecycle, scope P core (persona with the role section, masking, hidden tools and the `bsk_inspect` copy, file-write guard, approval `ask`), Fishball brand button and settings view | Requirement 2 singleton criteria; file-write criteria; brand criteria |
 | P3 | Private plugin tree, catalog, Fishball's plugin tools (`list_plugins`, `set_plugin_enabled`, `add_plugin`), approval of unchecked tools, default plugin set | Requirement 1 criteria |
 | P4 | Context window | Requirement 3 criteria |
@@ -864,7 +902,8 @@ Each phase ends with:
   - When Fishball turns plugin X on, X's checked or allowed tools appear in Fishball's next request and in no other session.
   - Turning a profile-wide plugin off for Fishball hides it from Fishball only.
   - Turning plugins on and off leaves the profile's `package.json` and `cordis.patch.yml` byte-identical.
-  - `add_plugin` installs nothing until you click Allow once in the normal DSH prompt in Fishball's chat. Fishball cannot answer that request itself, and it is refused when Fishball's permission mode never asks. After the click, the profile gains one dependency with its bundle off, and other sessions are unchanged.
+  - `add_plugin` installs nothing until you click Allow once in the normal DSH prompt in Fishball's chat. Fishball cannot answer that request itself, and it is refused when Fishball's permission mode never asks. After the click, Fishball's package folder gains the package; the DSH profile and other sessions are unchanged.
+  - Each plugin shows its status (§4) and offers exactly its actions; nothing uninstalls a DSH plugin. A new Fishball install starts with every DSH plugin off; a DSH plugin installed later starts off; on an existing install, DSH plugins already on stay on.
   - The state survives a restart.
   - The persona is Fishball's, not "coding agent".
 - **R2:**
@@ -973,6 +1012,18 @@ Each phase ends with:
 |---|---|---|
 | Q-bounds | Leave every limit in this plugin's config, so you can change them as you wish | The limits below are config fields of the `fishball` row (§9, §10, §11) |
 
+**Answered on 2026-10-25 (revision 8):**
+
+| ID | Your answer | Effect on the plan |
+|---|---|---|
+| Q-plugin-status | Three statuses with their own actions: installed in Fishball only (install, uninstall, enable, disable); installed in DSH and enabled in Fishball (disable); installed in DSH and disabled in Fishball (enable). Fishball cannot uninstall DSH plugins | §4 statuses; `remove_plugin` and the settings Uninstall only for plugins installed in Fishball only |
+| Q-installed-in-fishball | "Installed in Fishball only" means installed individually in Fishball, even when a plugin of the same name is installed in DSH | Fishball's own package folder; key `fishball:<package>` (§4) |
+| Q-install-route | Installing from the settings page goes through Fishball | The page hands the spec to Fishball, which calls `add_plugin` (§4) |
+| Q-uninstall | You and Fishball can uninstall; Fishball asks first | `remove_plugin` raises the normal permission request; your click needs none |
+| Q-builtins | Built-ins unchanged | Status `builtin`, same defaults |
+| Q-limit-scope | **Open, implementer's assumption:** `maxFishballOnlyPlugins` also counts plugins installed in Fishball only, since both run in the private tree | §16 limit row; confirm or change |
+| Q-defaults-dsh | DSH plugins off by default for new installs and for DSH plugins installed later; existing installs keep plugins already on. Baseline at the first start of revision 8; a reinstalled plugin counts as new | `plugin_defaults` (§9), §4 "On at first start" |
+
 **Nothing is open.** Every design question is answered, and the plan is ready for your approval. §15 lists what happens first.
 
 **Plugin config: the safety limits.** These caps stop a runaway loop or a flood of input from causing unbounded model calls or storage. Nothing over a cap is dropped silently: it either waits, or the sender gets a clear error.
@@ -986,7 +1037,7 @@ Each phase ends with:
 | `maxQueuedInputs` | Messages, finished-session notices and plugin events that have arrived but Fishball has not read yet | New inputs are refused, and the sender is told "Fishball's queue is full" | 200 |
 | `maxActiveWatches` | Open "tell Fishball when this session finishes" requests | New watches are refused | 50 |
 | `maxSourcesPerPlugin` | Separate feeds one plugin can register, for example "inbox" and "calendar" | Further registrations fail | 8 |
-| `maxFishballOnlyPlugins` | Fishball-only plugins (installed but off in the profile) running in Fishball's private tree at the same time; the built-ins are a fixed set and do not count | Turning on another fails until one is turned off | 32 |
+| `maxFishballOnlyPlugins` | Package plugins running in Fishball's private tree at the same time: DSH plugins off in the profile and plugins installed in Fishball only; the built-ins are a fixed set and do not count | Turning on another fails until one is turned off | 32 |
 | `wakeupsPerHour` | Times an input other than your message or a permission request starts a new Fishball turn from idle. Inputs that arrive while Fishball is already working steer that turn and do not count | Further inputs wait in the queue and arrive together at the next allowed wake-up | 60 (0 = no cap) |
 | `messagesPerHour` | `message_session` calls | Further sends fail, and Fishball tells you | 30 (0 = no cap) |
 | `sessionsPerHour` | `start_session` calls | Further starts fail, and Fishball tells you | 10 (0 = no cap) |

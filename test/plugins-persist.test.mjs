@@ -6,16 +6,17 @@
  * | PER-01 | ST (choices -restart-> same choices) | plugin choices and allowances survive a restart | catalog (plugin, kind, on, changedBy, tool statuses) and allowedTools equal before and after; Fishball's request lists the same tools; the Fishball-only plugin runs again |
  * | PER-02 | EP                     | storage tables                                             | $DSH_HOME/storages/fishball.json has tables plugins, tool_approvals and plugin_changes, each non-empty |
  * | PER-03 | BVA (auditEntriesKept = 2, three more changes) | audit keeps the newest N               | plugin_changes has at most 2 entries; the newest change is kept, the oldest of the three is gone |
- * | ADD-01 | DT (answer rejected)   | add_plugin installs nothing without Allow once             | one approval, toolName add_plugin, reason contains the spec and the reason; {ok:false, code:'rejected'}; profile package.json byte-identical; package not installed |
- * | ADD-02 | DT (answer allowed-once) | add_plugin installs a local package                      | the profile gains the dependency; its bundle is not in dsh.profile.bundles; other sessions and the global tool list lack its tool; catalog lists it fishball-only |
- * | ADD-03 | ST (added -on, allow-> on) | the added plugin then follows R6/R8                    | its code runs for Fishball; its tool appears in Fishball's next request only |
+ * | ADD-01 | DT (answer rejected)   | add_plugin installs nothing without Allow once             | one approval, toolName add_plugin, reason contains the spec and the reason; {ok:false, code:'rejected'}; profile package.json byte-identical; package not installed in the profile or Fishball's folder |
+ * | ADD-02 | DT (answer allowed-once) | add_plugin installs into Fishball's own folder (plugin statuses) | Fishball's folder has it; the profile package.json is byte-identical and lacks it; listBundles unchanged; catalog lists fishball:fbtest-added, kind fishball-installed, on |
+ * | ADD-03 | ST (added -> on, by add_plugin itself) | it runs for Fishball only                         | its code runs; its tool appears in Fishball's next request only |
+ * | ADD-04 | ST (restart) | a Fishball-installed plugin survives a restart                          | still listed, on, and running after a restart |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { ADDED_BUNDLE, API, CODE, FIXTURE_BUNDLE, KIND, LIMITS, ONLY_BUNDLES, OUTCOME, PRESET, PROFILE, STATUS, STORE } from './support/constants.mjs'
-import { HOOK, T, allowFixtures, fishballTool, listPlugins, nextTools, pluginIn, setPlugin, settle, toolNames, turn } from './support/expect.mjs'
+import { ADDED_BUNDLE, API, CODE, FIXTURE_BUNDLE, INSTALLED_KEY, KIND, LIMITS, ONLY_BUNDLES, OUTCOME, PRESET, PROFILE, STATUS, STORE } from './support/constants.mjs'
+import { HOOK, LONG_T, T, addPlugin, allowFixtures, fishballTool, inFishballFolder, inProfile, listPlugins, nextTools, pluginIn, setPlugin, settle, toolNames, turn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, until } from './support/host.mjs'
 
 const readStore = (home) => JSON.parse(fs.readFileSync(STORE.file(home), 'utf8'))
@@ -125,28 +126,43 @@ describe('P3 add_plugin', () => {
     assert.equal(r.json?.code, CODE.rejected)
     assert.equal(profileJson(), pkg, 'profile package.json byte-identical')
     assert.equal(fs.existsSync(path.join(home, 'profiles', PROFILE, 'node_modules', ADDED_BUNDLE.name)), false)
+    assert.equal(inFishballFolder(home, ADDED_BUNDLE.name), false)
   })
 
-  it('ADD-02 add_plugin answered Allow once installs the package with its bundle off', T, async () => {
-    const r = await fishballTool(host, fb, 'add_plugin', { spec: ADDED_BUNDLE.dir, reason: REASON }, OUTCOME.allow)
+  it('ADD-02 add_plugin answered Allow once installs into Fishball\'s own folder, not the profile', LONG_T, async () => {
+    const before = profileJson()
+    const bundles = JSON.stringify(await host.call('allBundles'))
+    const r = await addPlugin(host, fb, ADDED_BUNDLE.dir, OUTCOME.allow, REASON)
     assert.ok(r.approvals.length >= 1)
     assert.equal(r.approvals[0].toolName, 'add_plugin')
     assert.equal(r.json?.ok, true, r.result.text)
-    const pkg = JSON.parse(profileJson())
-    assert.ok(Object.hasOwn(pkg.dependencies ?? {}, ADDED_BUNDLE.name), 'dependency added: ' + JSON.stringify(pkg.dependencies))
-    assert.equal(pkg.dsh.profile.bundles.includes(ADDED_BUNDLE.name), false, 'bundle not enabled in the profile')
+    assert.ok(inFishballFolder(home, ADDED_BUNDLE.name), 'in Fishball\'s folder')
+    assert.equal(profileJson(), before, 'profile package.json byte-identical')
+    assert.equal(inProfile(home, ADDED_BUNDLE.name), false)
+    assert.equal(JSON.stringify(await host.call('allBundles')), bundles, 'listBundles unchanged')
     assert.equal((await host.call('globalToolNames')).includes(ADDED_BUNDLE.tool), false)
     assert.equal(toolNames((await turn(host, bare, [[{ text: 'hi' }]])).requests.at(-1)).includes(ADDED_BUNDLE.tool), false)
     await settle(host)
-    assert.equal(pluginIn(await listPlugins(host, fb), ADDED_BUNDLE.name)?.kind, KIND.only)
+    const p = pluginIn(await listPlugins(host, fb), INSTALLED_KEY(ADDED_BUNDLE.name))
+    assert.equal(p?.kind, KIND.installed)
+    assert.equal(p.on, true)
   })
 
-  it('ADD-03 the added plugin turned on runs for Fishball only, after approval of its tool', T, async () => {
-    const r = await setPlugin(host, fb, ADDED_BUNDLE.name, true, OUTCOME.allow)
-    assert.equal(r.json?.ok, true, r.result.text)
+  it('ADD-03 the added plugin, on after add_plugin, runs for Fishball only', T, async () => {
     assert.ok((await nextTools(host, fb)).includes(ADDED_BUNDLE.tool))
     assert.equal((await host.call('bundleEvents', { bundle: ADDED_BUNDLE.name })).at(-1)?.type, 'apply')
     assert.equal((await host.call('globalToolNames')).includes(ADDED_BUNDLE.tool), false)
     assert.equal(toolNames((await turn(host, bare, [[{ text: 'hi' }]])).requests.at(-1)).includes(ADDED_BUNDLE.tool), false)
+  })
+
+  it('ADD-04 a Fishball-installed plugin survives a restart: listed, on and running', LONG_T, async () => {
+    await host.stop()
+    host = await bootHost(home)
+    assert.equal((await host.waitStatus(STATUS.live))?.sessionId, fb)
+    await settle(host)
+    const p = pluginIn((await host.state()).catalog, INSTALLED_KEY(ADDED_BUNDLE.name))
+    assert.equal(p?.on, true, JSON.stringify(p))
+    assert.equal((await host.call('bundleEvents', { bundle: ADDED_BUNDLE.name })).at(-1)?.type, 'apply')
+    assert.ok((await nextTools(host, fb)).includes(ADDED_BUNDLE.tool))
   })
 })

@@ -21,7 +21,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { LIMITS, NOTICE, PLUGIN_INTAKE_KIND, PUBLISH_STATUS, SOURCE_SUMMARY, SUMMARY_MAX_CHARS, SOURCE_BOUNDS, SOURCE_BUNDLES, SOURCE_ERR, SOURCE_IDENTITY, SOURCES_ENV, STATUS } from './support/constants.mjs'
+import { API, LIMITS, NOTICE, PLUGIN_INTAKE_KIND, PUBLISH_STATUS, SOURCE_SUMMARY, SUMMARY_MAX_CHARS, SOURCE_BOUNDS, SOURCE_BUNDLES, SOURCE_ERR, SOURCE_IDENTITY, SOURCES_ENV, STATUS } from './support/constants.mjs'
 import { HOOK, T, bytes, intakeNow, pluginNotices, publish, register, requestsWith, settle, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -73,6 +73,9 @@ describe('P8 publish', () => {
     const st = await host.waitStatus(STATUS.live)
     assert.equal(st?.status, STATUS.live, 'precondition: live')
     fb = st.sessionId
+    // Plugin statuses: a profile-enabled DSH plugin starts off in Fishball on a new install, so its sources are
+    // disabled until the user turns it on for Fishball.
+    assert.equal((await host.post(API.plugins, { plugin: A.name, on: true })).status, 200, 'precondition: fbtest-source on for Fishball')
     await settle(host)
     await settledIdle(host, fb)
     for (const [label, def, key] of [[LA, SRC, 'main'], [LA, SRC2, 'other']]) assert.equal((await register(host, label, def, key)).ok, true)

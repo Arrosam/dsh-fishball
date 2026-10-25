@@ -5,8 +5,8 @@ Fishball is a DSH plugin that keeps one always-on assistant session. Any standar
 ## Where your plugin runs
 
 Either way works:
-- **For everyone.** Installed and enabled in the profile. Your plugin's code runs for every session; its events reach Fishball while Fishball has your plugin on (the default). When Fishball turns it off for itself, `publish` answers `disabled` and your code keeps running for the others.
-- **Fishball only.** Installed but left off in the profile, then turned on under "Plugins for Fishball". Your code runs only in Fishball's private tree, and only while Fishball has it on.
+- **For everyone.** Installed and enabled in the profile. Your plugin's code runs for every session; its events reach Fishball while Fishball has your plugin on. DSH plugins start off in Fishball, so the user (or Fishball) turns yours on under "Plugins for Fishball" first. While it is off for Fishball, `publish` answers `disabled` and your code keeps running for the others.
+- **Fishball only.** Either installed in DSH but left off in the profile, or installed for Fishball alone ("Install a plugin for Fishball only" on Fishball's settings page, or Fishball's `add_plugin`). Then turned on under "Plugins for Fishball". Your code runs only in Fishball's private tree, and only while Fishball has it on.
 
 Fishball's private tree cannot publish host services: a plugin that provides a service (`ctx.provide`) is turned off there with `leaks-service`. Your plugin's tools follow Fishball's tool rules (hidden tools stay hidden; tools nobody has checked wait for the user's Allow once).
 

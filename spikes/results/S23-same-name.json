@@ -1,0 +1,13 @@
+{
+  "id": "S23-same-name",
+  "started": "2026-10-25T03:35:47.605Z",
+  "finished": "2026-10-25T03:35:50.086Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "name": "@deepseek-ai/dsh-experimental-agent-team-profile",
+  "manifestIsFishballCopy": false,
+  "bareResolveIsFishballCopy": true,
+  "fromPackage": "file:///Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s23-1792899347606/profiles/.fishball-plugins/node_modules/@deepseek-ai/dsh-experimental-agent-team-profile/index.js",
+  "own": "file:///Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s23-1792899347606/profiles/.fishball-plugins/node_modules/@deepseek-ai/dsh-experimental-agent-team-profile/index.js",
+  "pass": true
+}
