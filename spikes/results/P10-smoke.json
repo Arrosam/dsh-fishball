@@ -1,0 +1,100 @@
+{
+  "id": "P10-smoke",
+  "started": "2026-10-25T03:41:50.083Z",
+  "finished": "2026-10-25T03:42:00.678Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "start": {
+    "demo": {
+      "kind": "profile",
+      "status": "dsh-disabled",
+      "actions": [
+        "enable"
+      ],
+      "on": false,
+      "removing": false
+    },
+    "added": {
+      "kind": "fishball-only",
+      "status": "dsh-disabled",
+      "actions": [
+        "enable"
+      ],
+      "on": false,
+      "removing": false
+    },
+    "web": {
+      "kind": "builtin",
+      "status": "builtin",
+      "actions": [
+        "disable"
+      ],
+      "on": true,
+      "removing": false
+    }
+  },
+  "demoOn": {
+    "kind": "profile",
+    "status": "dsh-enabled",
+    "actions": [
+      "disable"
+    ],
+    "on": true,
+    "removing": false
+  },
+  "afterAdd": {
+    "fishball": {
+      "kind": "fishball-installed",
+      "status": "installed-in-fishball",
+      "actions": [
+        "disable",
+        "uninstall"
+      ],
+      "on": true,
+      "removing": false
+    },
+    "dsh": {
+      "kind": "fishball-only",
+      "status": "dsh-disabled",
+      "actions": [
+        "enable"
+      ],
+      "on": false,
+      "removing": false
+    },
+    "folder": true,
+    "visibleAdded": true,
+    "globalAdded": false
+  },
+  "afterRemove": {
+    "fishball": null,
+    "folder": false,
+    "visibleAdded": false
+  },
+  "asked": [
+    "set_plugin_enabled",
+    "add_plugin",
+    "add_plugin",
+    "remove_plugin"
+  ],
+  "profileUnchanged": true,
+  "results": [
+    {
+      "tool": "set_plugin_enabled",
+      "ev": "{\"turn\":2,\"step\":1,\"message\":{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_74wyav\"},\"toolCallId\":\"call_74wyav\",\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"ok\\\": true,\\n  \\\"plugin\\\": \\\"fishball-spike-demo\\\",\\n  \\\"on\\\": true,\\n  \\\"allowedTools\\\": [\\n    \\\"demo_echo\\\"\\n  ],\\n  \\\"note\\\": \\\"Saved. It takes effect when this turn ends.\\\"\\n}\"}],\"isError\":false,\"id\":\"f0b8fc20-b2a2-44ff-b7cd-5d24299aac"
+    },
+    {
+      "tool": "add_plugin",
+      "ev": "{\"turn\":3,\"step\":1,\"message\":{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_klmp0f\"},\"toolCallId\":\"call_klmp0f\",\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"ok\\\": true,\\n  \\\"plugin\\\": \\\"fishball:fbtest-added\\\",\\n  \\\"on\\\": true,\\n  \\\"allowedTools\\\": [\\n    \\\"added_echo\\\"\\n  ],\\n  \\\"note\\\": \\\"Saved. It takes effect when this turn ends.\\\",\\n  \\\"installed\\\": \\\"fishball:fbtest-added\\\"\\n}\"}],\"isError"
+    },
+    {
+      "tool": "remove_plugin",
+      "ev": "{\"turn\":4,\"step\":1,\"message\":{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_ywvyap\"},\"toolCallId\":\"call_ywvyap\",\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"ok\\\": false,\\n  \\\"code\\\": \\\"not-removable\\\"\\n}\"}],\"isError\":false,\"id\":\"b9b6ae2a-c092-40b0-8840-852e5ba9f3b7\"}}"
+    },
+    {
+      "tool": "remove_plugin",
+      "ev": "{\"turn\":5,\"step\":1,\"message\":{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_qsj81w\"},\"toolCallId\":\"call_qsj81w\",\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"ok\\\": true,\\n  \\\"plugin\\\": \\\"fishball:fbtest-added\\\",\\n  \\\"removing\\\": true,\\n  \\\"note\\\": \\\"Allowed. It is uninstalled when this turn ends.\\\"\\n}\"}],\"isError\":false,\"id\":\"042a435a-1386-4937-8787-2c44d03b7a1d\"}}"
+    }
+  ]
+}

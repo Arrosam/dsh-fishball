@@ -4,6 +4,7 @@
  *
  * | id     | technique              | requirement                                                | expected |
  * |--------|------------------------|------------------------------------------------------------|----------|
+ * Plugin statuses: fbtest-tools starts off on a new install, so before() turns it on by the user route first.
  * | TOG-01 | DT (unchecked tools x answer rejected) | on with unchecked tools, Reject             | exactly one approval, toolName set_plugin_enabled, reason has "- name: first line" per unchecked tool and no second line; {ok:false, code:'rejected', unchecked}; tools stay hidden; no allowance |
  * | TOG-02 | DT (answer unavailable) | same, unavailable                                         | {ok:false, code:'rejected'}; nothing changes |
  * | TOG-03 | DT (answer cancelled)  | same, cancelled                                            | same |
@@ -25,7 +26,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { CODE, FIXTURE_BUNDLE, FIXTURE_DESCRIPTION, FIXTURE_UNCHECKED, KIND, LIMITS, ONLY_BUNDLES, OUTCOME, PRESET, TOOL_STATUS } from './support/constants.mjs'
+import { API, CODE, FIXTURE_BUNDLE, FIXTURE_DESCRIPTION, FIXTURE_UNCHECKED, KIND, LIMITS, ONLY_BUNDLES, OUTCOME, PRESET, TOOL_STATUS } from './support/constants.mjs'
 import { GENERIC_PARAMETERS } from './support/fixture-tools.mjs'
 import { HOOK, T, callTool, listPlugins, nextTools, pluginIn, profileFiles, setPlugin, settle, toolIn, toolNames, toolSchema, turn } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
@@ -57,6 +58,9 @@ describe('P3 set_plugin_enabled', () => {
     const created = await host.call('ordinary', { preset: PRESET.bare, folder: 'bare' })
     assert.equal(created.error, null)
     bare = created.sessionId
+    // Plugin statuses: DSH plugins start off on a new install. TOG-01..10 are about a profile plugin that is
+    // on with unchecked tools, so the user turns it on first (no allowance, no prompt).
+    assert.equal((await host.post(API.plugins, { plugin: FIX, on: true })).status, 200, 'precondition: fbtest-tools on')
     await settle(host)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)

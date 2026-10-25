@@ -3,15 +3,15 @@
  *
  * | id     | technique              | requirement                                                | expected |
  * |--------|------------------------|------------------------------------------------------------|----------|
- * | CAT-01 | EP (Fishball / ordinary session) | the three plugin tools exist only for Fishball    | in every Fishball request; absent from an ordinary session's request and from the global tool list |
- * | CAT-02 | EP                     | list_plugins answers the documented JSON shape             | exact keys (with waiting, post-review); enums for kind, status, changedBy, lastError; types of every field |
+ * | CAT-01 | EP (Fishball / ordinary session) | the four plugin tools (with remove_plugin, plugin statuses) exist only for Fishball | in every Fishball request; absent from an ordinary session's request and from the global tool list |
+ * | CAT-02 | EP                     | list_plugins answers the documented JSON shape             | exact keys (with waiting, post-review; with status, actions, removing, plugin statuses); enums for kind, status, changedBy, lastError; status/actions follow the table; types of every field |
  * | CAT-03 | DT (one row per built-in) | built-in keys and default state                         | 7 keys present, kind builtin, on as documented, changedBy null |
- * | CAT-04 | EP (bundle enabled in the profile) | fbtest-tools                                   | kind profile, on true, changedBy null, lastError null |
+ * | CAT-04 | EP (bundle enabled in the profile, new install) | fbtest-tools (plugin statuses: DSH plugins start off) | kind profile, on false, dsh-disabled, changedBy null, lastError null |
  * | CAT-05 | EP (installed, not enabled) | fbtest-only, fbtest-only-b, fbtest-edits               | kind fishball-only, on false |
  * | CAT-06 | EP (DSH-optional bundle) | listBundles optional and not enabled                     | listed as fishball-only, off |
  * | CAT-07 | EP                     | dsh-fishball never listed; no other kinds of entries        | no entry dsh-fishball; every bundle entry is a profile dependency or DSH-optional (A21) |
  * | CAT-08 | EP (first start)       | default tools                                              | setup request and a later request list web, schedule, own and working_directory tools; not ask_user_question, skill, bash or a hidden name |
- * | CAT-09 | EP (attributable unchecked) | fixture tools not on the checked list                  | absent from Fishball's request; status unchecked under fbtest-tools; present for an ordinary session |
+ * | CAT-09 | EP (attributable unchecked) | fixture tools not on the checked list (fbtest-tools turned on by the user first) | absent from Fishball's request; status unchecked under fbtest-tools; present for an ordinary session |
  * | CAT-10 | EP (hidden under a plugin) | fixture tools with hidden names                         | status hidden under fbtest-tools |
  * | CAT-11 | EP (unattributable)    | a tool registered by no plugin                             | in otherTools with status unchecked; not in Fishball's request; ordinary session has it |
  * | CAT-12 | EP                     | tools of built-ins that are on                             | status visible under their built-in |
@@ -22,10 +22,10 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
-  BUILTINS, CATALOG_KEYS, CHANGED_BY, CHECKED_HOST_TOOLS, FISHBALL_TOOLS, FIXTURE_BUNDLE, FIXTURE_HIDDEN, FIXTURE_UNCHECKED,
-  HIDDEN_TOOLS, KIND, LAST_ERRORS, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PLUGIN_KEYS, PRESET, STATE_HIDDEN_TOOLS, TOOL_STATUS,
+  API, BUILTINS, CATALOG_KEYS, CHANGED_BY, CHECKED_HOST_TOOLS, FISHBALL_TOOLS, FIXTURE_BUNDLE, FIXTURE_HIDDEN, FIXTURE_UNCHECKED,
+  HIDDEN_TOOLS, KIND, LAST_ERRORS, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PLUGIN_KEYS, PLUGIN_STATUS, PRESET, STATE_HIDDEN_TOOLS, TOOL_STATUS,
 } from './support/constants.mjs'
-import { HOOK, T, allowFixtures, callTool, listPlugins, nextTools, pluginIn, setPlugin, settle, toolIn, toolNames, turn } from './support/expect.mjs'
+import { HOOK, T, allowFixtures, assertEntryContract, callTool, listPlugins, nextTools, pluginIn, setPlugin, settle, toolIn, toolNames, turn } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
 
 const ROOT_TOOL = 'orphan_echo'
@@ -34,6 +34,9 @@ describe('P3 catalog and default tools', () => {
   let host
   let fb
   let bare
+  /** The catalog at the defaults of a new install (CAT-03..07). */
+  let defaults
+  /** The catalog after the user turned fbtest-tools on for Fishball (CAT-09/10): plugin statuses make it start off. */
   let catalog
   let bareTools
 
@@ -49,12 +52,16 @@ describe('P3 catalog and default tools', () => {
     assert.equal(created.error, null)
     bare = created.sessionId
     await settle(host)
+    defaults = await listPlugins(host, fb)
+    const on = await host.post(API.plugins, { plugin: FIXTURE_BUNDLE.name, on: true })
+    assert.equal(on.status, 200, 'precondition: fbtest-tools turned on: ' + on.text)
+    await settle(host)
     catalog = await listPlugins(host, fb)
     bareTools = await ordinaryTools()
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('CAT-01 list_plugins, set_plugin_enabled and add_plugin exist only for Fishball', T, async () => {
+  it('CAT-01 list_plugins, set_plugin_enabled, add_plugin and remove_plugin exist only for Fishball', T, async () => {
     const requests = await host.call('requests', { sessionId: fb })
     assert.ok(requests.length >= 2)
     for (const r of requests) for (const n of FISHBALL_TOOLS) assert.ok(toolNames(r).includes(n), 'Fishball request lacks ' + n)
@@ -69,8 +76,9 @@ describe('P3 catalog and default tools', () => {
     assert.ok(Array.isArray(catalog.allowedTools))
     assert.ok(Array.isArray(catalog.otherTools))
     const statuses = Object.values(TOOL_STATUS)
-    for (const p of catalog.plugins) {
+    for (const p of [...defaults.plugins, ...catalog.plugins]) {
       assert.deepEqual(Object.keys(p).sort(), PLUGIN_KEYS, 'keys of ' + p.plugin)
+      assertEntryContract(assert, p)
       assert.equal(typeof p.plugin, 'string')
       assert.equal(typeof p.title, 'string')
       assert.ok(Object.values(KIND).includes(p.kind), p.plugin + ' kind ' + p.kind)
@@ -95,7 +103,7 @@ describe('P3 catalog and default tools', () => {
 
   for (const [key, spec] of Object.entries(BUILTINS)) {
     it('CAT-03 built-in ' + key + ' is listed, kind builtin, default ' + (spec.on ? 'on' : 'off'), T, () => {
-      const p = pluginIn(catalog, key)
+      const p = pluginIn(defaults, key)
       assert.ok(p, key + ' listed')
       assert.equal(p.kind, KIND.builtin)
       assert.equal(p.on, spec.on)
@@ -104,18 +112,19 @@ describe('P3 catalog and default tools', () => {
     })
   }
 
-  it('CAT-04 the profile bundle fbtest-tools is kind profile and on by default', T, () => {
-    const p = pluginIn(catalog, FIXTURE_BUNDLE.name)
+  it('CAT-04 the profile bundle fbtest-tools is kind profile and off by default on a new install', T, () => {
+    const p = pluginIn(defaults, FIXTURE_BUNDLE.name)
     assert.ok(p, 'listed')
     assert.equal(p.kind, KIND.profile)
-    assert.equal(p.on, true)
+    assert.equal(p.on, false)
+    assert.equal(p.status, PLUGIN_STATUS.dshDisabled)
     assert.equal(p.changedBy, null)
     assert.equal(p.lastError, null)
   })
 
   for (const b of Object.values(ONLY_BUNDLES)) {
     it('CAT-05 installed-but-not-enabled bundle ' + b.name + ' is fishball-only and off by default', T, () => {
-      const p = pluginIn(catalog, b.name)
+      const p = pluginIn(defaults, b.name)
       assert.ok(p, 'listed')
       assert.equal(p.kind, KIND.only)
       assert.equal(p.on, false)
@@ -126,7 +135,7 @@ describe('P3 catalog and default tools', () => {
     const optional = (await host.call('allBundles')).filter((b) => b.optional && !b.enabled && b.name !== PACKAGE_NAME)
     if (optional.length === 0) t.diagnostic('this installation lists no DSH-optional bundle; the partition is empty')
     for (const b of optional) {
-      const p = pluginIn(catalog, b.name)
+      const p = pluginIn(defaults, b.name)
       assert.ok(p, 'optional bundle ' + b.name + ' listed')
       assert.equal(p.kind, KIND.only, b.name)
       assert.equal(p.on, false, b.name)
@@ -137,7 +146,8 @@ describe('P3 catalog and default tools', () => {
     assert.equal(pluginIn(catalog, PACKAGE_NAME), undefined)
     const bundles = await host.call('allBundles')
     const allowed = new Set(bundles.filter((b) => (b.installed || b.optional) && b.name !== PACKAGE_NAME).map((b) => b.name))
-    for (const p of catalog.plugins.filter((x) => x.kind !== KIND.builtin)) assert.ok(allowed.has(p.plugin), 'unexpected catalog entry ' + p.plugin)
+    // Plugin statuses: Fishball-installed entries (fishball:<name>) are not DSH bundles; plugins-status.test.mjs covers them.
+    for (const p of catalog.plugins.filter((x) => x.kind !== KIND.builtin && x.kind !== KIND.installed)) assert.ok(allowed.has(p.plugin), 'unexpected catalog entry ' + p.plugin)
     for (const b of bundles.filter((x) => x.installed && x.name !== PACKAGE_NAME)) {
       assert.ok(pluginIn(catalog, b.name), 'profile dependency ' + b.name + ' listed')
       assert.equal(pluginIn(catalog, b.name).kind, b.enabled ? KIND.profile : KIND.only, b.name)

@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { API, DSH_COMPACTION, FIXTURE_BUNDLE, OUTCOME, OUTPUT_CAP_MAX, PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
+import { ACTION, API, DSH_COMPACTION, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -76,15 +76,16 @@ export function deleteSession(home, sessionId) {
 }
 
 /** Drive one turn in a live session and require it to finish. */
-export async function turn(host, sessionId, script = [], text) {
-  const r = await host.call('drive', { sessionId, script, ...(text ? { text } : {}) })
+export async function turn(host, sessionId, script = [], text, timeoutMs) {
+  // timeoutMs: a turn that installs a package (pnpm) may need longer than the worker's default 20 s.
+  const r = timeoutMs ? await host.call('drive', { sessionId, script, timeoutMs, ...(text ? { text } : {}) }, timeoutMs + 10000) : await host.call('drive', { sessionId, script, ...(text ? { text } : {}) })
   if (!r.idle) throw new Error('turn did not finish for ' + sessionId)
   return r
 }
 
 /** Call one tool from a live session through the fake model; returns the single tool result and the turn record. */
-export async function callTool(host, sessionId, tool, args) {
-  const r = await turn(host, sessionId, callScript(tool, args))
+export async function callTool(host, sessionId, tool, args, timeoutMs) {
+  const r = await turn(host, sessionId, callScript(tool, args), undefined, timeoutMs)
   if (r.results.length !== 1) throw new Error('expected one tool result for ' + tool + ', got ' + JSON.stringify(r.results))
   return { result: r.results[0], asked: r.asked, requests: r.requests }
 }
@@ -105,13 +106,13 @@ export function jsonOf(result) {
  * unexpected prompt cannot pass). Returns the parsed answer, the raw result, the approval
  * questions this call raised, the turn's requests and the number of approval/asked events.
  */
-export async function fishballTool(host, sessionId, tool, args, outcome = OUTCOME.reject) {
+export async function fishballTool(host, sessionId, tool, args, outcome = OUTCOME.reject, timeoutMs) {
   // outcome may be one answer, or a list answered in order (later questions get the last one).
   const answers = [].concat(outcome)
   await host.call('setApprover', { outcome: answers.at(-1), queue: answers.slice(0, -1) })
   const before = (await host.call('approvals', { sessionId })).length
   try {
-    const { result, asked, requests } = await callTool(host, sessionId, tool, args)
+    const { result, asked, requests } = await callTool(host, sessionId, tool, args, timeoutMs)
     const approvals = (await host.call('approvals', { sessionId })).slice(before)
     return { json: jsonOf(result), result, asked, approvals, requests }
   } finally {
@@ -176,6 +177,66 @@ export async function scriptedTurn(host, sessionId, script, outcome = OUTCOME.re
     await host.call('setApprover', { outcome: OUTCOME.reject })
   }
 }
+
+// ---- Plugin statuses helpers ----
+
+/** Turns that install or remove a package run pnpm; they get this budget. */
+export const INSTALL_MS = 90000
+export const LONG_T = { timeout: 150000 }
+
+/** The status a catalog entry must report, from its kind and its desired on/off state (decision table). */
+export function expectedStatus(p) {
+  if (p.kind === KIND.builtin) return PLUGIN_STATUS.builtin
+  if (p.kind === KIND.installed) return PLUGIN_STATUS.installed
+  return p.on ? PLUGIN_STATUS.dshEnabled : PLUGIN_STATUS.dshDisabled
+}
+/** The actions a catalog entry must offer, in order: none while removing; uninstall only for Fishball-installed plugins. */
+export function expectedActions(p) {
+  if (p.removing) return []
+  const toggle = p.on ? ACTION.disable : ACTION.enable
+  return p.kind === KIND.installed ? [toggle, ACTION.uninstall] : [toggle]
+}
+/** Assert that one entry's status, actions and removing follow the requirement's table. */
+export function assertEntryContract(assert, p) {
+  assert.equal(typeof p.removing, 'boolean', p.plugin + ' removing')
+  assert.equal(p.status, expectedStatus(p), p.plugin + ' status for kind ' + p.kind + ', on ' + p.on)
+  assert.deepEqual(p.actions, expectedActions(p), p.plugin + ' actions')
+}
+
+/** Fishball's own package folder: its package.json dependencies ({} when absent). */
+export function fishballDeps(home) {
+  try { return JSON.parse(fs.readFileSync(path.join(FISHBALL_PLUGINS_DIR(home), 'package.json'), 'utf8')).dependencies ?? {} } catch { return {} }
+}
+/** Whether a package is installed in Fishball's folder (node_modules entry or dependency). */
+export const inFishballFolder = (home, name) => fs.existsSync(path.join(FISHBALL_PLUGINS_DIR(home), 'node_modules', name)) || Object.hasOwn(fishballDeps(home), name)
+/** Whether a package is installed in the DSH profile (node_modules entry or dependency). */
+export function inProfile(home, name) {
+  const dir = path.join(home, 'profiles', PROFILE)
+  const deps = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).dependencies ?? {}
+  return Object.hasOwn(deps, name) || fs.existsSync(path.join(dir, 'node_modules', name))
+}
+/** The DSH profile's own files, including its lockfile when there is one: a Fishball install must leave them byte-identical. */
+export function profileSnapshot(home) {
+  const lock = path.join(home, 'profiles', PROFILE, 'pnpm-lock.yaml')
+  return { ...profileFiles(home), lock: fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : null }
+}
+/** add_plugin with every prompt answered `outcome`. */
+export const addPlugin = (host, fb, spec, outcome, reason = 'fbtest add') => fishballTool(host, fb, 'add_plugin', { spec, reason }, outcome, INSTALL_MS)
+/** remove_plugin with every prompt answered `outcome`. */
+export const removePlugin = (host, fb, plugin, outcome, reason = 'fbtest remove') => fishballTool(host, fb, 'remove_plugin', { plugin, reason }, outcome, INSTALL_MS)
+/** The catalog from GET state once every change applied. */
+export async function catalogSettled(host) { await settle(host); return (await host.state()).catalog }
+/** Wait until GET state's catalog satisfies pred(catalog); returns the catalog that did, or false. */
+export const untilCatalog = (host, pred, timeoutMs = 15000) => until(async () => { const c = (await host.state())?.catalog; return c && pred(c) ? c : false }, timeoutMs, 100)
+/** Hold Fishball inside a turn: its next model request waits until releaseHold. */
+export async function holdFishball(host, fb) {
+  await settledIdle(host, fb)
+  await host.call('holdNext', { sessionId: fb })
+  await host.call('driveStart', { sessionId: fb, text: 'held turn' })
+  if (!(await until(() => host.call('isHeld', { sessionId: fb }), 5000, 50))) throw new Error('precondition: Fishball is held in a turn')
+}
+/** plugin_changes rows of the store. */
+export const auditRows = (home) => Object.values(JSON.parse(fs.readFileSync(path.join(home, 'storages', 'fishball.json'), 'utf8')).tables?.plugin_changes ?? {})
 
 // ---- P4 helpers (formulas from the P4 requirements C2, C4, C5) ----
 

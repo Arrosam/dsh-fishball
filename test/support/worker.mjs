@@ -69,6 +69,32 @@ if (!fs.existsSync(profileDir)) {
   // P8 R5: the example plugin, for everyone or Fishball-only (FBTEST_EXAMPLE), with its notes (see exampleDir).
   if (EXAMPLE_MODE) link(profileDir, EXAMPLE.name, exampleDir(), EXAMPLE_MODE === 'everyone')
 } else if (EXAMPLE_MODE) exampleDir()
+/**
+ * Plugin statuses: FBTEST_PLUGIN_DIR links dsh-fishball to another checkout (the previous version, for the
+ * existing-install cases); every boot re-points the link, so the same home can boot the old and the new version.
+ * FBTEST_LINK (JSON [{name, dir, enabled}]) links further bundles on this boot when the profile lacks them
+ * (a bundle installed while DSH was down).
+ */
+relinkPlugin(profileDir, process.env.FBTEST_PLUGIN_DIR ?? REPO)
+for (const b of JSON.parse(process.env.FBTEST_LINK ?? '[]')) {
+  const deps = JSON.parse(fs.readFileSync(path.join(profileDir, 'package.json'), 'utf8')).dependencies ?? {}
+  if (!Object.hasOwn(deps, b.name)) link(profileDir, b.name, b.dir, b.enabled)
+}
+
+function relinkPlugin(dir, target) {
+  const file = path.join(dir, 'package.json')
+  const pkg = JSON.parse(fs.readFileSync(file, 'utf8'))
+  if (pkg.dependencies?.[PACKAGE_NAME] !== 'link:' + target) {
+    pkg.dependencies = { ...pkg.dependencies, [PACKAGE_NAME]: 'link:' + target }
+    fs.writeFileSync(file, JSON.stringify(pkg, null, 2))
+  }
+  const linkPath = path.join(dir, 'node_modules', PACKAGE_NAME)
+  let current = null
+  try { current = fs.readlinkSync(linkPath) } catch { /* missing */ }
+  if (current === target) return
+  fs.rmSync(linkPath, { force: true })
+  fs.symlinkSync(target, linkPath)
+}
 // FBTEST_PLUGIN=off boots this home with the plugin installed but its bundle not selected (used to seed state).
 setBundleSelected(profileDir, PACKAGE_NAME, process.env.FBTEST_PLUGIN !== 'off')
 
@@ -339,6 +365,12 @@ const ops = {
   async installBundle({ spec, enabled }) {
     const r = await ctx.pluginManager.installBundle(spec, { enabled })
     return { changed: r.changed, application: r.application, stage: r.stage, bundle: r.bundle ?? null, enabled: r.enabled ?? null, error: r.error ? JSON.parse(JSON.stringify(r.error)) : null }
+  },
+
+  /** Plugin statuses: remove a bundle from the DSH profile through DSH's plugin manager while DSH runs. */
+  async removeBundle({ name }) {
+    const r = await ctx.pluginManager.removeBundle(name)
+    return { changed: r.changed, application: r.application, stage: r.stage, error: r.error ? JSON.parse(JSON.stringify(r.error)) : null }
   },
 
   /** Re-register one fbtest-tools tool AS that plugin, with other parameters (R7: a plugin update changing a schema). */

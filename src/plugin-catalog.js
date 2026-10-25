@@ -2,50 +2,76 @@
  * PluginCatalog: Fishball's own plugin states (DESIGN §4 "Plugin states", §7 "Tools nobody
  * has checked").
  *
- * Catalog: every bundle installed in the profile or offered by the installation
- * (`pluginManager.listBundles()`), except Fishball itself, plus the DSH built-ins of
- * src/builtins.js. Each has a Fishball-only on/off state, stored in domain `fishball`:
- * - profile (enabled in the profile): on = its tools are visible to Fishball; off = masked;
- * - fishball-only (installed, off in the profile): on = its rows run in the private tree;
- * - builtin: on = its rows run in the private tree.
- * Absent state means the default: profile plugins and default-on built-ins are on.
+ * Catalog: every DSH plugin (a bundle installed in the profile or offered by the installation,
+ * `pluginManager.listBundles()`, except Fishball itself), the DSH built-ins of src/builtins.js,
+ * and the plugins Fishball installed for itself (src/fishball-packages.js). Each has a
+ * Fishball-only on/off state, stored in domain `fishball`:
+ * - profile (DSH plugin enabled in the profile): on = its tools are visible to Fishball; off = masked;
+ * - fishball-only (DSH plugin installed, off in the profile): on = its rows run in the private tree;
+ * - builtin: on = its rows run in the private tree;
+ * - fishball-installed (installed in Fishball only): on = its rows run in the private tree.
+ * Absent state means the default: DSH plugins are off unless they keep the old default
+ * (src/plugin-defaults.js), default-on built-ins are on, Fishball-installed plugins are off.
+ *
+ * Statuses and actions (DESIGN §4 "Plugin statuses"): a Fishball-installed plugin can be turned
+ * on or off and uninstalled; a DSH plugin can only be turned on or off for Fishball, never
+ * uninstalled, because Fishball does not change the DSH profile.
  *
  * Two snapshots:
  * - DESIRED: the stored choices; durable at once.
  * - APPLIED: what the private tree runs and the mask shows. It changes only in the agent's
  *   idle phase (`agent.runMaintenance`), so a toggle never lands mid-turn. The one mid-turn
- *   change is a LISTING mount: one Fishball-only plugin mounted with every tool masked so a
+ *   change is a LISTING mount: one package plugin mounted with every tool masked so a
  *   prompt can list them; every other plugin keeps its applied rows.
  *
  * Tool decisions (`evaluate`) are pure reads of the applied snapshot, so the mask and the
  * guard always agree with what the model was shown.
  */
 import { BUILTIN_PLUGINS, BUILTIN_PREFIX } from './builtins.js'
-import { BundleRowsError, readBundleRows } from './bundle-rows.js'
+import { anchorRowModules, BundleRowsError, readBundleRows, readPackageRows } from './bundle-rows.js'
 import { CHECKED_TOOLS, isChecked } from './checked-tools.js'
 import { parametersDigest } from './digest.js'
 import { ownerOf } from './tool-attribution.js'
 import { BSK_INSPECT, HIDDEN_TOOLS } from './tool-rules.js'
-import { builtinPrefix, fishballOnlyPrefix, prefixRows, RowIdConflictError } from './row-ids.js'
+import { builtinPrefix, fishballInstalledPrefix, fishballOnlyPrefix, prefixRows, RowIdConflictError } from './row-ids.js'
 import { diagnosticOf } from './errors.js'
 import { AuditLog } from './audit.js'
 import { compoundKey } from './keys.js'
-import { CHANGED_BY, PLUGIN, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, TOOL_STATUS } from './constants.js'
+import { CHANGED_BY, FISHBALL_INSTALLED_PREFIX, OPTIONAL_SERVICE, PLUGIN, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_OFFER, PLUGIN_STATUS, TOOL_STATUS } from './constants.js'
+import { PackageError } from './fishball-packages.js'
 
 const HIDDEN = new Set(HIDDEN_TOOLS)
 /** Separator of the catalog's shape signature (not a storage key). */
 const SHAPE_SEPARATOR = '__'
 /** Cordis fiber state of an active plugin (cordis Fiber._getState). */
 const FIBER_ACTIVE = 2
-/** Optional service the profile launcher provides (absent in non-profile hosts). */
-const PROFILE_CONTEXT = 'profileContext'
-const OUTCOME_OK = 'ok'
 /** Review standings that are not themselves a TOOL_STATUS (see #decide). */
 const REVIEW = Object.freeze({ trusted: 'trusted', checked: 'checked', allowed: 'allowed' })
 /** listBundles availability of a bundle whose files cannot be read. */
 const MISSING = 'missing'
 /** Stable codes a plugin can store as lastError; anything else is reported as rowFailed. */
 const STORED_ERRORS = new Set(Object.values(PLUGIN_ERROR))
+/** DSH plugins: the kinds Fishball can only turn on or off, never uninstall. */
+const DSH_KINDS = new Set([PLUGIN_KIND.profile, PLUGIN_KIND.fishballOnly])
+/** Kinds whose rows come from an installed package and run in the private tree (they count toward maxFishballOnlyPlugins). */
+const PACKAGE_TREE_KINDS = new Set([PLUGIN_KIND.fishballOnly, PLUGIN_KIND.fishballInstalled])
+
+/** Catalog key of a Fishball-installed package. */
+export const fishballInstalledKey = (packageName) => FISHBALL_INSTALLED_PREFIX + packageName
+
+/** The status a plugin shows, from its kind and desired on/off state. */
+function statusOf(kind, on) {
+  if (kind === PLUGIN_KIND.builtin) return PLUGIN_STATUS.builtin
+  if (kind === PLUGIN_KIND.fishballInstalled) return PLUGIN_STATUS.installedInFishball
+  return on ? PLUGIN_STATUS.dshEnabled : PLUGIN_STATUS.dshDisabled
+}
+
+/** The actions a plugin offers: on/off for all, uninstall only for Fishball-installed ones; none while it is being uninstalled. */
+function actionsOf(kind, on, removing) {
+  if (removing) return []
+  const toggle = on ? PLUGIN_OFFER.disable : PLUGIN_OFFER.enable
+  return kind === PLUGIN_KIND.fishballInstalled ? [toggle, PLUGIN_OFFER.uninstall] : [toggle]
+}
 
 /** Stable key of one tool allowance: module, name and parameter digest (src/keys.js). */
 export const toolKeyOf = (module, toolName, digest) => compoundKey([module, toolName, digest])
@@ -72,13 +98,15 @@ export class PluginCatalog {
   #onApplied
   #pendingRowIds
   #ownsDefinition
+  #defaults
+  #packages
   #agentOf = () => undefined
-  /** key -> catalog entry { key, title, kind, defaultOn, rows?, bundle?, rowIds?, prefix } */
+  /** key -> catalog entry { key, title, kind, defaultOn, rows?, bundle?, rowIds?, packageName?, packageDir?, prefix } */
   #entries = new Map()
   /** Applied snapshot: plugins whose rows run / tools show, allowed tool keys. */
   #appliedOn = new Map()
   #appliedAllowed = new Set()
-  /** Fishball-only plugins mounted only so their tools can be listed for a prompt. */
+  /** Package plugins mounted only so their tools can be listed for a prompt. */
   #listing = new Set()
   /** Tree plugins whose rows wait for a host service (pending, not broken; re-audited). */
   #waiting = new Set()
@@ -92,6 +120,8 @@ export class PluginCatalog {
   #changes
   /** Bumped whenever #waiting is replaced, so a stale re-audit is dropped. */
   #waitingRevision = 0
+  /** Tail of the uninstalls run after applies (finishRemovals). */
+  #removals = Promise.resolve()
 
   /**
    * @param ctx - fishball row context (pluginManager, loader, profileContext?).
@@ -107,10 +137,12 @@ export class PluginCatalog {
    *   listing mount, and not when the apply failed).
    * @param options.pendingRowIds - () => Promise<Set> of private-tree row ids still waiting.
    * @param options.ownsDefinition - (definition) => whether it lives in the private tree's
-   *   layer (scope P): only those can belong to a built-in or Fishball-only plugin.
+   *   layer (scope P): only those can belong to a built-in or package plugin.
    * @param options.onChange - called after the applied snapshot changes.
+   * @param options.defaults - PluginDefaults (which DSH plugins keep the old default).
+   * @param options.packages - FishballPackages (Fishball's own package folder).
    */
-  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {} }) {
+  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -122,6 +154,8 @@ export class PluginCatalog {
     this.#pendingRowIds = pendingRowIds
     this.#ownsDefinition = ownsDefinition
     this.#onChange = onChange
+    this.#defaults = defaults
+    this.#packages = packages
   }
 
   /** The agent whose idle phase applies changes (wired after the lifecycle exists). */
@@ -136,30 +170,72 @@ export class PluginCatalog {
    */
   async refresh() {
     const entries = new Map(BUILTIN_PLUGINS.map((builtin) => [builtin.key, { ...builtin, kind: PLUGIN_KIND.builtin, prefix: builtinPrefix(builtin.key.slice(BUILTIN_PREFIX.length)) }]))
-    let bundles = []
+    let bundles
     try {
       bundles = await this.#ctx.pluginManager.listBundles()
     } catch (error) {
       this.#logger.warn('plugin list unavailable (%s)', diagnosticOf(error))
     }
-    for (const bundle of bundles) {
-      // Only plugins you added or DSH offers; the installation's own surface bundles are not plugins.
-      if (bundle.name === PLUGIN.name || bundle.availability === MISSING || !(bundle.installed || bundle.optional)) continue
+    // Only plugins you added or DSH offers; the installation's own surface bundles are not plugins.
+    const dshPlugins = (bundles ?? []).filter((bundle) => bundle.name !== PLUGIN.name && (bundle.installed || bundle.optional))
+    // Only a listing that worked may move the defaults baseline or forget choices (a failed one lists nothing).
+    if (bundles !== undefined) {
+      const present = new Set(dshPlugins.map((bundle) => bundle.name))
+      // The old default was on only for plugins enabled in the DSH profile (review H1).
+      const enabled = new Set(dshPlugins.filter((bundle) => bundle.enabled).map((bundle) => bundle.name))
+      await this.#defaults.observe(present, enabled)
+      await this.#forgetDshPlugins(present)
+    }
+    const installed = this.#packages.list()
+    // Only a folder that could be read may forget choices (an unreadable one lists nothing).
+    if (installed !== undefined) await this.#forgetFishballInstalled(new Set(installed.map((pkg) => fishballInstalledKey(pkg.name))))
+    for (const bundle of dshPlugins) {
+      if (bundle.availability === MISSING) continue
       entries.set(bundle.name, {
         key: bundle.name,
         title: bundle.name,
         kind: bundle.enabled ? PLUGIN_KIND.profile : PLUGIN_KIND.fishballOnly,
-        defaultOn: bundle.enabled,
+        // Off for Fishball unless it was present when this version first started on an existing install (DESIGN §4).
+        defaultOn: bundle.enabled && this.#defaults.keepsOldDefault(bundle.name),
         bundle,
         rowIds: new Set(bundle.rows.map((row) => row.rowId)),
         prefix: fishballOnlyPrefix(bundle.name),
       })
+    }
+    for (const { name, dir } of installed ?? []) {
+      const key = fishballInstalledKey(name)
+      entries.set(key, { key, title: name, kind: PLUGIN_KIND.fishballInstalled, defaultOn: false, packageName: name, packageDir: dir, prefix: fishballInstalledPrefix(name) })
     }
     this.#entries = entries
     const shape = [...entries.values()].map((entry) => entry.key + SHAPE_SEPARATOR + entry.kind).join('\n')
     const changed = this.#shape !== '' && shape !== this.#shape
     this.#shape = shape
     if (changed) this.schedule()
+  }
+
+  /**
+   * Forget the stored choice of DSH plugins no longer installed (DESIGN §4): installed again,
+   * one counts as new and starts off.
+   * @param present - Set of the DSH plugins a successful listing returned.
+   */
+  async #forgetDshPlugins(present) {
+    await this.#forgetMissing((record) => DSH_KINDS.has(record.kind), present)
+  }
+
+  /**
+   * Forget the stored choice of Fishball-installed plugins whose package is gone (an uninstall
+   * whose record outlived the package, or a folder edited by hand), so installing it again
+   * starts clean instead of looking like it is being removed (review H2).
+   */
+  async #forgetFishballInstalled(present) {
+    await this.#forgetMissing((record) => record.kind === PLUGIN_KIND.fishballInstalled, present)
+  }
+
+  /** Delete stored choices of the matching kinds whose key is not in present. */
+  async #forgetMissing(ofKind, present) {
+    for (const [key, record] of [...this.#store.plugins.entries()]) {
+      if (ofKind(record) && !present.has(key)) await this.#store.plugins.delete(key)
+    }
   }
 
   /** Whether `key` names a catalog plugin. */
@@ -183,23 +259,39 @@ export class PluginCatalog {
     return entry
   }
 
-  /** Tree plugins (built-ins and Fishball-only) that count toward maxFishballOnlyPlugins. */
+  /**
+   * Whether the plugin's rows come from an installed package and run in the private tree when on
+   * (a DSH plugin off in the profile, or a Fishball-installed one): it must be mounted to list its tools.
+   */
+  mountsPackage(key) {
+    return PACKAGE_TREE_KINDS.has(this.#require(key).kind)
+  }
+
+  /** Whether the plugin is being uninstalled (it offers no other action until then). */
+  isRemoving(key) {
+    const record = this.#store.plugins.get(key)
+    return record?.removing === true && record.kind === this.#entries.get(key)?.kind
+  }
+
+  /** Tree plugins (built-ins, DSH plugins off in the profile, Fishball-installed plugins). */
   #treePlugins() {
     return [...this.#entries.values()].filter((entry) => entry.kind !== PLUGIN_KIND.profile)
   }
 
   /**
-   * Refuse turning a plugin on when it cannot run for Fishball: a Fishball-only bundle that
-   * edits other rows or has none, or one more than `maxFishballOnlyPlugins` Fishball-only
-   * plugins at once. Lowering the limit never stops plugins already on (DESIGN §11). The
-   * limit counts Fishball-only plugins, the ones you add; built-ins are a fixed set (§16).
+   * Refuse turning a plugin on when it cannot run for Fishball: a plugin being uninstalled, a
+   * package whose patch edits other rows or has none, or one more than `maxFishballOnlyPlugins`
+   * package plugins in the private tree at once (DSH plugins off in the profile and
+   * Fishball-installed ones). Lowering the limit never stops plugins already on (DESIGN §11);
+   * built-ins are a fixed set and do not count (§16).
    * @throws CatalogError with the PLUGIN_ERROR code.
    */
   assertCanEnable(key) {
     const entry = this.#require(key)
-    if (entry.kind !== PLUGIN_KIND.fishballOnly || this.desiredOn(key)) return
+    if (this.isRemoving(key)) throw new CatalogError(PLUGIN_ERROR.removing)
+    if (!PACKAGE_TREE_KINDS.has(entry.kind) || this.desiredOn(key)) return
     this.#rowsOf(entry)
-    const running = this.#treePlugins().filter((other) => other.kind === PLUGIN_KIND.fishballOnly && this.desiredOn(other.key))
+    const running = this.#treePlugins().filter((other) => PACKAGE_TREE_KINDS.has(other.kind) && this.desiredOn(other.key))
     if (running.length >= this.#readLimits().maxFishballOnlyPlugins) throw new CatalogError(PLUGIN_ERROR.limitReached)
   }
 
@@ -344,7 +436,8 @@ export class PluginCatalog {
     const out = []
     for (const [name, decision] of decisions) {
       if (decision.status !== TOOL_STATUS.unchecked || decision.module === null || decision.plugin === null) continue
-      if (this.#entries.get(decision.plugin)?.kind !== PLUGIN_KIND.profile) continue
+      // Only plugins on for Fishball: with DSH plugins off by default, an off one is no news (DESIGN §7).
+      if (this.#entries.get(decision.plugin)?.kind !== PLUGIN_KIND.profile || !this.isAppliedOn(decision.plugin)) continue
       out.push({ plugin: decision.plugin, name, module: decision.module, digest: decision.digest })
     }
     return out
@@ -374,15 +467,81 @@ export class PluginCatalog {
    * @throws CatalogError(unknownPlugin | limitReached | editsOtherRows | noRows | noProfile).
    */
   setDesired(key, on, by) {
-    const run = this.#choices.then(async () => {
+    return this.#serializedChoice(async () => {
       if (on) this.assertCanEnable(key)
       const entry = this.#require(key)
-      await this.#store.plugins.put(key, { kind: entry.kind, on, changedBy: by, changedAt: new Date().toISOString() })
+      if (this.isRemoving(key)) throw new CatalogError(PLUGIN_ERROR.removing)
+      await this.#putChoice(key, entry, { on, changedBy: by })
       await this.audit(key, on ? PLUGIN_ACTION.on : PLUGIN_ACTION.off, by, OUTCOME_OK)
       this.schedule()
     })
+  }
+
+  /**
+   * Choose to uninstall a Fishball-installed plugin: it is turned off and marked removing at
+   * once (durable), the next idle-phase apply unmounts it, and the package is removed after
+   * that apply (finishRemovals), so its code has stopped before its files go. A repeated
+   * request while one is pending changes nothing.
+   * @throws CatalogError(unknownPlugin | notRemovable).
+   */
+  requestRemove(key, by) {
+    return this.#serializedChoice(async () => {
+      const entry = this.#require(key)
+      if (entry.kind !== PLUGIN_KIND.fishballInstalled) throw new CatalogError(PLUGIN_ERROR.notRemovable)
+      if (this.isRemoving(key)) return
+      await this.#putChoice(key, entry, { on: false, changedBy: by, removing: true })
+      this.schedule()
+    })
+  }
+
+  /**
+   * Store one plugin's Fishball state, stamped with its current kind and the time (DESIGN §9).
+   * @param fields - { on, changedBy, lastError?, removing? }.
+   */
+  #putChoice(key, entry, fields) {
+    return this.#store.plugins.put(key, { kind: entry.kind, ...fields, changedAt: new Date().toISOString() })
+  }
+
+  /**
+   * Run one check-and-write after the previous one (see setDesired). A stored choice changes the
+   * snapshot (on, status, actions, removing) before the apply, so it is published at once.
+   */
+  #serializedChoice(task) {
+    const run = this.#choices.then(async () => { await task(); this.#onChange() })
     this.#choices = run.catch(() => {})
     return run
+  }
+
+  /**
+   * Uninstall every plugin marked removing whose rows are no longer applied (after an apply, and
+   * after boot, which finishes an uninstall a restart interrupted). Success forgets the plugin
+   * and audits `remove`; a failure keeps it installed and off with lastError remove-failed.
+   */
+  finishRemovals() {
+    const run = this.#removals.then(async () => {
+      let removed = false
+      for (const [key, record] of [...this.#store.plugins.entries()]) {
+        const entry = this.#entries.get(key)
+        // Only once its rows are gone: neither applied nor mounted for a mid-turn listing.
+        if (record.removing !== true || entry?.kind !== PLUGIN_KIND.fishballInstalled || this.#appliedOn.get(key) === true || this.#listing.has(key)) continue
+        try {
+          await this.#packages.remove(entry.packageName)
+          await this.#store.plugins.delete(key)
+          await this.audit(key, PLUGIN_ACTION.remove, record.changedBy, OUTCOME_OK)
+        } catch (error) {
+          if (!(error instanceof PackageError)) this.#logger.warn('plugin %s could not be uninstalled (%s)', key, diagnosticOf(error))
+          await this.#putChoice(key, entry, { on: false, changedBy: record.changedBy, lastError: PLUGIN_ERROR.removeFailed })
+          await this.audit(key, PLUGIN_ACTION.remove, record.changedBy, PLUGIN_ERROR.removeFailed)
+        }
+        removed = true
+      }
+      if (removed) {
+        await this.refresh()
+        this.#onChange()
+      }
+    })
+    this.#removals = run.catch((error) => this.#logger.warn('uninstalls failed (%s)', diagnosticOf(error)))
+    return this.#removals
   }
 
   /** Durably allow tools nobody had checked, for exactly these parameters. */
@@ -402,7 +561,7 @@ export class PluginCatalog {
   }
 
   /**
-   * Mount one Fishball-only plugin now, with every tool masked, so its tools can be listed in
+   * Mount one package plugin now, with every tool masked, so its tools can be listed in
    * a prompt (DESIGN §7). Runs inside a tool call (mid-turn): every other plugin keeps its
    * applied rows (review M1), and the listed plugin's tools stay masked (plugin-off while
    * listing) until the next applied snapshot. Callers end the listing on every path that
@@ -442,6 +601,8 @@ export class PluginCatalog {
         while (this.#pending) {
           this.#pending = false
           await this.#inIdlePhase(() => this.apply())
+          // Outside the idle phase: a package removal must not hold Fishball's next turn.
+          await this.finishRemovals()
         }
       } catch (error) {
         this.#logger.warn('plugin changes could not be applied (%s)', diagnosticOf(error))
@@ -490,7 +651,8 @@ export class PluginCatalog {
   #rowsOf(entry, purpose = {}) {
     try {
       if (entry.kind === PLUGIN_KIND.builtin) return prefixRows(this.#adjustRows(entry.key, entry.rows, purpose), entry.prefix)
-      return prefixRows(readBundleRows(entry.bundle, this.#ctx.get(PROFILE_CONTEXT)), entry.prefix)
+      if (entry.kind === PLUGIN_KIND.fishballInstalled) return prefixRows(anchorRowModules(readPackageRows(entry.packageDir), entry.packageDir), entry.prefix)
+      return prefixRows(readBundleRows(entry.bundle, this.#ctx.get(OPTIONAL_SERVICE.profileContext)), entry.prefix)
     } catch (error) {
       if (error instanceof BundleRowsError) throw new CatalogError(error.code)
       if (error instanceof RowIdConflictError) throw new CatalogError(PLUGIN_ERROR.rowIdConflict)
@@ -572,7 +734,7 @@ export class PluginCatalog {
     const entry = this.#entries.get(key)
     const previous = this.#store.plugins.get(key)
     const stored = STORED_ERRORS.has(code) ? code : PLUGIN_ERROR.rowFailed
-    await this.#store.plugins.put(key, { kind: entry.kind, on: false, changedBy: previous?.changedBy ?? CHANGED_BY.fishball, changedAt: new Date().toISOString(), lastError: stored })
+    await this.#putChoice(key, entry, { on: false, changedBy: previous?.changedBy ?? CHANGED_BY.fishball, lastError: stored })
     await this.audit(key, PLUGIN_ACTION.on, previous?.changedBy ?? CHANGED_BY.fishball, stored)
     this.#logger.warn('plugin %s turned off for Fishball (%s)', key, stored)
   }
@@ -589,11 +751,16 @@ export class PluginCatalog {
     return {
       plugins: [...this.#entries.values()].map((entry) => {
         const record = this.#store.plugins.get(entry.key)
+        const on = this.desiredOn(entry.key)
+        const removing = this.isRemoving(entry.key)
         return {
           plugin: entry.key,
           title: entry.title,
           kind: entry.kind,
-          on: this.desiredOn(entry.key),
+          status: statusOf(entry.kind, on),
+          actions: actionsOf(entry.kind, on, removing),
+          removing,
+          on,
           applied: this.#appliedOn.get(entry.key) === true,
           waiting: this.#waiting.has(entry.key),
           changedBy: record?.kind === entry.kind ? record.changedBy : null,

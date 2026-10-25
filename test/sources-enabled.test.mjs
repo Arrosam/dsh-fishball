@@ -12,7 +12,7 @@
  * | ENA-05 | ST on -set_plugin_enabled off (Fishball, applied after its turn)-> off -set_plugin_enabled on-> on | X7 | disabled after Fishball's turn, enabled after the next; onEnabled once more |
  * | ENA-06 | EP (onEnabled's return value) | X7 | after calling the function onEnabled returned, the listener is not called again |
  * | ENA-07 | ST live -archive-> archived -unarchive+retry-> live | X7 | every source disabled while archived (publish 'disabled', nothing stored); state lists them disabled; enabled again when live, onEnabled called |
- * | ENA-08 | ST starting -> live (the first setup request held 6 s) | X7 | while starting: enabled false and publish 'disabled'; once live: enabled, onEnabled once |
+ * | ENA-08 | ST starting -> live (the first setup request held 6 s) -user on-> on | X7, plugin statuses | while starting: enabled false and publish 'disabled'; once live it stays disabled (a new install starts the profile plugin off in Fishball); after the user turns it on: enabled, onEnabled once |
  * | ENA-09 | EP (an onEnabled listener that throws, one that rejects) | X7 review | the plugin off and on again: DSH keeps running, the other listeners are still called, publish works |
  * | ONL-01 | ST (Fishball-only plugin off) | X1, X8 | its row never ran; no context; no source listed |
  * | ONL-02 | ST off -user on-> on | X2, X3 | its row runs and gets the service; a source's identity is '<bundle>/<bundle row id>/<id>', as if it ran for everyone (guide, A89) with plugin = the bundle; publish accepted and delivered, item kind plugin |
@@ -62,6 +62,9 @@ describe('P8 enabled and disabled', () => {
     const st = await host.waitStatus(STATUS.live)
     assert.equal(st?.status, STATUS.live, 'precondition: live')
     fb = st.sessionId
+    // Plugin statuses: fbtest-source is enabled in the profile but starts off in Fishball on a new install;
+    // ENA-01..07 start from it being on, so the user turns it on first.
+    assert.equal((await toggle(A.name, true)).status, 200, 'precondition: fbtest-source on for Fishball')
     await settle(host)
     await settledIdle(host, fb)
     await host.call('settingsUpdate', { patch: { wakeupsPerHour: 0 } })
@@ -243,7 +246,7 @@ describe('P8 sources before Fishball is live', () => {
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('ENA-08 while the setup turn runs (starting, not live): disabled; enabled with onEnabled once live', T, async (t) => {
+  it('ENA-08 while the setup turn runs (starting, not live): disabled; live but off for Fishball: disabled; turned on: enabled with onEnabled once', T, async (t) => {
     await until(() => host.call('sourceRow', { label: LA }).then((r) => r.captured), 10000, 50)
     const r = await register(host, LA, { id: 'early', title: 'Early' }, 'early')
     assert.equal(r.ok, true, JSON.stringify(r.error))
@@ -256,7 +259,10 @@ describe('P8 sources before Fishball is live', () => {
     assert.equal(r.enabled, false)
     assert.deepEqual(p.value, { intakeId: null, status: PUBLISH_STATUS.disabled })
     await host.waitStatus(STATUS.live, 20000)
-    assert.ok(await until(async () => (await host.call('sourceState', { key: 'early' })).enabled, 5000, 50), 'enabled once live')
+    await sleep(1500)
+    assert.equal((await host.call('sourceState', { key: 'early' })).enabled, false, 'live, but the plugin starts off in Fishball')
+    assert.equal((await host.post(API.plugins, { plugin: A.name, on: true })).status, 200)
+    assert.ok(await until(async () => (await host.call('sourceState', { key: 'early' })).enabled, 5000, 50), 'enabled once on for Fishball')
     await sleep(300)
     assert.equal((await host.call('sourceState', { key: 'early' })).enabledCalls, 1, 'onEnabled once')
   })

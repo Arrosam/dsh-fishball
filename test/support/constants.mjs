@@ -183,11 +183,14 @@ export const API = {
   contextWindow: '/api/fishball/context-window',
   send: '/api/fishball/send',
   read: '/api/fishball/read',
+  pluginsRemove: '/api/fishball/plugins/remove', pluginsInstall: '/api/fishball/plugins/install',
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
+export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
@@ -261,12 +264,27 @@ export const OUTPUT_CAP_MAX = 32000
 export const SUMMARY_HEADINGS = ['## Standing permissions', '## Commitments', '## Open loops', '## Watches', '## Preferences', '## Sources', '## Current conversation']
 
 /** P3 R1: Fishball's own model tools. */
-export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin']
-export const KIND = { profile: 'profile', only: 'fishball-only', builtin: 'builtin' }
+/** Plugin statuses: Fishball's own model tools (plugin statuses feature adds remove_plugin). */
+export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin']
+export const KIND = { profile: 'profile', only: 'fishball-only', builtin: 'builtin', installed: 'fishball-installed' }
 export const TOOL_STATUS = { visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked' }
 export const CHANGED_BY = { fishball: 'fishball', user: 'user' }
 export const CATALOG_KEYS = ['allowedTools', 'otherTools', 'plugins']
-export const PLUGIN_KEYS = ['applied', 'changedBy', 'kind', 'lastError', 'on', 'plugin', 'title', 'tools', 'waiting']
+/** Plugin statuses feature: every entry also has actions, removing and status (12 keys). */
+export const PLUGIN_KEYS = ['actions', 'applied', 'changedBy', 'kind', 'lastError', 'on', 'plugin', 'removing', 'status', 'title', 'tools', 'waiting']
+/** Plugin statuses feature: the status of a catalog entry and the actions it offers. */
+export const PLUGIN_STATUS = { installed: 'installed-in-fishball', dshEnabled: 'dsh-enabled', dshDisabled: 'dsh-disabled', builtin: 'builtin' }
+export const ACTION = { enable: 'enable', disable: 'disable', uninstall: 'uninstall' }
+/** The catalog key of a Fishball-installed plugin is this prefix + its package name. */
+export const INSTALLED_KEY = (name) => 'fishball:' + name
+/** Fishball's own package folder (a pnpm project), separate from the DSH profile (implementer's answer). */
+export const FISHBALL_PLUGINS_DIR = (home) => path.join(home, 'profiles', '.fishball-plugins')
+/** add_plugin install-failed reasons named by the requirements. */
+export const INSTALL_REASON = { invalidSpec: 'invalid-spec', alreadyInstalled: 'already-installed', notBundle: 'not-bundle' }
+/** A local package without a DSH bundle patch (add_plugin refuses it as not-bundle). */
+export const NOT_BUNDLE = { name: 'fbtest-notbundle', dir: path.join(SUPPORT, 'fixtures', 'fbtest-notbundle') }
+/** The previous version of the plugin, for the existing-install cases. */
+export const OLD_VERSION = { commit: 'f368ad2' }
 /** Post-review: the only values lastError may take (besides null). */
 export const LAST_ERRORS = ['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached']
 /** Post-review: plugin_changes and tool_approvals keys use only these characters. */
@@ -289,6 +307,7 @@ export const CHECKED_HOST_TOOLS = ['working_directory']
 export const CODE = {
   rejected: 'rejected', limit: 'limit-reached', editsOtherRows: 'edits-other-rows',
   unknown: 'unknown', refused: 'refused', badBody: 'bad-body',
+  installFailed: 'install-failed', notRemovable: 'not-removable', unknownPlugin: 'unknown-plugin',
 }
 
 /** DSH approval outcomes a test answerer can return (dsh-user-approval ApprovalOutcome). */

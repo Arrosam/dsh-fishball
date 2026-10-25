@@ -6,7 +6,9 @@
  * - src/store.js           durable assistant record, plugin states, tool allowances (fails closed)
  * - src/composition.js     scope P, persona, private tree, tool mask, bsk_inspect copy, guards
  * - src/plugin-catalog.js  Fishball's own plugin states and tool decisions
- * - src/plugin-tools.js    list_plugins, set_plugin_enabled, add_plugin
+ * - src/plugin-defaults.js which DSH plugins keep the old default (others start off in Fishball)
+ * - src/fishball-packages.js plugins installed in Fishball only (its own package folder)
+ * - src/plugin-tools.js    list_plugins, set_plugin_enabled, add_plugin, remove_plugin
  * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
@@ -36,7 +38,9 @@ import { Unread } from './src/unread.js'
 import { Preferences } from './src/preferences.js'
 import { ApprovalBroker } from './src/approvals.js'
 import { SourceRegistry } from './src/sources.js'
-import { registerPluginTools } from './src/plugin-tools.js'
+import { installRequester, registerPluginTools } from './src/plugin-tools.js'
+import { PluginDefaults } from './src/plugin-defaults.js'
+import { FishballPackages, PackageError } from './src/fishball-packages.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
 import { HIDDEN_TOOLS } from './src/tool-rules.js'
@@ -70,12 +74,14 @@ export async function apply(ctx, config) {
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, installPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
     recover: (action) => lifecycle.recover(action),
     setPlugin: (plugin, on) => commands.setPlugin(plugin, on),
+    removePlugin: (plugin) => commands.removePlugin(plugin),
+    installPlugin: (spec) => commands.installPlugin(spec),
     removeAllowance: (toolKey) => commands.removeAllowance(toolKey),
     setContextWindow: (setting) => commands.setContextWindow(setting),
     send: (input) => commands.send(input),
@@ -96,9 +102,21 @@ export async function apply(ctx, config) {
   }
 
   const composition = new AssistantComposition(ctx, logger)
+  // Decided once, before the first catalog listing: an install whose session already exists
+  // keeps the old default for the DSH plugins present now (src/plugin-defaults.js).
+  const defaults = new PluginDefaults(store)
+  try {
+    await defaults.begin(store.assistant().sessionId !== null)
+  } catch (error) {
+    logger.warn('plugin defaults could not be recorded (%s)', diagnosticOf(error))
+    return use(new InactiveLifecycle(STATUS.failed, ERROR.storeUnreadable, store.assistant()))
+  }
+  const packages = new FishballPackages(ctx, logger)
   // Boot mounts the tree once with the first evaluation; later policy changes remount through
   // the catalog's idle-phase apply (a change mid-turn waits for the turn to end).
   let booted = false
+  /** Run after each idle-phase apply; wired to the unchecked-tools notice once it exists. */
+  let afterApply = () => {}
   const contextWindow = new ContextWindow(ctx, store, logger, {
     onChange: () => publish(),
     onPolicyChange: () => { if (booted) void catalog.schedule() },
@@ -108,10 +126,13 @@ export async function apply(ctx, config) {
     readLimits: limits,
     mountRows: (rows) => composition.mountRows(rows),
     adjustRows: (key, rows, purpose) => (key === CONTEXT.compactionPlugin ? contextWindow.compactionRows(rows, purpose) : rows),
-    onApplied: () => contextWindow.confirmApplied(catalog.isRunning(CONTEXT.compactionPlugin)),
+    // A DSH plugin just turned on for Fishball may bring unchecked tools Fishball must hear about (DESIGN §7).
+    onApplied: () => { contextWindow.confirmApplied(catalog.isRunning(CONTEXT.compactionPlugin)); afterApply() },
     pendingRowIds: () => composition.pendingRowIds(),
     ownsDefinition: (definition) => composition.ownsDefinition(definition),
     onChange: () => { composition.refreshMasks(); publish() },
+    defaults,
+    packages,
   })
   try {
     await composition.mount()
@@ -134,9 +155,11 @@ export async function apply(ctx, config) {
     tools: ctx.tools,
     scope: composition.key,
     approval: ctx.approval,
-    pluginManager: ctx.pluginManager,
+    packages,
     logger,
   })
+  // An uninstall a restart interrupted finishes now (its rows were not mounted at boot).
+  void catalog.finishRemovals()
   catalogView = () => catalog.snapshot(composition.decisions())
   contextView = () => contextWindow.snapshot()
 
@@ -204,6 +227,7 @@ export async function apply(ctx, config) {
   intakeView = () => ledger.snapshot()
   outboxView = () => outbound.snapshot()
   const notifyUnchecked = uncheckedToolsNotifier({ ledger, catalog, decisions: () => composition.decisions(), store, logger })
+  afterApply = () => { if (assistantAgent() !== undefined) notifyUnchecked() }
   commands.send = ({ sessionId, note }) => asApiError(IntakeError)(() => inbound.forward(sessionId, note))
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
   /** A row waiting for a service may run now; its tools may have appeared too. */
@@ -220,15 +244,21 @@ export async function apply(ctx, config) {
     publish()
     if (assistantAgent() !== undefined) notifyUnchecked()
   }).catch(logged('catalog refresh')))
-  commands.setPlugin = async (plugin, on) => {
+  /** Run one of your plugin changes; a CatalogError answers 409 unknown or refused. */
+  const pluginChange = async (change) => {
     await catalog.refresh()
     try {
-      await catalog.setDesired(plugin, on, CHANGED_BY.user)
+      await change()
     } catch (error) {
       if (error instanceof CatalogError) throw new LifecycleStateError(error.code === PLUGIN_ERROR.unknownPlugin ? API_CODE.unknown : API_CODE.refused)
       throw error
     }
   }
+  commands.setPlugin = (plugin, on) => pluginChange(() => catalog.setDesired(plugin, on, CHANGED_BY.user))
+  // Your own uninstall needs no prompt: you are the one approving (DESIGN §4).
+  commands.removePlugin = (plugin) => pluginChange(() => catalog.requestRemove(plugin, CHANGED_BY.user))
+  const requestInstall = installRequester({ ledger, readLimits: limits, packages })
+  commands.installPlugin = (spec) => asApiError(IntakeError)(() => asApiError(PackageError)(() => requestInstall(spec)))
   commands.setContextWindow = (setting) => contextWindow.save(setting)
   commands.removeAllowance = async (toolKey) => {
     if (!(await catalog.removeAllowance(toolKey))) throw new LifecycleStateError(API_CODE.unknown)

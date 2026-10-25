@@ -85,13 +85,87 @@ export const PLUGIN_KIND = Object.freeze({
   fishballOnly: 'fishball-only',
   /** A DSH capability package Fishball mounts in its private tree when on. */
   builtin: 'builtin',
+  /**
+   * Installed by Fishball for itself alone, in its own package folder (src/fishball-packages.js),
+   * never in the DSH profile; runs in its private tree when on. A package of the same name may
+   * also be a DSH plugin: the two are separate catalog entries.
+   */
+  fishballInstalled: 'fishball-installed',
+})
+
+/**
+ * Catalog key prefix of a Fishball-installed plugin (DESIGN §4): its key is this plus the package
+ * name, so it never collides with a DSH plugin of the same name (whose key is the bare name).
+ */
+export const FISHBALL_INSTALLED_PREFIX = 'fishball:'
+
+/**
+ * The status each catalog plugin shows on the settings page and in list_plugins (DESIGN §4
+ * "Plugin statuses"). A DSH plugin's status follows its desired on/off state for Fishball.
+ */
+export const PLUGIN_STATUS = Object.freeze({
+  installedInFishball: 'installed-in-fishball',
+  dshEnabled: 'dsh-enabled',
+  dshDisabled: 'dsh-disabled',
+  builtin: 'builtin',
+})
+
+/** Actions a catalog plugin offers; which ones depends on its status (src/plugin-catalog.js). */
+export const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
+
+/**
+ * Fishball's own package folder (DESIGN §4 "Installed in Fishball only"): a pnpm project under
+ * DSH's profiles directory, so DSH's runtime resolution gives its packages the host's peer
+ * packages (spike S22). It is never a profile DSH boots.
+ */
+export const FISHBALL_PACKAGES = Object.freeze({
+  folder: '.fishball-plugins',
+  nodeModules: 'node_modules',
+  manifest: 'package.json',
+  /** pnpm copies a local directory installed with this protocol (a bare path would be linked). */
+  fileProtocol: 'file:',
+  /** pnpm commands (run through DSH's own runner, dsh-plugin-manager/operations). */
+  add: 'add',
+  remove: 'remove',
+  /** Executable when the launcher supplies none (dsh-plugin-manager's pnpmCommand default). */
+  pnpmCommand: 'pnpm',
+  /** How DSH's runner runs pnpm for a service: secrets scrubbed, output captured. */
+  execution: 'service',
+  /**
+   * Bounds of one package operation, mirroring dsh-plugin-manager's own config defaults
+   * (outputBytes, idleTimeoutMs, lockWaitMs, inspectTimeoutMs), which it does not export.
+   */
+  outputBytes: 16384,
+  idleTimeoutMs: 600000,
+  lockWaitMs: 120000,
+  lookupTimeoutMs: 20000,
+})
+
+/**
+ * Install requests from the settings page (src/plugin-tools.js installRequester). Kept apart
+ * from messaging's SOURCE_ID: those name sessions, and a request names none.
+ */
+export const PLUGIN_INSTALL_REQUEST = Object.freeze({ sourceIdentity: 'user/plugin-install' })
+
+/** Why installing or removing a Fishball-installed package failed (add_plugin's `reason`). */
+export const PACKAGE_ERROR = Object.freeze({
+  invalidSpec: 'invalid-spec',
+  alreadyInstalled: 'already-installed',
+  notBundle: 'not-bundle',
+  ambiguousInstall: 'ambiguous-install',
+  incompatibleVersion: 'incompatible-version',
+  operationError: 'operation-error',
+  noProfile: 'no-profile',
 })
 
 /** Who last changed a plugin's Fishball state. */
 export const CHANGED_BY = Object.freeze({ fishball: 'fishball', user: 'user' })
 
+/** Plugin change audit outcome of a change that went through (failures store their code). */
+export const PLUGIN_CHANGE_OK = 'ok'
+
 /** Plugin change audit actions. */
-export const PLUGIN_ACTION = Object.freeze({ on: 'on', off: 'off', add: 'add' })
+export const PLUGIN_ACTION = Object.freeze({ on: 'on', off: 'off', add: 'add', remove: 'remove' })
 
 /** Why a tool is not shown to Fishball, or that it is (list_plugins, settings). */
 export const TOOL_STATUS = Object.freeze({
@@ -114,7 +188,19 @@ export const PLUGIN_ERROR = Object.freeze({
   rejected: 'rejected',
   installFailed: 'install-failed',
   restartRequired: 'restart-required',
+  /** Only a Fishball-installed plugin can be uninstalled; DSH plugins and built-ins cannot. */
+  notRemovable: 'not-removable',
+  /** The plugin is being uninstalled; it offers no other action until that is done. */
+  removing: 'removing',
+  /** Uninstalling a Fishball-installed plugin failed; it stays installed and off. */
+  removeFailed: 'remove-failed',
 })
+
+/**
+ * Default on/off of DSH plugins for Fishball (DESIGN §4 "On at first start", src/plugin-defaults.js).
+ * The one record in table plugin_defaults.
+ */
+export const PLUGIN_DEFAULTS = Object.freeze({ recordKey: 'dsh' })
 
 /**
  * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults
@@ -368,6 +454,10 @@ export const API = Object.freeze({
   recovery: '/api/fishball/recovery',
   /** POST { plugin, on }: your own on/off choice for one catalog plugin. */
   plugins: '/api/fishball/plugins',
+  /** POST { plugin }: you uninstall a Fishball-installed plugin. */
+  pluginsRemove: '/api/fishball/plugins/remove',
+  /** POST { spec }: you ask Fishball to install a plugin (Fishball calls add_plugin). */
+  pluginsInstall: '/api/fishball/plugins/install',
   /** POST { toolKey }: withdraw an allowance for a tool nobody had checked. */
   toolApprovals: '/api/fishball/tool-approvals/remove',
   /** POST { contextWindowTokens, maxOutputTokens }: each a positive whole number or null (unset). */
@@ -436,6 +526,10 @@ export const SERVICE = Object.freeze({
 export const OPTIONAL_SERVICE = Object.freeze({
   /** Measures a request's size for the context window's hard ceiling (DESIGN §6). */
   tokenMeter: 'tokenMeter',
+  /** The profile launcher's facts (absent in non-profile hosts): bundle rows and Fishball's package folder. */
+  profileContext: 'profileContext',
+  /** DSH's runtime package resolution: where the profiles directory is (Fishball's package folder). */
+  pluginPackages: 'pluginPackages',
 })
 
 /** Host events this plugin listens to. */

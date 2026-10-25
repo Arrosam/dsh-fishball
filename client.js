@@ -49,7 +49,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', pluginsInstall: 'api/fishball/plugins/install', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand' })
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
     const WATCH_MENU = Object.freeze({ id: 'fishball-watch', order: 425 })
     const WATCH_HEADER = Object.freeze({ id: 'fishball-watch', order: 3 })
@@ -76,7 +76,15 @@ window.__ModuleLoader__.load({
      * Plugin diagnostics with their own text; any other code shows the generic one. A separate
      * client bundle cannot import the host's list: keep it in step with src/constants.js PLUGIN_ERROR.
      */
-    const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached'])
+    const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached', 'remove-failed'])
+    /**
+     * Plugin actions the Host offers per plugin (src/constants.js PLUGIN_OFFER), and the status
+     * tag tones. The Host decides which actions a plugin has; the page shows only those.
+     */
+    const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
+    const STATUS_TONE = Object.freeze({ 'installed-in-fishball': 'info', 'dsh-enabled': 'info', 'dsh-disabled': 'neutral', builtin: 'neutral' })
+    /** "Install for Fishball" refusals with their own text (src/constants.js INTAKE_ERROR, API_CODE). */
+    const INSTALL_ERRORS = new Set(['too-large', 'queue-full', 'unavailable', 'invalid-spec', 'already-installed'])
     const VISIBLE = 'visible'
     const VISIBILITY_EVENT = 'visibilitychange'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
@@ -334,9 +342,25 @@ window.__ModuleLoader__.load({
       plugins: 'Plugins for Fishball',
       pluginsHint: 'Fishball\'s own on/off choice. Other sessions and the profile are not changed. A change applies when Fishball\'s current turn ends.',
       pluginToggle: 'Use {name} in Fishball',
-      'kind.profile': 'Everyone',
-      'kind.fishball-only': 'Fishball only',
-      'kind.builtin': 'Built in',
+      'status.installed-in-fishball': 'Installed in Fishball only',
+      'status.dsh-enabled': 'Installed in DSH, enabled in Fishball',
+      'status.dsh-disabled': 'Installed in DSH, disabled in Fishball',
+      'status.builtin': 'Built in',
+      uninstall: 'Uninstall',
+      uninstallLabel: 'Uninstall {name} from Fishball',
+      removing: 'Uninstalling after this turn',
+      'pluginError.remove-failed': 'Could not be uninstalled; it stays installed and off',
+      installTitle: 'Install a plugin for Fishball only',
+      installHint: 'A package name, an absolute folder path, a git address or a tarball URL. Fishball installs it in its own folder, not in DSH, after you allow it in the permission prompt in Fishball\'s chat. Plugins installed in DSH are managed on DSH\'s Plugins page; here you can only turn them on or off for Fishball.',
+      installSpecLabel: 'Package',
+      install: 'Install',
+      installSent: 'Sent to Fishball. Answer the permission prompt in its chat.',
+      'installError.too-large': 'That package spec is too long.',
+      'installError.queue-full': 'Fishball\'s queue is full. Try again later.',
+      'installError.unavailable': 'Fishball is not running.',
+      'installError.invalid-spec': 'That is not a package spec DSH accepts. Use a package name, an absolute folder path, a git address or a tarball URL.',
+      'installError.already-installed': 'That plugin is already installed for Fishball.',
+      installFailed: 'That did not work.',
       pending: 'Applies after this turn',
       waiting: 'Starting…',
       'pluginError.row-id-conflict': 'Two of its parts have the same name, so it cannot run for Fishball',
@@ -499,9 +523,25 @@ window.__ModuleLoader__.load({
       plugins: 'Fishball 的插件',
       pluginsHint: '仅 Fishball 自己的开关，不影响其他会话和配置。更改在 Fishball 当前回合结束后生效。',
       pluginToggle: '在 Fishball 中使用 {name}',
-      'kind.profile': '所有会话',
-      'kind.fishball-only': '仅 Fishball',
-      'kind.builtin': '内置',
+      'status.installed-in-fishball': '仅安装在 Fishball',
+      'status.dsh-enabled': '安装在 DSH，Fishball 中已启用',
+      'status.dsh-disabled': '安装在 DSH，Fishball 中已停用',
+      'status.builtin': '内置',
+      uninstall: '卸载',
+      uninstallLabel: '从 Fishball 卸载 {name}',
+      removing: '本回合结束后卸载',
+      'pluginError.remove-failed': '卸载失败；它仍已安装并保持关闭',
+      installTitle: '仅为 Fishball 安装插件',
+      installHint: '包名、文件夹的绝对路径、git 地址或 tarball URL。Fishball 会在你于其对话中的权限请求里允许后，把它安装到自己的文件夹，而不是 DSH。安装在 DSH 的插件请在 DSH 的插件页管理；这里只能为 Fishball 开启或关闭它们。',
+      installSpecLabel: '包',
+      install: '安装',
+      installSent: '已发送给 Fishball。请在其对话中回应权限请求。',
+      'installError.too-large': '包名过长。',
+      'installError.queue-full': 'Fishball 的队列已满，请稍后再试。',
+      'installError.unavailable': 'Fishball 未运行。',
+      'installError.invalid-spec': 'DSH 不接受这个包规格。请使用包名、文件夹的绝对路径、git 地址或 tarball URL。',
+      'installError.already-installed': '这个插件已为 Fishball 安装。',
+      installFailed: '操作未成功。',
       pending: '本回合结束后生效',
       waiting: '启动中…',
       'pluginError.row-id-conflict': '它有两个部分同名，不能仅为 Fishball 运行',
@@ -793,17 +833,25 @@ window.__ModuleLoader__.load({
           h('h3', null, t('plugins')),
           h('p', { className: CLS.muted }, t('pluginsHint')),
           failed ? h('div', { role: 'alert' }, t('changeFailed')) : null,
-          catalog.plugins.map((plugin) => h('div', { key: plugin.plugin, className: CLS.plugin, 'data-fishball-plugin': plugin.plugin },
-            h('div', { className: CLS.grow },
-              h('div', { className: CLS.row },
-                h('span', { className: CLS.name }, plugin.title),
-                h(Tag, { tone: 'neutral' }, t('kind.' + plugin.kind)),
-                plugin.on !== plugin.applied ? h(Tag, { tone: 'info' }, t('pending')) : null,
-                plugin.waiting ? h(Tag, { tone: 'info' }, t('waiting')) : null),
-              plugin.changedBy ? h('span', { className: CLS.muted }, t('changedBy' + plugin.changedBy)) : null,
-              plugin.lastError ? h('span', { role: 'status' }, PLUGIN_ERRORS.has(plugin.lastError) ? t('pluginError.' + plugin.lastError) : t('pluginErrorOther')) : null,
-              plugin.tools.length > 0 ? h('ul', { className: CLS.list }, plugin.tools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t }))) : null),
-            h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: plugin.title }), onChange: (on) => run(API.plugins, { plugin: plugin.plugin, on }) }))),
+          h(InstallForm, { t }),
+          catalog.plugins.map((plugin) => {
+            // Only the actions the Host offers for this plugin's status (a DSH plugin has no uninstall).
+            const offers = new Set(plugin.actions)
+            const toggles = offers.has(PLUGIN_OFFER.enable) || offers.has(PLUGIN_OFFER.disable)
+            return h('div', { key: plugin.plugin, className: CLS.plugin, 'data-fishball-plugin': plugin.plugin, 'data-fishball-status': plugin.status },
+              h('div', { className: CLS.grow },
+                h('div', { className: CLS.row },
+                  h('span', { className: CLS.name }, plugin.title),
+                  h(Tag, { tone: STATUS_TONE[plugin.status] ?? 'neutral' }, t('status.' + plugin.status)),
+                  plugin.removing ? h(Tag, { tone: 'info' }, t('removing')) : null,
+                  plugin.on !== plugin.applied && !plugin.removing ? h(Tag, { tone: 'info' }, t('pending')) : null,
+                  plugin.waiting ? h(Tag, { tone: 'info' }, t('waiting')) : null),
+                plugin.changedBy ? h('span', { className: CLS.muted }, t('changedBy' + plugin.changedBy)) : null,
+                plugin.lastError ? h('span', { role: 'status' }, PLUGIN_ERRORS.has(plugin.lastError) ? t('pluginError.' + plugin.lastError) : t('pluginErrorOther')) : null,
+                plugin.tools.length > 0 ? h('ul', { className: CLS.list }, plugin.tools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t }))) : null),
+              offers.has(PLUGIN_OFFER.uninstall) ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'aria-label': t('uninstallLabel', { name: plugin.title }), onClick: () => run(API.pluginsRemove, { plugin: plugin.plugin }) }, t('uninstall')) : null,
+              toggles ? h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: plugin.title }), onChange: (on) => run(API.plugins, { plugin: plugin.plugin, on }) }) : null)
+          }),
           h('h3', null, t('allowedTools')),
           h('p', { className: CLS.muted }, t('allowedToolsHint')),
           catalog.allowedTools.length === 0 ? h('p', null, t('noAllowed')) : catalog.allowedTools.map((tool) => h('div', { key: tool.key, className: CLS.row },
@@ -814,6 +862,32 @@ window.__ModuleLoader__.load({
             h('h3', null, t('otherTools')),
             h('ul', { className: CLS.list }, catalog.otherTools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t })))) : null)
       }
+    }
+
+    /**
+     * "Install a plugin for Fishball only" (DESIGN §10): the spec goes to Fishball, which calls
+     * add_plugin, so the install still needs your Allow once in Fishball's chat.
+     */
+    function InstallForm({ t }) {
+      const id = React.useId()
+      const [spec, setSpec] = React.useState('')
+      const [busy, setBusy] = React.useState(false)
+      const [result, setResult] = React.useState(null)
+      const submit = async () => {
+        setBusy(true)
+        const { ok, code } = await send(API.pluginsInstall, { spec })
+        setBusy(false)
+        if (ok) { setSpec(''); setResult('installSent') } else setResult(INSTALL_ERRORS.has(code) ? 'installError.' + code : 'installFailed')
+      }
+      return h('div', { className: CLS.section, 'data-fishball-install': true },
+        h('h4', null, t('installTitle')),
+        h('p', { className: CLS.muted }, t('installHint')),
+        h('label', { className: CLS.field, htmlFor: id },
+          h('span', null, t('installSpecLabel')),
+          h('input', { id, className: CLS.note, value: spec, disabled: busy, onChange: (event) => { setSpec(event.target.value); setResult(null) } })),
+        h('div', { className: CLS.row },
+          h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: busy || spec.trim() === '', onClick: submit }, t('install'))),
+        result ? h('div', { role: result === 'installSent' ? 'status' : 'alert' }, t(result)) : null)
     }
 
     /** A token count for display, or a fallback word. */

@@ -21,21 +21,21 @@
  * | REV-12 ×2 | DT (answerer throws / unavailable) | 8 | {ok:false, code:'rejected'}; apply then dispose recorded; off; tool absent |
  * | REV-13 | BVA (limit 1, 1 Fishball-only + 3 built-ins on) | 12 | built-ins on are accepted; another Fishball-only is refused; with 0 Fishball-only running it is accepted although 3 built-ins are on |
  * | REV-14 | EP                     | 10 | every plugin_changes and tool_approvals key matches [A-Za-z0-9_-]+, also after a toggle of an @scope/name plugin |
- * | REV-15 | DT (add rejected)      | 9 | plugin_changes never contains the raw spec; the add entry's plugin is spec:<16 hex> or the bundle name |
- * | REV-16 | DT (install ok, enable refused by the limit) | 9 | {ok:false, installed:'fbtest-added-b'}; the dependency was added; no raw spec in the audit |
- * | REV-17a | ST (bundle installed and enabled while DSH runs) | 13 | GET state's catalog lists it, kind profile, on, with its tool, within 10 s and with no other action |
- * | REV-17b | ST (same bundle)       | 13 | its tool is unchecked and hidden; ordinary session has it; after allowance it is visible |
+ * | REV-15 | DT (add rejected)      | 9 | plugin_changes never contains the raw spec; the add entry's plugin is spec:<16 hex>, the bundle name or fishball:<name> |
+ * | REV-16 | DT (install ok, enable refused by the limit) | 9, plugin statuses | {ok:false, installed:'fishball:fbtest-added-b'}; installed in Fishball's folder (not the profile); no raw spec in the audit; the limit counts a Fishball-installed plugin like a fishball-only one |
+ * | REV-17a | ST (bundle installed and enabled while DSH runs) | 13, plugin statuses | GET state's catalog lists it, kind profile, OFF (dsh-disabled), with its tool, within 10 s and with no other action |
+ * | REV-17b | ST (same bundle)       | 13 | its tool is hidden; ordinary session has it; after set_plugin_enabled on with Allow it is visible |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
-  ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, AGENT_SCOPE_TOOL, API, APPROVER_THROWS, BUILTINS, CODE, FIXTURE_BUNDLE, KIND,
+  ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, AGENT_SCOPE_TOOL, API, APPROVER_THROWS, BUILTINS, CODE, FIXTURE_BUNDLE, INSTALLED_KEY, KIND,
   LAST_ERRORS, LIMITS, ONLY_BUNDLES, OUTCOME, PRESET, PROFILE, REVIEW_BUNDLES, SPOOF_ROWS, STATUS, STORE, STORE_KEY, TOOL_STATUS,
 } from './support/constants.mjs'
 import {
-  HOOK, T, allowFixtures, callTool, fishballTool, listPlugins, nextTools, pluginIn, scriptedTurn, setPlugin, settle, statusIn, toolIn, toolNames, turn,
+  HOOK, INSTALL_MS, T, allowFixtures, callTool, fishballTool, inFishballFolder, inProfile, listPlugins, nextTools, pluginIn, scriptedTurn, setPlugin, settle, statusIn, toolIn, toolNames, turn,
 } from './support/expect.mjs'
 import { bootHost, newHome, until } from './support/host.mjs'
 
@@ -295,12 +295,12 @@ describe('P3 review: installs (host C)', () => {
   let home
   let fb
   let bare
-  const profilePkg = () => JSON.parse(fs.readFileSync(path.join(home, 'profiles', PROFILE, 'package.json'), 'utf8'))
   const addEntries = () => Object.values(readTables(home).plugin_changes ?? {}).filter((e) => e?.action === 'add')
   /** The raw spec never appears in the audit, keys or values. */
   const expectNoSpec = (spec) => assert.equal(JSON.stringify(readTables(home).plugin_changes ?? {}).includes(spec), false, 'plugin_changes holds the raw spec')
   const SPEC_DIGEST = /^spec:[0-9a-f]{16}$/
-  const expectAddPlugin = (e, bundles) => assert.ok(bundles.includes(e.plugin) || SPEC_DIGEST.test(e.plugin), 'add entry plugin ' + JSON.stringify(e.plugin))
+  // Plugin statuses: a Fishball-installed plugin's key is fishball:<name>, so that is accepted too.
+  const expectAddPlugin = (e, bundles) => assert.ok(bundles.includes(e.plugin) || bundles.map(INSTALLED_KEY).includes(e.plugin) || SPEC_DIGEST.test(e.plugin), 'add entry plugin ' + JSON.stringify(e.plugin))
 
   before(async () => {
     ;({ host, home, fb } = await bootReady('review-c'))
@@ -327,10 +327,11 @@ describe('P3 review: installs (host C)', () => {
     await settle(host)
     const lim = await host.call('settingsUpdate', { patch: { maxFishballOnlyPlugins: 1 } })
     assert.equal(lim.ok, true, JSON.stringify(lim.error))
-    const r = await fishballTool(host, fb, 'add_plugin', { spec: ADDED_BUNDLE_B.dir, reason: 'fbtest' }, OUTCOME.allow)
-    assert.ok(Object.hasOwn(profilePkg().dependencies ?? {}, ADDED_BUNDLE_B.name), 'precondition: installed')
+    const r = await fishballTool(host, fb, 'add_plugin', { spec: ADDED_BUNDLE_B.dir, reason: 'fbtest' }, OUTCOME.allow, INSTALL_MS)
+    assert.ok(inFishballFolder(home, ADDED_BUNDLE_B.name), 'precondition: installed in Fishball\'s folder')
+    assert.equal(inProfile(home, ADDED_BUNDLE_B.name), false, 'not in the DSH profile')
     assert.equal(r.json?.ok, false, r.result.text)
-    assert.equal(r.json?.installed, ADDED_BUNDLE_B.name)
+    assert.equal(r.json?.installed, INSTALLED_KEY(ADDED_BUNDLE_B.name))
     expectNoSpec(ADDED_BUNDLE_B.dir)
     for (const e of addEntries()) expectAddPlugin(e, [ADDED_BUNDLE.name, ADDED_BUNDLE_B.name])
   })
@@ -344,15 +345,15 @@ describe('P3 review: installs (host C)', () => {
     const entry = await until(async () => { const c = (await host.state()).catalog; return pluginIn(c, D.name) && toolIn(c, D.name, D.tool) ? pluginIn(c, D.name) : false }, 10000, 100)
     assert.ok(entry, 'GET state catalog lists ' + D.name + ' with its tool within 10 s: ' + JSON.stringify(pluginIn((await host.state()).catalog, D.name)))
     assert.equal(entry.kind, KIND.profile)
-    assert.equal(entry.on, true)
+    assert.equal(entry.on, false, 'plugin statuses: a DSH plugin installed later starts off in Fishball')
   })
 
   it('REV-17b its tools follow its state: unchecked and hidden, then visible after allowance', T, async () => {
     const D = ADDED_BUNDLE_C
     const c = await listPlugins(host, fb)
     assert.equal(pluginIn(c, D.name)?.kind, KIND.profile, 'list_plugins lists it: ' + JSON.stringify(pluginIn(c, D.name)))
-    assert.equal(pluginIn(c, D.name).on, true)
-    assert.equal(toolIn(c, D.name, D.tool)?.status, TOOL_STATUS.unchecked)
+    assert.equal(pluginIn(c, D.name).on, false)
+    assert.ok([TOOL_STATUS.unchecked, TOOL_STATUS.pluginOff].includes(toolIn(c, D.name, D.tool)?.status), 'hidden status (A22)')
     assert.equal((await nextTools(host, fb)).includes(D.tool), false)
     assert.ok((await ordinaryTools(host, bare)).includes(D.tool), 'ordinary session has it')
     const on = await setPlugin(host, fb, D.name, true, OUTCOME.allow)

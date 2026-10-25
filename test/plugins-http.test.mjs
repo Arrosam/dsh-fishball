@@ -39,6 +39,8 @@ describe('P3 settings-page API', () => {
     const booted = await bootLive(newHome('plugins-http'))
     host = booted.host
     fb = booted.state?.sessionId
+    // Plugin statuses: DSH plugins start off on a new install; PHT-02 turns a profile plugin that is on off.
+    assert.equal((await host.post(API.plugins, { plugin: FIX, on: true })).status, 200, 'precondition: fbtest-tools on')
     await settle(host)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
