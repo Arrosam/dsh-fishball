@@ -24,7 +24,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -39,6 +39,8 @@ window.__ModuleLoader__.load({
     const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', uiWorkspace: 'uiWorkspace' })
     const SUMMARY_VIEW = 'summary'
     const HEADER_ACTION_ID = 'fishball-settings'
+    /** Renders nothing: while mounted for Fishball's session, that chat is on screen (see ReadReporter). */
+    const READ_HEADER = Object.freeze({ id: 'fishball-read', order: 6 })
     /** Host statuses (src/constants.js STATUS) and the recovery actions each one offers. */
     const STATUS = Object.freeze({ starting: 'starting', live: 'live', recovery: 'recovery', archived: 'archived', stopped: 'stopped', failed: 'failed' })
     const ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
@@ -47,7 +49,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand' })
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
     const WATCH_MENU = Object.freeze({ id: 'fishball-watch', order: 425 })
     const WATCH_HEADER = Object.freeze({ id: 'fishball-watch', order: 3 })
@@ -75,6 +77,10 @@ window.__ModuleLoader__.load({
      * client bundle cannot import the host's list: keep it in step with src/constants.js PLUGIN_ERROR.
      */
     const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached'])
+    const VISIBLE = 'visible'
+    const VISIBILITY_EVENT = 'visibilitychange'
+    /** Brand icon choices (src/constants.js BRAND_STYLE). */
+    const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     const SLOT = Object.freeze({
       mark: 'sidebar.brand.mark',
@@ -119,7 +125,9 @@ window.__ModuleLoader__.load({
     })
     /**
      * The "Deepseek Harness" tag: a tilted sticker overlapping the word logo's bottom-right corner
-     * (design 8 of the owner's pick), with a hard magenta drop shadow. It covers the foot of the
+     * (design 8 of the owner's pick), with a hard magenta drop shadow. A negative `right` pushes it
+     * past the word's right edge so its left end no longer covers the mark; the brand button has
+     * free room to the right of the word (it grows to the sidebar toggle), so nothing is cut off. It covers the foot of the
      * last letters on purpose: the small plain text it replaced could not be read at sidebar size.
      * The tilt pivots on the bottom-right corner, so the left end swings down below the word.
      * The shell clips the brand name to a 24px-high box (dsh-client-ui-sidebar `.brand`), which
@@ -132,7 +140,7 @@ window.__ModuleLoader__.load({
      */
     const BRAND_TAG = Object.freeze({
       fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px',
-      right: '0', bottom: '-2px', rotate: '-5deg', origin: 'right bottom',
+      right: '-16px', bottom: '-2px', rotate: '-5deg', origin: 'right bottom',
       fill: 'var(--dsw-alias-label-primary)', textColor: 'var(--dsw-alias-label-primary-inverted)',
       ring: '0 0 0 1.5px var(--dsw-alias-label-primary-inverted)', shadow: '2px 2px 0 1.5px ' + FISH_MARK.eyeColor,
     })
@@ -143,6 +151,58 @@ window.__ModuleLoader__.load({
      * container (the sidebar or the app root) that was meant to clip.
      */
     const CLIP_SEARCH_DEPTH = 4
+    /**
+     * Unread replies on the mark: a count pill on its top-right corner and a short tail wag,
+     * repeated every WAG cycle while anything is unread (the pill pops with the wag and rests
+     * between). The pill takes the brand's one accent and a ring in the sidebar's label colour
+     * so it separates from the mark on light and dark themes, as the Deepseek Harness tag does.
+     * The pill shows the count up to `max`, then "${max}+", so it stays narrow in the sidebar.
+     * The wag pivots near the tail's root; it is a keyframe list, so a change of look edits data.
+     * The pill overhangs the mark by 7px above and 9px to the right. The shell clips the brand
+     * button (overflow:hidden, exactly the mark's 24px high), so it shows only because
+     * releaseClip() opens that box while the brand is shown; if a DSH update changes that markup the
+     * pill is cut. Check it in the expanded sidebar, the collapsed rail and the Windows titlebar.
+     */
+    const UNREAD_BADGE = Object.freeze({
+      max: 99,
+      /** Keyframe names of the tail wag and the pill's pop (declared once in the style sheet below). */
+      wagAnimation: 'fb-wag', popAnimation: 'fb-pop',
+      fill: FISH_MARK.eyeColor, textColor: '#fff',
+      ring: '0 0 0 2px var(--dsw-alias-label-primary-inverted)',
+      minWidth: '16px', height: '16px', paddingX: '4px', radius: '8px',
+      fontSize: '10px', fontWeight: 800, top: '-7px', right: '-9px',
+      cycleSeconds: 2.2, wagOrigin: '70% 40%',
+      /** Keyframe percentages of one cycle: rest, then wag back and forth, then rest. */
+      wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
+      /** The pill's pop, over the same stretch of the cycle as the wag. */
+      pop: Object.freeze([[0, 1], [58, 1], [66, 1.35], [74, 0.95], [82, 1.1], [100, 1]]),
+    })
+    /**
+     * DSH's own orca (the brand icon of DSH's build) and its swim, which the stock new-session
+     * window plays when you hover the orca: the body morphs through a tail-up and a tail-down
+     * shape (SMIL on `d`) while the whole mark sways a little (CSS). The two shapes and the
+     * timings are copied from dsh-client-ui-conversation (HeroShell: HERO_SWIM_UP_PATH,
+     * HERO_SWIM_DOWN_PATH, 1.6 s, the sway keyframes). They are not exported, so they cannot be
+     * imported; the resting shape itself comes from the primitives (FISH_LOGO_PATH).
+     * With DeepSeek's icon chosen the swim replaces the tail wag: it runs once per unread cycle
+     * (UNREAD_BADGE.cycleSeconds), then rests, so both icons repeat at the same pace.
+     */
+    const ORCA_SWIM = Object.freeze({
+      up: "M22.403 0.567C22.145 0.477 22.068 0.718 21.939 0.85C21.895 0.893 21.86 0.947 21.824 0.997C21.515 1.421 21.13 1.721 20.591 1.77C19.829 1.867 19.221 2.244 18.712 2.958C18.535 2.227 18.116 1.839 17.516 1.626C17.203 1.506 16.887 1.379 16.663 1.064C16.508 0.839 16.462 0.581 16.383 0.329C16.332 0.176 16.283 0.02 16.121 -0.002C15.944 -0.029 15.875 0.133 15.805 0.269C15.52 0.822 15.408 1.43 15.42 2.046C15.449 3.432 16.031 4.532 17.202 5.274C17.337 5.356 17.374 5.445 17.335 5.582C17.261 5.862 17.169 6.134 17.086 6.413C17.032 6.59 16.952 6.63 16.764 6.558C16.118 6.301 15.562 5.909 15.074 5.433C14.248 4.633 13.5 3.751 12.568 3.06C12.349 2.898 12.13 2.748 11.903 2.605C10.952 1.682 12.028 0.923 12.277 0.833C12.537 0.739 12.367 0.416 11.526 0.42C10.684 0.424 9.914 0.706 8.933 1.081C8.789 1.138 8.638 1.179 8.484 1.213C7.593 1.044 6.668 1.006 5.702 1.115C3.883 1.318 2.43 2.178 1.362 3.646C0.079 5.41 -0.223 7.415 0.147 9.506C0.535 11.71 1.66 13.535 3.389 14.962C5.181 16.441 7.246 17.166 9.601 17.027C11.032 16.944 12.624 16.753 14.421 15.232C14.874 15.458 15.35 15.548 16.138 15.615C16.746 15.672 17.331 15.585 17.784 15.491C18.493 15.341 18.444 14.684 18.188 14.564C16.108 13.595 16.565 13.989 16.15 13.67C17.206 12.42 18.82 10.198 19.363 7.086C19.421 6.709 19.484 6.171 19.469 5.866C19.458 5.681 19.493 5.604 19.681 5.556C20.199 5.412 20.691 5.172 21.125 4.806C22.366 3.824 22.758 2.554 22.708 1.1C22.7 0.878 22.649 0.654 22.403 0.567ZM11.175 14.451C9.159 12.726 8.182 12.088 7.778 12.067C7.401 12.047 7.469 12.505 7.552 12.807C7.639 13.103 7.752 13.313 7.91 13.581C8.02 13.758 8.095 14.01 7.801 14.16C7.152 14.487 6.023 13.806 5.97 13.772C4.657 12.85 3.559 11.766 2.785 10.369C2.037 9.025 1.603 7.583 1.532 6.044C1.513 5.672 1.622 5.541 1.992 5.473C2.479 5.383 2.981 5.364 3.468 5.436C5.525 5.736 7.276 6.675 8.744 8.323C9.582 9.299 10.216 10.425 10.869 11.496C11.563 12.592 12.31 13.603 13.262 14.414C13.598 14.696 13.866 14.91 14.123 15.068C13.349 15.154 12.058 15.167 11.175 14.452L11.175 14.451ZM12.141 8.26C12.141 8.095 12.273 7.963 12.439 7.963C12.476 7.963 12.511 7.971 12.541 7.982C12.582 7.997 12.62 8.019 12.65 8.053C12.704 8.106 12.733 8.181 12.733 8.26C12.733 8.425 12.601 8.556 12.435 8.556C12.27 8.556 12.141 8.425 12.141 8.26ZM15.142 9.799C14.949 9.878 14.757 9.945 14.572 9.953C14.284 9.968 13.972 9.851 13.802 9.709C13.537 9.487 13.348 9.363 13.27 8.977C13.236 8.812 13.255 8.556 13.284 8.41C13.352 8.094 13.277 7.892 13.055 7.708C12.873 7.558 12.643 7.516 12.39 7.516C12.296 7.516 12.209 7.475 12.145 7.441C12.039 7.389 11.952 7.257 12.035 7.096C12.062 7.043 12.19 6.916 12.22 6.893C12.563 6.698 12.96 6.762 13.326 6.908C13.665 7.047 13.922 7.302 14.292 7.663C14.669 8.098 14.738 8.218 14.953 8.545C15.123 8.801 15.277 9.063 15.383 9.364C15.447 9.551 15.364 9.705 15.142 9.799Z",
+      down: "M23.271 2.216C23.039 2.071 22.91 2.287 22.755 2.388C22.703 2.42 22.656 2.464 22.61 2.505C22.214 2.848 21.771 3.054 21.225 2.956C20.412 2.784 19.68 2.919 19.005 3.435C18.92 2.663 18.493 2.157 17.808 1.798C17.446 1.621 17.08 1.449 16.83 1.111C16.656 0.872 16.611 0.612 16.524 0.354C16.469 0.198 16.414 0.039 16.223 0.009C16.017 -0.024 15.936 0.137 15.856 0.271C15.539 0.822 15.418 1.43 15.429 2.046C15.454 3.432 16.041 4.538 17.196 5.36C17.325 5.456 17.356 5.547 17.312 5.674C17.229 5.936 17.134 6.191 17.051 6.454C16.999 6.623 16.921 6.659 16.738 6.58C16.107 6.306 15.56 5.909 15.074 5.433C14.248 4.633 13.5 3.751 12.568 3.06C12.349 2.898 12.13 2.748 11.903 2.605C10.952 1.682 12.028 0.923 12.277 0.833C12.537 0.739 12.367 0.416 11.526 0.42C10.684 0.424 9.914 0.706 8.933 1.081C8.789 1.138 8.638 1.179 8.484 1.213C7.593 1.044 6.668 1.006 5.702 1.115C3.883 1.318 2.43 2.178 1.362 3.646C0.079 5.41 -0.223 7.415 0.147 9.506C0.535 11.71 1.66 13.535 3.389 14.962C5.181 16.441 7.246 17.166 9.601 17.027C11.032 16.944 12.624 16.753 14.421 15.232C14.874 15.458 15.35 15.548 16.138 15.615C16.746 15.672 17.331 15.585 17.784 15.491C18.493 15.341 18.444 14.684 18.188 14.564C16.108 13.595 16.565 13.989 16.15 13.67C17.206 12.42 18.82 10.198 19.278 7.246C19.318 6.948 19.375 6.534 19.371 6.293C19.371 6.145 19.411 6.092 19.597 6.098C20.113 6.109 20.619 6.051 21.096 5.891C22.503 5.375 23.169 4.232 23.448 2.804C23.49 2.586 23.491 2.356 23.271 2.216ZM11.175 14.49C9.159 13.005 8.182 12.567 7.778 12.621C7.401 12.673 7.469 13.087 7.552 13.354C7.639 13.619 7.752 13.797 7.91 14.024C8.02 14.175 8.095 14.406 7.801 14.609C7.152 15.063 6.023 14.63 5.97 14.609C4.657 13.941 3.559 12.965 2.785 11.569C2.037 10.225 1.603 8.783 1.532 7.244C1.513 6.872 1.622 6.741 1.992 6.673C2.479 6.583 2.981 6.564 3.468 6.636C5.525 6.936 7.276 7.843 8.744 9.163C9.582 9.888 10.216 10.783 10.869 11.679C11.563 12.659 12.31 13.617 13.262 14.415C13.598 14.696 13.866 14.91 14.123 15.068C13.349 15.155 12.058 15.177 11.175 14.491L11.175 14.49ZM12.141 8.26C12.141 8.095 12.273 7.963 12.439 7.963C12.476 7.963 12.511 7.971 12.541 7.982C12.582 7.997 12.62 8.019 12.65 8.053C12.704 8.106 12.733 8.181 12.733 8.26C12.733 8.425 12.601 8.556 12.435 8.556C12.27 8.556 12.141 8.425 12.141 8.26ZM15.142 9.799C14.949 9.878 14.757 9.945 14.572 9.953C14.284 9.968 13.972 9.851 13.802 9.709C13.537 9.487 13.348 9.363 13.27 8.977C13.236 8.812 13.255 8.556 13.284 8.41C13.352 8.094 13.277 7.892 13.055 7.708C12.873 7.558 12.643 7.516 12.39 7.516C12.296 7.516 12.209 7.475 12.145 7.441C12.039 7.389 11.952 7.257 12.035 7.096C12.062 7.043 12.19 6.916 12.22 6.893C12.563 6.698 12.96 6.762 13.326 6.908C13.665 7.047 13.922 7.302 14.292 7.663C14.669 8.098 14.738 8.218 14.953 8.545C15.123 8.801 15.277 9.063 15.383 9.364C15.447 9.551 15.364 9.705 15.142 9.799Z",
+      seconds: 1.6,
+      /** Rest, up, rest, down, rest: the keyTimes of one swim, as fractions of the swim. */
+      keyTimes: Object.freeze([0, 0.35, 0.55, 0.75, 1]),
+      spline: '0.45 0 0.55 1',
+      hold: '0 0 1 1',
+      origin: '50% 60%',
+      /** Sway keyframes of one swim: [percent of the swim, transform]. */
+      sway: Object.freeze([[0, 'none'], [35, 'rotate(-4deg) translate(-.4px,-.9px)'], [70, 'rotate(1.6deg) translate(.3px,.2px)'], [100, 'none']]),
+    })
+    /** The share of an unread cycle the swim takes; the rest of the cycle the orca is still. */
+    const SWIM_SHARE = ORCA_SWIM.seconds / UNREAD_BADGE.cycleSeconds
+    /** Only animate for people who have not asked for less motion (DSH's hero checks the same query). */
+    const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
     const STYLE_ID = 'fishball-style'
     /**
      * Fishball's own session is reached through the brand (or its Plugins page), not the
@@ -152,13 +212,17 @@ window.__ModuleLoader__.load({
      * grouped and the flat list; if a DSH update renames it the row simply shows again.
      */
     const OWN_ROW = Object.freeze({ styleId: 'fishball-own-row', selector: (sessionId) => `[data-row-key="session:${CSS.escape(sessionId)}"]{display:none}` })
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
       brandName: 'FISHBALL',
       brandTag: 'Deepseek Harness',
       brandLabel: 'Open Fishball',
-      status: 'Status',
+      brandLabelUnread: 'Open Fishball, {count} unread',
+      unreadMany: '{max}+',
+      brandStyle: 'Sidebar icon',
+      brandStyleHint: 'Fishball\'s own mark and word logo, or the DeepSeek orca and DeepSeek\'s word logo. A new message shows the number either way; Fishball\'s fish wags, and the orca swims as it does when you hover it in a new session.',
+      brandStyleDeepseek: 'Use the DeepSeek icon',
       session: 'Session',
       folder: 'Folder',
       error: 'Problem',
@@ -319,7 +383,11 @@ window.__ModuleLoader__.load({
       brandName: 'FISHBALL',
       brandTag: 'Deepseek Harness',
       brandLabel: '打开 Fishball',
-      status: '状态',
+      brandLabelUnread: '打开 Fishball，{count} 条未读',
+      unreadMany: '{max}+',
+      brandStyle: '侧边栏图标',
+      brandStyleHint: 'Fishball 自己的标志和字标，或 DeepSeek 的鲸鱼和字标。新消息在两种图标上都会显示数字；Fishball 的小鱼会摆尾，鲸鱼则会像在新会话里悬停时那样游动。',
+      brandStyleDeepseek: '使用 DeepSeek 图标',
       session: '会话',
       folder: '文件夹',
       error: '问题',
@@ -480,6 +548,15 @@ window.__ModuleLoader__.load({
     const css = [
       `.${CLS.section}{display:flex;flex-direction:column;gap:12px;margin:0 0 24px;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
       `.${CLS.mark}{color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.markBox}{position:relative;display:inline-flex}`,
+      `.${CLS.badge}{position:absolute;top:${UNREAD_BADGE.top};right:${UNREAD_BADGE.right};box-sizing:border-box;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};box-shadow:${UNREAD_BADGE.ring};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} sans-serif;text-align:center;white-space:nowrap;pointer-events:none;animation:${UNREAD_BADGE.popAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
+      `.${CLS.wag}{transform-origin:${UNREAD_BADGE.wagOrigin};animation:${UNREAD_BADGE.wagAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
+      `@keyframes ${UNREAD_BADGE.wagAnimation}{${UNREAD_BADGE.wag.map(([at, degrees]) => `${at}%{transform:rotate(${degrees}deg)}`).join('')}}`,
+      `@keyframes ${UNREAD_BADGE.popAnimation}{${UNREAD_BADGE.pop.map(([at, scale]) => `${at}%{transform:scale(${scale})}`).join('')}}`,
+      `.${CLS.swim}{transform-origin:${ORCA_SWIM.origin};overflow:visible;animation:fb-swim ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
+      `@keyframes fb-swim{${[...ORCA_SWIM.sway.map(([at, transform]) => [at * SWIM_SHARE, transform]), [100, 'none']].map(([at, transform]) => `${at}%{transform:${transform}}`).join('')}}`,
+      // Motion is the only thing that stops: the pill and its count stay.
+      `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim}{animation:none}}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
       `.${CLS.label}{min-width:120px;color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
@@ -540,10 +617,55 @@ window.__ModuleLoader__.load({
     const post = async (path, body) => (await send(path, body)).ok
     const recover = (action) => post(API.recovery, { action })
 
-    function Mark({ size }) {
-      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: CLS.mark, 'aria-hidden': true, 'data-fishball-mark': true },
+    /** Unread replies from the Host snapshot: a whole number, 0 until the first frame arrives. */
+    const unreadCount = (state) => state.unread?.count ?? 0
+
+    /** Which brand icon you chose; Fishball's own until the Host says otherwise. */
+    const brandStyleOf = (state) => state.preferences?.brandStyle ?? BRAND_STYLE.fishball
+
+    /** Fishball's fish: wags while anything is unread. */
+    function FishballIcon({ size, unread }) {
+      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: unread ? `${CLS.mark} ${CLS.wag}` : CLS.mark, 'aria-hidden': true, 'data-fishball-mark': true },
         h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
         h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
+    }
+
+    /**
+     * The swim as SMIL: DSH's morph through the tail-up and tail-down shapes, squeezed into the
+     * first part of the unread cycle with the orca still for the rest (a final rest-to-rest
+     * stretch), so it repeats at the pace of the fish's wag. Not drawn for reduced motion.
+     */
+    const swimAnimation = () => h('animate', {
+      attributeName: 'd',
+      values: [FISH_LOGO_PATH, ORCA_SWIM.up, FISH_LOGO_PATH, ORCA_SWIM.down, FISH_LOGO_PATH, FISH_LOGO_PATH].join(';'),
+      keyTimes: [...ORCA_SWIM.keyTimes.map((at) => at * SWIM_SHARE), 1].join(';'),
+      calcMode: 'spline',
+      // One spline per stretch between values: the swim's four, then a hold for the still part.
+      keySplines: [...ORCA_SWIM.keyTimes.slice(1).map(() => ORCA_SWIM.spline), ORCA_SWIM.hold].join(';'),
+      dur: `${UNREAD_BADGE.cycleSeconds}s`,
+      repeatCount: 'indefinite',
+    })
+
+    /** DSH's orca: the stock mark, swimming while anything is unread. */
+    function OrcaIcon({ size, unread }) {
+      const swims = unread && window.matchMedia(MOTION_QUERY).matches
+      return h('svg', {
+        width: size, height: size * FISH_LOGO_VIEWBOX.height / FISH_LOGO_VIEWBOX.width, viewBox: `0 0 ${FISH_LOGO_VIEWBOX.width} ${FISH_LOGO_VIEWBOX.height}`,
+        fill: 'none', className: unread ? CLS.swim : undefined, 'aria-hidden': true, 'data-fishball-orca': true,
+      }, h('path', { d: FISH_LOGO_PATH, fill: 'currentColor' }, swims ? swimAnimation() : null))
+    }
+
+    const BRAND_ICON = Object.freeze({ [BRAND_STYLE.fishball]: FishballIcon, [BRAND_STYLE.deepseek]: OrcaIcon })
+
+    function makeMark(t) {
+      return function Mark({ size }) {
+        const state = useFishball()
+        const count = unreadCount(state)
+        const Icon = BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
+        return h('span', { className: CLS.markBox, 'data-fishball-unread': count },
+          h(Icon, { size, unread: count > 0 }),
+          count > 0 ? h('span', { className: CLS.badge, 'data-fishball-badge': true }, count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)) : null)
+      }
     }
 
     /**
@@ -597,13 +719,15 @@ window.__ModuleLoader__.load({
         const ref = React.useRef(null)
         // Subscribed only to keep the shared state stream open while the brand is shown:
         // the click handler reads the latest snapshot when it runs.
-        useFishball()
+        const state = useFishball()
+        const count = unreadCount(state)
+        const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
         React.useEffect(() => releaseClip(ref.current), [])
         React.useEffect(() => {
           const button = ref.current?.closest('button')
           if (!button) return undefined
           const previous = button.getAttribute('aria-label')
-          button.setAttribute('aria-label', t('brandLabel'))
+          button.setAttribute('aria-label', count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel'))
           const onClick = (event) => {
             const open = fishballOpener(ctx)
             if (open === undefined) return
@@ -618,7 +742,9 @@ window.__ModuleLoader__.load({
             if (previous === null) button.removeAttribute('aria-label')
             else button.setAttribute('aria-label', previous)
           }
-        }, [])
+        }, [count])
+        // DeepSeek's word logo is the stock one, without Fishball's tag or its lifted word.
+        if (deepseek) return h('span', { ref, 'data-fishball-name': BRAND_STYLE.deepseek }, h(BrandWordmark, { includeMark: false }))
         return h('span', { ref, className: CLS.name, 'data-fishball-name': true },
           t('brandName'),
           h('span', { className: CLS.tag, 'data-fishball-tag': true }, t('brandTag')))
@@ -987,6 +1113,46 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * Reports that Fishball's chat is on screen. DSH has no "is this session shown" signal
+     * for plugins, but the session header's actions are rendered only for the session being
+     * shown, so this renders nothing and, while mounted for Fishball's own session in a visible
+     * tab, tells the Host that its replies are read: once on arrival and again for each reply
+     * that comes in while it stays open. A hidden tab does not count as reading.
+     */
+    function FishballReadReporter({ sessionId }) {
+      const state = useFishball()
+      const [visible, setVisible] = React.useState(document.visibilityState === VISIBLE)
+      React.useEffect(() => {
+        const update = () => setVisible(document.visibilityState === VISIBLE)
+        document.addEventListener(VISIBILITY_EVENT, update)
+        return () => document.removeEventListener(VISIBILITY_EVENT, update)
+      }, [])
+      const unread = unreadCount(state)
+      const shown = Boolean(sessionId) && sessionId === state.sessionId
+      React.useEffect(() => {
+        if (shown && visible && unread > 0) void post(API.read, {})
+      }, [shown, visible, unread])
+      return null
+    }
+
+    /** Settings: switch the sidebar back to DeepSeek's icon and word logo (your choice, stored by the Host). */
+    function makeBrandStyle(t) {
+      return function FishballBrandStyle() {
+        const state = useFishball()
+        const [failed, setFailed] = React.useState(false)
+        const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
+        const choose = async (on) => setFailed(!(await post(API.brand, { style: on ? BRAND_STYLE.deepseek : BRAND_STYLE.fishball })))
+        return h('div', { className: CLS.section, 'data-fishball-brand-style': brandStyleOf(state) },
+          h('h3', null, t('brandStyle')),
+          h('p', { className: CLS.muted }, t('brandStyleHint')),
+          h('div', { className: CLS.row },
+            h('span', { className: CLS.grow }, t('brandStyleDeepseek')),
+            h(Switch, { checked: deepseek, label: t('brandStyleDeepseek'), onChange: choose })),
+          failed ? h('div', { role: 'alert' }, t('changeFailed')) : null)
+      }
+    }
+
     function makeHeaderAction(ctx, t) {
       return function FishballHeaderAction({ sessionId }) {
         const state = useFishball()
@@ -1003,7 +1169,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -1013,6 +1179,7 @@ window.__ModuleLoader__.load({
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
           h(Status),
+          h(BrandStyle),
           h(ContextWindow),
           h(Intake),
           h(Watches),
@@ -1078,12 +1245,13 @@ window.__ModuleLoader__.load({
       ctx.effect(hideOwnRow, 'fishball: hide own session row')
       const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
-        yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, Mark)
+        yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, makeMark(t))
         yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
       })), 'fishball: brand')
       const HeaderAction = makeHeaderAction(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.headerActions, function* () {
         yield ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)
+        yield ctx.slots.register({ name: SLOT.headerActions, id: READ_HEADER.id, order: READ_HEADER.order, locale: NS }, FishballReadReporter)
         yield ctx.slots.register({ name: SLOT.headerActions, id: SEND_HEADER_ID, order: SEND_HEADER_ORDER, locale: NS }, makeSendHeaderAction(t))
         yield ctx.slots.register({ name: SLOT.headerActions, id: WATCH_HEADER.id, order: WATCH_HEADER.order, locale: NS }, makeWatchHeaderAction(t))
       }), 'fishball: header actions')
@@ -1097,7 +1265,7 @@ window.__ModuleLoader__.load({
       }), 'fishball: dialogs')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePlugins(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')
