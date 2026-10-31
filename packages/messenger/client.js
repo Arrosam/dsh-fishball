@@ -50,6 +50,8 @@ window.__ModuleLoader__.load({
     /** DSH's chat-row wrapper: one per row, siblings in transcript order. */
     const FLOW_ITEM = '[data-chat-flow-key]'
     const STYLE_ID = 'fishball-messenger-style'
+    /** Fishball's reply layout: the gap after the avatar, the name line above the bubble, and the fish on its avatar disc. */
+    const REPLY_LAYOUT = Object.freeze({ gapPx: 8, nameLinePx: 18, fishFill: '#fff', fishShare: '60%' })
     const AVATAR = Object.freeze({ sizePx: 28, fishPx: 20, headerPx: 16, saturation: '72%', lightness: '52%', hueTurn: 360, initials: 2 })
     const ACCENT = 'var(--fishball-messenger-accent)'
     /**
@@ -105,7 +107,8 @@ window.__ModuleLoader__.load({
     const FISHBALL_NAME = 'Fishball'
 
     /** An SVG data URL of the FishMark body, used as a CSS mask so it takes the theme's colour. */
-    const markMask = (mark) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='${mark.viewBox}'><path d='${mark.body}'/></svg>`)}")`
+    /** The FishMark body as an SVG data URL in one fill colour, for Fishball's reply avatar. */
+    const markImage = (mark, fill) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='${mark.viewBox}'><path d='${mark.body}' fill='${fill}'/></svg>`)}")`
 
     /**
      * The stylesheet. SCOPE matches only the conversation that shows the header marker, which
@@ -115,6 +118,8 @@ window.__ModuleLoader__.load({
     function stylesheet(mark) {
       const SCOPE = `[data-slot="main.conversation"]:has([${ATTR.marker}])`
       const REPLY = `${SCOPE} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]`
+      // DSH's reply view, inside the row's slot wrapper (display: contents): it becomes the bubble.
+      const REPLY_BUBBLE = `${REPLY}>[data-slot="conversation.chat.node"]>*`
       return [
         `:root{--fishball-messenger-accent:${mark.eyeColor}}`,
         `.${CLS.incoming}{display:flex;gap:8px;align-items:flex-start;margin:6px 20% 6px 0}`,
@@ -140,9 +145,13 @@ window.__ModuleLoader__.load({
         `.${CLS.headerFish}{width:${AVATAR.headerPx}px;height:${AVATAR.headerPx}px;color:var(--dsw-alias-label-primary)}`,
         `.${CLS.headerName}{font-weight:600;color:${ACCENT}}`,
         `.${CLS.status}{color:var(--dsw-alias-label-tertiary)}`,
-        `${REPLY}{position:relative;margin:6px 20% 6px 0;padding:24px 14px 8px 48px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2)}`,
-        `${REPLY}::before{content:"";position:absolute;left:10px;top:8px;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;background:var(--dsw-alias-label-primary);-webkit-mask:${markMask(mark)} center/contain no-repeat;mask:${markMask(mark)} center/contain no-repeat}`,
-        `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:48px;top:6px;font-size:12px;font-weight:600;color:${ACCENT}}`,
+        // Fishball's replies take the shape of an incoming message (owner's request): a round
+        // avatar outside the bubble at the top left, the name above, and the bubble with its tip
+        // beside the avatar. Offsets match .incoming: avatar, its gap, and the name line.
+        `${REPLY}{position:relative;margin:6px 20% 6px 0;padding:${REPLY_LAYOUT.nameLinePx}px 0 0 ${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px}`,
+        `${REPLY_BUBBLE}{padding:6px 12px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2)}`,
+        `${REPLY}::before{content:"";position:absolute;left:0;top:0;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;border-radius:50%;background:${markImage(mark, REPLY_LAYOUT.fishFill)} center/${REPLY_LAYOUT.fishShare} no-repeat,${ACCENT}}`,
+        `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px;top:0;font-size:12px;line-height:${REPLY_LAYOUT.nameLinePx}px;font-weight:600;color:${ACCENT}}`,
         // Work rows (tool calls, reasoning, process groups) read as quieter activity lines.
         `${SCOPE} [data-chat-group-part]:not([data-chat-group-part="response"]){opacity:.7}`,
         `${SCOPE} [data-slot="conversation.composer.bar"]>*{border-radius:24px}`,
