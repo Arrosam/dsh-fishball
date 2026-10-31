@@ -17,16 +17,16 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ACTION, ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, API, CHANGED_BY, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, KIND, ONLY_BUNDLES, PACKAGE_NAME, PLUGIN_STATUS, PRESET, STATUS } from './support/constants.mjs'
-import { HOOK, LONG_T, T, catalogSettled, nextTools, pluginIn, settle, settledIdle, toolNames, turn, untilCatalog } from './support/expect.mjs'
+import { ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, API, CHANGED_BY, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, KIND, ONLY_BUNDLES, PACKAGE_NAME, PLUGIN_STATUS, PRESET, STATUS } from './support/constants.mjs'
+import { HOOK, LONG_T, T, catalogSettled, expectedActions, nextTools, pluginIn, settle, settledIdle, toolNames, turn, untilCatalog } from './support/expect.mjs'
 import { bootHost, bootLive, newHome } from './support/host.mjs'
 
-/** Off for Fishball, as a DSH plugin: dsh-disabled with [enable]. */
+/** Off for Fishball, as a DSH plugin: dsh-disabled with [enable], or no action when it is blocked (revision 10b). */
 function assertOff(p, label) {
   assert.ok(p, label + ' listed')
   assert.equal(p.on, false, label + ' on: ' + JSON.stringify(p))
   assert.equal(p.status, PLUGIN_STATUS.dshDisabled, label)
-  assert.deepEqual(p.actions, [ACTION.enable], label)
+  assert.deepEqual(p.actions, expectedActions(p), label)
 }
 
 describe('Plugin defaults on a new install', () => {

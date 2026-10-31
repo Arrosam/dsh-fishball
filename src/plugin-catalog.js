@@ -110,9 +110,21 @@ function packageFacts(name, dir, folder) {
   return { version, description, meta }
 }
 
-/** The actions a plugin offers: on/off for all, uninstall only for Fishball-installed ones; none while it is being uninstalled. */
-function actionsOf(kind, on, removing) {
+/**
+ * Why a package plugin cannot run in Fishball's tree, read from its patch alone (S1): these codes
+ * mean it never can, so the page says so up front (revision 10b). A row failure is only known on
+ * mounting, so it is not one of them.
+ */
+const PATCH_BLOCKERS = new Set([PLUGIN_ERROR.editsOtherRows, PLUGIN_ERROR.noRows, PLUGIN_ERROR.noProfile])
+
+/**
+ * The actions a plugin offers: on/off for all, uninstall only for Fishball-installed ones; none
+ * while it is being uninstalled. A plugin that cannot run in Fishball's tree (`blocked`) offers
+ * no "on" (revision 10b: the page says why instead of a switch that is refused).
+ */
+function actionsOf(kind, on, removing, blocked) {
   if (removing) return []
+  if (blocked && !on) return kind === PLUGIN_KIND.fishballInstalled ? [PLUGIN_OFFER.uninstall] : []
   const toggle = on ? PLUGIN_OFFER.disable : PLUGIN_OFFER.enable
   return kind === PLUGIN_KIND.fishballInstalled ? [toggle, PLUGIN_OFFER.uninstall] : [toggle]
 }
@@ -167,6 +179,8 @@ export class PluginCatalog {
   #waitingRevision = 0
   /** Tail of the uninstalls run after applies (finishRemovals). */
   #removals = Promise.resolve()
+  /** Patch problems by plugin, package version and folder, so a refresh reads a patch only once per version. */
+  #patchProblems = new Map()
 
   /**
    * @param ctx - fishball row context (pluginManager, loader, profileContext?).
@@ -257,6 +271,7 @@ export class PluginCatalog {
       const key = fishballInstalledKey(name)
       entries.set(key, { key, title: name, kind: PLUGIN_KIND.fishballInstalled, defaultOn: false, packageName: name, packageDir: dir, prefix: fishballInstalledPrefix(name), ...packageFacts(name, dir, this.#packages.dir) })
     }
+    for (const entry of entries.values()) entry.patchProblem = this.#patchProblem(entry)
     this.#entries = entries
     const shape = [...entries.values()].map((entry) => entry.key + SHAPE_SEPARATOR + entry.kind).join('\n')
     const changed = this.#shape !== '' && shape !== this.#shape
@@ -318,6 +333,38 @@ export class PluginCatalog {
     return PACKAGE_TREE_KINDS.has(this.#require(key).kind)
   }
 
+  /**
+   * Why a package plugin can never run in Fishball's tree, from its patch (cached per version and
+   * folder), or undefined. Reads the rows without resolving modules: that is a mount-time matter.
+   */
+  #patchProblem(entry) {
+    if (!PACKAGE_TREE_KINDS.has(entry.kind)) return undefined
+    const cacheKey = [entry.key, entry.kind, entry.bundle?.version ?? entry.version ?? '', entry.packageDir ?? ''].join(SHAPE_SEPARATOR)
+    if (!this.#patchProblems.has(cacheKey)) {
+      let problem
+      try {
+        if (entry.kind === PLUGIN_KIND.fishballInstalled) readPackageRows(entry.packageDir)
+        else readBundleRows(entry.bundle, this.#ctx.get(OPTIONAL_SERVICE.profileContext))
+      } catch (error) {
+        if (error instanceof BundleRowsError && PATCH_BLOCKERS.has(error.code)) problem = error.code
+      }
+      this.#patchProblems.set(cacheKey, problem)
+    }
+    return this.#patchProblems.get(cacheKey)
+  }
+
+  /**
+   * Why the plugin cannot be turned on for Fishball (snapshot `blocked`, revision 10b): its patch,
+   * or, once Fishball has turned it off for publishing a service (its features are DSH's own,
+   * reached from DSH's interface), that diagnostic. A reinstall forgets the stored choice and
+   * with it the second reason.
+   */
+  #blockedOf(entry) {
+    if (entry.patchProblem !== undefined) return entry.patchProblem
+    const record = this.#store.plugins.get(entry.key)
+    return record?.kind === entry.kind && record.lastError === PLUGIN_ERROR.leaksService ? PLUGIN_ERROR.leaksService : undefined
+  }
+
   /** Whether the plugin is being uninstalled (it offers no other action until then). */
   isRemoving(key) {
     const record = this.#store.plugins.get(key)
@@ -341,6 +388,8 @@ export class PluginCatalog {
     const entry = this.#require(key)
     if (this.isRemoving(key)) throw new CatalogError(PLUGIN_ERROR.removing)
     if (!PACKAGE_TREE_KINDS.has(entry.kind) || this.desiredOn(key)) return
+    const blocked = this.#blockedOf(entry)
+    if (blocked !== undefined) throw new CatalogError(blocked)
     this.#rowsOf(entry)
     const running = this.#treePlugins().filter((other) => PACKAGE_TREE_KINDS.has(other.kind) && this.desiredOn(other.key))
     if (running.length >= this.#readLimits().maxFishballOnlyPlugins) throw new CatalogError(PLUGIN_ERROR.limitReached)
@@ -874,7 +923,7 @@ export class PluginCatalog {
           title: entry.title,
           kind: entry.kind,
           status: statusOf(entry.kind, on),
-          actions: actionsOf(entry.kind, on, removing),
+          actions: actionsOf(entry.kind, on, removing, this.#blockedOf(entry) !== undefined),
           removing,
           on,
           applied: this.#appliedOn.get(entry.key) === true,
@@ -889,6 +938,7 @@ export class PluginCatalog {
           meta: displayMeta(entry.meta),
           hasIcon: typeof entry.meta?.icon === 'string',
           settings: this.#settingsState(entry),
+          blocked: this.#blockedOf(entry) ?? null,
           tools: (toolsByPlugin.get(entry.key) ?? []).sort((a, b) => a.name.localeCompare(b.name)),
         }
       }),

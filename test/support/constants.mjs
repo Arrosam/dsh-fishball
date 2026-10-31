@@ -54,8 +54,8 @@ export const REVIEW_BUNDLES = {
   idinsert: { name: 'fbtest-idinsert', tool: 'idinsert_echo', dir: fixtureDir('fbtest-idinsert') },
   dup: { name: 'fbtest-dup', tool: 'dup_echo', dir: fixtureDir('fbtest-dup') },
   waits: { name: 'fbtest-waits', tool: 'waits_echo', dir: fixtureDir('fbtest-waits'), service: 'fbtestLateService' },
-  leak: { name: 'fbtest-leak', tool: 'leak_echo', dir: fixtureDir('fbtest-leak') },
-  leakB: { name: 'fbtest-leak-b', tool: 'leak_b_echo', dir: fixtureDir('fbtest-leak-b') },
+  leak: { name: 'fbtest-leak', tool: 'leak_echo', dir: fixtureDir('fbtest-leak'), service: 'fbtestLeaked' },
+  leakB: { name: 'fbtest-leak-b', tool: 'leak_b_echo', dir: fixtureDir('fbtest-leak-b'), service: 'fbtestLeakedB' },
   throws: { name: 'fbtest-throws', tool: 'throws_echo', dir: fixtureDir('fbtest-throws') },
   importThrows: { name: 'fbtest-import-throws', dir: fixtureDir('fbtest-import-throws') },
 }
@@ -279,8 +279,9 @@ export const CATALOG_KEYS = ['allowedTools', 'otherTools', 'plugins']
 /**
  * Plugin statuses feature: every entry also has actions, removing and status (12 keys).
  * P12 (DESIGN §10d "Host API") adds dsh, runs, packageName, version, description, meta, hasIcon and settings (20 keys).
+ * Revision 10b adds blocked (21 keys).
  */
-export const PLUGIN_KEYS = ['actions', 'applied', 'changedBy', 'description', 'dsh', 'hasIcon', 'kind', 'lastError', 'meta', 'on', 'packageName', 'plugin', 'removing', 'runs', 'settings', 'status', 'title', 'tools', 'version', 'waiting']
+export const PLUGIN_KEYS = ['actions', 'applied', 'blocked', 'changedBy', 'description', 'dsh', 'hasIcon', 'kind', 'lastError', 'meta', 'on', 'packageName', 'plugin', 'removing', 'runs', 'settings', 'status', 'title', 'tools', 'version', 'waiting']
 /** Plugin statuses feature: the status of a catalog entry and the actions it offers. */
 export const PLUGIN_STATUS = { installed: 'installed-in-fishball', dshEnabled: 'dsh-enabled', dshDisabled: 'dsh-disabled', builtin: 'builtin' }
 export const ACTION = { enable: 'enable', disable: 'disable', uninstall: 'uninstall' }
@@ -313,6 +314,18 @@ export const NOT_BUNDLE = { name: 'fbtest-notbundle', dir: path.join(SUPPORT, 'f
 export const OLD_VERSION = { commit: 'f368ad2' }
 /** Post-review: the only values lastError may take (besides null). */
 export const LAST_ERRORS = ['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached']
+/**
+ * Revision 10b (DESIGN §4 "Known before trying", §10d): why a package plugin cannot run in Fishball's tree,
+ * the catalog entry's `blocked` (null otherwise). The first three come from its patch, known when the list is read;
+ * leaks-service once Fishball turned it off for publishing a service, until it is reinstalled.
+ */
+export const BLOCKED = { editsOtherRows: 'edits-other-rows', noRows: 'no-rows', noProfile: 'no-profile', leaksService: 'leaks-service' }
+/** Revision 10b, S32: DSH's own optional bundles whose patch edits other rows (blocked when the installation ships them). */
+export const DSH_BLOCKED_BUNDLES = ['agent-team-profile', 'session-titles-bundle'].map((n) => '@deepseek-ai/dsh-experimental-' + n)
+/** Revision 10b: a self-contained package whose patch edits another row, installed for Fishball only (blocked, uninstallable). */
+export const INSTALLED_EDITS_BUNDLE = { name: 'fbtest-installed-edits', dir: fixtureDir('fbtest-installed-edits') }
+/** Revision 10b: a self-contained package that provides a service of its own, installed into the profile while DSH runs (reinstall clears leaks-service). */
+export const INSTALLED_LEAK_BUNDLE = { name: 'fbtest-installed-leak', dir: fixtureDir('fbtest-installed-leak'), service: 'fbtestInstalledLeaked' }
 /** Post-review: plugin_changes and tool_approvals keys use only these characters. */
 export const STORE_KEY = /^[A-Za-z0-9_-]+$/
 
@@ -334,6 +347,8 @@ export const CODE = {
   rejected: 'rejected', limit: 'limit-reached', editsOtherRows: 'edits-other-rows',
   unknown: 'unknown', refused: 'refused', badBody: 'bad-body',
   installFailed: 'install-failed', notRemovable: 'not-removable', unknownPlugin: 'unknown-plugin',
+  /** A plugin whose rows publish a service into DSH's root realm is turned off with this lastError. */
+  leaksService: 'leaks-service',
 }
 
 /** DSH approval outcomes a test answerer can return (dsh-user-approval ApprovalOutcome). */

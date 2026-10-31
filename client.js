@@ -84,6 +84,8 @@ window.__ModuleLoader__.load({
      * client bundle cannot import the host's list: keep it in step with src/constants.js PLUGIN_ERROR.
      */
     const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached', 'remove-failed'])
+    /** A plugin diagnostic in words: its own text when it has one, else the generic one. */
+    const pluginErrorText = (t, code) => (PLUGIN_ERRORS.has(code) ? t('pluginError.' + code) : t('pluginErrorOther'))
     /**
      * Plugin actions the Host offers per plugin (src/constants.js PLUGIN_OFFER). The Host decides
      * which actions a plugin has; the page shows only those.
@@ -528,7 +530,7 @@ window.__ModuleLoader__.load({
       'pluginError.edits-other-rows': 'Changes other plugins, so it cannot run for Fishball only',
       'pluginError.no-rows': 'Adds nothing Fishball can run',
       'pluginError.row-failed': 'Failed to start for Fishball',
-      'pluginError.leaks-service': 'Would change DSH for every session, so it was stopped',
+      'pluginError.leaks-service': 'Works only in DSH\'s own interface, so it cannot run for Fishball only',
       'pluginError.no-profile': 'Needs a DSH profile',
       changeFailed: 'That change was not accepted.',
       tabTitle: 'Fishball',
@@ -799,7 +801,7 @@ window.__ModuleLoader__.load({
       'pluginError.edits-other-rows': '它会修改其他插件，不能仅为 Fishball 运行',
       'pluginError.no-rows': '没有可为 Fishball 运行的内容',
       'pluginError.row-failed': '为 Fishball 启动失败',
-      'pluginError.leaks-service': '会影响所有会话，因此已停止',
+      'pluginError.leaks-service': '只能在 DSH 自己的界面中使用，不能仅为 Fishball 运行',
       'pluginError.no-profile': '需要 DSH 配置',
       changeFailed: '该更改未被接受。',
       tabTitle: 'Fishball',
@@ -1384,7 +1386,7 @@ window.__ModuleLoader__.load({
         [INSTALL_STEP.done]: () => ({
           body: [
             h('p', { key: 'done', role: 'status' }, t('installDone', { name: outcome.name, version: outcome.version ?? '' })),
-            outcome.on ? null : h('p', { key: 'off', role: 'alert' }, t('installDoneOff'), ' ', PLUGIN_ERRORS.has(outcome.code) ? t('pluginError.' + outcome.code) : t('pluginErrorOther')),
+            outcome.on ? null : h('p', { key: 'off', role: 'alert' }, t('installDoneOff'), ' ', pluginErrorText(t, outcome.code)),
           ],
           footer: [
             outline({ key: 'close', onClick: close }, t('close')),
@@ -1943,7 +1945,9 @@ window.__ModuleLoader__.load({
           plugin.removing ? tag('info', t('removing')) : null,
           plugin.on !== plugin.applied && !plugin.removing ? tag('info', t('pending')) : null,
           plugin.waiting ? tag('info', t('waiting')) : null,
-          plugin.lastError ? tag('danger', PLUGIN_ERRORS.has(plugin.lastError) ? t('pluginError.' + plugin.lastError) : t('pluginErrorOther')) : null,
+          // Why it cannot run in Fishball's tree, known before trying (the Host offers no switch then).
+          plugin.blocked && plugin.blocked !== plugin.lastError ? tag('danger', pluginErrorText(t, plugin.blocked)) : null,
+          plugin.lastError ? tag('danger', pluginErrorText(t, plugin.lastError)) : null,
           waiting > 0 ? tag('danger', t('toolsWait', { count: waiting })) : null,
         ]
       }
@@ -2367,6 +2371,8 @@ window.__ModuleLoader__.load({
         return function FishballDetailBadge({ subject }) {
           const plugin = useCatalogPlugin(bundlePlugin(subject))
           if (plugin === undefined) return null
+          // A plugin that cannot run in Fishball says why here too, as there is no switch (review 10b #9).
+          if (plugin.blocked && !plugin.on) return h(Tag, { tone: 'danger', className: MCLS.tag }, pluginErrorText(t, plugin.blocked))
           const text = plugin.dsh === MANAGER.dshOff && plugin.runs === MANAGER.runsInFishball ? 'runsOnlyInFishball' : plugin.on ? 'onInFishball' : 'offInFishball'
           return h(Tag, { tone: plugin.on ? 'info' : 'neutral', className: MCLS.tag }, t(text))
         }

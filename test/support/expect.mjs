@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, AUTHOR_KIND, DSH_COMPACTION, DSH_STATE, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, AUTHOR_KIND, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -191,15 +191,19 @@ export function expectedStatus(p) {
   if (p.kind === KIND.installed) return PLUGIN_STATUS.installed
   return p.on ? PLUGIN_STATUS.dshEnabled : PLUGIN_STATUS.dshDisabled
 }
-/** The actions a catalog entry must offer, in order: none while removing; uninstall only for Fishball-installed plugins. */
+/**
+ * The actions a catalog entry must offer, in order: none while removing; uninstall only for Fishball-installed
+ * plugins. Revision 10b: a blocked plugin offers no enable (a blocked one installed in Fishball only keeps uninstall).
+ */
 export function expectedActions(p) {
   if (p.removing) return []
-  const toggle = p.on ? ACTION.disable : ACTION.enable
-  return p.kind === KIND.installed ? [toggle, ACTION.uninstall] : [toggle]
+  const toggle = p.on ? [ACTION.disable] : p.blocked ? [] : [ACTION.enable]
+  return p.kind === KIND.installed ? [...toggle, ACTION.uninstall] : toggle
 }
 /** Assert that one entry's status, actions and removing follow the requirement's table. */
 export function assertEntryContract(assert, p) {
   assert.equal(typeof p.removing, 'boolean', p.plugin + ' removing')
+  assert.ok(p.blocked === null || Object.values(BLOCKED).includes(p.blocked), p.plugin + ' blocked ' + JSON.stringify(p.blocked))
   assert.equal(p.status, expectedStatus(p), p.plugin + ' status for kind ' + p.kind + ', on ' + p.on)
   assert.deepEqual(p.actions, expectedActions(p), p.plugin + ' actions')
 }

@@ -1,0 +1,60 @@
+{
+  "id": "S32-private-services",
+  "started": "2026-10-31T10:53:23.472Z",
+  "finished": "2026-10-31T10:53:29.257Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "leaking": {
+    "inspector-profile": {
+      "firstAccepted": true,
+      "on": false,
+      "lastError": "leaks-service",
+      "blocked": "leaks-service",
+      "actions": [],
+      "secondRefused": "refused"
+    },
+    "voice-input-bundle": {
+      "firstAccepted": true,
+      "on": false,
+      "lastError": "leaks-service",
+      "blocked": "leaks-service",
+      "actions": [],
+      "secondRefused": "refused"
+    },
+    "cot-translation-bundle": {
+      "firstAccepted": true,
+      "on": false,
+      "lastError": "leaks-service",
+      "blocked": "leaks-service",
+      "actions": [],
+      "secondRefused": "refused"
+    },
+    "tool-worktree": {
+      "firstAccepted": true,
+      "on": false,
+      "lastError": "leaks-service",
+      "blocked": "leaks-service",
+      "actions": [],
+      "secondRefused": "refused"
+    },
+    "plugin-market-bundle": {
+      "firstAccepted": true,
+      "on": false,
+      "lastError": "leaks-service",
+      "blocked": "leaks-service",
+      "actions": [],
+      "secondRefused": "refused"
+    }
+  },
+  "blocked": {
+    "agent-team-profile": {
+      "blocked": "edits-other-rows",
+      "actions": []
+    },
+    "session-titles-bundle": {
+      "blocked": "edits-other-rows",
+      "actions": []
+    }
+  }
+}
