@@ -1,6 +1,8 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
-**Status: approved 2026-10-24; revision 9 approved 2026-10-31.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+**Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+
+Revision 10 (2026-10-31, owner's request, approved the same day) adds a plugin manager: a Fishball tab on DSH's Plugins page that lists every plugin with its DSH and Fishball state, a page per plugin, and settings per plugin for the plugins that run only in Fishball, which you change, or Fishball changes after you allow it. DSH's own page for each plugin gains a Fishball tag and switch. The manager changes Fishball's side only (§10d, spikes S28–S30 run and recorded in §13c, phase P12, Q-manager).
 
 Revision 9 (2026-10-31, owner's request, approved the same day) adds the Messenger look: a built-in plugin, shipped and installed with dsh-fishball and on by default, that makes Fishball's own session look like a messenger chat, with every sender shown as its own author. Other sessions keep DSH's stock chat (§10c, spikes S24–S27, phase P11, Q-look).
 
@@ -239,6 +241,7 @@ Ask-user, skills and the read-only shell are in the catalog but start off. DSH's
 - **Moving a plugin between "everyone" and "Fishball only"** changes the profile for every session, so only you do it, on DSH's Plugins page. Fishball can suggest it.
 - **Profile files.** Fishball never writes the DSH profile's `package.json`, lockfile or `cordis.patch.yml`: toggles are stored in our domain, and installs go to Fishball's package folder.
 - **Limits.** The safety limits are this plugin's own config (§16). Only you change them, on DSH's Plugins page. DSH saves them as the `fishball` row's config in the profile's `cordis.patch.yml`, as it does for any plugin. Fishball has no tool that edits plugin config.
+- **Settings of the plugins Fishball runs itself (revision 10).** You change them in the Fishball tab; Fishball changes them with `set_plugin_settings`, after you allow each change in its chat. They are stored in our domain and never written to the profile (§10d). This does not reach the limits above.
 
 **Masking, applied in agent A's `setup`.** A restriction hides what a scope inherits, never what that scope registered itself [V `dsh-tools/lib/types/index.d.ts:660-681`]. Fishball-only plugins register their tools in P. The restriction is therefore applied one level down, in A, where P's tools and the global tools are both inherited and can be hidden:
 1. **Tools.** `tools.restrict({deny: …})` is built from four sets:
@@ -726,7 +729,8 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
   - The arguments themselves are not stored here; they stay in the two session logs.
 - `outbox[key]` (audit, keyed by time and a counter; the newest `auditEntriesKept` are kept, 500 by default): `{kind:'message'|'start', targetSessionId (null only if no session exists), folder?, messageDigest, at, status:'delivered'|'unconfirmed'|'failed', errorCode?}`
 - `toolApprovals[toolKey]`: `{module, toolName, paramsDigest, allowedAt}`, keyed by module, tool name and parameter digest (each segment encoded to storage-safe characters, joined by `__`), recording that you allowed a tool nobody had checked (§7). The hidden and checked sets are constants in code and are not stored.
-- `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add'|'remove', by:'fishball'|'user', at, outcome}`. These three tables keep domain version 1: the single-file layout reads a missing table as empty.
+- `pluginChanges[id]` (audit; the newest `auditEntriesKept` are kept, 500 by default): `{plugin, action:'on'|'off'|'add'|'remove', by:'fishball'|'user', at, outcome}`. These three tables keep domain version 1: the single-file layout reads a missing table as empty. Revision 10 adds the action `settings`.
+- `plugin_settings[pluginKey]` (revision 10, domain `fishball`): `{rows: {[rowId]: values}, changedBy:'fishball'|'user', changedAt}`, the values you or Fishball changed for a plugin Fishball runs in its private tree (§10d). Secret values are stored here and never leave the Host. Same version 1 rule; a missing table reads as empty.
 
 No custom session event types are added: persistence refuses logs containing unknown event types that are not marked ignorable [V `dsh-session/lib/types/known-event-types.d.ts`].
 
@@ -753,7 +757,7 @@ No custom session event types are added: persistence refuses logs containing unk
   2. **Fishball settings live on its page under Plugins** (owner's choice, P2), through `plugins.bundle.config`. There is no separate settings panel. The page opens from the header action in the assistant session and from the brand while the assistant needs attention. It shows, as the phases add them:
      - status and recovery actions;
      - the context window (`W_eff`, threshold, pressure);
-     - the plugin catalog: each plugin's status (§4) with only its actions (a switch for enable/disable, Uninstall for plugins installed in Fishball only), who last changed it, and "Install a plugin for Fishball only";
+     - the plugin catalog: each plugin's status (§4) with only its actions (a switch for enable/disable, Uninstall for plugins installed in Fishball only), who last changed it, and "Install a plugin for Fishball only" (revision 10 moves this to the Fishball tab and leaves a summary here, §10d);
      - the tools hidden from Fishball because they write files (read-only, §7);
      - unchecked tools waiting for your approval, and the tools you allowed, each with a Remove action;
      - sources;
@@ -814,6 +818,88 @@ No custom session event types are added: persistence refuses logs containing unk
 4. **Header.** The header marker action also shows "typing…" or "online" from the session status hook rows already receive (`useSessionStatus`).
 
 **Not changed.** No new safety limit, no change to Fishball's tools, prompt, intake or approvals, and no change for any other session.
+
+## 10d. Plugin manager (revision 10)
+
+**What you asked for.** Today Fishball's plugins are one long list on its settings page: a switch per plugin and an install field. You cannot open a plugin to see or change its settings for Fishball, and you cannot see at a glance how a plugin stands in DSH and in Fishball. Revision 10 replaces that list with a plugin manager. Your choices (Q-manager, 2026-10-31):
+- a **Fishball tab on DSH's Plugins page**, plus a Fishball tag and switch on DSH's own page for each plugin;
+- the manager changes **Fishball's side only**; DSH's side is shown read-only, with a link to DSH's page;
+- **settings per plugin for Fishball**, changed by you, or by Fishball after you click Allow once;
+- **installed plugins only**; finding new plugins stays on DSH's Discover tab.
+
+**Where it appears.**
+1. **The Fishball tab.** Fishball's browser half registers an entry in DSH's `plugins.tab` slot, labelled "Fishball", after DSH's Installed tab (and Discover, when that plugin is on). It exists while the `fishball` row runs. DSH draws the tab row and hides its own Refresh and Add buttons on the tab; the tab gets DSH's `openPackage(name)` owner prop, which the "Open in DSH" links use (S28).
+2. **DSH's page for each plugin.** For a bundle page (`subject.kind === 'bundle'`) whose package is in Fishball's catalog:
+   - a tag after DSH's own tags (`plugins.detail.badge`): "On in Fishball", "Off in Fishball", or "Runs only in Fishball" when it is off in DSH and on in Fishball;
+   - a "Use in Fishball" switch at the head of the page (`plugins.detail.actions`), which changes Fishball's choice exactly as the tab's switch does.
+
+   Neither appears for dsh-fishball itself or for a package Fishball's catalog does not list. Both render nothing while Fishball's state is not loaded.
+3. **Fishball's settings page.** Its "Plugins for Fishball" section shrinks to one line of counts (for example "6 on, 1 needs you") and the words "Manage them in the Fishball tab of the Plugins list". There is no button: DSH offers no way to select a page tab from outside, and its only navigation opens the Installed tab (S28). DSH keeps the tab you last chose when you leave Plugins. Status, limits, hidden tools and the other sections stay where they are.
+
+**Look (owner's choice, 2026-10-31: list version 1, plugin page A).** The tab looks like DSH's own Installed tab and plugin page, and is built from the same parts where DSH exports them: page header with title and subtitle, group headings, card rows with a 50 px icon tile, title, pill tags and a one-line description, a switch on the right, and DSH's `Tag`, `Switch` and `Button` primitives. Colours and sizes come from DSH's theme, as for the rest of Fishball's page. The browser checks it against DSH's Installed tab in light and dark.
+
+**The list (the tab's first view; version 1).**
+- **Header.** DSH's Plugins title and subtitle, the tab row, and an "Install for Fishball" button where DSH's own "Add plugin" sits on its Installed tab.
+- **Groups**, in this order, each with a heading as on DSH's Installed tab: Built in; DSH plugins; Installed for Fishball only; then, at the end, tools that belong to no plugin (today's "Other tools not shown to Fishball").
+- **One card per plugin**, like DSH's cards:
+  - its icon tile and title, from DSH's display metadata in the UI language (`listBundles` `meta` and icon, with DSH's fallbacks and default artwork), or from the package for a plugin installed in Fishball only;
+  - **tags** after the title: its DSH state ("On in DSH", "Off in DSH", "Built in"; a plugin installed for Fishball only shows "Fishball only"), "Runs only in Fishball" when it is off in DSH and on in Fishball, DSH's own "Experimental" tag where DSH shows one, today's tags (pending, waiting, removing, error), and "N tools wait" when unchecked tools are waiting;
+  - its one-line description;
+  - on the right, the **Fishball switch** the plugin's status offers (§4). It is the only control on the card; DSH's state is a tag, never a control.
+  - Selecting the card opens the plugin's page.
+- **No search or filters**, like DSH's Installed tab (the catalog is a few dozen entries).
+- **"Install for Fishball"** opens today's form in a dialog: the spec goes to Fishball, which asks you to Allow once in its chat (§4, unchanged).
+
+**The plugin page (page A).** Laid out like DSH's own plugin page, inside the Fishball tab:
+- **Back link** "Fishball", to the list.
+- **Header.** The icon tile, the title with its version and tags (as on the card), and the package name in monospace under it; on the right, the "Use in Fishball" switch, and Uninstall for a plugin installed in Fishball only (unchanged rules). "Applies when Fishball's current turn ends" shows while a change is pending.
+- **Description**, then two label rows:
+  - **In DSH** (read-only): "On for every session", "Installed, off", "Not installed in DSH" or "Built in", with "Open in DSH" when DSH's Installed tab lists the package;
+  - **Changed**: who last changed it and when, and its last error.
+- **Tools.** One row per tool with its state for Fishball as a tag: visible; hidden because it writes files (§7); waits for your allow; allowed by you (with Remove, today's action moved here); masked because the plugin is off.
+- **Settings for Fishball.** One row per field, label on the left and value on the right, with a "Changed" tag and a reset control on a field you changed; "Reset all" and "Save" at the end. See below.
+- DSH's own plugin page gets only the Fishball tag and switch described above, no Fishball section (owner's choice).
+
+**Settings for Fishball.**
+- **Which plugins have them.** Only plugins whose rows Fishball runs in its own private tree:
+  - the built-ins with rows;
+  - plugins installed in Fishball only;
+  - DSH plugins that are off in DSH and on in Fishball.
+
+  The Messenger look runs no rows and has none. The Compaction built-in's engine row has no form either: its config is Fishball's context-window policy, set in the context window section (§6), so a second form would fight it (S29); its other rows have one. A plugin on in DSH runs once, for every session, so its settings are DSH's. Its page says so and links to DSH's page; Fishball cannot give it separate values.
+- **Stored values.** Your changed values per row, in table `plugin_settings` (§9). A row's settings are its bundle patch's config with your values on top. A plugin that moves to "on in DSH" keeps its stored values but does not use them; its page shows them as "not used while this plugin runs in DSH" (Q-manager-stale).
+- **The form.** Built from the row's own config schema (Schemastery), read on the Host from the module's `Config` export (S29). The Host sends `schema.toJSON()` and the browser rebuilds it with `new Schema(json)`, as DSH's own settings view does. It covers text, numbers (with their bounds), switches, choices from a fixed list, lists of text and numbers, and nested groups; fields marked hidden are left out. In your installed plugins and the built-ins that is 257 of 276 fields (93%, S29). A field the form cannot draw (lists of objects, dictionaries, mixed choices, transforms) is shown read-only with its current value (Q-manager-form). A plugin with several configurable rows shows one group per row, titled by the row's display name. Each field can be reset to the plugin's own value, and "Reset all" clears the plugin's stored values.
+- **Secrets.** A field with the `secret` role is never sent to the browser or to Fishball: values are redacted with DSH's own `redactSecrets` (`@deepseek-ai/dsh-settings`), the page shows "set" or "not set", and you can replace or clear it. One installed plugin declares a secret today (S29).
+- **Checking.** The Host checks the complete new config against the row's schema before saving. An invalid value is refused with the field's path, and the stored values stay as they were. This check is required, not a convenience: a row mounted with an invalid config is not reported by DSH's row audit and keeps its old values silently (S30).
+  - Some rows' own patch config is already invalid on its own, because DSH fills it from the profile (an MCP server's command) or from a `!!js` expression (S29). For those the form shows the plugin's own error, and a save is refused until the whole config is valid. Such a plugin also fails to run in the private tree today, unchanged.
+- **When a change applies.** At the next idle phase, like a switch (§4). The catalog's existing `adjustRows` step puts your values on top of the row's config before the private tree updates, so a change never lands mid-turn (S30):
+  - an ordinary field restarts only that row; the plugin's other rows and every other private-tree plugin keep running;
+  - a field the plugin declares `.volatile()` reaches it without a restart.
+
+  A row that then fails to mount turns the plugin off with `row-failed`, as today; its stored values stay so you can fix or reset them.
+
+**Fishball changing settings (Q-manager-settings).**
+- `get_plugin_settings({plugin})` returns, for each configurable row, its fields: name, kind, description, the plugin's value and the current value. Secrets show only "set" or "not set". It changes nothing, so it needs no approval, like `list_plugins`.
+- `set_plugin_settings({plugin, row, values, reason})`:
+  - **Refused before any prompt:** a value the schema rejects; a plugin on in DSH (`shared-with-dsh`); a plugin with no settings (`no-settings`); any secret field (`secret-field`), because only you set secrets (Q-manager-secrets).
+  - **Otherwise** it raises the normal permission request in Fishball's chat, which always goes to you (§7a). The request names the plugin and row, lists each field with its old and new value, and gives Fishball's reason. Allow once saves the values; Reject changes nothing.
+  - Every change, yours or Fishball's, is recorded in `pluginChanges` with the action `settings`.
+- Fishball's own safety limits are not in its catalog, so neither tool can reach them. "Fishball has no tool that edits its limits" still holds.
+
+**Host API.**
+- The state snapshot's catalog entries gain:
+  - `dsh`: `on`, `off`, `builtin` or `none`;
+  - `runs`: `everywhere`, `fishball`, `dsh` or `nowhere`;
+  - `packageName`, `description` and `icon`;
+  - `settings`: `none`, `default`, `changed` or `unused`.
+- `GET /api/fishball/plugins/detail?plugin=<key>` returns the page's data: rows, tools, the settings form (schema projection with secrets redacted, the plugin's values, your values) and history. It answers 404 `unknown`.
+- `POST /api/fishball/plugins/settings` (`{plugin, row, values?, reset?: paths[]}`) saves your values. It answers 409 `unknown`, `shared-with-dsh` or `no-settings`, and 400 `invalid` with the field's path.
+- Same browser authentication, same-origin fence and boundary checks as the other routes (§10).
+
+**Not changed.**
+- Nothing in the manager changes the DSH profile: no bundle selection, no row switch, no `cordis.patch.yml` or `package.json` write. DSH's side changes only on DSH's own Installed tab.
+- Installing for Fishball only, uninstalling, the plugin statuses and defaults (§4), the tool mask and the approval of unchecked tools (§7) are unchanged; only where they are shown moves.
+- No new safety limit. The settings of a plugin shared with DSH stay on DSH's page.
 
 ## 11. Failure, restart, bounds and security
 
@@ -895,6 +981,9 @@ No custom session event types are added: persistence refuses logs containing unk
 | S25 | (Revision 9) Can a `conversation.chat.node` renderer registered for the user and assistant kinds render DSH's shipped renderer for every session but Fishball's? | Ordinary sessions render exactly as before (same DOM); Fishball's session renders the messenger rows; disposing the registration restores the stock rows |
 | S26 | (Revision 9) Does the browser's Chat node for a user message carry its message id and `source`? | Both are readable for steered intake messages and for your own messages |
 | S27 | (Revision 9, only if S25 fails) Can a session-scoped mount mark the conversation container for Fishball's session only, with a stylesheet that touches no other session? | Other sessions' computed styles are unchanged; switching sessions removes the marker |
+| S28 | (Revision 10) Can Fishball's browser half add a `plugins.tab` entry that receives `openPackage`, and `plugins.detail.badge` and `plugins.detail.actions` entries that render on bundle pages only? Can Fishball's settings page select that tab? | Tab, tag and switch render in a real browser, and `openPackage` opens a bundle's page. Selecting the tab from the settings page is found to work or not; if not, the button becomes text (§10d) |
+| S29 | (Revision 10) Can the Host read each private-tree row's config schema (the module's `Config`, as DSH's Loader reads it), send a projection of it to the browser with secret values redacted, and check a candidate config against it? Which field kinds do your installed plugins and the built-ins use? | Every row's schema is read, or the row is reported as having no settings; a survey lists the field kinds and what share the form draws |
+| S30 | (Revision 10) Does mounting a private-tree row again with a new config at the idle phase hand the plugin the new values, leave other private rows running, and leave a running turn alone? | The plugin reads the new value after the apply; other rows keep their fibres; no turn is cancelled |
 
 ## 13a. Spike results (P1, 2026-10-24)
 
@@ -937,6 +1026,14 @@ Every spike ran in-process against the installed rc.2 runtime, on a throwaway `D
 | S26 | **Pass** | Rows carry `sessionId`; `source` arrives complete with extra fields (a test `author` field survived); `steering` rows carry `messageId`, `turn-trigger` rows do not. §10c writes the author into the source and drops the authors route |
 | S27 | **Pass** | A `:has()`-scoped stylesheet styled reply rows only in the stand-in Fishball session, not in the ordinary one, and stopped when the messenger was off. The session header and the chat list share `main.conversation`, which gives the scope |
 
+## 13c. Spike results (revision 10, 2026-10-31)
+
+| Spike | Result | Evidence and amendment |
+|---|---|---|
+| S28 | **Pass, except selecting the tab from outside; amended** | `spikes/s28-manager-server.mjs`, `spikes/fixtures/manager-host`, browser pane (`S28-plugins-page.json`): a `plugins.tab` entry rendered as "Fishball" after Installed, with `install`, `openPackage` and `t` among its props; `openPackage` switched to Installed and opened the bundle's page; DSH hid its own Add and Refresh on the tab, and kept the selected tab after leaving Plugins. `plugins.detail.badge` and `plugins.detail.actions` rendered DSH's `Tag` and `Switch` on bundle pages with `subject.kind === 'bundle'` and `pkg` `{name, version, installed, availability, official, enabled, rows}`. No API selects a contributed tab (`pluginNavigation.openBundle` selects Installed), so Fishball's settings page names the tab instead of linking to it (§10d) |
+| S29 | **Pass; amended** | `spikes/s29-settings-schemas.mjs` (`S29-settings-schemas.json`), your `web` profile's plugins linked read-only: 57 rows; 37 with a schema, 18 with none, 2 bundles that edit other rows (they cannot run in Fishball only anyway). 257 of 276 fields (93%) are kinds the form draws; the rest are lists of objects (7), mixed choices (5), dictionaries (2), transforms (2) and three others. Every schema rebuilt from `toJSON()` resolved the same value; a wrong type was refused; DSH's `redactSecrets` found the one secret (`dsh-plugin-subscriptions`). Two rows' own patch config is invalid alone (an MCP server row, a `!!js` value). §10d now names the projection, the redaction, the Compaction exclusion and the invalid-patch case |
+| S30 | **Pass; amended** | `spikes/s30-settings-remount.mjs`, `spikes/fixtures/settings-plugin` (`S30-settings-remount.json`): in a private tree updated as Fishball does, an ordinary field change re-ran only that row's `apply` with the new value, and the other row kept its fibre; a `.volatile()` change reached the plugin without a restart; an invalid value was not reported by `auditRows` and the row kept its old values. §10d makes the Host's check before saving a requirement and applies values through the catalog's `adjustRows` step |
+
 ## 14. Delivery phases (after approval)
 
 Each phase ends with:
@@ -961,6 +1058,7 @@ Each phase ends with:
 | P9 S15 re-check (2026-10-25) | **Pass** | `spikes/p9-s15.mjs`, the real dsh-fishball in a throwaway home on macOS (not nested in another sandbox): Fishball's session is `read-only`; with the read-only shell built-in turned on through `set_plugin_enabled`, `bash` reads work, and writes inside and outside Fishball's folder fail with "Operation not permitted" (DSH's Seatbelt) and leave no file; a call with `sandbox_permissions` is refused by Fishball's guard before any approval is asked; DSH's `write` tool is refused |
 | P11 (revision 9) | Spikes S24–S27 (done, §13b); the `dsh-fishball-messenger` package and its client route, the `builtin:messenger` catalog entry, `look` in the snapshot, `author` in intake sources, the input-row renderers, the scoped reply stylesheet and the header marker | §10c criteria, verified in a real browser: Fishball's session shows the messenger look, every other session is unchanged, and turning the look off and on applies live |
 | P11 delivered (2026-10-31) | Implemented as amended | Host: `builtin:messenger` (no rows), `look` in the snapshot, `GET /api/fishball/messenger/client.js`, `author` on every intake source (`src/author.js`). Browser: `packages/messenger` mounted by `client.js` `followMessenger`. Live check (`spikes/p11-smoke-server.mjs`, browser pane): authors, quoted forward card, muted system fish, reply bubbles, header "typing…"/"online", rounded composer, light and dark; switching off and on is live; an ordinary session's conversation HTML is identical with the look on and off. Independent review: 4 medium and 9 low findings, fixed except work-row muting, which stays as designed |
+| P12 (revision 10) | Spikes S28–S30 (done, §13c); Host: catalog fields (`dsh`, `runs`, `settings`, display metadata), the detail and settings routes, `plugin_settings`, settings applied at the idle phase, `get_plugin_settings` and `set_plugin_settings`; browser: the Fishball tab (list, plugin page, settings form, in DSH's Plugins-page look), the tag and switch on DSH's bundle pages, the summary on Fishball's settings page | §10d criteria below, verified in a real browser |
 
 **Acceptance criteria (observable):**
 - **R1:**
@@ -1012,6 +1110,14 @@ Each phase ends with:
   - 0 turns an hourly cap off.
   - Lowering a limit keeps items already admitted.
   - Fishball has no tool that changes the limits.
+- **Plugin manager (revision 10):**
+  - The Fishball tab lists every catalog plugin once, in its group, as a card with its DSH state as a tag and its Fishball switch, laid out like DSH's Installed tab in light and dark.
+  - No action in the tab, tag or switch changes the DSH profile: `package.json`, the lockfile and `cordis.patch.yml` stay byte-identical, and other sessions are unchanged.
+  - The switch on DSH's page for a plugin and the tab's switch change the same Fishball choice.
+  - A saved setting reaches a plugin that runs only in Fishball after Fishball's current turn ends; an invalid value is refused with its path and the old values stay; a reset returns the plugin's own value.
+  - A plugin on in DSH shows no Fishball settings form and refuses settings from the route and the tool.
+  - A secret value never appears in the snapshot, the detail route, the tool's result or the prompt.
+  - `set_plugin_settings` changes nothing until you click Allow once; Reject changes nothing; secrets and plugins shared with DSH are refused before any prompt.
 - **Brand:**
   - With the plugin enabled, the sidebar shows the Fishball mark and name.
   - Clicking it, or pressing Enter on it, opens the assistant session.
@@ -1091,6 +1197,12 @@ Each phase ends with:
 | Q-look | (Revision 9, 2026-10-31) Messenger chat; every sender is its own author; restyle DSH's chat, not a new view; built-in, on by default, can be turned off, not uninstalled on its own | §10c |
 | Q-look-toggle | **Open, implementer's assumption:** Fishball may switch the Messenger look itself with `set_plugin_enabled`, like every built-in | §10c "Catalog entry"; confirm or change |
 | Q-look-raw | Settled by S25: bubbles wrap DSH's own row, which shows its summary and opens the full message; Fishball does not parse its framing in the browser | §10c "Every sender is an author" |
+| Q-manager | (Revision 10, 2026-10-31) A Fishball tab on DSH's Plugins page, with a Fishball tag and switch on DSH's page for each plugin; Fishball's side only, DSH's side read-only; settings changed by you, and by Fishball after asking; installed plugins only. Look: list version 1 (like DSH's Installed tab, no search or filters) and plugin page A (in the Fishball tab, like DSH's plugin page) | §10d |
+| Q-manager-stale | **Open, implementer's assumption:** a plugin that moves to "on in DSH" keeps its Fishball settings, unused, and uses them again if it runs only in Fishball later | §10d "Stored values"; confirm or change |
+| Q-manager-form | **Open, implementer's assumption:** a settings field the form cannot draw is read-only, not edited as raw text | §10d "The form"; confirm or change |
+| Q-manager-secrets | **Open, implementer's assumption:** Fishball never sees or sets secret fields; only you set them | §10d "Secrets" and `set_plugin_settings`; confirm or change |
+
+**Open for revision 10:** Q-manager-stale, Q-manager-form and Q-manager-secrets above (implementer's assumptions; revision 10 was approved 2026-10-31).
 
 **Open for revision 9:** Q-look-toggle above (implementer's assumption; §10c was approved 2026-10-31 and amended by S24–S27). Everything else is answered. §15 lists what happened first.
 

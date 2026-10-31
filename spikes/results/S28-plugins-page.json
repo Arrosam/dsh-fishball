@@ -1,0 +1,26 @@
+{
+  "id": "S28-plugins-page",
+  "date": "2026-10-31",
+  "runtime": "0.2.1-rc.2",
+  "how": "spikes/s28-manager-server.mjs with spikes/fixtures/manager-host and fishball-spike-demo linked; checked in the browser pane (window.__s28 and DOM reads)",
+  "pass": true,
+  "tab": {
+    "rendered": true,
+    "label": "Fishball, after Installed",
+    "props": ["usePanelInfo", "useSessions", "useSessionStatus", "useWorkspaces", "useResource", "useRemoteAccess", "useSessionRetainInfo", "useSessionAccess", "useWorkspaceAccess", "renderFactorySlot", "t", "install", "openPackage"],
+    "openPackage": "switched to Installed and opened fishball-spike-demo's page",
+    "dshAddAndRefreshOnTab": "hidden (laid out with zero size)",
+    "selectionKeptAfterLeavingPlugins": true
+  },
+  "detailBadge": {
+    "rendered": true,
+    "subject": { "kind": "bundle", "pkgKeys": ["name", "version", "installed", "availability", "official", "enabled", "rows"] },
+    "note": "DSH's Tag primitive does not pass data-* attributes through; find it by text"
+  },
+  "detailActions": { "rendered": true, "subject": "bundle", "switch": "DSH Switch primitive rendered at the head of the page" },
+  "selectTabFromOutside": {
+    "pass": false,
+    "found": "The page keeps the selected tab in its own store. Its only public navigation, pluginNavigation.openBundle(name), selects Installed and opens a bundle page, where the tab row is hidden. No API selects a contributed tab."
+  },
+  "harnessNote": "The test home lives under this repo, so DSH also served dsh-fishball's browser half (found by walking up the folders); its host half did not run. It does not change these results."
+}

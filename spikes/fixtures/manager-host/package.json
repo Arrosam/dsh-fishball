@@ -1,0 +1,10 @@
+{
+  "name": "fishball-spike-manager-host",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": { ".": "./index.js", "./client": "./client.js", "./package.json": "./package.json" },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-ui-renderer"] }
+  }
+}
