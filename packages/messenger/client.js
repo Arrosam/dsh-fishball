@@ -50,8 +50,22 @@ window.__ModuleLoader__.load({
     /** DSH's chat-row wrapper: one per row, siblings in transcript order. */
     const FLOW_ITEM = '[data-chat-flow-key]'
     const STYLE_ID = 'fishball-messenger-style'
-    const AVATAR = Object.freeze({ sizePx: 28, fishPx: 20, headerPx: 16, saturation: '55%', lightness: '45%', hueTurn: 360, initials: 2 })
+    const AVATAR = Object.freeze({ sizePx: 28, fishPx: 20, headerPx: 16, saturation: '72%', lightness: '52%', hueTurn: 360, initials: 2 })
     const ACCENT = 'var(--fishball-messenger-accent)'
+    /**
+     * Your messages: a light tint and edge of Fishball's magenta, so you can find your own
+     * messages at a glance. Fishball's replies stay neutral: they are read longest, and strong
+     * colour there is tiring (owner's choice and reason, 2026-10-31).
+     */
+    const YOU_TINT = Object.freeze({ fill: '10%', edge: '40%' })
+    /**
+     * Other senders keep their own colour (owner's choice, 2026-10-31): the avatar hue, set on
+     * the bubble as `variable`, colours the avatar and name and tints the bubble and its edge.
+     * Fishball's own notices and replies stay neutral. Mid lightness keeps names readable on
+     * both DSH themes.
+     */
+    const SENDER_COLOUR = Object.freeze({ variable: '--fbm-sender', fill: '16%', edge: '50%' })
+    const tint = (colour, share) => `color-mix(in srgb,${colour} ${share},transparent)`
 
     const en = {
       you: 'You',
@@ -75,7 +89,7 @@ window.__ModuleLoader__.load({
     }
 
     const CLS = Object.freeze({
-      incoming: 'fbm-incoming', mine: 'fbm-mine', avatar: 'fbm-avatar', spacer: 'fbm-spacer',
+      incoming: 'fbm-incoming', sender: 'fbm-sender', mine: 'fbm-mine', avatar: 'fbm-avatar', spacer: 'fbm-spacer',
       body: 'fbm-body', name: 'fbm-name', marker: 'fbm-marker', bubble: 'fbm-bubble', you: 'fbm-you', quote: 'fbm-quote',
       fish: 'fbm-fish', header: 'fbm-header', headerFish: 'fbm-header-fish', headerName: 'fbm-header-name', status: 'fbm-status',
     })
@@ -97,13 +111,20 @@ window.__ModuleLoader__.load({
         `:root{--fishball-messenger-accent:${mark.eyeColor}}`,
         `.${CLS.incoming}{display:flex;gap:8px;align-items:flex-start;margin:6px 20% 6px 0}`,
         `.${CLS.avatar},.${CLS.spacer}{flex:none;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px}`,
-        `.${CLS.avatar}{display:flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-size:11px;font-weight:700;overflow:hidden}`,
+        `.${CLS.avatar}{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(${SENDER_COLOUR.variable});color:#fff;font-size:11px;font-weight:700;overflow:hidden}`,
         `.${CLS.body}{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}`,
         `.${CLS.name}{font-size:12px;font-weight:600;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}`,
         `.${CLS.marker}{margin-left:6px;font-weight:400}`,
         `.${CLS.bubble}{padding:6px 12px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2)}`,
+        `.${CLS.sender} .${CLS.name}{color:var(${SENDER_COLOUR.variable})}`,
+        `.${CLS.sender} .${CLS.bubble}{background:${tint(`var(${SENDER_COLOUR.variable})`, SENDER_COLOUR.fill)};border-color:${tint(`var(${SENDER_COLOUR.variable})`, SENDER_COLOUR.edge)}}`,
         `.${CLS.mine}{display:flex;flex-direction:column;align-items:flex-end;margin:6px 0 6px 20%}`,
         `.${CLS.you}{font-size:12px;font-weight:600;color:${ACCENT}}`,
+        // Your messages are DSH's rows, whose classes are generated, so they are matched only
+        // inside our wrapper: the text bubble by its stable "_bubble" ending, and a forwarded
+        // session's card as DSH's section element. If DSH changes either, that row keeps DSH's
+        // colours; nothing else changes.
+        `.${CLS.mine} [class$="_bubble"],.${CLS.mine}>section{background:${tint(ACCENT, YOU_TINT.fill)};border:1px solid ${tint(ACCENT, YOU_TINT.edge)}}`,
         `.${CLS.quote}{max-width:100%;margin:2px 0;padding:2px 8px;border-left:3px solid ${ACCENT};border-radius:4px;background:var(--dsw-alias-bg-module-platform);font-size:12px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}`,
         // System notices: a small, muted fish (DESIGN §10c), in the theme's text colour.
         `.${CLS.fish}{flex:none;width:${AVATAR.sizePx}px;height:${AVATAR.fishPx}px;color:var(--dsw-alias-label-tertiary)}`,
@@ -181,7 +202,7 @@ window.__ModuleLoader__.load({
         if (author.fish) {
           return h(FishMark, { mark, className: CLS.fish })
         }
-        return h('span', { className: CLS.avatar, 'aria-hidden': true, style: { background: `hsl(${hueOf(author.seed)} ${AVATAR.saturation} ${AVATAR.lightness})` } }, initialsOf(author.name))
+        return h('span', { className: CLS.avatar, 'aria-hidden': true }, initialsOf(author.name))
       }
     }
 
@@ -193,7 +214,13 @@ window.__ModuleLoader__.load({
             grouped ? null : h('div', { className: CLS.you }, author.name),
             author.quote === undefined ? null : h('div', { className: CLS.quote }, author.quote), children)
         }
-        return h('div', { ref, className: CLS.incoming, [ATTR.author]: author.key },
+        // A sender with a seed gets its own colour; Fishball's notices (no seed) stay neutral.
+        const coloured = author.seed !== undefined
+        return h('div', {
+          ref, [ATTR.author]: author.key,
+          className: coloured ? `${CLS.incoming} ${CLS.sender}` : CLS.incoming,
+          style: coloured ? { [SENDER_COLOUR.variable]: `hsl(${hueOf(author.seed)} ${AVATAR.saturation} ${AVATAR.lightness})` } : undefined,
+        },
           grouped ? h('span', { className: CLS.spacer }) : h(Avatar, { author }),
           h('div', { className: CLS.body },
             grouped ? null : h('div', { className: CLS.name }, author.name, author.marker ? h('span', { className: CLS.marker }, author.marker) : null),
