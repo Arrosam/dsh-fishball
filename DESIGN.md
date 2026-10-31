@@ -1,6 +1,8 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
-**Status: approved 2026-10-24; revision 8.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+**Status: approved 2026-10-24; revision 9 approved 2026-10-31.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+
+Revision 9 (2026-10-31, owner's request, approved the same day) adds the Messenger look: a built-in plugin, shipped and installed with dsh-fishball and on by default, that makes Fishball's own session look like a messenger chat, with every sender shown as its own author. Other sessions keep DSH's stock chat (§10c, spikes S24–S27, phase P11, Q-look).
 
 Revision 7 records the spike results (§13a) and the four amendments they forced: the brand registers at a lower slot priority (§10), `start_session` checks that the folder exists before DSH sees it and does not register a workspace (§5d), tools are attributed to plugins by a registration hook (§4), and Fishball sets its own session read-only (§7).
 
@@ -182,7 +184,7 @@ One component per responsibility; each is a module with an explicit contract:
 | Schedule, approval, token meter, session controller, plugin manager | Global persona prefix/suffix, `harness:*` sections, optional runtime context (shadowed or suppressed) |
 | Global policy listeners: spill, timeouts, checkpointing. Cannot be hidden [V], and are harmless | Plugins that run for Fishball only (private tree) |
 
-**Plugin states.** Fishball's catalog lists every DSH plugin (a bundle installed in the profile or offered by the installation, `pluginManager.listBundles()` [V]), the plugins installed in Fishball only (its own package folder, below), and DSH built-in capability packages: compaction, web, time, reminders, ask-user, skills and the read-only shell. Each has a Fishball-only on/off state:
+**Plugin states.** Fishball's catalog lists every DSH plugin (a bundle installed in the profile or offered by the installation, `pluginManager.listBundles()` [V]), the plugins installed in Fishball only (its own package folder, below), and DSH built-in capability packages: compaction, web, time, reminders, ask-user, skills and the read-only shell. Revision 9 adds one Fishball built-in, the Messenger look, which changes only how Fishball's session is drawn and mounts nothing in the private tree (§10c). Each has a Fishball-only on/off state:
 
 | Where the plugin is | Fishball "on" | Fishball "off" | Effect on other sessions |
 |---|---|---|---|
@@ -766,6 +768,50 @@ No custom session event types are added: persistence refuses logs containing unk
   - These routes are behind DSH's browser authentication and same-origin fence [V pattern], and bodies are validated at the boundary.
   - The browser never names the source identity or the sender.
 
+## 10c. Messenger look (revision 9)
+
+**What you asked for.** A plugin that changes the interface of Fishball's session only, so it looks like a social-media messenger and stands out from ordinary DSH sessions. It is a Fishball built-in: its own plugin, shipped in the dsh-fishball bundle and installed with the main plugin by default. Your choices (Q-look): messenger chat; every sender is its own author; restyle DSH's chat rather than build a new view; a built-in you can turn off but not uninstall on its own.
+
+**Where it applies.**
+- Only in Fishball's own session, and only while the Messenger look is on. Every other session keeps DSH's stock chat, unchanged.
+- The behaviour of the chat stays DSH's: streaming, tool rows, the queue and steer dock, Stop, `/compact`, the model picker, approval prompts and scrolling. Only how they look changes.
+
+**How it looks.**
+- **Bubbles.** Your messages are right-aligned bubbles labelled "You". Fishball's replies are left-aligned bubbles with the FishMark avatar and the name "Fishball". Input bubbles show their time; Fishball's replies keep DSH's own turn footer with its time (S25: DSH's reply row cannot be wrapped, see below).
+- **Every sender is an author.** An input that reached Fishball through the intake ledger (§5) is a left-aligned bubble from its sender:
+  | Intake kind | Author name | Avatar |
+  |---|---|---|
+  | `session` (`message_fishball`) | The sending session's title | Initials disc, colour derived from the session id |
+  | `user` ("Send to Fishball") | "You", quoting the forwarded session | Your bubble, with the session as a quoted card |
+  | `watch` | The watched session's title, marked "finished" | That session's disc |
+  | `approval` | The asking session's title, marked "permission request" | That session's disc |
+  | `plugin` | The source's title | Disc derived from the source identity |
+  | `system` | "Fishball notice" | Small FishMark, muted |
+  - Names and titles come from other sessions and plugins, so they are shown as plain text only, never as markup (§7 framing applies to the display too).
+  - Inside each input bubble is DSH's own row for that message, unchanged: it shows DSH's summary (for example "Task message received") and opens the full message as DSH does, including Fishball's untrusted-block framing. Fishball does not parse or hide its framing in the browser (S25; replaces the earlier "Show raw" idea, Q-look-raw).
+- **Grouping.** Consecutive bubbles from the same author are grouped under one avatar and name, as messengers do.
+- **Work rows.** Tool calls, reasoning, compaction and command rows keep DSH's own renderers and disclosure, muted by the scoped stylesheet so they read as activity lines between bubbles.
+- **Header.** Fishball's avatar and name, with "typing…" while its agent is running and "online" while it is idle (from `agent/status`).
+- **Composer.** DSH's composer in a rounded messenger style, through the scoped stylesheet; its controls and keys are unchanged.
+- **Theme.** Colours come from DSH's theme tokens, so light and dark both work. Animations stop under `prefers-reduced-motion`.
+
+**Plugin form (amended by S24).**
+- **Package.** `dsh-fishball-messenger`, its own package with its own `package.json`, in `packages/messenger/` inside dsh-fishball and listed in dsh-fishball's `files`, so installing Fishball installs it. It has a browser half only: no host rows, no tools.
+- **Why not a dependency or a private-tree row (S24).** DSH installs a local plugin folder as a `link:` dependency, and pnpm does not install a linked package's own dependencies, so a dependency of dsh-fishball never reaches the profile and a row naming it fails to import. A row in Fishball's private tree runs, but DSH serves browser halves only for rows the host Loader lists, and the private tree is hidden from it on purpose (§4).
+- **How it loads (S24b).** The `fishball` row serves the package's browser file at `GET /api/fishball/messenger/client.js` (read from the package folder, `no-store`). Fishball's browser half loads that script once, which registers the module in DSH's module system, `require`s it by name and mounts it as a child plugin with `ctx.plugin()`. The profile is not changed.
+- **Catalog entry.** Built-in `builtin:messenger`, "Messenger look", status `builtin`, **on at first start**. You switch it on the settings page; Fishball can switch it with `set_plugin_enabled`, like every built-in (Q-look-toggle). It cannot be uninstalled on its own; it goes with dsh-fishball. It runs no rows in the private tree and gives Fishball no tools, so it does not count toward `maxFishballOnlyPlugins`.
+- **On and off.** The state snapshot (`GET /api/fishball/events`) carries `look: {messenger: boolean}`. Fishball's browser half mounts the messenger while it is on and disposes it when it is off, live, without a reload (S24b).
+
+**How it is built (amended by S25–S27).**
+1. **Input rows (S25 pass).** The messenger registers occupants of `conversation.chat.node` for the keys `user`, `steering`, `context` and `turn-trigger` at priority −1 (a keyed cell renders its lowest priority, as for the brand), with the shipped entry's `locale` so they receive the same props. For any session but Fishball's, an occupant renders DSH's shipped component with those props, so other sessions are unchanged (the same HTML in the spike). In Fishball's session it wraps the shipped component in a bubble with the author. Your messages arrive as `steering` or `user` rows; relays and notices that start a turn as `turn-trigger` rows; others as `context` rows (S26).
+2. **Fishball's replies (S25 fail, S27 pass).** DSH's `assistant-step` occupant declares child slots that only one entry may declare, and the shipped reply view needs the `renderSlot` prop that comes with them; the chat list is the same. So replies are not replaced. A stylesheet styles them as bubbles through DSH's stable `data-chat-flow-kind` and `data-chat-group-part` attributes, with the FishMark and name drawn by CSS. The same stylesheet mutes work rows and rounds the composer.
+   - **Scope.** Every rule is under `[data-slot="main.conversation"]:has([data-fishball-messenger])`. The marker is rendered by a render-nothing session-header action that mounts only for Fishball's session while the look is on (the pattern of the unread reporter, §10 1a). The header and the chat list share `main.conversation`, so the scope does not depend on which rows are loaded.
+   - **Risk.** The stylesheet depends on DSH's data attributes. A DSH update that renames them leaves replies in DSH's stock look; nothing breaks. The live check in each phase catches it.
+3. **Authors (S26 pass).** The browser receives each row's `source` complete, extra fields included. So Fishball writes the author into the source when it builds each intake message: `author: {kind, name, seed}`, where `kind` is the intake kind, `name` the session or source title at arrival (bounded like other titles) and `seed` the session id or source identity the avatar colour is derived from. This covers Fishball's notices and its `agent-message` relays. No lookup route is needed, and nothing depends on pruned ledger rows. Messages from before revision 9 have no author and fall back by source kind: a relay is "Another session", a Fishball notice is "Fishball notice", a user source is "You".
+4. **Header.** The header marker action also shows "typing…" or "online" from the session status hook rows already receive (`useSessionStatus`).
+
+**Not changed.** No new safety limit, no change to Fishball's tools, prompt, intake or approvals, and no change for any other session.
+
 ## 11. Failure, restart, bounds and security
 
 - **Quitting and restarting.** A full DSH quit stops the assistant. On start, in order:
@@ -842,6 +888,10 @@ No custom session event types are added: persistence refuses logs containing unk
 | S21 | Does changing a `.volatile()` limit on the Plugins page reach the running `fishball` row without remounting it, so that no Fishball turn is cancelled and the agent is not disposed? Does an invalid value leave the file and the running value unchanged? | Both, verified in a real browser |
 | S22 | Can a package installed in a folder under DSH's profiles directory import with the host's peer packages? | It imports, and its `@deepseek-ai/dsh-scope` is the host's instance |
 | S23 | A package in Fishball's folder with the same name as one the DSH installation ships: which copy is read and imported? | Fishball's copy is imported; the bundle check reads Fishball's copy |
+| S24 | (Revision 9) How does DSH load the browser half of `dsh-fishball-messenger` when it ships as a dependency of dsh-fishball: as its own bundle selected with dsh-fishball, or loaded by dsh-fishball's `client.js`? | Its browser half loads in a real browser after installing dsh-fishball alone, and the profile shows no extra footprint beyond what §0 lists |
+| S25 | (Revision 9) Can a `conversation.chat.node` renderer registered for the user and assistant kinds render DSH's shipped renderer for every session but Fishball's? | Ordinary sessions render exactly as before (same DOM); Fishball's session renders the messenger rows; disposing the registration restores the stock rows |
+| S26 | (Revision 9) Does the browser's Chat node for a user message carry its message id and `source`? | Both are readable for steered intake messages and for your own messages |
+| S27 | (Revision 9, only if S25 fails) Can a session-scoped mount mark the conversation container for Fishball's session only, with a stylesheet that touches no other session? | Other sessions' computed styles are unchanged; switching sessions removes the marker |
 
 ## 13a. Spike results (P1, 2026-10-24)
 
@@ -874,6 +924,16 @@ Every spike ran in-process against the installed rc.2 runtime, on a throwaway `D
 | S22 | **Pass** (2026-10-25, revision 8) | A local package installed with plain `pnpm add file:` into a hand-made pnpm folder `<profiles>/.fishball` imported from there, and its `@deepseek-ai/dsh-scope` was the host's instance (`spikes/s22-fishball-packages.mjs`). The built code uses `<profiles>/.fishball-plugins`, DSH's `initProfile` and `runPluginCommand`; `spikes/p10-smoke.mjs` covers that path end to end |
 | S23 | **Pass, with a fix** (2026-10-25, review H3) | For `@deepseek-ai/dsh-experimental-agent-team-profile` installed in Fishball's folder, a bare-name resolve from the package selects Fishball's copy, but DSH's `bundleManifest` reads the installation's copy first. The bundle check therefore reads the manifest from Fishball's copy directly (`spikes/s23-same-name.mjs`) |
 
+## 13b. Spike results (revision 9, 2026-10-31)
+
+| Spike | Result | Evidence and amendment |
+|---|---|---|
+| S24 | **Fail as designed; amended** | `spikes/s24-messenger-loading.mjs` (result `S24-install.json`): DSH installed a local bundle as `link:`, its `file:` dependency was not installed, and the dependency's row failed with `ERR_MODULE_NOT_FOUND`. A row in a private `EntryTree` is not in the host Loader's entries, so DSH serves no browser half for it. §10c now loads the browser half through Fishball's own route |
+| S24b | **Pass** | `spikes/s24b-s25-s26-server.mjs`, `spikes/fixtures/messenger-host`, browser pane (Chrome 152): the nested package's script loaded from the bundle's route, was `require`d by name and mounted with `ctx.plugin()`; disposed and mounted again live (`S24b-S25-S26-S27.json`) |
+| S25 | **Pass for input rows, fail for replies; amended** | Input-row occupants at priority −1 with the shipped `locale` delegate to the shipped component: the ordinary session's HTML was identical with the messenger on and off. `assistant-step` cannot be registered with the shipped child slots (already declared), and the chat list declares children too. Replies are styled instead (S27) |
+| S26 | **Pass** | Rows carry `sessionId`; `source` arrives complete with extra fields (a test `author` field survived); `steering` rows carry `messageId`, `turn-trigger` rows do not. §10c writes the author into the source and drops the authors route |
+| S27 | **Pass** | A `:has()`-scoped stylesheet styled reply rows only in the stand-in Fishball session, not in the ordinary one, and stopped when the messenger was off. The session header and the chat list share `main.conversation`, which gives the scope |
+
 ## 14. Delivery phases (after approval)
 
 Each phase ends with:
@@ -896,6 +956,7 @@ Each phase ends with:
 | P9 | Install into the profile you choose and retire the old `fishball` profile (§15), then a live browser check | Live acceptance |
 | P9 rehearsal (2026-10-25) | Done, without touching `~/.dsh` | `spikes/p9-rehearsal.mjs`: the owner's `web` profile's 24 plugin packages linked read-only into a throwaway home, plus dsh-fishball. Fishball went live with no failed row; 41 catalog plugins; the experimental terminal tools listed as unchecked; `message_fishball` hidden. Browser check in real Chromium: Fishball mark and name in the sidebar, clicking it opens the assistant session (Read Only, composer enabled), "Fishball settings" opens the Plugins page with every section; an ordinary session's row menu offers "Send to Fishball" and "Tell Fishball when finished" (then "Fishball is watching"), Fishball's own row offers neither; the Send dialog's note reached Fishball. The live install into a real profile waits for the owner's choice of profile |
 | P9 S15 re-check (2026-10-25) | **Pass** | `spikes/p9-s15.mjs`, the real dsh-fishball in a throwaway home on macOS (not nested in another sandbox): Fishball's session is `read-only`; with the read-only shell built-in turned on through `set_plugin_enabled`, `bash` reads work, and writes inside and outside Fishball's folder fail with "Operation not permitted" (DSH's Seatbelt) and leave no file; a call with `sandbox_permissions` is refused by Fishball's guard before any approval is asked; DSH's `write` tool is refused |
+| P11 (revision 9) | Spikes S24–S27 (done, §13b); the `dsh-fishball-messenger` package and its client route, the `builtin:messenger` catalog entry, `look` in the snapshot, `author` in intake sources, the input-row renderers, the scoped reply stylesheet and the header marker | §10c criteria, verified in a real browser: Fishball's session shows the messenger look, every other session is unchanged, and turning the look off and on applies live |
 
 **Acceptance criteria (observable):**
 - **R1:**
@@ -1023,8 +1084,11 @@ Each phase ends with:
 | Q-builtins | Built-ins unchanged | Status `builtin`, same defaults |
 | Q-limit-scope | **Open, implementer's assumption:** `maxFishballOnlyPlugins` also counts plugins installed in Fishball only, since both run in the private tree | §16 limit row; confirm or change |
 | Q-defaults-dsh | DSH plugins off by default for new installs and for DSH plugins installed later; existing installs keep plugins already on. Baseline at the first start of revision 8; a reinstalled plugin counts as new | `plugin_defaults` (§9), §4 "On at first start" |
+| Q-look | (Revision 9, 2026-10-31) Messenger chat; every sender is its own author; restyle DSH's chat, not a new view; built-in, on by default, can be turned off, not uninstalled on its own | §10c |
+| Q-look-toggle | **Open, implementer's assumption:** Fishball may switch the Messenger look itself with `set_plugin_enabled`, like every built-in | §10c "Catalog entry"; confirm or change |
+| Q-look-raw | Settled by S25: bubbles wrap DSH's own row, which shows its summary and opens the full message; Fishball does not parse its framing in the browser | §10c "Every sender is an author" |
 
-**Nothing is open.** Every design question is answered, and the plan is ready for your approval. §15 lists what happens first.
+**Open for revision 9:** Q-look-toggle above (implementer's assumption; §10c was approved 2026-10-31 and amended by S24–S27). Everything else is answered. §15 lists what happened first.
 
 **Plugin config: the safety limits.** These caps stop a runaway loop or a flood of input from causing unbounded model calls or storage. Nothing over a cap is dropped silently: it either waits, or the sender gets a clear error.
 - **Where you change them.** On this plugin's page in DSH's Plugins page (§10). DSH saves them as the `fishball` row's config in the profile's `cordis.patch.yml`.
