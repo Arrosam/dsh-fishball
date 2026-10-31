@@ -28,7 +28,8 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { createPortal } = require('react-dom')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconPlusOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -164,6 +165,8 @@ window.__ModuleLoader__.load({
       /** The back link's chevron, and the fewest rows a list field shows. */
       crumbIconSize: 14,
       listMinRows: 2,
+      /** The "+" before "Install for Fishball", as DSH's Add plugin draws it. */
+      addIconSize: 14,
       /** The group of DSH plugins: DSH's Installed tab lists them, so only they open there. */
       dshGroup: 'dsh',
       /** DSH tags these packages "Experimental" on its own page (dsh-client-ui-plugin-manager, rc.2). */
@@ -322,7 +325,7 @@ window.__ModuleLoader__.load({
       detailDesc: 'fbp-detail-desc', detailActions: 'fbp-detail-actions', sections: 'fbp-sections', section: 'fbp-section', sectionTitle: 'fbp-section-title',
       kv: 'fbp-kv', kvLabel: 'fbp-kv-label', line: 'fbp-line', link: 'fbp-link', field: 'fbp-field', fieldHead: 'fbp-field-head', hint: 'fbp-hint',
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
-      accent: 'fbp-accent', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
+      accent: 'fbp-accent', headerActions: 'fbp-header-actions', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
     const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
 
@@ -948,6 +951,8 @@ window.__ModuleLoader__.load({
       `.${MCLS.accent} [role=switch][aria-checked="true"]{background:${FISHBALL_COLOUR.fill}}`,
       `.${MCLS.accent}{display:inline-flex;align-items:center;gap:8px}`,
       `.${MCLS.menuIcon}{display:inline-flex;color:${FISHBALL_COLOUR.accent}}`,
+      // As DSH's own toolbar in the page header (dsh-client-ui-plugin-manager .toolbar, rc.2).
+      `.${MCLS.headerActions}{display:flex;flex:none;align-items:center;justify-content:flex-end;gap:16px;white-space:nowrap}`,
       // The Add plugin menu item and the install dialog follow DSH's own (dsh-client-ui-plugin-manager, rc.2).
       `.${MCLS.copy}{display:flex;flex-direction:column;gap:2px;white-space:normal}`,
       `.${MCLS.copyDesc}{display:-webkit-box;overflow:hidden;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;-webkit-line-clamp:2;-webkit-box-orient:vertical}`,
@@ -1932,13 +1937,38 @@ window.__ModuleLoader__.load({
       }
 
       /** The list (version 1): groups by origin, like DSH's Installed tab, then tools that belong to no plugin. */
+      /**
+       * "Install for Fishball" where DSH's own Add plugin sits: DSH hides its toolbar on a
+       * contributed tab and offers no slot in the page header, so the button is rendered into the
+       * header row through a portal (owner's request: the page looks like DSH's). The header is
+       * found from the tab panel: the row holding the page title (`h1`). If DSH's markup changes and
+       * it is not found, the button stays at the top of the tab instead.
+       */
+      function InstallHeaderAction({ t, onInstall }) {
+        const anchor = React.useRef(null)
+        const [slot, setSlot] = React.useState(null)
+        React.useLayoutEffect(() => {
+          const panel = anchor.current?.closest('[role=tabpanel]')
+          const head = panel?.parentElement?.querySelector('h1')?.parentElement?.parentElement
+          if (!head) return undefined
+          const container = document.createElement('div')
+          container.className = MCLS.headerActions
+          head.appendChild(container)
+          setSlot(container)
+          return () => { container.remove(); setSlot(null) }
+        }, [])
+        const button = h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: onInstall }, h(IconPlusOutlineRegular, { size: MANAGER.addIconSize }), t('installForFishball')))
+        // The anchor stays in the tab only to find the header; its class sets display, so it is hidden inline once the button moved.
+        return h('span', { ref: anchor, className: MCLS.bar, style: slot === null ? undefined : { display: 'none' } }, slot === null ? button : createPortal(button, slot))
+      }
+
       function PluginList({ catalog, t, onOpen, onResult, onInstall }) {
         const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
         // Allowances whose tool is not listed anywhere (its plugin is off, or it registers later) keep a Remove here (review M2).
         const shown = new Set([...catalog.plugins.flatMap((plugin) => plugin.tools.map((tool) => tool.name)), ...catalog.otherTools.map((tool) => tool.name)])
         const unlisted = catalog.allowedTools.filter((tool) => !shown.has(tool.toolName))
         return h(React.Fragment, null,
-          h('div', { className: MCLS.bar }, h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: onInstall }, t('installForFishball')))),
+          h(InstallHeaderAction, { t, onInstall }),
           MANAGER.groups.map((group) => {
             const plugins = catalog.plugins.filter((plugin) => group.dsh.includes(plugin.dsh))
             if (plugins.length === 0) return null
