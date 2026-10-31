@@ -596,6 +596,10 @@ const ops = {
   /** DSH's install progress events seen on the host bus, optionally for one request id. */
   installEvents({ requestId } = {}) { return store.installEvents.filter((e) => !requestId || e.requestId === requestId).map(({ json, ...e }) => ({ ...e, json: JSON.stringify(json).slice(0, 2000) })) },
 
+  // ---- Revision 10b operations ----
+  /** Whether each named service resolves from DSH's root context, as every other session's rows resolve it. */
+  rootServices({ names }) { return Object.fromEntries(names.map((name) => [name, ctx.get(name) !== undefined])) },
+
   // ---- P12 operations (plugin manager settings) ----
   /** apply/dispose/fail events of the settings fixtures' rows, with the config each apply received. */
   settingsEvents({ plugin, row } = {}) { return store.settingsEvents.filter((e) => (!plugin || e.plugin === plugin) && (!row || e.row === row)) },

@@ -1181,3 +1181,35 @@ The Fishball tab, the plugin page and settings form, the tag and switch on DSH's
   - STA-16 waits for the undo (A130).
 - **plugins-status, Refresh (DESIGN §10d "Refresh"):** new cases. STA-26: `POST /api/fishball/plugins/refresh` `{}` answers 200 `{ok:true, state}` whose catalog lists fishball:fbtest-added-b (installed in STA-19). STA-27: a bundle the test links into the profile while DSH runs, without DSH's plugin manager (new fixture [fbtest-refresh](support/fixtures/fbtest-refresh/index.js), `REFRESH_BUNDLE`), is in the refresh answer's catalog as fishball-only and off, and none of its code ran. STA-28 ×5: invalid JSON, array, string, number or null answers 400 bad-body. STA-24 also covers refresh without the cookie, and STA-25 expects 409 unavailable from it while the core failed (now ×3).
 - **messenger-author:** AUT-04 (the install request's author) is removed with its input kind, and the P11 author table row "install request (POST plugins/install)" no longer applies.
+
+## Revision 10b cases (blocked plugins; DESIGN §4 "Auditing" → "Plugins that publish a service" and "Known before trying", §10d `blocked`, S1, S32)
+
+Requirement (as given to the test author): every catalog entry gains `blocked`: `edits-other-rows`, `no-rows` or `no-profile` (read from the plugin's patch when the list is read), or `leaks-service` (once Fishball turned the plugin off for publishing a service, until it is reinstalled or its choice is reset); otherwise null. A blocked plugin that is off offers no `enable` action; one installed in Fishball only still offers `uninstall`. Turning it on through `POST /api/fishball/plugins` answers 409 `refused`; `set_plugin_enabled` refuses with the blocked code. A plugin whose rows publish a service is still turned off with lastError `leaks-service` (the isolation tried in S32 was not adopted).
+
+**Harness additions.** Worker op `rootServices({names})`: whether each service resolves from DSH's root context. New fixtures: [fbtest-installed-edits](support/fixtures/fbtest-installed-edits/index.js) (self-contained; its patch edits the fbtest-tools row; installed for Fishball only by BLK-06) and [fbtest-installed-leak](support/fixtures/fbtest-installed-leak/index.js) (self-contained; provides `fbtestInstalledLeaked`; installed into the profile while DSH runs by BLK-08). New constants: `BLOCKED`, `DSH_BLOCKED_BUNDLES`, `INSTALLED_EDITS_BUNDLE`, `INSTALLED_LEAK_BUNDLE`, `CODE.leaksService`, and the `service` names of `REVIEW_BUNDLES.leak`/`leakB`. `expectedActions` drops `enable` for a blocked entry that is off, and `assertEntryContract` checks `blocked` is null or one of `BLOCKED`.
+
+### [plugins-blocked.test.mjs](plugins-blocked.test.mjs): one host with the defective fixtures (`FBTEST_REVIEW_BUNDLES=1`), in order
+
+| id | technique | expected result |
+|---|---|---|
+| BLK-01 ×13 | DT (patch shape × kind) | In GET state and list_plugins: fbtest-edits and fbtest-idinsert `edits-other-rows`, fbtest-norows `no-rows`, each off with actions []. fbtest-only, fbtest-leak (not tried yet), fbtest-tools (kind profile) and the 7 built-ins: null with their usual actions |
+| BLK-01b | EP (S32) | DSH's agent-team and session-titles bundles, when the installation ships them: `edits-other-rows`, actions [] |
+| BLK-02 ×2 | DT (patch reason × route/tool) | fbtest-edits, fbtest-norows: POST on answers 409 `{ok:false, code:'refused'}`; set_plugin_enabled `{ok:false, code:<blocked>}` with no prompt; still off and blocked, actions []; its code never ran |
+| BLK-03 | ST null → leaks-service | fbtest-leak turned on by the user: off, lastError and blocked `leaks-service`, actions []; every apply disposed; its service not left in DSH's root realm; fbtest-only keeps running; assistant live; profile files unchanged |
+| BLK-04 | ST leaks-service → on | POST on 409 refused; set_plugin_enabled `{ok:false, code:'leaks-service'}`; no new apply; still blocked |
+| BLK-05 | ST (Fishball turns it on) | fbtest-leak-b by set_plugin_enabled with Allow: answer ok:false leaks-service or ok:true (A132; observed ok:false leaks-service); ends off, blocked `leaks-service`, not running, service not in the root realm |
+| BLK-06 | DT (installed for Fishball only × edits other rows) | install 200 `{ok:true, plugin:'fishball:fbtest-installed-edits', on:false}`; entry fishball-installed, blocked `edits-other-rows`, actions [uninstall]; code never ran; the uninstall route answers 200 and the entry goes; profile files unchanged |
+| BLK-07 | ST (restart) | fbtest-leak still off with lastError and blocked `leaks-service` after a restart; its code did not run at the boot |
+| BLK-08 | ST leaks-service → removed → installed again | fbtest-installed-leak installed (not enabled) through DSH's plugin manager and turned on: blocked `leaks-service`; removed and installed again: blocked null, off, actions [enable] |
+
+### Ambiguities (revision 10b)
+
+- **A132. Fishball turning on a service-publishing plugin nobody tried.** The leak may be found in the mid-turn listing mount (answer `{ok:false, code:'leaks-service'}`) or only at the idle apply (answer ok:true). BLK-05 accepts either and checks the end state. Observed: ok:false leaks-service.
+- **A133. Not covered.** `no-profile` (Fishball always runs with a profile in the test homes) and clearing `leaks-service` by resetting the choice ("or its choice is reset" names no route).
+
+### Cases changed by revision 10b
+
+- **Entry keys:** `PLUGIN_KEYS` gains `blocked` (21 keys), so the key checks of plugins-catalog CAT-02, plugins-status STA-01, manager-catalog and messenger-catalog MSL-01 expect it.
+- **Actions:** `expectedActions` (used by `assertEntryContract` in plugins-catalog, plugins-status, plugins-upgrade and messenger-catalog) no longer expects `enable` for a blocked entry that is off: DSH's own bundles that edit other rows, fbtest-edits, fbtest-idinsert and fbtest-norows now offer [].
+- **plugins-defaults DEF-01/02/07/08/09:** `assertOff` expects `expectedActions(p)` instead of `[enable]`, because DEF-02 covers DSH's optional bundles, two of which are blocked `edits-other-rows`.
+- **Not changed:** REV-08 (plugins-review) and BRK-01 (plugins-review2) still expect a service-publishing plugin to end off with `leaks-service` (A33: observed `leaks-service`); BLK-03 to BLK-05 now require it.
