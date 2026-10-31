@@ -64,7 +64,15 @@ window.__ModuleLoader__.load({
      * Fishball's own notices and replies stay neutral. Mid lightness keeps names readable on
      * both DSH themes.
      */
-    const SENDER_COLOUR = Object.freeze({ variable: '--fbm-sender', fill: '16%', edge: '50%' })
+    const SENDER_COLOUR = Object.freeze({
+      variable: '--fbm-sender', fill: '16%', edge: '50%',
+      /**
+       * Messages another session sends Fishball are always green, so you can tell them apart at
+       * a glance; a colour from the session id could land near your own magenta (owner's
+       * choice, 2026-10-31).
+       */
+      interSession: 'hsl(142 70% 42%)',
+    })
     const tint = (colour, share) => `color-mix(in srgb,${colour} ${share},transparent)`
 
     const en = {
@@ -154,7 +162,8 @@ window.__ModuleLoader__.load({
     /**
      * Who sent a row's message, or undefined when the row is not an input to Fishball (DSH's own
      * context rows stay as they are).
-     * @returns { key, name, mine, fish, seed, marker }; key groups consecutive bubbles.
+     * @returns { key, name, mine, fish, seed, colour, marker }; key groups consecutive bubbles;
+     *   colour, when set, replaces the colour derived from seed.
      */
     function authorOf(source, t) {
       const author = source?.author
@@ -167,10 +176,11 @@ window.__ModuleLoader__.load({
         const name = text(author.name) ?? t('untitled')
         const seed = text(author.seed) ?? name
         const marker = MARKER_KEY[author.kind]
-        return { key: `${author.kind}:${seed}`, name, seed, marker: marker && t(marker) }
+        const colour = author.kind === AUTHOR_KIND.session ? SENDER_COLOUR.interSession : undefined
+        return { key: `${author.kind}:${seed}`, name, seed, colour, marker: marker && t(marker) }
       }
       // Messages from before the Messenger look carry no author (DESIGN §10c).
-      if (source?.kind === SOURCE_KIND.relay) return { key: `${SOURCE_KIND.relay}:${source.senderSessionId}`, name: t('anotherSession'), seed: String(source.senderSessionId ?? '') }
+      if (source?.kind === SOURCE_KIND.relay) return { key: `${SOURCE_KIND.relay}:${source.senderSessionId}`, name: t('anotherSession'), seed: String(source.senderSessionId ?? ''), colour: SENDER_COLOUR.interSession }
       if (source?.kind === SOURCE_KIND.notice) return { key: AUTHOR_KIND.system, name: t('notice'), fish: true }
       return undefined
     }
@@ -219,7 +229,7 @@ window.__ModuleLoader__.load({
         return h('div', {
           ref, [ATTR.author]: author.key,
           className: coloured ? `${CLS.incoming} ${CLS.sender}` : CLS.incoming,
-          style: coloured ? { [SENDER_COLOUR.variable]: `hsl(${hueOf(author.seed)} ${AVATAR.saturation} ${AVATAR.lightness})` } : undefined,
+          style: coloured ? { [SENDER_COLOUR.variable]: author.colour ?? `hsl(${hueOf(author.seed)} ${AVATAR.saturation} ${AVATAR.lightness})` } : undefined,
         },
           grouped ? h('span', { className: CLS.spacer }) : h(Avatar, { author }),
           h('div', { className: CLS.body },
