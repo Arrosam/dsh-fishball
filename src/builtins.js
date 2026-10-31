@@ -13,6 +13,12 @@
  * so turning it on or off mounts nothing; Fishball's browser half follows its on/off choice
  * (the `look` snapshot field, MESSENGER.pluginKey). On at first start, like the defaults above.
  *
+ * Fishball's own plugins (DESIGN §10d "Fishball's own plugins", revision 10c): its own features,
+ * so every tool it registers belongs to a plugin. They have no rows either; each part of Fishball
+ * follows its plugin's applied state (index.js). `own` puts them in the Fishball group;
+ * `asksToEnable` makes Fishball ask you before turning one on, so your off holds (owner's choice).
+ * The Messenger look is own too, but Fishball switches it freely: it only changes the chat's look.
+ *
  * Not offered: DSH's MCP client. Each MCP server is one row with its own server config, which
  * an on/off catalog cannot supply; MCP servers configured in the profile are host rows, so
  * their tools reach Fishball as profile tools (checked or allowed like any other).
@@ -24,14 +30,28 @@ const IS_WINDOWS = process.platform === 'win32'
 /** Key prefix that marks a catalog key as a built-in. */
 export const BUILTIN_PREFIX = 'builtin:'
 
-const builtin = (key, title, defaultOn, rows) => Object.freeze({
+const builtin = (key, title, defaultOn, rows, extra = {}) => Object.freeze({
   key: BUILTIN_PREFIX + key,
   title,
   defaultOn,
   rows: Object.freeze(rows),
+  ...extra,
 })
 
+/** Ids of Fishball's own feature plugins (revision 10c). */
+const FEATURE_ID = Object.freeze({ messages: 'session-messages', watching: 'session-watching', plugins: 'plugin-management', approvals: 'permission-requests' })
+
+/** Catalog keys of Fishball's own feature plugins, by feature (snapshot `features`). */
+export const FEATURE_KEY = Object.freeze(Object.fromEntries(Object.entries(FEATURE_ID).map(([feature, id]) => [feature, BUILTIN_PREFIX + id])))
+
+/** A feature plugin: on by default, no rows, asks you before Fishball turns it on. */
+const feature = (id, title) => builtin(id, title, true, [], { own: true, asksToEnable: true })
+
 export const BUILTIN_PLUGINS = Object.freeze([
+  feature(FEATURE_ID.messages, 'Session messages'),
+  feature(FEATURE_ID.watching, 'Session watching'),
+  feature(FEATURE_ID.plugins, 'Plugin management'),
+  feature(FEATURE_ID.approvals, 'Permission requests'),
   builtin('compaction', 'Compaction', true, [{
     id: 'group',
     name: 'cordis:group',
@@ -59,5 +79,5 @@ export const BUILTIN_PLUGINS = Object.freeze([
     { id: 'tool-bash', name: '@deepseek-ai/dsh-tool-bash', disabled: IS_WINDOWS },
     { id: 'tool-pwsh', name: '@deepseek-ai/dsh-tool-pwsh', disabled: !IS_WINDOWS },
   ]),
-  builtin('messenger', 'Messenger look', true, []),
+  builtin('messenger', 'Messenger look', true, [], { own: true }),
 ])

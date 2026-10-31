@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, AUTHOR_KIND, DSH_COMPACTION, DSH_STATE, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, AUTHOR_KIND, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -471,7 +471,8 @@ export const pluginAuthor = (title, identity) => ({ kind: AUTHOR_KIND.plugin, na
 export const Schema = await (async () => { const m = await import(pathToFileURL(path.join(RUNTIME, '@deepseek-ai', 'schemastery', 'lib', 'index.mjs')).href); return m.default ?? m })()
 
 /** The `dsh` value a catalog entry must report for its kind (decision table). */
-export const expectedDsh = (p) => ({ [KIND.profile]: DSH_STATE.on, [KIND.only]: DSH_STATE.off, [KIND.builtin]: DSH_STATE.builtin, [KIND.installed]: DSH_STATE.none })[p.kind]
+/** Revision 10c: the five entries of the Fishball group are built-ins whose dsh is 'fishball'. */
+export const expectedDsh = (p) => (FISHBALL_GROUP_KEYS.includes(p.plugin) ? DSH_STATE.fishball : ({ [KIND.profile]: DSH_STATE.on, [KIND.only]: DSH_STATE.off, [KIND.builtin]: DSH_STATE.builtin, [KIND.installed]: DSH_STATE.none })[p.kind])
 /** The `runs` value from the desired on/off states: a profile plugin runs in DSH whatever Fishball chose. */
 export function expectedRuns(p) {
   if (p.kind === KIND.profile) return p.on ? RUNS.everywhere : RUNS.dsh

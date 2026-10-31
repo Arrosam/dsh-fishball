@@ -185,7 +185,15 @@ export const TOOL_STATUS = Object.freeze({
   hidden: 'hidden',
   pluginOff: 'plugin-off',
   unchecked: 'unchecked',
+  /** Fishball's own tool for other sessions (message_fishball): never visible to Fishball (revision 10c). */
+  otherSessions: 'other-sessions',
 })
+
+/**
+ * Off answer of a route or tool whose Fishball plugin is off (revision 10c): Send to Fishball,
+ * Tell Fishball when finished, notify_when_finished.
+ */
+export const FEATURE_OFF = 'feature-off'
 
 /** Stable plugin diagnostics (catalog `lastError`, tool results); never message text. */
 export const PLUGIN_ERROR = Object.freeze({
@@ -198,6 +206,8 @@ export const PLUGIN_ERROR = Object.freeze({
   leaksService: 'leaks-service',
   noProfile: 'no-profile',
   rejected: 'rejected',
+  /** Fishball must ask before turning one of its own plugins on (revision 10c): it went off while Fishball was deciding. */
+  askFirst: 'ask-first',
   installFailed: 'install-failed',
   restartRequired: 'restart-required',
   /** Only a Fishball-installed plugin can be uninstalled; DSH plugins and built-ins cannot. */
@@ -224,7 +234,9 @@ export const PLUGIN_ERROR = Object.freeze({
  * Where a catalog plugin stands in DSH (snapshot `dsh`, DESIGN §10d): on for every session,
  * installed but off, a DSH capability package Fishball mounts itself, or not in DSH at all.
  */
-export const PLUGIN_DSH = Object.freeze({ on: 'on', off: 'off', builtin: 'builtin', none: 'none' })
+export const PLUGIN_DSH = Object.freeze({ on: 'on', off: 'off', builtin: 'builtin', none: 'none',
+  /** One of Fishball's own plugins (revision 10c): part of dsh-fishball itself, listed in the Fishball group. */
+  fishball: 'fishball' })
 
 /** Where a catalog plugin runs, from both sides' desired state (snapshot `runs`, DESIGN §10d). */
 export const PLUGIN_RUNS = Object.freeze({ everywhere: 'everywhere', dsh: 'dsh', fishball: 'fishball', nowhere: 'nowhere' })
@@ -355,6 +367,7 @@ export const INTAKE_ERROR = Object.freeze({
   fromFishball: 'from-fishball',
   unknownSession: 'unknown-session',
   deliveryFailed: 'delivery-failed',
+  featureOff: FEATURE_OFF,
 })
 
 /** Watches (DESIGN §5c, §9 watches). */
@@ -372,6 +385,7 @@ export const WATCH_ERROR = Object.freeze({
   limitReached: 'limit-reached',
   unknownWatch: 'unknown-watch',
   notRelated: 'not-related',
+  featureOff: FEATURE_OFF,
 })
 export const WATCH = Object.freeze({
   /** Watches shown on the settings page and by list_watches. */

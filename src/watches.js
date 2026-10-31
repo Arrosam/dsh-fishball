@@ -95,6 +95,7 @@ export class Watches {
   #readLimits
   #assistantId
   #onChange
+  #isEnabled
   /** targetSessionId -> Set of watch ids (O(1) lookup in the event listener). */
   #byTarget = new Map()
   /** Serializes watch changes and firing. */
@@ -110,9 +111,10 @@ export class Watches {
    * @param store - Store (watches table).
    * @param logger - plugin logger.
    * @param deps.ledger - IntakeLedger; deps.readLimits - () => limits;
-   *   deps.assistantId - () => assistant session id; deps.onChange - state changed.
+   *   deps.assistantId - () => assistant session id; deps.onChange - state changed;
+   *   deps.isEnabled - () => whether Fishball's Session watching plugin runs (revision 10c).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange, isEnabled }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -120,6 +122,7 @@ export class Watches {
     this.#readLimits = readLimits
     this.#assistantId = assistantId
     this.#onChange = onChange
+    this.#isEnabled = isEnabled
     this.#index()
     ctx.on(EVENT.sessionEvent, (session, event) => { if (event.type === WATCH.turnEndEvent) this.#trigger(session.id) })
     ctx.on(EVENT.agentStatus, ({ agent, status }) => {
@@ -135,10 +138,11 @@ export class Watches {
    * @param input - { sessionId, condition?, mode?, by: { kind, id? }, since? }. since: the
    *   watermark (only turn ends after it count); default the target's last seq now.
    * @returns the watch view; an identical active watch is returned as is (not doubled).
-   * @throws WatchError(unknownSession | archived | isFishball | limitReached).
+   * @throws WatchError(featureOff | unknownSession | archived | isFishball | limitReached).
    */
   add({ sessionId, condition = WATCH_CONDITION.finished, mode = WATCH_MODE.once, by, since }) {
     return this.#serial(async () => {
+      if (!this.#isEnabled()) throw new WatchError(WATCH_ERROR.featureOff)
       if (sessionId === this.#assistantId()) throw new WatchError(WATCH_ERROR.isFishball)
       const info = await describeSession(this.#ctx, sessionId)
       if (info === undefined) throw new WatchError(WATCH_ERROR.unknownSession)
@@ -352,11 +356,14 @@ export class Watches {
   /**
    * Publish the notice through the ledger and advance the watch. A notice refused by the
    * ledger (queue full) keeps the watermark, so the next trigger or Fishball's idle retries it.
-   * @returns whether it was published.
+   * While Session watching is off the turn end is passed over: the watermark moves on and the
+   * watch stays open, so turning it on again sends no late notice (revision 10c).
+   * @returns whether it was published (or passed over).
    */
   async #fire(id, seq, reason, excerpt) {
     const record = this.#store.watches.get(id)
     if (record === undefined || record.status !== OPEN || seq <= record.lastSeenSeq) return true
+    if (!this.#isEnabled()) { await this.#advance(id, seq); return true }
     const described = (await describeSession(this.#ctx, record.targetSessionId)) ?? { id: record.targetSessionId, title: '', cwd: null }
     const info = { ...described, excerpt }
     try {
