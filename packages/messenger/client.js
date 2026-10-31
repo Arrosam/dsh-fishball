@@ -78,7 +78,6 @@ window.__ModuleLoader__.load({
     const tint = (colour, share) => `color-mix(in srgb,${colour} ${share},transparent)`
 
     const en = {
-      you: 'You',
       notice: 'Fishball notice',
       anotherSession: 'Another session',
       untitled: 'Untitled session',
@@ -88,7 +87,6 @@ window.__ModuleLoader__.load({
       online: 'online',
     }
     const zh = {
-      you: '你',
       notice: 'Fishball 通知',
       anotherSession: '另一个会话',
       untitled: '未命名会话',
@@ -100,7 +98,7 @@ window.__ModuleLoader__.load({
 
     const CLS = Object.freeze({
       incoming: 'fbm-incoming', sender: 'fbm-sender', mine: 'fbm-mine', avatar: 'fbm-avatar', spacer: 'fbm-spacer',
-      body: 'fbm-body', name: 'fbm-name', marker: 'fbm-marker', bubble: 'fbm-bubble', you: 'fbm-you', quote: 'fbm-quote',
+      body: 'fbm-body', name: 'fbm-name', marker: 'fbm-marker', bubble: 'fbm-bubble', quote: 'fbm-quote',
       fish: 'fbm-fish', header: 'fbm-header', headerFish: 'fbm-header-fish', headerName: 'fbm-header-name', status: 'fbm-status',
     })
     /** The name Fishball's replies and header show: a product name, the same in every language. */
@@ -132,7 +130,6 @@ window.__ModuleLoader__.load({
         `.${CLS.sender} .${CLS.name}{color:var(${SENDER_COLOUR.variable})}`,
         `.${CLS.sender} .${CLS.bubble}{background:${tint(`var(${SENDER_COLOUR.variable})`, SENDER_COLOUR.fill)};border-color:${tint(`var(${SENDER_COLOUR.variable})`, SENDER_COLOUR.edge)}}`,
         `.${CLS.mine}{display:flex;flex-direction:column;align-items:flex-end;margin:6px 0 6px 20%}`,
-        `.${CLS.you}{font-size:12px;font-weight:600;color:${ACCENT}}`,
         // Your messages are DSH's rows, whose classes are generated, so they are matched only
         // inside our wrapper: the text bubble by its stable "_bubble" ending, and a forwarded
         // session's card as DSH's section element. If DSH changes either, that row keeps DSH's
@@ -171,7 +168,8 @@ window.__ModuleLoader__.load({
     /**
      * Who sent a row's message, or undefined when the row is not an input to Fishball (DSH's own
      * context rows stay as they are).
-     * @returns { key, name, mine, fish, seed, colour, marker }; key groups consecutive bubbles;
+     * @returns { key, name, mine, quote, fish, seed, colour, marker }; key groups consecutive
+     *   bubbles; your messages (mine) have no name, and quote is a forwarded session's title;
      *   colour, when set, replaces the colour derived from seed.
      */
     function authorOf(source, t) {
@@ -179,7 +177,7 @@ window.__ModuleLoader__.load({
       // Any session's source is data from that session: use only parts of the expected type, so a
       // malformed one falls back instead of breaking the row.
       const text = (value) => (typeof value === 'string' && value.length > 0 ? value : undefined)
-      if (source?.kind === SOURCE_KIND.user || author?.kind === AUTHOR_KIND.user) return { key: AUTHOR_KIND.user, name: t('you'), mine: true, quote: text(author?.name) }
+      if (source?.kind === SOURCE_KIND.user || author?.kind === AUTHOR_KIND.user) return { key: AUTHOR_KIND.user, mine: true, quote: text(author?.name) }
       if (author !== null && typeof author === 'object') {
         if (author.kind === AUTHOR_KIND.system) return { key: AUTHOR_KIND.system, name: t('notice'), fish: true }
         const name = text(author.name) ?? t('untitled')
@@ -228,9 +226,9 @@ window.__ModuleLoader__.load({
     function makeBubble(Avatar) {
       return function Bubble({ author, children }) {
         const [ref, grouped] = useGrouped(author.key)
+        // Your messages carry no label (owner's choice): their side and tint mark them as yours.
         if (author.mine) {
           return h('div', { ref, className: CLS.mine, [ATTR.author]: author.key },
-            grouped ? null : h('div', { className: CLS.you }, author.name),
             author.quote === undefined ? null : h('div', { className: CLS.quote }, author.quote), children)
         }
         // A sender with a seed gets its own colour; Fishball's notices (no seed) stay neutral.
