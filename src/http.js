@@ -16,6 +16,7 @@
  * POST watches/remove         -> { watchId: string }
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
+ * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
  */
 import { isSettingInput } from './context-window.js'
 import { API, API_CODE, BRAND_STYLE, HTTP, HTTP_METHOD, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
@@ -52,8 +53,8 @@ const BODY = Object.freeze({
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin), installPlugin(spec),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
- *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style) }; the commands reject
- *   LifecycleStateError for a 409.
+ *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript() }; the
+ *   commands reject LifecycleStateError for a 409; messengerScript resolves the file's bytes.
  */
 export function registerRoutes(ctx, state) {
   const streams = new Set()
@@ -103,6 +104,13 @@ export function registerRoutes(ctx, state) {
     }
   }
 
+  /** The Messenger look's browser file; a read failure answers 500 `failed`. */
+  const messengerScript = async () => {
+    try { return new Response(await state.messengerScript(), { status: HTTP.ok, headers: RESPONSE_HEADERS.javascript }) } catch {
+      return json(HTTP.serverError, { ok: false, code: API_CODE.failed })
+    }
+  }
+
   const routes = [
     { path: API.state, methods: [HTTP_METHOD.get], fetch: () => Promise.resolve(json(HTTP.ok, state.snapshot())) },
     { path: API.events, methods: [HTTP_METHOD.get], fetch: events },
@@ -117,6 +125,7 @@ export function registerRoutes(ctx, state) {
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },
+    { path: API.messengerClient, methods: [HTTP_METHOD.get], fetch: messengerScript },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)

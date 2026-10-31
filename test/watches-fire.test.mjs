@@ -38,10 +38,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
-  API, INBOUND_TOOL, LIMITS, PRESET, READ_MAX, READ_ROLES, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_STATUS, WATCH_SUMMARY, WATCH_TEXT, WATCH_TOOLS,
+  API, AUTHOR_KIND, INBOUND_TOOL, LIMITS, PRESET, READ_MAX, READ_ROLES, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_STATUS, WATCH_SUMMARY, WATCH_TEXT, WATCH_TOOLS,
 } from './support/constants.mjs'
 import {
-  HOOK, T, callScript, fishballCall, intakeNow, jsonOf, messageFishball, noticesSettled, requestsWith, settledIdle, toolNames, turn,
+  HOOK, T, callScript, fishballCall, intakeNow, jsonOf, messageFishball, noticesSettled, requestsWith, sessionAuthor, settledIdle, toolNames, turn,
   untilSeen, untrustedBlock, watchById, watchNotices, watchesNow, watchesOn,
 } from './support/expect.mjs'
 import { bootLive, newHome, sleep, until } from './support/host.mjs'
@@ -100,7 +100,8 @@ describe('P6 watches fire', () => {
       const got = await noticesSettled(host, fb, watch.id, 1)
       assert.equal(got.length, 1, 'exactly one notice')
       const n = got[0]
-      assert.deepEqual(n.source, { kind: 'fishball-notice', form: 'notice', summary: WATCH_SUMMARY('completed') })
+      // P11 R4: the watched session is the author.
+      assert.deepEqual(n.source, { kind: 'fishball-notice', form: 'notice', summary: WATCH_SUMMARY('completed'), author: await sessionAuthor(host, AUTHOR_KIND.watch, sid) })
       assert.ok(n.text.toLowerCase().includes(WATCH_TEXT.finished), n.text.slice(0, 200))
       assert.ok(n.text.includes(JSON.stringify('completed')), 'the JSON-quoted reason')
       assert.ok(n.text.includes(watch.id), 'the watch id')

@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { ACTION, API, DSH_COMPACTION, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
+import { ACTION, API, AUTHOR_KIND, DSH_COMPACTION, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -449,3 +449,17 @@ export const publish = (host, key, event) => host.call('sourcePublish', { key, e
 
 export const T = { timeout: 55000 }
 export const HOOK = { timeout: 60000 }
+
+// ---- P11 helpers (authors, R4) ----
+
+/**
+ * The author R4 expects for an input from session sessionId: that session's title as DSH reports it
+ * (name absent when the title is empty) and the session id as seed. Callers use it where the title has
+ * not changed since the message arrived and is within the 200-byte bound (the fake model's title).
+ */
+export async function sessionAuthor(host, kind, sessionId) {
+  const title = await host.call('sessionTitle', { sessionId })
+  return { kind, ...(title ? { name: title } : {}), seed: sessionId }
+}
+/** R4: a plugin source's author: its registered title and its identity. */
+export const pluginAuthor = (title, identity) => ({ kind: AUTHOR_KIND.plugin, name: title, seed: identity })

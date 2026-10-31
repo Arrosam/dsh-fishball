@@ -188,7 +188,8 @@ export const API = {
 
 // ---- P5 (messaging, intake, outbox) ----
 /** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** P11 R2 adds 'look' (17). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'look', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
@@ -407,3 +408,29 @@ export const MS = { boot: 45000, live: 20000, turn: 20000, stop: 20000, poll: 10
 export const UNREAD = { keys: ['count'], table: 'unread', key: 'assistant', recordKeys: ['changedAt', 'count', 'sessionId'] }
 /** R8: strings the served client bundle must carry (the browser half is otherwise manual, see CASES.md). */
 export const UNREAD_UI = { badgeAttr: 'data-fishball-badge', openLabel: 'Open Fishball', reducedMotion: 'prefers-reduced-motion' }
+
+// ---- P11 (Messenger look, revision 9) ----
+/** R1/R3: the built-in catalog entry, its package and the route that serves its browser file. */
+export const MESSENGER = {
+  key: 'builtin:messenger', title: 'Messenger look',
+  packageName: 'dsh-fishball-messenger', moduleId: 'dsh-fishball-messenger',
+  dir: path.join(REPO, 'packages', 'messenger'),
+  clientFile: path.join(REPO, 'packages', 'messenger', 'client.js'),
+  packageFile: path.join(REPO, 'packages', 'messenger', 'package.json'),
+  filesEntry: 'packages/messenger/',
+  packed: ['packages/messenger/package.json', 'packages/messenger/client.js'],
+  route: '/api/fishball/messenger/client.js',
+  contentType: 'text/javascript; charset=utf-8',
+  cacheControl: 'no-store',
+}
+/** R2: keys of state.look once the catalog exists. */
+export const LOOK_KEYS = ['messenger']
+/** R4: author kinds and the keys an author may carry. */
+export const AUTHOR_KIND = { session: 'session', user: 'user', watch: 'watch', approval: 'approval', plugin: 'plugin', system: 'system' }
+export const AUTHOR_KEYS = ['kind', 'name', 'seed']
+/** R4: an author name is at most this many UTF-8 bytes, the ellipsis included. */
+export const AUTHOR_NAME_MAX_BYTES = 200
+/** P11: raises DSH's title cap (80 bytes in dsh-base) so titles longer than the author bound can exist. */
+export const TITLE_ENV = { FBTEST_TITLE_MAX_BYTES: '1024' }
+/** P11: the last commit before P11's implementation (an install from before this phase). */
+export const PRE_MESSENGER = { commit: 'e221d23' }

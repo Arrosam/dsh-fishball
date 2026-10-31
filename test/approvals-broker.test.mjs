@@ -39,13 +39,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
-  ANSWER_TOOL, APPROVALS_KEYS, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APPROVER_THROWS, APR_CODE, APR_NOTE,
+  ANSWER_TOOL, APPROVALS_KEYS, AUTHOR_KIND, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APPROVER_THROWS, APR_CODE, APR_NOTE,
   ASK_REASON, ASK_TOOL, ELLIPSIS, FINAL_OUTCOMES, INBOUND_TOOL, LATEST_USER_MAX_BYTES, LIMITS, NOTICE, OUTCOME, PENDING_KEYS, PRESET, RECENT_ANSWERS,
   RECENT_KEYS, RECENT_MAX, RUBRIC, STARTED_BY, STARTED_BY_OTHER, TURN_BY,
 } from './support/constants.mjs'
 import {
   HOOK, T, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
-  requestMessages, resultOfCall, settledIdle, startAsk, toolNames, turn, waitRequest,
+  requestMessages, resultOfCall, sessionAuthor, settledIdle, startAsk, toolNames, turn, waitRequest,
 } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -123,7 +123,8 @@ describe('P7 ApprovalBroker', () => {
     await plan(text, { decision: 'escalate', risk: 'high', reason: 'no allowance' })
     const args = { text, pad: 'pad-01' }
     const req = await asked(x, text, { pad: 'pad-01' }, 'please do the 01 thing')
-    assert.deepEqual(req.source, { ...NOTICE, summary: APPROVAL_SUMMARY(ASK_TOOL) })
+    // P11 R4: the asking session is the author.
+    assert.deepEqual(req.source, { ...NOTICE, summary: APPROVAL_SUMMARY(ASK_TOOL), author: await sessionAuthor(host, AUTHOR_KIND.approval, x) })
     assert.match(req.text, APPROVAL_PREFIX)
     assert.match(req.id, APPROVAL_ID)
     const header = req.block.header
@@ -408,7 +409,7 @@ describe('P7 ApprovalBroker', () => {
         if (otherTool) {
           assert.equal(req.block.fields.tool, extra.as)
           assert.equal(req.block.fields.call_was_to_tool, ASK_TOOL)
-          assert.deepEqual(req.source, { ...NOTICE, summary: APPROVAL_SUMMARY(extra.as) })
+          assert.deepEqual(req.source, { ...NOTICE, summary: APPROVAL_SUMMARY(extra.as), author: await sessionAuthor(host, AUTHOR_KIND.approval, x) })
         } else assert.equal(req.block.fields.call_was_to_tool, undefined)
         assert.deepEqual((await resultOfCall(host, fb, callId)).json, { ok: false, code: APR_CODE.incomplete })
         await settledIdle(host, fb)

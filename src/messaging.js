@@ -40,6 +40,7 @@ import { WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_
 import { AuditLog } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, rootSessionOf } from './session-info.js'
+import { sessionAuthor } from './author.js'
 import { byteLength } from './text.js'
 import { digestOf } from './digest.js'
 import { diagnosticOf } from './errors.js'
@@ -141,7 +142,7 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
           // (call_0, ...), so the key also binds the calling session, the size of its log at
           // the call (a later turn has a longer log) and the text (review M2).
           dedupeKey: [caller, exec.callId, logLengthAtCall(exec), digestOf(message)].join(':'),
-          message: messageOf(TEXT.fromSession(info, caller === sender ? undefined : caller, message), { ...SOURCE.relay, senderSessionId: sender }),
+          message: messageOf(TEXT.fromSession(info, caller === sender ? undefined : caller, message), { ...SOURCE.relay, senderSessionId: sender, author: sessionAuthor(INTAKE_KIND.session, info) }),
         })
       } catch (error) {
         if (error instanceof IntakeError) return refused(error.code)
@@ -168,7 +169,7 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
         sourceIdentity: SOURCE_ID.user + sessionId,
         // Each forward is its own input, even of the same session.
         dedupeKey: randomUUID(),
-        message: messageOf(TEXT.forwarded(info, note), { ...SOURCE.notice, summary: boundContextSummary(TEXT.forwardSummary) }),
+        message: messageOf(TEXT.forwarded(info, note), { ...SOURCE.notice, summary: boundContextSummary(TEXT.forwardSummary), author: sessionAuthor(INTAKE_KIND.user, info) }),
       })
     },
   }

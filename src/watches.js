@@ -37,6 +37,7 @@ import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { AGENT_IDLE, EVENT, INTAKE_KIND, SOURCE, WATCH, WATCH_BY, WATCH_CONDITION, WATCH_ERROR, WATCH_IGNORED_REASONS, WATCH_MODE, WATCH_STATUS } from './constants.js'
 import { describeSession, lastAnswerExcerpt, readSessionMessages } from './session-info.js'
+import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
 
@@ -363,7 +364,7 @@ export class Watches {
         kind: INTAKE_KIND.watch,
         sourceIdentity: WATCH.sourcePrefix + id,
         dedupeKey: `watch:${id}:${seq}`,
-        message: createUserMessage({ content: [{ type: 'text', text: TEXT.notice(info, reason, { id, ...record }) }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(reason)) } }),
+        message: createUserMessage({ content: [{ type: 'text', text: TEXT.notice(info, reason, { id, ...record }) }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(reason)), author: sessionAuthor(INTAKE_KIND.watch, info) } }),
       })
     } catch (error) {
       this.#logger.warn('watch %s notice not published (%s)', id, diagnosticOf(error))

@@ -9,6 +9,10 @@
  * On at first start (DESIGN §4): compaction, web search and page opening, time awareness and
  * reminders. Ask-user, skills and the read-only shell are in the catalog but start off.
  *
+ * The Messenger look (DESIGN §10c) is Fishball's own built-in, not a DSH package: it has no rows,
+ * so turning it on or off mounts nothing; Fishball's browser half follows its on/off choice
+ * (the `look` snapshot field, MESSENGER.pluginKey). On at first start, like the defaults above.
+ *
  * Not offered: DSH's MCP client. Each MCP server is one row with its own server config, which
  * an on/off catalog cannot supply; MCP servers configured in the profile are host rows, so
  * their tools reach Fishball as profile tools (checked or allowed like any other).
@@ -55,4 +59,5 @@ export const BUILTIN_PLUGINS = Object.freeze([
     { id: 'tool-bash', name: '@deepseek-ai/dsh-tool-bash', disabled: IS_WINDOWS },
     { id: 'tool-pwsh', name: '@deepseek-ai/dsh-tool-pwsh', disabled: !IS_WINDOWS },
   ]),
+  builtin('messenger', 'Messenger look', true, []),
 ])

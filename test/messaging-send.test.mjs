@@ -19,8 +19,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, ELLIPSIS, FORWARD_ANSWER_MAX_BYTES, FORWARD_HEADER, FORWARD_SUMMARY, IDENTITY, LIMITS, NOTE_PREFIX, NO_NOTE, NOTICE, P5_CODE, PRESET, STATE_KEYS, STATUS, STORE } from './support/constants.mjs'
-import { HOOK, T, fishballMessages, intakeNow, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
+import { API, AUTHOR_KIND, ELLIPSIS, FORWARD_ANSWER_MAX_BYTES, FORWARD_HEADER, FORWARD_SUMMARY, IDENTITY, LIMITS, NOTE_PREFIX, NO_NOTE, NOTICE, P5_CODE, PRESET, STATE_KEYS, STATUS, STORE } from './support/constants.mjs'
+import { HOOK, T, fishballMessages, sessionAuthor, intakeNow, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, until } from './support/host.mjs'
 
 let seq = 0
@@ -57,7 +57,8 @@ describe('P5 Send to Fishball', () => {
     assert.ok(await untilSeen(host, fb, last), 'Fishball read the forward')
     const got = await forwardsWith(last)
     assert.equal(got.length, 1)
-    assert.deepEqual(got[0].source, { ...NOTICE, summary: FORWARD_SUMMARY })
+    // P11 R4: the forward's author is the user, named after the forwarded session.
+    assert.deepEqual(got[0].source, { ...NOTICE, summary: FORWARD_SUMMARY, author: await sessionAuthor(host, AUTHOR_KIND.user, target) })
     const text = got[0].text
     assert.ok(text.startsWith(FORWARD_HEADER), text.slice(0, 200))
     assert.ok(text.includes(NOTE_PREFIX + JSON.stringify(note)), 'the note, JSON-quoted: ' + text.slice(0, 400))

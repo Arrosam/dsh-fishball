@@ -413,6 +413,27 @@ export const SOURCE = Object.freeze({
 })
 
 /**
+ * The Messenger look (DESIGN §10c): a Fishball built-in with no rows. Its package ships inside
+ * dsh-fishball, and this row serves its browser file, because DSH serves browser halves only
+ * for rows its host Loader lists (spike S24).
+ */
+export const MESSENGER = Object.freeze({
+  /** Catalog key (src/builtins.js builds it from the built-in prefix and 'messenger'). */
+  pluginKey: 'builtin:messenger',
+  /** The browser file, relative to the dsh-fishball package folder. */
+  clientFile: 'packages/messenger/client.js',
+})
+
+/**
+ * The sender each intake message records in its source (`source.author`, DESIGN §10c), read by
+ * the Messenger look. The name is the session or source title at arrival.
+ */
+export const AUTHOR = Object.freeze({
+  /** UTF-8 bytes of a name: a plugin source's title is bounded the same, so it always fits whole. */
+  nameBytes: SOURCES.sourceTitleBytes,
+})
+
+/**
  * Reading another session for a notice (src/session-info.js). The excerpt bound keeps a
  * notice small however long the other session's last answer was.
  */
@@ -472,6 +493,8 @@ export const API = Object.freeze({
   read: '/api/fishball/read',
   /** POST { style }: which brand icon the sidebar shows (BRAND_STYLE). */
   brand: '/api/fishball/brand',
+  /** GET: the Messenger look's browser file (DESIGN §10c; Fishball's browser half loads it). */
+  messengerClient: '/api/fishball/messenger/client.js',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -490,6 +513,8 @@ export const API_CODE = Object.freeze({
 export const RESPONSE_HEADERS = Object.freeze({
   json: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
   eventStream: Object.freeze({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive' }),
+  // no-store: the file changes with the installed dsh-fishball, so each page load fetches the installed copy.
+  javascript: Object.freeze({ 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' }),
 })
 
 /**

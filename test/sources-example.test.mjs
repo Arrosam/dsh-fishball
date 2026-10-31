@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { API, EXAMPLE, NOTICE, PLUGIN_INTAKE_KIND, SOURCE_IDENTITY, SOURCE_SUMMARY, STATUS } from './support/constants.mjs'
-import { HOOK, T, intakeNow, pluginNotices, settledIdle, sourcesNow, untilSeen, untrustedBlock } from './support/expect.mjs'
+import { HOOK, T, intakeNow, pluginAuthor, pluginNotices, settledIdle, sourcesNow, untilSeen, untrustedBlock } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
 const LONG = { timeout: 120000 }
@@ -74,7 +74,8 @@ describe('P8 R5: the example plugin enabled for everyone', () => {
     assert.deepEqual(await noteCounts(host, fb), NOTES.map(() => 1))
     for (const n of NOTES) {
       const m = (await pluginNotices(host, fb, n.body))[0]
-      assert.deepEqual(m.source, { ...NOTICE, summary: SOURCE_SUMMARY(EXAMPLE.source.title) })
+      // P11 R4: the example's source is the author.
+      assert.deepEqual(m.source, { ...NOTICE, summary: SOURCE_SUMMARY(EXAMPLE.source.title), author: pluginAuthor(EXAMPLE.source.title, IDENT) })
       const block = untrustedBlock(m.text)
       assert.equal(block.fields.source, IDENT)
       assert.equal(block.fields.title, n.title)
