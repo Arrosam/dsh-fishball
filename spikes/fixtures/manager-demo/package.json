@@ -1,0 +1,9 @@
+{
+  "name": "fishball-spike-manager-demo",
+  "version": "1.2.0",
+  "description": "Demo plugin for the Fishball plugin manager: one setting of each kind.",
+  "type": "module",
+  "icon": "./icon.svg",
+  "exports": { ".": "./index.js", "./package.json": "./package.json", "./icon.svg": "./icon.svg" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}

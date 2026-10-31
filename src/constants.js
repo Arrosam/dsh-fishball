@@ -165,7 +165,7 @@ export const CHANGED_BY = Object.freeze({ fishball: 'fishball', user: 'user' })
 export const PLUGIN_CHANGE_OK = 'ok'
 
 /** Plugin change audit actions. */
-export const PLUGIN_ACTION = Object.freeze({ on: 'on', off: 'off', add: 'add', remove: 'remove' })
+export const PLUGIN_ACTION = Object.freeze({ on: 'on', off: 'off', add: 'add', remove: 'remove', settings: 'settings' })
 
 /** Why a tool is not shown to Fishball, or that it is (list_plugins, settings). */
 export const TOOL_STATUS = Object.freeze({
@@ -194,6 +194,58 @@ export const PLUGIN_ERROR = Object.freeze({
   removing: 'removing',
   /** Uninstalling a Fishball-installed plugin failed; it stays installed and off. */
   removeFailed: 'remove-failed',
+  /** Settings (DESIGN §10d): the plugin is on in DSH, so its settings are DSH's. */
+  sharedWithDsh: 'shared-with-dsh',
+  /** Settings: the plugin has no row of that id. */
+  unknownRow: 'unknown-row',
+  /** Settings: the row has no schema, or is the Compaction engine row (set by the context window). */
+  noSettings: 'no-settings',
+  /** Settings: Fishball may not see or set a secret field; only you do (Q-manager-secrets). */
+  secretField: 'secret-field',
+  /** Settings: the new complete config fails the row's schema. */
+  invalidSettings: 'invalid',
+  /** Settings: every value equals the current one. */
+  noChange: 'no-change',
+})
+
+/**
+ * Where a catalog plugin stands in DSH (snapshot `dsh`, DESIGN §10d): on for every session,
+ * installed but off, a DSH capability package Fishball mounts itself, or not in DSH at all.
+ */
+export const PLUGIN_DSH = Object.freeze({ on: 'on', off: 'off', builtin: 'builtin', none: 'none' })
+
+/** Where a catalog plugin runs, from both sides' desired state (snapshot `runs`, DESIGN §10d). */
+export const PLUGIN_RUNS = Object.freeze({ everywhere: 'everywhere', dsh: 'dsh', fishball: 'fishball', nowhere: 'nowhere' })
+
+/** A plugin's Fishball settings (snapshot `settings`, DESIGN §10d). */
+export const PLUGIN_SETTINGS_STATE = Object.freeze({ none: 'none', default: 'default', changed: 'changed', unused: 'unused' })
+
+/** The plugin manager's bounds and fixed strings (DESIGN §10d). */
+export const PLUGIN_MANAGER = Object.freeze({
+  /** History entries the plugin page shows. */
+  historyEntries: 10,
+  /** Each old and new value in set_plugin_settings' prompt is cut to this many bytes. */
+  promptValueBytes: 200,
+  /** Query parameter naming the plugin on the GET routes. */
+  pluginParam: 'plugin',
+  /** Schemastery's error path prefix (`$.a.b expected …`) and how its segments are written. */
+  errorPath: /^\$((?:\.[^\s.[\]]+|\[\d+\])*)/,
+  errorSegment: /\.([^\s.[\]]+)|\[(\d+)\]/g,
+  /** A data URL icon (DSH's metadata icons are base64 data URLs). */
+  dataUrl: /^data:([^;,]+);base64,(.*)$/s,
+  /** The settings role DSH's settings forms treat as secret. */
+  secretRole: 'secret',
+  /** The global symbol Schemastery sets on every schema (schemastery lib: Schema.prototype[kSchema]). */
+  schemaMark: Symbol.for('schemastery'),
+  /**
+   * Schemastery's error messages end with the rejected data (`… but got ${data}`, unions and
+   * intersections as JSON), which can hold a secret; everything from this marker on is dropped.
+   */
+  errorDataMarker: ' but got ',
+  /** Keys a stored value may never carry: they would change an object's prototype when merged. */
+  unsafeKeys: Object.freeze(['__proto__', 'constructor', 'prototype']),
+  /** Why a row has no usable settings form (detail `rows[].error` when there is no schema message). */
+  rowError: Object.freeze({ moduleUnavailable: 'module-unavailable', configUnresolved: 'config-unresolved', schemaUnreadable: 'schema-unreadable' }),
 })
 
 /**
@@ -495,8 +547,14 @@ export const API = Object.freeze({
   brand: '/api/fishball/brand',
   /** GET: the Messenger look's browser file (DESIGN §10c; Fishball's browser half loads it). */
   messengerClient: '/api/fishball/messenger/client.js',
+  /** GET ?plugin=: one plugin's page data (rows, settings form, history; DESIGN §10d). */
+  pluginsDetail: '/api/fishball/plugins/detail',
+  /** GET ?plugin=: one plugin's icon image. */
+  pluginsIcon: '/api/fishball/plugins/icon',
+  /** POST { plugin, row, values?, reset? }: your settings for a plugin Fishball runs itself. */
+  pluginsSettings: '/api/fishball/plugins/settings',
 })
-export const HTTP = Object.freeze({ ok: 200, badRequest: 400, conflict: 409, serverError: 500 })
+export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
 export const REQUEST_BODY_BUFFERED = 'buffered'
 export const API_CODE = Object.freeze({
@@ -508,6 +566,12 @@ export const API_CODE = Object.freeze({
   refused: 'refused',
   /** No assistant lifecycle runs: before the store opens, or after a core failure. */
   unavailable: 'unavailable',
+  /** Settings (DESIGN §10d): the plugin is on in DSH; its settings are DSH's. */
+  sharedWithDsh: 'shared-with-dsh',
+  /** Settings: the row has no schema, or cannot be edited here. */
+  noSettings: 'no-settings',
+  /** Settings: the new config fails the row's schema (400, with `path`). */
+  invalid: 'invalid',
   failed: 'failed',
 })
 export const RESPONSE_HEADERS = Object.freeze({
@@ -515,6 +579,9 @@ export const RESPONSE_HEADERS = Object.freeze({
   eventStream: Object.freeze({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive' }),
   // no-store: the file changes with the installed dsh-fishball, so each page load fetches the installed copy.
   javascript: Object.freeze({ 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' }),
+  // The icon route sets the image's own content type; no-store, as an icon changes with its package.
+  // An SVG opened on its own runs no script and no other content (sandbox, nosniff; review L6).
+  image: Object.freeze({ 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-security-policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'" }),
 })
 
 /**

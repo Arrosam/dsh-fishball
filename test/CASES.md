@@ -1,4 +1,4 @@
-# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 + unread-replies + plugin-statuses black-box test catalogue
+# Fishball P2 + P3 + P4 + P5 + P6 + P7 + P8 + unread-replies + plugin-statuses + P11 + P12 black-box test catalogue
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
@@ -997,3 +997,140 @@ R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact
 - **FIR-01** expects `author: sessionAuthor(watch, sid)`.
 - Knock-ons that need no edit: FIR-02 (it depends on FIR-01) and APR-15, the first APR-16 row and APR-18 (they failed only because the failing APR-14 row left a request pending).
 - OUT's two relay assertions (messaging-outbound) are unchanged. They cover Fishball's messages to other sessions, which R4 leaves out of scope.
+
+## P12 cases (plugin manager, revision 10; DESIGN §10d, §13c S28-S30, §14 "Plugin manager")
+
+**Requirement summary.** Every snapshot catalog entry gains `dsh` (profile→`on`, fishball-only→`off`, built-in→`builtin`, installed in Fishball only→`none`), `runs` from the desired states (a profile plugin `everywhere` when on in Fishball, else `dsh`; every other kind `fishball` when on, else `nowhere`), `packageName` and `version` (null for built-ins or unknown), `description` (the package's own, or null), `meta` (DSH's localized `title`/`description`, or null), `hasIcon`, and `settings` (`unused` stored values of a plugin on in DSH, `none` on in DSH with nothing stored or no rows, `changed`, `default`). Only plugins whose rows run in Fishball's private tree have settings; a plugin on in DSH is shared and refuses them; the Compaction engine row has no form. Stored values per row live in table `plugin_settings` of domain `fishball`, never in the profile. A save deep-merges (objects merge, arrays and other values replace), then removes `reset` paths (`[]` removes all), deletes an empty record, and checks the complete config (patch config plus your values) against the row's schema: invalid → the first failing field's path. Changes apply at the next idle phase: an ordinary field restarts only that row, a `.volatile()` field reaches the plugin without a restart, a row that fails to mount turns the plugin off with `row-failed` and keeps the stored values. Secrets never leave the Host. Routes: GET `detail` (`{ok, detail:{plugin, shared, settings, rows, history}}`, 400 `bad-body` without plugin, 404 `unknown`), GET `icon` (the image, or 404 `unknown`), POST `settings` (`{plugin, row, values?, reset?}`; 200 with the state, 400 `bad-body`, 400 `invalid` with `path`, 409 `unknown`/`shared-with-dsh`/`no-settings`). Tools: `get_plugin_settings` (no prompt; refused `unknown-plugin`) and `set_plugin_settings` (refused before any prompt, in order: `unknown-plugin`, `shared-with-dsh`, `unknown-row`, `no-settings`, `secret-field`, `invalid` with `path`, `no-change`; otherwise DSH's normal prompt listing `path: old → new` with each value as JSON cut to 200 bytes and Fishball's reason; Allow once saves, Reject answers `rejected`). Every change is audited in `pluginChanges` with action `settings`. Nothing in the manager writes `package.json`, the lockfile or `cordis.patch.yml`.
+
+**Harness additions** (append-only, so the other files keep their catalog):
+- `FBTEST_MANAGER=1` (`MANAGER_ENV`) links three fixtures at a home's first boot ([support/fixtures](support/fixtures)): `fbtest-settings` (installed, not selected: fishball-only; version 1.2.3, a description and an SVG icon; row `fbtest-settings` whose `Config` has a string, a natural number 1..10, a boolean, a choice of two constants, a `role('secret')` string the patch sets, a `.volatile()` string, a nested object, a list of text, a list of objects a group `auth` with a plain `user` and a secret `key` the patch also sets, and a list of objects `accounts` whose items hold a secret the patch sets; row `fbtest-settings-side` with no `Config`; a greeting of `boom` makes apply throw), `fbtest-settings-dsh` (selected: on in DSH, with a `Config`, no description, no icon) `fbtest-settings-bad` (fishball-only; its patch config misses a required field) and `fbtest-settings-leak` (fishball-only; its patch gives the secret number `pin` a string, so the raw schema error would repeat the secret after " but got ").
+- Each fixture row's apply records its mounted entry id and the config it received (volatile fields read through their getter, as S30 did) in the worker's store (`settingsRow`, `plainConfig` in [support/fixture-tools.mjs](support/fixture-tools.mjs)). Private-tree rows are told apart by their documented `fbo-` prefix (§4 "Row ids").
+- New worker operations: `settingsEvents`, `settingsLive` (the latest apply's config read now) and `setBundleEnabled` (DSH's plugin manager, your own move on DSH's Installed tab). `bootLive(home, {env})` passes extra environment.
+- New helpers in [support/expect.mjs](support/expect.mjs): `Schema` (DSH's Schemastery), `expectedDsh`/`expectedRuns` (the decision tables), `detailOf`, `getIcon`, `saveSettings`, `userOf`, `valueOf`, `storedRecord`, `assertNoSecret` (five sentinels: the patch's top-level, nested, list and error secrets, and yours), `assertCutError`, `withoutSecrets`, `settingsAudit`, `privateApplies`, `untilApply`, `promptLine`, `quiet`.
+- The scripted approver can hold a `set_plugin_settings` prompt open, and `holdNext` then holds Fishball's next model request, so a test can look at the state after Allow once while Fishball's turn is still running.
+
+### [manager-catalog.test.mjs](manager-catalog.test.mjs): snapshot fields
+
+| id | technique | expected result |
+|---|---|---|
+| MCAT-01 | EP | every entry has 20 keys (`PLUGIN_KEYS`); `dsh`, `runs`, `settings` from their enums; `packageName`/`version`/`description` string or null; `meta` null or `{title?, description?}` as DSH's LocalizedText (A115); `hasIcon` boolean |
+| MCAT-02 | DT (kind × on) | for every entry, `dsh` from its kind and `runs` from kind and on |
+| MCAT-03 ×3 | ST off→on→off (user route) | fbtest-settings-dsh dsh→everywhere→dsh; fbtest-settings and builtin:ask-user nowhere→fishball→nowhere |
+| MCAT-04 | EP (built-in) | `packageName` and `version` null; `dsh` builtin |
+| MCAT-05 | EP | fbtest-settings: its name, 1.2.3, its description, hasIcon true; fbtest-settings-dsh: its name, 0.0.1, description null, hasIcon false |
+| MCAT-06 | DT (settings state) | fbtest-settings-dsh `none`; builtin:messenger `none`; builtin:time and fbtest-settings `default`; a save → `changed`; reset all → `default` |
+| MCAT-07 | EP (secret) | after you set a secret: neither secret in the route's answer, GET state, the SSE frames or list_plugins |
+| MCAT-08 | EP (installed in Fishball only) | after add_plugin (Allow once): `dsh` none, `runs` fishball, packageName fbtest-added, version 0.0.1, settings default; off → nowhere |
+| MCAT-09 | EP | package.json, cordis.patch.yml and lockfile byte-identical |
+
+### [manager-detail.test.mjs](manager-detail.test.mjs): GET detail and GET icon
+
+| id | technique | expected result |
+|---|---|---|
+| DET-01 | EP | 200 `{ok:true, detail}` with the 5 keys; rows `[fbtest-settings, fbtest-settings-side]` in patch order (A124), each with the 9 keys; module names the package |
+| DET-02 | EP (row with a schema) | `schema` rebuilds with `new Schema(json)`, has the 11 fields and resolves `base`; `base` = the patch config resolved with every secret (token, auth.key, accounts[0].secret) removed (A125); `user` {}; `value` = base; `secrets` [{accounts.0.secret}, {auth.key}, {token}], each set; `error` null; `editable` true |
+| DET-03 | EP (no schema) | `schema` null, `editable` false, `error` null |
+| DET-04 | EP (secret) | neither secret in the answer, before or after you set one; `token` absent from base, user and value; still `set` |
+| DET-05 | EP | reading an off plugin's detail (fbtest-settings, fbtest-settings-bad) records no apply; still off and unapplied |
+| DET-06 | DT (on in DSH) | shared true, settings none, every row editable false |
+| DET-07 | DT (Compaction engine row) | builtin:compaction lists compaction-basic with editable false; shared false |
+| DET-08 | EP (no rows) | builtin:messenger: rows [], settings none |
+| DET-09 | EP (invalid patch config) | error a non-empty string; schema present; editable true |
+| DET-10 | BVA (0, 9, 10, 11 changes) | history lengths 0, 9, 10, 10; keys {action, by, at, outcome}; newest first; by user; outcome ok (A122); the 11th drops the oldest |
+| DET-11 ×3 | EP | no query, a wrong parameter name: 400 bad-body; an empty plugin: 400 bad-body or 404 unknown (A117) |
+| DET-12 ×3 | EP | unknown key, dsh-fishball, wrong case: 404 unknown |
+| DET-13 | DT (icon, no icon, unknown) | fbtest-settings: 200 `image/svg+xml` with the fixture's file; fbtest-settings-dsh and an unknown key: 404 unknown (A123) |
+| DET-14 | EP (no cookie) | detail and icon not 200, no secret |
+| DET-15 | EP | profile files byte-identical |
+| DET-16 | EP (error with rejected secret data) | fbtest-settings-leak: `rows[].error` a non-empty message without "but got" or the secret; the whole answer carries neither |
+
+### [manager-settings-route.test.mjs](manager-settings-route.test.mjs): POST settings (one host, in order; fbtest-settings and fbtest-only on)
+
+| id | technique | expected result |
+|---|---|---|
+| SET-01 ×16 | EP/BVA (body shapes) | invalid JSON, array, {}, plugin or row missing or a number, neither values nor reset, values null/array/string/number, reset an object/strings/number segment/null: 400 bad-body; nothing stored |
+| SET-02 ×5 | EP | unknown plugin, dsh-fishball, unknown row, another plugin's row, builtin:messenger: 409 unknown |
+| SET-03 ×2 | EP (on in DSH) | fbtest-settings-dsh, fbtest-tools: 409 shared-with-dsh; nothing stored; settings stays none |
+| SET-04 ×2 | EP | the row without a schema, the Compaction engine row: 409 no-settings |
+| SET-05 | ST idle default→changed | 200 `{ok:true, state}` with settings changed; user {limit:7}; the row's apply gets 7; the side row and fbtest-only are not restarted; one audit `settings`/user/ok; the stored record has the row's values and changedBy user |
+| SET-06 ×9 | BVA (1, 10 valid; 0, 11 invalid) + EP | 1, 10: 200; 0, 11, 2.5, "many": 400 invalid path [limit]; mode, nested.b, enabled: their paths; stored values unchanged |
+| SET-06b | EP (rejected data) | invalid limit "<rejected>": 400 [limit] and the answer lacks the value; fbtest-settings-leak {note:2}: 400 [pin], no secret, no "but got" |
+| SET-07 | EP | nested.a then nested.b both stored; tags [x,y,z] then [q] → [q] |
+| SET-08 | ST reset path | reset nested.a → value x, sibling kept; reset greeting → hello (the patch's, not the schema's hi), received by the plugin |
+| SET-09 | DT (values + reset) | user has limit 4 and no greeting |
+| SET-10 | ST changed→default (reset []) | user {}; value = base; settings default; record deleted; the plugin receives the base config and the patch secret |
+| SET-11 ×2 | BVA (empty) | `{values:{}}` and `{reset:[]}`: 200, nothing stored, no audit entry (A121) |
+| SET-12 | EP (secret) | your secret: 200; no secret in the answer, detail or state; set; the plugin receives it; reset → the patch's again |
+| SET-13 | ST (mid-turn) | saved at once; not applied while the turn is held; applied after it ends |
+| SET-13b | ST (mid-turn save, then a listing mount) | save {limit:5} while Fishball is held; Fishball's set_plugin_enabled then mounts fbtest-only-b to list its tool (prompt held): the settings row never gets 5 mid-turn; after Reject and the turn end it does; fbtest-only-b stays off |
+| SET-14 | EP (volatile) | the plugin's live config shows two; no new apply of either row |
+| SET-15 | ST on→off row-failed | greeting boom: off with lastError row-failed, value kept; reset and on again → mounted with hello |
+| SET-16a | ST (invalid patch config) | {size:3}: 400 invalid [name]; nothing stored |
+| SET-16b | ST | {name:n}: 200, error null; then {size:3}: 200 |
+| SET-16c | ST (a reset that leaves values) | reset [name] leaves {size:3}: 400 invalid [name]; values kept |
+| SET-16d | ST (resets that leave no values) | reset [name],[size]: 200; user {}; the plugin's own error again; record deleted (A118) |
+| SET-16e | ST (reset []) | {name:m} then reset []: 200; user {}; error again |
+| SET-17 | EP (no cookie; foreign Origin with the cookie) | not 200; nothing stored |
+| SET-19 | EP (no-change saves) | with {limit:7} stored: {limit:7}, a reset of an unset field, and both together: 200; no audit entry; the stored record identical, changedAt included (A128) |
+| SET-18 | EP (afterEach) | profile files byte-identical after every case |
+
+### [manager-settings-tools.test.mjs](manager-settings-tools.test.mjs): get_plugin_settings and set_plugin_settings (one host, in order; your secret set first)
+
+| id | technique | expected result |
+|---|---|---|
+| GPS-01 | EP | no prompt; `{ok:true, plugin, shared:false, rows:[main only]}`; every listed path; non-secret fields have exactly {path, kind, description, pluginValue, value, changed, secret}, and `mode` (a fixed list) also `choices` = [fast, slow] (A120); unchanged; plugin values from the patch |
+| GPS-02 | EP (secret, top-level, nested, in a list) | token and auth.key: exactly {path, kind, description, secret:true, set:true, changed}; other fields secret false (accounts not asserted, A127); accounts, when shown, is [{name:a1}]; auth.user plain; no secret in the result |
+| GPS-07 | EP (error with rejected secret data) | fbtest-settings-leak: the row's error without "but got" or the secret; no secret in the result |
+| GPS-03 | EP | unknown plugin: `{ok:false, code:'unknown-plugin'}`, no prompt |
+| GPS-04 | EP (on in DSH) | `{ok:true, shared:true, rows:[]}` (A119) |
+| GPS-05 | EP | compaction-basic not among the rows |
+| GPS-06 | EP | fbtest-settings-bad: error a non-empty string |
+| SPS-01 ×20 | DT (refusal order) | each row also breaks every later rule and answers the earliest code: unknown-plugin; shared-with-dsh; unknown-row (also for builtin:messenger); no-settings (side row, Compaction engine); secret-field (with an invalid value; a cleared secret; a nested secret with an invalid value; a nested secret beside a changed sibling; a list of objects holding secrets, with and without them; the parent object of a secret replaced; a path under a secret); invalid [limit], [limit] with rejected data, [nested, b] (with an unchanged field), [name] (invalid patch), [pin] (invalid patch holding a secret); no-change. No refusal repeats rejected data or "but got". The approver would Allow, yet no prompt is raised; values, audit and the plugin unchanged; no secret echoed |
+| SPS-02 | ST (prompt open) | stored values unchanged and no audit while the prompt waits |
+| SPS-03 | DT (Reject) | `rejected`; unchanged; never applied; one audit `settings`/fishball/rejected |
+| SPS-04 | EP (prompt text) | toolName set_plugin_settings; names fbtest-settings and its row; `limit: 3 → 8` and `nested.a: "x" → "z"`; Fishball's reason; no secret |
+| SPS-05 | DT (Allow once) + ST (mid-turn) | `{ok:true, plugin, row, changed:[limit, nested.a], note}`; saved at once; not applied while Fishball's next request is held; applied after the turn with your secret kept; one audit `settings`/fishball/ok; stored changedBy fishball |
+| SPS-06 | EP | limit changed true, value 8, pluginValue 3; greeting unchanged |
+| SPS-07 ×2 | BVA (JSON 200 / 201 bytes) | 198 characters shown whole; 199 shown as a prefix of ≤ 200 bytes, never whole |
+| SPS-08 | EP | `{limit: 8}` after the save: no-change, no prompt |
+| SPS-10 | EP (beside a nested secret) | {auth:{user:v}}: one prompt with `auth.user: "u" → "v"`; no secret in the prompt or the answer |
+| SPS-11 | ST (your save while the prompt is open) | your {mode:slow} during the prompt and Fishball's {greeting:F} after Allow once are both stored |
+| SPS-12 | ST (re-check at save time) | {name:n} stored; Fishball proposes {size:5}; you reset all during the prompt; Allow once answers invalid [name]; nothing saved |
+| SPS-09 | EP (afterEach) | profile files byte-identical after every case |
+
+### [manager-stale.test.mjs](manager-stale.test.mjs): Q-manager-stale and restart (one home, in order)
+
+| id | technique | expected result |
+|---|---|---|
+| STL-01 | ST default→changed | on for Fishball, {limit:6} saved: settings changed, the private row receives 6 |
+| STL-02 | ST fishball-only→profile (DSH's setBundleEnabled) | kind profile, dsh on, settings unused; detail shared, unused, user {limit:6} kept, nothing editable; DSH's own row gets 3, never 6 (checked when DSH applies the move live, A126); no private mount |
+| STL-03 | EP (shared) | route 409 shared-with-dsh; tool shared-with-dsh with no prompt; values kept; profile unchanged by these actions |
+| STL-04 | ST profile→fishball-only | kind fishball-only, settings changed, user {limit:6}; the private row receives 6 again |
+| STL-05 | ST restart | settings changed, user {limit:6}; the private row receives 6 after the restart |
+
+### Browser behaviour (checked live, not by this suite)
+
+The Fishball tab, the plugin page and settings form, the tag and switch on DSH's bundle pages and the summary line on Fishball's settings page are browser-only (§10d "Where it appears", "Look", "The list", "The plugin page"). They are checked in a real browser against DSH's Installed tab in light and dark, as the P12 exit says.
+
+### Ambiguities (P12)
+
+- **A115. "DSH's localized title and description".** Read as DSH's `LocalizedText`: a string, or translations by language with a required `en` string. The browser picks the UI language (§10d "The list"). MCAT-01 accepts both forms.
+- **A116. list_plugins carries the new fields.** §10d names only the snapshot. PHT-01 (P3) requires the snapshot catalog to equal list_plugins, and `PLUGIN_KEYS` is shared, so CAT-02 now also expects the 20 keys from list_plugins.
+- **A117. An empty `plugin` query.** "Without plugin" clearly covers a missing parameter. An empty value is accepted as either 400 bad-body or 404 unknown.
+- **A118. Resets on a row whose own patch config is invalid (decided, now in DESIGN §10d).** Removing all of a row's values is never refused, whether by `reset [[]]` or by resets that leave the row with no values (SET-16d/e). Any save that leaves values stored is still checked and refused 400 invalid with the path (SET-16a/c).
+- **A119. get_plugin_settings for a plugin on in DSH.** It is refused only for an unknown plugin and lists "the rows with a schema that can be edited", so a shared plugin answers `{ok:true, shared:true, rows:[]}`.
+- **A120. Exact field keys (decided, now in DESIGN §10d).** GPS-01/02 expect exactly `{path, kind, description, pluginValue, value, changed, secret}`, plus `choices` on a field with a fixed list of values and on no other field; a secret field has `set` instead of the two values. Any other extra key fails.
+- **A121. Empty `values` and `reset`.** `{values:{}}` is "a plain object" and `{reset:[]}` "an array of paths", so both are valid bodies that change nothing (200).
+- **A122. The outcome of a change that went through.** §10d names only `rejected`. Earlier plugin-change audits record `ok`, which DET-10 and SPS-05 expect.
+- **A123. The icon of an unknown plugin.** §10d names 404 `unknown` for a plugin without an icon; an unknown plugin is expected to answer the same.
+- **A124. Row ids.** `row` in the detail, the route, the tools and `plugin_settings` is the row's own id from the bundle patch, not the private tree's `fbo-` id.
+- **A125. Volatile and secret values in `base`.** `base`, `user` and `value` hold plain values: a `.volatile()` field shows its value (`live: 'one'`), and a secret field's key is absent (DSH's `redactSecrets` removes it).
+- **A127. A list of objects holding secrets in get_plugin_settings.** Whether `accounts` is listed, and whether it is marked `secret`, is not specified. Only its value is checked: when shown, it carries no secret.
+- **A128. "A save that changes nothing".** Read as: the stored values after the merge and resets equal those before. Resetting a field that is not stored, or saving a value already stored, changes nothing. Saving a value equal to the plugin's own value when nothing is stored for it is not asserted.
+- **A126. Moving a plugin to DSH and back.** Done live through DSH's plugin manager (`setBundleEnabled`), as on DSH's Installed tab. The check that DSH's own row gets the plugin's value runs only when DSH reports the move applied live. After moving back, the plugin's stored on/off choice may mount it at once, so STL-04 turns it on only when it is off.
+
+### Cases changed by P12
+
+- **`PLUGIN_KEYS`** ([support/constants.mjs](support/constants.mjs)) gains `description`, `dsh`, `hasIcon`, `meta`, `packageName`, `runs`, `settings` and `version` (20 keys). This covers CAT-02, MSL's key checks and the plugin-statuses key check (A116).
+- **`FISHBALL_TOOLS`** gains `get_plugin_settings` and `set_plugin_settings`. CAT-01 then expects them only for Fishball, CAT-08 in its default request and CAT-09 not in the global list.
+- **The worker's `drive` results** leave out the replacements DSH's tool-result pruner appends: a `tool/result` right after a `compaction/prune` event is a shortened copy of an earlier result, not a result of the turn's calls (`dsh-compaction-tool-result-pruner`). With the new fields, list_plugins answers are larger. In plugins-toggle, Fishball's context reached the pruner during ONLY-04's list_plugins turn, and the old slice returned ten results, so the helper's "exactly one result" check failed. Call ids are not deduplicated, because MSG-07 reuses them on purpose. No assertion changed.

@@ -8,7 +8,8 @@
  * - src/plugin-catalog.js  Fishball's own plugin states and tool decisions
  * - src/plugin-defaults.js which DSH plugins keep the old default (others start off in Fishball)
  * - src/fishball-packages.js plugins installed in Fishball only (its own package folder)
- * - src/plugin-tools.js    list_plugins, set_plugin_enabled, add_plugin, remove_plugin
+ * - src/plugin-tools.js    list_plugins, set_plugin_enabled, add_plugin, remove_plugin, plugin settings tools
+ * - src/plugin-settings.js settings of the plugins Fishball runs itself (the plugin manager, DESIGN §10d)
  * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
@@ -25,7 +26,7 @@ import './src/tool-attribution.js'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PLUGIN_MANAGER } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -42,6 +43,7 @@ import { ApprovalBroker } from './src/approvals.js'
 import { SourceRegistry } from './src/sources.js'
 import { installRequester, registerPluginTools } from './src/plugin-tools.js'
 import { PluginDefaults } from './src/plugin-defaults.js'
+import { PluginSettings, SettingsError } from './src/plugin-settings.js'
 import { FishballPackages, PackageError } from './src/fishball-packages.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -78,7 +80,7 @@ export async function apply(ctx, config) {
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, installPlugin: unavailable, removeAllowance: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, installPlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -87,6 +89,9 @@ export async function apply(ctx, config) {
     removePlugin: (plugin) => commands.removePlugin(plugin),
     installPlugin: (spec) => commands.installPlugin(spec),
     removeAllowance: (toolKey) => commands.removeAllowance(toolKey),
+    pluginDetail: (plugin) => commands.pluginDetail(plugin),
+    pluginIcon: (plugin) => commands.pluginIcon(plugin),
+    saveSettings: (input) => commands.saveSettings(input),
     setContextWindow: (setting) => commands.setContextWindow(setting),
     send: (input) => commands.send(input),
     addWatch: (input) => commands.addWatch(input),
@@ -131,14 +136,27 @@ export async function apply(ctx, config) {
   const catalog = new PluginCatalog(ctx, store, logger, {
     readLimits: limits,
     mountRows: (rows) => composition.mountRows(rows),
-    adjustRows: (key, rows, purpose) => (key === CONTEXT.compactionPlugin ? contextWindow.compactionRows(rows, purpose) : rows),
+    // The context window sets the compaction row; then your plugin settings go on top (DESIGN §10d).
+    adjustRows: (key, rows, purpose) => settings.overlay(key, key === CONTEXT.compactionPlugin ? contextWindow.compactionRows(rows, purpose) : rows, purpose),
     // A DSH plugin just turned on for Fishball may bring unchecked tools Fishball must hear about (DESIGN §7).
-    onApplied: () => { contextWindow.confirmApplied(catalog.isRunning(CONTEXT.compactionPlugin)); afterApply() },
+    onApplied: () => { contextWindow.confirmApplied(catalog.isRunning(CONTEXT.compactionPlugin)); settings.confirmApplied(); afterApply() },
     pendingRowIds: () => composition.pendingRowIds(),
     ownsDefinition: (definition) => composition.ownsDefinition(definition),
     onChange: () => { composition.refreshMasks(); publish() },
     defaults,
     packages,
+    hasSettings: (key) => settings.has(key),
+  })
+  // Settings of the plugins Fishball runs in its private tree (DESIGN §10d).
+  const settings = new PluginSettings(store, {
+    rowsOf: (key) => catalog.settingsRows(key),
+    loadModule: (name) => composition.loadPluginModule(name),
+    resolveConfig: (config) => composition.resolveConfig(config),
+    // The context window owns the Compaction engine row's config (DESIGN §6): no second form.
+    isFixedRow: (key, rowId) => key === CONTEXT.compactionPlugin && rowId === CONTEXT.compactionRow,
+    onSaved: () => { publish(); void catalog.schedule() },
+    audit: (plugin, action, by, outcome) => catalog.audit(plugin, action, by, outcome),
+    logger,
   })
   try {
     await composition.mount()
@@ -162,6 +180,7 @@ export async function apply(ctx, config) {
     scope: composition.key,
     approval: ctx.approval,
     packages,
+    settings,
     logger,
   })
   // An uninstall a restart interrupted finishes now (its rows were not mounted at boot).
@@ -271,6 +290,39 @@ export async function apply(ctx, config) {
   commands.setContextWindow = (setting) => contextWindow.save(setting)
   commands.removeAllowance = async (toolKey) => {
     if (!(await catalog.removeAllowance(toolKey))) throw new LifecycleStateError(API_CODE.unknown)
+  }
+  /** A plugin the catalog knows (after a fresh listing), else the given refusal. */
+  const knownPlugin = async (plugin, status) => {
+    await catalog.refresh()
+    if (!catalog.has(plugin)) throw new LifecycleStateError(API_CODE.unknown, { status })
+  }
+  // The plugin page (DESIGN §10d): rows with their settings form, and the plugin's history.
+  commands.pluginDetail = async (plugin) => {
+    await knownPlugin(plugin, HTTP.notFound)
+    const { shared, rows } = await settings.describe(plugin)
+    return { plugin, shared, settings: catalog.settingsState(plugin), rows, history: catalog.history(plugin, PLUGIN_MANAGER.historyEntries) }
+  }
+  commands.pluginIcon = (plugin) => {
+    const icon = catalog.has(plugin) ? catalog.iconOf(plugin) : undefined
+    if (icon === undefined) throw new LifecycleStateError(API_CODE.unknown, { status: HTTP.notFound })
+    return icon
+  }
+  /** How the settings route answers each refusal (DESIGN §10d "Host API"). */
+  const SETTINGS_ANSWER = {
+    [PLUGIN_ERROR.unknownRow]: () => new LifecycleStateError(API_CODE.unknown),
+    [PLUGIN_ERROR.sharedWithDsh]: () => new LifecycleStateError(API_CODE.sharedWithDsh),
+    [PLUGIN_ERROR.noSettings]: () => new LifecycleStateError(API_CODE.noSettings),
+    [PLUGIN_ERROR.invalidSettings]: (error) => new LifecycleStateError(API_CODE.invalid, { status: HTTP.badRequest, fields: { path: error.path } }),
+  }
+  // Your own settings need no prompt: you are the one approving, and you may set secrets.
+  commands.saveSettings = async ({ plugin, row, values, reset }) => {
+    await knownPlugin(plugin)
+    try {
+      await settings.save(plugin, row, { values, reset }, { secrets: true }, CHANGED_BY.user)
+    } catch (error) {
+      if (error instanceof SettingsError && SETTINGS_ANSWER[error.code]) throw SETTINGS_ANSWER[error.code](error)
+      throw error
+    }
   }
 
   // Each time Fishball goes live: settle the intake queue (restart, adopt), then tell Fishball

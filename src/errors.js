@@ -8,10 +8,16 @@
  * the HTTP layer answers with (409).
  */
 export class LifecycleStateError extends Error {
-  /** @param code - API_CODE value naming why the request was refused. */
-  constructor(code) {
+  /**
+   * @param code - API_CODE value naming why the request was refused.
+   * @param options.status - HTTP status other than 409 (a 400 invalid setting, a 404 unknown plugin).
+   * @param options.fields - extra answer fields (the invalid setting's `path`).
+   */
+  constructor(code, { status, fields } = {}) {
     super(code)
     this.code = code
+    if (status !== undefined) this.status = status
+    if (fields !== undefined) this.fields = fields
   }
 }
 

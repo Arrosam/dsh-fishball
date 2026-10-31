@@ -1,0 +1,6 @@
+# P12: the patch gives a secret number field a string, so the schema's own error would repeat the secret
+# after " but got " (DESIGN §10d "Secrets and errors leaving the Host").
+- insert:
+    - id: fbtest-settings-leak
+      name: 'fbtest-settings-leak'
+      config: { pin: fbtest-secret-in-error-e61b }

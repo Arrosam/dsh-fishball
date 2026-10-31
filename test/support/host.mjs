@@ -140,8 +140,9 @@ export async function bootHost(home, { timeoutMs = MS.boot, env = {} } = {}) {
 }
 
 /** Boot and wait until Fishball reports "live" (its first-creation setup turn has ended). */
-export async function bootLive(home) {
-  const host = await bootHost(home)
+export async function bootLive(home, { env } = {}) {
+  // env (P12): extra worker environment, e.g. MANAGER_ENV to link the settings fixtures.
+  const host = await bootHost(home, { env })
   const state = await host.waitStatus(STATUS.live)
   return { host, state }
 }

@@ -17,19 +17,27 @@
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
+ * GET  plugins/detail?plugin= -> one plugin's page data (DESIGN §10d); 404 unknown
+ * GET  plugins/icon?plugin=   -> one plugin's icon image; 404 unknown when it has none
+ * POST plugins/settings       -> { plugin, row, values?, reset? } (your settings, DESIGN §10d);
+ *                                400 invalid with `path`; 409 unknown, shared-with-dsh, no-settings
  */
 import { isSettingInput } from './context-window.js'
-import { API, API_CODE, BRAND_STYLE, HTTP, HTTP_METHOD, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
+import { API, API_CODE, BRAND_STYLE, HTTP, HTTP_METHOD, PLUGIN_MANAGER, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
 import { LifecycleStateError } from './errors.js'
 
 const ACTIONS = new Set(Object.values(RECOVERY_ACTION))
 const BRAND_STYLES = new Set(Object.values(BRAND_STYLE))
 const json = (status, payload) => new Response(JSON.stringify(payload), { status, headers: RESPONSE_HEADERS.json })
+/** A refused command: 409 unless the error names another status, with its extra fields (an invalid setting's path). */
+const refusal = (error) => json(error.status ?? HTTP.conflict, { ok: false, code: error.code, ...error.fields })
 const frame = (payload) => `data: ${JSON.stringify(payload)}\n\n`
 
 const isRecord = (body) => body !== null && typeof body === 'object' && !Array.isArray(body)
 const isName = (value) => typeof value === 'string' && value.length > 0
 const isText = (value) => typeof value === 'string' && value.trim().length > 0
+/** Settings reset paths: an array of paths, each an array of field names (`[]` is the whole row). */
+const isPaths = (value) => Array.isArray(value) && value.every((path) => Array.isArray(path) && path.every(isName))
 
 /** Body readers: the validated command, or undefined for anything malformed. */
 const BODY = Object.freeze({
@@ -43,6 +51,11 @@ const BODY = Object.freeze({
   brand: (body) => (isRecord(body) && BRAND_STYLES.has(body.style) ? body.style : undefined),
   read: (body) => (isRecord(body) ? {} : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
+  settings: (body) => (isRecord(body) && isName(body.plugin) && isName(body.row)
+    && (body.values === undefined || isRecord(body.values)) && (body.reset === undefined || isPaths(body.reset))
+    && (body.values !== undefined || body.reset !== undefined)
+    ? { plugin: body.plugin, row: body.row, values: body.values, reset: body.reset }
+    : undefined),
   contextWindow: (body) => (isRecord(body) && isSettingInput(body.contextWindowTokens) && isSettingInput(body.maxOutputTokens)
     ? { contextWindowTokens: body.contextWindowTokens, maxOutputTokens: body.maxOutputTokens }
     : undefined),
@@ -53,8 +66,10 @@ const BODY = Object.freeze({
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin), installPlugin(spec),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
- *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript() }; the
- *   commands reject LifecycleStateError for a 409; messengerScript resolves the file's bytes.
+ *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript(),
+ *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }) }; the commands reject
+ *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
+ *   file's bytes; pluginIcon resolves the icon's data URL.
  */
 export function registerRoutes(ctx, state) {
   const streams = new Set()
@@ -99,9 +114,30 @@ export function registerRoutes(ctx, state) {
       await run(input)
       return json(HTTP.ok, { ok: true, state: state.snapshot() })
     } catch (error) {
-      if (error instanceof LifecycleStateError) return json(HTTP.conflict, { ok: false, code: error.code })
+      if (error instanceof LifecycleStateError) return refusal(error)
       return json(HTTP.serverError, { ok: false, code: API_CODE.failed })
     }
+  }
+
+  /**
+   * One GET for a named plugin (`?plugin=`): 400 bad-body without it; a LifecycleStateError
+   * answers its status (404 for an unknown plugin); anything else 500 `failed`.
+   * @param run - (plugin) => Promise<Response>.
+   */
+  const forPlugin = (run) => async (request) => {
+    const plugin = new URL(request.url).searchParams.get(PLUGIN_MANAGER.pluginParam)
+    if (!isName(plugin)) return json(HTTP.badRequest, { ok: false, code: API_CODE.badBody })
+    try { return await run(plugin) } catch (error) {
+      if (error instanceof LifecycleStateError) return refusal(error)
+      return json(HTTP.serverError, { ok: false, code: API_CODE.failed })
+    }
+  }
+
+  /** The plugin's icon: DSH's metadata gives a base64 data URL; anything else is not served. */
+  const icon = async (plugin) => {
+    const match = PLUGIN_MANAGER.dataUrl.exec(await state.pluginIcon(plugin))
+    if (match === null) return json(HTTP.notFound, { ok: false, code: API_CODE.unknown })
+    return new Response(Buffer.from(match[2], 'base64'), { status: HTTP.ok, headers: { ...RESPONSE_HEADERS.image, 'content-type': match[1] } })
   }
 
   /** The Messenger look's browser file; a read failure answers 500 `failed`. */
@@ -126,6 +162,9 @@ export function registerRoutes(ctx, state) {
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },
     { path: API.messengerClient, methods: [HTTP_METHOD.get], fetch: messengerScript },
+    { path: API.pluginsDetail, methods: [HTTP_METHOD.get], fetch: forPlugin(async (plugin) => json(HTTP.ok, { ok: true, detail: await state.pluginDetail(plugin) })) },
+    { path: API.pluginsIcon, methods: [HTTP_METHOD.get], fetch: forPlugin(icon) },
+    { path: API.pluginsSettings, methods: [HTTP_METHOD.post], fetch: command(BODY.settings, (input) => state.saveSettings(input)) },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)
