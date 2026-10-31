@@ -1,0 +1,35 @@
+{
+  "id": "S24-install",
+  "started": "2026-10-31T02:55:07.730Z",
+  "finished": "2026-10-31T02:55:22.004Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "home": "/Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s24-1793415307740",
+  "installResult": {
+    "restartReason": null,
+    "diagnostics": {
+      "code": "operation-error",
+      "diagnostic": "dsh: warning: 1 entry did not activate\nspike-messenger (fishball-spike-messenger): failed to import: Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'fishball-spike-messenger' imported from /Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s24-1793415307740/profiles/spike/"
+    }
+  },
+  "profileDependencies": [
+    "fishball-spike-main"
+  ],
+  "profileBundles": [
+    "fishball-spike-main"
+  ],
+  "messengerAtProfileRoot": false,
+  "messengerNested": false,
+  "messengerIsLink": false,
+  "liveAfterInstall": {
+    "messengerServed": false,
+    "mainServed": true,
+    "messengerRow": false
+  },
+  "privateTree": {
+    "rowApplied": false,
+    "served": false
+  },
+  "pass": null,
+  "next": "SPIKE_PHASE=restart SPIKE_REUSE_HOME=/Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s24-1793415307740"
+}

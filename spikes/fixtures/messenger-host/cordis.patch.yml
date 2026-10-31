@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-messenger-host
+      name: 'fishball-spike-messenger-host'
+      config: {}
