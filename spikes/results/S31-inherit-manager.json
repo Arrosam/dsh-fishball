@@ -1,0 +1,62 @@
+{
+  "id": "S31-inherit-manager",
+  "started": "2026-10-31T07:56:20.924Z",
+  "finished": "2026-10-31T07:56:26.041Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "hmr": true,
+  "proxyPerRead": true,
+  "scope": "isolate+extend",
+  "mounted": {
+    "subclass": true,
+    "dshServiceUnchanged": true,
+    "dshProfileDir": true,
+    "fishballProfileDir": true,
+    "hiddenFromGateway": true
+  },
+  "inspect": {
+    "status": "accepted",
+    "kind": "path",
+    "bundle": true,
+    "registry": null,
+    "name": "fishball-spike-manager-demo",
+    "version": "1.2.0",
+    "description": "Demo plugin for the Fishball plugin manager: one setting of each kind."
+  },
+  "install": {
+    "application": "applied",
+    "bundle": "fishball-spike-manager-demo",
+    "version": "1.2.0",
+    "changed": true
+  },
+  "folder": {
+    "dependency": "file:/Volumes/SSD1/GitHub/dsh-fishball/spikes/fixtures/manager-demo",
+    "bundles": [],
+    "copy": true
+  },
+  "events": {
+    "states": [
+      "installing",
+      "applying"
+    ],
+    "logLines": 6,
+    "logInFolder": true,
+    "changedEmitted": 1
+  },
+  "again": {
+    "application": "failed",
+    "error": "already-installed"
+  },
+  "notBundle": {
+    "application": "failed",
+    "error": "not-bundle",
+    "leftInFolder": false
+  },
+  "dshUntouched": {
+    "files": true,
+    "loader": true,
+    "serviceSame": true
+  },
+  "listBundlesStillDsh": true
+}

@@ -1134,3 +1134,49 @@ The Fishball tab, the plugin page and settings form, the tag and switch on DSH's
 - **`PLUGIN_KEYS`** ([support/constants.mjs](support/constants.mjs)) gains `description`, `dsh`, `hasIcon`, `meta`, `packageName`, `runs`, `settings` and `version` (20 keys). This covers CAT-02, MSL's key checks and the plugin-statuses key check (A116).
 - **`FISHBALL_TOOLS`** gains `get_plugin_settings` and `set_plugin_settings`. CAT-01 then expects them only for Fishball, CAT-08 in its default request and CAT-09 not in the global list.
 - **The worker's `drive` results** leave out the replacements DSH's tool-result pruner appends: a `tool/result` right after a `compaction/prune` event is a shortened copy of an earlier result, not a result of the turn's calls (`dsh-compaction-tool-result-pruner`). With the new fields, list_plugins answers are larger. In plugins-toggle, Fishball's context reached the pruner during ONLY-04's list_plugins turn, and the old slice returned ten results, so the helper's "exactly one result" check failed. Call ids are not deduplicated, because MSG-07 reuses them on purpose. No assertion changed.
+
+## Revision 10a cases (Install for Fishball; DESIGN §10d "Install for Fishball", §4 "Who changes what", S31, Q-install-route, Q-install-10a)
+
+**Requirement summary.** `POST /api/fishball/plugins/install` (the spec handed to Fishball's chat) is removed. Three routes replace it, each answering 400 `bad-body` for a malformed body and 409 `unavailable` before Fishball is ready:
+- `POST /api/fishball/install/inspect` (`{spec}`): Fishball's own checks first (409 `invalid-spec`, `already-installed` in Fishball's folder, `no-profile`), then `{ok:true, inspection}`, DSH's `PluginSpecInspection` (accepted with `kind`, `name?`, `version?`, `description?`, `bundle`, `registry`, `host?`; or refused with `problem` and `reason`). Nothing is installed.
+- `POST /api/fishball/install` (`{spec, requestId, approvedBuilds?}`): installs into Fishball's own folder through DSH's inherited install process; your call is the approval. It answers `{ok:true, plugin:'fishball:<name>', name, version, on}`, or `on:false` with `code` when turning it on was refused. Refusals are 409 with a PACKAGE_ERROR code. A success turns the plugin on for Fishball (changed by you) and is audited `add` by you. The DSH profile's files never change.
+- `POST /api/fishball/install/cancel` (`{requestId}`): `{ok:true, outcome}`, where the outcome is DSH's answer: `cancelled`, `too-late` or `not-running`.
+- DSH's `plugin-manager/install-state` and `install-log` events carry the request id.
+
+`add_plugin` installs through the same process after its Allow once.
+
+**Harness additions.** The worker records every `plugin-manager/install-state` and `install-log` event on the host bus (`installEvents` op, with the payload's `requestId`). New constants: `INSTALL_API`, `PACKAGE_ERRORS` (adds `cancelled` and `build-blocked`), `CANCEL_OUTCOMES`, `INSPECT_STATUS`, `INSPECT_PROBLEM`, `INSTALL_EVENTS` and `ADD_ACTION`. `API.removedPluginsInstall` and `API.unknownRoute` are used for the absence check.
+
+### [manager-install.test.mjs](manager-install.test.mjs): the install routes (one new-install host, in order)
+
+| id | technique | expected result |
+|---|---|---|
+| INS-01 ×25 | EP/BVA (body shapes) | inspect: invalid JSON, array, {}, spec 1/null/''/blanks. Install: the same plus spec missing, requestId missing/''/1, approvedBuilds a string, an object, [1] or ['']. Cancel: invalid JSON, {}, requestId ''/1. Each answers 400 bad-body, and nothing is installed |
+| INS-02 | EP (accepted) | a local bundle folder: `{ok:true, inspection:{status:'accepted', kind:'path', name, version:'0.0.1', bundle:true, registry}}`; nothing installed; no entry |
+| INS-03 ×2 | DT (refused by DSH) | a missing absolute folder: refused, not-found or not-a-package (A129); a folder without a bundle: refused, not-a-bundle; reason a string |
+| INS-04 ×2 | EP | `./fbtest-rel`, `../fbtest-rel`: 409 invalid-spec (Fishball's own check) |
+| INS-05 | ST not installed→installed, on | `approvedBuilds: []` (BVA, valid). Answer `{ok:true, plugin:'fishball:fbtest-added', name, version:'0.0.1', on:true}`. A `file:` dependency in `.fishball-plugins` resolving inside that folder, not to the source. The entry is fishball-installed, dsh none, runs fishball, on, changedBy user. added_echo stays unchecked. Audited add/user; no prompt; DSH's bundle list unchanged |
+| INS-06 | EP | install-state and install-log events carry `fbtest-ins-05` |
+| INS-07 | ST installed→install again | inspect and install: 409 already-installed; one entry |
+| INS-08 | EP (no bundle) | 409 not-bundle; gone from Fishball's folder (package.json and node_modules) within 30 s (A130); no entry |
+| INS-09 | EP (nothing at the path) | 409 with a code from `PACKAGE_ERRORS` |
+| INS-10 | EP (cancel, unknown request) | 200 `{ok:true, outcome:'not-running'}` (A131) |
+| INS-11 | DT (installed, turning on refused) | maxFishballOnlyPlugins 1 with fishball:fbtest-added on: `{ok:true, plugin:'fishball:fbtest-added-b', name, version, on:false, code:'limit-reached'}`; installed; entry off |
+| INS-12 | EP (afterEach) | profile files byte-identical. They are snapshotted again after the limit is lowered, because the limit is profile config (§9) |
+
+### Ambiguities (revision 10a)
+
+- **A129. A missing local folder.** DSH classifies it; observed `not-a-package`. INS-03 accepts `not-found` or `not-a-package`.
+- **A130. "Not-a-bundle refused and undone".** The refusal may answer before the removal finishes, so INS-08 and STA-16 wait up to 30 s. Observed: the dependency leaves package.json, but `node_modules/fbtest-notbundle` stays until a later pnpm run. INS-08 counts that as kept (§4 "removed again").
+- **A131. Cancel's `outcome`.** "`{ok: true, outcome}`, DSH's answer: `cancelled`, `too-late` or `not-running`" is read as the outcome being that string. DSH's own `cancelInstall` answers `{status}`.
+
+### Cases changed by revision 10a
+
+- **plugins-status:**
+  - STA-17 (7 bad bodies of the removed route) is now one case: the removed route answers what DSH answers for a path no route serves (not 200), and Fishball receives nothing.
+  - STA-18 (too-large) and STA-23 (queue-full) are removed, because they covered the removed route.
+  - STA-19 now installs fbtest-added-b through `POST /api/fishball/install`: no prompt, on, changedBy user, profile unchanged. STA-20 still uninstalls it.
+  - STA-24 covers the remove route and the three install routes.
+  - STA-25 (core failed) expects 409 unavailable from install/inspect and install.
+  - STA-16 waits for the undo (A130).
+- **messenger-author:** AUT-04 (the install request's author) is removed with its input kind, and the P11 author table row "install request (POST plugins/install)" no longer applies.

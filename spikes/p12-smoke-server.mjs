@@ -5,6 +5,7 @@
  * routes once, then stays up for the browser check (DESIGN §10d).
  */
 import fs from 'node:fs'
+import crypto from 'node:crypto'
 import path from 'node:path'
 import { bootDsh, until, REPO } from './harness.mjs'
 
@@ -13,7 +14,7 @@ const FIX = (folder) => path.join(REPO, 'spikes', 'fixtures', folder)
 let url
 const write = process.stdout.write.bind(process.stdout)
 process.stdout.write = (chunk, ...rest) => { const m = String(chunk).match(/dsh web: (\S+)/); if (m) url = m[1]; return write(chunk, ...rest) }
-const { home } = await bootDsh('p12smoke', [], {
+const { ctx: hostCtx, home, profileDir } = await bootDsh('p12smoke', [], {
   args: ['--no-open', '--port', port],
   setupProfile: (dir) => {
     const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
@@ -68,6 +69,18 @@ const after = await call('GET', '/api/fishball/plugins/detail?plugin=' + DEMO)
 out.detailAfter = { settings: after.body.detail.settings, row: after.body.detail.rows[0] && { user: after.body.detail.rows[0].user, value: after.body.detail.rows[0].value, secrets: after.body.detail.rows[0].secrets }, history: after.body.detail.history }
 out.secretLeaked = JSON.stringify(await call('GET', '/api/fishball/state')).includes('s3cret-value') || JSON.stringify(after).includes('s3cret-value')
 out.demoEntryAfter = pick(await plugin(DEMO))
+// Install for Fishball through DSH's inherited process (revision 10a): check, install, events, DSH untouched.
+const profileHash = () => ['package.json', 'cordis.patch.yml', 'pnpm-lock.yaml'].map((f) => { try { return crypto.createHash('sha256').update(fs.readFileSync(path.join(profileDir, f))).digest('hex') } catch { return null } }).join(',')
+const beforeProfile = profileHash()
+const installEvents = []
+hostCtx.on('plugin-manager/install-state', (e) => installEvents.push(e.phase))
+out.inspectInstall = (await call('POST', '/api/fishball/install/inspect', { spec: FIX('manager-demo') })).body
+const installRequest = 'p12-smoke-install'
+out.install = (await call('POST', '/api/fishball/install', { spec: FIX('manager-demo'), requestId: installRequest })).body
+out.installAgain = (await call('POST', '/api/fishball/install', { spec: FIX('manager-demo'), requestId: 'again' })).body
+out.installEvents = installEvents
+out.profileUntouched = beforeProfile === profileHash()
+out.installedEntry = pick(await plugin('fishball:fishball-spike-manager-demo'))
 if (out.detail.body?.detail?.rows) out.detail.body.detail.rows = out.detail.body.detail.rows.map((r) => ({ ...r, schema: r.schema ? '(schema json)' : null }))
 console.log('P12-SMOKE ' + JSON.stringify(out, null, 1))
 console.log('P12-READY ' + JSON.stringify({ url, home }))

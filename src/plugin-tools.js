@@ -26,13 +26,9 @@
  * package.json, lockfile or cordis.patch.yml.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { randomUUID } from 'node:crypto'
-import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
-import { APPROVAL_GRANTED, CHANGED_BY, INTAKE_ERROR, INTAKE_KIND, PLUGIN_INSTALL_REQUEST, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_MANAGER, SESSION_INFO, SOURCE } from './constants.js'
-import { IntakeError } from './intake.js'
-import { byteLength, cutToBytes } from './text.js'
+import { APPROVAL_GRANTED, CHANGED_BY, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_MANAGER, SESSION_INFO } from './constants.js'
+import { cutToBytes } from './text.js'
 import { SettingsError } from './plugin-settings.js'
-import { authorOf } from './author.js'
 import { CatalogError, fishballInstalledKey } from './plugin-catalog.js'
 import { PackageError } from './fishball-packages.js'
 import { diagnosticOf } from './errors.js'
@@ -51,13 +47,6 @@ const TEXT = Object.freeze({
   removeDescription: 'Uninstall a plugin installed in Fishball only (status installed-in-fishball), after the user allows it in a permission prompt. Plugins installed in DSH cannot be uninstalled from Fishball; turn them off instead. The uninstall happens when your current turn ends.',
   removeReasonArg: 'Why Fishball wants to uninstall this plugin, shown to the user in the permission prompt.',
   removesLater: 'Allowed. It is uninstalled when this turn ends.',
-  /** You asked on the settings page; your own request, so it is not framed as untrusted. */
-  installRequest: (spec) => [
-    'Fishball: the user asked, on your settings page, to install this plugin for you only:',
-    JSON.stringify(spec),
-    'Call add_plugin with exactly this spec; the user is then asked to allow it in the permission prompt.',
-  ].join('\n'),
-  installRequestSummary: 'The user asked to install a plugin',
   removePrompt: (plugin, reason) => `Fishball asks to uninstall "${plugin}", a plugin installed for Fishball only. Reason: ${reason}`,
   pluginArg: 'The plugin key exactly as list_plugins shows it.',
   onArg: 'true to turn the plugin on for Fishball, false to turn it off.',
@@ -94,29 +83,6 @@ const promptValue = (value) => cutToBytes(value === undefined ? TEXT.unsetValue 
 const changeLines = (changes) => changes.map((change) => `- ${change.path.join('.')}: ${change.secret ? TEXT.secretValue : `${promptValue(change.old)} → ${promptValue(change.new)}`}`)
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
 
-
-/**
- * "Install" on the settings page (DESIGN §10): DSH asks for a permission only inside a running
- * turn of the asking session, so the page cannot raise add_plugin's prompt itself. It hands the
- * request to Fishball through the intake ledger, which wakes it; Fishball calls add_plugin.
- * @param deps.ledger - IntakeLedger; deps.readLimits - () => limits; deps.packages - FishballPackages.
- * @returns (spec) => Promise; rejects IntakeError(tooLarge | queueFull) or PackageError(invalidSpec |
- *   alreadyInstalled). The spec is checked first, so an invalid one never wakes Fishball (review M3).
- */
-export function installRequester({ ledger, readLimits, packages }) {
-  return async (spec) => {
-    packages.check(spec)
-    // maxMessageBytes bounds your own text (the spec), as for "Send to Fishball"; Fishball's framing does not count.
-    if (byteLength(spec) > readLimits().maxMessageBytes) throw new IntakeError(INTAKE_ERROR.tooLarge)
-    const text = TEXT.installRequest(spec)
-    await ledger.publish({
-      kind: INTAKE_KIND.user,
-      sourceIdentity: PLUGIN_INSTALL_REQUEST.sourceIdentity,
-      dedupeKey: randomUUID(),
-      message: createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.installRequestSummary), author: authorOf(INTAKE_KIND.user) } }),
-    })
-  }
-}
 
 /**
  * Register the tools.
@@ -242,9 +208,10 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
           return refused(PLUGIN_ERROR.installFailed, { reason: error.code })
         }
         const installed = fishballInstalledKey(name)
-        await catalog.audit(installed, PLUGIN_ACTION.add, CHANGED_BY.fishball, OUTCOME_OK)
-        await catalog.refresh()
-        if (!catalog.has(installed)) return refused(PLUGIN_ERROR.restartRequired, { installed })
+        try { await catalog.adopt(name, CHANGED_BY.fishball) } catch (error) {
+          if (error instanceof CatalogError) return refused(error.code, { installed })
+          throw error
+        }
         // Installed either way: the result names it even when turning it on is refused (L5).
         try {
           return { ...(await enable(installed, exec, PLUGIN_TOOL.add)), installed }

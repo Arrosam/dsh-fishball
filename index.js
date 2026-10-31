@@ -26,12 +26,12 @@ import './src/tool-attribution.js'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PLUGIN_MANAGER } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PLUGIN_MANAGER, PACKAGE_ERROR } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
 import { AssistantComposition } from './src/composition.js'
-import { CatalogError, PluginCatalog } from './src/plugin-catalog.js'
+import { CatalogError, PluginCatalog, fishballInstalledKey } from './src/plugin-catalog.js'
 import { ContextWindow } from './src/context-window.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
 import { registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
@@ -41,10 +41,12 @@ import { Unread } from './src/unread.js'
 import { Preferences } from './src/preferences.js'
 import { ApprovalBroker } from './src/approvals.js'
 import { SourceRegistry } from './src/sources.js'
-import { installRequester, registerPluginTools } from './src/plugin-tools.js'
+import { registerPluginTools } from './src/plugin-tools.js'
 import { PluginDefaults } from './src/plugin-defaults.js'
 import { PluginSettings, SettingsError } from './src/plugin-settings.js'
 import { FishballPackages, PackageError } from './src/fishball-packages.js'
+import { byteLength } from './src/text.js'
+import { mountFishballPluginManager } from './src/fishball-plugin-manager.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
 import { HIDDEN_TOOLS } from './src/tool-rules.js'
@@ -80,18 +82,20 @@ export async function apply(ctx, config) {
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, installPlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
     recover: (action) => lifecycle.recover(action),
     setPlugin: (plugin, on) => commands.setPlugin(plugin, on),
     removePlugin: (plugin) => commands.removePlugin(plugin),
-    installPlugin: (spec) => commands.installPlugin(spec),
     removeAllowance: (toolKey) => commands.removeAllowance(toolKey),
     pluginDetail: (plugin) => commands.pluginDetail(plugin),
     pluginIcon: (plugin) => commands.pluginIcon(plugin),
     saveSettings: (input) => commands.saveSettings(input),
+    inspectInstall: (spec) => commands.inspectInstall(spec),
+    install: (input) => commands.install(input),
+    cancelInstall: (requestId) => commands.cancelInstall(requestId),
     setContextWindow: (setting) => commands.setContextWindow(setting),
     send: (input) => commands.send(input),
     addWatch: (input) => commands.addWatch(input),
@@ -123,6 +127,8 @@ export async function apply(ctx, config) {
     return use(new InactiveLifecycle(STATUS.failed, ERROR.storeUnreadable, store.assistant()))
   }
   const packages = new FishballPackages(ctx, logger)
+  // Installs run DSH's own install process, inherited for Fishball's folder (DESIGN §10d, S31).
+  packages.attachManager((facts) => mountFishballPluginManager(ctx, facts))
   // Boot mounts the tree once with the first evaluation; later policy changes remount through
   // the catalog's idle-phase apply (a change mid-turn waits for the turn to end).
   let booted = false
@@ -285,8 +291,35 @@ export async function apply(ctx, config) {
   commands.setPlugin = (plugin, on) => pluginChange(() => catalog.setDesired(plugin, on, CHANGED_BY.user))
   // Your own uninstall needs no prompt: you are the one approving (DESIGN §4).
   commands.removePlugin = (plugin) => pluginChange(() => catalog.requestRemove(plugin, CHANGED_BY.user))
-  const requestInstall = installRequester({ ledger, readLimits: limits, packages })
-  commands.installPlugin = (spec) => asApiError(IntakeError)(() => asApiError(PackageError)(() => requestInstall(spec)))
+  /** A PackageError as a 409 with its code (and the packages whose scripts wait for your approval). */
+  const asPackageAnswer = async (task) => {
+    try { return await task() } catch (error) {
+      if (error instanceof PackageError) throw new LifecycleStateError(error.code, error.details === undefined ? {} : { fields: error.details })
+      throw error
+    }
+  }
+  // Install for Fishball from the dialog (DESIGN §10d revision 10a): your click approves it, as in
+  // DSH's own Add plugin; DSH's process installs into Fishball's folder, then it is turned on.
+  /** A spec is your own text: maxMessageBytes bounds it, as it bounded the page's spec before (review L7). */
+  const boundSpec = (spec) => {
+    if (byteLength(spec) > limits().maxMessageBytes) throw new PackageError(PACKAGE_ERROR.tooLarge)
+  }
+  commands.inspectInstall = (spec) => asPackageAnswer(() => { boundSpec(spec); return packages.inspect(spec) })
+  commands.cancelInstall = (requestId) => asPackageAnswer(() => packages.cancel(requestId))
+  commands.install = ({ spec, requestId, approvedBuilds }) => asPackageAnswer(async () => {
+    boundSpec(spec)
+    const { name, version } = await packages.install(spec, { requestId, approvedBuilds })
+    const plugin = fishballInstalledKey(name)
+    // Installed either way; taking it in or turning it on can still be refused (restart required, the plugin limit).
+    try {
+      await catalog.adopt(name, CHANGED_BY.user)
+      await catalog.setDesired(plugin, true, CHANGED_BY.user)
+      return { plugin, name, version, on: true }
+    } catch (error) {
+      if (error instanceof CatalogError) return { plugin, name, version, on: false, code: error.code }
+      throw error
+    }
+  })
   commands.setContextWindow = (setting) => contextWindow.save(setting)
   commands.removeAllowance = async (toolKey) => {
     if (!(await catalog.removeAllowance(toolKey))) throw new LifecycleStateError(API_CODE.unknown)

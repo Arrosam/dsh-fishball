@@ -595,6 +595,19 @@ export class PluginCatalog {
     return this.#removals
   }
 
+  /**
+   * Take in a package just installed in Fishball's folder: audit the install and read the
+   * catalog again (shared by add_plugin and the install dialog, review L1).
+   * @returns the plugin's catalog key. @throws CatalogError(restartRequired) when the catalog does not list it yet.
+   */
+  async adopt(packageName, by) {
+    const key = fishballInstalledKey(packageName)
+    await this.audit(key, PLUGIN_ACTION.add, by, OUTCOME_OK)
+    await this.refresh()
+    if (!this.has(key)) throw new CatalogError(PLUGIN_ERROR.restartRequired)
+    return key
+  }
+
   /** Durably allow tools nobody had checked, for exactly these parameters. */
   async allowTools(tools) {
     const allowedAt = new Date().toISOString()

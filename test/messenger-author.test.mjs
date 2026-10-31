@@ -10,7 +10,6 @@
  * | AUT-01 | EP (message_fishball from S) | source = {agent-message, relay, senderSessionId: S, author: {kind:'session', name: S's title, seed: S}}; text and block unchanged; a markup-like title is the name verbatim |
  * | AUT-02 | EP (a subagent of S calls it) | author {kind:'session', name: S's title, seed: S} (the root session, not the child) |
  * | AUT-03 | EP (POST send for S) | source = {fishball-notice, notice, 'The user forwarded a session', author: {kind:'user', name: S's title, seed: S}} |
- * | AUT-04 | EP (POST plugins/install) | author exactly {kind:'user'}: no name, no seed |
  * | AUT-05 | EP (a watched session S finished) | source = {fishball-notice, notice, 'A watched session finished (completed)', author: {kind:'watch', name: S's title, seed: S}} |
  * | AUT-06 | EP (plugin source, identity I, title X) | source = {fishball-notice, notice, 'Plugin event: "X"', author: {kind:'plugin', name: X, seed: I}} |
  * | AUT-07 ×2 | BVA (source title exactly 200 bytes: ASCII / 4-byte emoji) | name is the whole title |
@@ -131,20 +130,6 @@ describe('P11 authors of intake messages', () => {
     assert.equal(got.length, 1)
     assert.deepEqual(got[0].source, { ...NOTICE, summary: FORWARD_SUMMARY, author: { kind: AUTHOR_KIND.user, name: title, seed: s } })
     assert.ok(got[0].text.startsWith(FORWARD_HEADER), 'the text is unchanged')
-  })
-
-  it('AUT-04 an install request from the settings page: author exactly {kind: user}', T, async () => {
-    await settledIdle(host, fb)
-    const spec = '/nonexistent/fbtest-' + tok('aut04')
-    const res = await host.post(API.pluginsInstall, { spec })
-    assert.equal(res.status, 200, res.text)
-    assert.ok(await until(async () => (await fishballMessages(host, fb, spec)).length > 0, 10000, 100), 'Fishball received the request')
-    await settledIdle(host, fb)
-    const got = await fishballMessages(host, fb, spec)
-    assert.equal(got.length, 1)
-    assert.deepEqual(got[0].source.author, { kind: AUTHOR_KIND.user })
-    assert.deepEqual(Object.keys(got[0].source.author), ['kind'], 'no name and no seed key')
-    assert.equal(typeof got[0].source.kind, 'string', 'the source keeps its kind')
   })
 
   it('AUT-05 a watch notice: author kind watch with the watched session\'s title', T, async () => {
