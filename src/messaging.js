@@ -112,10 +112,12 @@ const messageOf = (text, source) => createUserMessage({ content: [{ type: 'text'
  * @param deps.assistantId - () => the assistant session id, or null.
  * @param deps.isLive - () => whether Fishball's agent is running now.
  * @param deps.watch - (sessionId, by) => Promise<{ watch } | { watchError }> (a watch result).
- * @returns { forward(sessionId, note) } for the HTTP route.
+ * @param deps.isEnabled - () => whether Fishball's Session messages plugin runs (revision 10c).
+ * @returns { forward(sessionId, note) } for the HTTP route, and sync() to call when isEnabled
+ *   may have changed.
  */
-export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, watch }) {
-  ctx.effect(() => ctx.tools.register(defineTool({
+export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, watch, isEnabled }) {
+  const inboundTool = defineTool({
     name: MESSAGING_TOOL.inbound,
     description: TEXT.inboundDescription,
     parameters: {
@@ -124,6 +126,8 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
     },
     output: JSON_OUTPUT,
     async execute({ message, notify_when_finished: notify }, exec) {
+      // A call already in flight when Session messages went off (the tool is unregistered at the apply).
+      if (!isEnabled()) return refused(INTAKE_ERROR.featureOff)
       const caller = exec.agent?.id
       if (caller === undefined) return refused(INTAKE_ERROR.unknownSession)
       // Checked on the sender's text: Fishball's framing around it is never empty.
@@ -152,14 +156,30 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
       const watched = notify === true ? await watch(sender, { kind: WATCH_BY.agent, id: caller }) : {}
       return ok({ note: isLive() ? TEXT.inboundOk : TEXT.inboundQueued, ...watched })
     },
-  })), 'fishball: message_fishball')
+  })
+  // Registered only while Session messages runs: off takes the tool away from every other
+  // session (revision 10c, owner's choice). `active` ends with the row, so no late sync re-registers.
+  let dispose
+  let active = true
+  const sync = () => {
+    const on = active && isEnabled()
+    if (on === (dispose !== undefined)) return
+    if (on) dispose = ctx.tools.register(inboundTool)
+    else { dispose(); dispose = undefined }
+  }
+  ctx.effect(() => {
+    sync()
+    return () => { active = false; sync() }
+  }, 'fishball: message_fishball')
 
   return {
+    sync,
     /**
      * You forward a session with a note.
-     * @throws IntakeError(unknownSession | fromFishball | tooLarge | queueFull | empty).
+     * @throws IntakeError(featureOff | unknownSession | fromFishball | tooLarge | queueFull | empty).
      */
     async forward(sessionId, note) {
+      if (!isEnabled()) throw new IntakeError(INTAKE_ERROR.featureOff)
       if (sessionId === assistantId()) throw new IntakeError(INTAKE_ERROR.fromFishball)
       if (byteLength(note) > readLimits().maxMessageBytes) throw new IntakeError(INTAKE_ERROR.tooLarge)
       const info = await describeSession(ctx, sessionId)

@@ -5,6 +5,8 @@
  *
  * - set_plugin_enabled changes Fishball's own state only; the change applies when the
  *   current turn ends (the catalog applies it in the idle phase).
+ * - Turning on one of Fishball's own plugins (Session messages, Session watching, Plugin
+ *   management, Permission requests) that is off asks you first (revision 10c).
  * - Turning on a plugin with tools nobody has checked raises a normal DSH permission
  *   request listing them (N4). A package plugin (DSH plugin off in the profile, or one installed
  *   in Fishball only) is mounted first, with its tools
@@ -41,8 +43,8 @@ export const PLUGIN_TOOL = Object.freeze({ list: 'list_plugins', set: 'set_plugi
 
 /** Model-facing texts (stable; no secrets). */
 const TEXT = Object.freeze({
-  listDescription: 'List the plugins Fishball can use: each one\'s status (installed-in-fishball, dsh-enabled, dsh-disabled, builtin), the actions it offers, who last changed it, and why any of its tools are not available (hidden, plugin off, or unchecked).',
-  setDescription: 'Turn one plugin on or off for Fishball only. Other sessions are not affected and the DSH profile is not changed. The change takes effect when your current turn ends. Turning on a plugin with tools nobody has checked asks the user first.',
+  listDescription: 'List the plugins Fishball can use: each one\'s status (installed-in-fishball, dsh-enabled, dsh-disabled, builtin), the actions it offers, who last changed it, and why any of its tools are not available (hidden, plugin off, unchecked, or other-sessions: a tool Fishball provides to other sessions).',
+  setDescription: 'Turn one plugin on or off for Fishball only. The DSH profile is not changed, and other sessions are not affected, except by Fishball\'s own plugins: Session messages off takes message_fishball away from them, and Permission requests off sends their permission requests straight to the user. The change takes effect when your current turn ends. Turning on a plugin with tools nobody has checked, or one of Fishball\'s own plugins that is off, asks the user first.',
   addDescription: 'Install a plugin package for Fishball only, after the user allows it in a permission prompt. It goes into Fishball\'s own package folder, not the DSH profile, so other sessions never see it; Fishball then turns it on for itself.',
   removeDescription: 'Uninstall a plugin installed in Fishball only (status installed-in-fishball), after the user allows it in a permission prompt. Plugins installed in DSH cannot be uninstalled from Fishball; turn them off instead. The uninstall happens when your current turn ends.',
   removeReasonArg: 'Why Fishball wants to uninstall this plugin, shown to the user in the permission prompt.',
@@ -67,6 +69,7 @@ const TEXT = Object.freeze({
   /** A field without a value, and a secret (never shown), in the prompt's `path: old → new` lines. */
   unsetValue: 'unset',
   secretValue: 'secret',
+  ownPluginPrompt: (title) => `Fishball asks to turn on "${title}", one of Fishball's own plugins, for itself. It is off now; allowing turns it on when this turn ends.`,
   uncheckedPrompt: (plugin, unchecked) => [
     `Fishball wants to turn on "${plugin}" for itself. Nobody has checked these tools yet; allowing shows them to Fishball:`,
     ...unchecked.map((tool) => `- ${tool.name}: ${tool.description}`),
@@ -110,6 +113,15 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
    */
   const enable = async (plugin, exec, toolName) => {
     catalog.assertCanEnable(plugin)
+    /** Your Reject: audited, and the plugin stays as it was. */
+    const rejected = async (fields) => {
+      await catalog.audit(plugin, PLUGIN_ACTION.on, CHANGED_BY.fishball, PLUGIN_ERROR.rejected)
+      return refused(PLUGIN_ERROR.rejected, fields)
+    }
+    // One of Fishball's own plugins that is off: your off holds unless you allow it (revision 10c).
+    // setDesired checks again in its queue, so an off of yours arriving meanwhile still holds.
+    const asks = catalog.asksToEnable(plugin) && !catalog.desiredOn(plugin)
+    if (asks && !(await ask(exec, toolName, TEXT.ownPluginPrompt(catalog.titleOf(plugin))))) return rejected()
     const listing = catalog.mountsPackage(plugin) && !catalog.isRunning(plugin)
     let turnedOn = false
     try {
@@ -119,13 +131,10 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
         if (failure !== undefined) return refused(failure)
       }
       const unchecked = catalog.uncheckedOf(plugin, tools, scope)
-      if (unchecked.length > 0 && !(await ask(exec, toolName, TEXT.uncheckedPrompt(plugin, unchecked)))) {
-        await catalog.audit(plugin, PLUGIN_ACTION.on, CHANGED_BY.fishball, PLUGIN_ERROR.rejected)
-        return refused(PLUGIN_ERROR.rejected, { unchecked: unchecked.map((tool) => tool.name) })
-      }
+      if (unchecked.length > 0 && !(await ask(exec, toolName, TEXT.uncheckedPrompt(plugin, unchecked)))) return rejected({ unchecked: unchecked.map((tool) => tool.name) })
       // Turn on first: a refused setDesired (a racing toggle reached the limit) then stores no
       // allowance for a plugin that stays off (review N5).
-      await catalog.setDesired(plugin, true, CHANGED_BY.fishball)
+      await catalog.setDesired(plugin, true, CHANGED_BY.fishball, { asked: asks })
       turnedOn = true
       await catalog.allowTools(unchecked)
       return ok({ plugin, on: true, allowedTools: unchecked.map((tool) => tool.name), note: TEXT.appliesLater })

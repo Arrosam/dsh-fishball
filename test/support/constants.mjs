@@ -193,7 +193,8 @@ export const API = {
 // ---- P5 (messaging, intake, outbox) ----
 /** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
 /** P11 R2 adds 'look' (17). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'hiddenTools', 'intake', 'limits', 'look', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** Revision 10c adds 'features' (18). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'hiddenTools', 'intake', 'limits', 'look', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
@@ -273,7 +274,8 @@ export const SUMMARY_HEADINGS = ['## Standing permissions', '## Commitments', '#
 /** P12 (plugin manager) adds get_plugin_settings and set_plugin_settings. */
 export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings']
 export const KIND = { profile: 'profile', only: 'fishball-only', builtin: 'builtin', installed: 'fishball-installed' }
-export const TOOL_STATUS = { visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked' }
+/** Revision 10c adds other-sessions: message_fishball, registered for every other session and never visible to Fishball. */
+export const TOOL_STATUS = { visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked', otherSessions: 'other-sessions' }
 export const CHANGED_BY = { fishball: 'fishball', user: 'user' }
 export const CATALOG_KEYS = ['allowedTools', 'otherTools', 'plugins']
 /**
@@ -349,6 +351,8 @@ export const CODE = {
   installFailed: 'install-failed', notRemovable: 'not-removable', unknownPlugin: 'unknown-plugin',
   /** A plugin whose rows publish a service into DSH's root realm is turned off with this lastError. */
   leaksService: 'leaks-service',
+  /** Revision 10c (review M1): your off was written after Fishball decided not to ask; it must ask first. */
+  askFirst: 'ask-first',
 }
 
 /** DSH approval outcomes a test answerer can return (dsh-user-approval ApprovalOutcome). */
@@ -524,7 +528,8 @@ export const SETTINGS_FIXTURE = {
   choiceField: { path: 'mode', choices: ['fast', 'slow'] },
 }
 /** P12 snapshot enums (DESIGN §10d "Host API"). */
-export const DSH_STATE = { on: 'on', off: 'off', builtin: 'builtin', none: 'none' }
+/** Revision 10c adds fishball: Fishball's own plugins (the first group, with the Messenger look). */
+export const DSH_STATE = { on: 'on', off: 'off', builtin: 'builtin', none: 'none', fishball: 'fishball' }
 export const RUNS = { everywhere: 'everywhere', dsh: 'dsh', fishball: 'fishball', nowhere: 'nowhere' }
 export const SETTINGS_STATE = { unused: 'unused', none: 'none', changed: 'changed', default: 'default' }
 /** P12 route and tool codes. */
@@ -553,3 +558,25 @@ export const COMPACTION = { plugin: 'builtin:compaction', engineRow: 'compaction
 export const SETTINGS_TABLE = 'plugin_settings'
 /** Private-tree row ids carry this prefix (DESIGN §4 "Row ids"): fbo-<bundle>--<row>. */
 export const PRIVATE_ROW_PREFIX = 'fbo-'
+
+// ---- Revision 10c (Fishball's own plugins; DESIGN §10d "Fishball's own plugins", Q-own-plugins) ----
+/**
+ * The four new built-in plugins that hold every tool Fishball registers. `feature` names the snapshot's
+ * features field that is true while the plugin runs (desired on AND applied).
+ */
+export const OWN_PLUGINS = {
+  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball'] },
+  watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
+  plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval'] },
+}
+/** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
+export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
+/** The snapshot's features object. */
+export const FEATURE_KEYS = ['approvals', 'messages', 'plugins', 'watching']
+/** Route answer (409) and watchError when the feature's plugin is off. */
+export const FEATURE_OFF = 'feature-off'
+/** The words of the permission request Fishball raises before it turns one of its own plugins on. */
+export const OWN_ASK = 'Fishball asks to turn on'
+/** The last commit before revision 10c (an install from before Fishball's own plugins). */
+export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }

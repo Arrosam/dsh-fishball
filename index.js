@@ -26,7 +26,7 @@ import './src/tool-attribution.js'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PLUGIN_MANAGER, PACKAGE_ERROR } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PLUGIN_MANAGER, PACKAGE_ERROR, FEATURE_OFF } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -34,14 +34,14 @@ import { AssistantComposition } from './src/composition.js'
 import { CatalogError, PluginCatalog, fishballInstalledKey } from './src/plugin-catalog.js'
 import { ContextWindow } from './src/context-window.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
-import { registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
+import { MESSAGING_TOOL, registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
-import { Watches, WatchError } from './src/watches.js'
+import { WATCH_TOOL, Watches, WatchError } from './src/watches.js'
 import { Unread } from './src/unread.js'
 import { Preferences } from './src/preferences.js'
-import { ApprovalBroker } from './src/approvals.js'
+import { APPROVAL_TOOL, ApprovalBroker } from './src/approvals.js'
 import { SourceRegistry } from './src/sources.js'
-import { registerPluginTools } from './src/plugin-tools.js'
+import { PLUGIN_TOOL, registerPluginTools } from './src/plugin-tools.js'
 import { PluginDefaults } from './src/plugin-defaults.js'
 import { PluginSettings, SettingsError } from './src/plugin-settings.js'
 import { FishballPackages, PackageError } from './src/fishball-packages.js'
@@ -50,12 +50,21 @@ import { mountFishballPluginManager } from './src/fishball-plugin-manager.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
 import { HIDDEN_TOOLS } from './src/tool-rules.js'
+import { FEATURE_KEY } from './src/builtins.js'
 
 export const name = PLUGIN.name
 export { Config }
 
 /** Services the row cannot work without; see SERVICE for why each is needed. */
 export const inject = Object.values(SERVICE)
+
+/** Each tool Fishball registers, by the key of its own plugin (DESIGN §10d revision 10c). */
+const OWN_TOOL_PLUGIN = new Map([
+  [MESSAGING_TOOL, FEATURE_KEY.messages],
+  [WATCH_TOOL, FEATURE_KEY.watching],
+  [PLUGIN_TOOL, FEATURE_KEY.plugins],
+  [APPROVAL_TOOL, FEATURE_KEY.approvals],
+].flatMap(([tools, key]) => Object.values(tools).map((name) => [name, key])))
 
 /** Settings-page commands before the catalog exists, or after a core failure. */
 const unavailable = () => Promise.reject(new LifecycleStateError(API_CODE.unavailable))
@@ -76,7 +85,11 @@ export async function apply(ctx, config) {
   let preferencesView = () => null
   /** The Messenger look's on/off for the browser (DESIGN §10c); null until the catalog exists. */
   let lookView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView() })
+  /** Which of Fishball's own feature plugins run (revision 10c); null until the catalog exists. */
+  let featuresView = () => null
+  /** Make each feature follow its plugin's applied state; wired once the features exist. */
+  let syncFeatures = () => {}
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView() })
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
@@ -149,10 +162,11 @@ export async function apply(ctx, config) {
     onApplied: () => { contextWindow.confirmApplied(catalog.isRunning(CONTEXT.compactionPlugin)); settings.confirmApplied(); afterApply() },
     pendingRowIds: () => composition.pendingRowIds(),
     ownsDefinition: (definition) => composition.ownsDefinition(definition),
-    onChange: () => { composition.refreshMasks(); publish() },
+    onChange: () => { composition.refreshMasks(); syncFeatures(); publish() },
     defaults,
     packages,
     hasSettings: (key) => settings.has(key),
+    ownPluginOf: (name) => OWN_TOOL_PLUGIN.get(name),
   })
   // Settings of the plugins Fishball runs in its private tree (DESIGN §10d).
   const settings = new PluginSettings(store, {
@@ -196,6 +210,8 @@ export async function apply(ctx, config) {
   // The choice, not the applied state: the look mounts no rows, so the browser need not wait
   // for Fishball's turn to end before it changes.
   lookView = () => ({ messenger: catalog.desiredOn(MESSENGER.pluginKey) })
+  // The browser hides your buttons of a feature that is off (revision 10c).
+  featuresView = () => Object.fromEntries(Object.entries(FEATURE_KEY).map(([feature, key]) => [feature, catalog.isAppliedOn(key)]))
   contextView = () => contextWindow.snapshot()
 
   // Inputs (DESIGN §5b) and handing work off (§5d).
@@ -205,7 +221,7 @@ export async function apply(ctx, config) {
   const ledger = new IntakeLedger(ctx, store, logger, { readLimits: limits, onChange: () => publish() })
   composition.addAgentSetup((agentCtx, agent) => ledger.installAgent(agentCtx, agent))
   // Watches (DESIGN §5c): set up by you, by Fishball, or by another agent for its own session.
-  const watches = new Watches(ctx, store, logger, { ledger, readLimits: limits, assistantId, onChange: () => publish() })
+  const watches = new Watches(ctx, store, logger, { ledger, readLimits: limits, assistantId, onChange: () => publish(), isEnabled: () => catalog.isAppliedOn(FEATURE_KEY.watching) })
   // When Fishball goes idle its queue has room again: retry watch notices refused earlier.
   composition.addAgentSetup((agentCtx, agent) => agentCtx.on(EVENT.agentStatus, ({ agent: changed, status }) => {
     if (changed === agent && status === AGENT_IDLE) void watches.retry()
@@ -217,7 +233,7 @@ export async function apply(ctx, config) {
       throw error
     }
   }
-  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor })
+  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: () => catalog.isAppliedOn(FEATURE_KEY.messages) })
   const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor })
   /** Sessions related to Fishball (read_session, DESIGN §5c): watched, messaged it, messaged or started by it, or forwarded by you. */
   const related = (sessionId) => watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)) || outbound.contacted(sessionId)
@@ -234,9 +250,16 @@ export async function apply(ctx, config) {
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
     startedByFishball: (sessionId) => outbound.started(sessionId), agentOf: () => assistantAgent(), onChange: () => publish(),
+    isEnabled: () => catalog.isAppliedOn(FEATURE_KEY.approvals),
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   approvalsView = () => broker.snapshot()
+  // Off takes the feature away at the apply: message_fishball leaves other sessions, and requests
+  // waiting for Fishball go to you at once (revision 10c).
+  syncFeatures = () => {
+    inbound.sync()
+    if (!catalog.isAppliedOn(FEATURE_KEY.approvals)) broker.releaseAll()
+  }
   // ctx.fishball (DESIGN §8): plugins publish events to Fishball through the ledger.
   const sources = new SourceRegistry(ctx, {
     ledger, catalog, readLimits: limits, isLive: () => assistantAgent() !== undefined,
@@ -255,6 +278,8 @@ export async function apply(ctx, config) {
   }
   // A watch from the GUI needs a running Fishball to report to (DESIGN §5c; P6 test A67).
   commands.addWatch = ({ sessionId }) => {
+    // Off answers feature-off even while Fishball is stopped (review L4).
+    if (!catalog.isAppliedOn(FEATURE_KEY.watching)) return Promise.reject(new LifecycleStateError(FEATURE_OFF))
     if (assistantAgent() === undefined) return unavailable()
     return asApiError(WatchError)(() => watches.add({ sessionId, by: { kind: WATCH_BY.user } }))
   }
@@ -262,14 +287,16 @@ export async function apply(ctx, config) {
   intakeView = () => ledger.snapshot()
   outboxView = () => outbound.snapshot()
   const notifyUnchecked = uncheckedToolsNotifier({ ledger, catalog, decisions: () => composition.decisions(), store, logger })
-  afterApply = () => { if (assistantAgent() !== undefined) notifyUnchecked() }
+  /** The notice asks Fishball to call set_plugin_enabled: only while Plugin management gives it that tool (review L3). */
+  const canNotifyUnchecked = () => assistantAgent() !== undefined && catalog.isAppliedOn(FEATURE_KEY.plugins)
+  afterApply = () => { if (canNotifyUnchecked()) notifyUnchecked() }
   commands.send = ({ sessionId, note }) => asApiError(IntakeError)(() => inbound.forward(sessionId, note))
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
   /** A row waiting for a service may run now; its tools may have appeared too. */
   const recheck = () => void catalog.recheckWaiting().catch(logged('waiting re-audit'))
   // A tool registered or removed anywhere can change Fishball's catalog view, and may bring
   // unchecked tools Fishball must be told about.
-  ctx.on(EVENT.toolsChange, () => { queueMicrotask(publish); recheck(); if (assistantAgent() !== undefined) notifyUnchecked() })
+  ctx.on(EVENT.toolsChange, () => { queueMicrotask(publish); recheck(); if (canNotifyUnchecked()) notifyUnchecked() })
   ctx.on(EVENT.service, recheck)
   // A bundle installed or toggled while DSH runs joins the catalog at once (refresh schedules
   // the apply when the catalog's shape changed); the state feed shows it without a turn.
@@ -277,7 +304,7 @@ export async function apply(ctx, config) {
   // bundle, so it cannot be tied to a profile plugin yet; re-check once the catalog has it.
   ctx.on(EVENT.pluginManagerChanged, () => void catalog.refresh().then(() => {
     publish()
-    if (assistantAgent() !== undefined) notifyUnchecked()
+    if (canNotifyUnchecked()) notifyUnchecked()
   }).catch(logged('catalog refresh')))
   /** Run one of your plugin changes; a CatalogError answers 409 unknown or refused. */
   const pluginChange = async (change) => {
@@ -366,7 +393,7 @@ export async function apply(ctx, config) {
 
   // Each time Fishball goes live: settle the intake queue (restart, adopt), then tell Fishball
   // about unchecked tools of plugins already on (DESIGN §7, §11 steps 4-6).
-  const onLive = () => void ledger.reconcile().then(() => watches.catchUp()).then(() => notifyUnchecked()).catch(logged('intake reconcile'))
+  const onLive = () => void ledger.reconcile().then(() => watches.catchUp()).then(() => { if (catalog.isAppliedOn(FEATURE_KEY.plugins)) notifyUnchecked() }).catch(logged('intake reconcile'))
   // Every lifecycle change publishes; when Fishball is no longer live, its waiting permission
   // requests go to you at once instead of timing out (P7 review M1).
   const onLifecycleChange = () => {

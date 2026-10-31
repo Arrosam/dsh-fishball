@@ -86,7 +86,7 @@ export function guardDecision(name, args, sandboxMode) {
 const byRowId = (lines) => new Map(lines.map((line) => [line.slice(0, line.indexOf(' ')), line]))
 
 /** Tool statuses the mask denies (everything but visible). */
-const MASKED = new Set([TOOL_STATUS.hidden, TOOL_STATUS.pluginOff, TOOL_STATUS.unchecked])
+const MASKED = new Set([TOOL_STATUS.hidden, TOOL_STATUS.pluginOff, TOOL_STATUS.unchecked, TOOL_STATUS.otherSessions])
 
 export class AssistantComposition {
   #rowCtx
