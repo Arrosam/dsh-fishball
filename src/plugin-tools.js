@@ -27,6 +27,7 @@ import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { APPROVAL_GRANTED, CHANGED_BY, INTAKE_ERROR, INTAKE_KIND, PLUGIN_INSTALL_REQUEST, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, SOURCE } from './constants.js'
 import { IntakeError } from './intake.js'
 import { byteLength } from './text.js'
+import { authorOf } from './author.js'
 import { CatalogError, fishballInstalledKey } from './plugin-catalog.js'
 import { PackageError } from './fishball-packages.js'
 import { diagnosticOf } from './errors.js'
@@ -88,7 +89,7 @@ export function installRequester({ ledger, readLimits, packages }) {
       kind: INTAKE_KIND.user,
       sourceIdentity: PLUGIN_INSTALL_REQUEST.sourceIdentity,
       dedupeKey: randomUUID(),
-      message: createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.installRequestSummary) } }),
+      message: createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.installRequestSummary), author: authorOf(INTAKE_KIND.user) } }),
     })
   }
 }

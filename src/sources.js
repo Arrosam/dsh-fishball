@@ -35,6 +35,7 @@ import { entryOf } from './tool-attribution.js'
 import { IntakeError } from './intake.js'
 import { untrustedBlock } from './framing.js'
 import { byteLength } from './text.js'
+import { authorOf } from './author.js'
 import { diagnosticOf } from './errors.js'
 import { slug, ROW_PREFIX_BOUNDARY } from './row-ids.js'
 
@@ -218,7 +219,7 @@ export class SourceRegistry {
         dedupeKey: JSON.stringify(['source', event.dedupeKey]),
         message: createUserMessage({
           content: [{ type: 'text', text: TEXT.event(identity, record, event) }],
-          source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(record)) },
+          source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(record)), author: authorOf(INTAKE_KIND.plugin, { name: record.title, seed: identity }) },
         }),
       })
       return { intakeId: result.intakeId, status: result.status === INTAKE_OUTCOME.duplicate ? SOURCE_STATUS.duplicate : SOURCE_STATUS.accepted }

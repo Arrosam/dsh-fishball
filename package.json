@@ -17,6 +17,7 @@
     "index.js",
     "src/",
     "client.js",
+    "packages/messenger/",
     "assets/icon.svg",
     "cordis.patch.yml",
     "README.md",

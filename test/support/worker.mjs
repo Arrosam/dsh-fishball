@@ -110,6 +110,9 @@ function setBundleSelected(dir, name, selected) {
 const overlay = path.join(home, 'fbtest.overlay.yml')
 fs.writeFileSync(overlay, JSON.stringify([
   { id: 'agent-default-model', config: { provider: FAKE.provider, model: FAKE.model } },
+  // P11: FBTEST_TITLE_MAX_BYTES raises DSH's title byte cap (80 in dsh-base), so a test can give a session a title
+  // longer than the 200-byte author-name bound. The other two fields repeat dsh-base's values.
+  ...(process.env.FBTEST_TITLE_MAX_BYTES ? [{ id: 'session-title', config: { fallbackMaxWords: 5, fallbackMaxBytes: 40, maxTitleBytes: Number(process.env.FBTEST_TITLE_MAX_BYTES) } }] : []),
   { insert: [
     { id: 'fbtest-llm', name: FAKE_LLM_MODULE },
     // An ordinary preset with no tools of its own, so the global fixture tools are what its sessions see.
@@ -560,6 +563,16 @@ const ops = {
   sourceRow({ label }) { return { captured: store.sourceCtxs?.has(label) ?? false, events: (store.sourceEvents ?? []).filter((e) => e.label === label).map((e) => e.type) } },
   /** The root realm's fishball service: present, and its own keys. */
   fishballService() { const s = ctx.get('fishball'); return { present: s !== undefined && s !== null, hasRegister: typeof s?.registerSource === 'function' } },
+
+  // ---- P11 operations (Messenger look: authors) ----
+  /** Rename a live session the way DSH's rename does (a user title, through DSH's session-title service). */
+  renameSession({ sessionId, title }) {
+    try { return { ok: true, title: ctx.get('sessionTitle').rename(liveAgent(sessionId).session, title).title } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** A live session's current title as DSH's session-title service reports it ('' when it has none). */
+  sessionTitle({ sessionId }) { return ctx.get('sessionTitle')?.get(liveAgent(sessionId).session)?.title ?? '' },
+  /** Every row id of the dsh-fishball bundle as DSH's plugin manager lists it (the messenger must add none). */
+  async fishballRows() { return (await ctx.pluginManager.listBundles()).filter((b) => b.name === PACKAGE_NAME).flatMap((b) => b.rows.map((r) => r.rowId)).sort() },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])

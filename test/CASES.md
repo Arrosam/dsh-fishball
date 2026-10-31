@@ -871,3 +871,129 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 - **A94. The example's notes cannot be edited live.** The example's `notes` config is not `.volatile()`: DSH's settings service refuses an update ("Plugin entry … has no volatile fields"). The README's "add notes on its Plugins page" therefore takes effect when the row remounts. EXA-03/EXO-03 add a note across a restart instead. Whether the example should declare its notes volatile, so that a new note arrives without a restart, needs a decision.
 - **A95. A host row is always enabled.** Observed, and stated in the guide: a source of a row no catalog plugin owns stays enabled while Fishball is live, whatever plugin is turned off (ENA-02). It follows Fishball's state (ENA-07).
 - **A66. Runs while the implementation changes.** One full run made while the working tree was being edited gave 7 failures in the older lifecycle and context files (boots that never became ready). Rerun alone, those files passed 120/120, and the next full run passed 486/486.
+
+## P11 cases (Messenger look, revision 9; R1-R5)
+
+**Requirement summary.** A Fishball built-in `builtin:messenger` ("Messenger look", kind and status `builtin`) is on by default, on a new install and on an install from before P11 with no stored choice. It is switched like other built-ins (POST plugins, `set_plugin_enabled`), cannot be uninstalled (route 409 `refused`, tool `not-removable`), mounts no rows, registers no tools and does not count toward `maxFishballOnlyPlugins`. The snapshot carries `look`: `{messenger: <current choice>}` once the catalog exists, `null` before it or when the core failed. GET `/api/fishball/messenger/client.js` serves `packages/messenger/client.js` (`text/javascript; charset=utf-8`, `no-store`) whatever the look. Every intake message's `source` gains `author: {kind, name?, seed?}`. The name is the title at arrival, absent when the title is empty, and at most 200 UTF-8 bytes (a cut ends with `…`, the ellipsis inside the bound).
+
+| input | author |
+|---|---|
+| message_fishball from S (or from a subagent of S) | `{kind:'session', name: title(S), seed: S}` on the unchanged relay source |
+| Send to Fishball of S | `{kind:'user', name: title(S), seed: S}` |
+| install request (POST plugins/install) | `{kind:'user'}` |
+| watch notice for S | `{kind:'watch', name: title(S), seed: S}` |
+| permission request from S | `{kind:'approval', name: title(S), seed: S}` |
+| plugin source (identity I, title X) | `{kind:'plugin', name: X, seed: I}` |
+| unchecked-tools notice; the note after you answer a request Fishball passed on | `{kind:'system'}` |
+
+**Harness additions.** These are append-only. The worker's overlay raises DSH's title cap when `FBTEST_TITLE_MAX_BYTES` is set (`TITLE_ENV`, 1024 bytes; dsh-base sets 80), so titles longer than the 200-byte author bound can exist. New worker operations: `renameSession` (DSH's session-title service `rename`, a user title), `sessionTitle` (the title DSH reports, `''` when none) and `fishballRows` (dsh-fishball's row ids from DSH's plugin manager). New constants: `MESSENGER`, `LOOK_KEYS`, `AUTHOR_KIND`, `AUTHOR_KEYS`, `AUTHOR_NAME_MAX_BYTES`, `TITLE_ENV` and `PRE_MESSENGER` (commit e221d23, the last commit before P11's code, extracted with `git archive` as plugins-upgrade does). Every author case first checks that DSH reports the title it set. The new tests were also run against e221d23 (`FBTEST_PLUGIN_DIR`) and all 42 host cases failed there, so they tell the two versions apart.
+
+### [messenger-catalog.test.mjs](messenger-catalog.test.mjs): R1, R2 on a new install
+
+| id | technique | expected result |
+|---|---|---|
+| MSL-01 | EP (fresh install; GET state and first SSE frame) | exactly one `builtin:messenger`: title "Messenger look", kind builtin, status builtin, on, [disable], tools [], removing false, changedBy null; 12 keys; decision table |
+| MSL-02 | EP (list_plugins) | the same entry |
+| LOK-01 | EP (normal start) | `look` is exactly `{messenger: true}` |
+| LOK-02 | ST on → off (user) | the POST answer's `state.look.messenger` is false; entry off, changedBy user, [enable]; GET state agrees; an SSE frame carries false |
+| LOK-03 | ST off → on while Fishball is held in a turn | the answer, GET state and an SSE frame show true before the turn ends |
+| MSL-03 ×2 | DT (POST plugins/remove × on/off) | 409 `refused`; entry and look unchanged |
+| MSL-04 ×2 | DT (remove_plugin × on/off) | `not-removable`; no prompt |
+| MSL-05 | ST on → off → on (set_plugin_enabled) | ok:true, no prompt, changedBy fishball; look follows |
+| MSL-06 | EP (on vs off) | the same Fishball request tools, global tools, dsh-fishball rows and profile files; the entry's tools are [] |
+| MSL-07 | BVA (maxFishballOnlyPlugins 1, reached by fbtest-only) | another fishball-only plugin is refused (precondition); the messenger off and on both answer 200 ok |
+| LOK-04 | EP (every frame collected) | with a catalog, `look.messenger` equals the entry's `on` |
+| MSL-08 | ST off → restart → on → restart | the choice survives each restart (changedBy user) |
+| LOK-05 | EP (store unreadable: core failed) | `look` is present and null in GET state and the first frame |
+| LOK-06 | ST starting → live (setup request held) | in every snapshot and frame: no catalog → look null; catalog → `{messenger: entry.on}`; live → `{messenger: true}` |
+
+### [messenger-upgrade.test.mjs](messenger-upgrade.test.mjs): R1 on an existing install
+
+| id | technique | expected result |
+|---|---|---|
+| UPL-00 | precondition | the old version (e221d23) has no entry and no `look` field |
+| UPL-01 | DT (existing install × no stored choice) | on, builtin, [disable], changedBy null; look `{messenger:true}` |
+| UPL-02 | DT (existing install × other built-ins changed by the user) | builtin:reminders stays off, builtin:ask-user stays on |
+| UPL-03 | ST (restart) | still on |
+| UPL-04 | ST (user off → restart) | stays off; the default is not applied again |
+
+### [messenger-client.test.mjs](messenger-client.test.mjs): R3
+
+| id | technique | expected result |
+|---|---|---|
+| MCJ-01 | EP (GET, look on) | 200, `text/javascript; charset=utf-8`, `no-store`, body byte-for-byte `packages/messenger/client.js` |
+| MCJ-02 | ST (look off, then on) | the same answer in both states |
+| MCJ-03 | EP (POST) | not 200, and never the file |
+| MCJ-04 | EP (no cookie) | not 200, and not the file |
+| MCJ-05 | EP | `packages/messenger/package.json` name `dsh-fishball-messenger` |
+| MCJ-06 | EP | `files` lists `packages/messenger/`; `npm pack --dry-run` lists `packages/messenger/package.json` and `packages/messenger/client.js` |
+| MCJ-07 | EP | client.js calls `window.__ModuleLoader__.load({ … id: 'dsh-fishball-messenger' … })` |
+
+### [messenger-author.test.mjs](messenger-author.test.mjs): R4 (one host with source fixtures and the raised title cap)
+
+| id | technique | expected result |
+|---|---|---|
+| AUT-01 | EP (message_fishball; title with quotes and markup) | source = `{agent-message, relay, senderSessionId: S, author: {session, title, S}}`; the name is the title verbatim; text and block unchanged |
+| AUT-02 | EP (subagent of S) | author `{session, title(S), S}`, not the child |
+| AUT-03 | EP (Send to Fishball) | source = `{fishball-notice, notice, 'The user forwarded a session', author: {user, title(S), S}}` |
+| AUT-04 | EP (install route) | author exactly `{kind:'user'}` |
+| AUT-05 | EP (watch notice) | source = `{fishball-notice, notice, 'A watched session finished (completed)', author: {watch, title(S), S}}` |
+| AUT-06 | EP (plugin source) | source = `{fishball-notice, notice, 'Plugin event: "X"', author: {plugin, X, identity}}` |
+| AUT-07 ×2 | BVA (source title exactly 200 bytes: ASCII, emoji) | the whole title |
+| AUT-08 | EP (unchecked-tools notice) | author exactly `{kind:'system'}` |
+| AUT-09 ×9 | BVA × EP (bytes × character width) | whole: 199 and 200 ASCII bytes, 66 CJK + 2 ASCII, 50 emoji, 100 'é'. Cut: 201 ASCII bytes, 67 CJK (201), 51 emoji (204), 100 'é' + 1 ASCII (201). A cut name is ≤ 200 bytes, ends with '…', is a prefix of the title and splits no character |
+| AUT-10 | EP (empty title) | author `{session, seed: S}` with no `name` key |
+| AUT-11 | ST (title A → message → rename B → message) | the first stored message keeps A; the second has B |
+| AUT-12 | EP (Send to Fishball, 250-byte title) | cut by the same rule |
+| AUT-13 | EP (sweep of Fishball's log) | every author has only kind/name/seed, a known kind and string values; a present name is non-empty and ≤ 200 bytes; every relay and every notice except the setup message has one |
+
+### [messenger-author-approvals.test.mjs](messenger-author-approvals.test.mjs): R4 for permission requests (scripted answerer after the broker)
+
+| id | technique | expected result |
+|---|---|---|
+| AUT-14 | EP (S asks; Fishball escalates) | source = `{fishball-notice, notice, 'Permission request: "fbtest_ask"', author: {approval, title(S), S}}`; text still starts `[permission request apr_…]` |
+| AUT-15 | EP (the user answers the escalated request) | the note in Fishball's next turn has author exactly `{kind:'system'}` |
+| AUT-16 | EP (no answer in time; the user answers) | the timeout note has author exactly `{kind:'system'}` |
+| AUT-17 | BVA (201-byte title) | the approval author's name is cut (≤ 200 bytes, '…', a prefix) |
+
+### R5 browser behaviour (manual; the suite drives no browser)
+
+Run these against a live DSH Web with the Messenger look on, unless the case says otherwise.
+
+| id | technique | expected result |
+|---|---|---|
+| MAN-01 | EP | In Fishball's session your messages are right-aligned bubbles labelled "You" |
+| MAN-02 | EP (one per author kind) | Each input is a left-aligned bubble with its author's name and an initials disc coloured from `seed`. A system notice shows Fishball's fish. Each bubble wraps DSH's own row for that message |
+| MAN-03 | EP (two consecutive inputs from one author, then another author) | The name and avatar appear once per run of bubbles |
+| MAN-04 | EP | Fishball's replies are bubbles with the fish and the name "Fishball"; work rows (tools, reasoning) are muted |
+| MAN-05 | ST idle → running → idle | The header shows "online", then "typing…", then "online" |
+| MAN-06 | EP (an ordinary session, look on and off) | It renders exactly as without the plugin |
+| MAN-07 | ST on → off → on (settings page or set_plugin_enabled), no reload | The stock look comes back at once, then the messenger look |
+| MAN-08 | DT (pre-P11 messages without author: relay / Fishball notice / user) | The fallback names are "Another session", "Fishball notice" and "You" |
+| MAN-09 | EP (a title containing markup) | The name is shown as plain text |
+
+### Ambiguities (P11)
+
+- **A108. Which notes are "the note after you answer".** The escalated note (AUT-15) and the timeout note (AUT-16) are both injected after the user answers a request that Fishball passed on, so both are expected to have `{kind:'system'}`. The withdrawn note is not asserted.
+- **A109. The setup message.** "Fishball is set up" is not in the author table and is not an intake message, so AUT-13 does not require an author on it.
+- **A110. How short a cut name is.** The requirement bounds the cut (≤ 200 bytes, ends with '…', no split character); it does not say the cut must keep the longest prefix. The tests do not assert that. Observed: 200 bytes (ASCII), 198 (CJK), 199 (emoji), 199 (é + ASCII), which is the longest prefix that fits.
+- **A111. "Other methods are not served by Fishball."** Checked as: a POST never gets 200 or the file's bytes. The exact status DSH answers is not asserted.
+- **A112. An empty title.** DSH's rename refuses an empty title, so AUT-10 builds a session whose only turn was started by a relay. DSH derives titles from the user's messages only, so the session has no title; the test checks this first.
+- **A113. Titles over 80 bytes.** DSH caps titles at 80 bytes by default, so the 200-byte rule can only bite when the cap is raised. The author files raise it to 1024 through the overlay (`TITLE_ENV`).
+- **A114. "Exactly like other built-ins" for set_plugin_enabled.** The Messenger look has no tools, so MSL-05 expects no prompt (as for builtin:time).
+
+### Cases changed by P11
+
+R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact-match assertions in earlier files were updated on the coordinator's instruction. Each expected author is derived from the R4 table. Every other assertion is unchanged.
+
+- **`STATE_KEYS`** ([support/constants.mjs](support/constants.mjs)) gains `look` (17 keys). This covers HTP-01, HTP-04/05, PHT-01, PHT-04 and SND-01's key check.
+- New helpers in [support/expect.mjs](support/expect.mjs):
+  - `sessionAuthor(host, kind, sid)` builds `{kind, name: <the title DSH reports for sid>, seed: sid}`, with no `name` when the title is empty. The title is the fake model's "fbtest title", which does not change after it arrives and is within the 200-byte bound.
+  - `pluginAuthor(title, identity)` builds `{kind:'plugin', name: title, seed: identity}`.
+- **MSG-03** expects `author: sessionAuthor(session, bare)`. **MSG-06** expects `sessionAuthor(session, std)`: the root session, not the subagent.
+- **SND-01** expects `author: sessionAuthor(user, target)`.
+- **APR-01** and the APR-14 row "the call was to another tool" expect `author: sessionAuthor(approval, x)`.
+- **PUB-01** expects `author: pluginAuthor(SRC.title, IDENT)`. **EXA-01** expects `pluginAuthor(EXAMPLE.source.title, IDENT)`.
+- **FIR-01** expects `author: sessionAuthor(watch, sid)`.
+- Knock-ons that need no edit: FIR-02 (it depends on FIR-01) and APR-15, the first APR-16 row and APR-18 (they failed only because the failing APR-14 row left a request pending).
+- OUT's two relay assertions (messaging-outbound) are unchanged. They cover Fishball's messages to other sessions, which R4 leaves out of scope.

@@ -22,7 +22,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { API, LIMITS, NOTICE, PLUGIN_INTAKE_KIND, PUBLISH_STATUS, SOURCE_SUMMARY, SUMMARY_MAX_CHARS, SOURCE_BOUNDS, SOURCE_BUNDLES, SOURCE_ERR, SOURCE_IDENTITY, SOURCES_ENV, STATUS } from './support/constants.mjs'
-import { HOOK, T, bytes, intakeNow, pluginNotices, publish, register, requestsWith, settle, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
+import { HOOK, T, bytes, pluginAuthor, intakeNow, pluginNotices, publish, register, requestsWith, settle, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
 const A = SOURCE_BUNDLES.profile
@@ -98,7 +98,8 @@ describe('P8 publish', () => {
     const notices = await pluginNotices(host, fb, ev.body)
     assert.equal(notices.length, 1, 'one user/message')
     const n = notices[0]
-    assert.deepEqual(n.source, { ...NOTICE, summary: SOURCE_SUMMARY(SRC.title) }, 'summary names the source title (review update); the event title stays in the block')
+    // P11 R4: the source is the author (its registered title and identity).
+    assert.deepEqual(n.source, { ...NOTICE, summary: SOURCE_SUMMARY(SRC.title), author: pluginAuthor(SRC.title, IDENT) }, 'summary names the source title (review update); the event title stays in the block')
     const block = untrustedBlock(n.text)
     assert.ok(block, 'an untrusted block: ' + n.text.slice(0, 400))
     assert.ok(block.header.includes(JSON.stringify(SRC.title)), 'header names the source title, JSON-quoted: ' + block.header)

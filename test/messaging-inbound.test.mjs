@@ -22,11 +22,11 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
-  API, IDENTITY, INBOUND_TOOL, INTAKE_ITEM_KEYS, INTAKE_KEYS, INTAKE_KINDS, INTAKE_STATUSES, LIMITS, NOTE_TEXT, OUTBOUND_TOOLS,
+  API, AUTHOR_KIND, IDENTITY, INBOUND_TOOL, INTAKE_ITEM_KEYS, INTAKE_KEYS, INTAKE_KINDS, INTAKE_STATUSES, LIMITS, NOTE_TEXT, OUTBOUND_TOOLS,
   P5_CODE, PRESET, RELAY, RELAY_HEADER, STATE_LIST_MAX,
 } from './support/constants.mjs'
 import {
-  HOOK, T, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball, settledIdle,
+  HOOK, T, callTool, sessionAuthor, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball, settledIdle,
   toolNames, toolSchema, turn, untilSeen, untrustedBlock,
 } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
@@ -98,7 +98,8 @@ describe('P5 message_fishball', () => {
     assert.ok((await host.call('requests', { sessionId: fb })).length > before)
     const got = await fishballMessages(host, fb, JSON.stringify(text))
     assert.equal(got.length, 1, 'exactly one message')
-    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: bare })
+    // P11 R4: the relay source also carries the sender as author.
+    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: bare, author: await sessionAuthor(host, AUTHOR_KIND.session, bare) })
     assert.ok(got[0].text.startsWith(RELAY_HEADER), 'trusted header first: ' + got[0].text.slice(0, 120))
     const block = untrustedBlock(got[0].text)
     assert.ok(block && block.inner !== null, 'an untrusted block: ' + got[0].text)
@@ -155,7 +156,8 @@ describe('P5 message_fishball', () => {
     assert.ok(await untilSeen(host, fb, text))
     const got = await fishballMessages(host, fb, text)
     assert.equal(got.length, 1)
-    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: std })
+    // P11 R4: a subagent's call counts as its root session, also for the author.
+    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: std, author: await sessionAuthor(host, AUTHOR_KIND.session, std) })
     const block = untrustedBlock(got[0].text)
     assert.equal(block.fields.session_id, std)
     assert.equal(block.fields.sent_by_subagent_session, child)

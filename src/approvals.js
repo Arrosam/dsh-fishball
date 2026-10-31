@@ -26,6 +26,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, INTAKE_KIND, SOURCE } from './constants.js'
 import { AuditLog } from './audit.js'
 import { describeSession, rootSessionOf } from './session-info.js'
+import { authorOf, sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
@@ -235,13 +236,14 @@ export class ApprovalBroker {
     this.#onChange()
     if (this.#pending.has(id)) {
       try {
+        const info = (await describeSession(this.#ctx, sessionId)) ?? { id: sessionId, title: '', cwd: null }
         await this.#ledger.publish({
           kind: INTAKE_KIND.approval,
           sourceIdentity: SOURCE_IDENTITY,
           dedupeKey: id,
           message: createUserMessage({
-            content: [{ type: 'text', text: TEXT.request(id, (await describeSession(this.#ctx, sessionId)) ?? { id: sessionId, title: '', cwd: null }, ask, args, latestUserText(root), this.#provenance(root), limits.approvalAnswerSeconds) }],
-            source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(req.toolName)) },
+            content: [{ type: 'text', text: TEXT.request(id, info, ask, args, latestUserText(root), this.#provenance(root), limits.approvalAnswerSeconds) }],
+            source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(req.toolName)), author: sessionAuthor(INTAKE_KIND.approval, info) },
           }),
         })
       } catch (error) {
@@ -333,7 +335,7 @@ export class ApprovalBroker {
   #tell(text) {
     const agent = this.#agentOf()
     if (agent === undefined) return
-    try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text) } })) } catch (error) {
+    try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } })) } catch (error) {
       this.#logger.warn('approval note failed (%s)', diagnosticOf(error))
     }
   }

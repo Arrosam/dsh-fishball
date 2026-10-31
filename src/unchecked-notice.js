@@ -10,6 +10,7 @@
  */
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { INTAKE_KIND, SOURCE } from './constants.js'
+import { authorOf } from './author.js'
 import { compoundKey } from './keys.js'
 import { diagnosticOf } from './errors.js'
 
@@ -49,7 +50,7 @@ export function uncheckedToolsNotifier({ ledger, catalog, decisions, store, logg
     if (tools.length === 0) return
     tools.sort((a, b) => versionOf(a).localeCompare(versionOf(b)))
     const dedupeKey = tools.map(versionOf).join(VERSION_SEPARATOR)
-    const message = createUserMessage({ content: [{ type: 'text', text: TEXT.body(tools) }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(tools.length)) } })
+    const message = createUserMessage({ content: [{ type: 'text', text: TEXT.body(tools) }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(tools.length)), author: authorOf(INTAKE_KIND.system) } })
     await ledger.publish({ kind: INTAKE_KIND.system, sourceIdentity: SOURCE_IDENTITY, dedupeKey, message })
   }
   return () => {

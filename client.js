@@ -13,6 +13,10 @@
  *    tools Fishball never uses. There is no separate settings panel.
  * 3. Header action in Fishball's own session: opens that Plugins page.
  * 4. Fishball's own session row is hidden from the sidebar's session list; the brand opens it.
+ * 5. The Messenger look (DESIGN §10c): while the Host reports `look.messenger`, this half loads
+ *    the dsh-fishball-messenger package's browser file from the Host and mounts it as a child
+ *    plugin; it is disposed when the look is turned off. DSH serves browser halves only for
+ *    host rows, and the messenger package has none (spike S24).
  *
  * The mark is FishMark from the owner's fishball app (assets/icon.svg, THIRD_PARTY_NOTICES).
  *
@@ -49,7 +53,9 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', pluginsInstall: 'api/fishball/plugins/install', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', pluginsInstall: 'api/fishball/plugins/install', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js' })
+    /** The Messenger look's module id: its browser file registers it with DSH's module system. */
+    const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
     const WATCH_MENU = Object.freeze({ id: 'fishball-watch', order: 425 })
     const WATCH_HEADER = Object.freeze({ id: 'fishball-watch', order: 3 })
@@ -1310,6 +1316,58 @@ window.__ModuleLoader__.load({
       return () => { unsubscribe(); style.remove() }
     }
 
+    /** Load a script once; the promise settles when it has run. */
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = src
+        script.onload = () => resolve()
+        script.onerror = () => { script.remove(); reject(new Error(src)) }
+        document.head.appendChild(script)
+      })
+    }
+
+    /**
+     * Fishball's session id for the messenger's rows (a React hook). It selects the id alone, so
+     * rows in every session re-render only when the id changes, not on each state event.
+     */
+    const useAssistantSessionId = () => React.useSyncExternalStore(stateSource.subscribe, () => stateSource.get().sessionId)
+
+    /**
+     * Mount the Messenger look while the Host reports it on, dispose it when off. Its file is
+     * fetched at most once per page: a module already registered (a remount of this half) is
+     * reused, because DSH refuses a second registration of the same id; so a page keeps the
+     * messenger code it first loaded until it reloads. A failed load or mount is not retried on
+     * every state event (the same failure would repeat): it is tried again when the look is
+     * turned off and on, or on reload.
+     */
+    function followMessenger(ctx) {
+      let fork
+      let loading
+      let wanted = false
+      /** Bumped on every change, so a load that finishes after the look went off mounts nothing. */
+      let generation = 0
+      const messengerModule = () => {
+        try { return Promise.resolve(require(MESSENGER_MODULE)) } catch { /* not registered yet */ }
+        loading ??= loadScript(apiUrl(API.messengerClient)).then(() => require(MESSENGER_MODULE))
+        loading.catch(() => { loading = undefined })
+        return loading
+      }
+      const update = () => {
+        const on = stateSource.get().look?.messenger === true
+        if (on === wanted) return
+        wanted = on
+        const current = ++generation
+        if (!on) { fork?.dispose(); fork = undefined; return }
+        messengerModule()
+          .then((plugin) => { if (current === generation) fork = ctx.plugin(plugin, { useAssistantSessionId, mark: FISH_MARK }) })
+          .catch((error) => console.warn('fishball: the Messenger look could not be loaded', error))
+      }
+      update()
+      const unsubscribe = stateSource.subscribe(update)
+      return () => { unsubscribe(); generation++; fork?.dispose(); fork = undefined }
+    }
+
     exports.name = PACKAGE_NAME
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {
@@ -1317,6 +1375,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
       ctx.effect(hideOwnRow, 'fishball: hide own session row')
+      ctx.effect(() => followMessenger(ctx), 'fishball: messenger look')
       const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
         yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, makeMark(t))

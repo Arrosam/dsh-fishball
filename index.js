@@ -18,12 +18,14 @@
  * - src/approvals.js       other sessions' permission requests go to Fishball first
  * - src/sources.js         ctx.fishball: plugins publish events to Fishball (DESIGN §8)
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
- * - src/http.js            /api/fishball/* for the settings page and the brand button
+ * - src/http.js            /api/fishball/* for the settings page, the brand button and the Messenger look
  */
 // Evaluated first, so the register() wrapper sees every tool registered after this row loads.
 import './src/tool-attribution.js'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -68,7 +70,9 @@ export async function apply(ctx, config) {
   let sourcesView = () => null
   let unreadView = () => null
   let preferencesView = () => null
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView() })
+  /** The Messenger look's on/off for the browser (DESIGN §10c); null until the catalog exists. */
+  let lookView = () => null
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView() })
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
@@ -89,6 +93,8 @@ export async function apply(ctx, config) {
     removeWatch: (input) => commands.removeWatch(input),
     markRead: () => commands.markRead(),
     setBrandStyle: (style) => commands.setBrandStyle(style),
+    // Read per request: served whether the look is on or off, the browser decides (DESIGN §10c).
+    messengerScript: () => readFile(path.join(import.meta.dirname, MESSENGER.clientFile)),
   })
   // A limit edited on the Plugins page reaches this row without a remount (spike S21).
   ctx.on(EVENT.volatileUpdate, publish)
@@ -161,6 +167,9 @@ export async function apply(ctx, config) {
   // An uninstall a restart interrupted finishes now (its rows were not mounted at boot).
   void catalog.finishRemovals()
   catalogView = () => catalog.snapshot(composition.decisions())
+  // The choice, not the applied state: the look mounts no rows, so the browser need not wait
+  // for Fishball's turn to end before it changes.
+  lookView = () => ({ messenger: catalog.desiredOn(MESSENGER.pluginKey) })
   contextView = () => contextWindow.snapshot()
 
   // Inputs (DESIGN §5b) and handing work off (§5d).
