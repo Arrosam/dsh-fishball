@@ -1,7 +1,7 @@
 /**
  * Plugin statuses feature: the three statuses (installed-in-fishball, dsh-enabled, dsh-disabled) plus
  * built-ins, the actions each offers, Fishball-installed plugins (add_plugin into Fishball's own folder,
- * remove_plugin, POST plugins/remove, POST plugins/install). One new-install host, cases in order
+ * remove_plugin, POST plugins/remove; revision 10a: POST install, and POST plugins/install removed). One new-install host, cases in order
  * (state transitions); a second host whose store is unreadable checks 'unavailable'.
  * Requirements: the plugin-statuses brief (see CASES.md "Plugin statuses cases"); never the implementation.
  *
@@ -23,22 +23,20 @@
  * | STA-14 | ST on -remove (Allow)-> removing -turn ends-> gone | answer {ok:true, plugin, removing:true}; a list_plugins later in the same turn shows removing true, actions []; after the turn the entry and the package are gone, the tool too; audit action remove |
  * | STA-15 | ST gone -add again-> installed | re-adding after the uninstall succeeds (not already-installed) |
  * | STA-16 | EP (package without a bundle patch) | install-failed / not-bundle; not kept in Fishball's folder; no entry |
- * | STA-17 ×7 | DT (install body) | invalid JSON, array, {}, spec 1, spec null, '', blanks: 400 bad-body |
- * | STA-18 ×2 | BVA (maxMessageBytes 64: spec 65 / 64 bytes) | 409 too-large / 200 |
- * | STA-19 | ST (install route, Fishball idle) | 200 {ok, state}; Fishball receives a message containing the spec, calls add_plugin (scripted), the prompt is asked in Fishball's session, fishball:fbtest-added-b ends installed and on |
+ * | STA-17 | EP (removed route, revision 10a) | POST plugins/install answers as a path no route serves (not 200); Fishball receives nothing |
+ * | STA-19 | ST (user install route, revision 10a) | POST install {spec, requestId}: 200 {ok, plugin: fishball:fbtest-added-b, name, version, on:true}; no prompt; installed, on and applied, changedBy user; profile files byte-identical |
  * | STA-20 | ST on -user remove while Fishball runs-> removing -turn ends-> gone | 200; no prompt; removing true, actions [] in GET state and in an SSE frame while the turn runs, package still there; gone after the turn |
  * | STA-21 | ST on -user remove while idle-> gone | 200; the entry and the package go without a Fishball turn |
  * | STA-22 | DT (same name as a DSH plugin) | fishball:fbtest-added-c is a separate entry; the DSH entry fbtest-added-c keeps kind fishball-only, off; the remove route refuses the DSH entry; removing the Fishball one leaves the DSH one |
- * | STA-23 | BVA (maxQueuedInputs 1, Fishball held) | the first install request 200, the second 409 queue-full |
- * | STA-24 | EP (no cookie) | both new routes are not 200 |
- * | STA-25 | EP (store unreadable: core failed) | POST plugins/install answers 409 unavailable |
+ * | STA-24 | EP (no cookie) | the remove route and the three install routes are not 200 |
+ * | STA-25 ×2 | EP (store unreadable: core failed) | POST install/inspect and POST install answer 409 unavailable; nothing installed |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
-  ACTION, ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, API, BUILTINS, CATALOG_KEYS, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INSTALL_REASON,
+  ACTION, ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, API, BUILTINS, CATALOG_KEYS, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INSTALL_API, INSTALL_REASON,
   INSTALLED_KEY, KIND, LIMITS, NOT_BUNDLE, ONLY_BUNDLES, OUTCOME, P5_CODE, PACKAGE_NAME, PLUGIN_KEYS, PLUGIN_STATUS, PRESET, STATUS, STORE,
 } from './support/constants.mjs'
 import {
@@ -62,7 +60,6 @@ describe('Plugin statuses on a new install', () => {
   let bare
   const toggle = (plugin, on) => host.post(API.plugins, { plugin, on })
   const removeRoute = (plugin) => host.post(API.pluginsRemove, { plugin })
-  const installRoute = (spec) => host.post(API.pluginsInstall, { spec })
   const approvalsFor = async () => (await host.call('approvals', { sessionId: fb })).length
   const ordinaryTools = async () => toolNames((await turn(host, bare, [[{ text: 'hi' }]])).requests.at(-1))
   const eventsOf = async (bundle) => (await host.call('bundleEvents', { bundle })).map((e) => e.type)
@@ -341,59 +338,37 @@ describe('Plugin statuses on a new install', () => {
     assert.equal(r.json?.ok, false, r.result.text)
     assert.equal(r.json?.code, CODE.installFailed)
     assert.equal(r.json?.reason, INSTALL_REASON.notBundle)
-    assert.equal(inFishballFolder(home, NOT_BUNDLE.name), false, 'not kept')
+    // Revision 10a (A130): DSH's inherited process undoes the install; the removal may still be finishing when it answers.
+    assert.ok(await until(() => !inFishballFolder(home, NOT_BUNDLE.name), 30000, 200), 'not kept')
     assert.equal(pluginIn(await catalogSettled(host), INSTALLED_KEY(NOT_BUNDLE.name)), undefined)
     assert.deepEqual(profileSnapshot(home), files)
   })
 
-  describe('POST plugins/install', () => {
-    for (const [label, body, raw] of [['invalid JSON', '{spec:', true], ['a JSON array', '["x"]', true], ['{}', {}, false], ['spec 1', { spec: 1 }, false], ['spec null', { spec: null }, false], ['spec empty', { spec: '' }, false], ['spec blanks', { spec: '   ' }, false]]) {
-      it('STA-17 ' + label + ' answers 400 bad-body', T, async () => {
-        const res = await host.post(API.pluginsInstall, body, { raw })
-        assert.equal(res.status, 400, res.text)
-        assert.deepEqual(res.json, { ok: false, code: CODE.badBody })
-      })
-    }
-
-    describe('maxMessageBytes 64', () => {
-      before(async () => { await settledIdle(host, fb); await setLimit({ maxMessageBytes: 64 }) }, HOOK)
-      after(async () => { await setLimit({ maxMessageBytes: LIMITS.maxMessageBytes.default }); await settledIdle(host, fb) }, HOOK)
-      it('STA-18 a 65-byte spec is 409 too-large', T, async () => {
-        const res = await installRoute('/' + 'a'.repeat(64))
-        assert.equal(res.status, 409, res.text)
-        assert.deepEqual(res.json, { ok: false, code: P5_CODE.tooLarge })
-      })
-      it('STA-18 a 64-byte spec is queued (200)', T, async () => {
-        const spec = '/' + 'b'.repeat(63)
-        const res = await installRoute(spec)
-        assert.equal(res.status, 200, res.text)
-        assert.equal(res.json?.ok, true)
-        assert.ok(await until(async () => (await fishballMessages(host, fb, spec)).length > 0, 10000, 100), 'delivered to Fishball')
-        await settledIdle(host, fb)
-      })
+  describe('Install for Fishball (revision 10a)', () => {
+    it('STA-17 the removed route POST plugins/install is absent: it answers as an unknown path and reaches nobody', T, async () => {
+      await settledIdle(host, fb)
+      const spec = '/nonexistent/fbtest-removed-route'
+      const unknown = await host.post(API.unknownRoute, { spec })
+      const res = await host.post(API.removedPluginsInstall, { spec })
+      assert.notEqual(res.status, 200, res.text)
+      assert.equal(res.status, unknown.status, 'the same answer as a path no route serves')
+      await sleep(1000)
+      assert.deepEqual(await fishballMessages(host, fb, spec), [], 'nothing was handed to Fishball')
     })
 
-    it('STA-19 the request wakes Fishball, which installs through add_plugin after the normal prompt', LONG_T, async () => {
+    it('STA-19 the user installs fbtest-added-b through POST install: no prompt, on for Fishball, changed by the user', LONG_T, async () => {
       await settledIdle(host, fb)
-      const spec = ADDED_BUNDLE_B.dir
-      await host.call('queueMarker', { marker: spec, script: [[{ tool: 'add_plugin', args: { spec, reason: 'the user asked from the settings page' } }], [{ text: 'done' }]] })
-      await host.call('setApprover', { outcome: OUTCOME.allow })
-      try {
-        const asked = await approvalsFor()
-        const res = await installRoute(spec)
-        assert.equal(res.status, 200, res.text)
-        assert.equal(res.json?.ok, true)
-        assert.equal(typeof res.json?.state, 'object')
-        assert.ok(await until(async () => (await fishballMessages(host, fb, spec)).length > 0, 10000, 100), 'Fishball received a message containing the spec')
-        const c = await untilCatalog(host, (x) => pluginIn(x, KEY_B)?.on === true && pluginIn(x, KEY_B)?.applied === true, INSTALL_MS)
-        assert.ok(c, 'fishball:fbtest-added-b installed and on: ' + JSON.stringify(pluginIn((await host.state()).catalog, KEY_B)))
-        const seen = (await host.call('approvals', { sessionId: fb })).slice(asked)
-        assert.equal(seen[0]?.toolName, 'add_plugin', 'the normal prompt was asked in Fishball\'s session')
-      } finally {
-        await host.call('setApprover', { outcome: OUTCOME.reject })
-        await settledIdle(host, fb)
-      }
+      const asked = await approvalsFor()
+      const files = profileSnapshot(home)
+      const res = await host.post(INSTALL_API.install, { spec: ADDED_BUNDLE_B.dir, requestId: 'fbtest-sta19' })
+      assert.equal(res.status, 200, res.text)
+      assert.deepEqual(res.json, { ok: true, plugin: KEY_B, name: ADDED_BUNDLE_B.name, version: '0.0.1', on: true })
+      const c = await untilCatalog(host, (x) => pluginIn(x, KEY_B)?.on === true && pluginIn(x, KEY_B)?.applied === true, INSTALL_MS)
+      assert.ok(c, 'fishball:fbtest-added-b installed and on')
+      assert.equal(pluginIn(c, KEY_B).changedBy, 'user')
+      assert.equal(await approvalsFor(), asked, 'your click is the approval: no prompt')
       assert.ok(inFishballFolder(home, ADDED_BUNDLE_B.name))
+      assert.deepEqual(profileSnapshot(home), files)
     })
   })
 
@@ -467,24 +442,8 @@ describe('Plugin statuses on a new install', () => {
     assert.ok(inProfile(home, D.name), 'still installed in the profile')
   })
 
-  it('STA-23 maxQueuedInputs 1 while Fishball runs: the second install request is 409 queue-full', T, async () => {
-    await setLimit({ maxQueuedInputs: 1 })
-    await holdFishball(host, fb)
-    try {
-      const first = await installRoute('/nonexistent/fbtest-queued-1')
-      assert.equal(first.status, 200, first.text)
-      const second = await installRoute('/nonexistent/fbtest-queued-2')
-      assert.equal(second.status, 409, second.text)
-      assert.deepEqual(second.json, { ok: false, code: P5_CODE.queueFull })
-    } finally {
-      await host.call('releaseHold', { sessionId: fb })
-      await settledIdle(host, fb)
-      await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default })
-    }
-  })
-
-  it('STA-24 both new routes refuse a request without the browser cookie', T, async () => {
-    for (const [route, body] of [[API.pluginsRemove, { plugin: FIX }], [API.pluginsInstall, { spec: '/nonexistent/fbtest-nocookie' }]]) {
+  it('STA-24 the remove route and the three install routes refuse a request without the browser cookie', T, async () => {
+    for (const [route, body] of [[API.pluginsRemove, { plugin: FIX }], [INSTALL_API.inspect, { spec: '/nonexistent/fbtest-nocookie' }], [INSTALL_API.install, { spec: '/nonexistent/fbtest-nocookie', requestId: 'fbtest-nocookie' }], [INSTALL_API.cancel, { requestId: 'fbtest-nocookie' }]]) {
       const res = await fetch(host.origin + route, { method: 'POST', headers: { origin: host.origin, 'content-type': 'application/json' }, body: JSON.stringify(body) })
       await res.text()
       assert.notEqual(res.status, 200, route)
@@ -502,11 +461,14 @@ describe('Plugin statuses while the core failed', () => {
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('STA-25 POST plugins/install answers 409 unavailable', T, async () => {
-    const st = await host.waitStatus(STATUS.failed)
-    assert.equal(st?.status, STATUS.failed, 'precondition: ' + JSON.stringify(st))
-    const res = await host.post(API.pluginsInstall, { spec: ADDED_BUNDLE.dir })
-    assert.equal(res.status, 409, res.text)
-    assert.deepEqual(res.json, { ok: false, code: P5_CODE.unavailable })
-  })
+  for (const [route, body] of [[INSTALL_API.inspect, { spec: ADDED_BUNDLE.dir }], [INSTALL_API.install, { spec: ADDED_BUNDLE.dir, requestId: 'fbtest-sta25' }]]) {
+    it('STA-25 POST ' + route + ' answers 409 unavailable while Fishball is not ready', T, async () => {
+      const st = await host.waitStatus(STATUS.failed)
+      assert.equal(st?.status, STATUS.failed, 'precondition: ' + JSON.stringify(st))
+      const res = await host.post(route, body)
+      assert.equal(res.status, 409, res.text)
+      assert.deepEqual(res.json, { ok: false, code: P5_CODE.unavailable })
+      assert.equal(inFishballFolder(host.home, ADDED_BUNDLE.name), false, 'nothing installed')
+    })
+  }
 })

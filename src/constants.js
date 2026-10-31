@@ -139,13 +139,19 @@ export const FISHBALL_PACKAGES = Object.freeze({
   idleTimeoutMs: 600000,
   lockWaitMs: 120000,
   lookupTimeoutMs: 20000,
+  /** The patch file a profile-shaped folder would have; DSH's manager never writes it for installs (S31). */
+  patchFile: 'cordis.patch.yml',
+  /** How pnpm is told the registry a package came from, so its lockfile check passes on removal (DSH's removeBundle). */
+  registryOption: '--config.registry=',
+  /**
+   * After a refused or cancelled install DSH restores the manifest and lockfile but leaves the
+   * fetched files in node_modules; pnpm install with the restored files removes them again.
+   */
+  prune: Object.freeze(['install', '--prefer-offline']),
+  /** How long the inherited manager may take to start before package operations give up on it. */
+  managerStartMs: 30000,
 })
 
-/**
- * Install requests from the settings page (src/plugin-tools.js installRequester). Kept apart
- * from messaging's SOURCE_ID: those name sessions, and a request names none.
- */
-export const PLUGIN_INSTALL_REQUEST = Object.freeze({ sourceIdentity: 'user/plugin-install' })
 
 /** Why installing or removing a Fishball-installed package failed (add_plugin's `reason`). */
 export const PACKAGE_ERROR = Object.freeze({
@@ -156,6 +162,12 @@ export const PACKAGE_ERROR = Object.freeze({
   incompatibleVersion: 'incompatible-version',
   operationError: 'operation-error',
   noProfile: 'no-profile',
+  /** You cancelled the install in the dialog (DSH's install process, revision 10a). */
+  cancelled: 'cancelled',
+  /** pnpm held back install scripts that need your approval (DSH's pendingBuilds). */
+  buildBlocked: 'build-blocked',
+  /** The spec is longer than maxMessageBytes (the bound the page's spec always had). */
+  tooLarge: 'too-large',
 })
 
 /** Who last changed a plugin's Fishball state. */
@@ -529,8 +541,6 @@ export const API = Object.freeze({
   plugins: '/api/fishball/plugins',
   /** POST { plugin }: you uninstall a Fishball-installed plugin. */
   pluginsRemove: '/api/fishball/plugins/remove',
-  /** POST { spec }: you ask Fishball to install a plugin (Fishball calls add_plugin). */
-  pluginsInstall: '/api/fishball/plugins/install',
   /** POST { toolKey }: withdraw an allowance for a tool nobody had checked. */
   toolApprovals: '/api/fishball/tool-approvals/remove',
   /** POST { contextWindowTokens, maxOutputTokens }: each a positive whole number or null (unset). */
@@ -553,6 +563,12 @@ export const API = Object.freeze({
   pluginsIcon: '/api/fishball/plugins/icon',
   /** POST { plugin, row, values?, reset? }: your settings for a plugin Fishball runs itself. */
   pluginsSettings: '/api/fishball/plugins/settings',
+  /** POST { spec }: what a spec names, read by DSH's inspect (revision 10a). */
+  installInspect: '/api/fishball/install/inspect',
+  /** POST { spec, requestId, approvedBuilds? }: install for Fishball through DSH's process, then turn it on. */
+  install: '/api/fishball/install',
+  /** POST { requestId }: cancel that install. */
+  installCancel: '/api/fishball/install/cancel',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })

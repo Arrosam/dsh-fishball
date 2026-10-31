@@ -183,7 +183,11 @@ export const API = {
   contextWindow: '/api/fishball/context-window',
   send: '/api/fishball/send',
   read: '/api/fishball/read',
-  pluginsRemove: '/api/fishball/plugins/remove', pluginsInstall: '/api/fishball/plugins/install',
+  pluginsRemove: '/api/fishball/plugins/remove',
+  /** Revision 10a removes this route (it handed the spec to Fishball's chat); tests expect it absent. */
+  removedPluginsInstall: '/api/fishball/plugins/install',
+  /** A path no route serves: what DSH answers for an unknown path under /api/fishball. */
+  unknownRoute: '/api/fishball/fbtest-no-such-route',
 }
 
 // ---- P5 (messaging, intake, outbox) ----
@@ -286,6 +290,19 @@ export const INSTALLED_KEY = (name) => 'fishball:' + name
 export const FISHBALL_PLUGINS_DIR = (home) => path.join(home, 'profiles', '.fishball-plugins')
 /** add_plugin install-failed reasons named by the requirements. */
 export const INSTALL_REASON = { invalidSpec: 'invalid-spec', alreadyInstalled: 'already-installed', notBundle: 'not-bundle' }
+/**
+ * Revision 10a (DESIGN §10d "Install for Fishball"): every code an install refusal may carry (the route's 409 code,
+ * add_plugin's reason). cancelled and build-blocked are new with DSH's inherited install process.
+ */
+export const PACKAGE_ERRORS = ['invalid-spec', 'already-installed', 'not-bundle', 'ambiguous-install', 'incompatible-version', 'cancelled', 'build-blocked', 'operation-error', 'no-profile']
+export const INSTALL_API = { inspect: '/api/fishball/install/inspect', install: '/api/fishball/install', cancel: '/api/fishball/install/cancel' }
+/** DSH's cancel answers and inspection statuses and problems (dsh-plugin-manager types). */
+export const CANCEL_OUTCOMES = ['cancelled', 'too-late', 'not-running']
+export const INSPECT_STATUS = { accepted: 'accepted', refused: 'refused' }
+export const INSPECT_PROBLEM = { notFound: 'not-found', notAPackage: 'not-a-package', notABundle: 'not-a-bundle', invalidSpec: 'invalid-spec' }
+/** DSH's progress events, each carrying the request id the caller chose. */
+export const INSTALL_EVENTS = { state: 'plugin-manager/install-state', log: 'plugin-manager/install-log' }
+export const ADD_ACTION = 'add'
 /** A local package without a DSH bundle patch (add_plugin refuses it as not-bundle). */
 export const NOT_BUNDLE = { name: 'fbtest-notbundle', dir: path.join(SUPPORT, 'fixtures', 'fbtest-notbundle') }
 /** The previous version of the plugin, for the existing-install cases. */

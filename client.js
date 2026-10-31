@@ -28,7 +28,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -40,7 +40,7 @@ window.__ModuleLoader__.load({
     /** Plugins page main-panel id (dsh-client-ui-plugin-manager PANEL_ID) and its navigation service. */
     const PLUGINS_PANEL = 'plugins'
     /** Client services read on demand (not injected: Fishball works without each of them). */
-    const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', uiWorkspace: 'uiWorkspace' })
+    const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', uiWorkspace: 'uiWorkspace', remote: 'remote' })
     const SUMMARY_VIEW = 'summary'
     const HEADER_ACTION_ID = 'fishball-settings'
     /** Renders nothing: while mounted for Fishball's session, that chat is on screen (see ReadReporter). */
@@ -53,7 +53,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', pluginsInstall: 'api/fishball/plugins/install', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -88,8 +88,34 @@ window.__ModuleLoader__.load({
      * which actions a plugin has; the page shows only those.
      */
     const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
-    /** "Install for Fishball" refusals with their own text (src/constants.js INTAKE_ERROR, API_CODE). */
-    const INSTALL_ERRORS = new Set(['too-large', 'queue-full', 'unavailable', 'invalid-spec', 'already-installed'])
+    /**
+     * Install for Fishball (DESIGN §10d revision 10a): refusals with their own text (src/constants.js
+     * PACKAGE_ERROR, API_CODE), DSH's inspection problems (dsh-plugin-manager PluginInspectProblem),
+     * and DSH's install events, which carry the request id the dialog chose.
+     */
+    const INSTALL_ERRORS = new Set(['too-large', 'invalid-spec', 'already-installed', 'not-bundle', 'ambiguous-install', 'incompatible-version', 'cancelled', 'build-blocked', 'operation-error', 'no-profile', 'unavailable'])
+    const INSPECT_PROBLEMS = new Set(['invalid-spec', 'already-installed', 'not-found', 'not-a-package', 'not-a-bundle', 'network', 'unknown'])
+    const INSTALL_EVENT = Object.freeze({ state: 'plugin-manager/install-state', log: 'plugin-manager/install-log' })
+    const INSPECT_ACCEPTED = 'accepted'
+    /**
+     * DSH's inspect in Fishball's scope answers `already-installed` for a name the DSH installation
+     * ships (its view is Fishball's folder plus the installation, never DSH's profile): Fishball can
+     * still install its own copy (review M5). A name installed in DSH's profile is read from the catalog.
+     */
+    const INSPECT_SHIPPED = 'already-installed'
+    /** DSH's inspection kind of a registry name (the other kinds name a folder or a host). */
+    const SPEC_KIND_REGISTRY = 'registry'
+    /** DSH's cancel answer once its install is applying. */
+    const CANCEL_TOO_LATE = 'too-late'
+    /** The phase in which DSH's install asks registries in turn (its `attempt` counts them). */
+    const INSTALL_PHASE_INSTALLING = 'installing'
+    const BUILD_BLOCKED = 'build-blocked'
+    /** The dialog's screens, in DSH's order: the spec, its check, the confirmation, progress, the result. */
+    const INSTALL_STEP = Object.freeze({ edit: 'edit', checking: 'checking', confirm: 'confirm', installing: 'installing', done: 'done', failed: 'failed' })
+    /** The newest output lines the progress screen keeps. */
+    const INSTALL_LOG_LINES = 200
+    /** Where the dialog was opened: the Fishball tab can open the new plugin's page, DSH's menu cannot (S28). */
+    const INSTALL_FROM = Object.freeze({ tab: 'tab', menu: 'menu' })
     const VISIBLE = 'visible'
     const VISIBILITY_EVENT = 'visibilitychange'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
@@ -106,6 +132,8 @@ window.__ModuleLoader__.load({
       pluginsTab: 'plugins.tab',
       detailBadge: 'plugins.detail.badge',
       detailActions: 'plugins.detail.actions',
+      /** DSH's Add plugin menu: plugin-contributed items after its own (revision 10a). */
+      addActions: 'plugins.add.actions',
     })
     /**
      * The plugin manager (DESIGN §10d): the Fishball tab, laid out like DSH's Installed tab and
@@ -170,6 +198,18 @@ window.__ModuleLoader__.load({
       bodyColor: 'currentColor',
       eyeColor: '#EC0A6E',
     })
+    /**
+     * Fishball's own interactive controls take a light magenta derived from the mark's eye, so they
+     * stand apart from DSH's (owner's choice, revision 10a): its buttons, switches and menu item.
+     * Mixed with white, it reads on DSH's light and dark themes; the text is a deep magenta.
+     */
+    const FISHBALL_COLOUR = Object.freeze({
+      fill: `color-mix(in srgb, ${FISH_MARK.eyeColor} 32%, #fff)`,
+      fillHover: `color-mix(in srgb, ${FISH_MARK.eyeColor} 44%, #fff)`,
+      text: `color-mix(in srgb, ${FISH_MARK.eyeColor} 70%, #000)`,
+      accent: FISH_MARK.eyeColor,
+    })
+    const ADD_MENU = Object.freeze({ id: 'fishball-install', iconSize: 14 })
     /**
      * The word logo from the fishball repo. The repo ships no image for it: it is the string
      * `wordmark` ("FISHBALL", strings.xml) set in the display face at weight 900 with -0.5px
@@ -282,6 +322,7 @@ window.__ModuleLoader__.load({
       detailDesc: 'fbp-detail-desc', detailActions: 'fbp-detail-actions', sections: 'fbp-sections', section: 'fbp-section', sectionTitle: 'fbp-section-title',
       kv: 'fbp-kv', kvLabel: 'fbp-kv-label', line: 'fbp-line', link: 'fbp-link', field: 'fbp-field', fieldHead: 'fbp-field-head', hint: 'fbp-hint',
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
+      accent: 'fbp-accent', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
     const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
 
@@ -409,12 +450,49 @@ window.__ModuleLoader__.load({
       removing: 'Uninstalling after this turn',
       'pluginError.remove-failed': 'Could not be uninstalled; it stays installed and off',
       installTitle: 'Install a plugin for Fishball only',
-      installHint: 'A package name, an absolute folder path, a git address or a tarball URL. Fishball installs it in its own folder, not in DSH, after you allow it in the permission prompt in Fishball\'s chat. Plugins installed in DSH are managed on DSH\'s Plugins page; here you can only turn them on or off for Fishball.',
+      installHint: 'A package name with an optional version, a Git address, a tarball URL or an absolute folder path. It is installed in Fishball\'s own folder, not in DSH, and turned on for Fishball only.',
       installSpecLabel: 'Package',
       install: 'Install',
-      installSent: 'Sent to Fishball. Answer the permission prompt in its chat.',
+      'installError.not-bundle': 'That package is not a DSH plugin.',
+      'installError.ambiguous-install': 'pnpm changed more than one package, so nothing was installed.',
+      'installError.incompatible-version': 'That package does not support this DSH version.',
+      'installError.cancelled': 'The install was cancelled.',
+      'installError.build-blocked': 'pnpm held back install scripts that need your approval.',
+      'installError.operation-error': 'pnpm could not install it. The output is below.',
+      'installError.no-profile': 'Installing needs a DSH profile.',
+      installForFishballOnly: 'Install for Fishball only',
+      installForFishballDescription: 'Installs into Fishball\'s own folder; other sessions do not get it',
+      installPlaceholder: 'package-name, package-name@1.2.0, a Git address, or /absolute/path',
+      installTrust: 'A plugin runs with full access to this computer. Install only plugins you trust.',
+      installChecking: 'Checking the package…',
+      installConfirm: 'Install for Fishball',
+      installSource: 'From {source}',
+      defaultRegistry: 'the registry pnpm uses',
+      alsoInDsh: 'This package is installed in DSH too. Fishball installs its own copy, separate from DSH\'s.',
+      shippedByDsh: 'DSH ships a plugin with this name. Fishball installs its own copy, which Fishball uses instead of DSH\'s.',
+      cancelTooLate: 'It is too late to cancel: the install is finishing.',
       'installError.too-large': 'That package spec is too long.',
-      'installError.queue-full': 'Fishball\'s queue is full. Try again later.',
+      'installPhase.waiting': 'Starting…',
+      'installPhase.installing': 'Installing…',
+      'installPhase.applying': 'Finishing…',
+      'installPhase.cancelling': 'Cancelling…',
+      installAttempt: '(registry {index} of {total})',
+      showOutput: 'Install output',
+      cancelInstall: 'Cancel install',
+      installDone: '{name} {version} is installed for Fishball and turned on.',
+      installDoneOff: 'It is installed but could not be turned on:',
+      openPluginPage: 'Open its page',
+      installRetry: 'Try again',
+      allowScripts: 'Allow these scripts and retry',
+      pendingScripts: 'Packages that want to run install scripts:',
+      back: 'Back',
+      'inspectProblem.invalid-spec': 'That is not a package spec DSH accepts.',
+      'inspectProblem.already-installed': 'That package is already installed.',
+      'inspectProblem.not-found': 'No package was found for that spec.',
+      'inspectProblem.not-a-package': 'That is not a package.',
+      'inspectProblem.not-a-bundle': 'That package is not a DSH plugin.',
+      'inspectProblem.network': 'The registry could not be reached.',
+      'inspectProblem.unknown': 'The package could not be checked.',
       'installError.unavailable': 'Fishball is not running.',
       'installError.invalid-spec': 'That is not a package spec DSH accepts. Use a package name, an absolute folder path, a git address or a tarball URL.',
       'installError.already-installed': 'That plugin is already installed for Fishball.',
@@ -639,12 +717,49 @@ window.__ModuleLoader__.load({
       removing: '本回合结束后卸载',
       'pluginError.remove-failed': '卸载失败；它仍已安装并保持关闭',
       installTitle: '仅为 Fishball 安装插件',
-      installHint: '包名、文件夹的绝对路径、git 地址或 tarball URL。Fishball 会在你于其对话中的权限请求里允许后，把它安装到自己的文件夹，而不是 DSH。安装在 DSH 的插件请在 DSH 的插件页管理；这里只能为 Fishball 开启或关闭它们。',
+      installHint: '包名（可带版本）、Git 地址、tarball URL 或文件夹的绝对路径。它会安装到 Fishball 自己的文件夹，而不是 DSH，并只为 Fishball 开启。',
       installSpecLabel: '包',
       install: '安装',
-      installSent: '已发送给 Fishball。请在其对话中回应权限请求。',
+      'installError.not-bundle': '这个包不是 DSH 插件。',
+      'installError.ambiguous-install': 'pnpm 改动了不止一个包，因此没有安装。',
+      'installError.incompatible-version': '这个包不支持当前的 DSH 版本。',
+      'installError.cancelled': '安装已取消。',
+      'installError.build-blocked': 'pnpm 拦下了需要你批准的安装脚本。',
+      'installError.operation-error': 'pnpm 无法安装它，输出见下方。',
+      'installError.no-profile': '安装需要 DSH 配置。',
+      installForFishballOnly: '仅为 Fishball 安装',
+      installForFishballDescription: '安装到 Fishball 自己的文件夹；其他会话不会获得它',
+      installPlaceholder: '包名、包名@1.2.0、Git 地址或 /绝对路径',
+      installTrust: '插件拥有这台电脑的完全访问权限。请只安装你信任的插件。',
+      installChecking: '正在检查这个包…',
+      installConfirm: '为 Fishball 安装',
+      installSource: '来源：{source}',
+      defaultRegistry: 'pnpm 使用的源',
+      alsoInDsh: '这个包也安装在 DSH 中。Fishball 会安装自己的一份，与 DSH 的分开。',
+      shippedByDsh: 'DSH 自带同名插件。Fishball 会安装自己的一份，并使用它而不是 DSH 的。',
+      cancelTooLate: '已无法取消：安装正在完成。',
       'installError.too-large': '包名过长。',
-      'installError.queue-full': 'Fishball 的队列已满，请稍后再试。',
+      'installPhase.waiting': '正在开始…',
+      'installPhase.installing': '正在安装…',
+      'installPhase.applying': '正在完成…',
+      'installPhase.cancelling': '正在取消…',
+      installAttempt: '（第 {index} 个源，共 {total} 个）',
+      showOutput: '安装输出',
+      cancelInstall: '取消安装',
+      installDone: '{name} {version} 已为 Fishball 安装并开启。',
+      installDoneOff: '已安装，但无法开启：',
+      openPluginPage: '打开它的页面',
+      installRetry: '重试',
+      allowScripts: '允许这些脚本并重试',
+      pendingScripts: '想要运行安装脚本的包：',
+      back: '返回',
+      'inspectProblem.invalid-spec': 'DSH 不接受这个包规格。',
+      'inspectProblem.already-installed': '这个包已经安装。',
+      'inspectProblem.not-found': '没有找到这个包。',
+      'inspectProblem.not-a-package': '这不是一个包。',
+      'inspectProblem.not-a-bundle': '这个包不是 DSH 插件。',
+      'inspectProblem.network': '无法连接到源。',
+      'inspectProblem.unknown': '无法检查这个包。',
       'installError.unavailable': 'Fishball 未运行。',
       'installError.invalid-spec': 'DSH 不接受这个包规格。请使用包名、文件夹的绝对路径、git 地址或 tarball URL。',
       'installError.already-installed': '这个插件已为 Fishball 安装。',
@@ -769,7 +884,8 @@ window.__ModuleLoader__.load({
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
-      `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--dsw-alias-border-primary);border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;resize:vertical}`,
+      // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
+      `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
       // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
@@ -825,6 +941,20 @@ window.__ModuleLoader__.load({
       `.${MCLS.input}[aria-invalid="true"]{border-color:var(--dsw-alias-state-error-primary)}`,
       `.${MCLS.readOnly}{margin:0;padding:6px 10px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${MCLS.formActions}{display:flex;justify-content:flex-end;gap:8px}`,
+      // Fishball's colour on its own controls (revision 10a). A switch is a button too: only its "on" track changes.
+      // Enabled buttons only: a disabled one keeps DSH's own disabled look (review L8).
+      `.${MCLS.accent} button:not([role=switch]):not(:disabled){background:${FISHBALL_COLOUR.fill};color:${FISHBALL_COLOUR.text}}`,
+      `.${MCLS.accent} button:not([role=switch]):hover:not(:disabled){background:${FISHBALL_COLOUR.fillHover}}`,
+      `.${MCLS.accent} [role=switch][aria-checked="true"]{background:${FISHBALL_COLOUR.fill}}`,
+      `.${MCLS.accent}{display:inline-flex;align-items:center;gap:8px}`,
+      `.${MCLS.menuIcon}{display:inline-flex;color:${FISHBALL_COLOUR.accent}}`,
+      // The Add plugin menu item and the install dialog follow DSH's own (dsh-client-ui-plugin-manager, rc.2).
+      `.${MCLS.copy}{display:flex;flex-direction:column;gap:2px;white-space:normal}`,
+      `.${MCLS.copyDesc}{display:-webkit-box;overflow:hidden;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;-webkit-line-clamp:2;-webkit-box-orient:vertical}`,
+      `.${MCLS.dialog}{display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.5}`,
+      `.${MCLS.subject}{display:flex;align-items:flex-start;gap:14px;padding:12px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg)}`,
+      `.${MCLS.trust}{margin:0;padding:8px 12px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.5}`,
+      `.${MCLS.log}{max-height:220px;margin:0;overflow:auto;padding:8px 12px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
     ].join('')
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
@@ -856,15 +986,15 @@ window.__ModuleLoader__.load({
     })()
     const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
 
-    /** POST one command to the Host. @returns { ok, code, path } (the Host's refusal code and, for an invalid setting, its path). */
+    /** POST one command to the Host. @returns { ok, code, path, answer } (the Host's refusal code, an invalid setting's path, and the whole answer). */
     async function send(path, body) {
       try {
         const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
-        if (response.ok) return { ok: true, code: null }
+        if (response.ok) return { ok: true, code: null, answer: await response.json().catch(() => ({})) }
         const answer = await response.json().catch(() => ({}))
-        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, path: Array.isArray(answer.path) ? answer.path : null }
+        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, path: Array.isArray(answer.path) ? answer.path : null, answer }
       } catch {
-        return { ok: false, code: null, path: null }
+        return { ok: false, code: null, path: null, answer: null }
       }
     }
     /** POST one command. @returns whether it was accepted. */
@@ -1043,29 +1173,200 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * "Install a plugin for Fishball only" (DESIGN §10, §10d): the spec goes to Fishball, which
-     * calls add_plugin, so the install still needs your Allow once in Fishball's chat. Shown in a
-     * dialog from the Fishball tab, whose title names it.
+     * Install for Fishball (DESIGN §10d revision 10a): one request store shared by the item in
+     * DSH's Add plugin menu and the Fishball tab's button. The dialog lives in the shell overlay,
+     * so it outlives the menu that opened it (as "Send to Fishball" does).
      */
-    function InstallForm({ t }) {
-      const id = React.useId()
-      const [spec, setSpec] = React.useState('')
-      const [busy, setBusy] = React.useState(false)
-      const [result, setResult] = React.useState(null)
-      const submit = async () => {
-        setBusy(true)
-        const { ok, code } = await send(API.pluginsInstall, { spec })
-        setBusy(false)
-        if (ok) { setSpec(''); setResult('installSent') } else setResult(INSTALL_ERRORS.has(code) ? 'installError.' + code : 'installFailed')
+    const installRequest = (() => {
+      let current = null
+      let count = 0
+      const listeners = new Set()
+      const set = (next) => { current = next; for (const listener of listeners) listener() }
+      return {
+        open: (from) => set({ from, id: ++count }),
+        close: () => set(null),
+        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
+        get: () => current,
       }
-      return h('div', { className: CLS.section, 'data-fishball-install': true },
-        h('p', { className: CLS.muted }, t('installHint')),
-        h('label', { className: CLS.field, htmlFor: id },
-          h('span', null, t('installSpecLabel')),
-          h('input', { id, className: CLS.note, value: spec, disabled: busy, onChange: (event) => { setSpec(event.target.value); setResult(null) } })),
-        h('div', { className: CLS.row },
-          h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: busy || spec.trim() === '', onClick: submit }, t('install'))),
-        result ? h('div', { role: result === 'installSent' ? 'status' : 'alert' }, t(result)) : null)
+    })()
+    const useInstallRequest = () => React.useSyncExternalStore(installRequest.subscribe, installRequest.get)
+
+    /** Which plugin's page the Fishball tab shows (null: the list); the install dialog opens a new plugin's page through it. */
+    const managerView = (() => {
+      let open = null
+      const listeners = new Set()
+      return {
+        show: (plugin) => { open = plugin; for (const listener of listeners) listener() },
+        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
+        get: () => open,
+      }
+    })()
+    const useManagerView = () => React.useSyncExternalStore(managerView.subscribe, managerView.get)
+
+    /** Where a checked package comes from, in words (DSH's inspection: registry, folder, Git host or tarball host). */
+    function installSource(subject, spec, t) {
+      if (subject.kind === SPEC_KIND_REGISTRY) return subject.registry ?? t('defaultRegistry')
+      return subject.host ?? spec
+    }
+
+    /** "Install for Fishball only" in DSH's Add plugin menu, laid out like DSH's own items, with Fishball's mark in its colour. */
+    function makeAddMenuItem(t) {
+      return function FishballAddMenuItem({ onDismiss }) {
+        return h(MenuItemButton, {
+          icon: h('span', { className: MCLS.menuIcon }, h(FishballIcon, { size: ADD_MENU.iconSize, unread: false })),
+          onSelect: () => { onDismiss?.(); installRequest.open(INSTALL_FROM.menu) },
+        }, h('span', { className: MCLS.copy },
+          h('span', null, t('installForFishballOnly')),
+          h('span', { className: MCLS.copyDesc }, t('installForFishballDescription'))))
+      }
+    }
+
+    /** The install dialog while one is open; a new request starts a fresh flow. */
+    function makeInstallDialog(t, listen) {
+      return function FishballInstallDialog() {
+        const request = useInstallRequest()
+        if (request === null) return null
+        return h(InstallFlow, { key: request.id, from: request.from, t, listen })
+      }
+    }
+
+    /**
+     * One install, following DSH's own dialog: the spec, DSH's check of what it names, a
+     * confirmation, progress with DSH's install output and Cancel, then the result. DSH's dialog
+     * is not exported (S31), so its screens are rebuilt from DSH's components; the process behind
+     * them is DSH's own, inherited for Fishball's folder. Your click on Install approves it.
+     */
+    function InstallFlow({ from, t, listen }) {
+      const id = React.useId()
+      const [step, setStep] = React.useState(INSTALL_STEP.edit)
+      const [spec, setSpec] = React.useState('')
+      const [problem, setProblem] = React.useState(null)
+      const [subject, setSubject] = React.useState(null)
+      const [progress, setProgress] = React.useState({ phase: null, attempt: null, output: '' })
+      const [outcome, setOutcome] = React.useState(null)
+      const [note, setNote] = React.useState(null)
+      const requestId = React.useRef(null)
+      const catalog = useFishball().catalog
+      const installing = step === INSTALL_STEP.installing
+      React.useEffect(() => {
+        if (!installing) return undefined
+        const own = (event) => event?.requestId === requestId.current
+        const offState = listen(INSTALL_EVENT.state, (event) => { if (own(event)) setProgress((previous) => ({ ...previous, phase: event.phase, attempt: event.attempt ?? previous.attempt })) })
+        // DSH sends output in chunks; the screen keeps the newest INSTALL_LOG_LINES lines (review L8).
+        const offLog = listen(INSTALL_EVENT.log, (event) => { if (own(event) && event.text) setProgress((previous) => ({ ...previous, output: (previous.output + event.text).split(LIST_SEPARATOR).slice(-INSTALL_LOG_LINES).join(LIST_SEPARATOR) })) })
+        return () => { offState(); offLog() }
+      }, [installing])
+      const cancel = async () => {
+        if (requestId.current === null) return
+        const answer = await send(API.installCancel, { requestId: requestId.current })
+        if (answer.answer?.outcome === CANCEL_TOO_LATE) setNote('cancelTooLate')
+      }
+      // Closing while it runs asks DSH's process to stop, as DSH's own dialog does.
+      const close = () => { if (installing) void cancel(); installRequest.close() }
+      const refuse = (key, reason) => { setProblem({ key, reason }); setStep(INSTALL_STEP.edit) }
+      const check = async () => {
+        if (spec.trim() === '') return
+        setProblem(null)
+        setStep(INSTALL_STEP.checking)
+        const answer = await send(API.installInspect, { spec: spec.trim() })
+        if (!answer.ok) return refuse(INSTALL_ERRORS.has(answer.code) ? 'installError.' + answer.code : 'installFailed')
+        const inspection = answer.answer.inspection
+        const shipped = inspection.status !== INSPECT_ACCEPTED && inspection.problem === INSPECT_SHIPPED
+        if (inspection.status !== INSPECT_ACCEPTED && !shipped) {
+          return refuse(INSPECT_PROBLEMS.has(inspection.problem) ? 'inspectProblem.' + inspection.problem : 'inspectProblem.unknown', inspection.reason)
+        }
+        if (inspection.bundle === false) return refuse('inspectProblem.not-a-bundle')
+        // Installed in DSH's profile too: read from the catalog's DSH plugins (review M5).
+        const inDsh = inspection.name !== undefined && catalog?.plugins.some((plugin) => DSH_LISTED.has(plugin.dsh) && plugin.packageName === inspection.name)
+        setSubject(shipped ? { kind: null, shipped: true } : { ...inspection, inDsh })
+        setStep(INSTALL_STEP.confirm)
+      }
+      const install = async (approvedBuilds) => {
+        requestId.current = crypto.randomUUID()
+        setProgress({ phase: null, attempt: null, output: '' })
+        setNote(null)
+        setStep(INSTALL_STEP.installing)
+        const answer = await send(API.install, { spec: spec.trim(), requestId: requestId.current, ...(approvedBuilds === undefined ? {} : { approvedBuilds }) })
+        setOutcome(answer.ok ? answer.answer : { code: answer.code, pendingBuilds: answer.answer?.pendingBuilds ?? [] })
+        setStep(answer.ok ? INSTALL_STEP.done : INSTALL_STEP.failed)
+      }
+      const accent = (props, label) => h('span', { className: MCLS.accent }, h(Button, { type: 'button', variant: 'primary', ...props }, label))
+      const outline = (props, label) => h(Button, { type: 'button', variant: 'outline', ...props }, label)
+      const title = subject?.name ?? spec.trim()
+      const screens = {
+        [INSTALL_STEP.edit]: () => ({
+          body: [
+            h('p', { key: 'hint', className: MCLS.hint }, t('installHint')),
+            h('div', { key: 'field', className: MCLS.field },
+              h('label', { htmlFor: id, className: MCLS.label }, t('installSpecLabel')),
+              h(Input, {
+                id, value: spec, placeholder: t('installPlaceholder'), 'data-modal-autofocus': true, 'aria-invalid': problem !== null || undefined,
+                onChange: (event) => { setSpec(event.target.value); setProblem(null) },
+                // Enter installs, except while an input method is composing (as DSH's field does).
+                onKeyDown: (event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) void check() },
+              }),
+              problem ? h('p', { role: 'alert', className: MCLS.hint }, t(problem.key), problem.reason ? ` ${problem.reason}` : '') : null),
+            h('p', { key: 'trust', className: MCLS.trust }, t('installTrust')),
+          ],
+          footer: [outline({ key: 'cancel', onClick: close }, t('cancel')), accent({ key: 'go', disabled: spec.trim() === '', onClick: check }, t('install'))],
+        }),
+        [INSTALL_STEP.checking]: () => ({
+          body: [h('p', { key: 'checking', role: 'status' }, t('installChecking'))],
+          footer: [outline({ key: 'cancel', onClick: close }, t('cancel'))],
+        }),
+        [INSTALL_STEP.confirm]: () => ({
+          body: [
+            h('div', { key: 'subject', className: MCLS.subject },
+              h('span', { className: MCLS.icon, 'aria-hidden': true }, h(PluginArtworkDefault, { size: MANAGER.artSize })),
+              h('div', { className: MCLS.main },
+                h('div', { className: MCLS.titleRow }, h('span', { className: MCLS.title }, title), subject.version ? h(Tag, { tone: 'neutral', className: MCLS.tag }, subject.version) : null),
+                subject.description ? h('p', { className: MCLS.detailDesc }, subject.description) : null,
+                subject.kind ? h('p', { className: MCLS.hint }, t('installSource', { source: installSource(subject, spec.trim(), t) })) : null)),
+            subject.inDsh ? h('p', { key: 'dsh', className: MCLS.hint }, t('alsoInDsh')) : null,
+            subject.shipped ? h('p', { key: 'shipped', className: MCLS.hint }, t('shippedByDsh')) : null,
+            h('p', { key: 'trust', className: MCLS.trust }, t('installTrust')),
+          ],
+          footer: [outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')), accent({ key: 'go', onClick: () => install() }, t('installConfirm'))],
+        }),
+        [INSTALL_STEP.installing]: () => ({
+          body: [
+            h('p', { key: 'phase', role: 'status' }, t('installPhase.' + (progress.phase ?? 'waiting')), progress.phase === INSTALL_PHASE_INSTALLING && progress.attempt?.total > 1 ? ` ${t('installAttempt', { index: progress.attempt.index, total: progress.attempt.total })}` : ''),
+            progress.output !== '' ? h('pre', { key: 'log', className: MCLS.log, 'aria-label': t('showOutput') }, progress.output) : null,
+            note ? h('p', { key: 'note', role: 'status', className: MCLS.hint }, t(note)) : null,
+          ],
+          footer: [outline({ key: 'cancel', onClick: () => void cancel() }, t('cancelInstall'))],
+        }),
+        [INSTALL_STEP.done]: () => ({
+          body: [
+            h('p', { key: 'done', role: 'status' }, t('installDone', { name: outcome.name, version: outcome.version ?? '' })),
+            outcome.on ? null : h('p', { key: 'off', role: 'alert' }, t('installDoneOff'), ' ', PLUGIN_ERRORS.has(outcome.code) ? t('pluginError.' + outcome.code) : t('pluginErrorOther')),
+          ],
+          footer: [
+            outline({ key: 'close', onClick: close }, t('close')),
+            // DSH offers no way to select the Fishball tab from its own menu (S28): only the tab opens the page.
+            // Only once the tab lists it, so the page never opens by surprise later (review L8).
+            from === INSTALL_FROM.tab && catalog?.plugins.some((plugin) => plugin.plugin === outcome.plugin)
+              ? accent({ key: 'open', onClick: () => { managerView.show(outcome.plugin); close() } }, t('openPluginPage'))
+              : null,
+          ],
+        }),
+        [INSTALL_STEP.failed]: () => ({
+          body: [
+            h('p', { key: 'failed', role: 'alert' }, t(INSTALL_ERRORS.has(outcome.code) ? 'installError.' + outcome.code : 'installFailed')),
+            outcome.code === BUILD_BLOCKED ? h('p', { key: 'scripts', className: MCLS.hint }, t('pendingScripts'), ' ', outcome.pendingBuilds.join(', ')) : null,
+            progress.output !== '' ? h('pre', { key: 'log', className: MCLS.log, 'aria-label': t('showOutput') }, progress.output) : null,
+          ],
+          footer: [
+            outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')),
+            outcome.code === BUILD_BLOCKED
+              ? accent({ key: 'scripts', onClick: () => install(outcome.pendingBuilds) }, t('allowScripts'))
+              : accent({ key: 'retry', onClick: () => install() }, t('installRetry')),
+          ],
+        }),
+      }
+      const screen = screens[step]()
+      return h(Modal, { open: true, onClose: close, closeLabel: t('close'), title: t('installTitle'), footer: h(React.Fragment, null, ...screen.footer) },
+        h('div', { className: MCLS.dialog, 'data-fishball-install': step }, ...screen.body))
     }
 
     /** A token count for display, or a fallback word. */
@@ -1601,7 +1902,8 @@ window.__ModuleLoader__.load({
       /** Fishball's own on/off for one plugin (POST plugins); none while the Host offers no toggle. */
       function FishballSwitch({ plugin, t, onResult }) {
         if (!offersToggle(plugin)) return null
-        return h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: pluginTitle(plugin) }), onChange: async (on) => onResult(await post(API.plugins, { plugin: plugin.plugin, on })) })
+        // Fishball's own switch, in Fishball's colour wherever it appears (revision 10a).
+        return h('span', { className: MCLS.accent }, h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: pluginTitle(plugin) }), onChange: async (on) => onResult(await post(API.plugins, { plugin: plugin.plugin, on })) }))
       }
 
       /** One card of the list, like a card on DSH's Installed tab; the whole card opens the plugin's page. */
@@ -1636,7 +1938,7 @@ window.__ModuleLoader__.load({
         const shown = new Set([...catalog.plugins.flatMap((plugin) => plugin.tools.map((tool) => tool.name)), ...catalog.otherTools.map((tool) => tool.name)])
         const unlisted = catalog.allowedTools.filter((tool) => !shown.has(tool.toolName))
         return h(React.Fragment, null,
-          h('div', { className: MCLS.bar }, h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: onInstall }, t('installForFishball'))),
+          h('div', { className: MCLS.bar }, h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: onInstall }, t('installForFishball')))),
           MANAGER.groups.map((group) => {
             const plugins = catalog.plugins.filter((plugin) => group.dsh.includes(plugin.dsh))
             if (plugins.length === 0) return null
@@ -1854,7 +2156,7 @@ window.__ModuleLoader__.load({
           message?.kind === FORM_MESSAGE.invalid && !marked ? h('div', { role: 'alert' }, t('settingsInvalid')) : null,
           h('div', { className: MCLS.formActions },
             Object.keys(row.user).length > 0 ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: saving, onClick: () => void save({ reset: [[]] }) }, t('settingsResetAll')) : null,
-            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: saving || !dirty, onClick: submit }, saving ? t('saving') : t('save'))))
+            h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: saving || !dirty, onClick: submit }, saving ? t('saving') : t('save')))))
       }
 
       /** Settings for Fishball on the plugin page; a plugin on in DSH uses DSH's settings (DESIGN §10d). */
@@ -1928,9 +2230,8 @@ window.__ModuleLoader__.load({
       function makeFishballTab(t) {
         return function FishballTab({ openPackage }) {
           const state = useFishball()
-          const [open, setOpen] = React.useState(null)
+          const open = useManagerView()
           const [failed, setFailed] = React.useState(false)
-          const [installing, setInstalling] = React.useState(false)
           const catalog = state.catalog
           if (!catalog) return h('div', { className: MCLS.panel }, h('p', { className: MCLS.hint }, t('status.' + (state.status ?? STATUS.starting))))
           const onResult = (ok) => setFailed(!ok)
@@ -1938,15 +2239,8 @@ window.__ModuleLoader__.load({
           return h('div', { className: MCLS.panel, 'data-fishball-manager': true },
             failed ? h('div', { role: 'alert' }, t('changeFailed')) : null,
             plugin !== undefined
-              ? h(PluginPage, { key: plugin.plugin, plugin, catalog, t, openPackage, onBack: () => setOpen(null), onResult })
-              : h(PluginList, { catalog, t, onOpen: setOpen, onResult, onInstall: () => setInstalling(true) }),
-            installing ? h(Modal, {
-              open: true,
-              onClose: () => setInstalling(false),
-              closeLabel: t('close'),
-              title: t('installTitle'),
-              footer: h(Button, { type: 'button', variant: 'outline', onClick: () => setInstalling(false) }, t('close')),
-            }, h(InstallForm, { t })) : null)
+              ? h(PluginPage, { key: plugin.plugin, plugin, catalog, t, openPackage, onBack: () => managerView.show(null), onResult })
+              : h(PluginList, { catalog, t, onOpen: managerView.show, onResult, onInstall: () => installRequest.open(INSTALL_FROM.tab) }))
         }
       }
 
@@ -1981,6 +2275,14 @@ window.__ModuleLoader__.load({
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {
       const t = ctx.locale.bind(NS)
+      /**
+       * DSH's Host events the browser receives (its install progress, revision 10a), when the
+       * remote service is there; without it the dialog shows no progress lines.
+       */
+      const listenToHost = (name, listener) => {
+        const remote = ctx.get(SERVICE.remote)
+        return typeof remote?.$on === 'function' ? remote.$on(name, listener) : () => {}
+      }
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
       ctx.effect(hideOwnRow, 'fishball: hide own session row')
@@ -2004,9 +2306,11 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
         yield ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))
         yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeWatchNotice(t))
+        yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
       }), 'fishball: dialogs')
       // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.
       const manager = makeManager(t, (text) => ctx.locale.resolveText(text))
+      ctx.effect(() => ctx.slots.inject(SLOT.addActions, () => ctx.slots.register({ name: SLOT.addActions, id: ADD_MENU.id, locale: NS }, makeAddMenuItem(t))), 'fishball: Add plugin menu item')
       ctx.effect(() => ctx.slots.inject(SLOT.pluginsTab, () => ctx.slots.register({ name: SLOT.pluginsTab, id: MANAGER.tabId, label: () => t('tabTitle'), locale: NS }, manager.FishballTab)), 'fishball: plugin manager tab')
       ctx.effect(() => ctx.slots.inject(SLOT.detailBadge, () => ctx.slots.register({ name: SLOT.detailBadge, id: MANAGER.badgeId, locale: NS }, manager.DetailBadge)), 'fishball: plugin page tag')
       ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')

@@ -7,7 +7,6 @@
  * POST recovery               -> { action: 'retry' | 'adopt' }
  * POST plugins                -> { plugin: string, on: boolean } (your own choice, DESIGN §4)
  * POST plugins/remove         -> { plugin: string } (uninstall a plugin installed in Fishball only)
- * POST plugins/install        -> { spec: string } (ask Fishball to install a plugin for itself)
  * POST tool-approvals/remove  -> { toolKey: string } (withdraw an allowance, DESIGN §7)
  * POST context-window         -> { contextWindowTokens, maxOutputTokens } (DESIGN §6; each a
  *                                positive whole number, or null for unset)
@@ -19,6 +18,9 @@
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
  * GET  plugins/detail?plugin= -> one plugin's page data (DESIGN §10d); 404 unknown
  * GET  plugins/icon?plugin=   -> one plugin's icon image; 404 unknown when it has none
+ * POST install/inspect        -> { spec }: DSH's inspection of what it names (revision 10a)
+ * POST install                -> { spec, requestId, approvedBuilds? }: install for Fishball, then turn it on
+ * POST install/cancel         -> { requestId }: cancel that install
  * POST plugins/settings       -> { plugin, row, values?, reset? } (your settings, DESIGN §10d);
  *                                400 invalid with `path`; 409 unknown, shared-with-dsh, no-settings
  */
@@ -44,13 +46,18 @@ const BODY = Object.freeze({
   recovery: (body) => (isRecord(body) && ACTIONS.has(body.action) ? body.action : undefined),
   plugin: (body) => (isRecord(body) && isName(body.plugin) && typeof body.on === 'boolean' ? { plugin: body.plugin, on: body.on } : undefined),
   pluginRemove: (body) => (isRecord(body) && isName(body.plugin) ? body.plugin : undefined),
-  pluginInstall: (body) => (isRecord(body) && isText(body.spec) ? body.spec.trim() : undefined),
   toolApproval: (body) => (isRecord(body) && isName(body.toolKey) ? body.toolKey : undefined),
   watch: (body) => (isRecord(body) && isName(body.sessionId) ? { sessionId: body.sessionId } : undefined),
   unwatch: (body) => (isRecord(body) && isName(body.watchId) ? { watchId: body.watchId } : undefined),
   brand: (body) => (isRecord(body) && BRAND_STYLES.has(body.style) ? body.style : undefined),
   read: (body) => (isRecord(body) ? {} : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
+  installSpec: (body) => (isRecord(body) && isText(body.spec) ? body.spec.trim() : undefined),
+  install: (body) => (isRecord(body) && isText(body.spec) && isName(body.requestId)
+    && (body.approvedBuilds === undefined || (Array.isArray(body.approvedBuilds) && body.approvedBuilds.every(isName)))
+    ? { spec: body.spec.trim(), requestId: body.requestId, approvedBuilds: body.approvedBuilds }
+    : undefined),
+  installCancel: (body) => (isRecord(body) && isName(body.requestId) ? body.requestId : undefined),
   settings: (body) => (isRecord(body) && isName(body.plugin) && isName(body.row)
     && (body.values === undefined || isRecord(body.values)) && (body.reset === undefined || isPaths(body.reset))
     && (body.values !== undefined || body.reset !== undefined)
@@ -64,10 +71,11 @@ const BODY = Object.freeze({
 /**
  * Register the routes; they are removed with the plugin context.
  * @param ctx - fishball row context (needs connection).
- * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin), installPlugin(spec),
+ * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
  *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript(),
- *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }) }; the commands reject
+ *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
+ *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId) }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
  *   file's bytes; pluginIcon resolves the icon's data URL.
  */
@@ -102,22 +110,26 @@ export function registerRoutes(ctx, state) {
   }
 
   /**
-   * One POST command: parse and validate the body, run it, answer with the new state.
-   * A LifecycleStateError answers 409 with its code; anything else 500 `failed`.
+   * One POST: parse and validate the body, run it, and answer. A LifecycleStateError answers its
+   * refusal (409 unless it names another status); anything else 500 `failed`.
+   * @param answer - (value) => the answer's fields beside `ok: true`.
    */
-  const command = (read, run) => async (request) => {
+  const post = (read, run, answer) => async (request) => {
     let body
     try { body = await request.json() } catch { return json(HTTP.badRequest, { ok: false, code: API_CODE.badBody }) }
     const input = read(body)
     if (input === undefined) return json(HTTP.badRequest, { ok: false, code: API_CODE.badBody })
     try {
-      await run(input)
-      return json(HTTP.ok, { ok: true, state: state.snapshot() })
+      return json(HTTP.ok, { ok: true, ...answer(await run(input)) })
     } catch (error) {
       if (error instanceof LifecycleStateError) return refusal(error)
       return json(HTTP.serverError, { ok: false, code: API_CODE.failed })
     }
   }
+  /** A command: its answer is the new state. */
+  const command = (read, run) => post(read, run, () => ({ state: state.snapshot() }))
+  /** A call: its answer is the result it returns. */
+  const call = (read, run) => post(read, run, (result) => result)
 
   /**
    * One GET for a named plugin (`?plugin=`): 400 bad-body without it; a LifecycleStateError
@@ -153,7 +165,6 @@ export function registerRoutes(ctx, state) {
     { path: API.recovery, methods: [HTTP_METHOD.post], fetch: command(BODY.recovery, (action) => state.recover(action)) },
     { path: API.plugins, methods: [HTTP_METHOD.post], fetch: command(BODY.plugin, ({ plugin, on }) => state.setPlugin(plugin, on)) },
     { path: API.pluginsRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.pluginRemove, (plugin) => state.removePlugin(plugin)) },
-    { path: API.pluginsInstall, methods: [HTTP_METHOD.post], fetch: command(BODY.pluginInstall, (spec) => state.installPlugin(spec)) },
     { path: API.toolApprovals, methods: [HTTP_METHOD.post], fetch: command(BODY.toolApproval, (toolKey) => state.removeAllowance(toolKey)) },
     { path: API.contextWindow, methods: [HTTP_METHOD.post], fetch: command(BODY.contextWindow, (setting) => state.setContextWindow(setting)) },
     { path: API.send, methods: [HTTP_METHOD.post], fetch: command(BODY.send, (input) => state.send(input)) },
@@ -165,6 +176,9 @@ export function registerRoutes(ctx, state) {
     { path: API.pluginsDetail, methods: [HTTP_METHOD.get], fetch: forPlugin(async (plugin) => json(HTTP.ok, { ok: true, detail: await state.pluginDetail(plugin) })) },
     { path: API.pluginsIcon, methods: [HTTP_METHOD.get], fetch: forPlugin(icon) },
     { path: API.pluginsSettings, methods: [HTTP_METHOD.post], fetch: command(BODY.settings, (input) => state.saveSettings(input)) },
+    { path: API.installInspect, methods: [HTTP_METHOD.post], fetch: call(BODY.installSpec, async (spec) => ({ inspection: await state.inspectInstall(spec) })) },
+    { path: API.install, methods: [HTTP_METHOD.post], fetch: call(BODY.install, (input) => state.install(input)) },
+    { path: API.installCancel, methods: [HTTP_METHOD.post], fetch: call(BODY.installCancel, async (requestId) => ({ outcome: await state.cancelInstall(requestId) })) },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)

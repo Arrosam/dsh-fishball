@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTALL_EVENTS, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
@@ -175,6 +175,16 @@ if (APPROVER_AFTER) {
       entry.decidedAt = Date.now()
       return 'outcome=' + outcome
     },
+  })
+}
+
+/** Revision 10a: DSH's install progress events on the host bus, so a test can see which request id they carry. */
+store.installEvents ??= []
+for (const type of [INSTALL_EVENTS.state, INSTALL_EVENTS.log]) {
+  ctx.on(type, (payload) => {
+    let json
+    try { json = JSON.parse(JSON.stringify(payload ?? null)) } catch { json = null }
+    store.installEvents.push({ type, requestId: payload?.requestId ?? null, phase: payload?.phase ?? null, at: Date.now(), json })
   })
 }
 
@@ -581,6 +591,10 @@ const ops = {
   sessionTitle({ sessionId }) { return ctx.get('sessionTitle')?.get(liveAgent(sessionId).session)?.title ?? '' },
   /** Every row id of the dsh-fishball bundle as DSH's plugin manager lists it (the messenger must add none). */
   async fishballRows() { return (await ctx.pluginManager.listBundles()).filter((b) => b.name === PACKAGE_NAME).flatMap((b) => b.rows.map((r) => r.rowId)).sort() },
+
+  // ---- Revision 10a operations (Install for Fishball) ----
+  /** DSH's install progress events seen on the host bus, optionally for one request id. */
+  installEvents({ requestId } = {}) { return store.installEvents.filter((e) => !requestId || e.requestId === requestId).map(({ json, ...e }) => ({ ...e, json: JSON.stringify(json).slice(0, 2000) })) },
 
   // ---- P12 operations (plugin manager settings) ----
   /** apply/dispose/fail events of the settings fixtures' rows, with the config each apply received. */
