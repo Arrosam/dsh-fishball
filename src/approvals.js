@@ -4,7 +4,8 @@
  *
  * One host-level approval/request listener, prepended so it runs before DSH's browser
  * forwarder (spike S12). For each request:
- * - Fishball itself asking, Fishball not live, or maxPendingApprovals pending -> next(): the
+ * - Fishball itself asking, Fishball not live, its Permission requests plugin off (revision 10c),
+ *   or maxPendingApprovals pending -> next(): the
  *   stock prompt, unchanged DSH behaviour. Fishball never answers its own requests (N3).
  * - Otherwise: mint apr_<id>, read the call's arguments from the asking session's log by callId
  *   (spike S11: native tool-call blocks, run_code inner calls), and deliver one Fishball notice
@@ -129,6 +130,7 @@ export class ApprovalBroker {
   #startedByFishball
   #agentOf
   #onChange
+  #isEnabled
   #audit
   /** apr id -> { resolve(answer), ask, at, args } of a request waiting for Fishball. */
   #pending = new Map()
@@ -139,8 +141,10 @@ export class ApprovalBroker {
    * @param deps.ledger, deps.readLimits, deps.assistantId, deps.isLive, deps.onChange.
    * @param deps.startedByFishball - (sessionId) => whether Fishball started that session.
    * @param deps.agentOf - () => Fishball's agent (for notes without a wake).
+   * @param deps.isEnabled - () => whether Fishball's Permission requests plugin runs (revision 10c);
+   *   when it stops, the caller releases waiting requests (releaseAll).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -151,6 +155,7 @@ export class ApprovalBroker {
     this.#startedByFishball = startedByFishball
     this.#agentOf = agentOf
     this.#onChange = onChange
+    this.#isEnabled = isEnabled
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     ctx.on(APPROVAL.waterfall, (req, next) => this.#route(req, next), { prepend: true })
   }
@@ -210,7 +215,7 @@ export class ApprovalBroker {
     const asker = req.agent
     const assistantId = this.#assistantId()
     // Code rules first: each can only send the request on to you.
-    if (asker === undefined || asker.id === assistantId || !this.#isLive()) return next()
+    if (asker === undefined || asker.id === assistantId || !this.#isLive() || !this.#isEnabled()) return next()
     const limits = this.#readLimits()
     if (this.#pending.size >= limits.maxPendingApprovals) return next()
     // A subagent asks for the session the user sees; its own session is named as detail (M2).
@@ -267,7 +272,8 @@ export class ApprovalBroker {
     req.signal?.removeEventListener('abort', onAbort)
     await this.#record({ id, ask, args, at, answer: finalOutcome === APPROVAL_OUTCOME.cancelled && answer !== APPROVAL_ANSWER.allow ? APPROVAL_ANSWER.withdrawn : answer, risk, rationale, finalOutcome })
     if (finalOutcome === APPROVAL_OUTCOME.cancelled && answer !== APPROVAL_ANSWER.allow) this.#tell(TEXT.outcome(id, TEXT.withdrawn))
-    else if (answer === APPROVAL_ANSWER.timeout) this.#tell(TEXT.outcome(id, TEXT.timedOut))
+    // A request released because Permission requests went off is not news to Fishball (review L2).
+    else if (answer === APPROVAL_ANSWER.timeout && this.#isEnabled()) this.#tell(TEXT.outcome(id, TEXT.timedOut))
     else if (answer === APPROVAL_ANSWER.escalate) this.#tell(TEXT.outcome(id, TEXT.escalatedOutcome(finalOutcome)))
     return finalOutcome
   }

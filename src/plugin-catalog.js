@@ -45,6 +45,8 @@ import { CHANGED_BY, FISHBALL_INSTALLED_PREFIX, FISHBALL_PACKAGES, OPTIONAL_SERV
 import { PackageError } from './fishball-packages.js'
 
 const HIDDEN = new Set(HIDDEN_TOOLS)
+/** Reviews that keep a tool from Fishball whatever its plugin's state. */
+const NOT_FOR_FISHBALL = new Set([TOOL_STATUS.hidden, TOOL_STATUS.unchecked, TOOL_STATUS.otherSessions])
 /** Separator of the catalog's shape signature (not a storage key). */
 const SHAPE_SEPARATOR = '__'
 /** Cordis fiber state of an active plugin (cordis Fiber._getState). */
@@ -145,6 +147,7 @@ export class PluginCatalog {
   #defaults
   #packages
   #hasSettings
+  #ownPluginOf
   #agentOf = () => undefined
   /** key -> catalog entry { key, title, kind, defaultOn, rows?, bundle?, rowIds?, packageName?, packageDir?, prefix } */
   #entries = new Map()
@@ -187,8 +190,10 @@ export class PluginCatalog {
    * @param options.defaults - PluginDefaults (which DSH plugins keep the old default).
    * @param options.packages - FishballPackages (Fishball's own package folder).
    * @param options.hasSettings - (key) => whether settings are stored for the plugin (snapshot `settings`).
+   * @param options.ownPluginOf - (toolName) => the key of Fishball's own plugin a tool Fishball
+   *   registers belongs to, or undefined (revision 10c).
    */
-  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages, hasSettings = () => false }) {
+  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages, hasSettings = () => false, ownPluginOf = () => undefined }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -198,6 +203,7 @@ export class PluginCatalog {
     this.#adjustRows = adjustRows
     this.#onApplied = onApplied
     this.#pendingRowIds = pendingRowIds
+    this.#ownPluginOf = ownPluginOf
     this.#ownsDefinition = ownsDefinition
     this.#onChange = onChange
     this.#defaults = defaults
@@ -299,6 +305,19 @@ export class PluginCatalog {
     return this.#require(key).kind
   }
 
+  /**
+   * Whether Fishball must ask you before it turns this plugin on: one of its own feature plugins
+   * (revision 10c), so your off holds unless you allow it.
+   */
+  asksToEnable(key) {
+    return this.#require(key).asksToEnable === true
+  }
+
+  /** The plugin's title as the Fishball tab shows it (Fishball's prompts name it so). */
+  titleOf(key) {
+    return this.#require(key).title
+  }
+
   /** Whether the plugin is on both as desired and as applied (nothing to do for "on"). */
   isRunning(key) {
     return this.desiredOn(key) && this.#appliedOn.get(key) === true
@@ -359,11 +378,12 @@ export class PluginCatalog {
    * The catalog plugin a tool belongs to, from its registering row.
    * Tree plugins are recognised by row-id prefix AND by living in the private tree's layer,
    * so a host row cannot pass as a built-in by choosing a matching id (review M4).
-   * @returns { key, own } — own: Fishball registered it; key undefined for DSH host rows.
+   * @returns { key, own } — own: Fishball registered it, and key is its own plugin (revision 10c);
+   *   key undefined for DSH host rows.
    */
-  #pluginOfOwner(owner, definition) {
+  #pluginOfOwner(owner, definition, name) {
     if (owner === undefined) return { key: undefined, own: false }
-    if (owner.module === PLUGIN.name) return { key: undefined, own: true }
+    if (owner.module === PLUGIN.name) return { key: this.#ownPluginOf(name), own: true }
     const inTree = this.#ownsDefinition(definition)
     for (const entry of this.#entries.values()) {
       const matches = entry.kind === PLUGIN_KIND.profile
@@ -386,7 +406,7 @@ export class PluginCatalog {
     return undefined
   }
 
-  /** Whether a plugin is on for Fishball as applied now (its sources are accepted). */
+  /** Whether a plugin is on for Fishball as applied now (its sources are accepted; Fishball's own features follow it). */
   isAppliedOn(key) {
     return this.#appliedOn.get(key) === true
   }
@@ -418,8 +438,9 @@ export class PluginCatalog {
   /**
    * One tool's decision. `review` is the tool's own standing, independent of its plugin's
    * on/off state; `status` combines it with that state:
-   * - hidden: on the §7 hidden list (or a bsk_inspect that is not Fishball's save-less copy),
-   *   or one of Fishball's own host-row tools, which serve other sessions (message_fishball);
+   * - hidden: on the §7 hidden list (or a bsk_inspect that is not Fishball's save-less copy);
+   * - other-sessions: one of Fishball's own host-row tools, which serve other sessions
+   *   (message_fishball), never Fishball itself;
    * - trusted: Fishball's own tool, or a tool of a DSH built-in Fishball mounts;
    * - checked / allowed: in the checked constants, or allowed by you, for these parameters;
    * - unchecked: anything else, including a tool whose registering row is unknown.
@@ -431,12 +452,15 @@ export class PluginCatalog {
     const judged = isCopy ? tools.get(name) : definition
     const digest = parametersDigest(judged?.parameters)
     const owner = ownerOf(judged) ?? this.#claimedOwner(tools, name, judged, digest)
-    const { key, own } = this.#pluginOfOwner(owner, judged)
+    const { key, own } = this.#pluginOfOwner(owner, judged, name)
     const review = (() => {
-      if (HIDDEN.has(name) || (name === BSK_INSPECT.name && !isCopy)) return TOOL_STATUS.hidden
       // Fishball's own HOST-row tools serve other sessions (message_fishball); only the tools
-      // it registers in its own scope P are for Fishball itself.
-      if (own && !isCopy && !this.#ownsDefinition(judged)) return TOOL_STATUS.hidden
+      // it registers in its own scope P are for Fishball itself. Checked before the hidden list,
+      // which also names message_fishball for the guard, so the page says whom it serves (revision 10c).
+      if (own && !isCopy && !this.#ownsDefinition(judged)) return TOOL_STATUS.otherSessions
+      // An own tool missing from index.js OWN_TOOL_PLUGIN has no switch: hidden, not trusted (review L5).
+      if (own && !isCopy && key === undefined) return TOOL_STATUS.hidden
+      if (HIDDEN.has(name) || (name === BSK_INSPECT.name && !isCopy)) return TOOL_STATUS.hidden
       if ((own && !isCopy) || this.#entries.get(key)?.kind === PLUGIN_KIND.builtin) return REVIEW.trusted
       if (owner === undefined) return TOOL_STATUS.unchecked
       if (isChecked(name, owner.module, digest)) return REVIEW.checked
@@ -444,7 +468,7 @@ export class PluginCatalog {
       return TOOL_STATUS.unchecked
     })()
     const pluginOff = key !== undefined && (this.#listing.has(key) || this.#appliedOn.get(key) !== true)
-    const status = review === TOOL_STATUS.hidden || review === TOOL_STATUS.unchecked ? review
+    const status = NOT_FOR_FISHBALL.has(review) ? review
       : pluginOff ? TOOL_STATUS.pluginOff : TOOL_STATUS.visible
     return { status, review, plugin: key ?? null, module: owner?.module ?? null, digest, description: firstLine(judged?.description) }
   }
@@ -515,12 +539,16 @@ export class PluginCatalog {
    * Record one on/off choice durably and schedule it. Choices are serialized: a settings-page
    * toggle can race a Fishball tool call, and the limit check must see the other's write
    * (review L3), so each check-and-write runs after the previous one finished.
-   * @throws CatalogError(unknownPlugin | limitReached | editsOtherRows | noRows | noProfile).
+   * @param options.asked - Fishball turning on one of its own plugins after you allowed it.
+   * @throws CatalogError(unknownPlugin | limitReached | editsOtherRows | noRows | noProfile | askFirst).
    */
-  setDesired(key, on, by) {
+  setDesired(key, on, by, { asked = false } = {}) {
     return this.#serializedChoice(async () => {
       if (on) this.assertCanEnable(key)
       const entry = this.#require(key)
+      // Checked here, in the queue: an off of yours queued while Fishball decided not to ask
+      // still holds (revision 10c review M1). `asked` means you allowed it in Fishball's prompt.
+      if (on && by === CHANGED_BY.fishball && !asked && entry.asksToEnable === true && !this.desiredOn(key)) throw new CatalogError(PLUGIN_ERROR.askFirst)
       if (this.isRemoving(key)) throw new CatalogError(PLUGIN_ERROR.removing)
       await this.#putChoice(key, entry, { on, changedBy: by })
       await this.audit(key, on ? PLUGIN_ACTION.on : PLUGIN_ACTION.off, by, OUTCOME_OK)
@@ -881,7 +909,7 @@ export class PluginCatalog {
           waiting: this.#waiting.has(entry.key),
           changedBy: record?.kind === entry.kind ? record.changedBy : null,
           lastError: record?.lastError ?? null,
-          dsh: DSH_OF[entry.kind],
+          dsh: entry.own === true ? PLUGIN_DSH.fishball : DSH_OF[entry.kind],
           runs: runsOf(entry.kind, on),
           packageName: entry.packageName ?? null,
           version: entry.version ?? null,
