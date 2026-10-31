@@ -65,3 +65,36 @@ export function bundleFixture(bundle, toolName) {
     },
   }
 }
+
+// ---- P12 (plugin manager settings) ----
+/** apply/dispose/fail of the settings fixtures' rows, with the config each apply received (plain values). */
+store.settingsEvents ??= []
+/** The live config objects the settings rows received, so a volatile change can be read where the plugin reads it. */
+store.settingsConfigs ??= []
+
+/** A config snapshot with volatile fields read through their getter, as the plugin itself reads them (S30). */
+export function plainConfig(value) {
+  if (typeof value?.get === 'function') return plainConfig(value.get())
+  if (Array.isArray(value)) return value.map(plainConfig)
+  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, plainConfig(child)]))
+  return value
+}
+
+/**
+ * The apply of one settings-fixture row: records the mounted entry id (private-tree rows carry the
+ * fbo-<bundle>-- prefix, DESIGN §4) and the config, and a dispose when the row stops. A config that
+ * failOn(config) accepts makes apply throw after recording 'fail', so a valid value can fail to mount.
+ */
+export function settingsRow(plugin, row, failOn) {
+  return function apply(ctx, config) {
+    const entryId = ctx.fiber?.entry?.options?.id ?? null
+    const base = { plugin, row, entryId, config: plainConfig(config ?? {}), at: Date.now() }
+    if (failOn?.(config ?? {})) {
+      store.settingsEvents.push({ ...base, type: 'fail' })
+      throw new Error(plugin + ': apply throws on purpose')
+    }
+    store.settingsEvents.push({ ...base, type: 'apply' })
+    store.settingsConfigs.push({ plugin, row, entryId, config })
+    ctx.effect(() => () => { store.settingsEvents.push({ plugin, row, entryId, type: 'dispose', at: Date.now() }) }, plugin + ' ' + row)
+  }
+}

@@ -1,6 +1,7 @@
 /**
- * Fishball's plugin tools (DESIGN §4 "Who changes what"): list_plugins, set_plugin_enabled,
- * add_plugin, remove_plugin. They are registered in scope P, so only Fishball has them.
+ * Fishball's plugin tools (DESIGN §4 "Who changes what", §10d): list_plugins, set_plugin_enabled,
+ * add_plugin, remove_plugin, get_plugin_settings, set_plugin_settings. They are registered in
+ * scope P, so only Fishball has them.
  *
  * - set_plugin_enabled changes Fishball's own state only; the change applies when the
  *   current turn ends (the catalog applies it in the idle phase).
@@ -13,6 +14,9 @@
  *   through the same path.
  * - remove_plugin uninstalls a plugin installed in Fishball only, after you click Allow once;
  *   a DSH plugin can never be uninstalled from Fishball (refused before any prompt).
+ * - get_plugin_settings reads the settings of a plugin Fishball runs itself, secrets shown only as
+ *   set or not set; set_plugin_settings changes them after you click Allow once, and never a
+ *   secret field (Q-manager-secrets). Every refusal comes before the prompt.
  *
  * A plugin that registers its tools lazily (browser-skill reveals bsk_* on first use) has no
  * tools to list when it is turned on; they appear later as unchecked and are allowed the same
@@ -24,9 +28,10 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
-import { APPROVAL_GRANTED, CHANGED_BY, INTAKE_ERROR, INTAKE_KIND, PLUGIN_INSTALL_REQUEST, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, SOURCE } from './constants.js'
+import { APPROVAL_GRANTED, CHANGED_BY, INTAKE_ERROR, INTAKE_KIND, PLUGIN_INSTALL_REQUEST, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_MANAGER, SESSION_INFO, SOURCE } from './constants.js'
 import { IntakeError } from './intake.js'
-import { byteLength } from './text.js'
+import { byteLength, cutToBytes } from './text.js'
+import { SettingsError } from './plugin-settings.js'
 import { authorOf } from './author.js'
 import { CatalogError, fishballInstalledKey } from './plugin-catalog.js'
 import { PackageError } from './fishball-packages.js'
@@ -36,7 +41,7 @@ import { digestOf } from './digest.js'
 /** Audit key of an install request: a digest, never the raw spec. */
 const SPEC_AUDIT_PREFIX = 'spec:'
 
-export const PLUGIN_TOOL = Object.freeze({ list: 'list_plugins', set: 'set_plugin_enabled', add: 'add_plugin', remove: 'remove_plugin' })
+export const PLUGIN_TOOL = Object.freeze({ list: 'list_plugins', set: 'set_plugin_enabled', add: 'add_plugin', remove: 'remove_plugin', getSettings: 'get_plugin_settings', setSettings: 'set_plugin_settings' })
 
 /** Model-facing texts (stable; no secrets). */
 const TEXT = Object.freeze({
@@ -60,6 +65,19 @@ const TEXT = Object.freeze({
   reasonArg: 'Why Fishball needs this plugin, shown to the user in the permission prompt.',
   appliesLater: 'Saved. It takes effect when this turn ends.',
   addPrompt: (spec, reason) => `Fishball asks to install the plugin "${spec}" for Fishball only, in its own package folder; the DSH profile and other sessions are not changed. Reason: ${reason}`,
+  getSettingsDescription: 'Read the settings of one plugin Fishball runs itself (built in, installed in Fishball only, or a DSH plugin that is off in DSH and on in Fishball): each field\'s path, kind, description, the plugin\'s own value and the current value. Secret fields show only whether they are set. A plugin on in DSH shares DSH\'s settings (shared: true); change those on DSH\'s Plugins page.',
+  setSettingsDescription: 'Change settings of one plugin Fishball runs itself, after the user allows it in a permission prompt. Pass only the fields to change, as a nested object for one row (get_plugin_settings lists rows and fields). Secret fields cannot be set by Fishball. The change takes effect when your current turn ends.',
+  rowArg: 'The row id exactly as get_plugin_settings shows it.',
+  valuesArg: 'The fields to change, as a nested object, for example {"limit": 5}. Objects are merged; lists and other values replace.',
+  settingsReasonArg: 'Why Fishball wants this change, shown to the user in the permission prompt.',
+  settingsPrompt: (plugin, row, lines, reason) => [
+    `Fishball asks to change settings of "${plugin}" (row ${row}) for Fishball only; other sessions and the DSH profile are not changed:`,
+    ...lines,
+    `Reason: ${reason}`,
+  ].join('\n'),
+  /** A field without a value, and a secret (never shown), in the prompt's `path: old → new` lines. */
+  unsetValue: 'unset',
+  secretValue: 'secret',
   uncheckedPrompt: (plugin, unchecked) => [
     `Fishball wants to turn on "${plugin}" for itself. Nobody has checked these tools yet; allowing shows them to Fishball:`,
     ...unchecked.map((tool) => `- ${tool.name}: ${tool.description}`),
@@ -68,6 +86,12 @@ const TEXT = Object.freeze({
 
 const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }] })
 const ok = (fields = {}) => ({ ok: true, ...fields })
+
+/** A value in the settings prompt: JSON, cut to promptValueBytes (DESIGN §10d). */
+const promptValue = (value) => cutToBytes(value === undefined ? TEXT.unsetValue : JSON.stringify(value), PLUGIN_MANAGER.promptValueBytes, SESSION_INFO.ellipsis)
+
+/** The prompt's lines, one per changed field: `- path: old → new` (a secret never shows its values). */
+const changeLines = (changes) => changes.map((change) => `- ${change.path.join('.')}: ${change.secret ? TEXT.secretValue : `${promptValue(change.old)} → ${promptValue(change.new)}`}`)
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
 
 
@@ -101,9 +125,10 @@ export function installRequester({ ledger, readLimits, packages }) {
  * @param deps.composition - AssistantComposition (decisions()).
  * @param deps.tools - tools service; deps.scope - scope key P.
  * @param deps.approval - approval service; deps.packages - FishballPackages.
+ * @param deps.settings - PluginSettings (src/plugin-settings.js).
  * @param deps.logger - plugin logger.
  */
-export function registerPluginTools({ register, catalog, composition, tools, scope, approval, packages, logger }) {
+export function registerPluginTools({ register, catalog, composition, tools, scope, approval, packages, settings, logger }) {
   /** Ask the user through DSH's normal prompt; only Allow once grants. */
   const ask = async (exec, toolName, reason) => {
     const outcome = await approval.request({ agent: exec.agent, toolName, callId: exec.callId, reason, signal: exec.signal })
@@ -144,12 +169,19 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
     }
   }
 
+  /** Read the catalog again; the refusal for a plugin it does not list, else undefined. */
+  const unknownPlugin = async (plugin) => {
+    await catalog.refresh()
+    return catalog.has(plugin) ? undefined : refused(PLUGIN_ERROR.unknownPlugin)
+  }
+
   /** Run a tool body; a CatalogError becomes a refusal with its code. */
   const guarded = (body) => async (args, exec) => {
     try {
       return await body(args, exec)
     } catch (error) {
       if (error instanceof CatalogError) return refused(error.code)
+      if (error instanceof SettingsError) return refused(error.code, error.path === undefined ? {} : { path: error.path })
       if (error instanceof PackageError) return refused(PLUGIN_ERROR.installFailed, { reason: error.code })
       logger.warn('plugin tool failed (%s)', diagnosticOf(error))
       throw error
@@ -176,8 +208,8 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
       },
       output: JSON_OUTPUT,
       execute: guarded(async ({ plugin, on }, exec) => {
-        await catalog.refresh()
-        if (!catalog.has(plugin)) return refused(PLUGIN_ERROR.unknownPlugin)
+        const unknown = await unknownPlugin(plugin)
+        if (unknown) return unknown
         if (on) return enable(plugin, exec, PLUGIN_TOOL.set)
         await catalog.setDesired(plugin, false, CHANGED_BY.fishball)
         return ok({ plugin, on: false, note: TEXT.appliesLater })
@@ -231,8 +263,8 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
       },
       output: JSON_OUTPUT,
       execute: guarded(async ({ plugin, reason }, exec) => {
-        await catalog.refresh()
-        if (!catalog.has(plugin)) return refused(PLUGIN_ERROR.unknownPlugin)
+        const unknown = await unknownPlugin(plugin)
+        if (unknown) return unknown
         // DSH plugins and built-ins: refused before the user is asked (Fishball never changes the DSH profile).
         if (catalog.kindOf(plugin) !== PLUGIN_KIND.fishballInstalled) return refused(PLUGIN_ERROR.notRemovable)
         // Already being uninstalled: nothing to ask the user (review L1).
@@ -243,6 +275,45 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
         }
         await catalog.requestRemove(plugin, CHANGED_BY.fishball)
         return ok({ plugin, removing: true, note: TEXT.removesLater })
+      }),
+    })),
+    register(defineTool({
+      name: PLUGIN_TOOL.getSettings,
+      description: TEXT.getSettingsDescription,
+      parameters: {
+        plugin: { type: 'string', required: true, description: TEXT.pluginArg },
+      },
+      output: JSON_OUTPUT,
+      execute: guarded(async ({ plugin }) => {
+        const unknown = await unknownPlugin(plugin)
+        if (unknown) return unknown
+        return ok({ plugin, ...(await settings.fields(plugin)) })
+      }),
+    })),
+    register(defineTool({
+      name: PLUGIN_TOOL.setSettings,
+      description: TEXT.setSettingsDescription,
+      parameters: {
+        plugin: { type: 'string', required: true, description: TEXT.pluginArg },
+        row: { type: 'string', required: true, description: TEXT.rowArg },
+        values: { type: 'object', additionalProperties: true, required: true, description: TEXT.valuesArg },
+        reason: { type: 'string', required: true, description: TEXT.settingsReasonArg },
+      },
+      output: JSON_OUTPUT,
+      execute: guarded(async ({ plugin, row, values, reason }, exec) => {
+        const unknown = await unknownPlugin(plugin)
+        if (unknown) return unknown
+        // Every refusal (shared, unknown row, no settings, secret, invalid) comes before the prompt.
+        const preview = await settings.plan(plugin, row, { values }, { secrets: false })
+        if (preview.changes.length === 0) return refused(PLUGIN_ERROR.noChange)
+        if (!(await ask(exec, PLUGIN_TOOL.setSettings, TEXT.settingsPrompt(plugin, row, changeLines(preview.changes), reason)))) {
+          await catalog.audit(plugin, PLUGIN_ACTION.settings, CHANGED_BY.fishball, PLUGIN_ERROR.rejected)
+          return refused(PLUGIN_ERROR.rejected)
+        }
+        // Saved against the values stored now: a change you made while the prompt was open is
+        // kept, and the saved config is checked again (a refusal now answers its code).
+        const saved = await settings.save(plugin, row, { values }, { secrets: false }, CHANGED_BY.fishball)
+        return ok({ plugin, row, changed: saved.changes.map((change) => change.path.join('.')), note: TEXT.appliesLater })
       }),
     })),
   ]

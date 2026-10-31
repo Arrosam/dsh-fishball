@@ -266,13 +266,17 @@ export const SUMMARY_HEADINGS = ['## Standing permissions', '## Commitments', '#
 
 /** P3 R1: Fishball's own model tools. */
 /** Plugin statuses: Fishball's own model tools (plugin statuses feature adds remove_plugin). */
-export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin']
+/** P12 (plugin manager) adds get_plugin_settings and set_plugin_settings. */
+export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings']
 export const KIND = { profile: 'profile', only: 'fishball-only', builtin: 'builtin', installed: 'fishball-installed' }
 export const TOOL_STATUS = { visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked' }
 export const CHANGED_BY = { fishball: 'fishball', user: 'user' }
 export const CATALOG_KEYS = ['allowedTools', 'otherTools', 'plugins']
-/** Plugin statuses feature: every entry also has actions, removing and status (12 keys). */
-export const PLUGIN_KEYS = ['actions', 'applied', 'changedBy', 'kind', 'lastError', 'on', 'plugin', 'removing', 'status', 'title', 'tools', 'waiting']
+/**
+ * Plugin statuses feature: every entry also has actions, removing and status (12 keys).
+ * P12 (DESIGN §10d "Host API") adds dsh, runs, packageName, version, description, meta, hasIcon and settings (20 keys).
+ */
+export const PLUGIN_KEYS = ['actions', 'applied', 'changedBy', 'description', 'dsh', 'hasIcon', 'kind', 'lastError', 'meta', 'on', 'packageName', 'plugin', 'removing', 'runs', 'settings', 'status', 'title', 'tools', 'version', 'waiting']
 /** Plugin statuses feature: the status of a catalog entry and the actions it offers. */
 export const PLUGIN_STATUS = { installed: 'installed-in-fishball', dshEnabled: 'dsh-enabled', dshDisabled: 'dsh-disabled', builtin: 'builtin' }
 export const ACTION = { enable: 'enable', disable: 'disable', uninstall: 'uninstall' }
@@ -434,3 +438,82 @@ export const AUTHOR_NAME_MAX_BYTES = 200
 export const TITLE_ENV = { FBTEST_TITLE_MAX_BYTES: '1024' }
 /** P11: the last commit before P11's implementation (an install from before this phase). */
 export const PRE_MESSENGER = { commit: 'e221d23' }
+
+// ---- P12 (plugin manager, revision 10; DESIGN §10d) ----
+/** P12: FBTEST_MANAGER=1 links the settings fixtures (MANAGER_BUNDLES) at the first boot of a home. */
+export const MANAGER_ENV = { FBTEST_MANAGER: '1' }
+export const MANAGER_API = { detail: '/api/fishball/plugins/detail', icon: '/api/fishball/plugins/icon', settings: '/api/fishball/plugins/settings' }
+/**
+ * P12 fixtures. settings: installed but not selected (fishball-only), two rows (one with every field
+ * kind, one without a Config), a package description, version 1.2.3 and an icon. dsh: selected in
+ * the profile (kind profile, on in DSH), with a Config. bad: fishball-only, its patch config fails its schema.
+ */
+export const MANAGER_BUNDLES = {
+  settings: { name: 'fbtest-settings', dir: fixtureDir('fbtest-settings'), enabled: false, rows: { main: 'fbtest-settings', side: 'fbtest-settings-side' } },
+  dsh: { name: 'fbtest-settings-dsh', dir: fixtureDir('fbtest-settings-dsh'), enabled: true, rows: { main: 'fbtest-settings-dsh' } },
+  bad: { name: 'fbtest-settings-bad', dir: fixtureDir('fbtest-settings-bad'), enabled: false, rows: { main: 'fbtest-settings-bad' } },
+  /** fishball-only; its patch gives the secret number `pin` a string, so the raw schema error would repeat it. */
+  leak: { name: 'fbtest-settings-leak', dir: fixtureDir('fbtest-settings-leak'), enabled: false, rows: { main: 'fbtest-settings-leak' } },
+}
+/** P12: what the fbtest-settings fixture declares (its package.json, patch and Config). */
+export const SETTINGS_FIXTURE = {
+  version: '1.2.3',
+  description: 'fbtest settings fixture: a Config with every field kind the plugin manager handles.',
+  iconMarker: 'data-fbtest-icon="fbtest-settings"',
+  /** The secret the patch sets, and one the user sets: neither may ever leave the Host. */
+  patchSecret: 'fbtest-patch-secret-7f3a9c',
+  /** The patch also sets a secret inside the nested group auth. */
+  nestedSecret: 'fbtest-patch-secret-nested-2d81',
+  /** ... and one inside the list of objects accounts. */
+  listSecret: 'fbtest-patch-secret-list-90c4',
+  /** The secret fbtest-settings-leak's patch puts where a number belongs. */
+  errorSecret: 'fbtest-secret-in-error-e61b',
+  /** A rejected value a save sends: no answer may repeat it. */
+  rejected: 'fbtest-rejected-data-77d2',
+  /** Schemastery repeats the rejected data after this; the Host cuts the message before it. */
+  errorCut: ' but got ',
+  userSecret: 'fbtest-user-secret-41be0d',
+  /** A greeting that makes the row's apply throw (a valid value that fails to mount). */
+  failGreeting: 'boom',
+  /** The row's own resolved config (patch config over the schema defaults), secret removed. */
+  base: { greeting: 'hello', limit: 3, enabled: false, mode: 'fast', live: 'one', nested: { a: 'x', b: 1 }, tags: ['a', 'b'], servers: [], auth: { user: 'u' }, accounts: [{ name: 'a1' }] },
+  limit: { min: 1, max: 10 },
+  /** Leaf field paths get_plugin_settings must list (dotted); servers (a list of objects) is not asserted. */
+  fields: ['greeting', 'limit', 'enabled', 'mode', 'token', 'live', 'nested.a', 'nested.b', 'tags', 'auth.user', 'auth.key'],
+  secretPath: ['token'],
+  /** Every secret field's dotted path, and the one field with a fixed list of values and its choices. */
+  secretPaths: ['accounts.0.secret', 'auth.key', 'token'],
+  /** The secret fields get_plugin_settings lists (with set); accounts holds secrets but is not one. */
+  secretFields: ['auth.key', 'token'],
+  choiceField: { path: 'mode', choices: ['fast', 'slow'] },
+}
+/** P12 snapshot enums (DESIGN §10d "Host API"). */
+export const DSH_STATE = { on: 'on', off: 'off', builtin: 'builtin', none: 'none' }
+export const RUNS = { everywhere: 'everywhere', dsh: 'dsh', fishball: 'fishball', nowhere: 'nowhere' }
+export const SETTINGS_STATE = { unused: 'unused', none: 'none', changed: 'changed', default: 'default' }
+/** P12 route and tool codes. */
+export const MANAGER_CODE = {
+  badBody: 'bad-body', unknown: 'unknown', sharedWithDsh: 'shared-with-dsh', noSettings: 'no-settings', invalid: 'invalid',
+  unknownPlugin: 'unknown-plugin', unknownRow: 'unknown-row', secretField: 'secret-field', noChange: 'no-change', rejected: 'rejected',
+}
+export const DETAIL_KEYS = ['history', 'plugin', 'rows', 'settings', 'shared']
+export const DETAIL_ROW_KEYS = ['base', 'editable', 'error', 'module', 'row', 'schema', 'secrets', 'user', 'value']
+export const HISTORY_KEYS = ['action', 'at', 'by', 'outcome']
+export const HISTORY_MAX = 10
+export const SETTINGS_TOOLS = { get: 'get_plugin_settings', set: 'set_plugin_settings' }
+export const GET_FIELD_KEYS = ['changed', 'description', 'kind', 'path', 'pluginValue', 'secret', 'value']
+/** A field with a fixed list of values also carries `choices` (DESIGN §10d, coordinator's decision on A120). */
+export const GET_CHOICE_FIELD_KEYS = ['changed', 'choices', 'description', 'kind', 'path', 'pluginValue', 'secret', 'value']
+export const GET_SECRET_FIELD_KEYS = ['changed', 'description', 'kind', 'path', 'secret', 'set']
+/** set_plugin_settings' prompt: each changed field as `path: old → new`, each value as JSON cut to this many bytes. */
+export const PROMPT_ARROW = ' → '
+export const PROMPT_VALUE_BYTES = 200
+/** The audit action of a settings change, and the outcome of one that went through (or was rejected). */
+export const SETTINGS_ACTION = 'settings'
+export const AUDIT_OUTCOME = { ok: 'ok', rejected: 'rejected' }
+/** The Compaction built-in and its engine row, whose config is the context-window policy (§6, S29). */
+export const COMPACTION = { plugin: 'builtin:compaction', engineRow: 'compaction-basic' }
+/** Stored values: domain fishball, table plugin_settings (§9). */
+export const SETTINGS_TABLE = 'plugin_settings'
+/** Private-tree row ids carry this prefix (DESIGN §4 "Row ids"): fbo-<bundle>--<row>. */
+export const PRIVATE_ROW_PREFIX = 'fbo-'

@@ -4,7 +4,7 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences and plugin_defaults tables keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults and plugin_settings tables keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
@@ -12,7 +12,7 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -85,6 +85,17 @@ const pluginDefaultsRecord = z.object({
   existingInstall: z.boolean(),
   dshPlugins: z.array(z.string().min(1)).nullable(),
   recordedAt: z.string(),
+})
+
+/**
+ * Settings for a plugin Fishball runs in its private tree (DESIGN §9, §10d): the changed values
+ * per row id, by you or by Fishball after you allowed them. Secret values are kept here and never
+ * leave the Host.
+ */
+const pluginSettingsRecord = z.object({
+  rows: z.record(z.string().min(1), z.record(z.string(), z.unknown())),
+  changedBy: z.enum(Object.values(CHANGED_BY)),
+  changedAt: z.string(),
 })
 
 /** You allowed a tool nobody had checked, for exactly these parameters (DESIGN §7). */
@@ -184,6 +195,7 @@ export const fishballDomain = defineDomain({
     [TABLE.unread]: domainTable(unreadRecord),
     [TABLE.preferences]: domainTable(preferencesRecord),
     [TABLE.pluginDefaults]: domainTable(pluginDefaultsRecord),
+    [TABLE.pluginSettings]: domainTable(pluginSettingsRecord),
   },
 })
 
@@ -225,6 +237,7 @@ export class Store {
   get unread() { return this.#domain.table(TABLE.unread) }
   get preferences() { return this.#domain.table(TABLE.preferences) }
   get pluginDefaults() { return this.#domain.table(TABLE.pluginDefaults) }
+  get pluginSettings() { return this.#domain.table(TABLE.pluginSettings) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

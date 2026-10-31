@@ -12,7 +12,7 @@
  * are not registered: only currently registered hidden names are denied.
  */
 import { bindScopeParent, createScope, scopeOf } from '@deepseek-ai/dsh-scope'
-import { EntryTree } from '@deepseek-ai/cordis-plugin-loader'
+import { EntryTree, interpolate } from '@deepseek-ai/cordis-plugin-loader'
 import { prepareProfileEntries } from '@deepseek-ai/dsh-app-boot'
 import { RUN_CODE_NAME } from '@deepseek-ai/dsh-tools'
 import { auditRows, leakedServices } from '@deepseek-ai/dsh-agent-preset-registry'
@@ -151,6 +151,20 @@ export class AssistantComposition {
       if (entry.fiber !== undefined && leakedServices(this.#rowCtx, entry.fiber).length > 0) leaked.add(entry.options.id)
     }
     return { failed: byRowId(audit.failed), pending: byRowId(audit.pending), leaked }
+  }
+
+  /**
+   * A row module as the private tree would import it (same resolution base), unwrapped the way
+   * DSH's loader unwraps plugin exports. Reading a plugin's settings schema needs it (DESIGN §10d);
+   * nothing is mounted.
+   */
+  async loadPluginModule(name) {
+    return this.#rowCtx.loader.unwrapExports(await this.#tree.import(name))
+  }
+
+  /** A row config with its `!!js` values evaluated as the private tree evaluates them when mounting. */
+  resolveConfig(config) {
+    return interpolate(this.#pctx, config)
   }
 
   /** Whether a context runs inside Fishball's private tree (its fiber descends from P's tree). */

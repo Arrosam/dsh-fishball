@@ -1,0 +1,4 @@
+- insert:
+    - id: manager-demo
+      name: 'fishball-spike-manager-demo'
+      config: { greeting: hello }

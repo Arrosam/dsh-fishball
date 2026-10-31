@@ -2,7 +2,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { ACTION, API, AUTHOR_KIND, DSH_COMPACTION, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PROFILE, ROW_ID, RUNTIME } from './constants.mjs'
+import { pathToFileURL } from 'node:url'
+import { ACTION, API, AUTHOR_KIND, DSH_COMPACTION, DSH_STATE, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -463,3 +464,82 @@ export async function sessionAuthor(host, kind, sessionId) {
 }
 /** R4: a plugin source's author: its registered title and its identity. */
 export const pluginAuthor = (title, identity) => ({ kind: AUTHOR_KIND.plugin, name: title, seed: identity })
+
+// ---- P12 helpers (plugin manager, DESIGN §10d) ----
+
+/** DSH's Schemastery, the instance plugins and the Host use (the browser rebuilds schemas with it). */
+export const Schema = await (async () => { const m = await import(pathToFileURL(path.join(RUNTIME, '@deepseek-ai', 'schemastery', 'lib', 'index.mjs')).href); return m.default ?? m })()
+
+/** The `dsh` value a catalog entry must report for its kind (decision table). */
+export const expectedDsh = (p) => ({ [KIND.profile]: DSH_STATE.on, [KIND.only]: DSH_STATE.off, [KIND.builtin]: DSH_STATE.builtin, [KIND.installed]: DSH_STATE.none })[p.kind]
+/** The `runs` value from the desired on/off states: a profile plugin runs in DSH whatever Fishball chose. */
+export function expectedRuns(p) {
+  if (p.kind === KIND.profile) return p.on ? RUNS.everywhere : RUNS.dsh
+  return p.on ? RUNS.fishball : RUNS.nowhere
+}
+
+const pluginQuery = (key) => '?plugin=' + encodeURIComponent(key)
+export const getDetail = (host, key) => host.get(MANAGER_API.detail + pluginQuery(key))
+export const getIcon = (host, key) => host.get(MANAGER_API.icon + pluginQuery(key))
+/** The detail of one plugin; throws when the route does not answer 200 {ok:true}. */
+export async function detailOf(host, key) {
+  const r = await getDetail(host, key)
+  if (r.status !== 200 || r.json?.ok !== true) throw new Error('detail of ' + key + ' answered ' + r.status + ': ' + r.text.slice(0, 500))
+  return r.json.detail
+}
+export const rowIn = (detail, row) => detail?.rows?.find((r) => r.row === row)
+/** Your stored values for one row as the detail route reports them ({} when none). */
+export const userOf = async (host, key, row) => rowIn(await detailOf(host, key), row)?.user ?? {}
+export const valueOf = async (host, key, row) => rowIn(await detailOf(host, key), row)?.value
+export const saveSettings = (host, body, opts) => host.post(MANAGER_API.settings, body, opts)
+/** A secret path as a dotted string, whether it came as an array of segments or a string. */
+export const pathText = (p) => (Array.isArray(p) ? p.join('.') : String(p))
+
+/** The stored plugin_settings records (domain fishball, §9); {} when the table is missing. */
+export function storedSettings(home) {
+  try { return JSON.parse(fs.readFileSync(STORE.file(home), 'utf8')).tables?.[SETTINGS_TABLE] ?? {} } catch { return {} }
+}
+/** The stored record whose rows hold this row id (row ids are unique across the fixtures), or undefined. */
+export const storedRecord = (home, rowId) => Object.values(storedSettings(home)).find((r) => r?.rows && Object.hasOwn(r.rows, rowId))
+
+/** Assert a text carries neither fixture secret (the patch's nor the one the user set). */
+export function assertNoSecret(assert, text, label) {
+  for (const secret of [SETTINGS_FIXTURE.patchSecret, SETTINGS_FIXTURE.nestedSecret, SETTINGS_FIXTURE.listSecret, SETTINGS_FIXTURE.errorSecret, SETTINGS_FIXTURE.userSecret]) assert.equal(String(text ?? '').includes(secret), false, label + ' carries a secret value')
+}
+
+/** A fixture config as the plugin received it, with the patch's three secrets taken out (compare with SETTINGS_FIXTURE.base). */
+export function withoutSecrets(config) {
+  const { token, auth, accounts, ...rest } = config ?? {}
+  return { ...rest, auth: { user: auth?.user }, accounts: (accounts ?? []).map(({ secret, ...a }) => a) }
+}
+/** Assert a schema error message left the Host cut: nothing from " but got " on, and no secret. */
+export function assertCutError(assert, message, label) {
+  assert.equal(typeof message, 'string', label + ' error is a message')
+  assert.ok(message.length > 0, label + ' error is not empty')
+  assert.equal(message.includes(SETTINGS_FIXTURE.errorCut.trim()), false, label + ' error repeats the rejected data: ' + message)
+  assertNoSecret(assert, message, label + ' error')
+}
+
+/** Settings audit rows (action 'settings') of one plugin. */
+export const settingsAudit = (home, plugin) => auditRows(home).filter((r) => r.plugin === plugin && r.action === SETTINGS_ACTION)
+
+/** apply events of one settings-fixture row mounted in Fishball's private tree. */
+export const privateApplies = async (host, plugin, row) => (await host.call('settingsEvents', { plugin, row })).filter((e) => e.type === 'apply' && String(e.entryId ?? '').startsWith(PRIVATE_ROW_PREFIX))
+/** Wait until a private-tree apply after the first `skip` ones satisfies pred(config); returns it or undefined. */
+export async function untilApply(host, plugin, row, skip, pred, timeoutMs = 10000) {
+  let found
+  await until(async () => { found = (await privateApplies(host, plugin, row)).slice(skip).find((e) => pred(e.config)); return found }, timeoutMs, 100)
+  return found
+}
+
+/** The line of a set_plugin_settings prompt that lists one field as `path: old → new`, split into its parts. */
+export function promptLine(reason, fieldPath) {
+  const line = String(reason ?? '').split('\n').find((l) => l.includes(fieldPath + ': ') && l.includes(PROMPT_ARROW))
+  if (!line) return undefined
+  const start = line.indexOf(fieldPath + ': ') + fieldPath.length + 2
+  const arrow = line.indexOf(PROMPT_ARROW, start)
+  return { line, old: line.slice(start, arrow).trim(), new: line.slice(arrow + PROMPT_ARROW.length).trim() }
+}
+
+/** Let `ms` pass (a negative check: something must NOT happen in that time). */
+export const quiet = (ms) => new Promise((resolve) => setTimeout(resolve, ms))

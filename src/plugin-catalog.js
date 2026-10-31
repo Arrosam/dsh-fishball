@@ -27,6 +27,10 @@
  * Tool decisions (`evaluate`) are pure reads of the applied snapshot, so the mask and the
  * guard always agree with what the model was shown.
  */
+import fs from 'node:fs'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { readPluginMeta } from '@deepseek-ai/dsh-app-boot'
 import { BUILTIN_PLUGINS, BUILTIN_PREFIX } from './builtins.js'
 import { anchorRowModules, BundleRowsError, readBundleRows, readPackageRows } from './bundle-rows.js'
 import { CHECKED_TOOLS, isChecked } from './checked-tools.js'
@@ -37,7 +41,7 @@ import { builtinPrefix, fishballInstalledPrefix, fishballOnlyPrefix, prefixRows,
 import { diagnosticOf } from './errors.js'
 import { AuditLog } from './audit.js'
 import { compoundKey } from './keys.js'
-import { CHANGED_BY, FISHBALL_INSTALLED_PREFIX, OPTIONAL_SERVICE, PLUGIN, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_OFFER, PLUGIN_STATUS, TOOL_STATUS } from './constants.js'
+import { CHANGED_BY, FISHBALL_INSTALLED_PREFIX, FISHBALL_PACKAGES, OPTIONAL_SERVICE, PLUGIN, PLUGIN_ACTION, PLUGIN_CHANGE_OK as OUTCOME_OK, PLUGIN_DSH, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_OFFER, PLUGIN_RUNS, PLUGIN_SETTINGS_STATE, PLUGIN_STATUS, TOOL_STATUS } from './constants.js'
 import { PackageError } from './fishball-packages.js'
 
 const HIDDEN = new Set(HIDDEN_TOOLS)
@@ -64,6 +68,46 @@ function statusOf(kind, on) {
   if (kind === PLUGIN_KIND.builtin) return PLUGIN_STATUS.builtin
   if (kind === PLUGIN_KIND.fishballInstalled) return PLUGIN_STATUS.installedInFishball
   return on ? PLUGIN_STATUS.dshEnabled : PLUGIN_STATUS.dshDisabled
+}
+
+/** Where the plugin stands in DSH (snapshot `dsh`, DESIGN §10d). */
+const DSH_OF = Object.freeze({
+  [PLUGIN_KIND.profile]: PLUGIN_DSH.on,
+  [PLUGIN_KIND.fishballOnly]: PLUGIN_DSH.off,
+  [PLUGIN_KIND.builtin]: PLUGIN_DSH.builtin,
+  [PLUGIN_KIND.fishballInstalled]: PLUGIN_DSH.none,
+})
+
+/** Where the plugin runs, from its kind and Fishball's desired on/off (snapshot `runs`). */
+function runsOf(kind, on) {
+  if (kind === PLUGIN_KIND.profile) return on ? PLUGIN_RUNS.everywhere : PLUGIN_RUNS.dsh
+  return on ? PLUGIN_RUNS.fishball : PLUGIN_RUNS.nowhere
+}
+
+/** The display fields DSH's metadata offers the list (the icon is served by its own route). */
+function displayMeta(meta) {
+  if (meta === undefined || meta === null) return null
+  const out = {}
+  if (meta.title !== undefined) out.title = meta.title
+  if (meta.description !== undefined) out.description = meta.description
+  return Object.keys(out).length > 0 ? out : null
+}
+
+/**
+ * Version and display metadata of a package in Fishball's own folder, read without running its
+ * code (DSH's readPluginMeta). Missing pieces are null: the list still shows the package name.
+ */
+function packageFacts(name, dir, folder) {
+  let version = null
+  let description = null
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, FISHBALL_PACKAGES.manifest), 'utf8'))
+    version = typeof manifest.version === 'string' ? manifest.version : null
+    description = typeof manifest.description === 'string' ? manifest.description : null
+  } catch { /* unreadable manifest: the catalog reports it when it is mounted */ }
+  let meta
+  try { meta = readPluginMeta(name, pathToFileURL(path.join(folder, FISHBALL_PACKAGES.manifest)).href) } catch { meta = undefined }
+  return { version, description, meta }
 }
 
 /** The actions a plugin offers: on/off for all, uninstall only for Fishball-installed ones; none while it is being uninstalled. */
@@ -100,6 +144,7 @@ export class PluginCatalog {
   #ownsDefinition
   #defaults
   #packages
+  #hasSettings
   #agentOf = () => undefined
   /** key -> catalog entry { key, title, kind, defaultOn, rows?, bundle?, rowIds?, packageName?, packageDir?, prefix } */
   #entries = new Map()
@@ -141,8 +186,9 @@ export class PluginCatalog {
    * @param options.onChange - called after the applied snapshot changes.
    * @param options.defaults - PluginDefaults (which DSH plugins keep the old default).
    * @param options.packages - FishballPackages (Fishball's own package folder).
+   * @param options.hasSettings - (key) => whether settings are stored for the plugin (snapshot `settings`).
    */
-  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages }) {
+  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages, hasSettings = () => false }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -156,6 +202,7 @@ export class PluginCatalog {
     this.#onChange = onChange
     this.#defaults = defaults
     this.#packages = packages
+    this.#hasSettings = hasSettings
   }
 
   /** The agent whose idle phase applies changes (wired after the lifecycle exists). */
@@ -200,11 +247,15 @@ export class PluginCatalog {
         bundle,
         rowIds: new Set(bundle.rows.map((row) => row.rowId)),
         prefix: fishballOnlyPrefix(bundle.name),
+        packageName: bundle.name,
+        version: bundle.version ?? null,
+        description: bundle.description ?? null,
+        meta: bundle.meta,
       })
     }
     for (const { name, dir } of installed ?? []) {
       const key = fishballInstalledKey(name)
-      entries.set(key, { key, title: name, kind: PLUGIN_KIND.fishballInstalled, defaultOn: false, packageName: name, packageDir: dir, prefix: fishballInstalledPrefix(name) })
+      entries.set(key, { key, title: name, kind: PLUGIN_KIND.fishballInstalled, defaultOn: false, packageName: name, packageDir: dir, prefix: fishballInstalledPrefix(name), ...packageFacts(name, dir, this.#packages.dir) })
     }
     this.#entries = entries
     const shape = [...entries.values()].map((entry) => entry.key + SHAPE_SEPARATOR + entry.kind).join('\n')
@@ -645,21 +696,73 @@ export class PluginCatalog {
   }
 
   /**
-   * Rows of one tree-mounted plugin, with private-tree ids. @throws CatalogError.
+   * Rows of one tree-mounted plugin, with private-tree ids. Every kind passes through adjustRows
+   * before ids are prefixed: the context window sets the compaction row there, and your plugin
+   * settings are merged in there (DESIGN §10d). @throws CatalogError.
    * @param purpose - { listing } passed to adjustRows (a mid-turn listing mount).
    */
   #rowsOf(entry, purpose = {}) {
     try {
-      if (entry.kind === PLUGIN_KIND.builtin) return prefixRows(this.#adjustRows(entry.key, entry.rows, purpose), entry.prefix)
-      if (entry.kind === PLUGIN_KIND.fishballInstalled) return prefixRows(anchorRowModules(readPackageRows(entry.packageDir), entry.packageDir), entry.prefix)
-      return prefixRows(readBundleRows(entry.bundle, this.#ctx.get(OPTIONAL_SERVICE.profileContext)), entry.prefix)
+      return prefixRows(this.#adjustRows(entry.key, this.#plainRows(entry), purpose), entry.prefix)
     } catch (error) {
-      if (error instanceof BundleRowsError) throw new CatalogError(error.code)
-      if (error instanceof RowIdConflictError) throw new CatalogError(PLUGIN_ERROR.rowIdConflict)
-      // A missing or unparsable bundle file: a stable code, never the raw fs/YAML error (M8b).
-      this.#logger.warn('plugin %s rows unreadable (%s)', entry.key, diagnosticOf(error))
-      throw new CatalogError(PLUGIN_ERROR.rowFailed)
+      throw this.#rowsError(entry, error)
     }
+  }
+
+  /** The plugin's own rows, unprefixed, with module names as the private tree imports them. */
+  #plainRows(entry) {
+    if (entry.kind === PLUGIN_KIND.builtin) return entry.rows
+    if (entry.kind === PLUGIN_KIND.fishballInstalled) return anchorRowModules(readPackageRows(entry.packageDir), entry.packageDir)
+    return readBundleRows(entry.bundle, this.#ctx.get(OPTIONAL_SERVICE.profileContext))
+  }
+
+  /** A stable CatalogError for a failure to read or prefix a plugin's rows. */
+  #rowsError(entry, error) {
+    if (error instanceof CatalogError) return error
+    if (error instanceof BundleRowsError) return new CatalogError(error.code)
+    if (error instanceof RowIdConflictError) return new CatalogError(PLUGIN_ERROR.rowIdConflict)
+    // A missing or unparsable bundle file: a stable code, never the raw fs/YAML error (M8b).
+    this.#logger.warn('plugin %s rows unreadable (%s)', entry.key, diagnosticOf(error))
+    return new CatalogError(PLUGIN_ERROR.rowFailed)
+  }
+
+  /**
+   * The rows whose settings the plugin page and the settings tools work on (DESIGN §10d):
+   * unprefixed, without your values merged in. `shared` is true for a plugin on in DSH, whose
+   * settings are DSH's. A plugin whose rows cannot be read has none.
+   * @throws CatalogError(unknownPlugin).
+   */
+  settingsRows(key) {
+    const entry = this.#require(key)
+    let rows
+    try { rows = this.#plainRows(entry) } catch (error) {
+      this.#logger.warn('plugin %s settings rows unreadable (%s)', key, diagnosticOf(error))
+      rows = []
+    }
+    return { shared: entry.kind === PLUGIN_KIND.profile, rows }
+  }
+
+  /** The plugin's newest audit entries, newest first: { action, by, at, outcome }. */
+  history(key, limit) {
+    return this.#changes.recent(Infinity).filter((entry) => entry.plugin === key).slice(0, limit).map(({ action, by, at, outcome }) => ({ action, by, at, outcome }))
+  }
+
+  /** The plugin's icon as DSH's metadata gives it (a base64 data URL), or undefined. @throws CatalogError(unknownPlugin). */
+  iconOf(key) {
+    const icon = this.#require(key).meta?.icon
+    return typeof icon === 'string' ? icon : undefined
+  }
+
+  /** Snapshot `settings` of one plugin (DESIGN §10d). @throws CatalogError(unknownPlugin). */
+  settingsState(key) {
+    return this.#settingsState(this.#require(key))
+  }
+
+  #settingsState(entry) {
+    const stored = this.#hasSettings(entry.key)
+    if (entry.kind === PLUGIN_KIND.profile) return stored ? PLUGIN_SETTINGS_STATE.unused : PLUGIN_SETTINGS_STATE.none
+    if (stored) return PLUGIN_SETTINGS_STATE.changed
+    return entry.kind === PLUGIN_KIND.builtin && entry.rows.length === 0 ? PLUGIN_SETTINGS_STATE.none : PLUGIN_SETTINGS_STATE.default
   }
 
   /**
@@ -765,6 +868,14 @@ export class PluginCatalog {
           waiting: this.#waiting.has(entry.key),
           changedBy: record?.kind === entry.kind ? record.changedBy : null,
           lastError: record?.lastError ?? null,
+          dsh: DSH_OF[entry.kind],
+          runs: runsOf(entry.kind, on),
+          packageName: entry.packageName ?? null,
+          version: entry.version ?? null,
+          description: entry.description ?? null,
+          meta: displayMeta(entry.meta),
+          hasIcon: typeof entry.meta?.icon === 'string',
+          settings: this.#settingsState(entry),
           tools: (toolsByPlugin.get(entry.key) ?? []).sort((a, b) => a.name.localeCompare(b.name)),
         }
       }),

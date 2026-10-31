@@ -2,7 +2,7 @@
 
 **Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
 
-Revision 10 (2026-10-31, owner's request, approved the same day) adds a plugin manager: a Fishball tab on DSH's Plugins page that lists every plugin with its DSH and Fishball state, a page per plugin, and settings per plugin for the plugins that run only in Fishball, which you change, or Fishball changes after you allow it. DSH's own page for each plugin gains a Fishball tag and switch. The manager changes Fishball's side only (§10d, spikes S28–S30 run and recorded in §13c, phase P12, Q-manager).
+Revision 10 (2026-10-31, owner's request, approved the same day) adds a plugin manager: a Fishball tab on DSH's Plugins page that lists every plugin with its DSH and Fishball state, a page per plugin, and settings per plugin for the plugins that run only in Fishball, which you change, or Fishball changes after you allow it. DSH's own page for each plugin gains a Fishball tag and switch. The manager changes Fishball's side only (§10d, spikes S28–S30 run and recorded in §13c, phase P12 delivered, Q-manager).
 
 Revision 9 (2026-10-31, owner's request, approved the same day) adds the Messenger look: a built-in plugin, shipped and installed with dsh-fishball and on by default, that makes Fishball's own session look like a messenger chat, with every sender shown as its own author. Other sessions keep DSH's stock chat (§10c, spikes S24–S27, phase P11, Q-look).
 
@@ -879,21 +879,32 @@ No custom session event types are added: persistence refuses logs containing unk
   A row that then fails to mount turns the plugin off with `row-failed`, as today; its stored values stay so you can fix or reset them.
 
 **Fishball changing settings (Q-manager-settings).**
-- `get_plugin_settings({plugin})` returns, for each configurable row, its fields: name, kind, description, the plugin's value and the current value. Secrets show only "set" or "not set". It changes nothing, so it needs no approval, like `list_plugins`.
-- `set_plugin_settings({plugin, row, values, reason})`:
-  - **Refused before any prompt:** a value the schema rejects; a plugin on in DSH (`shared-with-dsh`); a plugin with no settings (`no-settings`); any secret field (`secret-field`), because only you set secrets (Q-manager-secrets).
-  - **Otherwise** it raises the normal permission request in Fishball's chat, which always goes to you (§7a). The request names the plugin and row, lists each field with its old and new value, and gives Fishball's reason. Allow once saves the values; Reject changes nothing.
-  - Every change, yours or Fishball's, is recorded in `pluginChanges` with the action `settings`.
+- `get_plugin_settings({plugin})` returns `{ok: true, plugin, shared, rows: [{row, error, fields: [{path, kind, description, pluginValue, value, changed, secret}]}]}` for the rows with a schema that can be edited. `path` is the dotted field path; a field with a fixed list of values also carries `choices`; a secret field carries `set` (true or false) instead of `pluginValue` and `value`. It changes nothing, so it needs no approval, like `list_plugins`. Refused: `unknown-plugin`.
+- `set_plugin_settings({plugin, row, values, reason})`, `values` a nested object of the fields to change:
+  - **Refused before any prompt**, in this order: `unknown-plugin`; `shared-with-dsh` (a plugin on in DSH); `unknown-row` (no such row in the plugin); `no-settings` (the row has no schema, or is the Compaction engine row); `secret-field` (a path in `values` that is a secret field, or lies above or under one, as in a list of objects holding tokens; also when the secret fields cannot be located), because only you set or clear secrets (Q-manager-secrets); `invalid` with `path` (the new complete config fails the schema); `no-change` (every value equals the current one).
+  - **Otherwise** it raises the normal permission request in Fishball's chat, which always goes to you (§7a). The request names the plugin and row, lists each changed field as `path: old → new` (each value as JSON with secret values removed, cut to 200 bytes) and gives Fishball's reason. Allow once saves the values and answers `{ok: true, plugin, row, changed: [paths], note}`; Reject answers `rejected` and changes nothing.
+  - Every change, yours or Fishball's, is recorded in `pluginChanges` with the action `settings` (a rejected one with outcome `rejected`).
 - Fishball's own safety limits are not in its catalog, so neither tool can reach them. "Fishball has no tool that edits its limits" still holds.
+
+**Values and merging (both tools and the route).** Your stored values for a row are a plain object. A save deep-merges the new values into them: objects merge key by key, while arrays and other values replace. `reset` paths are then removed (the empty path `[]` removes all of the row's values), and a row or plugin left with no values is deleted. Removing all of a row's values is never refused, even when the row's own patch config is invalid, because it cannot make the row worse. A save that changes nothing stores and audits nothing. Saves of one plugin run one at a time and are checked against the values stored at that moment, so a change you make while Fishball's prompt is open is kept (review M1).
+
+**Secrets and errors leaving the Host (review H2, H3).** Every value the page, the tools or the prompt show comes from a redacted config, so a secret inside a list or a nested object never shows. A schema error message is cut before ` but got `, the part that repeats the rejected data.
+
+**Mid-turn listing mounts (review H1).** When Fishball lists a plugin's tools mid-turn, the private tree is mounted again; the plugins already running keep the settings of the last idle-phase apply, so a save still waits for the turn to end. The row's config is its bundle patch config with your values deep-merged on top, checked with `schema(config)`. An invalid config answers the first failing field's path, read from the schema's error (`$.a.b` → `["a","b"]`; `[]` when it names none).
 
 **Host API.**
 - The state snapshot's catalog entries gain:
-  - `dsh`: `on`, `off`, `builtin` or `none`;
-  - `runs`: `everywhere`, `fishball`, `dsh` or `nowhere`;
-  - `packageName`, `description` and `icon`;
-  - `settings`: `none`, `default`, `changed` or `unused`.
-- `GET /api/fishball/plugins/detail?plugin=<key>` returns the page's data: rows, tools, the settings form (schema projection with secrets redacted, the plugin's values, your values) and history. It answers 404 `unknown`.
-- `POST /api/fishball/plugins/settings` (`{plugin, row, values?, reset?: paths[]}`) saves your values. It answers 409 `unknown`, `shared-with-dsh` or `no-settings`, and 400 `invalid` with the field's path.
+  - `dsh`: `on` (kind profile), `off` (fishball-only), `builtin` or `none` (installed in Fishball only);
+  - `runs`, from the desired on/off state: `everywhere` (on in DSH and in Fishball), `dsh` (on in DSH, off in Fishball), `fishball` (runs in the private tree) or `nowhere`;
+  - `packageName` and `version` (null for built-ins or when unknown), `description` (the package's own description, or null), `meta` (DSH's localized `title` and `description`, or null), and `hasIcon`;
+  - `settings`: `unused` (stored values for a plugin on in DSH), `none` (on in DSH with no stored values, or a plugin with no rows), `changed` (stored values in use) or `default`.
+- `GET /api/fishball/plugins/detail?plugin=<key>` answers `{ok: true, detail: {plugin, shared, settings, rows, history}}`:
+  - `rows`: one per leaf row of the plugin, in patch order: `{row, module, schema, base, user, value, secrets, error, editable}`. `schema` is `schema.toJSON()` or null; `base` is the row's own resolved config, `user` your stored values, and `value` the resolved config with them; each has its secret fields removed by `redactSecrets`, and `secrets` lists `{path, set}`. `error` is the schema's message when the row's config is invalid, else null. `editable` is false for a plugin on in DSH, a row without a schema, and the Compaction engine row.
+  - `history`: the plugin's newest 10 `pluginChanges` entries, newest first, as `{action, by, at, outcome}`.
+  - Reading a plugin's schemas imports its row modules, as turning it on would; nothing is mounted.
+  - 400 `bad-body` without `plugin`; 404 `unknown` for a plugin not in the catalog.
+- `GET /api/fishball/plugins/icon?plugin=<key>` answers the plugin's icon image (from DSH's metadata), or 404 `unknown` when it has none.
+- `POST /api/fishball/plugins/settings` (`{plugin, row, values?, reset?}`, with at least one of `values`, a plain object, and `reset`, an array of paths, each an array of strings) saves your values; the change applies at the next idle phase. It answers 200 with the state; 400 `bad-body`; 400 `invalid` with `path`; 409 `unknown` (plugin or row), `shared-with-dsh` or `no-settings`.
 - Same browser authentication, same-origin fence and boundary checks as the other routes (§10).
 
 **Not changed.**
@@ -1059,6 +1070,7 @@ Each phase ends with:
 | P11 (revision 9) | Spikes S24–S27 (done, §13b); the `dsh-fishball-messenger` package and its client route, the `builtin:messenger` catalog entry, `look` in the snapshot, `author` in intake sources, the input-row renderers, the scoped reply stylesheet and the header marker | §10c criteria, verified in a real browser: Fishball's session shows the messenger look, every other session is unchanged, and turning the look off and on applies live |
 | P11 delivered (2026-10-31) | Implemented as amended | Host: `builtin:messenger` (no rows), `look` in the snapshot, `GET /api/fishball/messenger/client.js`, `author` on every intake source (`src/author.js`). Browser: `packages/messenger` mounted by `client.js` `followMessenger`. Live check (`spikes/p11-smoke-server.mjs`, browser pane): authors, quoted forward card, muted system fish, reply bubbles, header "typing…"/"online", rounded composer, light and dark; switching off and on is live; an ordinary session's conversation HTML is identical with the look on and off. Independent review: 4 medium and 9 low findings, fixed except work-row muting, which stays as designed |
 | P12 (revision 10) | Spikes S28–S30 (done, §13c); Host: catalog fields (`dsh`, `runs`, `settings`, display metadata), the detail and settings routes, `plugin_settings`, settings applied at the idle phase, `get_plugin_settings` and `set_plugin_settings`; browser: the Fishball tab (list, plugin page, settings form, in DSH's Plugins-page look), the tag and switch on DSH's bundle pages, the summary on Fishball's settings page | §10d criteria below, verified in a real browser |
+| P12 delivered (2026-10-31) | Implemented as amended | Host: `src/plugin-settings.js` (stored values, overlay at the idle phase with listing mounts reusing the last applied values, schema reading through the private tree, `redactSecrets`, cut error messages, per-plugin save queue), catalog fields and `settingsRows`, detail, icon and settings routes, `get_plugin_settings` and `set_plugin_settings`. Browser: the Fishball tab (list version 1, plugin page A, settings form built from the schema JSON with DSH's field components), the tag and switch on DSH's bundle pages, and the plugin summary on Fishball's settings page. Live check (`spikes/p12-smoke-server.mjs`, `spikes/fixtures/manager-demo`, browser pane): list, page, save, invalid field, secret set/clear, DSH-page switch, light and dark. Independent review: 3 high, 5 medium and 12 low findings, all fixed; contract additions written into §10d (`choices`, reset-all never refused, saves that change nothing, secrets near other fields, cut error messages, mid-turn listing mounts). Tests: 1039 of 1039 pass (P12 cases in `test/manager-*.test.mjs`, `test/CASES.md` P12) |
 
 **Acceptance criteria (observable):**
 - **R1:**

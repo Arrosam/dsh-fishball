@@ -1,0 +1,5 @@
+# P12: selected in the profile, so it runs for every session ("on in DSH"); its settings are DSH's.
+- insert:
+    - id: fbtest-settings-dsh
+      name: 'fbtest-settings-dsh'
+      config: {}

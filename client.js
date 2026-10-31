@@ -28,7 +28,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -53,7 +53,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', pluginsInstall: 'api/fishball/plugins/install', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', pluginsInstall: 'api/fishball/plugins/install', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -84,11 +84,10 @@ window.__ModuleLoader__.load({
      */
     const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached', 'remove-failed'])
     /**
-     * Plugin actions the Host offers per plugin (src/constants.js PLUGIN_OFFER), and the status
-     * tag tones. The Host decides which actions a plugin has; the page shows only those.
+     * Plugin actions the Host offers per plugin (src/constants.js PLUGIN_OFFER). The Host decides
+     * which actions a plugin has; the page shows only those.
      */
     const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
-    const STATUS_TONE = Object.freeze({ 'installed-in-fishball': 'info', 'dsh-enabled': 'info', 'dsh-disabled': 'neutral', builtin: 'neutral' })
     /** "Install for Fishball" refusals with their own text (src/constants.js INTAKE_ERROR, API_CODE). */
     const INSTALL_ERRORS = new Set(['too-large', 'queue-full', 'unavailable', 'invalid-spec', 'already-installed'])
     const VISIBLE = 'visible'
@@ -103,7 +102,56 @@ window.__ModuleLoader__.load({
       headerActions: 'conversation.session.header.actions',
       sessionMenu: 'sidebar.workspaces.session.menu.item',
       overlay: 'shell.overlay',
+      /** DSH's Plugins page (dsh-client-ui-plugin-manager): a page tab, and a tag and an action on each plugin's page (spike S28). */
+      pluginsTab: 'plugins.tab',
+      detailBadge: 'plugins.detail.badge',
+      detailActions: 'plugins.detail.actions',
     })
+    /**
+     * The plugin manager (DESIGN §10d): the Fishball tab, laid out like DSH's Installed tab and
+     * plugin page (owner's choice: list version 1, page A), and the tag and switch on DSH's own
+     * page for each plugin. It changes Fishball's side only; DSH's side is shown, never changed.
+     */
+    const MANAGER = Object.freeze({
+      tabId: 'fishball',
+      badgeId: 'fishball-state',
+      actionId: 'fishball-use',
+      /** The subject kind of a bundle's page (plugins.detail.* props). */
+      bundleSubject: 'bundle',
+      /** Card groups in order, by the catalog's `dsh` field (src/constants.js PLUGIN_DSH). */
+      groups: Object.freeze([
+        Object.freeze({ id: 'builtin', dsh: Object.freeze(['builtin']) }),
+        Object.freeze({ id: 'dsh', dsh: Object.freeze(['on', 'off']) }),
+        Object.freeze({ id: 'fishball', dsh: Object.freeze(['none']) }),
+      ]),
+      /** A DSH plugin that is off in DSH and on in Fishball runs only in Fishball (snapshot `runs`). */
+      dshOff: 'off',
+      runsInFishball: 'fishball',
+      /** Snapshot `settings` values the page words. */
+      settingsUnused: 'unused',
+      /** DSH's own artwork for the built-ins it has one for (dsh-client-ui-primitives); the rest take the default. */
+      builtinArt: Object.freeze({ 'builtin:web': PluginArtworkSearch, 'builtin:shell': PluginArtworkTerminal }),
+      messengerKey: 'builtin:messenger',
+      artSize: 36,
+      /** The back link's chevron, and the fewest rows a list field shows. */
+      crumbIconSize: 14,
+      listMinRows: 2,
+      /** The group of DSH plugins: DSH's Installed tab lists them, so only they open there. */
+      dshGroup: 'dsh',
+      /** DSH tags these packages "Experimental" on its own page (dsh-client-ui-plugin-manager, rc.2). */
+      experimentalPrefix: '@deepseek-ai/dsh-experimental-',
+    })
+    /** What a settings form last said after Save. */
+    const FORM_MESSAGE = Object.freeze({ saved: 'saved', invalid: 'invalid', failed: 'failed' })
+    /**
+     * How the settings form draws each schema field (DESIGN §10d "The form"); anything else is
+     * shown read-only. The form reads the Host's `schema.toJSON()` envelope ({ uid, refs }).
+     */
+    const FIELD_KIND = Object.freeze({ text: 'text', number: 'number', switch: 'switch', choice: 'choice', list: 'list', secret: 'secret', readOnly: 'read-only' })
+    const SCHEMA = Object.freeze({ object: 'object', intersect: 'intersect', string: 'string', number: 'number', boolean: 'boolean', union: 'union', constant: 'const', array: 'array', secretRole: 'secret' })
+    /** Settings refusals: 400 `invalid` names the failing field's path. */
+    const SETTINGS_INVALID = 'invalid'
+    const LIST_SEPARATOR = '\n'
     /**
      * The limit fields, in the order the Host declares them (src/config.js LIMITS). The
      * form model needs its fields before the first state frame arrives, so the browser keeps
@@ -226,7 +274,16 @@ window.__ModuleLoader__.load({
      * grouped and the flat list; if a DSH update renames it the row simply shows again.
      */
     const OWN_ROW = Object.freeze({ styleId: 'fishball-own-row', selector: (sessionId) => `[data-row-key="session:${CSS.escape(sessionId)}"]{display:none}` })
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', plugin: 'fb-plugin', grow: 'fb-grow', muted: 'fb-muted' })
+    /** The plugin manager's classes (styles below); `fbp-` keeps them apart from the settings page's. */
+    const MCLS = Object.freeze({
+      panel: 'fbp-panel', bar: 'fbp-bar', group: 'fbp-group', groupTitle: 'fbp-group-title', cards: 'fbp-cards', card: 'fbp-card', cardHead: 'fbp-card-head',
+      icon: 'fbp-icon', main: 'fbp-main', titleRow: 'fbp-title-row', title: 'fbp-title', desc: 'fbp-desc', tag: 'fbp-tag', crumb: 'fbp-crumb',
+      detailHead: 'fbp-detail-head', detailIdentity: 'fbp-detail-identity', detailMain: 'fbp-detail-main', detailTitle: 'fbp-detail-title', detailName: 'fbp-detail-name',
+      detailDesc: 'fbp-detail-desc', detailActions: 'fbp-detail-actions', sections: 'fbp-sections', section: 'fbp-section', sectionTitle: 'fbp-section-title',
+      kv: 'fbp-kv', kvLabel: 'fbp-kv-label', line: 'fbp-line', link: 'fbp-link', field: 'fbp-field', fieldHead: 'fbp-field-head', hint: 'fbp-hint',
+      input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
+    })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -346,12 +403,7 @@ window.__ModuleLoader__.load({
       'approvalOutcome.cancelled': 'cancelled',
       'approvalOutcome.unavailable': 'no answer',
       plugins: 'Plugins for Fishball',
-      pluginsHint: 'Fishball\'s own on/off choice. Other sessions and the profile are not changed. A change applies when Fishball\'s current turn ends.',
       pluginToggle: 'Use {name} in Fishball',
-      'status.installed-in-fishball': 'Installed in Fishball only',
-      'status.dsh-enabled': 'Installed in DSH, enabled in Fishball',
-      'status.dsh-disabled': 'Installed in DSH, disabled in Fishball',
-      'status.builtin': 'Built in',
       uninstall: 'Uninstall',
       uninstallLabel: 'Uninstall {name} from Fishball',
       removing: 'Uninstalling after this turn',
@@ -377,17 +429,71 @@ window.__ModuleLoader__.load({
       'tool.unchecked': 'Not checked',
       'tool.hidden': 'Hidden',
       'tool.plugin-off': 'Off',
-      allowedTools: 'Tools you allowed',
-      allowedToolsHint: 'Nobody had checked these tools; you allowed them for Fishball. Removing one hides it again until you allow it.',
       remove: 'Remove',
-      noAllowed: 'None.',
-      otherTools: 'Other tools not shown to Fishball',
       'pluginError.edits-other-rows': 'Changes other plugins, so it cannot run for Fishball only',
       'pluginError.no-rows': 'Adds nothing Fishball can run',
       'pluginError.row-failed': 'Failed to start for Fishball',
       'pluginError.leaks-service': 'Would change DSH for every session, so it was stopped',
       'pluginError.no-profile': 'Needs a DSH profile',
       changeFailed: 'That change was not accepted.',
+      tabTitle: 'Fishball',
+      pluginsSummary: 'On in Fishball: {on}. Waiting for you: {needs}.',
+      pluginsWhere: 'Manage them in the Fishball tab of the Plugins list.',
+      installForFishball: 'Install for Fishball',
+      'group.builtin': 'Built in',
+      'group.dsh': 'DSH plugins',
+      'group.fishball': 'Installed for Fishball only',
+      'group.tools': 'Tools that belong to no plugin',
+      'dsh.on': 'On in DSH',
+      'dsh.off': 'Off in DSH',
+      'dsh.builtin': 'Built in',
+      'dsh.none': 'Fishball only',
+      runsOnlyInFishball: 'Runs only in Fishball',
+      onInFishball: 'On in Fishball',
+      offInFishball: 'Off in Fishball',
+      toolsWait: '{count} waiting for you',
+      useInFishball: 'Use in Fishball',
+      backToList: 'Fishball',
+      viewPlugin: 'View {name}',
+      inDsh: 'In DSH',
+      'inDsh.on': 'On for every session',
+      'inDsh.off': 'Installed, off',
+      'inDsh.builtin': 'Built in',
+      'inDsh.none': 'Not installed in DSH',
+      openInDsh: 'Open in DSH',
+      lastChange: 'Changed',
+      neverChanged: 'Not changed yet',
+      changedAt: '{who} · {when}',
+      'who.user': 'By you',
+      'who.fishball': 'By Fishball',
+      tools: 'Tools',
+      noTools: 'No tools.',
+      'tool.visible': 'Visible',
+      'tool.allowed': 'Allowed by you',
+      settingsTitle: 'Settings for Fishball',
+      settingsShared: 'This plugin is on in DSH, so one copy runs for every session with DSH\'s settings. Change them on DSH\'s page.',
+      settingsUnused: 'Your Fishball settings are kept, but not used while this plugin runs in DSH.',
+      settingsNone: 'This plugin has no settings Fishball can change.',
+      settingsOwnError: 'The plugin\'s own settings are not valid: {message}',
+      settingsChanged: 'Changed',
+      settingsReset: 'Reset',
+      settingsResetAll: 'Reset all',
+      settingsSaved: 'Saved. It applies when Fishball\'s current turn ends.',
+      settingsFailed: 'That was not saved.',
+      settingsInvalid: 'This value is not accepted.',
+      settingsReadOnly: 'Shown only: this kind of setting cannot be changed here.',
+      settingsListHint: 'One per line.',
+      settingsRow: 'Part: {row}',
+      secretSet: 'Set',
+      secretUnset: 'Not set',
+      secretHint: 'Type a new value to replace it. It is never shown, and Fishball cannot see it.',
+      secretClear: 'Clear',
+      pageLoadFailed: 'This page could not be loaded.',
+      experimental: 'Experimental',
+      'group.allowed': 'Tools you allowed that are not listed above',
+      resetField: 'Reset {name}',
+      clearField: 'Clear {name}',
+      settingsRowUnavailable: 'The settings of part {row} could not be read.',
       'field.maxQueuedInputs': 'Queued inputs not yet read',
       'field.maxActiveWatches': 'Active "tell me when finished" watches',
       'field.maxSourcesPerPlugin': 'Feeds per plugin',
@@ -527,12 +633,7 @@ window.__ModuleLoader__.load({
       'approvalOutcome.cancelled': '已取消',
       'approvalOutcome.unavailable': '无人答复',
       plugins: 'Fishball 的插件',
-      pluginsHint: '仅 Fishball 自己的开关，不影响其他会话和配置。更改在 Fishball 当前回合结束后生效。',
       pluginToggle: '在 Fishball 中使用 {name}',
-      'status.installed-in-fishball': '仅安装在 Fishball',
-      'status.dsh-enabled': '安装在 DSH，Fishball 中已启用',
-      'status.dsh-disabled': '安装在 DSH，Fishball 中已停用',
-      'status.builtin': '内置',
       uninstall: '卸载',
       uninstallLabel: '从 Fishball 卸载 {name}',
       removing: '本回合结束后卸载',
@@ -558,17 +659,71 @@ window.__ModuleLoader__.load({
       'tool.unchecked': '未检查',
       'tool.hidden': '已隐藏',
       'tool.plugin-off': '已关闭',
-      allowedTools: '你允许的工具',
-      allowedToolsHint: '这些工具未经检查，是你允许 Fishball 使用的。移除后会再次隐藏，直到你重新允许。',
       remove: '移除',
-      noAllowed: '无。',
-      otherTools: '未向 Fishball 显示的其他工具',
       'pluginError.edits-other-rows': '它会修改其他插件，不能仅为 Fishball 运行',
       'pluginError.no-rows': '没有可为 Fishball 运行的内容',
       'pluginError.row-failed': '为 Fishball 启动失败',
       'pluginError.leaks-service': '会影响所有会话，因此已停止',
       'pluginError.no-profile': '需要 DSH 配置',
       changeFailed: '该更改未被接受。',
+      tabTitle: 'Fishball',
+      pluginsSummary: 'Fishball 中已开启：{on} 个。等待你处理：{needs} 个。',
+      pluginsWhere: '在插件列表的 Fishball 标签页中管理它们。',
+      installForFishball: '为 Fishball 安装',
+      'group.builtin': '内置',
+      'group.dsh': 'DSH 插件',
+      'group.fishball': '仅为 Fishball 安装',
+      'group.tools': '不属于任何插件的工具',
+      'dsh.on': 'DSH 中已开启',
+      'dsh.off': 'DSH 中已关闭',
+      'dsh.builtin': '内置',
+      'dsh.none': '仅 Fishball',
+      runsOnlyInFishball: '仅在 Fishball 中运行',
+      onInFishball: 'Fishball 中已开启',
+      offInFishball: 'Fishball 中已关闭',
+      toolsWait: '{count} 个等待你处理',
+      useInFishball: '在 Fishball 中使用',
+      backToList: 'Fishball',
+      viewPlugin: '查看 {name}',
+      inDsh: '在 DSH 中',
+      'inDsh.on': '对所有会话开启',
+      'inDsh.off': '已安装，已关闭',
+      'inDsh.builtin': '内置',
+      'inDsh.none': '未安装在 DSH',
+      openInDsh: '在 DSH 中打开',
+      lastChange: '更改',
+      neverChanged: '尚未更改',
+      changedAt: '{who} · {when}',
+      'who.user': '由你',
+      'who.fishball': '由 Fishball',
+      tools: '工具',
+      noTools: '没有工具。',
+      'tool.visible': '可见',
+      'tool.allowed': '你已允许',
+      settingsTitle: 'Fishball 的设置',
+      settingsShared: '此插件在 DSH 中已开启，所有会话共用一份，使用 DSH 的设置。请在 DSH 的页面中修改。',
+      settingsUnused: '你为 Fishball 做的设置会保留，但此插件在 DSH 中运行时不会使用。',
+      settingsNone: '此插件没有可供 Fishball 修改的设置。',
+      settingsOwnError: '插件自身的设置无效：{message}',
+      settingsChanged: '已更改',
+      settingsReset: '重置',
+      settingsResetAll: '全部重置',
+      settingsSaved: '已保存。在 Fishball 当前回合结束后生效。',
+      settingsFailed: '未能保存。',
+      settingsInvalid: '此值不被接受。',
+      settingsReadOnly: '仅显示：这类设置不能在这里修改。',
+      settingsListHint: '每行一项。',
+      settingsRow: '部分：{row}',
+      secretSet: '已设置',
+      secretUnset: '未设置',
+      secretHint: '输入新值以替换。它不会显示，Fishball 也看不到。',
+      secretClear: '清除',
+      pageLoadFailed: '无法加载此页面。',
+      experimental: '实验性',
+      'group.allowed': '你允许的、未在上方列出的工具',
+      resetField: '重置 {name}',
+      clearField: '清除 {name}',
+      settingsRowUnavailable: '无法读取部分 {row} 的设置。',
       'field.maxQueuedInputs': '尚未读取的排队输入',
       'field.maxActiveWatches': '进行中的“完成时通知我”',
       'field.maxSourcesPerPlugin': '每个插件的信息源',
@@ -611,12 +766,65 @@ window.__ModuleLoader__.load({
       `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
       `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;transform:rotate(${BRAND_TAG.rotate});transform-origin:${BRAND_TAG.origin};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
-      `.${CLS.plugin}{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-primary)}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--dsw-alias-border-primary);border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;resize:vertical}`,
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
+      // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
+      // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
+      // as DSH's Installed tab and plugin page (DESIGN §10d "Look"). If DSH restyles its page,
+      // this copy keeps the old look until it is updated.
+      `.${MCLS.panel}{display:flex;flex-direction:column;gap:24px;color:var(--dsw-alias-label-primary)}`,
+      `.${MCLS.bar}{display:flex;justify-content:flex-end;gap:8px}`,
+      `.${MCLS.group}{display:flex;flex-direction:column;gap:8px}`,
+      `.${MCLS.groupTitle}{margin:0;font-size:14px;font-weight:500;line-height:22px}`,
+      `.${MCLS.cards}{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}`,
+      `.${MCLS.card}{position:relative;min-width:0;margin:0 -8px;border-radius:var(--dsw-radius-xl);cursor:pointer}`,
+      `.${MCLS.card}:hover{background:var(--dsw-alias-interactive-bg-hover)}`,
+      `.${MCLS.cardHead}{display:flex;align-items:center;gap:14px;padding:8px}`,
+      `.${MCLS.icon}{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;width:48px;height:48px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);color:var(--dsw-alias-label-secondary);overflow:hidden}`,
+      `.${MCLS.icon} img{width:${MANAGER.artSize}px;height:${MANAGER.artSize}px;object-fit:contain}`,
+      `.${MCLS.main}{display:flex;flex:1 1 0%;flex-direction:column;gap:4px;min-width:0}`,
+      `.${MCLS.titleRow}{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}`,
+      `.${MCLS.title}{overflow:hidden;padding:0;border:0;background:none;color:inherit;font-size:14px;font-weight:500;line-height:20px;text-align:left;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}`,
+      `.${MCLS.title}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}`,
+      `.${MCLS.desc}{display:-webkit-box;overflow:hidden;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:18px;-webkit-line-clamp:1;-webkit-box-orient:vertical}`,
+      `.${MCLS.tag}{height:18px;padding:0 7px;font-size:10px;line-height:1}`,
+      `.${MCLS.crumb}{display:inline-flex;align-items:center;gap:2px;align-self:flex-start;padding:0;border:0;background:none;color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer}`,
+      `.${MCLS.crumb}:hover{color:var(--dsw-alias-label-primary)}`,
+      `.${MCLS.detailHead}{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}`,
+      `.${MCLS.detailIdentity}{display:flex;align-items:flex-start;gap:14px;min-width:0}`,
+      `.${MCLS.detailMain}{display:flex;flex-direction:column;gap:8px;min-width:0}`,
+      `.${MCLS.detailTitle}{margin:0;font-size:20px;font-weight:500;line-height:28px}`,
+      `.${MCLS.detailName}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;overflow-wrap:anywhere}`,
+      `.${MCLS.detailName} code{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace)}`,
+      `.${MCLS.detailDesc}{margin:0;color:var(--dsw-alias-label-secondary);font-size:14px;line-height:22px}`,
+      `.${MCLS.detailActions}{display:flex;flex:0 0 auto;align-items:center;gap:8px}`,
+      `.${MCLS.sections}{display:flex;flex-direction:column;gap:32px}`,
+      `.${MCLS.section}{display:flex;flex-direction:column;gap:8px}`,
+      `.${MCLS.sectionTitle}{margin:0;font-size:14px;font-weight:500;line-height:20px}`,
+      `.${MCLS.kv}{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:8px;align-items:baseline;font-size:13px;line-height:20px}`,
+      `.${MCLS.kvLabel}{color:var(--dsw-alias-label-tertiary)}`,
+      `.${MCLS.line}{display:flex;align-items:center;gap:8px;min-height:32px;border-top:.5px solid var(--dsw-alias-border-l2);font-size:13px}`,
+      `.${MCLS.line} code{flex:1;font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);overflow-wrap:anywhere}`,
+      `.${MCLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer}`,
+      // Fields copy DSH's settings fields (dsh-client-ui-primitives SettingsValueField, rc.2): a
+      // hairline between fields, a 13px label, a 12px reset link and a filled 34px input.
+      `.${MCLS.fields}{display:flex;flex-direction:column}`,
+      `.${MCLS.fields}>*+*{border-top:.5px solid var(--dsw-alias-border-l2)}`,
+      `.${MCLS.field}{display:flex;flex-direction:column;gap:6px;padding:12px 0}`,
+      `.${MCLS.fieldHead}{display:flex;align-items:center;gap:8px}`,
+      `.${MCLS.label}{flex:1 1 0%;min-width:0;color:var(--dsw-alias-label-primary);font-size:13px;font-weight:500;line-height:1.5}`,
+      `.${MCLS.reset}{align-self:flex-start;padding:0;border:none;background:none;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.5;cursor:pointer}`,
+      `.${MCLS.reset}:hover:not(:disabled){color:var(--dsw-alias-label-primary)}`,
+      `.${MCLS.hint}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}`,
+      `.${MCLS.input}{box-sizing:border-box;width:100%;min-height:34px;padding:0 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.5}`,
+      `textarea.${MCLS.input}{padding:6px 12px;resize:vertical}`,
+      `.${MCLS.input}:focus-visible{outline:none;border-color:var(--dsw-alias-state-business-primary)}`,
+      `.${MCLS.input}[aria-invalid="true"]{border-color:var(--dsw-alias-state-error-primary)}`,
+      `.${MCLS.readOnly}{margin:0;padding:6px 10px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
+      `.${MCLS.formActions}{display:flex;justify-content:flex-end;gap:8px}`,
     ].join('')
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
@@ -648,15 +856,15 @@ window.__ModuleLoader__.load({
     })()
     const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
 
-    /** POST one command to the Host. @returns { ok, code } (code: the Host's refusal code, if any). */
+    /** POST one command to the Host. @returns { ok, code, path } (the Host's refusal code and, for an invalid setting, its path). */
     async function send(path, body) {
       try {
         const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
         if (response.ok) return { ok: true, code: null }
         const answer = await response.json().catch(() => ({}))
-        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null }
+        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, path: Array.isArray(answer.path) ? answer.path : null }
       } catch {
-        return { ok: false, code: null }
+        return { ok: false, code: null, path: null }
       }
     }
     /** POST one command. @returns whether it was accepted. */
@@ -818,61 +1026,26 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** A status tag for one tool, in DSH's Tag primitive. */
-    function ToolTag({ name, status, t }) {
-      return h('li', { key: name }, name, status === TOOL_STATUS.visible ? null : h(Tag, { tone: TAG_TONE[status] }, t('tool.' + status)))
-    }
-
     /**
-     * Fishball's plugin catalog (DESIGN §10): one row per plugin with your on/off switch,
-     * where it runs, who changed it last and the state of its tools; then the tools you
-     * allowed (each with Remove) and other tools Fishball cannot see.
+     * The plugins on Fishball's settings page (DESIGN §10d): one line of counts. The plugins
+     * themselves are managed in the Fishball tab of DSH's Plugins page; DSH offers no way to
+     * select that tab from here (spike S28), so the page names it instead of linking to it.
      */
-    function makePlugins(t) {
-      return function FishballPlugins() {
-        const state = useFishball()
-        const [failed, setFailed] = React.useState(false)
-        const catalog = state.catalog
+    function makePluginsSummary(t) {
+      return function FishballPluginsSummary() {
+        const catalog = useFishball().catalog
         if (!catalog) return null
-        const run = async (path, body) => { setFailed(!(await post(path, body))) }
-        return h('div', { className: CLS.section },
+        return h('div', { className: CLS.section, 'data-fishball-plugins-summary': true },
           h('h3', null, t('plugins')),
-          h('p', { className: CLS.muted }, t('pluginsHint')),
-          failed ? h('div', { role: 'alert' }, t('changeFailed')) : null,
-          h(InstallForm, { t }),
-          catalog.plugins.map((plugin) => {
-            // Only the actions the Host offers for this plugin's status (a DSH plugin has no uninstall).
-            const offers = new Set(plugin.actions)
-            const toggles = offers.has(PLUGIN_OFFER.enable) || offers.has(PLUGIN_OFFER.disable)
-            return h('div', { key: plugin.plugin, className: CLS.plugin, 'data-fishball-plugin': plugin.plugin, 'data-fishball-status': plugin.status },
-              h('div', { className: CLS.grow },
-                h('div', { className: CLS.row },
-                  h('span', { className: CLS.name }, plugin.title),
-                  h(Tag, { tone: STATUS_TONE[plugin.status] ?? 'neutral' }, t('status.' + plugin.status)),
-                  plugin.removing ? h(Tag, { tone: 'info' }, t('removing')) : null,
-                  plugin.on !== plugin.applied && !plugin.removing ? h(Tag, { tone: 'info' }, t('pending')) : null,
-                  plugin.waiting ? h(Tag, { tone: 'info' }, t('waiting')) : null),
-                plugin.changedBy ? h('span', { className: CLS.muted }, t('changedBy' + plugin.changedBy)) : null,
-                plugin.lastError ? h('span', { role: 'status' }, PLUGIN_ERRORS.has(plugin.lastError) ? t('pluginError.' + plugin.lastError) : t('pluginErrorOther')) : null,
-                plugin.tools.length > 0 ? h('ul', { className: CLS.list }, plugin.tools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t }))) : null),
-              offers.has(PLUGIN_OFFER.uninstall) ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'aria-label': t('uninstallLabel', { name: plugin.title }), onClick: () => run(API.pluginsRemove, { plugin: plugin.plugin }) }, t('uninstall')) : null,
-              toggles ? h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: plugin.title }), onChange: (on) => run(API.plugins, { plugin: plugin.plugin, on }) }) : null)
-          }),
-          h('h3', null, t('allowedTools')),
-          h('p', { className: CLS.muted }, t('allowedToolsHint')),
-          catalog.allowedTools.length === 0 ? h('p', null, t('noAllowed')) : catalog.allowedTools.map((tool) => h('div', { key: tool.key, className: CLS.row },
-            h('span', { className: CLS.code }, tool.toolName),
-            h('span', { className: CLS.muted }, tool.module),
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => run(API.toolApprovals, { toolKey: tool.key }) }, t('remove')))),
-          catalog.otherTools.length > 0 ? h(React.Fragment, null,
-            h('h3', null, t('otherTools')),
-            h('ul', { className: CLS.list }, catalog.otherTools.map((tool) => h(ToolTag, { key: tool.name, ...tool, t })))) : null)
+          h('p', null, t('pluginsSummary', { on: catalog.plugins.filter((plugin) => plugin.on).length, needs: catalog.plugins.filter(needsYou).length })),
+          h('p', { className: CLS.muted }, t('pluginsWhere')))
       }
     }
 
     /**
-     * "Install a plugin for Fishball only" (DESIGN §10): the spec goes to Fishball, which calls
-     * add_plugin, so the install still needs your Allow once in Fishball's chat.
+     * "Install a plugin for Fishball only" (DESIGN §10, §10d): the spec goes to Fishball, which
+     * calls add_plugin, so the install still needs your Allow once in Fishball's chat. Shown in a
+     * dialog from the Fishball tab, whose title names it.
      */
     function InstallForm({ t }) {
       const id = React.useId()
@@ -886,7 +1059,6 @@ window.__ModuleLoader__.load({
         if (ok) { setSpec(''); setResult('installSent') } else setResult(INSTALL_ERRORS.has(code) ? 'installError.' + code : 'installFailed')
       }
       return h('div', { className: CLS.section, 'data-fishball-install': true },
-        h('h4', null, t('installTitle')),
         h('p', { className: CLS.muted }, t('installHint')),
         h('label', { className: CLS.field, htmlFor: id },
           h('span', null, t('installSpecLabel')),
@@ -1368,6 +1540,443 @@ window.__ModuleLoader__.load({
       return () => { unsubscribe(); generation++; fork?.dispose(); fork = undefined }
     }
 
+    // The plugin manager (DESIGN §10d): the Fishball tab of DSH's Plugins page, and a tag and a
+    // switch on DSH's own page for each plugin. Every change goes to Fishball's side only.
+
+    /** Unchecked tools wait for your Allow (DESIGN §7); a plugin with any, or with an error, needs you. */
+    const waitingTools = (plugin) => plugin.tools.filter((tool) => tool.status === TOOL_STATUS.unchecked).length
+    const needsYou = (plugin) => waitingTools(plugin) > 0 || plugin.lastError !== null
+    const offersToggle = (plugin) => plugin.actions.includes(PLUGIN_OFFER.enable) || plugin.actions.includes(PLUGIN_OFFER.disable)
+    /** DSH's Installed tab lists DSH plugins only, so only they open there. */
+    const DSH_LISTED = new Set(MANAGER.groups.find((group) => group.id === MANAGER.dshGroup).dsh)
+    /** The value at a path of a plain value, or undefined. */
+    const valueAt = (value, path) => path.reduce((node, key) => (node === null || node === undefined ? undefined : node[key]), value)
+    /** Set a value at a path, creating the objects on the way. */
+    function setAt(target, path, value) {
+      let node = target
+      for (const key of path.slice(0, -1)) node = node[key] ??= {}
+      node[path[path.length - 1]] = value
+    }
+
+    /**
+     * The plugin manager's components (DESIGN §10d). Display text from DSH's metadata is read
+     * through DSH's own locale service, as its Plugins page reads it (review M3).
+     * @param resolveText - ctx.locale.resolveText (LocalizedText -> string in the UI language).
+     */
+    function makeManager(t, resolveText) {
+      const localized = (text) => (text === undefined || text === null ? undefined : resolveText(text))
+      const pluginTitle = (plugin) => localized(plugin.meta?.title) || plugin.title
+      const pluginDescription = (plugin) => localized(plugin.meta?.description) || plugin.description || ''
+
+      /** One catalog plugin from the snapshot (undefined for no key or an unknown one). */
+      function useCatalogPlugin(key) {
+        const catalog = useFishball().catalog
+        return key === undefined ? undefined : catalog?.plugins.find((plugin) => plugin.plugin === key)
+      }
+
+      /** The plugin's icon tile: its own icon, DSH's artwork for some built-ins, the fish for the Messenger look, else DSH's default. */
+      function PluginIcon({ plugin }) {
+        const art = plugin.hasIcon ? h('img', { src: apiUrl(`${API.pluginsIcon}?plugin=${encodeURIComponent(plugin.plugin)}`), alt: '', loading: 'lazy' })
+          : plugin.plugin === MANAGER.messengerKey ? h(FishballIcon, { size: MANAGER.artSize, unread: false })
+            : h(MANAGER.builtinArt[plugin.plugin] ?? PluginArtworkDefault, { size: MANAGER.artSize })
+        return h('span', { className: MCLS.icon, 'aria-hidden': true }, art)
+      }
+
+      /** The tags after a plugin's title (DESIGN §10d): its DSH state, where it runs, and anything pending or wrong. */
+      function PluginTags({ plugin, t }) {
+        const tag = (tone, text) => h(Tag, { key: text, tone, className: MCLS.tag }, text)
+        const waiting = waitingTools(plugin)
+        return [
+          tag('neutral', t('dsh.' + plugin.dsh)),
+          plugin.packageName?.startsWith(MANAGER.experimentalPrefix) ? tag('info', t('experimental')) : null,
+          plugin.dsh === MANAGER.dshOff && plugin.runs === MANAGER.runsInFishball ? tag('info', t('runsOnlyInFishball')) : null,
+          plugin.removing ? tag('info', t('removing')) : null,
+          plugin.on !== plugin.applied && !plugin.removing ? tag('info', t('pending')) : null,
+          plugin.waiting ? tag('info', t('waiting')) : null,
+          plugin.lastError ? tag('danger', PLUGIN_ERRORS.has(plugin.lastError) ? t('pluginError.' + plugin.lastError) : t('pluginErrorOther')) : null,
+          waiting > 0 ? tag('danger', t('toolsWait', { count: waiting })) : null,
+        ]
+      }
+
+      /** Fishball's own on/off for one plugin (POST plugins); none while the Host offers no toggle. */
+      function FishballSwitch({ plugin, t, onResult }) {
+        if (!offersToggle(plugin)) return null
+        return h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: pluginTitle(plugin) }), onChange: async (on) => onResult(await post(API.plugins, { plugin: plugin.plugin, on })) })
+      }
+
+      /** One card of the list, like a card on DSH's Installed tab; the whole card opens the plugin's page. */
+      function PluginCard({ plugin, t, onOpen, onResult }) {
+        const title = pluginTitle(plugin)
+        const description = pluginDescription(plugin)
+        return h('li', { className: MCLS.card, 'data-fishball-plugin': plugin.plugin, onClick: () => onOpen(plugin.plugin) },
+          h('div', { className: MCLS.cardHead },
+            h(PluginIcon, { plugin }),
+            h('div', { className: MCLS.main },
+              h('div', { className: MCLS.titleRow },
+                h('button', { type: 'button', className: MCLS.title, 'aria-label': t('viewPlugin', { name: title }), onClick: (event) => { event.stopPropagation(); onOpen(plugin.plugin) } }, title),
+                h(PluginTags, { plugin, t })),
+              description ? h('div', { className: MCLS.desc }, description) : null),
+            // The switch acts on its own; a click on it must not also open the page.
+            h('span', { onClick: (event) => event.stopPropagation() }, h(FishballSwitch, { plugin, t, onResult }))))
+      }
+
+      /** One tool and its state for Fishball; an allowance you gave can be removed here (DESIGN §7). */
+      function ToolLine({ tool, allowance, t, onResult }) {
+        const allowed = allowance !== undefined && tool.status === TOOL_STATUS.visible
+        return h('div', { className: MCLS.line },
+          h('code', null, tool.name),
+          h(Tag, { tone: TAG_TONE[tool.status] ?? 'neutral', className: MCLS.tag }, t(allowed ? 'tool.allowed' : 'tool.' + tool.status)),
+          allowance !== undefined ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: allowance })) }, t('remove')) : null)
+      }
+
+      /** The list (version 1): groups by origin, like DSH's Installed tab, then tools that belong to no plugin. */
+      function PluginList({ catalog, t, onOpen, onResult, onInstall }) {
+        const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
+        // Allowances whose tool is not listed anywhere (its plugin is off, or it registers later) keep a Remove here (review M2).
+        const shown = new Set([...catalog.plugins.flatMap((plugin) => plugin.tools.map((tool) => tool.name)), ...catalog.otherTools.map((tool) => tool.name)])
+        const unlisted = catalog.allowedTools.filter((tool) => !shown.has(tool.toolName))
+        return h(React.Fragment, null,
+          h('div', { className: MCLS.bar }, h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: onInstall }, t('installForFishball'))),
+          MANAGER.groups.map((group) => {
+            const plugins = catalog.plugins.filter((plugin) => group.dsh.includes(plugin.dsh))
+            if (plugins.length === 0) return null
+            return h('section', { key: group.id, className: MCLS.group },
+              h('h3', { className: MCLS.groupTitle }, t('group.' + group.id)),
+              h('ul', { className: MCLS.cards }, plugins.map((plugin) => h(PluginCard, { key: plugin.plugin, plugin, t, onOpen, onResult }))))
+          }),
+          catalog.otherTools.length === 0 ? null : h('section', { className: MCLS.group },
+            h('h3', { className: MCLS.groupTitle }, t('group.tools')),
+            catalog.otherTools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult }))),
+          unlisted.length === 0 ? null : h('section', { className: MCLS.group },
+            h('h3', { className: MCLS.groupTitle }, t('group.allowed')),
+            unlisted.map((tool) => h('div', { key: tool.key, className: MCLS.line },
+              h('code', null, tool.toolName),
+              h('span', { className: MCLS.hint }, tool.module),
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: tool.key })) }, t('remove'))))))
+      }
+
+      /**
+       * The plugin page's data from the Host (GET plugins/detail), read again when the plugin's
+       * snapshot entry changes (a switch, an apply, a save) and after a save of this page.
+       */
+      function usePluginDetail(plugin) {
+        const [result, setResult] = React.useState({ value: null, failed: false })
+        const [revision, setRevision] = React.useState(0)
+        const stamp = JSON.stringify([plugin.on, plugin.applied, plugin.settings, plugin.changedBy, plugin.lastError, plugin.dsh])
+        React.useEffect(() => {
+          let current = true
+          fetch(apiUrl(`${API.pluginsDetail}?plugin=${encodeURIComponent(plugin.plugin)}`))
+            .then((response) => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
+            .then((body) => { if (current) setResult({ value: body.detail, failed: false }) })
+            .catch(() => { if (current) setResult((previous) => ({ value: previous.value, failed: true })) })
+          return () => { current = false }
+        }, [plugin.plugin, stamp, revision])
+        return { ...result, reload: () => setRevision((count) => count + 1) }
+      }
+
+      /**
+       * The fields of a schema JSON envelope ({ uid, refs }, schemastery toJSON), in declaration
+       * order, each with the way the form draws it. A root that is not an object is shown only.
+       */
+      function formFields(json) {
+        const node = (ref) => (typeof ref === 'object' ? ref : json.refs?.[ref])
+        const kindOf = (field) => {
+          if (field.meta?.role === SCHEMA.secretRole) return FIELD_KIND.secret
+          if (field.type === SCHEMA.string) return FIELD_KIND.text
+          if (field.type === SCHEMA.number) return FIELD_KIND.number
+          if (field.type === SCHEMA.boolean) return FIELD_KIND.switch
+          if (field.type === SCHEMA.union && (field.list ?? []).length > 0 && field.list.every((ref) => node(ref)?.type === SCHEMA.constant)) return FIELD_KIND.choice
+          if (field.type === SCHEMA.array && [SCHEMA.string, SCHEMA.number].includes(node(field.inner)?.type)) return FIELD_KIND.list
+          return FIELD_KIND.readOnly
+        }
+        const walk = (ref, path) => {
+          const field = node(ref)
+          if (!field || field.meta?.hidden) return []
+          if (field.type === SCHEMA.object) return Object.entries(field.dict ?? {}).flatMap(([key, inner]) => walk(inner, [...path, key]))
+          if (field.type === SCHEMA.intersect) return (field.list ?? []).flatMap((inner) => walk(inner, path))
+          const kind = path.length === 0 ? FIELD_KIND.readOnly : kindOf(field)
+          return [{
+            path,
+            key: JSON.stringify(path),
+            kind,
+            description: localized(field.meta?.description),
+            numbers: kind === FIELD_KIND.list && node(field.inner)?.type === SCHEMA.number,
+            choices: kind === FIELD_KIND.choice ? field.list.map((choice) => node(choice).value) : undefined,
+          }]
+        }
+        return walk(json.uid ?? json, [])
+      }
+
+      /** A field's text in the form, from its current value. */
+      function fieldText(field, value) {
+        if (value === undefined || value === null) return ''
+        if (field.kind === FIELD_KIND.list) return Array.isArray(value) ? value.join(LIST_SEPARATOR) : ''
+        if (field.kind === FIELD_KIND.choice) return String(Math.max(0, field.choices.findIndex((choice) => choice === value)))
+        return String(value)
+      }
+
+      /** The value a field's draft stands for; undefined when it is not a valid value for its kind. */
+      function fieldValue(field, draft) {
+        if (field.kind === FIELD_KIND.switch) return draft === true
+        if (field.kind === FIELD_KIND.choice) return field.choices[Number(draft)]
+        if (field.kind === FIELD_KIND.number) {
+          const number = Number(String(draft).trim())
+          return String(draft).trim() !== '' && Number.isFinite(number) ? number : undefined
+        }
+        if (field.kind === FIELD_KIND.list) {
+          const items = String(draft).split(LIST_SEPARATOR).map((item) => item.trim()).filter((item) => item !== '')
+          if (!field.numbers) return items
+          const numbers = items.map(Number)
+          return numbers.every(Number.isFinite) ? numbers : undefined
+        }
+        return String(draft)
+      }
+
+      /** A field's label row: its name, and "Changed" with Reset for a field you changed (as DSH's value field shows). */
+      function FieldHead({ id, label, changed, onReset, disabled, t }) {
+        return h('div', { className: MCLS.fieldHead },
+          // A control without an id of its own (the switch, a shown-only value) gets a plain caption.
+          id === undefined ? h('span', { className: MCLS.label }, label) : h('label', { htmlFor: id, className: MCLS.label }, label),
+          changed ? h(React.Fragment, null, h(Tag, { tone: 'neutral' }, t('settingsChanged')), h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('resetField', { name: label }), onClick: onReset }, t('settingsReset'))) : null)
+      }
+
+      /** One field of the form, drawn for its kind. */
+      function SettingsField({ field, id, row, draft, changed, invalid, disabled, onEdit, onReset, t }) {
+        const label = field.path.join('.')
+        const current = valueAt(row.value, field.path)
+        const text = draft !== undefined ? draft : fieldText(field, current)
+        const labelled = field.kind === FIELD_KIND.choice || field.kind === FIELD_KIND.list
+        const head = h(FieldHead, { id: labelled ? id : undefined, label, changed, onReset, disabled, t })
+        const hint = field.description ? h('p', { className: MCLS.hint }, field.description) : null
+        if (field.kind === FIELD_KIND.text || field.kind === FIELD_KIND.number) {
+          return h(SettingsValueField, {
+            id, label, text, numeric: field.kind === FIELD_KIND.number, hint: field.description, invalid, invalidLabel: t('settingsInvalid'),
+            overridden: changed, overriddenLabel: t('settingsChanged'), resetLabel: t('settingsReset'), onReset, disabled, onEdit,
+          })
+        }
+        if (field.kind === FIELD_KIND.secret) {
+          const slot = row.secrets.find((candidate) => JSON.stringify(candidate.path) === field.key)
+          const set = slot?.set === true
+          // DSH's secret field draws its own padding; Clear sits under it.
+          return h('div', null,
+            h(SettingsSecretField, { id, label, configured: set, stateLabel: t(set ? 'secretSet' : 'secretUnset'), text: draft ?? '', hint: t('secretHint'), disabled, onEdit }),
+            // Clear drops the value you set; the plugin's own value, if any, then applies.
+            slot?.stored === true ? h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('clearField', { name: label }), onClick: onReset }, t('secretClear')) : null)
+        }
+        if (field.kind === FIELD_KIND.switch) {
+          return h('div', { className: MCLS.field }, head, h(Switch, { checked: draft !== undefined ? draft : current === true, label, onChange: onEdit }), hint)
+        }
+        if (field.kind === FIELD_KIND.choice) {
+          return h('div', { className: MCLS.field }, head,
+            h('select', { id, className: MCLS.input, value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) },
+              field.choices.map((choice, index) => h('option', { key: index, value: String(index) }, String(choice)))),
+            hint)
+        }
+        if (field.kind === FIELD_KIND.list) {
+          return h('div', { className: MCLS.field }, head,
+            h('textarea', { id, className: MCLS.input, rows: Math.max(MANAGER.listMinRows, text.split(LIST_SEPARATOR).length), value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) }),
+            h('p', { className: MCLS.hint }, [field.description, t('settingsListHint')].filter(Boolean).join(' ')))
+        }
+        return h('div', { className: MCLS.field }, head,
+          h('pre', { className: MCLS.readOnly }, JSON.stringify(current ?? null, null, 2)),
+          h('p', { className: MCLS.hint }, [field.description, t('settingsReadOnly')].filter(Boolean).join(' ')))
+      }
+
+      /**
+       * One row's settings form (DESIGN §10d "The form"). Edits are drafts until Save; Reset on a
+       * field drops your value for it; Reset all drops every value of the row. The Host checks the
+       * whole config and answers an invalid field's path, which the form marks.
+       */
+      function SettingsRowForm({ plugin, row, showRow, t, onSaved }) {
+        const baseId = React.useId()
+        const fields = React.useMemo(() => formFields(row.schema), [row.schema])
+        const [drafts, setDrafts] = React.useState({})
+        const [resets, setResets] = React.useState([])
+        const [saving, setSaving] = React.useState(false)
+        const [message, setMessage] = React.useState(null)
+        const edit = (field, value) => {
+          setDrafts({ ...drafts, [field.key]: value })
+          setResets(resets.filter((key) => key !== field.key))
+          setMessage(null)
+        }
+        const reset = (field) => {
+          const next = { ...drafts }
+          delete next[field.key]
+          setDrafts(next)
+          setResets([...new Set([...resets, field.key])])
+          setMessage(null)
+        }
+        const save = async (body) => {
+          setSaving(true)
+          const answer = await send(API.pluginsSettings, { plugin, row: row.row, ...body })
+          setSaving(false)
+          if (answer.ok) { setDrafts({}); setResets([]); setMessage({ kind: FORM_MESSAGE.saved }); onSaved() }
+          else setMessage(answer.code === SETTINGS_INVALID ? { kind: FORM_MESSAGE.invalid, path: answer.path ?? [] } : { kind: FORM_MESSAGE.failed })
+        }
+        const submit = () => {
+          const values = {}
+          for (const field of fields) {
+            if (!Object.hasOwn(drafts, field.key)) continue
+            // An empty secret field means "keep the stored secret".
+            if (field.kind === FIELD_KIND.secret && drafts[field.key] === '') continue
+            const value = fieldValue(field, drafts[field.key])
+            if (value === undefined) { setMessage({ kind: FORM_MESSAGE.invalid, path: field.path }); return }
+            setAt(values, field.path, value)
+          }
+          const reset = resets.map((key) => JSON.parse(key))
+          // Only an emptied secret was edited: nothing to send (review L3).
+          if (Object.keys(values).length === 0 && reset.length === 0) { setDrafts({}); return }
+          void save({ ...(Object.keys(values).length > 0 ? { values } : {}), ...(reset.length > 0 ? { reset } : {}) })
+        }
+        const dirty = Object.keys(drafts).length > 0 || resets.length > 0
+        // The Host names the failing field's path, which can lie inside a field (a list item): the field containing it is marked (review L7).
+        const isInvalid = (field) => message?.kind === FORM_MESSAGE.invalid && field.path.every((key, index) => message.path[index] === key)
+        const marked = fields.some(isInvalid)
+        return h('div', { className: MCLS.section, 'data-fishball-settings-row': row.row },
+          showRow ? h('p', { className: MCLS.hint }, t('settingsRow', { row: row.row })) : null,
+          row.error ? h('p', { role: 'status', className: MCLS.hint }, t('settingsOwnError', { message: row.error })) : null,
+          h('div', { className: MCLS.fields }, fields.map((field) => h(SettingsField, {
+            key: field.key,
+            field,
+            id: `${baseId}-${field.key}`,
+            row,
+            draft: drafts[field.key],
+            changed: Object.hasOwn(drafts, field.key) || (valueAt(row.user, field.path) !== undefined && !resets.includes(field.key)),
+            invalid: isInvalid(field),
+            disabled: saving,
+            onEdit: (value) => edit(field, value),
+            onReset: () => reset(field),
+            t,
+          }))),
+          message?.kind === FORM_MESSAGE.saved ? h('div', { role: 'status', className: MCLS.hint }, t('settingsSaved')) : null,
+          message?.kind === FORM_MESSAGE.failed ? h('div', { role: 'alert' }, t('settingsFailed')) : null,
+          // A field the Host named is marked on the field itself; say it here only when no drawn field contains it.
+          message?.kind === FORM_MESSAGE.invalid && !marked ? h('div', { role: 'alert' }, t('settingsInvalid')) : null,
+          h('div', { className: MCLS.formActions },
+            Object.keys(row.user).length > 0 ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: saving, onClick: () => void save({ reset: [[]] }) }, t('settingsResetAll')) : null,
+            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: saving || !dirty, onClick: submit }, saving ? t('saving') : t('save'))))
+      }
+
+      /** Settings for Fishball on the plugin page; a plugin on in DSH uses DSH's settings (DESIGN §10d). */
+      function SettingsSection({ plugin, detail, t }) {
+        const body = (() => {
+          if (detail.value === null) return detail.failed ? h('p', { role: 'alert' }, t('pageLoadFailed')) : null
+          if (detail.value.shared) {
+            return h(React.Fragment, null,
+              h('p', { className: MCLS.hint }, t('settingsShared')),
+              plugin.settings === MANAGER.settingsUnused ? h('p', { className: MCLS.hint }, t('settingsUnused')) : null)
+          }
+          const rows = detail.value.rows.filter((row) => row.editable)
+          // A row whose module or config could not be read says so instead of disappearing (review M5).
+          const broken = detail.value.rows.filter((row) => !row.editable && row.error !== null)
+          const notes = broken.map((row) => h('p', { key: row.row, role: 'status', className: MCLS.hint }, t('settingsRowUnavailable', { row: row.row })))
+          if (rows.length === 0) return notes.length > 0 ? notes : h('p', { className: MCLS.hint }, t('settingsNone'))
+          return [...notes, ...rows.map((row) => h(SettingsRowForm, { key: row.row, plugin: plugin.plugin, row, showRow: rows.length > 1, t, onSaved: detail.reload }))]
+        })()
+        return h('section', { className: MCLS.section },
+          h('h4', { className: MCLS.sectionTitle }, t('settingsTitle')),
+          // A failed refresh keeps the last page on screen, and says it may be out of date (review L4).
+          detail.failed && detail.value !== null ? h('p', { role: 'alert' }, t('pageLoadFailed')) : null,
+          body)
+      }
+
+      /** A plugin's page (page A), laid out like DSH's own plugin page, inside the Fishball tab. */
+      function PluginPage({ plugin, catalog, t, openPackage, onBack, onResult }) {
+        const detail = usePluginDetail(plugin)
+        const title = pluginTitle(plugin)
+        const description = pluginDescription(plugin)
+        const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
+        const last = detail.value?.history[0]
+        const changed = last !== undefined ? t('changedAt', { who: t('who.' + last.by), when: new Date(last.at).toLocaleString() })
+          : plugin.changedBy ? t('changedBy' + plugin.changedBy) : t('neverChanged')
+        return h(React.Fragment, null,
+          h('button', { type: 'button', className: MCLS.crumb, onClick: onBack }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('backToList')),
+          h('div', { className: MCLS.detailHead, 'data-fishball-plugin-page': plugin.plugin },
+            h('div', { className: MCLS.detailIdentity },
+              h(PluginIcon, { plugin }),
+              h('div', { className: MCLS.detailMain },
+                h('div', { className: MCLS.titleRow },
+                  h('h3', { className: MCLS.detailTitle }, title),
+                  plugin.version ? h(Tag, { tone: 'neutral', className: MCLS.tag }, plugin.version) : null,
+                  h(PluginTags, { plugin, t })),
+                plugin.packageName ? h('p', { className: MCLS.detailName }, h('code', null, plugin.packageName)) : null)),
+            h('div', { className: MCLS.detailActions },
+              plugin.actions.includes(PLUGIN_OFFER.uninstall)
+                ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'aria-label': t('uninstallLabel', { name: title }), onClick: async () => onResult(await post(API.pluginsRemove, { plugin: plugin.plugin })) }, t('uninstall'))
+                : null,
+              offersToggle(plugin) ? h('span', { className: MCLS.hint }, t('useInFishball')) : null,
+              h(FishballSwitch, { plugin, t, onResult }))),
+          description ? h('p', { className: MCLS.detailDesc }, description) : null,
+          h('div', { className: MCLS.section },
+            h('div', { className: MCLS.kv },
+              h('span', { className: MCLS.kvLabel }, t('inDsh')),
+              h('span', null, t('inDsh.' + plugin.dsh)),
+              DSH_LISTED.has(plugin.dsh) && plugin.packageName ? h('button', { type: 'button', className: MCLS.link, onClick: () => openPackage(plugin.packageName) }, t('openInDsh')) : h('span')),
+            h('div', { className: MCLS.kv },
+              h('span', { className: MCLS.kvLabel }, t('lastChange')),
+              h('span', null, changed),
+              h('span'))),
+          h('div', { className: MCLS.sections },
+            h('section', { className: MCLS.section },
+              h('h4', { className: MCLS.sectionTitle }, t('tools')),
+              plugin.tools.length === 0 ? h('p', { className: MCLS.hint }, t('noTools'))
+                : plugin.tools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult }))),
+            h(SettingsSection, { plugin, detail, t })))
+      }
+
+      /** The Fishball tab (`plugins.tab`): the list, or one plugin's page, and the install dialog. */
+      function makeFishballTab(t) {
+        return function FishballTab({ openPackage }) {
+          const state = useFishball()
+          const [open, setOpen] = React.useState(null)
+          const [failed, setFailed] = React.useState(false)
+          const [installing, setInstalling] = React.useState(false)
+          const catalog = state.catalog
+          if (!catalog) return h('div', { className: MCLS.panel }, h('p', { className: MCLS.hint }, t('status.' + (state.status ?? STATUS.starting))))
+          const onResult = (ok) => setFailed(!ok)
+          const plugin = open === null ? undefined : catalog.plugins.find((entry) => entry.plugin === open)
+          return h('div', { className: MCLS.panel, 'data-fishball-manager': true },
+            failed ? h('div', { role: 'alert' }, t('changeFailed')) : null,
+            plugin !== undefined
+              ? h(PluginPage, { key: plugin.plugin, plugin, catalog, t, openPackage, onBack: () => setOpen(null), onResult })
+              : h(PluginList, { catalog, t, onOpen: setOpen, onResult, onInstall: () => setInstalling(true) }),
+            installing ? h(Modal, {
+              open: true,
+              onClose: () => setInstalling(false),
+              closeLabel: t('close'),
+              title: t('installTitle'),
+              footer: h(Button, { type: 'button', variant: 'outline', onClick: () => setInstalling(false) }, t('close')),
+            }, h(InstallForm, { t })) : null)
+        }
+      }
+
+      /** The DSH plugin a bundle page shows, as Fishball's catalog knows it (DSH plugins are keyed by package name). */
+      const bundlePlugin = (subject) => (subject?.kind === MANAGER.bundleSubject ? subject.pkg?.name : undefined)
+
+      /** DSH's page for a plugin: a tag with its state in Fishball (`plugins.detail.badge`). */
+      function makeDetailBadge(t) {
+        return function FishballDetailBadge({ subject }) {
+          const plugin = useCatalogPlugin(bundlePlugin(subject))
+          if (plugin === undefined) return null
+          const text = plugin.dsh === MANAGER.dshOff && plugin.runs === MANAGER.runsInFishball ? 'runsOnlyInFishball' : plugin.on ? 'onInFishball' : 'offInFishball'
+          return h(Tag, { tone: plugin.on ? 'info' : 'neutral', className: MCLS.tag }, t(text))
+        }
+      }
+
+      /** DSH's page for a plugin: Fishball's own switch at its head (`plugins.detail.actions`), labelled so it is not taken for DSH's. */
+      function makeDetailAction(t) {
+        return function FishballDetailAction({ subject }) {
+          const plugin = useCatalogPlugin(bundlePlugin(subject))
+          if (plugin === undefined || !offersToggle(plugin)) return null
+          return h('span', { className: MCLS.detailActions },
+            h('span', { className: MCLS.hint }, t('useInFishball')),
+            h(FishballSwitch, { plugin, t, onResult: () => {} }))
+        }
+      }
+
+      return { FishballTab: makeFishballTab(t), DetailBadge: makeDetailBadge(t), DetailAction: makeDetailAction(t) }
+    }
+
     exports.name = PACKAGE_NAME
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {
@@ -1396,9 +2005,14 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))
         yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeWatchNotice(t))
       }), 'fishball: dialogs')
+      // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.
+      const manager = makeManager(t, (text) => ctx.locale.resolveText(text))
+      ctx.effect(() => ctx.slots.inject(SLOT.pluginsTab, () => ctx.slots.register({ name: SLOT.pluginsTab, id: MANAGER.tabId, label: () => t('tabTitle'), locale: NS }, manager.FishballTab)), 'fishball: plugin manager tab')
+      ctx.effect(() => ctx.slots.inject(SLOT.detailBadge, () => ctx.slots.register({ name: SLOT.detailBadge, id: MANAGER.badgeId, locale: NS }, manager.DetailBadge)), 'fishball: plugin page tag')
+      ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePlugins(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

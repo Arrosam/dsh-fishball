@@ -8,8 +8,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
-import { fixtureTool, registerFixtures, store } from './fixture-tools.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
 const host = (spec) => import(pathToFileURL(path.join(RUNTIME, spec)).href)
@@ -68,6 +68,8 @@ if (!fs.existsSync(profileDir)) {
   if (SOURCES) for (const [kind, b] of Object.entries(SOURCE_BUNDLES)) link(profileDir, b.name, b.dir, kind !== 'only')
   // P8 R5: the example plugin, for everyone or Fishball-only (FBTEST_EXAMPLE), with its notes (see exampleDir).
   if (EXAMPLE_MODE) link(profileDir, EXAMPLE.name, exampleDir(), EXAMPLE_MODE === 'everyone')
+  // P12: the settings fixtures (fishball-only with every field kind, on in DSH, invalid patch), only in homes that ask for them.
+  if (process.env.FBTEST_MANAGER === '1') for (const b of Object.values(MANAGER_BUNDLES)) link(profileDir, b.name, b.dir, b.enabled)
 } else if (EXAMPLE_MODE) exampleDir()
 /**
  * Plugin statuses: FBTEST_PLUGIN_DIR links dsh-fishball to another checkout (the previous version, for the
@@ -273,7 +275,13 @@ const ops = {
     agent.steer(createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } }))
     await until(() => agent.status === 'running', 2000, 5)
     const idle = await until(() => agent.status === 'idle', timeoutMs, 20)
-    const events = agent.session.snapshotEvents().slice(eventsBefore).map(eventSummary)
+    // P12: DSH's tool-result pruner appends a shortened replacement of an earlier tool result, each
+    // immediately after a compaction/prune event (dsh-compaction-tool-result-pruner). Those replacements are
+    // not results of this turn's calls, so they are left out of `results`.
+    const all = agent.session.snapshotEvents()
+    const replacements = new Set(all.flatMap((e, i) => (e.type === 'tool/result' && all[i - 1]?.type === 'compaction/prune' ? [i] : [])))
+    const events = all.slice(eventsBefore).map(eventSummary)
+    const turnResults = all.slice(eventsBefore).flatMap((e, i) => (e.type === 'tool/result' && !replacements.has(eventsBefore + i) ? [eventSummary(e).result] : []))
     const leftover = model.queues.get(sessionId)?.length ?? 0
     model.queues.delete(sessionId)
     return {
@@ -283,7 +291,7 @@ const ops = {
       assistantTexts: events.filter((e) => e.type === 'assistant/message').map((e) => e.text),
       userLengths: events.filter((e) => e.type === 'user/message').map((e) => e.textLength),
       requests: model.requests.slice(before).filter((r) => r.sessionId === sessionId),
-      results: events.filter((e) => e.type === 'tool/result').map((e) => e.result),
+      results: turnResults,
       asked: events.filter((e) => e.type === 'approval/asked').length,
       turnEnds: events.filter((e) => e.type === 'turn/end').map((e) => e.reason),
       leftover,
@@ -573,6 +581,20 @@ const ops = {
   sessionTitle({ sessionId }) { return ctx.get('sessionTitle')?.get(liveAgent(sessionId).session)?.title ?? '' },
   /** Every row id of the dsh-fishball bundle as DSH's plugin manager lists it (the messenger must add none). */
   async fishballRows() { return (await ctx.pluginManager.listBundles()).filter((b) => b.name === PACKAGE_NAME).flatMap((b) => b.rows.map((r) => r.rowId)).sort() },
+
+  // ---- P12 operations (plugin manager settings) ----
+  /** apply/dispose/fail events of the settings fixtures' rows, with the config each apply received. */
+  settingsEvents({ plugin, row } = {}) { return store.settingsEvents.filter((e) => (!plugin || e.plugin === plugin) && (!row || e.row === row)) },
+  /** The config the latest apply of a row received, read now (a volatile field shows its current value). */
+  settingsLive({ plugin, row }) {
+    const last = store.settingsConfigs.filter((c) => c.plugin === plugin && c.row === row).at(-1)
+    return last ? { entryId: last.entryId, config: plainConfig(last.config) } : null
+  },
+  /** Select or deselect a bundle in the DSH profile through DSH's plugin manager (your action on DSH's Installed tab). */
+  async setBundleEnabled({ name, enabled }) {
+    const r = await ctx.pluginManager.setBundleEnabled(name, enabled)
+    return { changed: r.changed, application: r.application, stage: r.stage ?? null, error: r.error ? JSON.parse(JSON.stringify(r.error)) : null }
+  },
 
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])
