@@ -17,4 +17,4 @@ Rebuild in progress on branch `rebuild/assistant`. The earlier "dsh-fishball (df
 
 [MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Git stays local: there is no remote push or publication.
+The repository is private on GitHub. Branches are pushed there; the package is not published.

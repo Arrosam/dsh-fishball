@@ -1029,7 +1029,7 @@ Each phase ends with:
 5. **Old live profile.** `~/.dsh/profiles/fishball` and its DSH-X launch item load `dsh-fishball/installed` from this checkout, so they will fail after step 2. They are retired in the same step (Q2), the one step outside this folder:
    - the profile directory is renamed to `fishball.retired-2026-10-24`, and nothing inside it is deleted;
    - its DSH-X launch item is removed.
-6. **Git stays local.** No remote, push or publication.
+6. **Git stays local.** No remote, push or publication. *Amended 2026-10-31 (owner): pushing branches to the private `origin` is allowed; the repository stays private and the package unpublished (AGENTS.md).*
 
 ## 16. Decisions
 
