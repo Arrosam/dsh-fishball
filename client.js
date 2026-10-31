@@ -212,10 +212,20 @@ window.__ModuleLoader__.load({
     const FISHBALL_COLOUR = Object.freeze({
       fill: `color-mix(in srgb, ${FISH_MARK.eyeColor} 32%, #fff)`,
       fillHover: `color-mix(in srgb, ${FISH_MARK.eyeColor} 44%, #fff)`,
-      text: `color-mix(in srgb, ${FISH_MARK.eyeColor} 70%, #000)`,
+      // Dark enough to read on the light fill (about 8:1); the earlier 70% mix read at about 4:1 (owner's note).
+      text: `color-mix(in srgb, ${FISH_MARK.eyeColor} 35%, #000)`,
       accent: FISH_MARK.eyeColor,
     })
     const ADD_MENU = Object.freeze({ id: 'fishball-install', iconSize: 14 })
+    /**
+     * The knob of Fishball's switches: white, with the fish mark in magenta (its eye white), drawn as
+     * a background image so DSH's own Switch is reused as it is.
+     */
+    const FISHBALL_SWITCH = Object.freeze({
+      knob: '#fff',
+      fishSize: '11px',
+      fish: `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='${FISH_MARK.viewBox}'><path d='${FISH_MARK.body}' fill='${FISH_MARK.eyeColor}'/><path d='${FISH_MARK.eye}' fill='#fff'/></svg>`)}")`,
+    })
     /**
      * The word logo from the fishball repo. The repo ships no image for it: it is the string
      * `wordmark` ("FISHBALL", strings.xml) set in the display face at weight 900 with -0.5px
@@ -324,9 +334,10 @@ window.__ModuleLoader__.load({
     const MCLS = Object.freeze({
       panel: 'fbp-panel', bar: 'fbp-bar', group: 'fbp-group', groupTitle: 'fbp-group-title', cards: 'fbp-cards', card: 'fbp-card', cardHead: 'fbp-card-head',
       icon: 'fbp-icon', main: 'fbp-main', titleRow: 'fbp-title-row', title: 'fbp-title', desc: 'fbp-desc', tag: 'fbp-tag', crumb: 'fbp-crumb',
-      detailHead: 'fbp-detail-head', detailIdentity: 'fbp-detail-identity', detailMain: 'fbp-detail-main', detailTitle: 'fbp-detail-title', detailName: 'fbp-detail-name',
+      detailHead: 'fbp-detail-head', detailMain: 'fbp-detail-main', detailTitle: 'fbp-detail-title', detailName: 'fbp-detail-name',
       detailDesc: 'fbp-detail-desc', detailActions: 'fbp-detail-actions', sections: 'fbp-sections', section: 'fbp-section', sectionTitle: 'fbp-section-title',
-      kv: 'fbp-kv', kvLabel: 'fbp-kv-label', line: 'fbp-line', link: 'fbp-link', field: 'fbp-field', fieldHead: 'fbp-field-head', hint: 'fbp-hint',
+      detail: 'fbp-detail', detailTop: 'fbp-detail-top', detailSection: 'fbp-detail-section', sectionHead: 'fbp-section-head', sectionCount: 'fbp-section-count',
+      facts: 'fbp-facts', rows: 'fbp-rows', row: 'fbp-row', link: 'fbp-link', field: 'fbp-field', fieldHead: 'fbp-field-head', hint: 'fbp-hint',
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
@@ -538,8 +549,10 @@ window.__ModuleLoader__.load({
       onInFishball: 'On in Fishball',
       offInFishball: 'Off in Fishball',
       toolsWait: '{count} waiting for you',
-      useInFishball: 'Use in Fishball',
-      backToList: 'Fishball',
+      backToList: 'Plugins',
+      backToListLabel: 'Back to the Fishball list',
+      toolsCount: '{count} tools',
+      detailsTitle: 'Details',
       viewPlugin: 'View {name}',
       inDsh: 'In DSH',
       'inDsh.on': 'On for every session',
@@ -807,8 +820,10 @@ window.__ModuleLoader__.load({
       onInFishball: 'Fishball 中已开启',
       offInFishball: 'Fishball 中已关闭',
       toolsWait: '{count} 个等待你处理',
-      useInFishball: '在 Fishball 中使用',
-      backToList: 'Fishball',
+      backToList: '插件',
+      backToListLabel: '返回 Fishball 列表',
+      toolsCount: '{count} 个工具',
+      detailsTitle: '详情',
       viewPlugin: '查看 {name}',
       inDsh: '在 DSH 中',
       'inDsh.on': '对所有会话开启',
@@ -917,23 +932,34 @@ window.__ModuleLoader__.load({
       `.${MCLS.title}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}`,
       `.${MCLS.desc}{display:-webkit-box;overflow:hidden;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:18px;-webkit-line-clamp:1;-webkit-box-orient:vertical}`,
       `.${MCLS.tag}{height:18px;padding:0 7px;font-size:10px;line-height:1}`,
-      `.${MCLS.crumb}{display:inline-flex;align-items:center;gap:2px;align-self:flex-start;padding:0;border:0;background:none;color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer}`,
+      // The plugin page copies DSH's own (dsh-client-ui-plugin-manager .detail and its parts, rc.2).
+      `.${MCLS.detail}{display:flex;flex-direction:column}`,
+      `.${MCLS.detailTop}{display:flex;flex-direction:column;padding-top:28px}`,
+      `[data-platform="darwin"] .${MCLS.detailTop}{padding-top:calc(28px + var(--dsh-frame-top-clearance,0px))}`,
+      `.${MCLS.crumb}{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:0;border:0;background:none;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:12.5px;cursor:pointer}`,
       `.${MCLS.crumb}:hover{color:var(--dsw-alias-label-primary)}`,
-      `.${MCLS.detailHead}{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}`,
-      `.${MCLS.detailIdentity}{display:flex;align-items:flex-start;gap:14px;min-width:0}`,
-      `.${MCLS.detailMain}{display:flex;flex-direction:column;gap:8px;min-width:0}`,
+      `.${MCLS.crumb}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}`,
+      `.${MCLS.detailHead}{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:32px 0 0}`,
+      `.${MCLS.detailMain}{display:flex;flex-direction:column;gap:8px;min-width:0;margin-top:20px}`,
       `.${MCLS.detailTitle}{margin:0;font-size:20px;font-weight:500;line-height:28px}`,
       `.${MCLS.detailName}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;overflow-wrap:anywhere}`,
       `.${MCLS.detailName} code{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace)}`,
       `.${MCLS.detailDesc}{margin:0;color:var(--dsw-alias-label-secondary);font-size:14px;line-height:22px}`,
-      `.${MCLS.detailActions}{display:flex;flex:0 0 auto;align-items:center;gap:8px}`,
-      `.${MCLS.sections}{display:flex;flex-direction:column;gap:32px}`,
+      `.${MCLS.detailActions}{display:flex;flex:0 0 auto;align-items:center;gap:16px}`,
+      `.${MCLS.sections}{display:flex;flex-direction:column;gap:32px;margin-top:32px}`,
+      `.${MCLS.detailSection}{display:flex;flex-direction:column;gap:12px}`,
+      `.${MCLS.sectionHead}{display:flex;align-items:baseline;gap:10px}`,
+      `.${MCLS.sectionCount}{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px}`,
+      `.${MCLS.facts}{margin:0}`,
+      `.${MCLS.facts} div{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;padding:8px 2px;border-bottom:.5px solid var(--dsw-alias-border-l2)}`,
+      `.${MCLS.facts} dt{flex:0 0 auto;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}`,
+      `.${MCLS.facts} dd{min-width:0;margin:0;font-size:13px;line-height:20px;text-align:end;overflow-wrap:anywhere}`,
+      `.${MCLS.rows}{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}`,
+      `.${MCLS.row}{display:flex;align-items:center;gap:8px;padding:12px 2px;border-bottom:.5px solid var(--dsw-alias-border-l2);font-size:13px}`,
+      `.${MCLS.row}:last-child{border-bottom:0}`,
+      `.${MCLS.row} code{flex:1;font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);overflow-wrap:anywhere}`,
       `.${MCLS.section}{display:flex;flex-direction:column;gap:8px}`,
       `.${MCLS.sectionTitle}{margin:0;font-size:14px;font-weight:500;line-height:20px}`,
-      `.${MCLS.kv}{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:8px;align-items:baseline;font-size:13px;line-height:20px}`,
-      `.${MCLS.kvLabel}{color:var(--dsw-alias-label-tertiary)}`,
-      `.${MCLS.line}{display:flex;align-items:center;gap:8px;min-height:32px;border-top:.5px solid var(--dsw-alias-border-l2);font-size:13px}`,
-      `.${MCLS.line} code{flex:1;font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);overflow-wrap:anywhere}`,
       `.${MCLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer}`,
       // Fields copy DSH's settings fields (dsh-client-ui-primitives SettingsValueField, rc.2): a
       // hairline between fields, a 13px label, a 12px reset link and a filled 34px input.
@@ -955,7 +981,12 @@ window.__ModuleLoader__.load({
       // Enabled buttons only: a disabled one keeps DSH's own disabled look (review L8).
       `.${MCLS.accent} button:not([role=switch]):not(:disabled){background:${FISHBALL_COLOUR.fill};color:${FISHBALL_COLOUR.text}}`,
       `.${MCLS.accent} button:not([role=switch]):hover:not(:disabled){background:${FISHBALL_COLOUR.fillHover}}`,
-      `.${MCLS.accent} [role=switch][aria-checked="true"]{background:${FISHBALL_COLOUR.fill}}`,
+      // Fishball's switches (owner's choice): magenta when on, and a small fish on the knob in both
+      // states, so one reads as Fishball's wherever it appears, DSH's pages included. DSH's switch
+      // is a button[role=switch] with one span knob (dsh-client-ui-primitives Switch, rc.2).
+      `.${MCLS.accent} [role=switch][aria-checked="true"]{background:${FISHBALL_COLOUR.accent}}`,
+      // [aria-checked] outranks DSH's off-state knob rule, whose `background` shorthand would clear the fish.
+      `.${MCLS.accent} [role=switch][aria-checked] > span{background-color:${FISHBALL_SWITCH.knob};background-image:${FISHBALL_SWITCH.fish};background-position:center;background-repeat:no-repeat;background-size:${FISHBALL_SWITCH.fishSize}}`,
       `.${MCLS.accent}{display:inline-flex;align-items:center;gap:8px}`,
       `.${MCLS.menuIcon}{display:inline-flex;color:${FISHBALL_COLOUR.accent}}`,
       // As DSH's own toolbar in the page header (dsh-client-ui-plugin-manager .toolbar, rc.2).
@@ -1943,13 +1974,12 @@ window.__ModuleLoader__.load({
       /** One tool and its state for Fishball; an allowance you gave can be removed here (DESIGN §7). */
       function ToolLine({ tool, allowance, t, onResult }) {
         const allowed = allowance !== undefined && tool.status === TOOL_STATUS.visible
-        return h('div', { className: MCLS.line },
+        return h('li', { className: MCLS.row },
           h('code', null, tool.name),
           h(Tag, { tone: TAG_TONE[tool.status] ?? 'neutral', className: MCLS.tag }, t(allowed ? 'tool.allowed' : 'tool.' + tool.status)),
           allowance !== undefined ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: allowance })) }, t('remove')) : null)
       }
 
-      /** The list (version 1): groups by origin, like DSH's Installed tab, then tools that belong to no plugin. */
       /**
        * "Install for Fishball" where DSH's own Add plugin sits: DSH hides its toolbar on a
        * contributed tab and offers no slot in the page header, so the button is rendered into the
@@ -1995,6 +2025,7 @@ window.__ModuleLoader__.load({
         return h('span', { ref: anchor, className: MCLS.bar, style: slot === null ? undefined : { display: 'none' } }, slot === null ? button : createPortal(button, slot))
       }
 
+      /** The list (version 1): groups by origin, like DSH's Installed tab, then tools that belong to no plugin. */
       function PluginList({ catalog, t, onOpen, onResult, onInstall }) {
         const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
         // Allowances whose tool is not listed anywhere (its plugin is off, or it registers later) keep a Remove here (review M2).
@@ -2011,13 +2042,13 @@ window.__ModuleLoader__.load({
           }),
           catalog.otherTools.length === 0 ? null : h('section', { className: MCLS.group },
             h('h3', { className: MCLS.groupTitle }, t('group.tools')),
-            catalog.otherTools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult }))),
+            h('ul', { className: MCLS.rows }, catalog.otherTools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult })))),
           unlisted.length === 0 ? null : h('section', { className: MCLS.group },
             h('h3', { className: MCLS.groupTitle }, t('group.allowed')),
-            unlisted.map((tool) => h('div', { key: tool.key, className: MCLS.line },
+            h('ul', { className: MCLS.rows }, unlisted.map((tool) => h('li', { key: tool.key, className: MCLS.row },
               h('code', null, tool.toolName),
               h('span', { className: MCLS.hint }, tool.module),
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: tool.key })) }, t('remove'))))))
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: tool.key })) }, t('remove')))))))
       }
 
       /**
@@ -2246,8 +2277,29 @@ window.__ModuleLoader__.load({
           body)
       }
 
-      /** A plugin's page (page A), laid out like DSH's own plugin page, inside the Fishball tab. */
+      /**
+       * While a plugin's page is open, DSH's page header and tab row are hidden, as DSH hides them
+       * on its own plugin pages (owner's request: the page looks like DSH's). They are the tab
+       * panel's siblings in DSH's page (dsh-client-ui-plugin-manager, rc.2); each gets its own
+       * display back when the page closes. If DSH's markup changes, nothing is hidden.
+       */
+      function useHiddenPageChrome(anchor) {
+        React.useLayoutEffect(() => {
+          const panel = anchor.current?.closest('[role=tabpanel]')
+          const siblings = panel?.parentElement ? [...panel.parentElement.children].filter((element) => element !== panel) : []
+          const before = siblings.map((element) => element.style.display)
+          for (const element of siblings) element.style.display = 'none'
+          return () => siblings.forEach((element, index) => { element.style.display = before[index] })
+        }, [])
+      }
+
+      /**
+       * A plugin's page (page A), laid out like DSH's own plugin page (dsh-client-ui-plugin-manager
+       * .detail, rc.2): the back link, the icon with the actions, the title block, then sections.
+       */
       function PluginPage({ plugin, catalog, t, openPackage, onBack, onResult }) {
+        const anchor = React.useRef(null)
+        useHiddenPageChrome(anchor)
         const detail = usePluginDetail(plugin)
         const title = pluginTitle(plugin)
         const description = pluginDescription(plugin)
@@ -2255,39 +2307,37 @@ window.__ModuleLoader__.load({
         const last = detail.value?.history[0]
         const changed = last !== undefined ? t('changedAt', { who: t('who.' + last.by), when: new Date(last.at).toLocaleString() })
           : plugin.changedBy ? t('changedBy' + plugin.changedBy) : t('neverChanged')
-        return h(React.Fragment, null,
-          h('button', { type: 'button', className: MCLS.crumb, onClick: onBack }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('backToList')),
-          h('div', { className: MCLS.detailHead, 'data-fishball-plugin-page': plugin.plugin },
-            h('div', { className: MCLS.detailIdentity },
+        const fact = (label, value) => h('div', null, h('dt', null, label), h('dd', null, value))
+        return h('div', { ref: anchor, className: MCLS.detail, 'data-fishball-plugin-page': plugin.plugin },
+          h('div', { className: MCLS.detailTop },
+            h('button', { type: 'button', className: MCLS.crumb, 'aria-label': t('backToListLabel'), onClick: onBack }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('backToList')),
+            h('div', { className: MCLS.detailHead },
               h(PluginIcon, { plugin }),
-              h('div', { className: MCLS.detailMain },
-                h('div', { className: MCLS.titleRow },
-                  h('h3', { className: MCLS.detailTitle }, title),
-                  plugin.version ? h(Tag, { tone: 'neutral', className: MCLS.tag }, plugin.version) : null,
-                  h(PluginTags, { plugin, t })),
-                plugin.packageName ? h('p', { className: MCLS.detailName }, h('code', null, plugin.packageName)) : null)),
-            h('div', { className: MCLS.detailActions },
-              plugin.actions.includes(PLUGIN_OFFER.uninstall)
-                ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'aria-label': t('uninstallLabel', { name: title }), onClick: async () => onResult(await post(API.pluginsRemove, { plugin: plugin.plugin })) }, t('uninstall'))
-                : null,
-              offersToggle(plugin) ? h('span', { className: MCLS.hint }, t('useInFishball')) : null,
-              h(FishballSwitch, { plugin, t, onResult }))),
-          description ? h('p', { className: MCLS.detailDesc }, description) : null,
-          h('div', { className: MCLS.section },
-            h('div', { className: MCLS.kv },
-              h('span', { className: MCLS.kvLabel }, t('inDsh')),
-              h('span', null, t('inDsh.' + plugin.dsh)),
-              DSH_LISTED.has(plugin.dsh) && plugin.packageName ? h('button', { type: 'button', className: MCLS.link, onClick: () => openPackage(plugin.packageName) }, t('openInDsh')) : h('span')),
-            h('div', { className: MCLS.kv },
-              h('span', { className: MCLS.kvLabel }, t('lastChange')),
-              h('span', null, changed),
-              h('span'))),
+              h('div', { className: MCLS.detailActions },
+                plugin.actions.includes(PLUGIN_OFFER.uninstall)
+                  ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'aria-label': t('uninstallLabel', { name: title }), onClick: async () => onResult(await post(API.pluginsRemove, { plugin: plugin.plugin })) }, t('uninstall'))
+                  : null,
+                h(FishballSwitch, { plugin, t, onResult })))),
+          h('div', { className: MCLS.detailMain },
+            h('div', { className: MCLS.titleRow },
+              h('h3', { className: MCLS.detailTitle }, title),
+              plugin.version ? h(Tag, { tone: 'neutral', className: MCLS.tag }, plugin.version) : null,
+              h(PluginTags, { plugin, t })),
+            plugin.packageName ? h('p', { className: MCLS.detailName }, h('code', null, plugin.packageName)) : null,
+            description ? h('p', { className: MCLS.detailDesc }, description) : null),
           h('div', { className: MCLS.sections },
-            h('section', { className: MCLS.section },
-              h('h4', { className: MCLS.sectionTitle }, t('tools')),
+            h('section', { className: MCLS.detailSection },
+              h('div', { className: MCLS.sectionHead },
+                h('h4', { className: MCLS.sectionTitle }, t('tools')),
+                plugin.tools.length > 0 ? h('span', { className: MCLS.sectionCount }, t('toolsCount', { count: plugin.tools.length })) : null),
               plugin.tools.length === 0 ? h('p', { className: MCLS.hint }, t('noTools'))
-                : plugin.tools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult }))),
-            h(SettingsSection, { plugin, detail, t })))
+                : h('ul', { className: MCLS.rows }, plugin.tools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult })))),
+            h(SettingsSection, { plugin, detail, t }),
+            h('section', { className: MCLS.detailSection },
+              h('h4', { className: MCLS.sectionTitle }, t('detailsTitle')),
+              h('dl', { className: MCLS.facts },
+                fact(t('inDsh'), h(React.Fragment, null, t('inDsh.' + plugin.dsh), DSH_LISTED.has(plugin.dsh) && plugin.packageName ? h(React.Fragment, null, ' · ', h('button', { type: 'button', className: MCLS.link, onClick: () => openPackage(plugin.packageName) }, t('openInDsh'))) : null)),
+                fact(t('lastChange'), changed)))))
       }
 
       /** The Fishball tab (`plugins.tab`): the list, or one plugin's page, and the install dialog. */
@@ -2327,9 +2377,8 @@ window.__ModuleLoader__.load({
         return function FishballDetailAction({ subject }) {
           const plugin = useCatalogPlugin(bundlePlugin(subject))
           if (plugin === undefined || !offersToggle(plugin)) return null
-          return h('span', { className: MCLS.detailActions },
-            h('span', { className: MCLS.hint }, t('useInFishball')),
-            h(FishballSwitch, { plugin, t, onResult: () => {} }))
+          // No caption: the fish on the knob marks it as Fishball's (its label names it for screen readers).
+          return h(FishballSwitch, { plugin, t, onResult: () => {} })
         }
       }
 
