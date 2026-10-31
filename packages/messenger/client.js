@@ -152,6 +152,12 @@ window.__ModuleLoader__.load({
         // Work rows (tool calls, reasoning, process groups) read as quieter activity lines.
         `${SCOPE} [data-chat-group-part]:not([data-chat-group-part="response"]){opacity:.7}`,
         `${SCOPE} [data-slot="conversation.composer.bar"]>*{border-radius:24px}`,
+        // Hidden in Fishball's session (owner's request, 2026-10-31): the "Completed in …" row of
+        // each turn, the copy button on your messages, and the rating and branch buttons under
+        // Fishball's replies. Fishball's copy button and every time stay. The branch button has
+        // no attribute of its own; it is the button after DSH's assistant-actions slot. That slot's
+        // wrapper has an inline display, so its children are hidden instead.
+        `${SCOPE} [data-chat-flow-kind="turn-process"],${SCOPE} .${CLS.mine} [data-clock="start"]>button,${SCOPE} [data-slot="conversation.chat.assistant-actions"]>*,${SCOPE} [data-slot="conversation.chat.assistant-actions"]~button{display:none}`,
       ].join('')
     }
 
