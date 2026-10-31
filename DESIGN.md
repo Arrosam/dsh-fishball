@@ -777,7 +777,7 @@ No custom session event types are added: persistence refuses logs containing unk
 - The behaviour of the chat stays DSH's: streaming, tool rows, the queue and steer dock, Stop, `/compact`, the model picker, approval prompts and scrolling. Only how they look changes.
 
 **How it looks.**
-- **Bubbles.** Your messages are right-aligned bubbles labelled "You". Fishball's replies are left-aligned bubbles with the FishMark avatar and the name "Fishball". Input bubbles show their time; Fishball's replies keep DSH's own turn footer with its time (S25: DSH's reply row cannot be wrapped, see below).
+- **Bubbles.** Your messages are right-aligned bubbles with no label: their side and tint mark them as yours (owner's choice, 2026-10-31; a forwarded session keeps its quoted card). Fishball's replies are left-aligned bubbles with the FishMark avatar and the name "Fishball". Input bubbles show their time; Fishball's replies keep DSH's own turn footer with its time (S25: DSH's reply row cannot be wrapped, see below).
 - **Every sender is an author.** An input that reached Fishball through the intake ledger (§5) is a left-aligned bubble from its sender:
   | Intake kind | Author name | Avatar |
   |---|---|---|
