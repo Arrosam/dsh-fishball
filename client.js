@@ -48,6 +48,10 @@ window.__ModuleLoader__.load({
     const READ_HEADER = Object.freeze({ id: 'fishball-read', order: 6 })
     /** Host statuses (src/constants.js STATUS) and the recovery actions each one offers. */
     const STATUS = Object.freeze({ starting: 'starting', live: 'live', recovery: 'recovery', archived: 'archived', stopped: 'stopped', failed: 'failed' })
+    /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
+    const FEATURE = Object.freeze({ messages: 'messages', watching: 'watching' })
+    /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
+    const featureOn = (state, feature) => state.features?.[feature] !== false
     const ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
     const OFFERED = Object.freeze({
       [STATUS.recovery]: Object.freeze([ACTION.retry, ACTION.adopt]),
@@ -76,7 +80,7 @@ window.__ModuleLoader__.load({
     const CONTEXT_ERRORS = new Set(['window-too-small', 'output-too-large', 'model-window-unknown'])
     const WHOLE_NUMBER = /^[1-9][0-9]*$/
     /** Host tool statuses (src/constants.js TOOL_STATUS) shown as tags, and the plugin kinds. */
-    const TOOL_STATUS = Object.freeze({ visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked' })
+    const TOOL_STATUS = Object.freeze({ visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked', otherSessions: 'other-sessions' })
     /** Tag tones used by DSH's own plugin page (neutral, info, danger). */
     const TAG_TONE = Object.freeze({ [TOOL_STATUS.unchecked]: 'danger', [TOOL_STATUS.hidden]: 'neutral', [TOOL_STATUS.pluginOff]: 'neutral' })
     /**
@@ -151,6 +155,8 @@ window.__ModuleLoader__.load({
       bundleSubject: 'bundle',
       /** Card groups in order, by the catalog's `dsh` field (src/constants.js PLUGIN_DSH). */
       groups: Object.freeze([
+        // Fishball's own plugins first (revision 10c).
+        Object.freeze({ id: 'own', dsh: Object.freeze(['fishball']) }),
         Object.freeze({ id: 'builtin', dsh: Object.freeze(['builtin']) }),
         Object.freeze({ id: 'dsh', dsh: Object.freeze(['on', 'off']) }),
         Object.freeze({ id: 'fishball', dsh: Object.freeze(['none']) }),
@@ -525,6 +531,7 @@ window.__ModuleLoader__.load({
       changedByuser: 'Changed by you',
       'tool.unchecked': 'Not checked',
       'tool.hidden': 'Hidden',
+      'tool.other-sessions': 'For other sessions',
       'tool.plugin-off': 'Off',
       remove: 'Remove',
       'pluginError.edits-other-rows': 'Changes other plugins, so it cannot run for Fishball only',
@@ -542,11 +549,13 @@ window.__ModuleLoader__.load({
       'group.builtin': 'Built in',
       'group.dsh': 'DSH plugins',
       'group.fishball': 'Installed for Fishball only',
-      'group.tools': 'Tools that belong to no plugin',
+      'group.own': 'Fishball',
+      'group.tools': 'Tools from an unknown plugin',
       'dsh.on': 'On in DSH',
       'dsh.off': 'Off in DSH',
       'dsh.builtin': 'Built in',
       'dsh.none': 'Fishball only',
+      'dsh.fishball': 'Fishball',
       runsOnlyInFishball: 'Runs only in Fishball',
       onInFishball: 'On in Fishball',
       offInFishball: 'Off in Fishball',
@@ -561,6 +570,7 @@ window.__ModuleLoader__.load({
       'inDsh.off': 'Installed, off',
       'inDsh.builtin': 'Built in',
       'inDsh.none': 'Not installed in DSH',
+      'inDsh.fishball': 'Part of dsh-fishball',
       openInDsh: 'Open in DSH',
       lastChange: 'Changed',
       neverChanged: 'Not changed yet',
@@ -796,6 +806,7 @@ window.__ModuleLoader__.load({
       changedByuser: '由你更改',
       'tool.unchecked': '未检查',
       'tool.hidden': '已隐藏',
+      'tool.other-sessions': '供其他会话使用',
       'tool.plugin-off': '已关闭',
       remove: '移除',
       'pluginError.edits-other-rows': '它会修改其他插件，不能仅为 Fishball 运行',
@@ -813,11 +824,13 @@ window.__ModuleLoader__.load({
       'group.builtin': '内置',
       'group.dsh': 'DSH 插件',
       'group.fishball': '仅为 Fishball 安装',
-      'group.tools': '不属于任何插件的工具',
+      'group.own': 'Fishball',
+      'group.tools': '来自未知插件的工具',
       'dsh.on': 'DSH 中已开启',
       'dsh.off': 'DSH 中已关闭',
       'dsh.builtin': '内置',
       'dsh.none': '仅 Fishball',
+      'dsh.fishball': 'Fishball',
       runsOnlyInFishball: '仅在 Fishball 中运行',
       onInFishball: 'Fishball 中已开启',
       offInFishball: 'Fishball 中已关闭',
@@ -832,6 +845,7 @@ window.__ModuleLoader__.load({
       'inDsh.off': '已安装，已关闭',
       'inDsh.builtin': '内置',
       'inDsh.none': '未安装在 DSH',
+      'inDsh.fishball': 'dsh-fishball 的一部分',
       openInDsh: '在 DSH 中打开',
       lastChange: '更改',
       neverChanged: '尚未更改',
@@ -1510,12 +1524,15 @@ window.__ModuleLoader__.load({
 
     /** Whether a session can be sent: Fishball runs, and it is not Fishball's own session. */
     const canSend = (state, sessionId) => state.status === STATUS.live && Boolean(sessionId) && sessionId !== state.sessionId
+    /** Your Send to Fishball and Tell Fishball when finished belong to their Fishball plugins, and hide while it is off (revision 10c). */
+    const canMessage = (state, sessionId) => canSend(state, sessionId) && featureOn(state, FEATURE.messages)
+    const canWatch = (state, sessionId) => canSend(state, sessionId) && featureOn(state, FEATURE.watching)
 
     function makeSendMenuItem(t) {
       return function FishballSendMenuItem({ sessionId, displayTitle, useMenuOpenState }) {
         const state = useFishball()
         const [, setMenuOpen] = useMenuOpenState()
-        if (!canSend(state, sessionId)) return null
+        if (!canMessage(state, sessionId)) return null
         return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); sendRequest.open(sessionId, displayTitle) } }, t('sendToFishball'))
       }
     }
@@ -1523,7 +1540,7 @@ window.__ModuleLoader__.load({
     function makeSendHeaderAction(t) {
       return function FishballSendHeaderAction({ sessionId }) {
         const state = useFishball()
-        if (!canSend(state, sessionId)) return null
+        if (!canMessage(state, sessionId)) return null
         return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => sendRequest.open(sessionId, '') }, t('sendToFishball'))
       }
     }
@@ -1625,7 +1642,7 @@ window.__ModuleLoader__.load({
       return function FishballWatchMenuItem({ sessionId, useMenuOpenState }) {
         const state = useFishball()
         const [, setMenuOpen] = useMenuOpenState()
-        if (!canSend(state, sessionId)) return null
+        if (!canWatch(state, sessionId)) return null
         // Already watched: the entry says so; choosing it again returns the same watch.
         const watched = isWatched(state, sessionId)
         return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void watchNotice.watch(sessionId) } }, watched ? t('watching') : t('watchSession'))
@@ -1635,7 +1652,7 @@ window.__ModuleLoader__.load({
     function makeWatchHeaderAction(t) {
       return function FishballWatchHeaderAction({ sessionId }) {
         const state = useFishball()
-        if (!canSend(state, sessionId)) return null
+        if (!canWatch(state, sessionId)) return null
         const watched = isWatched(state, sessionId)
         return h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: watched, onClick: () => void watchNotice.watch(sessionId) }, watched ? t('watching') : t('watchSession'))
       }
@@ -2029,7 +2046,7 @@ window.__ModuleLoader__.load({
         return h('span', { ref: anchor, className: MCLS.bar, style: slot === null ? undefined : { display: 'none' } }, slot === null ? button : createPortal(button, slot))
       }
 
-      /** The list (version 1): groups by origin, like DSH's Installed tab, then tools that belong to no plugin. */
+      /** The list (version 1): groups by origin, like DSH's Installed tab, then any tool whose plugin is unknown. */
       function PluginList({ catalog, t, onOpen, onResult, onInstall }) {
         const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
         // Allowances whose tool is not listed anywhere (its plugin is off, or it registers later) keep a Remove here (review M2).

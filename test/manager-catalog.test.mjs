@@ -6,9 +6,9 @@
  * | id      | technique | requirement | expected |
  * |---------|-----------|-------------|----------|
  * | MCAT-01 | EP | every entry carries the eight new fields with their types | 20 keys; dsh/runs/settings from their enums; packageName/version/description string or null; meta null or {title?, description?} as DSH's LocalizedText; hasIcon boolean |
- * | MCAT-02 | DT (kind × Fishball on/off) | dsh from the kind, runs from both desired states | every entry: profile→on, fishball-only→off, builtin→builtin, fishball-installed→none; runs everywhere/dsh/fishball/nowhere |
+ * | MCAT-02 | DT (kind × Fishball on/off) | dsh from the kind, runs from both desired states | every entry: profile→on, fishball-only→off, builtin→builtin (the Fishball group→fishball, revision 10c), fishball-installed→none; runs everywhere/dsh/fishball/nowhere |
  * | MCAT-03 | ST off→on per kind (user route) | runs follows the desired state at once | fbtest-settings-dsh dsh→everywhere; fbtest-settings nowhere→fishball; builtin:ask-user nowhere→fishball; and back |
- * | MCAT-04 | EP (built-in) | packageName and version are null for built-ins | every builtin entry |
+ * | MCAT-04 | EP (built-in) | packageName and version are null for built-ins | every builtin entry; dsh builtin, or fishball for the Fishball group (revision 10c) |
  * | MCAT-05 | EP (DSH plugin with package fields) | packageName, version, description, hasIcon from the package | fbtest-settings: name, 1.2.3, its description, hasIcon true; fbtest-settings-dsh: name, 0.0.1, description null, hasIcon false |
  * | MCAT-06 | DT (settings state) | none / default / changed | fbtest-settings-dsh none (on in DSH, nothing stored); builtin:messenger none (no rows); builtin:time and fbtest-settings default; a save makes fbtest-settings changed; reset all makes it default again |
  * | MCAT-07 | EP (secret) | a secret value never appears in the snapshot | GET state, the first SSE frame and list_plugins carry neither the patch's nor the user's secret |
@@ -108,7 +108,8 @@ describe('P12 catalog fields', () => {
     for (const p of builtins) {
       assert.equal(p.packageName, null, p.plugin + ' packageName')
       assert.equal(p.version, null, p.plugin + ' version')
-      assert.equal(p.dsh, DSH_STATE.builtin, p.plugin + ' dsh')
+      // Revision 10c: the Fishball group's built-ins report dsh 'fishball', every other built-in 'builtin'.
+      assert.equal(p.dsh, expectedDsh(p), p.plugin + ' dsh')
     }
   })
 

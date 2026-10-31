@@ -1213,3 +1213,120 @@ Requirement (as given to the test author): every catalog entry gains `blocked`: 
 - **Actions:** `expectedActions` (used by `assertEntryContract` in plugins-catalog, plugins-status, plugins-upgrade and messenger-catalog) no longer expects `enable` for a blocked entry that is off: DSH's own bundles that edit other rows, fbtest-edits, fbtest-idinsert and fbtest-norows now offer [].
 - **plugins-defaults DEF-01/02/07/08/09:** `assertOff` expects `expectedActions(p)` instead of `[enable]`, because DEF-02 covers DSH's optional bundles, two of which are blocked `edits-other-rows`.
 - **Not changed:** REV-08 (plugins-review) and BRK-01 (plugins-review2) still expect a service-publishing plugin to end off with `leaks-service` (A33: observed `leaks-service`); BLK-03 to BLK-05 now require it.
+
+## Revision 10c cases (Fishball's own plugins; DESIGN §10d "Fishball's own plugins", Q-own-plugins, Q-own-plugins-open)
+
+**Requirement summary.** Every tool Fishball registers belongs to a catalog plugin. Four new built-ins (kind `builtin`, no rows) and the Messenger look form the first group, "Fishball". These five entries report `dsh: 'fishball'`, and every other built-in keeps `'builtin'`:
+- Session messages (`builtin:session-messages`): message_session, start_session, and message_fishball with status `other-sessions`.
+- Session watching (`builtin:session-watching`): watch_session, list_watches, unwatch_session, read_session.
+- Plugin management (`builtin:plugin-management`): the six plugin tools.
+- Permission requests (`builtin:permission-requests`): answer_approval.
+
+The rules:
+- **otherTools.** It no longer holds message_fishball.
+- **Defaults.** Each of the five is on by default, on a fresh install and on an existing one.
+- **Applied state.** Each follows its applied state, which changes at the idle-phase apply. The snapshot's `features: {messages, watching, plugins, approvals}` follows the applied state too (coordinator's correction).
+- **Off removes the feature:**
+  - Session messages: its tools are masked, message_fishball is unregistered for every session, and `POST send` answers 409 `feature-off`.
+  - Session watching: its tools are masked and `POST watches` answers 409 `feature-off`. notify_when_finished still delivers the message but answers `watchError: 'feature-off'`. Existing watches stay active. A turn end while it is off sends no notice and is passed over. Remove still works.
+  - Permission requests: requests go to DSH's normal prompt, waiting ones are released at once, and answer_approval is masked.
+  - Plugin management: only its tools are masked.
+- **Who may switch:**
+  - The user switches freely.
+  - Fishball turns any of the four off freely.
+  - Turning one of the four on raises a prompt, "Fishball asks to turn on …". Only Allow once grants it; otherwise the answer is `{ok:false, code:'rejected'}`.
+  - The Messenger look keeps free switching.
+  - Fishball's own tools stay trusted, so they are never unchecked.
+
+**Harness additions.** New constants: `OWN_PLUGINS`, `FISHBALL_GROUP_KEYS`, `FEATURE_KEYS`, `FEATURE_OFF`, `OWN_ASK`, `PRE_OWN_PLUGINS` (commit 90a6a8c), `TOOL_STATUS.otherSessions` and `DSH_STATE.fishball`. `expectedDsh` returns `fishball` for the Fishball group.
+
+### [own-plugins.test.mjs](own-plugins.test.mjs): catalog and switches (one new-install host, in order)
+
+| id | technique | expected result |
+|---|---|---|
+| OWN-01 ×5 | EP (each Fishball-group entry) | kind builtin, dsh fishball, status builtin, on, applied, [disable], changedBy null, its title, exactly its tools |
+| OWN-02 | EP | own tools visible; message_fishball other-sessions |
+| OWN-03 | EP | no own tool in otherTools (state and list_plugins); each under exactly one plugin |
+| OWN-04 | EP | the 7 DSH built-ins dsh builtin; exactly the 5 group keys dsh fishball |
+| OWN-05 | EP | features all true in GET state and the first SSE frame |
+| OWN-06 | EP (Fishball / ordinary) | Fishball has its tools but not message_fishball; an ordinary session has only message_fishball |
+| OWN-10 ×4 | DT (user × own × off/on, idle) | no prompt; off applied at once, features false, tools plugin-off and absent; on: visible (never unchecked), features true |
+| OWN-11 ×3×3 | DT (Fishball × messages/watching/approvals × off / on+Reject / on+Allow once) | off: no prompt, the same turn keeps the tools, the next request lacks them. Reject: one prompt with "Fishball asks to turn on" and the title shown on the tab (A135), `rejected`, stays off. Allow once: on, tools back, no unchecked |
+| OWN-12 | DT (on × unavailable) | `rejected`, stays off |
+| OWN-13 | ST (Fishball turns Plugin management off) | only its tools are masked; features `{plugins:false}` and the rest true; the masked set_plugin_enabled is a tool error and changes nothing; the user turns it back on |
+| OWN-14 ×2 | DT (Fishball × Messenger look / ask-user × on) | no prompt, ok |
+| OWN-15 ×6 | DT (remove) | POST plugins/remove: 409 refused for the five; remove_plugin: not-removable, no prompt |
+| OWN-16 ×3 | BVA (near-miss keys) | 409 unknown |
+| OWN-17 | EP (Fishball × own plugin already on × on) | no prompt, ok, stays on |
+| OWN-18 | ST (your off arrives during Fishball's turn, before its set_plugin_enabled(on)) | the off holds: one prompt (Reject → `rejected`), or `ask-first` without a prompt; stays off |
+| OWN-19 ×6 | ST (race: your off POSTed while Fishball's set_plugin_enabled(on) of an on plugin runs; offsets 0–75 ms) | the off holds without an Allow once. The answer is ok without a prompt (your off came after the write), `rejected` after a prompt, or `ask-first` without a prompt; the plugin ends off (A142) |
+| OWN-20 | ST (user off while Fishball is held) | applied stays true; features.messages true and message_fishball registered until the turn ends; then both off; an ordinary request lacks it |
+| OWN-21 | ST (user on while held) | applied false; POST send 409 feature-off and message_fishball absent until the turn ends; then back, send 200 |
+| OWN-30 | EP (invariant over every SSE frame) | `features[f] === entry.applied` |
+
+### [own-plugins-features.test.mjs](own-plugins-features.test.mjs): Session messages and Session watching off (one host, in order)
+
+| id | technique | expected result |
+|---|---|---|
+| OFM-01 | precondition | message_fishball global and in an ordinary request; send 200 |
+| OFM-02 | ST on→off | features.messages false; message_fishball leaves the global list and the ordinary request; message_session/start_session plugin-off and absent for Fishball |
+| OFM-03 | EP | POST send 409 feature-off; nothing delivered |
+| OFM-04 | EP (guard) | Fishball's message_session is a tool error; the target gets nothing |
+| OFM-05 | ST off→on | message_fishball back and works; send 200 |
+| OFM-06 | ST (an ordinary request made while on and held; the off applies; then it calls message_fishball) | `{ok:false, code:'feature-off'}`, or skipped as not reachable black-box when DSH refuses the unregistered tool itself; Fishball receives nothing |
+| OFP-01 | ST (Plugin management off; the user turns on fbtest-tools, which has unchecked tools) | no unchecked-tools notice |
+| OFP-02 | ST (Plugin management on; a fixture tool's schema changes) | unchanged: one new notice naming the tool |
+| OFW-08 | DT (Session watching off × Fishball archived) | POST watches 409 `feature-off`, not unavailable |
+| OFW-01 | ST on→off | features.watching false; 4 tools plugin-off and absent; watch_session call is a tool error |
+| OFW-02 | EP | POST watches 409 feature-off; watches unchanged |
+| OFW-03 ×3 | DT (message_session / start_session / message_fishball × flag × off) | ok:true, watchError feature-off, no `watch` key, delivered, no watch |
+| OFW-04 | ST (active watch, target finishes while off) | no notice; active, firedCount 0 |
+| OFW-05 | EP | POST watches/remove 200; closed |
+| OFW-06 | ST off→on | no late notice for the passed-over turn end; still active |
+| OFW-07 | ST (next turn end) | exactly one notice; closed |
+| OFU-01 | EP | the served client bundle mentions `features` (hiding the buttons is checked by hand in a browser) |
+
+### [own-plugins-approvals.test.mjs](own-plugins-approvals.test.mjs): Permission requests off (scripted answerer after the broker)
+
+| id | technique | expected result |
+|---|---|---|
+| OFA-01 | precondition | a request is routed to Fishball, pending 1 |
+| OFA-02 | ST (pending → user off while idle) | released to the normal prompt within 5 s; pending 0; features.approvals false; answer_approval plugin-off |
+| OFA-03 | EP | a new request goes straight to the normal prompt (< 1 s); no request message |
+| OFA-04 | EP | answer_approval absent from the request; a direct call is a tool error |
+| OFA-05 | ST off→on | routed to Fishball again |
+| OFA-02/06 (note) | EP (released by the feature going off) | Fishball's next turn carries no "timed out" note for those requests |
+| OFA-07 | EP (control: feature on, approvalAnswerSeconds 1 runs out) | the timed-out note is in Fishball's next turn |
+| OFA-08 | ST (Fishball archived while a request waits → unarchive, retry) | as before revision 10c: released to the normal prompt; no timed-out note (A141) |
+| OFA-06 | ST (pending; user off while Fishball is held) | until the turn ends: features.approvals true, the request waits, a new one is still routed (pending 2). After the apply: both go to the normal prompt, features false, pending 0 |
+
+### [own-plugins-upgrade.test.mjs](own-plugins-upgrade.test.mjs): existing install (old version 90a6a8c, Messenger look off there)
+
+| id | technique | expected result |
+|---|---|---|
+| UPO-00 | precondition | the old version has no own plugins and no features |
+| UPO-01 ×4 | DT (existing × no choice) | on, applied, dsh fishball, builtin, [disable], changedBy null |
+| UPO-02 | DT (existing × stored off) | the Messenger look stays off (changedBy user), dsh fishball |
+| UPO-03 | EP | features all true; message_fishball registered; no own tool in otherTools |
+| UPO-04 | ST (user off → restart) | stays off; features.watching false; POST watches 409 feature-off |
+| UPO-05 | ST (user on → restart) | on |
+
+### Ambiguities (revision 10c)
+
+- **A134. message_fishball's status while Session messages is off.** It is not specified whether it reads `plugin-off` or stays `other-sessions`. Only Fishball's two tools are asserted `plugin-off`.
+- **A135. The prompt's wording and tool name.** The phrase "Fishball asks to turn on" and the title shown on the tab are asserted (review follow-up; the first build named the key). The prompt's toolName is logged (observed: `set_plugin_enabled`), not asserted.
+- **A136. Fishball asking to turn on a plugin that is already on.** Read from review M1 ("it was on when Fishball checked", so Fishball decided not to ask): no prompt and ok (OWN-17).
+- **A137. Unanswered outcomes.** "Only Allow once grants" is read as unavailable answering `rejected`, as `set_plugin_enabled` does for unchecked tools (TOG-02).
+- **A138. Removing an own plugin.** These are built-ins, so removal is refused as for every built-in (STA-04/05).
+- **A141. "When Fishball stops, the timed-out note behaviour is unchanged."** Observed with the same probe on 90a6a8c and on this version: after an archive while a request waits, then unarchive and retry, Fishball's next turn carries no timed-out note. OFA-08 encodes that baseline. OFA-07 checks the note on a real answer timeout.
+- **A142. The ask-first race (review M1).** The window between Fishball's check and its write cannot be hit on purpose from outside. OWN-18 checks the deterministic part: an off that arrives before the call. OWN-19 fires the off at six offsets and asserts the invariant for whichever order happened; it logs each answer. If no run lands in the window, `ask-first` is simply not observed, and the case still passes.
+- **A143. A message_fishball call after the off (OFM-06).** DESIGN lists it under Permission requests; the coordinator's follow-up places it under Session messages, as tested. If DSH refuses a tool that was unregistered after the request was made, Fishball's code never runs, and the case skips as not reachable.
+- **A139. Releasing at the apply (OFA-06).** The release is expected after the turn ends, within the case's 20 s waits. No exact bound is stated.
+
+### Cases changed by revision 10c
+
+- **`STATE_KEYS`** gains `features` (18 keys). This affects HTP-01, PHT-01/04 and SND-01.
+- **`TOOL_STATUS`** gains `otherSessions`, so CAT-02 accepts message_fishball's status.
+- **`DSH_STATE`** gains `fishball`, and **`expectedDsh`** returns it for the Fishball group. This affects MCAT-01/02.
+- **`CODE.askFirst`** (`ask-first`) is new (review M1).
+- **MCAT-04** expects `expectedDsh(p)` for built-ins instead of `builtin` for all of them.
