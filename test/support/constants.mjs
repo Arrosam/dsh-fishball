@@ -296,6 +296,10 @@ export const INSTALL_REASON = { invalidSpec: 'invalid-spec', alreadyInstalled: '
  */
 export const PACKAGE_ERRORS = ['invalid-spec', 'already-installed', 'not-bundle', 'ambiguous-install', 'incompatible-version', 'cancelled', 'build-blocked', 'operation-error', 'no-profile']
 export const INSTALL_API = { inspect: '/api/fishball/install/inspect', install: '/api/fishball/install', cancel: '/api/fishball/install/cancel' }
+/** Revision 10a Refresh: read Fishball's plugin list again ({}). */
+export const REFRESH_API = '/api/fishball/plugins/refresh'
+/** A bundle a test links into the profile while DSH runs, outside DSH's plugin manager (no change event). */
+export const REFRESH_BUNDLE = { name: 'fbtest-refresh', dir: path.join(SUPPORT, 'fixtures', 'fbtest-refresh') }
 /** DSH's cancel answers and inspection statuses and problems (dsh-plugin-manager types). */
 export const CANCEL_OUTCOMES = ['cancelled', 'too-late', 'not-running']
 export const INSPECT_STATUS = { accepted: 'accepted', refused: 'refused' }

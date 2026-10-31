@@ -1179,4 +1179,5 @@ The Fishball tab, the plugin page and settings form, the tag and switch on DSH's
   - STA-24 covers the remove route and the three install routes.
   - STA-25 (core failed) expects 409 unavailable from install/inspect and install.
   - STA-16 waits for the undo (A130).
+- **plugins-status, Refresh (DESIGN §10d "Refresh"):** new cases. STA-26: `POST /api/fishball/plugins/refresh` `{}` answers 200 `{ok:true, state}` whose catalog lists fishball:fbtest-added-b (installed in STA-19). STA-27: a bundle the test links into the profile while DSH runs, without DSH's plugin manager (new fixture [fbtest-refresh](support/fixtures/fbtest-refresh/index.js), `REFRESH_BUNDLE`), is in the refresh answer's catalog as fishball-only and off, and none of its code ran. STA-28 ×5: invalid JSON, array, string, number or null answers 400 bad-body. STA-24 also covers refresh without the cookie, and STA-25 expects 409 unavailable from it while the core failed (now ×3).
 - **messenger-author:** AUT-04 (the install request's author) is removed with its input kind, and the P11 author table row "install request (POST plugins/install)" no longer applies.

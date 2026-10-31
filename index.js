@@ -82,7 +82,7 @@ export async function apply(ctx, config) {
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -96,6 +96,7 @@ export async function apply(ctx, config) {
     inspectInstall: (spec) => commands.inspectInstall(spec),
     install: (input) => commands.install(input),
     cancelInstall: (requestId) => commands.cancelInstall(requestId),
+    refreshPlugins: () => commands.refreshPlugins(),
     setContextWindow: (setting) => commands.setContextWindow(setting),
     send: (input) => commands.send(input),
     addWatch: (input) => commands.addWatch(input),
@@ -320,6 +321,11 @@ export async function apply(ctx, config) {
       throw error
     }
   })
+  // The Fishball tab's Refresh: read the bundle list and Fishball's folder again, then publish.
+  commands.refreshPlugins = async () => {
+    await catalog.refresh()
+    publish()
+  }
   commands.setContextWindow = (setting) => contextWindow.save(setting)
   commands.removeAllowance = async (toolKey) => {
     if (!(await catalog.removeAllowance(toolKey))) throw new LifecycleStateError(API_CODE.unknown)

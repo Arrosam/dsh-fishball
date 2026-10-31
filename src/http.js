@@ -18,6 +18,7 @@
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
  * GET  plugins/detail?plugin= -> one plugin's page data (DESIGN §10d); 404 unknown
  * GET  plugins/icon?plugin=   -> one plugin's icon image; 404 unknown when it has none
+ * POST plugins/refresh        -> {} (read the plugin list again; the Fishball tab's Refresh)
  * POST install/inspect        -> { spec }: DSH's inspection of what it names (revision 10a)
  * POST install                -> { spec, requestId, approvedBuilds? }: install for Fishball, then turn it on
  * POST install/cancel         -> { requestId }: cancel that install
@@ -75,7 +76,7 @@ const BODY = Object.freeze({
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
  *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript(),
  *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
- *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId) }; the commands reject
+ *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId), refreshPlugins() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
  *   file's bytes; pluginIcon resolves the icon's data URL.
  */
@@ -176,6 +177,7 @@ export function registerRoutes(ctx, state) {
     { path: API.pluginsDetail, methods: [HTTP_METHOD.get], fetch: forPlugin(async (plugin) => json(HTTP.ok, { ok: true, detail: await state.pluginDetail(plugin) })) },
     { path: API.pluginsIcon, methods: [HTTP_METHOD.get], fetch: forPlugin(icon) },
     { path: API.pluginsSettings, methods: [HTTP_METHOD.post], fetch: command(BODY.settings, (input) => state.saveSettings(input)) },
+    { path: API.pluginsRefresh, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.refreshPlugins()) },
     { path: API.installInspect, methods: [HTTP_METHOD.post], fetch: call(BODY.installSpec, async (spec) => ({ inspection: await state.inspectInstall(spec) })) },
     { path: API.install, methods: [HTTP_METHOD.post], fetch: call(BODY.install, (input) => state.install(input)) },
     { path: API.installCancel, methods: [HTTP_METHOD.post], fetch: call(BODY.installCancel, async (requestId) => ({ outcome: await state.cancelInstall(requestId) })) },

@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
     const exports = module.exports
     const React = require('react')
     const { createPortal } = require('react-dom')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconPlusOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -54,7 +54,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -165,8 +165,11 @@ window.__ModuleLoader__.load({
       /** The back link's chevron, and the fewest rows a list field shows. */
       crumbIconSize: 14,
       listMinRows: 2,
-      /** The "+" before "Install for Fishball", as DSH's Add plugin draws it. */
-      addIconSize: 14,
+      /** The "+" before "Install for Fishball", as DSH's Add plugin draws it (13px). */
+      addIconSize: 13,
+      /** DSH's Refresh: a 16px icon; the spinner shows at least this long so it never flashes (DSH's 400 ms). */
+      refreshIconSize: 16,
+      refreshMinMs: 400,
       /** The group of DSH plugins: DSH's Installed tab lists them, so only they open there. */
       dshGroup: 'dsh',
       /** DSH tags these packages "Experimental" on its own page (dsh-client-ui-plugin-manager, rc.2). */
@@ -325,7 +328,7 @@ window.__ModuleLoader__.load({
       detailDesc: 'fbp-detail-desc', detailActions: 'fbp-detail-actions', sections: 'fbp-sections', section: 'fbp-section', sectionTitle: 'fbp-section-title',
       kv: 'fbp-kv', kvLabel: 'fbp-kv-label', line: 'fbp-line', link: 'fbp-link', field: 'fbp-field', fieldHead: 'fbp-field-head', hint: 'fbp-hint',
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
-      accent: 'fbp-accent', headerActions: 'fbp-header-actions', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
+      accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
     const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
 
@@ -518,6 +521,8 @@ window.__ModuleLoader__.load({
       'pluginError.no-profile': 'Needs a DSH profile',
       changeFailed: 'That change was not accepted.',
       tabTitle: 'Fishball',
+      refresh: 'Refresh',
+      refreshFailed: 'The plugin list could not be read again. Try Refresh again.',
       pluginsSummary: 'On in Fishball: {on}. Waiting for you: {needs}.',
       pluginsWhere: 'Manage them in the Fishball tab of the Plugins list.',
       installForFishball: 'Install for Fishball',
@@ -785,6 +790,8 @@ window.__ModuleLoader__.load({
       'pluginError.no-profile': '需要 DSH 配置',
       changeFailed: '该更改未被接受。',
       tabTitle: 'Fishball',
+      refresh: '刷新',
+      refreshFailed: '无法重新读取插件列表。请再试一次刷新。',
       pluginsSummary: 'Fishball 中已开启：{on} 个。等待你处理：{needs} 个。',
       pluginsWhere: '在插件列表的 Fishball 标签页中管理它们。',
       installForFishball: '为 Fishball 安装',
@@ -953,6 +960,17 @@ window.__ModuleLoader__.load({
       `.${MCLS.menuIcon}{display:inline-flex;color:${FISHBALL_COLOUR.accent}}`,
       // As DSH's own toolbar in the page header (dsh-client-ui-plugin-manager .toolbar, rc.2).
       `.${MCLS.headerActions}{display:flex;flex:none;align-items:center;justify-content:flex-end;gap:16px;white-space:nowrap}`,
+      // DSH's own Add button pattern on top of its primary small button (dsh-client-ui-plugin-manager
+      // .addButton, rc.2): 32px high, 12px sides, the medium radius, 13px text.
+      `.${MCLS.addButton}{height:32px;padding:0 12px;border-radius:var(--dsw-radius-md);font-size:13px;line-height:20px}`,
+      // DSH's Refresh icon button (dsh-client-ui-plugin-manager .iconButton, rc.2).
+      `.${MCLS.iconButton}{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:var(--dsw-radius-sm);background:none;color:var(--dsw-alias-label-caption);cursor:pointer}`,
+      `.${MCLS.iconButton}:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}`,
+      `.${MCLS.iconButton}:disabled{opacity:.5;cursor:default}`,
+      `.${MCLS.iconButton}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:1px}`,
+      `.${MCLS.spin}{display:inline-flex;animation:fbp-spin 1s linear infinite}`,
+      `@keyframes fbp-spin{to{transform:rotate(360deg)}}`,
+      `@media (prefers-reduced-motion:reduce){.${MCLS.spin}{animation:none}}`,
       // The Add plugin menu item and the install dialog follow DSH's own (dsh-client-ui-plugin-manager, rc.2).
       `.${MCLS.copy}{display:flex;flex-direction:column;gap:2px;white-space:normal}`,
       `.${MCLS.copyDesc}{display:-webkit-box;overflow:hidden;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;-webkit-line-clamp:2;-webkit-box-orient:vertical}`,
@@ -1183,30 +1201,21 @@ window.__ModuleLoader__.load({
      * so it outlives the menu that opened it (as "Send to Fishball" does).
      */
     const installRequest = (() => {
-      let current = null
+      const store = valueStore(null)
       let count = 0
-      const listeners = new Set()
-      const set = (next) => { current = next; for (const listener of listeners) listener() }
-      return {
-        open: (from) => set({ from, id: ++count }),
-        close: () => set(null),
-        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
-        get: () => current,
-      }
+      return { ...store, open: (from) => store.set({ from, id: ++count }), close: () => store.set(null) }
     })()
     const useInstallRequest = () => React.useSyncExternalStore(installRequest.subscribe, installRequest.get)
 
     /** Which plugin's page the Fishball tab shows (null: the list); the install dialog opens a new plugin's page through it. */
     const managerView = (() => {
-      let open = null
-      const listeners = new Set()
-      return {
-        show: (plugin) => { open = plugin; for (const listener of listeners) listener() },
-        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
-        get: () => open,
-      }
+      const store = valueStore(null)
+      return { ...store, show: store.set }
     })()
     const useManagerView = () => React.useSyncExternalStore(managerView.subscribe, managerView.get)
+    /** Counts the Fishball tab's refreshes, so an open plugin page reads its data again too. */
+    const managerRefreshes = valueStore(0)
+    const useManagerRefreshes = () => React.useSyncExternalStore(managerRefreshes.subscribe, managerRefreshes.get)
 
     /** Where a checked package comes from, in words (DSH's inspection: registry, folder, Git host or tarball host). */
     function installSource(subject, spec, t) {
@@ -1445,20 +1454,24 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** One value components share and follow (dialog requests, the tab's open page); set() notifies them. */
+    function valueStore(initial) {
+      let current = initial
+      const listeners = new Set()
+      return {
+        get: () => current,
+        set: (next) => { current = next; for (const listener of listeners) listener() },
+        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
+      }
+    }
+
     /**
      * "Send to Fishball" (DESIGN §5b): one request store shared by the session-row menu entry
      * and the header action; the dialog lives in the shell overlay so it outlives the menu.
      */
     const sendRequest = (() => {
-      let current = null
-      const listeners = new Set()
-      const set = (next) => { current = next; for (const listener of listeners) listener() }
-      return {
-        open: (sessionId, title) => set({ sessionId, title }),
-        close: () => set(null),
-        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
-        get: () => current,
-      }
+      const store = valueStore(null)
+      return { ...store, open: (sessionId, title) => store.set({ sessionId, title }), close: () => store.set(null) }
     })()
     const useSendRequest = () => React.useSyncExternalStore(sendRequest.subscribe, sendRequest.get)
 
@@ -1944,7 +1957,25 @@ window.__ModuleLoader__.load({
        * found from the tab panel: the row holding the page title (`h1`). If DSH's markup changes and
        * it is not found, the button stays at the top of the tab instead.
        */
-      function InstallHeaderAction({ t, onInstall }) {
+      /**
+       * Refresh, as on DSH's own list: reads Fishball's plugin list again (and an open plugin page).
+       * Disabled with a spinner until the read settles and at least refreshMinMs passed, so the
+       * spinner never flashes; repeated clicks meanwhile are ignored (DSH's rules).
+       */
+      function RefreshButton({ t, onResult }) {
+        const [busy, setBusy] = React.useState(false)
+        const refresh = async () => {
+          setBusy(true)
+          const [answer] = await Promise.all([send(API.pluginsRefresh, {}), new Promise((resolve) => setTimeout(resolve, MANAGER.refreshMinMs))])
+          managerRefreshes.set(managerRefreshes.get() + 1)
+          setBusy(false)
+          onResult(answer.ok, 'refreshFailed')
+        }
+        return h('button', { type: 'button', className: MCLS.iconButton, 'aria-label': t('refresh'), title: t('refresh'), 'aria-busy': busy, disabled: busy, onClick: refresh },
+          busy ? h('span', { className: MCLS.spin, 'aria-hidden': true }, h(IconLoadingOutlineRegular, { size: MANAGER.refreshIconSize })) : h(IconRefreshOutlineRegular, { size: MANAGER.refreshIconSize }))
+      }
+
+      function InstallHeaderAction({ t, onInstall, onResult }) {
         const anchor = React.useRef(null)
         const [slot, setSlot] = React.useState(null)
         React.useLayoutEffect(() => {
@@ -1957,7 +1988,9 @@ window.__ModuleLoader__.load({
           setSlot(container)
           return () => { container.remove(); setSlot(null) }
         }, [])
-        const button = h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: onInstall }, h(IconPlusOutlineRegular, { size: MANAGER.addIconSize }), t('installForFishball')))
+        const button = h(React.Fragment, null,
+          h(RefreshButton, { t, onResult }),
+          h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', className: MCLS.addButton, onClick: onInstall }, h(IconPlusOutlineRegular, { size: MANAGER.addIconSize }), t('installForFishball'))))
         // The anchor stays in the tab only to find the header; its class sets display, so it is hidden inline once the button moved.
         return h('span', { ref: anchor, className: MCLS.bar, style: slot === null ? undefined : { display: 'none' } }, slot === null ? button : createPortal(button, slot))
       }
@@ -1968,7 +2001,7 @@ window.__ModuleLoader__.load({
         const shown = new Set([...catalog.plugins.flatMap((plugin) => plugin.tools.map((tool) => tool.name)), ...catalog.otherTools.map((tool) => tool.name)])
         const unlisted = catalog.allowedTools.filter((tool) => !shown.has(tool.toolName))
         return h(React.Fragment, null,
-          h(InstallHeaderAction, { t, onInstall }),
+          h(InstallHeaderAction, { t, onInstall, onResult }),
           MANAGER.groups.map((group) => {
             const plugins = catalog.plugins.filter((plugin) => group.dsh.includes(plugin.dsh))
             if (plugins.length === 0) return null
@@ -1994,6 +2027,7 @@ window.__ModuleLoader__.load({
       function usePluginDetail(plugin) {
         const [result, setResult] = React.useState({ value: null, failed: false })
         const [revision, setRevision] = React.useState(0)
+        const refreshes = useManagerRefreshes()
         const stamp = JSON.stringify([plugin.on, plugin.applied, plugin.settings, plugin.changedBy, plugin.lastError, plugin.dsh])
         React.useEffect(() => {
           let current = true
@@ -2002,7 +2036,7 @@ window.__ModuleLoader__.load({
             .then((body) => { if (current) setResult({ value: body.detail, failed: false }) })
             .catch(() => { if (current) setResult((previous) => ({ value: previous.value, failed: true })) })
           return () => { current = false }
-        }, [plugin.plugin, stamp, revision])
+        }, [plugin.plugin, stamp, revision, refreshes])
         return { ...result, reload: () => setRevision((count) => count + 1) }
       }
 
@@ -2261,13 +2295,14 @@ window.__ModuleLoader__.load({
         return function FishballTab({ openPackage }) {
           const state = useFishball()
           const open = useManagerView()
-          const [failed, setFailed] = React.useState(false)
+          // The text of the last action that failed, or null; a later success clears it.
+          const [failed, setFailed] = React.useState(null)
           const catalog = state.catalog
           if (!catalog) return h('div', { className: MCLS.panel }, h('p', { className: MCLS.hint }, t('status.' + (state.status ?? STATUS.starting))))
-          const onResult = (ok) => setFailed(!ok)
+          const onResult = (ok, failure = 'changeFailed') => setFailed(ok ? null : failure)
           const plugin = open === null ? undefined : catalog.plugins.find((entry) => entry.plugin === open)
           return h('div', { className: MCLS.panel, 'data-fishball-manager': true },
-            failed ? h('div', { role: 'alert' }, t('changeFailed')) : null,
+            failed ? h('div', { role: 'alert' }, t(failed)) : null,
             plugin !== undefined
               ? h(PluginPage, { key: plugin.plugin, plugin, catalog, t, openPackage, onBack: () => managerView.show(null), onResult })
               : h(PluginList, { catalog, t, onOpen: managerView.show, onResult, onInstall: () => installRequest.open(INSTALL_FROM.tab) }))
