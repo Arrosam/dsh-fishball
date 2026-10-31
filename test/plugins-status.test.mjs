@@ -28,16 +28,19 @@
  * | STA-20 | ST on -user remove while Fishball runs-> removing -turn ends-> gone | 200; no prompt; removing true, actions [] in GET state and in an SSE frame while the turn runs, package still there; gone after the turn |
  * | STA-21 | ST on -user remove while idle-> gone | 200; the entry and the package go without a Fishball turn |
  * | STA-22 | DT (same name as a DSH plugin) | fishball:fbtest-added-c is a separate entry; the DSH entry fbtest-added-c keeps kind fishball-only, off; the remove route refuses the DSH entry; removing the Fishball one leaves the DSH one |
- * | STA-24 | EP (no cookie) | the remove route and the three install routes are not 200 |
- * | STA-25 ×2 | EP (store unreadable: core failed) | POST install/inspect and POST install answer 409 unavailable; nothing installed |
+ * | STA-24 | EP (no cookie) | the remove route, the three install routes and refresh are not 200 |
+ * | STA-25 ×3 | EP (store unreadable: core failed) | POST install/inspect, POST install and POST plugins/refresh answer 409 unavailable; nothing installed |
+ * | STA-26 | EP (refresh, revision 10a) | POST plugins/refresh {}: 200 {ok:true, state} whose catalog lists fishball:fbtest-added-b (installed in STA-19) |
+ * | STA-27 | EP (refresh after an out-of-band profile change) | a bundle the test links into the profile while DSH runs is in the refresh answer's catalog, fishball-only and off; none of its code ran |
+ * | STA-28 ×5 | EP (refresh body not an object) | invalid JSON, array, string, number, null: 400 bad-body |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
-  ACTION, ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, API, BUILTINS, CATALOG_KEYS, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INSTALL_API, INSTALL_REASON,
-  INSTALLED_KEY, KIND, LIMITS, NOT_BUNDLE, ONLY_BUNDLES, OUTCOME, P5_CODE, PACKAGE_NAME, PLUGIN_KEYS, PLUGIN_STATUS, PRESET, STATUS, STORE,
+  ACTION, ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, API, BUILTINS, CATALOG_KEYS, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INSTALL_API, INSTALL_REASON, REFRESH_API, REFRESH_BUNDLE,
+  INSTALLED_KEY, KIND, LIMITS, NOT_BUNDLE, ONLY_BUNDLES, OUTCOME, P5_CODE, PACKAGE_NAME, PLUGIN_KEYS, PLUGIN_STATUS, PRESET, PROFILE, STATUS, STORE,
 } from './support/constants.mjs'
 import {
   HOOK, INSTALL_MS, LONG_T, T, addPlugin, assertEntryContract, auditRows, callScript, catalogSettled, fishballMessages, holdFishball,
@@ -372,6 +375,22 @@ describe('Plugin statuses on a new install', () => {
     })
   })
 
+  it('STA-26 POST plugins/refresh answers {ok, state} whose catalog lists the package just installed for Fishball', T, async () => {
+    const res = await host.post(REFRESH_API, {})
+    assert.equal(res.status, 200, res.text)
+    assert.equal(res.json?.ok, true)
+    assert.ok(pluginIn(res.json.state?.catalog, KEY_B), 'fishball:fbtest-added-b is listed')
+    assert.equal(pluginIn(res.json.state.catalog, KEY_B).kind, KIND.installed)
+  })
+
+  for (const [label, body] of [['invalid JSON', '{x:'], ['a JSON array', '[]'], ['a JSON string', '"refresh"'], ['a JSON number', '1'], ['null', 'null']]) {
+    it('STA-28 POST plugins/refresh with ' + label + ' answers 400 bad-body', T, async () => {
+      const res = await host.post(REFRESH_API, body, { raw: true })
+      assert.equal(res.status, 400, res.text)
+      assert.deepEqual(res.json, { ok: false, code: CODE.badBody })
+    })
+  }
+
   it('STA-20 the user\'s uninstall while Fishball runs waits for the turn, shown as removing', LONG_T, async () => {
     assert.ok(pluginIn(await catalogSettled(host), KEY_B), 'precondition: installed')
     const asked = (await host.call('approvals')).length
@@ -442,8 +461,25 @@ describe('Plugin statuses on a new install', () => {
     assert.ok(inProfile(home, D.name), 'still installed in the profile')
   })
 
-  it('STA-24 the remove route and the three install routes refuse a request without the browser cookie', T, async () => {
-    for (const [route, body] of [[API.pluginsRemove, { plugin: FIX }], [INSTALL_API.inspect, { spec: '/nonexistent/fbtest-nocookie' }], [INSTALL_API.install, { spec: '/nonexistent/fbtest-nocookie', requestId: 'fbtest-nocookie' }], [INSTALL_API.cancel, { requestId: 'fbtest-nocookie' }]]) {
+  it('STA-27 a bundle linked into the profile outside DSH\'s plugin manager is listed after a refresh', T, async () => {
+    // The test edits the profile itself (as a hand install would); DSH's plugin manager announces nothing.
+    const dir = path.join(home, 'profiles', PROFILE)
+    const file = path.join(dir, 'package.json')
+    const pkg = JSON.parse(fs.readFileSync(file, 'utf8'))
+    pkg.dependencies = { ...pkg.dependencies, [REFRESH_BUNDLE.name]: 'link:' + REFRESH_BUNDLE.dir }
+    fs.writeFileSync(file, JSON.stringify(pkg, null, 2))
+    fs.symlinkSync(REFRESH_BUNDLE.dir, path.join(dir, 'node_modules', REFRESH_BUNDLE.name))
+    const res = await host.post(REFRESH_API, {})
+    assert.equal(res.status, 200, res.text)
+    const p = pluginIn(res.json?.state?.catalog, REFRESH_BUNDLE.name)
+    assert.ok(p, 'listed after the refresh')
+    assert.equal(p.kind, KIND.only)
+    assert.equal(p.on, false)
+    assert.deepEqual(await eventsOf(REFRESH_BUNDLE.name), [], 'listing it runs none of its code')
+  })
+
+  it('STA-24 the remove route, the three install routes and refresh refuse a request without the browser cookie', T, async () => {
+    for (const [route, body] of [[API.pluginsRemove, { plugin: FIX }], [INSTALL_API.inspect, { spec: '/nonexistent/fbtest-nocookie' }], [INSTALL_API.install, { spec: '/nonexistent/fbtest-nocookie', requestId: 'fbtest-nocookie' }], [INSTALL_API.cancel, { requestId: 'fbtest-nocookie' }], [REFRESH_API, {}]]) {
       const res = await fetch(host.origin + route, { method: 'POST', headers: { origin: host.origin, 'content-type': 'application/json' }, body: JSON.stringify(body) })
       await res.text()
       assert.notEqual(res.status, 200, route)
@@ -461,7 +497,7 @@ describe('Plugin statuses while the core failed', () => {
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  for (const [route, body] of [[INSTALL_API.inspect, { spec: ADDED_BUNDLE.dir }], [INSTALL_API.install, { spec: ADDED_BUNDLE.dir, requestId: 'fbtest-sta25' }]]) {
+  for (const [route, body] of [[INSTALL_API.inspect, { spec: ADDED_BUNDLE.dir }], [INSTALL_API.install, { spec: ADDED_BUNDLE.dir, requestId: 'fbtest-sta25' }], [REFRESH_API, {}]]) {
     it('STA-25 POST ' + route + ' answers 409 unavailable while Fishball is not ready', T, async () => {
       const st = await host.waitStatus(STATUS.failed)
       assert.equal(st?.status, STATUS.failed, 'precondition: ' + JSON.stringify(st))

@@ -563,6 +563,8 @@ export const API = Object.freeze({
   pluginsIcon: '/api/fishball/plugins/icon',
   /** POST { plugin, row, values?, reset? }: your settings for a plugin Fishball runs itself. */
   pluginsSettings: '/api/fishball/plugins/settings',
+  /** POST {}: read the plugin list again now (the Fishball tab's Refresh, as DSH's page has one). */
+  pluginsRefresh: '/api/fishball/plugins/refresh',
   /** POST { spec }: what a spec names, read by DSH's inspect (revision 10a). */
   installInspect: '/api/fishball/install/inspect',
   /** POST { spec, requestId, approvedBuilds? }: install for Fishball through DSH's process, then turn it on. */
