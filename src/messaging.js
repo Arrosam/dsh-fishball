@@ -211,9 +211,10 @@ class UnconfirmedDelivery extends Error {}
  * @param deps.onChange - called after the outbox changed.
  * @param deps.watch - (sessionId, by, since?) => Promise<{ watch } | { watchError }>.
  * @param deps.manage - (sessionId, by) => Promise: make the target managed (MANAGED_BY).
+ * @param deps.isManaged - (sessionId) => whether that session is managed.
  * @returns { snapshot() } for the settings page.
  */
-export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch, manage }) {
+export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch, manage, isManaged }) {
   const outbox = new AuditLog(() => store.outbox, () => readLimits().auditEntriesKept)
   /**
    * Calls this hour, counted in memory as well as from the outbox: the outbox is pruned to
@@ -323,7 +324,9 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       return {}
     } catch (error) {
       logger.warn('making session %s managed failed (%s)', sessionId, diagnosticOf(error))
-      return { managedError: START_MANAGED_ERROR.failed }
+      // manage writes the store first; a throw after that write (syncing tools, a listener)
+      // leaves the session managed, so only a session still the user's is reported.
+      return isManaged(sessionId) ? {} : { managedError: START_MANAGED_ERROR.failed }
     }
   }
 
