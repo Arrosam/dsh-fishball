@@ -24,7 +24,7 @@
  * | NTF-02 | EP (start_session + flag) | W6 | result has watch on the new session; one notice after its first turn |
  * | NTF-03 | DT (flag × watch refused: limit) | W6 | ok:true, watchError 'limit-reached', no watch; the message is still delivered |
  * | NTF-04 | EP (message_fishball + flag) | W6 | result has watch on the caller with createdBy {kind:'agent', id:caller}; one notice when the caller's turn ends |
- * | NTF-05 | EP (subagent + flag) | W6 | the watch targets the root session; createdBy agent, id = the calling (child) session |
+ * | NTF-05 | EP (subagent of a managed session + flag) | W6, rev11a Q-r11-subagent-tools | the child has no message_fishball: its call is UNKNOWN_TOOL and no watch is added on the root or the child |
  * | NTF-06 ×3 | EP (no flag) | W6 | message_session, start_session and message_fishball add no watch and no 'watch' key |
  * | NTF-07/08 | EP (fast turn: the target's first model call fails at once) | W3, W6 review | message_session / start_session with the flag: one notice, reason error |
  * | TOL-06b ×4 | EP (not a session: topic, intake identity, forward identity, watch id) | W5 review | read_session answers not-related or unknown-session, never ok |
@@ -41,7 +41,7 @@ import {
   API, AUTHOR_KIND, INBOUND_TOOL, LIMITS, PRESET, READ_MAX, READ_ROLES, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_STATUS, WATCH_SUMMARY, WATCH_TEXT, WATCH_TOOLS,
 } from './support/constants.mjs'
 import {
-  HOOK, T, callScript, fishballCall, intakeNow, jsonOf, messageFishball, noticesSettled, requestsWith, sessionAuthor, settledIdle, toolNames, turn,
+  HOOK, T, callScript, fishballCall, makeManaged, intakeNow, jsonOf, messageFishball, noticesSettled, requestsWith, sessionAuthor, settledIdle, toolNames, turn,
   untilSeen, untrustedBlock, watchById, watchNotices, watchesNow, watchesOn,
 } from './support/expect.mjs'
 import { bootLive, newHome, sleep, until } from './support/host.mjs'
@@ -292,7 +292,7 @@ describe('P6 watches fire', () => {
       const related = [
         ['watched now', async (sid) => { await toolWatch({ session_id: sid, mode: 'repeat', condition: 'per-turn' }) }],
         ['watched before (closed)', async (sid) => { const w = await toolWatch({ session_id: sid }); await fishballCall(host, fb, 'unwatch_session', { watch_id: w.id }) }],
-        ['messaged Fishball', async (sid) => { await messageFishball(host, sid, { message: tok('rel') }); await settledIdle(host, fb) }],
+        ['messaged Fishball', async (sid) => { await makeManaged(host, fb, sid); await messageFishball(host, sid, { message: tok('rel') }); await settledIdle(host, fb) }],
         ['forwarded by the user', async (sid) => { assert.equal((await host.post(API.send, { sessionId: sid, note: '' })).status, 200); await settledIdle(host, fb) }],
         ['messaged by Fishball', async (sid) => { assert.equal((await fishballCall(host, fb, 'message_session', { session_id: sid, message: tok('rel') })).json?.ok, true); await settledIdle(host, sid) }],
       ]
@@ -492,6 +492,7 @@ describe('P6 watches fire', () => {
 
     it('NTF-04 message_fishball with the flag watches the caller (createdBy agent) and fires when its turn ends', T, async () => {
       const sid = await ordinary('n-04')
+      await makeManaged(host, fb, sid) // rev11a: only a managed session has message_fishball
       const text = tok('ntf04')
       const r = await turn(host, sid, callScript(INBOUND_TOOL, { message: text, notify_when_finished: true }))
       const json = jsonOf(r.results[0])
@@ -502,20 +503,19 @@ describe('P6 watches fire', () => {
       assert.equal(got.length, 1)
     })
 
-    it('NTF-05 from a subagent the watch targets the root session', LONG, async (t) => {
+    it('NTF-05 a subagent of a managed session has no message_fishball, so no watch (rev11a)', LONG, async () => {
       const std = await ordinary('n-05', PRESET.standard)
+      await makeManaged(host, fb, std)
       const marker = tok('ntf05sub')
       await host.call('queueMarker', { marker, except: std, script: [[{ tool: INBOUND_TOOL, args: { message: tok('ntf05'), notify_when_finished: true } }], [{ text: 'sub done' }]] })
       const r = await turn(host, std, [[{ tool: 'subagent', args: { description: 'fbtest sub', prompt: marker + ' please' } }], [{ text: 'parent done' }]])
       assert.equal(r.results[0]?.isError, false, r.results[0]?.text)
       assert.ok(await until(async () => (await host.call('markerState', { marker })).left === 0, 15000, 100))
       const child = (await host.call('markerState', { marker })).sessions[0]
-      assert.ok(await until(async () => (await watchesOn(host, std)).length > 0, 8000, 100), 'a watch on the root session')
-      const [w] = await watchesOn(host, std)
-      t.diagnostic('createdBy ' + JSON.stringify(w.createdBy) + ', child ' + child)
-      assert.equal(w.createdBy.kind, 'agent')
-      assert.equal(w.createdBy.id, child, 'the calling session id')
-      assert.equal((await watchesOn(host, child)).length, 0, 'not the child')
+      for (const req of await host.call('requests', { sessionId: child })) assert.equal(toolNames(req).includes(INBOUND_TOOL), false, 'the child lists ' + INBOUND_TOOL)
+      await settledIdle(host, fb)
+      assert.equal((await watchesOn(host, std)).length, 0, 'no watch on the root')
+      assert.equal((await watchesOn(host, child)).length, 0, 'no watch on the child')
     })
 
     describe('NTF-06 without the flag no watch is added', () => {
@@ -537,6 +537,7 @@ describe('P6 watches fire', () => {
       })
       it('message_fishball', T, async () => {
         const sid = await ordinary('n-06c')
+        await makeManaged(host, fb, sid)
         const { json } = await messageFishball(host, sid, { message: tok('n06') })
         assert.equal(json?.ok, true)
         assert.equal('watch' in json, false)
@@ -548,7 +549,7 @@ describe('P6 watches fire', () => {
 
   describe('W4/W8 notices refused by a full queue', () => {
     let sender
-    before(async () => { sender = await ordinary('q-sender') }, HOOK)
+    before(async () => { sender = await ordinary('q-sender'); await makeManaged(host, fb, sender) }, HOOK)
     after(async () => { await host.call('releaseHold', { sessionId: fb }).catch(() => {}); await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default }) }, HOOK)
     /** Hold Fishball in a turn with its queue full (maxQueuedInputs 1). */
     async function fullQueue() {

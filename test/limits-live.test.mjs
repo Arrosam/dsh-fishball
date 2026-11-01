@@ -21,7 +21,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { API, APPROVER_AFTER_ENV, ASK_TOOL, ELLIPSIS, LIMITS_R11, OUTCOME, PRESET, STATUS, WATCH_STATUS } from './support/constants.mjs'
 import {
-  HOOK, T, approvalsNow, askSettled, bytes, fishballCall, fishballMessages, intakeNow, messageFishball, outboxNow, settledIdle, startAsk, turn, untilSeen,
+  HOOK, T, makeManaged, approvalsNow, askSettled, bytes, fishballCall, fishballMessages, intakeNow, messageFishball, outboxNow, settledIdle, startAsk, turn, untilSeen,
   untrustedBlock, waitRequest, watchesNow,
 } from './support/expect.mjs'
 import { bootHost, newHome, until } from './support/host.mjs'
@@ -122,6 +122,7 @@ describe('rev11-limits: shown and excerpt fields apply live', () => {
   it('L53 intakeRowsShown: the state shows 2 rows at 2, all again after', LONG, async () => {
     for (let i = 0; i < 3; i++) {
       const sid = await ordinary('l53-' + i)
+      await makeManaged(host, fb, sid) // rev11a: only a managed session has message_fishball
       await messageFishball(host, sid, { message: tok('l53') })
       await settledIdle(host, fb)
     }
@@ -172,7 +173,7 @@ describe('rev11-limits: shown and excerpt fields apply live', () => {
 
   describe('permission requests', () => {
     let x
-    before(async () => { x = await warm('l56-x') }, HOOK)
+    before(async () => { x = await warm('l56-x'); await makeManaged(host, fb, x) }, HOOK) // rev11a: only a managed session's requests reach Fishball
     /** One request from x that Fishball allows (planned); returns the request message. */
     async function allowedAsk(reason, turnText) {
       const text = tok('ask')

@@ -17,7 +17,7 @@ import {
   APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APR_NOTE, ASK_TOOL, AUTHOR_KIND, AUTHOR_NAME_MAX_BYTES, ELLIPSIS, LIMITS, NOTICE, OUTCOME, PRESET,
   STATUS, TITLE_ENV,
 } from './support/constants.mjs'
-import { HOOK, T, askSettled, fishballMessages, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
+import { HOOK, T, askSettled, fishballMessages, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome, until } from './support/host.mjs'
 
 let seq = 0
@@ -37,6 +37,8 @@ describe('P11 authors of permission requests and their notes', () => {
     const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
     await rename(sid, title)
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1).
+    await makeManaged(host, fb, sid)
     return sid
   }
   async function asked(sid, text) {

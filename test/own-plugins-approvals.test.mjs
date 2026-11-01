@@ -20,8 +20,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ANSWER_TOOL, API, APPROVER_AFTER_ENV, APR_NOTE, ASK_REASON, LIMITS, ASK_TOOL, OUTCOME, OWN_PLUGINS, PRESET, STATUS, TOOL_STATUS } from './support/constants.mjs'
 import {
-  HOOK, T, approvalsNow, askSettled, callTool, catalogSettled, holdFishball, nextTools, requestMessages, settledIdle, startAsk, toolIn, turn, untilCatalog, pluginIn, waitRequest,
-} from './support/expect.mjs'
+  HOOK, T, approvalsNow, askSettled, callTool, catalogSettled, holdFishball, nextTools, requestMessages, settledIdle, startAsk, toolIn, turn, untilCatalog, pluginIn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
 let seq = 0
@@ -45,6 +44,8 @@ describe('Revision 10c: Permission requests off', () => {
   async function session(folder) {
     const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1).
+    await makeManaged(host, fb, sid)
     sessions.push(sid)
     return sid
   }
