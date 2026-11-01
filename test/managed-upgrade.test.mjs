@@ -60,6 +60,7 @@ describe('Revision 11 rev11a on an existing install', () => {
     await settledIdle(host, sessions.messaged)
     const folder = path.join(home, 'work', 'upm-started')
     fs.mkdirSync(folder, { recursive: true })
+    // The previous version's start_session (PRE_REV11A) has no title argument: this call is made to that version, so it passes none.
     const started = await fishballCall(host, fb, 'start_session', { folder, message: 'fbtest old start' })
     assert.equal(started.json?.ok, true, started.result.text)
     sessions.started = started.json.sessionId
