@@ -40,6 +40,31 @@ export function rootSessionOf(ctx, sessionId) {
   return id
 }
 
+/**
+ * DSH's "session not found": the controller throws an ApiSessionNotFound (class name; its
+ * error.name stays 'Error'), the query engine a SESSION_QUERY_SESSION_NOT_FOUND code.
+ */
+const NOT_FOUND = Object.freeze({ errorName: 'ApiSessionNotFound', queryCode: 'SESSION_QUERY_SESSION_NOT_FOUND' })
+
+/**
+ * Whether a read failed because the session does not exist (DSH's not-found failures), as
+ * opposed to a transient or migration failure.
+ */
+export const isNotFound = (error) => error?.constructor?.name === NOT_FOUND.errorName || error?.code === NOT_FOUND.queryCode
+
+/**
+ * Whether DSH reports a session as gone. Only a not-found failure counts: any other read
+ * failure may be transient, so the session is treated as still there.
+ */
+export async function isSessionGone(ctx, sessionId) {
+  try {
+    await eventsOf(ctx, sessionId)
+    return false
+  } catch (error) {
+    return isNotFound(error)
+  }
+}
+
 /** Events and header of a session: the live one when attached, else the persisted log. */
 async function eventsOf(ctx, sessionId) {
   const live = ctx.sessions.get(sessionId)
