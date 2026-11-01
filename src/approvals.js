@@ -107,14 +107,14 @@ export function argumentsOf(session, callId, toolName, maxBytes) {
   return none
 }
 
-/** The latest message you typed in a session (sources user / user-rpc), bounded. */
-function latestUserText(session) {
+/** The latest message you typed in a session (sources user / user-rpc), cut to maxBytes. */
+function latestUserText(session, maxBytes) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
     if (event.type !== APPROVAL.userEvent || !APPROVAL.userSources.includes(event.data?.source?.kind)) continue
     const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
-    if (text.length > 0) return cutToBytes(text, APPROVAL.userMessageBytes, ELLIPSIS)
+    if (text.length > 0) return cutToBytes(text, maxBytes, ELLIPSIS)
   }
   return ''
 }
@@ -164,7 +164,7 @@ export class ApprovalBroker {
   snapshot() {
     return {
       pending: [...this.#pending.entries()].map(([id, p]) => ({ id, sessionId: p.ask.sessionId, toolName: p.ask.toolName, at: p.at })),
-      recent: this.#audit.recent(APPROVAL.shown).map(({ key, sessionId, toolName, at, answer, risk, rationale, finalOutcome, decidedAt, argumentsStatus }) => ({ key, sessionId, toolName, at, answer, risk: risk ?? null, rationale: rationale ?? null, finalOutcome, decidedAt, argumentsStatus })),
+      recent: this.#audit.recent(this.#readLimits().approvalsShown).map(({ key, sessionId, toolName, at, answer, risk, rationale, finalOutcome, decidedAt, argumentsStatus }) => ({ key, sessionId, toolName, at, answer, risk: risk ?? null, rationale: rationale ?? null, finalOutcome, decidedAt, argumentsStatus })),
     }
   }
 
@@ -241,13 +241,13 @@ export class ApprovalBroker {
     this.#onChange()
     if (this.#pending.has(id)) {
       try {
-        const info = (await describeSession(this.#ctx, sessionId)) ?? { id: sessionId, title: '', cwd: null }
+        const info = (await describeSession(this.#ctx, sessionId, limits.forwardExcerptBytes)) ?? { id: sessionId, title: '', cwd: null }
         await this.#ledger.publish({
           kind: INTAKE_KIND.approval,
           sourceIdentity: SOURCE_IDENTITY,
           dedupeKey: id,
           message: createUserMessage({
-            content: [{ type: 'text', text: TEXT.request(id, info, ask, args, latestUserText(root), this.#provenance(root), limits.approvalAnswerSeconds) }],
+            content: [{ type: 'text', text: TEXT.request(id, info, ask, args, latestUserText(root, limits.requestUserMessageBytes), this.#provenance(root), limits.approvalAnswerSeconds) }],
             source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(req.toolName)), author: sessionAuthor(INTAKE_KIND.approval, info) },
           }),
         })
@@ -328,7 +328,7 @@ export class ApprovalBroker {
       await this.#audit.append({
         sessionId: ask.sessionId, toolName: ask.toolName, ...(ask.callId === undefined ? {} : { callId: ask.callId }),
         argumentsDigest: sha256(args.text), argumentsStatus: args.status, at, answer,
-        ...(risk === undefined ? {} : { risk }), ...(rationale ? { rationale: rationale.slice(0, APPROVAL.rationaleChars) } : {}),
+        ...(risk === undefined ? {} : { risk }), ...(rationale ? { rationale: rationale.slice(0, this.#readLimits().rationaleChars) } : {}),
         finalOutcome, decidedAt: new Date().toISOString(),
       }, [id])
       this.#onChange()

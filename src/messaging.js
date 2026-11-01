@@ -39,7 +39,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
 import { AuditLog } from './audit.js'
 import { IntakeError } from './intake.js'
-import { describeSession, rootSessionOf } from './session-info.js'
+import { describeSession, lastSeqOf, NO_EVENTS_SEQ, rootSessionOf } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { byteLength } from './text.js'
 import { digestOf } from './digest.js'
@@ -51,8 +51,6 @@ export const MESSAGING_TOOL = Object.freeze({ inbound: SELF_MESSAGE_TOOL, send: 
 
 /** Source identity prefixes (DESIGN §8: the host works the identity out, never the payload). */
 export const SOURCE_ID = Object.freeze({ session: 'session/', user: 'user/forward/' })
-/** Outbox entries shown on the settings page. */
-const OUTBOX_SHOWN = 20
 /** Statuses that count toward an hourly cap: the call reached the other session. */
 const COUNTED = new Set([OUTBOX_STATUS.delivered, OUTBOX_STATUS.unconfirmed, OUTBOX_STATUS.failed])
 
@@ -136,7 +134,7 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
       // A subagent speaks for the session the user sees (review M4).
       const sender = rootSessionOf(ctx, caller)
       if (sender === assistantId()) return refused(INTAKE_ERROR.fromFishball)
-      const info = (await describeSession(ctx, sender)) ?? { id: sender, title: '', cwd: null }
+      const info = (await describeSession(ctx, sender, readLimits().forwardExcerptBytes)) ?? { id: sender, title: '', cwd: null }
       let result
       try {
         result = await ledger.publish({
@@ -182,7 +180,7 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
       if (!isEnabled()) throw new IntakeError(INTAKE_ERROR.featureOff)
       if (sessionId === assistantId()) throw new IntakeError(INTAKE_ERROR.fromFishball)
       if (byteLength(note) > readLimits().maxMessageBytes) throw new IntakeError(INTAKE_ERROR.tooLarge)
-      const info = await describeSession(ctx, sessionId)
+      const info = await describeSession(ctx, sessionId, readLimits().forwardExcerptBytes)
       if (info === undefined) throw new IntakeError(INTAKE_ERROR.unknownSession)
       return ledger.publish({
         kind: INTAKE_KIND.user,
@@ -286,7 +284,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (bad !== undefined) return refused(bad)
       if (sessionId === assistantId()) return refused(OUTBOUND_ERROR.isFishball)
       if (overCap(OUTBOX_KIND.message, readLimits().messagesPerHour)) return refused(OUTBOUND_ERROR.hourlyCap)
-      const info = await describeSession(ctx, sessionId)
+      const info = await describeSession(ctx, sessionId, readLimits().forwardExcerptBytes)
       if (info === undefined) return refused(OUTBOUND_ERROR.unknownSession)
       if (info.archived) return refused(OUTBOUND_ERROR.archived)
       const entry = { kind: OUTBOX_KIND.message, targetSessionId: sessionId, messageDigest: digestOf(message) }
@@ -325,7 +323,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
   }))
 
   return {
-    snapshot: () => ({ entries: outbox.recent(OUTBOX_SHOWN) }),
+    snapshot: () => ({ entries: outbox.recent(readLimits().outboxShown) }),
     /** Whether Fishball messaged or started this session (kept outbox entries). */
     contacted: (sessionId) => [...store.outbox.entries()].some(([, entry]) => entry.targetSessionId === sessionId),
     /** Whether Fishball started this session (a kept start_session entry). */
@@ -335,7 +333,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
 
 /** The last seq of a session just created, before its first message (its header events only). */
 async function watermarkOfNew(ctx, sessionId) {
-  return (await describeSession(ctx, sessionId))?.lastSeq ?? -1
+  return (await lastSeqOf(ctx, sessionId)) ?? NO_EVENTS_SEQ
 }
 
 /** Whether a path is an existing directory (following symlinks, as DSH's realpath does). */

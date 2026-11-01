@@ -131,14 +131,6 @@ export const FISHBALL_PACKAGES = Object.freeze({
   pnpmCommand: 'pnpm',
   /** How DSH's runner runs pnpm for a service: secrets scrubbed, output captured. */
   execution: 'service',
-  /**
-   * Bounds of one package operation, mirroring dsh-plugin-manager's own config defaults
-   * (outputBytes, idleTimeoutMs, lockWaitMs, inspectTimeoutMs), which it does not export.
-   */
-  outputBytes: 16384,
-  idleTimeoutMs: 600000,
-  lockWaitMs: 120000,
-  lookupTimeoutMs: 20000,
   /** The patch file a profile-shaped folder would have; DSH's manager never writes it for installs (S31). */
   patchFile: 'cordis.patch.yml',
   /** How pnpm is told the registry a package came from, so its lockfile check passes on removal (DSH's removeBundle). */
@@ -148,8 +140,6 @@ export const FISHBALL_PACKAGES = Object.freeze({
    * fetched files in node_modules; pnpm install with the restored files removes them again.
    */
   prune: Object.freeze(['install', '--prefer-offline']),
-  /** How long the inherited manager may take to start before package operations give up on it. */
-  managerStartMs: 30000,
 })
 
 
@@ -246,10 +236,6 @@ export const PLUGIN_SETTINGS_STATE = Object.freeze({ none: 'none', default: 'def
 
 /** The plugin manager's bounds and fixed strings (DESIGN §10d). */
 export const PLUGIN_MANAGER = Object.freeze({
-  /** History entries the plugin page shows. */
-  historyEntries: 10,
-  /** Each old and new value in set_plugin_settings' prompt is cut to this many bytes. */
-  promptValueBytes: 200,
   /** Query parameter naming the plugin on the GET routes. */
   pluginParam: 'plugin',
   /** Schemastery's error path prefix (`$.a.b expected …`) and how its segments are written. */
@@ -282,24 +268,11 @@ export const PLUGIN_DEFAULTS = Object.freeze({ recordKey: 'dsh' })
  * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults
  * (lib/index.js DEFAULT_THRESHOLD_RATIO, DEFAULT_RETAIN_RATIO, headroomTokens ?? 65536),
  * which it does not export; they price the threshold shown when no smaller window is set.
+ * How a smaller window is priced (replyCapShare, headroomShare, minWindowTokens and
+ * defaultReplyCapTokens) is config: src/config.js LIMITS.
  */
 export const CONTEXT = Object.freeze({
   dshDefaults: Object.freeze({ thresholdRatio: 0.8, retainRatio: 0.16, headroomTokens: 65536 }),
-  /**
-   * Headroom (and the summary's own token cap, which DSH ties to it) for a smaller window:
-   * one eighth of it, at most DSH's 65,536, which alone would not fit a small window. At
-   * 20,000 that is 2,500, as in spike S5, so a summary of that length fits.
-   */
-  headroomShare: 8,
-  /** Default reply-length cap with a smaller window: one eighth of it, at most 32,000 (Q-defaults). */
-  outputShare: 8,
-  outputMax: 32000,
-  /**
-   * Smallest window accepted, whatever the prompt: below it the reply and summary caps would
-   * be a few hundred tokens. It bounds a save made before any request has measured the
-   * prompt and tools (review M2); with them measured the fit check is usually stricter.
-   */
-  minWindowTokens: 4096,
   /** Smallest reply or summary cap: DSH requires a positive summary cap, a 0 reply is none. */
   minCapTokens: 1,
   /** Bound on asking the model adapter for its window, so a slow discovery never stalls boot. */
@@ -388,11 +361,6 @@ export const WATCH_ERROR = Object.freeze({
   featureOff: FEATURE_OFF,
 })
 export const WATCH = Object.freeze({
-  /** Watches shown on the settings page and by list_watches. */
-  shown: 50,
-  /** read_session: recent messages and their byte bound. */
-  readMessages: 12,
-  readBytes: 12288,
   turnEndEvent: 'turn/end',
   sourcePrefix: 'fishball/watch/',
 })
@@ -427,14 +395,8 @@ export const SOURCE_STATUS = Object.freeze({ accepted: 'accepted', duplicate: 'd
 export const APPROVAL = Object.freeze({
   /** Request id prefix Fishball sees (apr_<id>). */
   idPrefix: 'apr_',
-  /** Bytes of the asking session's latest user message shown with a request. */
-  userMessageBytes: 2048,
-  /** Characters of a rationale kept in the audit (DESIGN §9). */
-  rationaleChars: 500,
   /** setTimeout's limit (2^31-1 ms): a longer answer time is clamped to it. */
   maxTimerMs: 2147483647,
-  /** Audit entries shown on the settings page. */
-  shown: 20,
   waterfall: 'approval/request',
   assistantEvent: 'assistant/message',
   ptcDispatchEvent: 'tool/ptc-dispatch-start',
@@ -477,8 +439,6 @@ export const INTAKE = Object.freeze({
   keySeparator: '\n',
   /** Delivery attempts before a row is marked failed (each restart or reconcile retries). */
   maxAttempts: 3,
-  /** Rows shown on the settings page. */
-  snapshotRows: 20,
 })
 
 /** Outcome of handing one item to the ledger. */
@@ -512,12 +472,10 @@ export const AUTHOR = Object.freeze({
 })
 
 /**
- * Reading another session for a notice (src/session-info.js). The excerpt bound keeps a
- * notice small however long the other session's last answer was.
+ * Reading another session for a notice (src/session-info.js). The excerpt's bound, which keeps a
+ * notice small however long the other session's last answer was, is the forwardExcerptBytes limit.
  */
 export const SESSION_INFO = Object.freeze({
-  /** Bytes of a session's last answer in a forward (Fishball's own bound, not the sender's). */
-  excerptBytes: 3072,
   ellipsis: '…',
   assistantEvent: 'assistant/message',
   userEvent: 'user/message',
