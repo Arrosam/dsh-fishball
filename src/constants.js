@@ -488,12 +488,6 @@ export const INTAKE_OUTCOME = Object.freeze({ accepted: 'accepted', duplicate: '
 export const SOURCE = Object.freeze({
   relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
   notice: Object.freeze({ kind: 'fishball-notice', form: 'notice' }),
-  /**
-   * start_session's first message (DESIGN §5d). DSH's automatic title reads only user-source
-   * messages, so a relay left the new session untitled. Fishball adds its senderSessionId (DSH
-   * keeps extra source fields), so its own checks never read the message as typed by the user.
-   */
-  start: Object.freeze({ kind: 'user' }),
 })
 
 /**

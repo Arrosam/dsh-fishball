@@ -358,7 +358,7 @@ Both tools hand work to other sessions. The work then happens there, under that 
 - **Folder.** An existing DSH workspace, or an existing folder on disk. Fishball cannot create folders, since that would be a file write.
   - DSH's `create` makes the folder when it is missing [V `agent.js:565-571`], so the tool checks that the folder exists first and refuses otherwise (S18).
   - A folder that is not a workspace is not registered: the session appears under Ungrouped, as DSH shows any session without a workspace (S18).
-- **First message.** Delivered with `steer` and flushed like `message_session`, so the new session starts working at once, but as a user message that names Fishball as the sender: `{kind:'user', senderSessionId}` (Q-start-title, §16). DSH's automatic title reads only user-source messages, so with the relay source the session got no title at all. DSH keeps the extra field in the log. The new session sees the message as the user's; Fishball's own checks count a user message that names a sender as sent by that session, never as typed by you (§7a provenance, the text shown with a request).
+- **First message.** Delivered the same way as `message_session`, with the relay source naming Fishball as the sender, so the new session starts working at once.
 - **Title.** DSH titles it as usual. Fishball settings list the session in the outbox.
 
 **As built (P5).** Both tools refuse an empty or oversized message and calls over the hourly cap; `message_session` also refuses an unknown or archived session and Fishball's own. The caps count every recorded call in the last hour (delivered, unconfirmed or failed delivery; a `start_session` whose session could not be created at all is neither recorded nor counted), in memory as well as from the outbox, so a low `auditEntriesKept` cannot disable them. A message that was steered but whose flush could not be confirmed answers `ok` with `unconfirmed: true` and "do not send it again", so the target never gets it twice. `start_session` takes a workspace id whose folder still exists, or an absolute path of an existing folder (`not-absolute`, `no-folder`); a folder that is a registered workspace starts the session in that workspace. A folder removed between that check and DSH's create would be created by DSH; closing that window needs host support. The outbox stores a digest of each message, never its text. The ping-pong between Fishball and a session it started is bounded by `messagesPerHour` and `wakeupsPerHour`. `notify_when_finished: true` sets up a watch on the target after a successful delivery (P6); a refused watch is reported as `watchError` without undoing the message.
@@ -484,7 +484,7 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
 | Other sessions | `message_fishball` (§5b), watches (§5c), permission requests (§7a) | `agent-message` relay / fishball notice (S4) |
 | Plugin hooks | `ctx.fishball` sources (§8) | Fishball notice (S4) |
 | Time | `dsh-tool-schedule` reminders into its own session; `dsh-time-context` | `schedule`, `time-context` [V] |
-| Handing work off | `message_session`, `start_session` (§5d) | `agent-message` relay in the target; `start_session`'s first message is a user message naming Fishball |
+| Handing work off | `message_session`, `start_session` (§5d) | `agent-message` relay in the target |
 
 **Every input wakes Fishball.** Every input is delivered with `steer`: an idle Fishball starts a turn at once, and a running turn picks the input up at its next step [V].
 - The urgency levels from revision 1 (passive, normal, urgent) are removed.
@@ -650,7 +650,7 @@ Fishball calls add_plugin({spec, reason})
 - **Audit.** `approvals[key]` in `fishball_intake` (newest `auditEntriesKept`): session, tool, call id, a digest of the arguments and their status, the answer, risk, rationale (≤ 500 characters), DSH's final outcome and both times. The arguments are not stored, but the rationale is Fishball's own text and may quote them. The settings page shows pending requests and the recent audit.
 - **The rubric** of this section is the second part of Fishball's persona, word for word, with two operational lines added (the request header it will see, and "answer with answer_approval; you cannot reject").
 - **Subagents.** A request from a subagent is attributed to the session you see (its root); the subagent is named in the block, and your latest message and the provenance come from the root. DSH sets every subagent's approval policy to `never` at delegation, so by default a subagent's request is rejected by DSH before any answerer, Fishball included; attribution applies only when a child's policy is widened.
-- **Provenance** comes from positive evidence: a kept `start_session` outbox entry, or the first user message of the session (and of its current turn): a message Fishball sent (a relay, or `start_session`'s first message, which names Fishball as sender) means Fishball, a user source with no sender means you; otherwise "unknown", never an unproven "the user". The "latest message you typed" shown with a request skips user messages that name a sender.
+- **Provenance** comes from positive evidence: a kept `start_session` outbox entry, or the first user message of the session (and of its current turn): a relay from Fishball means Fishball, a user source means you; otherwise "unknown", never an unproven "the user".
 - **Arguments** are those of the call with that id; a call to a different tool than the request names counts as unavailable (`call_was_to_tool` says which).
 - **Timing.** The answer time starts when the request arrives, before its notice is delivered, and a call cancelled at any point is withdrawn (never handed on). When Fishball stops being live, or its row unloads, every waiting request goes to you at once. The next answerer is guarded: a failure there is audited as `unavailable`, and a cancellation as `cancelled`. An answer time above about 24 days is clamped.
 - **What the settings page shows** is other sessions' requests waiting for Fishball. Whether Fishball itself waits on one of your prompts shows in its own chat, as in any session; a separate "Waiting for your approval" status is not built.
@@ -1268,12 +1268,6 @@ Each phase ends with:
 | Q-own-plugins-open | **Open, implementer's assumptions:** a turn end while Session watching is off is passed over, not delivered later; the settings page keeps Remove for watches while it is off; a tool whose plugin cannot be told is listed under "Tools from an unknown plugin"; the Messenger look keeps free switching by Fishball | §10d; confirm or change |
 | Q-install-10a | (2026-10-31) Install for Fishball reuses DSH's install process by inheritance and DSH's components; still installs only into Fishball's folder; your click in the dialog approves it; entries in DSH's Add plugin menu and the Fishball tab; Fishball's controls take a light magenta | §10d "Install for Fishball", S31 |
 | Q-manager-secrets | **Open, implementer's assumption:** Fishball never sees or sets secret fields; only you set them | §10d "Secrets" and `set_plugin_settings`; confirm or change |
-
-**Answered on 2026-11-02 (bug fix):**
-
-| ID | Your answer | Effect on the plan |
-|---|---|---|
-| Q-start-title | Sessions Fishball started had no title, because DSH's automatic title reads only user messages and the first message came as a relay. Of three fixes (Fishball names the session; Fishball calls DSH's title model; the first message goes in as your message) you chose the last | `start_session`'s first message is `{kind:'user', senderSessionId}` (§5d). To keep §7a sound, a user message that names a sender counts as sent by that session, never as typed by you: provenance says Fishball, and it is left out of the text shown as yours |
 
 **Open for revision 10:** Q-manager-stale, Q-manager-form and Q-manager-secrets above (implementer's assumptions; revision 10 was approved 2026-10-31).
 
