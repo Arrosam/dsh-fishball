@@ -19,7 +19,10 @@
  *   the same thread with ask_fishball (your answer, Q-r11-direct-reply);
  * - Fishball's own request past maxPendingApprovals: `block` with the too-many-waiting text, so
  *   its call returns at once instead of waiting on a prompt (Q-r11-cap-own, rev11c). One path
- *   for Fishball's own tools and for other plugins' tools in its session alike.
+ *   for Fishball's own tools and for other plugins' tools in its session alike;
+ * - another plugin's tool in Fishball's session whose request became Fishball's card (rev11f,
+ *   §7a.11): `block` with the waiting text naming the request (S35 variant A). Fishball's own tools
+ *   return that text themselves and are never marked.
  * Inside run_code a block reaches the program as the thrown error's message.
  *
  * A call cancelled after its approval may never reach post-execute, so marks also end with the
@@ -29,9 +32,10 @@ import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { EVENT, INTAKE_KIND, POST_DECISION, SOURCE, TOO_MANY_WAITING } from './constants.js'
 import { authorOf } from './author.js'
 import { rootSessionOf } from './session-info.js'
+import { waitingText } from './own-requests.js'
 
 /** What Fishball answered for one marked call. */
-export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING })
+export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING, waiting: 'waiting' })
 
 /** Agent-visible texts (S35's proposal, kept as the plugin's constants). */
 const TEXT = Object.freeze({
@@ -41,7 +45,7 @@ const TEXT = Object.freeze({
   userRejected: (note) => `The user rejected this call: ${note}`,
   question: (requestId, question) => `Fishball did not run this call yet; it asks a question first (request ${requestId}): ${question}\nAnswer with ask_fishball({request_id: "${requestId}", reply: "…"}); that continues the same request. If Fishball then allows it, make this identical call again.`,
   summary: 'Fishball approved a call once',
-  tooManyWaiting: `${TOO_MANY_WAITING}: too many permission requests are waiting for the user, so this call was not made and nothing was asked. Try it again once the user has answered some of them.`,
+  tooManyWaiting: `${TOO_MANY_WAITING}: too many permission requests are waiting for the user, so this call was not made and nothing was asked. Try it again once the user has answered some of them, or withdraw one of your own waiting requests with withdraw_request.`,
 })
 const SEPARATOR = '\n\n'
 const textBlock = (text) => ({ type: 'text', text })
@@ -52,7 +56,7 @@ const keyOf = (sessionId, callId) => sessionId + KEY_SEPARATOR + callId
 
 export class ResultWording {
   #ctx
-  /** sessionId|callId -> { sessionId, toolName, kind: WORDING, reason?, requestId?, question? } */
+  /** sessionId|callId -> { sessionId, toolName, kind: WORDING, reason?, requestId?, question?, note? } */
   #marks = new Map()
 
   /** @param ctx - fishball row context (host level, so it sees every agent's calls). */
@@ -87,6 +91,7 @@ export class ResultWording {
       if (exec.parent !== undefined) return { kind: POST_DECISION.accept, additionalContexts: [noticeMessage(notice)] }
       return { kind: POST_DECISION.accept, content: [...result.content, textBlock(SEPARATOR + notice)] }
     }
+    if (mark.kind === WORDING.waiting) return { kind: POST_DECISION.block, feedback: [textBlock(waitingText(mark.requestId))] }
     if (mark.kind === WORDING.tooManyWaiting) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.tooManyWaiting)] }
     if (mark.kind === WORDING.userReject) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.userRejected(mark.note))] }
     if (mark.kind === WORDING.reject) return { kind: POST_DECISION.block, feedback: [textBlock(`${TEXT.rejected(mark.reason)}\n${TEXT.hint}`)] }
