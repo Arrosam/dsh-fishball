@@ -13,9 +13,9 @@
  * | ASK-01  | EP (allow) | {ok:true, code:'allowed', request_id}; one notice saying the session asked first (ask_fishball), its block with tool, arguments, why, latest_user_message; audit row kind asked, answer allow |
  * | ASK-02  | EP (reject with a reason) | {ok:false, code:'rejected', reason, request_id}; audit answer reject |
  * | ASK-03 ×7 | DT (answer_approval refusals on an asked request) | allow+high → allow-needs-low-risk; allow '' / '   ' reason → reason-required; reject '' reason → reason-required; ask with no / '' question → question-required; unknown id → expired; each leaves the request pending |
- * | ASK-04  | DT (escalate needs nothing) | {ok:true, requestId, decision:'escalate'}; the agent gets to-user with request_id; the identical call goes to the stock prompt, not to Fishball; your Allow once there → decisions row allow-once by user, target = the request id |
+ * | ASK-04  | DT (escalate needs nothing) | rev11c: {ok:true, requestId, decision:'escalate'}; a card, the agent keeps waiting; your Allow once → allowed, the identical call runs on the pass, decisions row allow-once by user, audit escalate then pass |
  * | ASK-05  | DT (allow with truncated arguments) | arguments-incomplete; still pending |
- * | ASK-06  | BVA (approvalAnswerSeconds 1, no answer) | to-user after about 1 s (not before); the identical call to the stock prompt; your Reject there → decisions row reject; audit answer timeout |
+ * | ASK-06  | BVA (approvalAnswerSeconds 1, no answer) | rev11c: a card after about 1 s, the agent keeps waiting; your Reject → rejected with your note, decisions row reject; audit answer timeout |
  * | ASK-07  | ST (thread: 3 question rounds, then allow) | each round: code question, the same request_id, Fishball's question; each reply reaches Fishball as a new round of the same request with the whole thread in order; the final allow covers the call (it runs with no prompt and no further notice); one audit row |
  * | ASK-08 ×3 | EP (request_id unknown / settled / another session's) | {ok:false, code:'expired'}, no request_id, no notice |
  * | ASK-09  | EP (Permission requests off) | unavailable at once, request_id, no notice; the call then to the stock prompt |
@@ -31,8 +31,8 @@ import {
   LIMITS, OUTCOME, OWN_PLUGINS, QUESTION_REQUIRED, REQUEST_PLACEHOLDER, STATUS, UNKNOWN_TOOL_TEXT,
 } from './support/constants.mjs'
 import {
-  HOOK, T, approvalsNow, askStep, auditOf, blockArguments, callStep, fishballCall, jsonOf, managedSession, requestMessages, resultById, resultOfCall, roundsOf, setManaged, settledIdle,
-  stockSeen, storedRows, turn, waitRequest,
+  HOOK, T, answerCard, approvalsNow, askStep, auditOf, blockArguments, callStep, fishballCall, jsonOf, managedSession, requestMessages, resultById, resultOfCall, roundsOf, setManaged, settledIdle,
+  stockSeen, storedRows, turn, untilCard, waitRequest,
 } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -203,25 +203,29 @@ describe('Revision 11 rev11b: ask_fishball', () => {
       assert.ok((await pendingIds()).includes(requestId))
     })
 
-    it('ASK-04 escalate needs nothing extra: to-user, and the identical call then goes to the stock prompt; your Allow once is audited', T, async () => {
-      await withStock(OUTCOME.allow, async () => {
-        // risk and reason are answer_approval's schema fields for every decision (P7); escalate adds no code rule,
-        // so even an empty reason is accepted (§7a.3 "None: any request can go to you").
-        const json = await answer(requestId, { decision: DECISION.escalate, risk: 'high', reason: '' })
-        assert.deepEqual(json, { ok: true, requestId, decision: DECISION.escalate })
-        const got = await answered(x, callId)
-        assertShape(got, ASK_CODE.toUser)
-        assert.equal(got.request_id, requestId)
-        await expectStockResult(x, text, stockId, OUTCOME.allow, 1)
-      })
+    it('ASK-04 escalate needs nothing extra: the request becomes a card and the agent keeps waiting; your Allow once then lets the identical call run (rev11c: replaces the to-user answer)', T, async () => {
+      // risk and reason are answer_approval's schema fields for every decision (P7); escalate adds no code rule,
+      // so even an empty reason is accepted (§7a.3 "None: any request can go to you").
+      const json = await answer(requestId, { decision: DECISION.escalate, risk: 'high', reason: '' })
+      assert.deepEqual(json, { ok: true, requestId, decision: DECISION.escalate })
+      assert.ok(await untilCard(host, requestId), 'a card in the pile')
+      await sleep(QUIET_MS)
+      assert.equal(await host.call('agentStatus', { sessionId: x }), 'running', 'the agent keeps waiting (no to-user answer)')
+      assert.deepEqual(await stockSeen(host, text), [], 'no stock prompt')
+      assert.equal((await answerCard(host, requestId, 'allow')).status, 200)
+      const got = await answered(x, callId)
+      assertShape(got, ASK_CODE.allowed)
+      assert.equal(got.request_id, requestId)
       await host.call('waitIdle', { sessionId: x })
+      assert.equal((await resultOfCall(host, x, stockId, 15000))?.text, ASK_OUTPUT(OUTCOME.allow), 'the identical call ran on the pass')
+      assert.deepEqual(await stockSeen(host, text), [], 'still no stock prompt')
       assert.ok(await until(() => decisionsFor(requestId).length > 0, 5000, 100), 'a decisions row for your click')
       const [row] = decisionsFor(requestId)
       assert.equal(row.action, DECISION_ACTION.allowOnce)
       assert.equal(row.by, 'user')
-      // Reading (A-r11b-6): the follow-up call the ticket sends to your prompt is audited too, under the same request id.
-      assert.deepEqual(answersOf(requestId), [AUDIT_ANSWER.escalate, AUDIT_ANSWER.toUser])
-      assert.equal(auditOf(home, requestId).find((r) => r.answer === AUDIT_ANSWER.toUser)?.finalOutcome, OUTCOME.allow, 'your answer is its outcome')
+      await settledIdle(host, fb)
+      assert.deepEqual(answersOf(requestId), [AUDIT_ANSWER.escalate, AUDIT_ANSWER.pass])
+      assert.equal(auditOf(home, requestId)[0].finalOutcome, OUTCOME.allow, 'your answer is its outcome')
     })
   })
 
@@ -240,25 +244,31 @@ describe('Revision 11 rev11b: ask_fishball', () => {
     } finally { await setLimit({ argumentExcerptBytes: LIMITS.argumentExcerptBytes.default }) }
   })
 
-  it('ASK-06 approvalAnswerSeconds 1 with no answer: to-user after about 1 s; the call then to the stock prompt; your Reject is audited', T, async () => {
+  it('ASK-06 approvalAnswerSeconds 1 with no answer: a card after about 1 s and the agent keeps waiting; your Reject then answers rejected (rev11c: replaces to-user)', T, async () => {
     await setLimit({ approvalAnswerSeconds: 1 })
     try {
       await settledIdle(host, x)
       const text = tok('06')
-      const [id, stockId] = [cid('06'), cid('06stock')]
+      const id = cid('06')
+      await host.call('driveStart', { sessionId: x, script: [askStep(askArgs({ text }), id), [{ text: 'done' }]] })
+      const req = await waitRequest(host, fb, text)
       const t0 = Date.now()
-      const r = await run(x, [askStep(askArgs({ text }), id), callStep({ text }, stockId)])
-      const elapsed = Date.now() - t0
-      const json = jsonOf(resultById(r, id))
-      assertShape(json, ASK_CODE.toUser)
-      assert.ok(elapsed >= 1000, 'not before the answer time: ' + elapsed + ' ms')
-      assert.ok(elapsed < 10000, 'about the answer time: ' + elapsed + ' ms')
-      await expectStockResult(x, text, stockId, OUTCOME.reject, 1)
+      const card = await untilCard(host, req.id, 8000)
+      assert.ok(card, 'a card in the pile')
+      assert.ok(Date.now() - t0 < 10000, 'about the answer time')
+      await sleep(QUIET_MS)
+      assert.equal(await host.call('agentStatus', { sessionId: x }), 'running', 'the agent keeps waiting')
+      assert.deepEqual(await stockSeen(host, text), [], 'no stock prompt')
+      assert.equal((await answerCard(host, req.id, 'reject', 'timed out note')).status, 200)
+      const json = await answered(x, id)
+      assertShape(json, ASK_CODE.rejected)
+      assert.equal(json.reason, 'timed out note')
+      await host.call('waitIdle', { sessionId: x })
       await settledIdle(host, fb)
       assert.ok(await until(() => decisionsFor(json.request_id).length > 0, 5000, 100), 'a decisions row for your click')
       assert.equal(decisionsFor(json.request_id)[0].action, DECISION_ACTION.reject)
       assert.equal(decisionsFor(json.request_id)[0].by, 'user')
-      assert.deepEqual(answersOf(json.request_id), [AUDIT_ANSWER.timeout, AUDIT_ANSWER.toUser])
+      assert.deepEqual(answersOf(json.request_id), [AUDIT_ANSWER.timeout])
     } finally { await setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
   })
 

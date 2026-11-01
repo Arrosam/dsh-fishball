@@ -223,9 +223,10 @@ export const API = {
 // ---- P5 (messaging, intake, outbox) ----
 /** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
 /** P11 R2 adds 'look' (17). */
-/** Revision 10c adds 'features' (18). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** Revision 10c adds 'features' (18). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"); rev11c adds 'pile' (20). The tag records the Host publishes (§9 "Tag records") may add a 'tags' key, whose name the design leaves open: tests drop it before comparing (STATE_KEYS_OPTIONAL). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
+export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
@@ -664,11 +665,10 @@ export const ASK_FISHBALL = 'ask_fishball'
 export const LIST_USER_MESSAGES = 'list_user_messages'
 export const MANAGED_TOOLS = [INBOUND_TOOL, ASK_FISHBALL, LIST_USER_MESSAGES]
 /**
- * ask_fishball's result codes (§7a.2; contract given to the test writer). `toUser` is provisional: the
- * manager may rename it, so the literal lives only here. `ok` is true only for `allowed`.
+ * ask_fishball's result codes (§7a.2; contract given to the test writer). The interim `to-user` answer of rev11b is gone: from rev11c an escalated or timed-out request waits on a card. `ok` is true only for `allowed`.
  */
 export const ASK_CODE = {
-  allowed: 'allowed', rejected: 'rejected', question: 'question', unavailable: 'unavailable', toUser: 'to-user',
+  allowed: 'allowed', rejected: 'rejected', question: 'question', unavailable: 'unavailable',
   overCapacity: 'over-capacity', noLongerManaged: 'no-longer-managed',
   notUserMessage: 'not-user-message', tooLarge: 'too-large', expired: 'expired',
 }
@@ -693,7 +693,7 @@ export const LIMITS_R11B = {
 }
 /** Audit (§9 "Revision 11 additions"): approvals rows' kind and answers, and the decisions rows your clicks add. */
 export const AUDIT_KIND = { asked: 'asked', direct: 'direct' }
-export const AUDIT_ANSWER = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', toUser: 'to-user', pass: 'pass', released: 'released', withdrawn: 'withdrawn' }
+export const AUDIT_ANSWER = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', pass: 'pass', released: 'released', withdrawn: 'withdrawn' }
 export const DECISION_ACTION = { allowOnce: 'allow-once', reject: 'reject' }
 export const DECISIONS_TABLE = 'decisions'
 /** A message source the web prompt records: kind 'user' with an rpc id (DSH's "user-rpc" source, dsh-api-session-controller). */
@@ -703,3 +703,22 @@ export const USER_RPC_SOURCE = { kind: 'user', rpcId: 'rpc-fbtest', clientTimeZo
  * conversation (fixtures/fake-llm.mjs), so a script can continue a request minted during the turn.
  */
 export const REQUEST_PLACEHOLDER = '$fbtest:last-request-id'
+
+// ---- Revision 11 rev11c (your pile, buttons in both places, tags; DESIGN §7a.6, §9, §10e, §16; S37) ----
+/** Allow once / Reject on a card: POST {requestId, decision: 'allow'|'reject', note?} (§10e "Host API"); 409 `expired` when the card already left. */
+export const PILE_API = { answer: '/api/fishball/requests/answer' }
+export const PILE_CODE = { expired: 'expired', badBody: 'bad-body' }
+/** The user's two decisions on a card. */
+export const CLICK = { allow: 'allow', reject: 'reject' }
+/** Card kinds (§9 "Session cards"); rev11c builds 'asked' only (direct calls come with rev11e, questions with rev11g). */
+export const CARD_KIND = { asked: 'asked', direct: 'direct', question: 'question' }
+/** Keys every card of an ask_fishball request carries (§9; callId is what S37's running-row buttons match on). */
+export const CARD_KEYS = ['arguments', 'callId', 'kind', 'requestId', 'sessionId', 'since', 'toolName', 'why']
+/** rev11c's new limit (§16 "Revision 11's new limits"): plugin config, whole number of at least 1 (§16 "Rules"). */
+export const LIMITS_R11C = { pileMaxHeightVh: { default: 45, min: 1 } }
+/** Tag records (§9 "Tag records"): table `tags` of the fishball domain, rows {sessionId, callId, seq, answer, kind, at}. */
+export const TAGS_TABLE = 'tags'
+export const TAG_KIND = { approval: 'approval', sentToYou: 'sent-to-you' }
+export const TAG_KEYS = ['answer', 'at', 'callId', 'kind', 'seq', 'sessionId']
+/** Fishball's own request returns this code when the pile is full (§7a.6, Q-r11-cap-own). */
+export const TOO_MANY_WAITING = 'too-many-waiting'
