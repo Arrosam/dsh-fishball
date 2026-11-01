@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, AUTHOR_KIND, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -572,3 +572,56 @@ export async function makeManaged(host, fb, sessionId) {
   await settledIdle(host, fb)
   return r
 }
+
+// ---- Revision 11 rev11b helpers (ask_fishball, passes, direct calls) ----
+
+/** One scripted model step that calls a tool, with a call id so its result can be found. */
+export const step = (tool, args, id) => [{ tool, args, ...(id ? { id } : {}) }]
+/** One scripted ask_fishball step. */
+export const askStep = (args, id) => step(ASK_FISHBALL, args, id)
+/** One scripted call of the asking fixture tool (its body asks DSH for approval). */
+export const callStep = (args, id) => step(ASK_TOOL, args, id)
+/** The result of the call with this id in a drive record, or undefined. */
+export const resultById = (r, id) => r.results.find((x) => x.callId === id)
+/** The stock prompt's records (the scripted answerer after the broker) for the asking tool's call with this text. */
+export const stockSeen = async (host, text) => (await host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
+
+/**
+ * Every approval audit record (domain fishball_intake, table approvals, one file per record; §9), with its
+ * file name: the record key, which carries the request id's hex part (P7). The record is the object inside
+ * the file's JSON that carries an `answer`, whatever wrapper the store adds.
+ */
+export function approvalAudit(home) {
+  const dir = path.join(INTAKE_DIR(home), 'approvals')
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir) : []
+  const find = (x, depth = 0) => {
+    if (!x || typeof x !== 'object' || depth > 6) return undefined
+    if (Object.hasOwn(x, 'answer')) return x
+    for (const v of Object.values(x)) { const r = find(v, depth + 1); if (r) return r }
+    return undefined
+  }
+  const found = []
+  for (const file of files) {
+    let record
+    try { record = find(JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))) } catch { record = undefined }
+    if (record) found.push({ file, record })
+  }
+  return found
+}
+/** The audit records of one request, found by the request id's hex part in the record key (file name). */
+export const auditOf = (home, requestId) => approvalAudit(home).filter((r) => r.file.includes(String(requestId).replace(/^apr_/, ''))).map((r) => r.record)
+/** The rows of one table of the fishball domain (single-file layout, §9); [] when the table is missing. */
+export function storedRows(home, table) {
+  try { return Object.values(JSON.parse(fs.readFileSync(STORE.file(home), 'utf8')).tables?.[table] ?? {}) } catch { return [] }
+}
+/** Fishball's permission-request messages of one request id (one per round), oldest first. */
+export const roundsOf = async (host, fb, requestId) => (await requestMessages(host, fb, '[permission request ' + requestId + ']')).map((m) => ({ ...m, block: untrustedBlock(m.text) }))
+/** A session the user starts with one plain turn ('first words'), then handed over, so it is managed (rev11a). */
+export async function managedSession(host, fb, folder, preset = PRESET.bare) {
+  const sid = (await host.call('ordinary', { preset, folder })).sessionId
+  await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+  await makeManaged(host, fb, sid)
+  return sid
+}
+/** A request block's arguments as an object (P7 gives the call's JSON as a string field). */
+export const blockArguments = (block) => { const a = block?.fields?.arguments; return typeof a === 'string' ? JSON.parse(a) : a }
