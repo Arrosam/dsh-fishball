@@ -1,0 +1,539 @@
+{
+  "id": "S36-question-routing",
+  "started": "2026-11-01T08:28:08.861Z",
+  "finished": "2026-11-01T08:28:18.192Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "cases": {
+    "A": {
+      "requestCarried": {
+        "timed": false,
+        "callIdInRequest": "call_a",
+        "questions": [
+          {
+            "id": "color",
+            "question": "Which colour?",
+            "options": [
+              {
+                "label": "Red (Recommended)"
+              },
+              {
+                "label": "Blue"
+              }
+            ]
+          },
+          {
+            "id": "parts",
+            "question": "Which parts?",
+            "options": [
+              {
+                "label": "Docs"
+              },
+              {
+                "label": "Tests"
+              },
+              {
+                "label": "Code"
+              }
+            ],
+            "multiSelect": true
+          },
+          {
+            "id": "name",
+            "question": "Name for the branch?"
+          },
+          {
+            "id": "size",
+            "question": "Which size?",
+            "options": [
+              {
+                "label": "S"
+              },
+              {
+                "label": "M"
+              }
+            ]
+          },
+          {
+            "id": "skip",
+            "question": "Anything else?",
+            "options": [
+              {
+                "label": "No"
+              }
+            ]
+          }
+        ]
+      },
+      "refusedIncomplete": {
+        "ok": false,
+        "code": "bad-answer",
+        "reason": "one item per question"
+      },
+      "refusedTwoLabelsOnSingle": {
+        "ok": false,
+        "code": "bad-answer",
+        "reason": "color: single-select takes one label, or custom text alone"
+      },
+      "accepted": {
+        "ok": true,
+        "path": "waterfall"
+      },
+      "fishballBatchEqualsBrowserBatch": true,
+      "browserCard": "cancel",
+      "gatewayPending": 0,
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}",
+        "isError": false
+      },
+      "entry": {
+        "state": "answered",
+        "by": "fishball"
+      }
+    },
+    "B": {
+      "entry": {
+        "state": "answered",
+        "by": "user",
+        "learntAnswerEqualsBrowser": true
+      },
+      "fishballLate": {
+        "ok": false,
+        "code": "already-settled",
+        "state": "answered",
+        "by": "user"
+      },
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}",
+        "isError": false
+      }
+    },
+    "C": {
+      "routerSaw": [
+        {
+          "sessionId": "session-d1655565-821e-40c1-8d31-3c6fc1ea63c1",
+          "managed": false
+        }
+      ],
+      "entriesAdded": 0,
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}",
+        "isError": false
+      }
+    },
+    "E": {
+      "entry": {
+        "state": "closed",
+        "history": [
+          "opened",
+          "closed:error"
+        ]
+      },
+      "fishballAfter": {
+        "ok": false,
+        "code": "already-settled",
+        "state": "closed"
+      },
+      "browserCard": "cancel",
+      "gatewayPending": 0,
+      "result": {
+        "text": "Error: ask_user_question was aborted before the user answered",
+        "isError": true,
+        "error": {
+          "name": "UserQuestionError",
+          "code": "ASK_ABORTED"
+        }
+      }
+    },
+    "F1": {
+      "request": {
+        "timed": true,
+        "callId": "call_f1"
+      },
+      "browserClaimedMs": 59999,
+      "answered": {
+        "ok": true,
+        "path": "waterfall"
+      },
+      "browserCard": "cancel",
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}",
+        "isError": false
+      },
+      "projection": {
+        "active": [],
+        "settled": [
+          {
+            "callId": "call_f1",
+            "answers": [
+              {
+                "id": "color",
+                "selected": [
+                  "Blue"
+                ]
+              },
+              {
+                "id": "parts",
+                "selected": [
+                  "Docs",
+                  "Code"
+                ],
+                "custom": "and CI"
+              },
+              {
+                "id": "name",
+                "selected": [],
+                "custom": "fix/s36"
+              },
+              {
+                "id": "size",
+                "selected": [],
+                "custom": "XL"
+              },
+              {
+                "id": "skip",
+                "selected": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "F2": {
+      "browserCard": "rejected:ASK_TIMED_OUT",
+      "entry": {
+        "state": "answered",
+        "by": "fishball",
+        "history": [
+          "opened",
+          "continued",
+          "answered-by-fishball"
+        ]
+      },
+      "pendingResult": {
+        "text": "{\"pending\":true,\"callId\":\"call_f2\",\"message\":\"No answer batch arrived before the timeout. This is pending, not a skipped answer. Continue useful independent work. The user can still answer; their reply will be a user message identified as answer_to_pending_question with this callId and the original questions. Do not treat this as permission.\"}",
+        "isError": false
+      },
+      "activeBefore": [
+        {
+          "callId": "call_f2",
+          "questions": [
+            {
+              "id": "color",
+              "question": "Which colour?",
+              "options": [
+                {
+                  "label": "Red (Recommended)"
+                },
+                {
+                  "label": "Blue"
+                }
+              ]
+            },
+            {
+              "id": "parts",
+              "question": "Which parts?",
+              "options": [
+                {
+                  "label": "Docs"
+                },
+                {
+                  "label": "Tests"
+                },
+                {
+                  "label": "Code"
+                }
+              ],
+              "multiSelect": true
+            },
+            {
+              "id": "name",
+              "question": "Name for the branch?"
+            },
+            {
+              "id": "size",
+              "question": "Which size?",
+              "options": [
+                {
+                  "label": "S"
+                },
+                {
+                  "label": "M"
+                }
+              ]
+            },
+            {
+              "id": "skip",
+              "question": "Anything else?",
+              "options": [
+                {
+                  "label": "No"
+                }
+              ]
+            }
+          ],
+          "state": "continued"
+        }
+      ],
+      "answered": {
+        "ok": true,
+        "path": "reply"
+      },
+      "replies": [
+        {
+          "source": {
+            "kind": "user-question-reply",
+            "callId": "call_f2",
+            "outcome": "answered"
+          },
+          "text": "{\"kind\":\"answer_to_pending_question\",\"tool\":\"ask_user_question\",\"callId\":\"call_f2\",\"questions\":[{\"id\":\"color\",\"question\":\"Which colour?\",\"options\":[{\"label\":\"Red (Recommended)\"},{\"label\":\"Blue\"}]},{\"id\":\"parts\",\"question\":\"Which parts?\",\"options\":[{\"label\":\"Docs\"},{\"label\":\"Tests\"},{\"label\":\"Code\"}],\"multiSelect\":true},{\"id\":\"name\",\"question\":\"Name for the branch?\"},{\"id\":\"size\",\"question\":\"Which size?\",\"options\":[{\"label\":\"S\"},{\"label\":\"M\"}]},{\"id\":\"skip\",\"question\":\"Anything else?\",\"options\":[{\"label\":\"No\"}]}],\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}"
+        }
+      ],
+      "browserLateAccepted": false,
+      "projection": {
+        "active": [],
+        "settled": [
+          {
+            "callId": "call_f2",
+            "answers": [
+              {
+                "id": "color",
+                "selected": [
+                  "Blue"
+                ]
+              },
+              {
+                "id": "parts",
+                "selected": [
+                  "Docs",
+                  "Code"
+                ],
+                "custom": "and CI"
+              },
+              {
+                "id": "name",
+                "selected": [],
+                "custom": "fix/s36"
+              },
+              {
+                "id": "size",
+                "selected": [],
+                "custom": "XL"
+              },
+              {
+                "id": "skip",
+                "selected": []
+              }
+            ]
+          }
+        ]
+      },
+      "modelSawReply": true
+    },
+    "F3": {
+      "browserAccepted": true,
+      "entry": {
+        "state": "answered",
+        "by": "user",
+        "learntAnswerEqualsBrowser": true
+      },
+      "fishballLate": {
+        "ok": false,
+        "code": "already-settled",
+        "state": "answered",
+        "by": "user"
+      },
+      "replies": [
+        {
+          "source": {
+            "kind": "user-question-reply",
+            "callId": "call_f3",
+            "outcome": "answered"
+          },
+          "text": "{\"kind\":\"answer_to_pending_question\",\"tool\":\"ask_user_question\",\"callId\":\"call_f3\",\"questions\":[{\"id\":\"color\",\"question\":\"Which colour?\",\"options\":[{\"label\":\"Red (Recommended)\"},{\"label\":\"Blue\"}]},{\"id\":\"parts\",\"question\":\"Which parts?\",\"options\":[{\"label\":\"Docs\"},{\"label\":\"Tests\"},{\"label\":\"Code\"}],\"multiSelect\":true},{\"id\":\"name\",\"question\":\"Name for the branch?\"},{\"id\":\"size\",\"question\":\"Which size?\",\"options\":[{\"label\":\"S\"},{\"label\":\"M\"}]},{\"id\":\"skip\",\"question\":\"Anything else?\",\"options\":[{\"label\":\"No\"}]}],\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}"
+        }
+      ],
+      "projection": {
+        "active": [],
+        "settled": [
+          {
+            "callId": "call_f3",
+            "answers": [
+              {
+                "id": "color",
+                "selected": [
+                  "Blue"
+                ]
+              },
+              {
+                "id": "parts",
+                "selected": [
+                  "Docs",
+                  "Code"
+                ],
+                "custom": "and CI"
+              },
+              {
+                "id": "name",
+                "selected": [],
+                "custom": "fix/s36"
+              },
+              {
+                "id": "size",
+                "selected": [],
+                "custom": "XL"
+              },
+              {
+                "id": "skip",
+                "selected": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "F4": {
+      "liveClient": false,
+      "entry": {
+        "state": "answered",
+        "by": "fishball",
+        "history": [
+          "opened",
+          "continued",
+          "answered-by-fishball"
+        ]
+      },
+      "pendingResult": {
+        "text": "{\"pending\":true,\"callId\":\"call_f4\",\"message\":\"No answer batch arrived before the timeout. This is pending, not a skipped answer. Continue useful independent work. The user can still answer; their reply will be a user message identified as answer_to_pending_question with this callId and the original questions. Do not treat this as permission.\"}",
+        "isError": false
+      },
+      "answered": {
+        "ok": true,
+        "path": "reply"
+      },
+      "replies": [
+        {
+          "source": {
+            "kind": "user-question-reply",
+            "callId": "call_f4",
+            "outcome": "answered"
+          },
+          "text": "{\"kind\":\"answer_to_pending_question\",\"tool\":\"ask_user_question\",\"callId\":\"call_f4\",\"questions\":[{\"id\":\"color\",\"question\":\"Which colour?\",\"options\":[{\"label\":\"Red (Recommended)\"},{\"label\":\"Blue\"}]},{\"id\":\"parts\",\"question\":\"Which parts?\",\"options\":[{\"label\":\"Docs\"},{\"label\":\"Tests\"},{\"label\":\"Code\"}],\"multiSelect\":true},{\"id\":\"name\",\"question\":\"Name for the branch?\"},{\"id\":\"size\",\"question\":\"Which size?\",\"options\":[{\"label\":\"S\"},{\"label\":\"M\"}]},{\"id\":\"skip\",\"question\":\"Anything else?\",\"options\":[{\"label\":\"No\"}]}],\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"parts\",\"selected\":[\"Docs\",\"Code\"],\"custom\":\"and CI\"},{\"id\":\"name\",\"selected\":[],\"custom\":\"fix/s36\"},{\"id\":\"size\",\"selected\":[],\"custom\":\"XL\"},{\"id\":\"skip\",\"selected\":[]}]}"
+        }
+      ],
+      "gatewayPending": 0
+    },
+    "P1": {
+      "planModeSet": "{\"commandId\":\"cmd-67c7f269-1\",\"result\":{\"kind\":\"success\",\"text\":\"Plan mode on. Use /plan off to leave.\"}}",
+      "request": {
+        "kind": "plan-review",
+        "intent": {
+          "kind": "plan-review",
+          "approve": "Approve",
+          "callId": "call_p1"
+        },
+        "hasDetail": true,
+        "waitInRequest": null
+      },
+      "approveEqualsBrowser": true,
+      "answered": {
+        "ok": true,
+        "path": "waterfall"
+      },
+      "browserCard": "cancel",
+      "result": {
+        "text": "Plan approved — plan mode exited; carry out the plan starting with your next step.",
+        "isError": false
+      },
+      "planActiveAfter": "{\"commandId\":\"cmd-67c7f269-2\",\"result\":{\"kind\":\"success\",\"text\":\"Plan mode is already inactive.\"}}"
+    },
+    "P2": {
+      "rejectEqualsGenericBrowser": true,
+      "answered": {
+        "ok": true,
+        "path": "waterfall"
+      },
+      "browserCard": "cancel",
+      "result": {
+        "text": "Error: The user chose to keep planning; their feedback: Add a restart test first.",
+        "isError": true
+      },
+      "planActiveAfter": "{\"commandId\":\"cmd-67c7f269-4\",\"result\":{\"kind\":\"success\",\"text\":\"Plan mode off.\"}}"
+    },
+    "P3": {
+      "entry": {
+        "state": "answered",
+        "by": "user",
+        "answer": {
+          "answers": [
+            {
+              "id": "plan-review",
+              "selected": [
+                "Approve"
+              ]
+            }
+          ]
+        }
+      },
+      "fishballLate": {
+        "ok": false,
+        "code": "already-settled",
+        "state": "answered",
+        "by": "user"
+      },
+      "result": {
+        "text": "Plan approved — plan mode exited; carry out the plan starting with your next step.",
+        "isError": false
+      }
+    },
+    "P4": {
+      "entry": {
+        "state": "closed",
+        "history": [
+          "opened",
+          "closed:ASK_CANCELLED"
+        ]
+      },
+      "result": {
+        "text": "The user dismissed the plan review to reply in their own words; plan mode remains active.",
+        "isError": false
+      },
+      "planActiveAfter": "{\"commandId\":\"cmd-67c7f269-7\",\"result\":{\"kind\":\"success\",\"text\":\"Plan mode off.\"}}"
+    },
+    "K": {
+      "childId": "eba14245-87c4-4d23-a6c4-a17711d6daa6",
+      "routerSawAnything": 0,
+      "childResult": "{\"turn\":1,\"step\":1,\"message\":{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_child\"},\"toolCallId\":\"call_child\",\"content\":[{\"type\":\"text\",\"text\":\"Error: human interaction is unavailable while the calling agent is owned by another live agent; include the unresolved question or decision in the child agent's final result\"}],\"isError\":true,\"id\":\"90f89294-51ae-48df-ac02-ec23b58bf655\"},\"error\":{\"name\":\"UserQuestionError\",\"code\":\"DELEGATED_CALLER\"}}",
+      "parentResult": "started subagent eba14245-87c4-4d23-a6c4-a17711d6daa6"
+    }
+  },
+  "restartSetup": {
+    "sessions": {
+      "legacy": "session-44532cde-8a82-4c15-89ed-93deca12bac5",
+      "timedOpen": "session-09bcfed3-a6b7-414f-b65a-2d6267142af2",
+      "timedContinued": "session-d99e904d-ee3e-449e-8436-54f8e8871762",
+      "plan": "session-dd743459-a9a9-4f40-a68d-a5ad4f078056"
+    },
+    "states": {
+      "call_rl": "open",
+      "call_rt": "open",
+      "call_rc": "continued",
+      "call_rp": "open"
+    }
+  },
+  "verdict": {
+    "Q1_fishball_answer_equals_browser_answer": true,
+    "Q1_bad_answers_refused": true,
+    "Q1_continued_answer_by_fishball": true,
+    "Q1_other_sessions_untouched": true,
+    "Q2_fishball_first_closes_session_card": true,
+    "Q2_user_first_learnt_and_fishball_refused": true,
+    "Q2_user_first_continued_learnt": true,
+    "Q2_stopped_turn_closes_both": true,
+    "Q3_plan_approve": true,
+    "Q3_plan_reject_with_feedback": true,
+    "Q3_plan_user_first": true,
+    "Q5_child_never_reaches_router": true
+  }
+}
