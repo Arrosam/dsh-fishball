@@ -10,9 +10,10 @@
  *   browser forwarder (spike S12), for a managed session's call that no pass covers (item 12).
  *
  * Code rules in the listener, in order (each can only send the request on to you):
- * - Fishball itself asking -> next(): your stock prompt in its chat (its own cards are rev11f);
- *   but with maxPendingApprovals requests open, 'rejected' at once with the too-many-waiting
- *   text, so it never freezes (Q-r11-cap-own);
+ * - Fishball itself asking (rev11f, §7a.11, S35): the pass of an identical call you allowed ->
+ *   'allowed-once'; else, below maxPendingApprovals, a card labelled Fishball in your pile and
+ *   'rejected' at once, so it never freezes (src/own-requests.js); at the cap, 'rejected' at once
+ *   with the too-many-waiting text (Q-r11-cap-own). Code never approves it without your Allow;
  * - no agent, Fishball not live, or its Permission requests plugin off -> next(): your stock
  *   prompt, unchanged DSH behaviour;
  * - a session that is yours (judged by the session the user sees, so a subagent follows its
@@ -61,8 +62,8 @@
  * S33's re-dispatch: the waterfall runs again with a marked copy that owns the signal.
  * Each prompt waiting this way is remembered in memory (prompts already showing, §7a.9): Fishball
  * is not told and takes no step, but list_frozen_sessions lists them and answer_prompt answers
- * one, which makes its session managed (the fifth way in, item 2). Fishball's own requests keep a
- * plain next(): it never answers its own prompt (§7a.13).
+ * one, which makes its session managed (the fifth way in, item 2). Fishball's own requests never
+ * reach a prompt: they are its cards (§7a.11), which it can never answer (§7a.13).
  */
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
@@ -77,6 +78,7 @@ import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { checkGrant } from './grants.js'
+import { waitingResult } from './own-requests.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -269,6 +271,7 @@ export class ApprovalBroker {
   #tags
   #grants
   #manage
+  #own
   #audit
   #decisions
   /** apr id -> request (DESIGN §9 "Request threads"): waiting for Fishball, or owing a reply. */
@@ -294,8 +297,9 @@ export class ApprovalBroker {
    * @param deps.pile - Pile (your cards). @param deps.tags - TagRecords (one per Fishball answer).
    * @param deps.grants - Grants (standing grants: created by Fishball's grant answers, covering calls).
    * @param deps.manage - (sessionId, by) => Promise<whether it became managed now> (answer_prompt, §7a.9).
+   * @param deps.own - OwnRequests (Fishball's own cards and their passes, §7a.11).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage, own }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -314,6 +318,7 @@ export class ApprovalBroker {
     this.#tags = tags
     this.#grants = grants
     this.#manage = manage
+    this.#own = own
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
     // A `function`, so the scope target (`this`) is at hand for S33's re-dispatch fallback.
@@ -477,7 +482,7 @@ export class ApprovalBroker {
   releaseAll() {
     this.#releaseWaiting(() => true, { answer: APPROVAL_ANSWER.timeout, off: true })
     // Every card in the pile is a session's request: an ask_fishball request gets a to-you ticket, a
-    // direct call keeps its stock prompt (§7a.5). Fishball's own cards (rev11f) will stay.
+    // direct call keeps its stock prompt (§7a.5). Fishball's own cards are not in this pile: they stay (§7a.11).
     this.#pile.settleWhere(() => true, { end: CARD_END.off })
   }
 
@@ -553,10 +558,10 @@ export class ApprovalBroker {
 
   /**
    * Open requests, as maxPendingApprovals counts them: waiting for Fishball, or a card in your
-   * pile (Reading, §7a.6). Fishball's own cards join this count in rev11f (Q-r11-cap-own).
+   * pile (Reading, §7a.6), Fishball's own cards included (Q-r11-cap-own).
    */
   #openCount() {
-    return this.#waiting.size + this.#pile.size
+    return this.#waiting.size + this.#pile.size + this.#own.waitingCount()
   }
 
   /** Fishball live with its Permission requests plugin on (item 10). */
@@ -868,15 +873,66 @@ export class ApprovalBroker {
   }
 
   /**
-   * Fishball's own request: your stock prompt in its chat, as before (its own cards are rev11f).
-   * With maxPendingApprovals requests already open it returns at once, rejected with the
-   * too-many-waiting text set by post-execute, so Fishball never freezes (Q-r11-cap-own).
+   * Fishball's own request (§7a.11, S35): never your stock prompt, and never answered by Fishball.
+   * - The pass of an identical call you allowed (same tool, same canonical arguments) -> 'allowed-once'.
+   * - With maxPendingApprovals requests open -> 'rejected' at once with the too-many-waiting text
+   *   (Q-r11-cap-own).
+   * - Arguments that cannot be read (no pass could match a retry) -> 'rejected' with its own text.
+   * - Otherwise a card labelled Fishball in your pile, and 'rejected' at once. Fishball's own tool
+   *   reads the card's id and returns the waiting result itself; another plugin's tool gets the
+   *   waiting text through post-execute (variant A).
+   * Under a never-asking mode DSH answers before this listener, so no card is filed (S35).
+   * Without a call id neither the card nor the text can reach the call: your stock prompt, as before.
+   * @param req - DSH's request; its agent is Fishball or a subagent of it (widened policy).
    */
-  #ownRequest(req, next) {
-    // Without a call id the text cannot be set, and a bare rejection would read as your choice: prompt as before.
-    if (req.callId === undefined || this.#openCount() < this.#readLimits().maxPendingApprovals) return next()
-    this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
+  async #ownRequest(req, next) {
+    if (req.callId === undefined) return next()
+    const limits = this.#readLimits()
+    const expected = this.#own.expected(req.callId)
+    // add_plugin's second step stands for set_plugin_enabled on the plugin it installed (own-requests.js expect).
+    const subject = expected?.subject
+    const toolName = subject?.toolName ?? req.toolName
+    const args = subject === undefined
+      ? argumentsOf(req.agent.session, req.callId, req.toolName, limits.argumentExcerptBytes)
+      : { ...argumentsText(JSON.stringify(subject.args), limits.argumentExcerptBytes), calledTool: toolName, value: subject.args }
+    const call = { sessionId: this.#assistantId(), toolName, callId: req.callId, args, at: new Date().toISOString() }
+    const passed = await this.#own.takePass(toolName, args.value)
+    if (passed !== undefined) {
+      await this.#record({ ...call, id: passed, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.pass, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
+      return APPROVAL_OUTCOME.allowedOnce
+    }
+    // Arguments that could not be read give no pass key: Allow could never let a retry through,
+    // so no card is filed, and the call is refused with its own text (Reading).
+    if (args.value === undefined) {
+      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.unreadable })
+      return APPROVAL_OUTCOME.rejected
+    }
+    let id
+    try {
+      // Only Fishball's own tool reads the filed id back (cardFor); another plugin's tool gets the text by its mark.
+      id = await this.#own.file({ callId: expected === undefined ? undefined : req.callId, toolName, args, reason: expected?.reason ?? req.reason ?? '', detail: expected?.detail }, () => this.#openCount() >= limits.maxPendingApprovals)
+    } catch (error) {
+      // No card could be stored: refused without one, never a prompt that freezes Fishball.
+      this.#logger.warn('own request could not be filed (%s)', diagnosticOf(error))
+      return APPROVAL_OUTCOME.rejected
+    }
+    if (id === undefined) {
+      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
+      return APPROVAL_OUTCOME.rejected
+    }
+    if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.waiting, requestId: id })
+    await this.#record({ ...call, id, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.toUser, finalOutcome: APPROVAL_OUTCOME.rejected })
     return APPROVAL_OUTCOME.rejected
+  }
+
+  /**
+   * Fishball's own tool, after its request was answered 'rejected': the waiting result when the
+   * request became a card (§7a.11), or undefined when it was refused without one (a never-asking
+   * mode, S35; the cap, whose text post-execute sets).
+   */
+  cardFor(callId) {
+    const id = this.#own.takeFiled(callId)
+    return id === undefined ? undefined : waitingResult(id)
   }
 
   /**
