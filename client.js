@@ -167,7 +167,7 @@ window.__ModuleLoader__.load({
     const CARD_KINDS = new Set(['asked', 'direct'])
     const ARGUMENTS_COMPLETE = 'complete'
     /** The turn-tail tags (DESIGN §7a.3, §10e; src/constants.js TAG_KIND). */
-    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', iconSize: 12, separator: ' · ' })
+    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', iconSize: 12, separator: ' · ' })
     const TAG_ANSWERS = new Set(['allow', 'grant', 'reject', 'ask'])
     /**
      * Standing grants (rev11d; src/constants.js GRANT_KIND, GRANT.wildcard): a prefix grant is shown
@@ -508,7 +508,7 @@ window.__ModuleLoader__.load({
       'managedBy.message': 'Messaged by Fishball',
       'managedBy.start': 'Started by Fishball',
       'managedBy.prompt-answer': 'Prompt answered by Fishball',
-      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you: a request the session asked first waits in your pile above Fishball\'s chat, a direct call in that session.',
+      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you: a request the session asked first waits in your pile above Fishball\'s chat, and a direct call waits both there and in that session.',
       approvalsWaiting: 'Waiting for Fishball',
       'approvalAnswer.allow': 'Approved by Fishball',
       'approvalAnswer.escalate': 'Sent to you',
@@ -738,6 +738,7 @@ window.__ModuleLoader__.load({
       tagSentToYou: 'Sent to you',
       'tagAnswer.grant': 'granted (standing grant)',
       tagGrant: 'Allowed by Fishball\'s grant: {what}',
+      tagPrompt: 'Answered by Fishball: {decision}',
       grantExact: 'exact {tool} call',
       grantsTitle: 'Standing grants ({count})',
       grantEnds: 'ends {at}',
@@ -879,7 +880,7 @@ window.__ModuleLoader__.load({
       'managedBy.message': 'Fishball 发过消息',
       'managedBy.start': 'Fishball 启动',
       'managedBy.prompt-answer': 'Fishball 答复过提示',
-      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你：会话事先询问的请求在 Fishball 对话上方的待处理区等你，直接调用则在该会话中等你。',
+      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你：会话事先询问的请求在 Fishball 对话上方的待处理区等你，直接调用则同时在待处理区和该会话中等你。',
       approvalsWaiting: '等待 Fishball 处理',
       'approvalAnswer.allow': 'Fishball 已批准',
       'approvalAnswer.escalate': '已转交给你',
@@ -1109,6 +1110,7 @@ window.__ModuleLoader__.load({
       tagSentToYou: '已转交给你',
       'tagAnswer.grant': '已授予长期许可',
       tagGrant: '由 Fishball 的长期许可允许：{what}',
+      tagPrompt: 'Fishball 已答复：{decision}',
       grantExact: '完全相同的 {tool} 调用',
       grantsTitle: '长期许可（{count}）',
       grantEnds: '{at} 到期',
@@ -2209,11 +2211,13 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * A tag's words: "Sent to you", "Allowed by Fishball's grant: …" for a call a grant covered, or
-     * "Asked Fishball" with the answer (DESIGN §7a.3; client wording constants).
+     * A tag's words: "Sent to you", "Allowed by Fishball's grant: …" for a call a grant covered,
+     * "Answered by Fishball: …" for a prompt Fishball answered (answer_prompt, rev11e), or "Asked
+     * Fishball" with the answer (DESIGN §7a.3; client wording constants).
      */
     const tagText = (t, tag) => {
       if (tag.kind === TURN_TAGS.sentToYou) return t('tagSentToYou')
+      if (tag.kind === TURN_TAGS.prompt && TAG_ANSWERS.has(tag.answer)) return t('tagPrompt', { decision: t('tagAnswer.' + tag.answer) })
       if (tag.kind === TURN_TAGS.grant && tag.grant) return t('tagGrant', { what: grantWhat(t, tag.grant) })
       return TAG_ANSWERS.has(tag.answer) ? `${t('tagAskedFishball')}${TURN_TAGS.separator}${t('tagAnswer.' + tag.answer)}` : t('tagAskedFishball')
     }
