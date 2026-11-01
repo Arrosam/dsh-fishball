@@ -2049,3 +2049,7 @@ Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan`
 `rev11g-cap.test.mjs` CAP-01: past `maxPendingApprovals`, Fishball's own request answers parsed JSON `{ok: false, code: 'too-many-waiting', …}` with "or withdraw one" in the text. Total rev11g cases: 96. Readings 1-4 above (User mode/`to_user` card at once, cards rebuilt at start without resuming, 409 after a question goes back to its session, `questionId`) are confirmed by the manager.
 
 - **A-r11e-8. Audit of `answer_prompt` (settled, manager 2026-11-02).** Follows DESIGN §9: a `decisions` row `answer-prompt` AND an approvals audit row of kind `prompt`; APR-10 expects both.
+
+### rev11g after the build (stage 2)
+
+Older cases changed on purpose: `STATE_KEYS` gains `questionMode` (HTP-01, HTP-04/05, SND-01, PHT-01, PHT-04) and `OWN_PLUGINS.approvals.tools` gains `answer_question` (OWN-01): DESIGN §10e, §7a.10. Readings 1 and the rest above changed as follows: plan-review cards are `kind: 'plan-review'` (the helper accepts both); a tag record's `answer` is a word (`answer`, `approve`, `keep-planning`) and the published record carries Fishball's words (the user's confirmed reading); a rebuilt continued card is the user's and Fishball's answer on it is `expired` (RST-04); a `to_user` question gets a Sent-to-you tag (FLW-12); the route's `bad-answer` for a well-shaped body with invalid answers (FLW-14); the session's own card is untimed (HLD-01). Full report: [hand-checks/rev11g.md](hand-checks/rev11g.md).
