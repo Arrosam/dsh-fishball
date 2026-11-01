@@ -285,6 +285,8 @@ export class ApprovalBroker {
         question: { type: 'string', description: TEXT.questionArg },
         grant: {
           type: 'object',
+          // DSH requires an explicit true or false on every object schema (dsh-tools); only these three fields are a grant.
+          additionalProperties: false,
           properties: { kind: { type: 'string', enum: Object.values(GRANT_KIND) }, prefix: { type: 'string' }, expires_at: { type: 'string' } },
           description: TEXT.grantArg,
         },
