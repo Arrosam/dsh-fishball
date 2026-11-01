@@ -743,9 +743,10 @@ export const GRANT_ACTION = { grant: 'grant', revoke: 'revoke' }
 export const GRANT_AUDIT = { grant: 'grant', used: 'grant-used' }
 /** A tag record made for a call a grant covered (§9 "Tag records"). */
 export const GRANT_TAG_KIND = 'grant'
+/** run_code is a DSH built-in that only exists in PTC mode and cannot be a fixture here; demo_echo stands in for "every other tool" (exact-only). */
 /** Tools that accept prefix grants (shell commands only, §7a.8, Q-r11-prefix-tools), and tools that get exact grants only. */
 export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_send']
 /** terminal_open has no command text (the manager's decision, 2026-11-02): exact-call grants only. */
-export const EXACT_ONLY_TOOLS = ['run_code', 'fbtest_ask', 'terminal_open']
+export const EXACT_ONLY_TOOLS = ['demo_echo', 'fbtest_ask', 'terminal_open']
 /** The fixture tools that ask for approval in their body (fixture-tools.mjs). */
-export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('run_code', 'terminal_open').join(',') }
+export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('demo_echo', 'terminal_open').join(',') }

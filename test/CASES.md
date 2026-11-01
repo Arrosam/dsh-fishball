@@ -1794,3 +1794,4 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 - **A-r11d-6. Expiry rows.** Expiry is checked on the grants row (`expired`/`ended`, `endedBy: 'expiry'`), not on a `decisions` row; the design says expiry is audited without naming the table.
 
 - **A-r11d-7. Manager's readings (2026-11-02), built in:** `terminal_open` takes exact grants only; a prefix is the start of the asking command; a trailing `*` is dropped; expiry writes no `decisions` row (END-01 checks the grants row only).
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
