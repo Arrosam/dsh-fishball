@@ -22,7 +22,8 @@
  *   for Fishball's own tools and for other plugins' tools in its session alike;
  * - another plugin's tool in Fishball's session whose request became Fishball's card (rev11f,
  *   §7a.11): `block` with the waiting text naming the request (S35 variant A). Fishball's own tools
- *   return that text themselves and are never marked.
+ *   return that text themselves and are never marked. One whose arguments could not be read gets
+ *   no card (no retry could match it) and says so.
  * Inside run_code a block reaches the program as the thrown error's message.
  *
  * A call cancelled after its approval may never reach post-execute, so marks also end with the
@@ -35,7 +36,7 @@ import { rootSessionOf } from './session-info.js'
 import { waitingText } from './own-requests.js'
 
 /** What Fishball answered for one marked call. */
-export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING, waiting: 'waiting' })
+export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING, waiting: 'waiting', unreadable: 'unreadable' })
 
 /** Agent-visible texts (S35's proposal, kept as the plugin's constants). */
 const TEXT = Object.freeze({
@@ -45,6 +46,7 @@ const TEXT = Object.freeze({
   userRejected: (note) => `The user rejected this call: ${note}`,
   question: (requestId, question) => `Fishball did not run this call yet; it asks a question first (request ${requestId}): ${question}\nAnswer with ask_fishball({request_id: "${requestId}", reply: "…"}); that continues the same request. If Fishball then allows it, make this identical call again.`,
   summary: 'Fishball approved a call once',
+  unreadable: 'This call needs the user\'s approval, but its arguments could not be read, so it could not be put to the user as a request and it did not run.',
   tooManyWaiting: `${TOO_MANY_WAITING}: too many permission requests are waiting for the user, so this call was not made and nothing was asked. Try it again once the user has answered some of them, or withdraw one of your own waiting requests with withdraw_request.`,
 })
 const SEPARATOR = '\n\n'
@@ -91,6 +93,7 @@ export class ResultWording {
       if (exec.parent !== undefined) return { kind: POST_DECISION.accept, additionalContexts: [noticeMessage(notice)] }
       return { kind: POST_DECISION.accept, content: [...result.content, textBlock(SEPARATOR + notice)] }
     }
+    if (mark.kind === WORDING.unreadable) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.unreadable)] }
     if (mark.kind === WORDING.waiting) return { kind: POST_DECISION.block, feedback: [textBlock(waitingText(mark.requestId))] }
     if (mark.kind === WORDING.tooManyWaiting) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.tooManyWaiting)] }
     if (mark.kind === WORDING.userReject) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.userRejected(mark.note))] }

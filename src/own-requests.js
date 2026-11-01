@@ -30,11 +30,11 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ERROR, CARD_DECISION, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OWN_REQUEST, OWN_STATUS, REQUEST_KIND, SOURCE } from './constants.js'
+import { APPROVAL, APPROVAL_ERROR, ARGUMENTS_STATUS, CARD_DECISION, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OWN_REQUEST, OWN_STATUS, REQUEST_KIND, SOURCE } from './constants.js'
 import { AuditLog } from './audit.js'
 import { argumentsDigest } from './passes.js'
 import { authorOf } from './author.js'
-import { byteLength, cutToBytes } from './text.js'
+import { byteLength, cutToBytes, latestFirst } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { JSON_OUTPUT, ok, refused } from './tool-results.js'
 
@@ -49,6 +49,8 @@ const TEXT = Object.freeze({
   waiting: (id) => `${OWN_REQUEST.waitingCode}: this call did not run. It waits for the user's approval as request ${id}, a card in the user's pile; carry on with other work meanwhile. You will be told when the user answers. If the user allows it, you are told to run it again, with the exact call to make; that identical call then runs once. If you no longer need it, withdraw it with withdraw_request({request_id: "${id}"}).`,
   /** The "approved, run it again" notice (item 22); it names the request and the exact call. */
   runAgain: (id, toolName, args) => `[approved ${id}] Fishball notice: the user allowed your request ${id}. It has not run yet: run it again now, as the identical call ${toolName} with exactly these arguments: ${args}\nThat one call then runs once without asking. The approval ends when this turn ends.`,
+  /** The same, when the arguments were too long to keep whole: quoting the cut text would make a different call. */
+  runAgainLong: (id, toolName) => `[approved ${id}] Fishball notice: the user allowed your request ${id}. It has not run yet: run it again now, repeating your earlier ${toolName} call for request ${id} exactly, with the same arguments (too long to quote here). That one call then runs once without asking. The approval ends when this turn ends.`,
   runAgainSummary: (id) => `The user allowed request ${id}`,
   rejected: (id, toolName, note) => `Fishball notice: the user rejected your request ${id} (${toolName}); it did not run.${note ? ` The user's note: ${note}` : ''}`,
   /** The closing line of a cut detail list (not counted in its bound). */
@@ -93,7 +95,7 @@ function turnOfMessage(events, messageId) {
   return events.slice(0, at).findLast((event) => event.type === APPROVAL.turnStartEvent)?.data?.turn
 }
 
-const byNewest = (field) => ([, a], [, b]) => ((a[field] ?? '') < (b[field] ?? '') ? 1 : (a[field] ?? '') > (b[field] ?? '') ? -1 : 0)
+const byNewest = (field) => ([, a], [, b]) => latestFirst(a[field], b[field])
 
 export class OwnRequests {
   #store
@@ -171,19 +173,26 @@ export class OwnRequests {
    * File one card (the broker's listener, before it answers 'rejected').
    * @param request - { callId, toolName, args: { text, status, value }, reason, detail? }; callId is
    *   Fishball's own tool's call, whose body reads the id back (takeFiled), else undefined.
-   * @returns the own_ id.
+   * @param isFull - () => whether maxPendingApprovals requests are open; checked in the write
+   *   queue, so parallel calls in one step cannot all slip under the cap.
+   * @returns the own_ id, or undefined when the cap is reached (nothing filed).
    */
-  async file({ callId, toolName, args, reason, detail }) {
+  async file({ callId, toolName, args, reason, detail }, isFull) {
     const limits = this.#readLimits()
     const id = OWN_REQUEST.idPrefix + randomUUID().replace(/-/g, '')
-    await this.#serial(() => this.#store.ownRequests.put(id, {
+    const filed = await this.#serial(async () => {
+      if (isFull()) return false
+      await this.#store.ownRequests.put(id, {
       toolName,
       ...(args.value === undefined ? {} : { argumentsDigest: argumentsDigest(args.value) }),
       arguments: args.text, argumentsStatus: args.status,
       reason: reason.slice(0, limits.rationaleChars),
       ...(detail === undefined ? {} : { detail: boundedDetail(detail, limits.argumentExcerptBytes) }),
       status: OWN_STATUS.waiting, createdAt: new Date().toISOString(),
-    }))
+      })
+      return true
+    })
+    if (!filed) return undefined
     if (callId !== undefined) this.#filed.set(callId, id)
     this.#onChange()
     return id
@@ -191,6 +200,8 @@ export class OwnRequests {
 
   /**
    * Use the pass of an identical call you allowed (S35: same tool, same canonical arguments).
+   * Every own request is Fishball's session's (a subagent of Fishball asks for it, §7a.13), so
+   * the session part of S35's key is the same for all of them and is not stored.
    * @param args - the parsed arguments, or undefined (then no pass can match).
    * @returns the own_ id whose pass was used, or undefined.
    */
@@ -227,7 +238,7 @@ export class OwnRequests {
     })
     if (answered === undefined) return false
     await this.#decide({ action: allowed ? DECISION_ACTION.allowOnce : DECISION_ACTION.reject, by: CHANGED_BY.user, target: requestId, ...(allowed ? {} : { withNote: Boolean(note) }) })
-    if (allowed) await this.#wake(requestId, answered.notice)
+    if (allowed && !(await this.#wake(requestId, answered.notice))) await this.#serial(() => this.#update(requestId, { told: false })).catch(this.#warn('own request told'))
     else await this.#tellRejected(requestId, answered.record)
     return true
   }
@@ -250,7 +261,7 @@ export class OwnRequests {
   /**
    * Each time Fishball goes live (§11 "Restart"), from Fishball's log: a pass whose notice entered
    * a turn that has ended (a restart closes it as interrupted) ends; one whose turn still runs
-   * records it; a rejection Fishball has not been told about is told now.
+   * records it; a rejection or run-again notice Fishball has not been given yet is given now.
    * @param session - Fishball's session.
    */
   async catchUp(session) {
@@ -258,7 +269,11 @@ export class OwnRequests {
     for (const [id, record] of [...this.#store.ownRequests.entries()]) {
       if (record.status === OWN_STATUS.approved) {
         const turn = record.wokenTurn ?? turnOfMessage(events, record.noticeId)
-        if (turn === undefined) continue
+        if (turn === undefined) {
+          // A notice that reached neither the queue nor Fishball is given now, without a wake.
+          if (record.told === false) await this.#retell(id, record)
+          continue
+        }
         const ended = events.some((event) => event.type === APPROVAL.turnEndEvent && event.data?.turn === turn)
         await this.#serial(() => (ended ? this.#settle(id, { status: OWN_STATUS.expired }) : this.#update(id, { wokenTurn: turn })))
       } else if (record.status === OWN_STATUS.rejected && record.told === false) await this.#tellRejected(id, record)
@@ -315,21 +330,30 @@ export class OwnRequests {
 
   /** The "approved, run it again" notice for one request (item 22). */
   #runAgainNotice(requestId, record) {
-    const text = TEXT.runAgain(requestId, record.toolName, record.arguments)
+    const text = record.argumentsStatus === ARGUMENTS_STATUS.complete ? TEXT.runAgain(requestId, record.toolName, record.arguments) : TEXT.runAgainLong(requestId, record.toolName)
     return createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.runAgainSummary(requestId)), author: authorOf(INTAKE_KIND.system) } })
   }
 
   /**
    * Wake Fishball with the notice (never wake-capped, Reading). A notice the queue refuses is
    * injected without a wake instead, so Fishball still reads it at its next turn.
+   * @returns whether it was queued or injected (false: Fishball is told at its next go-live).
    */
   async #wake(requestId, notice) {
     try {
       await this.#ledger.publish({ kind: INTAKE_KIND.approval, sourceIdentity: OWN_REQUEST.sourceIdentity, dedupeKey: requestId, message: notice })
+      return true
     } catch (error) {
       this.#logger.warn('run-again notice %s not queued (%s)', requestId, diagnosticOf(error))
-      this.#inject(notice)
+      return this.#inject(notice)
     }
+  }
+
+  /** A run-again notice that could not be given before: a fresh one, injected; its id replaces the old one. */
+  async #retell(requestId, record) {
+    const notice = this.#runAgainNotice(requestId, record)
+    if (!this.#inject(notice)) return
+    await this.#serial(() => this.#update(requestId, { noticeId: notice.id, told: true })).catch(this.#warn('own request told'))
   }
 
   /** Tell Fishball of your Reject without waking it; once told, the record says so. */
@@ -366,9 +390,12 @@ export class OwnRequests {
     if (record !== undefined) await this.#store.ownRequests.put(id, { ...record, ...fields })
   }
 
-  /** Settled requests beyond auditEntriesKept leave, oldest decision first; cards and passes always stay. */
+  /**
+   * Settled requests beyond auditEntriesKept leave, oldest decision first; cards, passes and
+   * rejections Fishball has not been told about yet always stay.
+   */
   async #pruneSettled() {
-    const settled = [...this.#store.ownRequests.entries()].filter(([, record]) => record.status !== OWN_STATUS.waiting && record.status !== OWN_STATUS.approved).sort(byNewest('decidedAt'))
+    const settled = [...this.#store.ownRequests.entries()].filter(([, record]) => record.status !== OWN_STATUS.waiting && record.status !== OWN_STATUS.approved && record.told !== false).sort(byNewest('decidedAt'))
     for (const [id] of settled.slice(this.#readLimits().auditEntriesKept)) await this.#store.ownRequests.delete(id)
   }
 

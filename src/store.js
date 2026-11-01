@@ -177,7 +177,7 @@ const ownRequestRecord = z.object({
   noticeId: z.string().min(1).optional(),
   /** The turn of Fishball's session the notice entered: the pass ends with it. */
   wokenTurn: z.number().int().nonnegative().optional(),
-  /** A rejection Fishball has been told about (one decided while it was not live is told when it is). */
+  /** Whether Fishball has been given the outcome: false for a rejection or run-again notice it could not be given yet (given at its next go-live). */
   told: z.boolean().optional(),
 })
 
