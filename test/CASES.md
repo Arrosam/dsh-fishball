@@ -1752,7 +1752,7 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 | GRT-03 | EP | item 18 (accepted risk) | `npm test && git push` is covered |
 | GRT-04 ×8 | BVA/EP (command against prefix `npm test`) | item 18 (raw text) | longer, `npm testing`, exactly the prefix: covered; `npm tes`, `npm run test`, `NPM test`, `npm  test`, `echo npm test`: to Fishball |
 | GRT-05, 06 | EP | §7a.8 "same session, tool" | the same command in pwsh, or in another session: not covered |
-| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or a missing argument: to Fishball |
+| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or an extra argument: to Fishball |
 | GRT-08 ×3 | EP (pwsh, terminal_send; a trailing `*`) | Q-r11-prefix-tools; manager 2026-11-02 | prefix grant accepted and covers a following command; a trailing `*` is dropped |
 | GRT-09 ×5 | EP (run_code, fbtest_ask, terminal_open prefix refused; exact on run_code and terminal_open accepted) | Q-r11-prefix-tools, requirements "Prefix grants" | prefix refused, `ok:false`, request still pending (a reject works), no grant row; an exact grant on run_code is accepted and covers |
 | GRT-10 ×10 | DT (refused answers) | §7a.8 "an end time is required and must be in the future", `allow`'s rules | no end time; past (an hour, one second); not a time; no grant object; unknown kind; prefix kind with no or an empty prefix; a prefix that is not the start of the asking command; risk high; empty reason: `ok:false` with a code, no grant row, no `decisions` row, request still pending |
@@ -1794,6 +1794,7 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 - **A-r11d-6. Expiry rows.** Expiry is checked on the grants row (`expired`/`ended`, `endedBy: 'expiry'`), not on a `decisions` row; the design says expiry is audited without naming the table.
 
 - **A-r11d-7. Manager's readings (2026-11-02), built in:** `terminal_open` takes exact grants only; a prefix is the start of the asking command; a trailing `*` is dropped; expiry writes no `decisions` row (END-01 checks the grants row only).
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
 
 
 ## Revision 11 rev11e cases (prompts already showing, `answer_prompt`, cards for direct calls)
