@@ -4,6 +4,8 @@
  *
  * A card is filed by the broker (src/approvals.js) when Fishball escalates an ask_fishball
  * request, does not answer in time, or cannot be told; the asking agent keeps waiting on it.
+ * A direct call Fishball escalates or does not answer in time is a card too, beside the stock
+ * prompt in its session (rev11e, §7a.6): the first answer in either place wins.
  * Each card settles exactly once, in one place (settle), so your answer in the pile, your answer
  * on the session's row, the call's cancellation and a release can race safely: the first wins
  * and every later one is refused (answering in either place clears both, item 15).
@@ -27,19 +29,25 @@ export class Pile {
    * File one card.
    * @param card - { requestId, kind, sessionId, callId?, toolName, arguments, argumentsStatus,
    *   quotes, why, thread, note?, since }; plain data, published to the browser as it is.
+   * @param onAnswer - optional, called synchronously with { decision, note? } when you answer it
+   *   (a direct call's card races its stock prompt in the same tick, src/approvals.js).
    * @returns a promise of how it left: { end: CARD_END.user, decision, note? } for your answer,
    *   or the { end } given to settle() by a release or a cancellation.
    */
-  file(card) {
+  file(card, onAnswer) {
     // The executor runs synchronously, so the card is in the pile when file() returns.
-    const ended = new Promise((settle) => { this.#cards.set(card.requestId, { card, settle }) })
+    const ended = new Promise((settle) => { this.#cards.set(card.requestId, { card, settle, onAnswer }) })
     this.#onChange()
     return ended
   }
 
   /** Your answer on one card. @returns whether the card was still in the pile. */
   answer(requestId, decision, note) {
-    return this.settle(requestId, { end: CARD_END.user, decision, ...(note === undefined ? {} : { note }) })
+    const onAnswer = this.#cards.get(requestId)?.onAnswer
+    const answer = { decision, ...(note === undefined ? {} : { note }) }
+    if (!this.settle(requestId, { end: CARD_END.user, ...answer })) return false
+    onAnswer?.(answer)
+    return true
   }
 
   /** End one card once. @returns whether it was still in the pile. */
@@ -55,6 +63,11 @@ export class Pile {
   /** End every card that matches with `result`. */
   settleWhere(matches, result) {
     for (const { card } of [...this.#cards.values()]) if (matches(card)) this.settle(card.requestId, result)
+  }
+
+  /** Whether this request's card is still in the pile. */
+  has(requestId) {
+    return this.#cards.has(requestId)
   }
 
   /** Cards in the pile (the maxPendingApprovals count includes them, §7a.6). */
