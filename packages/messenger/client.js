@@ -150,10 +150,12 @@ window.__ModuleLoader__.load({
         `${REPLY}::before{content:"";position:absolute;left:0;top:0;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;border-radius:50%;background:${markImage(mark, REPLY_LAYOUT.fishFill)} center/${REPLY_LAYOUT.fishShare} no-repeat,${ACCENT}}`,
         `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px;top:0;font-size:12px;line-height:${REPLY_LAYOUT.nameLinePx}px;font-weight:600;color:${ACCENT}}`,
         // DSH stretches a table of four or more columns (its md-table-wide class) past the chat
-        // column to the edges of the chat area. Beside the avatar and inside the bubble that runs
-        // past the bubble's right edge, so here it keeps the bubble's width and scrolls sideways
-        // inside it, like DSH's narrower tables. Scoped to the reply row, not the bubble element,
-        // so it holds even if the bubble falls back to DSH's look.
+        // column to the edges of the chat area. The reply row is narrower (avatar on the left, a
+        // margin on the right), so that stretch ran past the bubble's right edge. Here the table
+        // keeps the row's width and, when wider, scrolls sideways on hover or focus as DSH's wide
+        // tables do; DSH resets its compact markdown's tables the same way. Scoped to the reply
+        // row, whose margin and padding cause the narrowing, so it holds even if the bubble
+        // element falls back to DSH's look.
         `${REPLY} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
         // Work rows (tool calls, reasoning, process groups) read as quieter activity lines.
         `${SCOPE} [data-chat-group-part]:not([data-chat-group-part="response"]){opacity:.7}`,
