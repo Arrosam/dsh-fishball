@@ -824,9 +824,9 @@ export class ApprovalBroker {
     const result = await this.#round(request, signal, false)
     switch (result.answer) {
       case ROUND.undelivered:
-        // Unrecorded, as in P7: Fishball never saw it.
-        this.#requests.delete(request.id)
-        return this.#showPrompt(via, call)
+        // The notice could not reach Fishball (queue full): to you, a card and the stock prompt as
+        // for a timeout, audited to-user, with no tag (the manager's decision, 2026-11-02; §16).
+        return this.#sendOn(request, { answer: APPROVAL_ANSWER.toUser }, via, signal)
       case APPROVAL_ANSWER.allow:
       case APPROVAL_ANSWER.grant:
         this.#wording.mark(req.callId, sessionId, req.toolName, { kind: WORDING.allow })
@@ -874,8 +874,8 @@ export class ApprovalBroker {
   /**
    * A direct call Fishball did not decide (escalated, timed out, released, Fishball off, or
    * withdrawn): your stock prompt in the session, unless the call was cancelled meanwhile.
-   * Escalated or timed out while Fishball can still take requests and the session is still
-   * managed, it is also a card in your pile (rev11e, §7a.6): the first answer in either place
+   * Escalated, timed out or undelivered while Fishball can still take requests and the session is
+   * still managed, it is also a card in your pile (rev11e, §7a.6): the first answer in either place
    * wins, and the other closes. Released or off, the prompt alone (§7a.5, §5e).
    * @param signal - the asker's own signal.
    */
@@ -883,13 +883,14 @@ export class ApprovalBroker {
     // Withdrawn, or the call was cancelled while Fishball's answer arrived: never next() (H1).
     if (result.answer === APPROVAL_ANSWER.withdrawn || signal?.aborted) {
       await this.#finish(request, { answer: APPROVAL_ANSWER.withdrawn }, APPROVAL_OUTCOME.cancelled)
-      this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
+      if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
       return APPROVAL_OUTCOME.cancelled
     }
     // A request released because Fishball or Permission requests went off is not news to Fishball (review L2).
     const timedOut = result.answer === APPROVAL_ANSWER.timeout && !result.off
     // Checked in the same tick as the filing in #passOn, so a release cannot slip in between.
-    const toPile = (timedOut || result.answer === APPROVAL_ANSWER.escalate) && this.#canAnswer() && this.#isManaged(request.sessionId)
+    const sentToYou = timedOut || result.answer === APPROVAL_ANSWER.escalate || result.answer === APPROVAL_ANSWER.toUser
+    const toPile = sentToYou && this.#canAnswer() && this.#isManaged(request.sessionId)
     // As for an asked request (rev11c): Fishball hears of the timeout at once, not after your answer.
     if (timedOut) this.#tell(TEXT.outcome(request.id, TEXT.timedOut))
     const { outcome, by, note } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)
@@ -899,6 +900,8 @@ export class ApprovalBroker {
     await this.#finish(request, outcome === APPROVAL_OUTCOME.cancelled ? { answer: APPROVAL_ANSWER.withdrawn } : result, outcome)
     if (by === PROMPT_BY.session) await this.#clicked(request.sessionId, request.id, outcome)
     else if (by === PROMPT_BY.pile) await this.#clicked(request.sessionId, request.id, outcome, outcome === APPROVAL_OUTCOME.rejected ? note !== undefined : undefined)
+    // Fishball hears how it ended only for a request it saw (not an undelivered notice).
+    if (!request.seen) return outcome
     if (outcome === APPROVAL_OUTCOME.cancelled) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
     else if (by === PROMPT_BY.pile) this.#tell(TEXT.outcome(request.id, TEXT.pileOutcome(outcome)))
     else if (by === PROMPT_BY.session && result.answer === APPROVAL_ANSWER.escalate) this.#tell(TEXT.outcome(request.id, TEXT.escalatedOutcome(outcome)))
