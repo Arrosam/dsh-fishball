@@ -1333,7 +1333,7 @@ The rules:
 
 ## Revision 11 rev11-limits cases (DESIGN §14 row rev11-limits; §16 "Plugin config: the safety limits", "Hard-coded limits moved to config", "Values that stay constants", decision rows "Limits: …")
 
-Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_R11` in [support/constants.mjs](support/constants.mjs); every minimum is 1 (§16 "Rules"). The worker gained one read-only operation, `settingsSchema`, which returns the row's form exactly as DSH's settings service describes it to its settings page (`describe().schema`).
+Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_R11` in [support/constants.mjs](support/constants.mjs); every minimum is 1 (§16 "Rules") except `replyCapShare`, whose minimum is 2 (addendum below). The worker gained one read-only operation, `settingsSchema`, which returns the row's form exactly as DSH's settings service describes it to its settings page (`describe().schema`).
 
 ### [limits-config.test.mjs](limits-config.test.mjs): the fields in the fishball row config (one host)
 
@@ -1398,6 +1398,20 @@ Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_
 | L41 ×19 | EP (one per staying name) | same files | each constant §16 keeps (`maxTimerMs`, `HOUR_MS`, `idPattern`, `dshDefaults`, `minCapTokens`, the three `ctx.fishball` sizes, `nameBytes`, `maxSubagentDepth`, `resumeAttempts`, `resumeRetryMs`, `maxAttempts`, `modelInfoTimeoutMs`, `SEQ_DIGITS`, `DIGEST_HEX_CHARS`, `WORDS_PER_TOKEN`, `ROUNDING_GUARD`, `FIBER_ACTIVE`) is still named. Values are not read |
 | L42 ×3 | EP | `docs/plugin-author-guide.md` | a line names the dedupe key with 256 bytes, the description with 1,024 (or 1024) bytes, and the title with 200 bytes |
 
+### Addendum 2026-11-01: `replyCapShare` minimum 2 (user's decision)
+
+`replyCapShare`'s minimum is now 2, so the automatic reply cap is never more than half the window. Every other field keeps its minimum. `LIMITS_R11.replyCapShare.min` is 2 in [support/constants.mjs](support/constants.mjs).
+
+Changed existing cases (now computed from each field's `min`; other fields' inputs are unchanged):
+- **L4** `replyCapShare` accepts 2 (was 1).
+- **L5** inputs are min−1, −1, min+0.5 and "5", plus 0 where min > 1. For `replyCapShare` that is 1, 0, −1, 2.5, "5" (65 cases, was 64).
+- **L8** the rebuilt form refuses min−1 and min+0.5 and accepts min: for `replyCapShare` 1 and 2.5 fail, 2 passes.
+
+| id | technique | input | expected |
+|---|---|---|---|
+| L12 (limits-config) | BVA | `replyCapShare` 8, then 1, then 2 | 1 refused: profile patch, settings value and `state.limits` keep 8; 2 accepted: value, saved config and `state.limits` show 2 |
+| L31 (limits-context) | ST + BVA | `replyCapShare` 8 → 2 → 1 → 8; N 40000 (floor(N/2) 20000 < `defaultReplyCapTokens` 32000) | at 2: outputCap 20000, threshold 15000, next Fishball request maxTokens in (5000, 20000]; 1 refused, `state.limits` keeps 2, cap stays 20000; back at 8: 5000 / 30000; same agent, not disposed, live throughout |
+
 ### Not automated (rev11-limits)
 
 - **Package operations follow DSH's plugin-manager values** (`outputBytes`, `idleTimeoutMs`, `lockWaitMs`, `inspectTimeoutMs`), and DSH's defaults apply when its manager cannot be read. DSH's plugin-manager row has no live (volatile) settings form, so the settings service cannot change it in a running host. Showing the effect would need slow pnpm installs that are made to time out or overflow on purpose. L40 checks that the four Fishball constants are gone. The behaviour needs a review or a manual check.
@@ -1406,7 +1420,7 @@ Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_
 
 ### Ambiguities (rev11-limits)
 
-- **A-L1. Minimums.** §16 says only that every value is a whole number of at least 1. The tests use min 1 for all 16 fields, including `minWindowTokens`, `replyCapShare` and `pluginManagerStartMs`.
+- **A-L1. Minimums.** §16 says only that every value is a whole number of at least 1. The tests use min 1 for 15 fields, including `minWindowTokens` and `pluginManagerStartMs`, and 2 for `replyCapShare` (user's decision 2026-11-01, see the addendum).
 - **A-L2. `watchesShown` with active watches.** "Older closed watches are not shown" can mean either that the cap counts all watches and the active ones are kept, or that only closed ones are capped. L52 asserts at most 2 shown with the active one among them, which holds under the first reading only. Under the second, 2 would be the closed count alone.
 - **A-L3. Whether `state.limits` lists the new fields (resolved).** §16 makes each moved limit "a config field like those above", and §3 makes `Config` the one object every component reads limits from. So the default table is now 28 fields: the 12 original ones and the 16 moved ones. CFG-01 and CFG-08 (`config.test.mjs`) and HTP-01's `state.limits` key check (`http.test.mjs`) expect all 28 in the settings value and in `state.limits`, built from `LIMITS` plus `LIMITS_R11`.
 - **A-L4. A stored window that the new `minWindowTokens` makes too small.** Not stated. L21 clears the window before raising the minimum.
