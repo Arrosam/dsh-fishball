@@ -1,0 +1,253 @@
+{
+  "id": "verify-S33-rc2",
+  "started": "2026-11-01T08:29:39.442Z",
+  "finished": "2026-11-01T08:29:41.155Z",
+  "runtime": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.2/node_modules",
+  "node": "v22.22.2",
+  "pass": true,
+  "cases": {
+    "mutate": {
+      "A": {
+        "heldBefore": 1,
+        "accepted": true,
+        "secondAnswer": false,
+        "gatewayAfter": 0,
+        "decided": [
+          "allowed-once"
+        ],
+        "toolResults": [
+          "RAN allow-mutate"
+        ],
+        "entry": {
+          "key": "s33_1",
+          "mode": "mutate",
+          "toolName": "ask_me",
+          "callId": "call_allow-mutate",
+          "args": {
+            "text": "{\"what\":\"allow-mutate\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "plugin",
+          "outcome": "allowed-once",
+          "downstream": {
+            "rejected": "s33: answered by the plugin"
+          },
+          "events": [
+            "plugin-abort"
+          ]
+        }
+      },
+      "B": {
+        "decided": [
+          "rejected"
+        ],
+        "toolResults": [
+          "not run: rejected"
+        ],
+        "gatewayAfter": 0,
+        "entry": {
+          "key": "s33_2",
+          "mode": "mutate",
+          "toolName": "ask_me",
+          "callId": "call_reject-mutate",
+          "args": {
+            "text": "{\"what\":\"reject-mutate\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "plugin",
+          "outcome": "rejected",
+          "downstream": {
+            "rejected": "s33: answered by the plugin"
+          },
+          "events": [
+            "plugin-abort"
+          ]
+        }
+      },
+      "C": {
+        "decided": [
+          "cancelled"
+        ],
+        "inRegistry": false,
+        "lateAnswer": false,
+        "gatewayAfter": 0,
+        "entry": {
+          "key": "s33_3",
+          "mode": "mutate",
+          "toolName": "ask_me",
+          "callId": "call_stop-mutate",
+          "args": {
+            "text": "{\"what\":\"stop-mutate\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "cancelled",
+          "outcome": "cancelled",
+          "downstream": {
+            "rejected": "typert gateway: Remote event was cancelled"
+          },
+          "events": []
+        }
+      },
+      "D": {
+        "decided": [
+          "rejected"
+        ],
+        "toolResults": [
+          "not run: rejected"
+        ],
+        "lateAnswer": false,
+        "entry": {
+          "key": "s33_4",
+          "mode": "mutate",
+          "toolName": "ask_me",
+          "callId": "call_user-mutate",
+          "args": {
+            "text": "{\"what\":\"user-mutate\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "downstream",
+          "outcome": "rejected",
+          "downstream": {
+            "resolved": "rejected"
+          },
+          "events": []
+        }
+      }
+    },
+    "redispatch": {
+      "A": {
+        "heldBefore": 1,
+        "accepted": true,
+        "secondAnswer": false,
+        "gatewayAfter": 0,
+        "decided": [
+          "allowed-once"
+        ],
+        "toolResults": [
+          "RAN allow-redispatch"
+        ],
+        "entry": {
+          "key": "s33_5",
+          "mode": "redispatch",
+          "toolName": "ask_me",
+          "callId": "call_allow-redispatch",
+          "args": {
+            "text": "{\"what\":\"allow-redispatch\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "plugin",
+          "outcome": "allowed-once",
+          "downstream": {
+            "rejected": "s33: answered by the plugin"
+          },
+          "events": [
+            "plugin-abort"
+          ]
+        }
+      },
+      "B": {
+        "decided": [
+          "rejected"
+        ],
+        "toolResults": [
+          "not run: rejected"
+        ],
+        "gatewayAfter": 0,
+        "entry": {
+          "key": "s33_6",
+          "mode": "redispatch",
+          "toolName": "ask_me",
+          "callId": "call_reject-redispatch",
+          "args": {
+            "text": "{\"what\":\"reject-redispatch\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "plugin",
+          "outcome": "rejected",
+          "downstream": {
+            "rejected": "s33: answered by the plugin"
+          },
+          "events": [
+            "plugin-abort"
+          ]
+        }
+      },
+      "C": {
+        "decided": [
+          "cancelled"
+        ],
+        "inRegistry": false,
+        "lateAnswer": false,
+        "gatewayAfter": 0,
+        "entry": {
+          "key": "s33_7",
+          "mode": "redispatch",
+          "toolName": "ask_me",
+          "callId": "call_stop-redispatch",
+          "args": {
+            "text": "{\"what\":\"stop-redispatch\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "cancelled",
+          "outcome": "cancelled",
+          "downstream": {
+            "rejected": "typert gateway: Remote event was cancelled"
+          },
+          "events": []
+        }
+      },
+      "D": {
+        "decided": [
+          "rejected"
+        ],
+        "toolResults": [
+          "not run: rejected"
+        ],
+        "lateAnswer": false,
+        "entry": {
+          "key": "s33_8",
+          "mode": "redispatch",
+          "toolName": "ask_me",
+          "callId": "call_user-redispatch",
+          "args": {
+            "text": "{\"what\":\"user-redispatch\"}",
+            "status": "complete",
+            "calledTool": "ask_me"
+          },
+          "settledBy": "downstream",
+          "outcome": "rejected",
+          "downstream": {
+            "resolved": "rejected"
+          },
+          "events": []
+        }
+      }
+    }
+  },
+  "listenersOnEvent": 3,
+  "unhandled": [],
+  "verdict": {
+    "mutate": {
+      "A_allow_runs_tool": true,
+      "B_reject_reaches_agent": true,
+      "C_stop_cancels": true,
+      "D_user_first_learned": true,
+      "A_args_recorded": true
+    },
+    "redispatch": {
+      "A_allow_runs_tool": true,
+      "B_reject_reaches_agent": true,
+      "C_stop_cancels": true,
+      "D_user_first_learned": true,
+      "A_args_recorded": true
+    },
+    "no_unhandled_rejection": true
+  }
+}
