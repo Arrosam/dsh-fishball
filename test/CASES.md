@@ -2043,3 +2043,28 @@ Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan`
 ### rev11g addendum: too-many-waiting as JSON (manager's decision, 2026-11-02)
 
 `rev11g-cap.test.mjs` CAP-01: past `maxPendingApprovals`, Fishball's own request answers parsed JSON `{ok: false, code: 'too-many-waiting', …}` with "or withdraw one" in the text. Total rev11g cases: 96. Readings 1-4 above (User mode/`to_user` card at once, cards rebuilt at start without resuming, 409 after a question goes back to its session, `questionId`) are confirmed by the manager.
+
+## Revision 11 rev11h cases (stop and redirect; DESIGN §14 row rev11h, §7a.12, §9 "Fishball's other decisions", §11, §16 Q-r11-stop, Q-r11-stop-cap, Q-r11-redirect-order; requirements items 28-29, done-when 9; S34; written from the requirements alone, no code read)
+
+File: `rev11h-stop` (16 cases: STP-01..09 in 8 tests, RDR-01..06, CAP-01..02), on the rev11g host (stand-in question card). Each case uses a fresh managed session; a "running" turn is one held at its first model request (`holdNext`).
+
+| id | technique | expected |
+|---|---|---|
+| STP-01 | EP | `stop_session` on a running turn: ok, turn ends `aborted`, session idle and still managed, script does not continue |
+| STP-02 | ST | pending approval card: card leaves, approval settles `cancelled`, turn `aborted`, later click 409 |
+| STP-03 | ST | pending question (User mode): pile card leaves, own card closes, result ASK_ABORTED, late answers refused |
+| STP-04 | ST | idle session: ok, no turn end, no model request, still managed |
+| STP-05 | ST | idle until next message; a Fishball message then runs a completed turn |
+| STP-06 | ST | message queued before the stop starts no turn; it runs at the next wake |
+| STP-07 | DT | yours / taken back: `not-managed`, turn untouched, not audited; Fishball's own: `is-fishball`; unknown id refused |
+| STP-08/09 | EP | one `decisions` row `stop` by fishball keeping the reason; reason optional |
+| RDR-01 | EP | old turn `aborted`, new turn from Fishball (relay source with `senderSessionId`) completes |
+| RDR-02 | ST | waiting approval and question cancelled, cards leave, new turn runs |
+| RDR-03 | ST | queued user message is read before Fishball's instruction (log order) |
+| RDR-04 | DT | refusals as STP-07; nothing delivered |
+| RDR-05 | EP | one `decisions` row `redirect` by fishball |
+| RDR-06 | EP | idle managed session: instruction just starts a turn |
+| CAP-01 | BVA | `messagesPerHour` 2: two redirects ok, third `hourly-cap` and undelivered, `message_session` shares the count; six `stop_session` calls all ok and audited |
+| CAP-02 | BVA | `messagesPerHour` 0: no cap for redirect |
+
+Readings (not in the design text, taken from existing conventions): refusal codes are `not-managed`, `is-fishball` (P5 code); a decisions row carries `action`, `sessionId`, `by`, `at`, with the reason somewhere in the row; Stop on a question needs User mode so the question is a pile card at once. No older case is changed.
