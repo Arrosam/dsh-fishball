@@ -174,14 +174,14 @@ describe('Revision 11 rev11d: creating grants and what they cover', () => {
     })
   }
 
-  it('GRT-09 an exact grant on run_code is accepted (exact-call grants are for every tool)', T, async () => {
-    const needle = 'print(' + tok('09x') + ')'
+  for (const tool of ['run_code', 'terminal_open']) it('GRT-09 an exact grant on ' + tool + ' is accepted (exact-call grants are for every tool)', T, async () => {
+    const needle = 'print(' + tok('09x' + tool) + ')'
     const id = cid('09x')
-    const requestId = await g.directWith(x, 'run_code', { command: needle }, needle, id)
+    const requestId = await g.directWith(x, tool, { command: needle }, needle, id)
     const j = await g.answer(requestId, { decision: 'grant', risk: 'low', reason: 'fbtest', grant: { kind: GRANT_KIND.exact, expires_at: iso(HOUR) } })
     assert.equal(j.ok, true, JSON.stringify(j))
     await ctx.host.call('waitIdle', { sessionId: x })
-    await g.covered(x, 'run_code', needle)
+    await g.covered(x, tool, needle)
   })
 
   describe('GRT-10 refused answers leave the request pending and create nothing', () => {
@@ -195,6 +195,7 @@ describe('Revision 11 rev11d: creating grants and what they cover', () => {
       ['an unknown kind', (a) => { a.grant.kind = 'any' }],
       ['kind prefix without a prefix', (a) => { delete a.grant.prefix }],
       ['kind prefix with an empty prefix', (a) => { a.grant.prefix = '' }],
+      ['a prefix that is not the start of the asking call\'s command', (a) => { a.grant.prefix = 'cmake' }],
       ['risk high (allow\'s rules)', (a) => { a.risk = 'high' }],
       ['an empty reason (allow\'s rules)', (a) => { a.reason = '  ' }],
     ]
@@ -216,6 +217,15 @@ describe('Revision 11 rev11d: creating grants and what they cover', () => {
         await g.finishRejected(requestId, x, id)
       })
     }
+  })
+
+  it('GRT-08 a trailing * in the prefix is notation and is dropped', T, async () => {
+    const prefix = 'yq' + tok('08s')
+    const c = await g.create(y, 'bash', prefix + ' init', { kind: GRANT_KIND.prefix, prefix: prefix + '*', expires_at: iso(HOUR) })
+    assert.equal(c.json.ok, true, JSON.stringify(c.json))
+    const snap = (await g.snapshotGrants()).find((e) => snapId(e) === c.grantId)
+    assert.ok(!String(snap?.prefix ?? '').endsWith('*'), 'stored without the star: ' + JSON.stringify(snap))
+    await g.covered(y, 'bash', prefix + 'tail more')
   })
 
   it('GRT-11 an end time one year out is accepted and any number of grants are active at once', T, async () => {

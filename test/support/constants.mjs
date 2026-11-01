@@ -744,7 +744,8 @@ export const GRANT_AUDIT = { grant: 'grant', used: 'grant-used' }
 /** A tag record made for a call a grant covered (§9 "Tag records"). */
 export const GRANT_TAG_KIND = 'grant'
 /** Tools that accept prefix grants (shell commands only, §7a.8, Q-r11-prefix-tools), and tools that get exact grants only. */
-export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_open', 'terminal_send']
-export const EXACT_ONLY_TOOLS = ['run_code', 'fbtest_ask']
+export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_send']
+/** terminal_open has no command text (the manager's decision, 2026-11-02): exact-call grants only. */
+export const EXACT_ONLY_TOOLS = ['run_code', 'fbtest_ask', 'terminal_open']
 /** The fixture tools that ask for approval in their body (fixture-tools.mjs). */
-export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('run_code').join(',') }
+export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('run_code', 'terminal_open').join(',') }
