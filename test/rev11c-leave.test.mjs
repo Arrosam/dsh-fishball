@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { API, ASK_CODE, AUDIT_ANSWER, CLICK, FIXTURE_BUNDLE, LIMITS, OUTCOME, OWN_PLUGINS, STATUS, TOO_MANY_WAITING } from './support/constants.mjs'
-import { HOOK, T, answerCard, askStep, auditOf, callStep, cardOf, fishballTool, jsonOf, managedEntry, pileNow, resultById, setManaged, settledIdle, stockSeen, untilNoCard } from './support/expect.mjs'
+import { HOOK, T, answerCard, askStep, auditOf, callStep, cardOf, fishballTool, jsonOf, managedEntry, pileNow, requestMessages, resultById, resultOfCall, setManaged, settledIdle, stockSeen, untilNoCard } from './support/expect.mjs'
 import { AT_ONCE_MS, QUIET_MS, boot, pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
 
 const { tok, cid } = tokens('LVE')
@@ -33,14 +33,6 @@ describe('Revision 11 rev11c: cards leave, and the cap', () => {
     assert.equal(r.status, 200, r.text)
     assert.ok(await until(async () => (await ctx.host.state()).features?.approvals === on, 10000, 100), 'features.approvals ' + on)
   }
-  /** After the agent was told to make the call itself, the identical call goes straight to the stock prompt (a to-you ticket). */
-  async function expectStockNext(sid, text, outcome = OUTCOME.reject) {
-    const callId = cid('next')
-    const r = await t.withStock(outcome, () => t.run(sid, [callStep({ text }, callId)]))
-    assert.equal(resultById(r, callId)?.text, 'outcome=' + outcome, "the stock prompt's answer")
-    assert.equal((await stockSeen(ctx.host, text)).length, 1, 'the stock prompt was asked once')
-  }
-
   before(async () => {
     ctx = await pileHost('rev11c-leave')
     t = pileTools(ctx, { tok, cid })
@@ -78,20 +70,21 @@ describe('Revision 11 rev11c: cards leave, and the cap', () => {
     assert.equal(auditOf(ctx.home, requestId).at(-1)?.answer, AUDIT_ANSWER.released)
   })
 
-  it('LVE-03 Permission requests turned off while it is a card: unavailable, the card leaves, the next call prompts in the session', T, async () => {
+  it('LVE-03 Permission requests turned off while it is a card: unavailable, the card leaves, the agent\'s next call prompts in the session', T, async () => {
     const text = tok('03')
-    const id = cid('03')
-    const { requestId } = await t.escalated(x, text, id)
+    const [id, stockId] = [cid('03'), cid('03stock')]
+    // The agent makes the identical call in the same turn, as the unavailable answer tells it to (a to-you ticket ends with the turn).
+    const { requestId } = await t.escalated(x, text, id, { after: [callStep({ text }, stockId)] })
     await toggleApprovals(false)
     try {
       const got = await t.answered(x, id)
       assert.equal(got.code, ASK_CODE.unavailable)
       assert.ok(await untilNoCard(ctx.host, requestId), 'the card left')
       await ctx.host.call('waitIdle', { sessionId: x })
-      await settledIdle(ctx.host, x)
+      assert.equal((await resultOfCall(ctx.host, x, stockId, 15000))?.text, 'outcome=' + OUTCOME.reject, "the stock prompt's answer")
     } finally { await toggleApprovals(true) }
-    // The agent makes the call itself: the user is prompted in that session (the scripted stock prompt), Fishball takes no step.
-    await expectStockNext(x, text)
+    assert.equal((await stockSeen(ctx.host, text)).length, 1, "the call showed the session's own stock prompt, once")
+    assert.equal((await requestMessages(ctx.host, ctx.fb, text)).length, 1, 'Fishball took no further step')
   })
 
   it('LVE-04 Fishball stopped while it is a card: unavailable, the card leaves, Fishball live again afterwards', LONG, async () => {
