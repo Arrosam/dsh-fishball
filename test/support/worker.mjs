@@ -645,6 +645,15 @@ const ops = {
     return { disposed: Boolean(handle), live: Boolean(ctx.agents.get(sessionId)) }
   },
 
+  // ---- Revision 11 rev11b operations (ask_fishball, list_user_messages) ----
+  /** Every user/message of a live session in log order: DSH message id, source kind, rpc id and the whole text. */
+  userMessageLog({ sessionId }) {
+    return liveAgent(sessionId).session.snapshotEvents().filter((e) => e.type === 'user/message').map((e) => {
+      const message = e.data?.message ?? e.data
+      return { id: message?.id ?? null, kind: message?.source?.kind ?? null, rpcId: message?.source?.rpcId ?? null, text: textOf(message?.content) }
+    })
+  },
+
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])
     return true

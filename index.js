@@ -18,7 +18,10 @@
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
  * - src/unread.js          unread replies from Fishball (the sidebar mark's count)
  * - src/preferences.js    your display choices (the sidebar brand icon)
- * - src/approvals.js       other sessions' permission requests go to Fishball first
+ * - src/approvals.js       managed sessions' permission requests go to Fishball first
+ * - src/request-desk.js    ask_fishball and list_user_messages (managed sessions only)
+ * - src/passes.js          one-time passes and to-you tickets
+ * - src/result-wording.js  what an agent reads after Fishball answered its direct call
  * - src/sources.js         ctx.fishball: plugins publish events to Fishball (DESIGN §8)
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
  * - src/http.js            /api/fishball/* for the settings page, the brand button and the Messenger look
@@ -44,6 +47,9 @@ import { WATCH_TOOL, Watches, WatchError } from './src/watches.js'
 import { Unread } from './src/unread.js'
 import { Preferences } from './src/preferences.js'
 import { APPROVAL_TOOL, ApprovalBroker } from './src/approvals.js'
+import { DESK_TOOL, requestDeskTools } from './src/request-desk.js'
+import { CallPasses } from './src/passes.js'
+import { ResultWording } from './src/result-wording.js'
 import { SourceRegistry } from './src/sources.js'
 import { PLUGIN_TOOL, registerPluginTools } from './src/plugin-tools.js'
 import { PluginDefaults } from './src/plugin-defaults.js'
@@ -69,6 +75,7 @@ const OWN_TOOL_PLUGIN = new Map([
   [WATCH_TOOL, FEATURE_KEY.watching],
   [PLUGIN_TOOL, FEATURE_KEY.plugins],
   [APPROVAL_TOOL, FEATURE_KEY.approvals],
+  [DESK_TOOL, FEATURE_KEY.approvals],
 ].flatMap(([tools, key]) => Object.values(tools).map((name) => [name, key])))
 
 /** Settings-page commands before the catalog exists, or after a core failure. */
@@ -252,8 +259,14 @@ export async function apply(ctx, config) {
   const messagesOn = () => catalog.isAppliedOn(FEATURE_KEY.messages)
   const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: messagesOn, isManaged: (sessionId) => managedRegistry.isManaged(sessionId), manage })
   const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor, manage })
-  /** What a managed agent has now: message_fishball while Session messages runs (rev11a). */
-  const managedTools = () => (messagesOn() ? [inbound.tool] : [])
+  const approvalsOn = () => catalog.isAppliedOn(FEATURE_KEY.approvals)
+  /** ask_fishball and list_user_messages; created with the broker below. */
+  let deskTools = []
+  /**
+   * What a managed agent has now: message_fishball while Session messages runs (rev11a), and
+   * ask_fishball and list_user_messages while Permission requests runs (rev11b, §5e Reading).
+   */
+  const managedTools = () => [...(messagesOn() ? [inbound.tool] : []), ...(approvalsOn() ? deskTools : [])]
   // The settings page lists managed sessions by title (§10e): titles followed while they are managed.
   const sessionTitles = new SessionTitles(ctx, { onChange: () => publish() })
   const followManaged = () => sessionTitles.follow(managedRegistry.snapshot().map((entry) => entry.sessionId))
@@ -277,20 +290,26 @@ export async function apply(ctx, config) {
   const preferences = new Preferences(store, { onChange: () => publish() })
   preferencesView = () => preferences.snapshot()
   commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
-  // Other sessions' permission requests go to Fishball first (DESIGN §7a).
+  // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
     startedByFishball: (sessionId) => outbound.started(sessionId), agentOf: () => assistantAgent(), onChange: () => publish(),
-    isEnabled: () => catalog.isAppliedOn(FEATURE_KEY.approvals),
+    isEnabled: approvalsOn,
     isManaged: (sessionId) => managedRegistry.isManaged(sessionId),
+    passes: new CallPasses(),
+    // The one post-execute listener that sets Fishball's wording (spike S35).
+    wording: new ResultWording(ctx),
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
+  deskTools = requestDeskTools({ ctx, broker, readLimits: limits })
+  // Managed agents already live get the two tools now that they exist.
+  managedRegistry.sync()
   approvalsView = () => broker.snapshot()
   // Off takes the feature away at the apply: message_fishball leaves managed sessions (they stay
   // managed, Q-r11-plugins-off), and requests waiting for Fishball go to you at once (revision 10c).
   syncFeatures = () => {
     managedRegistry.sync()
-    if (!catalog.isAppliedOn(FEATURE_KEY.approvals)) broker.releaseAll()
+    if (!approvalsOn()) broker.releaseAll()
   }
   // ctx.fishball (DESIGN §8): plugins publish events to Fishball through the ledger.
   const sources = new SourceRegistry(ctx, {
