@@ -97,8 +97,8 @@ const TEXT = Object.freeze({
   answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "grant" approves it as "allow" does and also creates a standing grant, so that session\'s later calls it covers run without asking you: only when the user\'s allowance covers every call the grant covers; it needs `grant` with an end time. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; tell the user in one or two sentences why.',
   requestIdArg: 'The request id, e.g. apr_7f3c….',
   decisionArg: '"allow" (low risk, within the user\'s allowance), "grant" (as allow, plus a standing grant), "reject" (beyond the user\'s request and dangerous), "ask" (a question to the session) or "escalate" (to the user).',
-  riskArg: '"low" or "high": your judgement of the exact call\'s real effect. Optional with "escalate".',
-  reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session). Optional with "escalate".',
+  riskArg: '"low" or "high": your judgement of the exact call\'s real effect. Optional with "escalate" and "ask".',
+  reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session). Optional with "escalate" and "ask".',
   questionArg: 'With "ask": the question for the session.',
   grantArg: 'With "grant": {kind, prefix?, expires_at}. kind "exact" covers this exact call (same tool and arguments) each time it repeats in that session; kind "prefix" covers that session\'s shell commands (bash, pwsh, terminal_send) whose command text starts with `prefix`, taken from this call\'s command, e.g. "npm test" (a trailing * is optional). Matching is on the raw text, so "npm test" also covers "npm test && git push"; for terminal_send it is the text sent. Every other tool, run_code and terminal_open included, gets exact grants only. expires_at: an ISO time in the future; every grant must end.',
   /** The request Fishball sees (DESIGN §7a.2 framing). */
@@ -296,8 +296,9 @@ export class ApprovalBroker {
         const rationale = trimmed(reason)
         const asked = trimmed(question)
         // Code rules (DESIGN §7a.3 table). Any request can go to the user, so escalate needs no
-        // risk or reason; every other decision needs both, as the schema required before.
-        if (decision !== APPROVAL_DECISION.escalate) {
+        // risk or reason, and a question needs only itself; every other decision needs both, as the
+        // schema required before. When given, they are recorded either way.
+        if (decision !== APPROVAL_DECISION.escalate && decision !== APPROVAL_DECISION.ask) {
           if (risk === undefined) return refused(APPROVAL_ERROR.riskRequired)
           if (reason === undefined) return refused(APPROVAL_ERROR.reasonRequired)
         }
