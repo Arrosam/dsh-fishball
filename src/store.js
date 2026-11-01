@@ -4,12 +4,12 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants and own_requests tables keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants and own_requests tables keep version 1 (as do the question-mode record, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
 const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests' })
@@ -51,6 +51,15 @@ const settingsRecord = z.object({
   sessionId: z.string().min(1),
   contextWindowTokens: tokenCount.optional(),
   maxOutputTokens: tokenCount.optional(),
+  changedAt: z.string(),
+})
+
+/**
+ * Who answers managed sessions' questions (rev11g, §9 `settings['questions']`); absent means auto.
+ * It shares the settings table with the context-window record, under its own key.
+ */
+const questionModeRecord = z.object({
+  mode: z.enum(Object.values(QUESTION_MODE)),
   changedAt: z.string(),
 })
 
@@ -124,7 +133,8 @@ const tagRecord = z.object({
   sessionId: z.string().min(1),
   callId: z.string().min(1).optional(),
   seq: z.number().int().nonnegative(),
-  answer: z.enum(Object.values(APPROVAL_DECISION)),
+  /** An answer_approval / answer_prompt decision, or a question's answer kind (rev11g; the words stay in the session log). */
+  answer: z.enum([...Object.values(APPROVAL_DECISION), ...Object.values(QUESTION_TAG_ANSWER)]),
   kind: z.enum(Object.values(TAG_KIND)),
   /** A call a standing grant covered (rev11d): what the tag names, the prefix or "exact call" (never the arguments). */
   grant: z.object({ kind: z.enum(Object.values(GRANT_KIND)), toolName: z.string().min(1), prefix: z.string().min(1).optional() }).optional(),
@@ -247,7 +257,8 @@ const approvalRecord = z.object({
   grantId: z.string().min(1).optional(),
   risk: z.enum(Object.values(APPROVAL_RISK)).optional(),
   rationale: z.string().optional(),
-  finalOutcome: z.enum(Object.values(APPROVAL_OUTCOME)),
+  /** DSH's outcome; a question's row (kind question, rev11g) records how the question ended instead. */
+  finalOutcome: z.enum([...Object.values(APPROVAL_OUTCOME), ...Object.values(QUESTION_END)]),
   decidedAt: z.string(),
 })
 
@@ -278,7 +289,7 @@ export const fishballDomain = defineDomain({
     [TABLE.plugins]: domainTable(pluginRecord),
     [TABLE.toolApprovals]: domainTable(toolApprovalRecord),
     [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
-    [TABLE.settings]: domainTable(settingsRecord),
+    [TABLE.settings]: domainTable(z.union([settingsRecord, questionModeRecord])),
     [TABLE.watches]: domainTable(watchRecord),
     [TABLE.unread]: domainTable(unreadRecord),
     [TABLE.preferences]: domainTable(preferencesRecord),
