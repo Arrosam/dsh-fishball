@@ -5,7 +5,7 @@
  * DSH's title is folded from that log.
  */
 import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
-import { SESSION_INFO } from './constants.js'
+import { APPROVAL, SESSION_INFO, SOURCE } from './constants.js'
 import { byteLength, cutToBytes } from './text.js'
 
 /** The seq a session with no events reports, so every later event counts as newer. */
@@ -129,12 +129,42 @@ export const textOfEvent = (event) => {
 }
 
 /**
- * The last user and assistant messages of a session, newest last, within maxBytes in total
- * (older ones are dropped first; one longer message is cut).
- * @param excerptBytes - bound of info's last-answer excerpt (the forwardExcerptBytes limit).
- * @returns { info, messages: [{ role, text }] }, or undefined when the session does not exist.
+ * Who wrote a user-role message, from the source DSH recorded with it (DESIGN §5c, §7a): the
+ * user typing (DSH's user sources), Fishball (a relay carrying Fishball's session id), another
+ * session (any other relay), or else context that DSH or a plugin added (notices, goal rounds,
+ * schedules, file notes, instructions). A message without a source is context, never an
+ * unproven 'user'. DSH's user/message carries all of these; only the source tells them apart.
+ * @param fishballId - Fishball's session id (undefined matches no relay).
+ * @returns a SESSION_INFO.roles value other than assistant.
  */
-export async function readSessionMessages(ctx, sessionId, count, maxBytes, excerptBytes) {
+export function senderOf(source, fishballId) {
+  if (APPROVAL.userSources.includes(source?.kind)) return SESSION_INFO.roles.user
+  if (source?.kind !== SOURCE.relay.kind) return SESSION_INFO.roles.context
+  return fishballId !== undefined && source.senderSessionId === fishballId ? SESSION_INFO.roles.fishball : SESSION_INFO.roles.agent
+}
+
+/**
+ * One message as read_session shows it: its role, plus the sending session of another
+ * session's relay (so Fishball can read that one too) or the source kind of added context.
+ */
+function messageOf(event, fishballId, text) {
+  if (event.type === SESSION_INFO.assistantEvent) return { role: SESSION_INFO.roles.assistant, text }
+  const source = event.data?.source
+  const role = senderOf(source, fishballId)
+  if (role === SESSION_INFO.roles.agent) return { role, from: source.senderSessionId, text }
+  if (role === SESSION_INFO.roles.context && typeof source?.kind === 'string') return { role, source: source.kind, text }
+  return { role, text }
+}
+
+/**
+ * The last user-role and assistant messages of a session, newest last, within maxBytes of text
+ * in total (older ones are dropped first; one longer message is cut). Each is labelled by who
+ * wrote it (senderOf), so Fishball never reads its own or another agent's words as the user's.
+ * @param fishballId - Fishball's session id, to tell its own messages apart.
+ * @param excerptBytes - bound of info's last-answer excerpt (the forwardExcerptBytes limit).
+ * @returns { info, messages: [{ role, from?, source?, text }] }, or undefined when the session does not exist.
+ */
+export async function readSessionMessages(ctx, sessionId, fishballId, count, maxBytes, excerptBytes) {
   let read
   try {
     read = await eventsOf(ctx, sessionId)
@@ -146,15 +176,14 @@ export async function readSessionMessages(ctx, sessionId, count, maxBytes, excer
   let used = 0
   for (let i = read.events.length - 1; i >= 0 && picked.length < count; i--) {
     const event = read.events[i]
-    const role = event.type === SESSION_INFO.assistantEvent ? SESSION_INFO.roles.assistant : event.type === SESSION_INFO.userEvent ? SESSION_INFO.roles.user : undefined
-    if (role === undefined) continue
+    if (event.type !== SESSION_INFO.assistantEvent && event.type !== SESSION_INFO.userEvent) continue
     const text = textOfEvent(event)
     if (text.length === 0) continue
     const room = maxBytes - used
     // Too little room for even the ellipsis: stop rather than exceed the bound (P6 test A73).
     if (room <= byteLength(SESSION_INFO.ellipsis)) break
     const cut = cutToBytes(text, room, SESSION_INFO.ellipsis)
-    picked.unshift({ role, text: cut })
+    picked.unshift(messageOf(event, fishballId, cut))
     used += byteLength(cut)
   }
   return { info, messages: picked }

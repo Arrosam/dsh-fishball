@@ -67,11 +67,11 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
 import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
-import { describeSession, rootSessionOf } from './session-info.js'
+import { describeSession, rootSessionOf, senderOf } from './session-info.js'
 import { authorOf, sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
@@ -1043,8 +1043,11 @@ export class ApprovalBroker {
   #provenance(session) {
     const fishball = this.#assistantId()
     const events = session.snapshotEvents()
-    const byFishball = (source) => source?.kind === SOURCE.relay.kind && source.senderSessionId === fishball
-    const describe = (source, fishballText) => source === undefined ? PROVENANCE.unknown : byFishball(source) ? fishballText : APPROVAL.userSources.includes(source.kind) ? PROVENANCE.user : PROVENANCE.other
+    const describe = (source, fishballText) => {
+      if (source === undefined) return PROVENANCE.unknown
+      const sender = senderOf(source, fishball)
+      return sender === SESSION_INFO.roles.user ? PROVENANCE.user : sender === SESSION_INFO.roles.fishball ? fishballText : PROVENANCE.other
+    }
     let turnStart = -1
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
     const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)?.data?.source
