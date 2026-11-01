@@ -32,13 +32,14 @@ export function grantTools(ctx, names) {
   const g = {
     t,
     /** A model step that runs a shell-like tool with this command text. */
-    cmd: (tool, command, id) => step(tool, { command }, id),
+    // terminal_send carries its command text in `text` (its real schema); the other shell tools in `command`.
+    cmd: (tool, command, id) => step(tool, tool === 'terminal_send' ? { text: command } : { command }, id),
     /** Fishball's model-request count: a covered call must not add one (it takes no Fishball step). */
     fbSteps: async () => (await ctx.host.call('requests', { sessionId: ctx.fb })).length,
     notices: (needle) => requestMessages(ctx.host, ctx.fb, needle),
     snapshotGrants: async () => (await ctx.host.state()).grants,
     /** A direct call by sid: starts the turn, waits for Fishball's notice; returns the request id. The turn stays open. */
-    direct: (sid, tool, command, id) => g.directWith(sid, tool, { command }, command, id),
+    direct: (sid, tool, command, id) => g.directWith(sid, tool, tool === 'terminal_send' ? { text: command } : { command }, command, id),
     /** Like direct(), for any arguments; `needle` is a unique text inside them. */
     async directWith(sid, tool, args, needle, id) {
       await settledIdle(ctx.host, sid)
@@ -47,6 +48,12 @@ export function grantTools(ctx, names) {
       assert.ok(req, 'the call with "' + needle + '" reached Fishball')
       await settledIdle(ctx.host, ctx.fb)
       return req.id
+    },
+    /** Answer a request; returns {json, text}: json is undefined when the tool's schema refused the arguments (text then says so). */
+    async answerRaw(requestId, args) {
+      await settledIdle(ctx.host, ctx.fb)
+      const { json, result } = await fishballCall(ctx.host, ctx.fb, ANSWER_TOOL, { request_id: requestId, ...args })
+      return { json, text: result?.text ?? '' }
     },
     /** Answer a request; returns Fishball's parsed result. */
     answer: (requestId, args) => t.answer(requestId, args),
@@ -61,6 +68,8 @@ export function grantTools(ctx, names) {
     async create(sid, tool, command, grant, { id = 'call_' + command.replace(/\W+/g, '_') + Math.random().toString(36).slice(2, 6), finish = true, extra = {} } = {}) {
       const requestId = await g.direct(sid, tool, command, id)
       const json = await g.answer(requestId, { decision: GRANT_DECISION, risk: 'low', reason: 'fbtest: the user allowed this', grant, ...extra })
+      // A refused answer leaves the request pending: reject it so the turn ends.
+      if (finish && json.ok === false) await g.finishRejected(requestId, sid, id)
       if (finish && json.ok !== false) { await ctx.host.call('waitIdle', { sessionId: sid }); await settledIdle(ctx.host, sid) }
       let grantId = grantIdOf(json)
       // The design does not name the result's id field; fall back to the stored row (its key is the grant id, §9).
