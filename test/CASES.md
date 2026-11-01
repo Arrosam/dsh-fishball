@@ -1987,3 +1987,51 @@ Three hosts: A (title service, no cap), B (`sessionsPerHour` 2), C (no `sessionT
 
 - No existing expectation changed. The start_session helpers of messaging-start-title.test.mjs (`useHost`, `assertDelivered`, `assertTitleError`, `assertFailedDelivery`, `assertRefused` and the rest) moved to [support/start-session.mjs](support/start-session.mjs) unchanged; `assertDelivered` gained an optional `folder` argument that defaults to the old behaviour.
 - `READ_ROLES` in support/constants.mjs still lists `user` and `assistant`: TOL-07 reads a session that has only those two, and still passes. `READ_ROLE` (five labels) and `HALF_MADE` are new.
+
+## Revision 11: the live fixes on revision 11 (start_session managed step, read_session settings, list_user_messages sources)
+
+The merge brought the live branch's tests (ROL, HM, PRV above) onto revision 11, where only managed sessions' permission requests reach Fishball, `start_session` also makes the session managed (DESIGN §5d "Not made managed", §5e) and read_session's bounds are the settings `readSessionMessages` and `readSessionBytes` (§16). The files below are new; the harness gained `failStoreTable`, `storeWriteCalls` and `storeRecord` ([support/worker.mjs](support/worker.mjs)) and [support/read-session.mjs](support/read-session.mjs).
+
+### [managed-start.test.mjs](managed-start.test.mjs): R3, start_session makes the session managed and carries on when it cannot (MST-nn)
+
+Two hosts (approver after the broker, as managed-ways): A has no cap; B has `sessionsPerHour` 2. The new session's first message makes it ask for permission at once, so where its request goes shows whether it is the user's (its own stock prompt) or managed (a request to Fishball).
+
+| id | technique | expected result |
+|---|---|---|
+| MST-01 | EP (control, the registry works) | no `managedError`; managed by `start`; every request has the three managed tools; its request goes to Fishball |
+| MST-02 | EP (the managed-list write fails before storing) | ok with `managedError: 'manage-failed'`, the control's keys plus `managedError`; the write was tried after the rename and before the first message; renamed once; first message delivered once as a relay from Fishball; outbox `start`/`delivered`; the session ran its first turn; not listed, not stored, no Fishball tool in any request, its request went to the stock prompt and Fishball was not told |
+| MST-03 | EP (the write is stored, then the call fails) | no `managedError`; the control's keys; listed by `start`; its request goes to Fishball |
+| MST-04 ×2 | DT (flag × write fails) | the watch (`createdBy` assistant) and one notice after the first turn, or none; `managedError` either way |
+| MST-05 ×3 | DT (write fails × rename ok / invalid / fails) | `managedError` next to `title` or `titleError`; delivered and recorded |
+| MST-06 ×2 | DT (flush rejects / answers false × write fails) | ok, `unconfirmed`, `managedError`; keys as the unconfirmed start made whole plus `managedError`; steered once; outbox `unconfirmed` |
+| MST-07 ×2 | DT (steer throws × write fails / write stored then fails) | `delivery-failed` with `sessionId`, the title, no `folder`, outbox `failed`; with `managedError` and the session the user's (first), without and managed (second) |
+| MST-08 | EP (control, steer throws, registry works) | `delivery-failed` without `managedError`; the session is managed |
+| MST-09 ×2 | DT (workspace attach fails × write fails / works) | both `workspaceError` and `managedError` (the session the user's, in no workspace) / `workspaceError` alone (managed) |
+| MST-10 | ST (the user's after a failed write → Hand over) | 200, managed by `hand-over`, the next request has the three tools |
+| MST-20..22 | ST (cap 2) | a start whose write fails succeeds; one whose delivery also fails is refused with `managedError`; the next start is refused `hourly-cap`, creating nothing |
+
+### [rev11b-sources.test.mjs](rev11b-sources.test.mjs): R4, list_user_messages lists only what the user typed (LUS-nn)
+
+| id | technique | expected result |
+|---|---|---|
+| LUS-00..03 | DT (one message per source in a managed session's log; 2 typed, 15 not) | listed: kind `user` plain and with an rpc id. Not listed: relays from Fishball, from another session and with a null, numeric or missing sender; a Fishball notice, a goal round, a schedule, runtime context; `user-approval`, `user-question-reply`, a made-up kind, `User`, `user `; an empty source object. The list equals the log's typed messages, newest first, with DSH's ids. Passes on the base branch (83e4275) too |
+
+### [limits-read-roles.test.mjs](limits-read-roles.test.mjs): read_session's bounds are settings, with labelled messages (LRR-nn)
+
+| id | technique | expected result |
+|---|---|---|
+| LRR-01 | ST + BVA (`readSessionMessages` 12 → 3 → 1 → 12; 15 messages of five labels) | the newest 12 / 3 / 1 / 12, in order, labels intact, applied to the next read |
+| LRR-02 | BVA (`readSessionBytes` 2048 / 3072 / default; four messages of exactly 1024 bytes with 300-character labels) | the newest 2 / 3 / all 4: labels are not counted |
+| LRR-03 | BVA (`readSessionBytes` 2047) | at most 2047 bytes of text; the newest whole with its label |
+| LRR-04 | BVA (`readSessionBytes` 2048, one 5000-byte message from another session) | one entry, label kept, a prefix ending with an ellipsis, at most 2048 bytes |
+
+### Ambiguities (revision 11 fixes)
+
+- **A165. Simulating the failing managed-list write.** `failStoreTable` wraps `put` and `update` on the `managed` table handle of Fishball's open store domain (DSH's storage-domain facility, `ctx.storageDomain.get('fishball')`, its diagnostic lookup), so only that table fails and the outbox the same start writes to keeps working. Mode `reject` stores nothing. Mode `after` lets the write complete and then rejects: this stands in for the requirement's "a change listener throws after the store write", because DSH contains failures of its own domain listeners and Fishball's own listeners cannot be reached from outside.
+- **A166. "Managed" when the throw comes after the write.** MST-03 and MST-07's second row require: no `managedError`, the session in the managed list by `start`, and (when it runs) its permission request going to Fishball. They do not require the managed tools in its requests: in this simulation the call fails before the registry can give the session its tools (observed: its requests have none), and DESIGN §5d names a failure while giving the tools among those that leave the session managed.
+- **A167. "The session is then the user's."** Not in the managed list, not in the store, no tool whose name mentions Fishball or is `list_user_messages` in any request of the session, its request asked its own stock prompt once and Fishball was not told. A start whose delivery failed ran no turn, so only the first three are checked there.
+- **A168. The answer's shape.** The control start in the same host is the reference: the half answer has the same keys plus `managedError` (so `unconfirmed` with its note, or `watch`, need not be named). The refusal for a failed delivery has the keys of the same failed delivery made whole plus `managedError`.
+- **A169. The order.** "After naming it and before delivering the first message" is checked with timestamps: the rename (probe), the failing write attempt (`storeWriteCalls`) and the first steer (probe), in that order.
+- **A170. A failed delivery still leaves the session managed.** Because the managed step comes before the delivery (A169), a start whose delivery fails but whose registry works leaves the session managed (MST-08). This follows from the order and is not stated separately.
+- **A171. list_user_messages and a message with no source.** DSH's agent loop cannot run a turn over a message with no source (it throws reading the source's kind), and the tool is called inside a turn, so the table has no such row; read_session's ROL-06 covers it. The literal kind `user-rpc` is not used either: DSH records its rpc source with kind `user` (LUM-05's USER_RPC_SOURCE).
+- **A172. Older tests changed by the merge.** approvals-provenance hands each session over to Fishball first (`makeManaged`), as the rev11a older-tests list does for the other approvals files, because only a managed session's requests reach Fishball. messaging-start-title keeps revision 11's filter for DSH's unrelated `client-module-registry` warning. The merged tests that start a session (HM, ROL-11) pass unchanged: `start_session` makes the session managed there, which they do not look at.

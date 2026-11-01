@@ -279,6 +279,9 @@ const attachCalls = []
 const attachUndo = new Map()
 const createUndo = []
 const createdByWrapper = []
+/** Revision 11 R3: the undo of a failing store table, and the writes it saw. */
+const storeUndo = []
+const storeWriteCalls = []
 
 const tags = new WeakMap()
 let tagCounter = 0
@@ -755,6 +758,37 @@ const ops = {
     return true
   },
   createdByWrapper() { return createdByWrapper },
+
+  // ---- Revision 11 R3: start_session and the managed list ----
+  /**
+   * Make writes to one table of Fishball's own store (domain `fishball`, e.g. the `managed` registry) fail, without
+   * touching its other tables: DSH's storage-domain facility keeps the open domain, and the table handle is the one
+   * object Fishball writes through. mode 'reject': put and update reject before anything is stored, so the record is
+   * not made. mode 'after': the write is stored (the handle's own put/update run to the end) and then the call
+   * rejects, as when something after a successful write throws. mode null restores the handle. `storeWriteCalls` lists
+   * the writes attempted while armed (table, key).
+   */
+  failStoreTable({ table = 'managed', mode = null }) {
+    const handle = ctx.storageDomain.get('fishball')?.table(table)
+    if (!handle) throw new Error('no open fishball domain table ' + table)
+    storeUndo.splice(0).forEach((undo) => undo())
+    if (!mode) return true
+    for (const method of ['put', 'update']) {
+      const own = Object.getOwnPropertyDescriptor(handle, method)
+      const original = handle[method]
+      handle[method] = async function (key, ...rest) {
+        storeWriteCalls.push({ table, key, method, at: Date.now() })
+        if (mode === 'reject') throw new Error('fbtest: store write failed')
+        await original.call(this, key, ...rest)
+        throw new Error('fbtest: failed after the store was written')
+      }
+      storeUndo.push(() => { if (own) Object.defineProperty(handle, method, own); else delete handle[method] })
+    }
+    return true
+  },
+  storeWriteCalls() { return storeWriteCalls },
+  /** The record of one table of Fishball's store as the open domain holds it (null when absent). */
+  storeRecord({ table, key }) { const r = ctx.storageDomain.get('fishball')?.table(table)?.get(key); return r === undefined ? null : JSON.parse(JSON.stringify(r)) },
 
   // ---- Revision 10a operations (Install for Fishball) ----
   /** DSH's install progress events seen on the host bus, optionally for one request id. */
