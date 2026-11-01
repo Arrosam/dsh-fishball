@@ -1,0 +1,233 @@
+{
+  "id": "S34-session-control",
+  "started": "2026-11-01T08:47:17.756Z",
+  "finished": "2026-11-01T08:47:25.758Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "host": "0.2.1-rc.2",
+  "verdict": {
+    "Q1_hidden_by_default": true,
+    "Q1_connect_next_request": true,
+    "Q1_call_in_managed_runs": true,
+    "Q1_call_in_unmanaged_refused": true,
+    "Q1_disconnect_removes": true,
+    "Q1_survives_recreate": true,
+    "Q1_plugin_owned_unwinds": true,
+    "Q1_mid_turn_next_step": true,
+    "Q2_approval_cancelled": true,
+    "Q2_question_aborted": true,
+    "Q3_followup_new_turn": true,
+    "Q3_redirect": true
+  },
+  "Q1": {
+    "baseline": {
+      "a": [],
+      "b": []
+    },
+    "afterConnect": {
+      "a": [
+        "ask_fishball",
+        "message_fishball",
+        "list_user_messages"
+      ],
+      "b": [],
+      "registryB": [],
+      "registryGlobal": []
+    },
+    "callInA": {
+      "callId": "call_a_ask",
+      "text": "ask_fishball ran",
+      "isError": false
+    },
+    "callInB": {
+      "callId": "call_b_ask",
+      "text": "Error: unknown tool \"ask_fishball\"",
+      "isError": true,
+      "error": "UNKNOWN_TOOL"
+    },
+    "subagentOfManaged": {
+      "childSession": "3019d702-35a9-4910-afef-42b933728192",
+      "managedToolsSeen": [],
+      "result": "started subagent 3019d702-35a9-4910-afef-42b933728192"
+    },
+    "subagentOfUnmanaged": {
+      "childSession": "f174be73-765a-4baf-84dd-ff60bfb07506",
+      "managedToolsSeen": [],
+      "result": "started subagent f174be73-765a-4baf-84dd-ff60bfb07506"
+    },
+    "subagentOptIn": {
+      "childSession": "295a7036-80d1-4367-85c1-631703c3d2c8",
+      "managedToolsSeen": [
+        "ask_fishball",
+        "message_fishball",
+        "list_user_messages"
+      ],
+      "result": "started subagent 295a7036-80d1-4367-85c1-631703c3d2c8"
+    },
+    "afterDisconnect": {
+      "requestTools": [],
+      "call": {
+        "callId": "call_a_after",
+        "text": "Error: unknown tool \"ask_fishball\"",
+        "isError": true,
+        "error": "UNKNOWN_TOOL"
+      },
+      "fixtureCalls": [
+        [
+          "ask_fishball",
+          "A"
+        ]
+      ]
+    },
+    "midTurn": {
+      "step1": [],
+      "step2": [
+        "ask_fishball",
+        "message_fishball",
+        "list_user_messages"
+      ]
+    },
+    "recreated": {
+      "beforeDispose": [
+        "ask_fishball",
+        "message_fishball",
+        "list_user_messages"
+      ],
+      "afterResume": [
+        "ask_fishball",
+        "message_fishball",
+        "list_user_messages"
+      ],
+      "newAgent": true
+    },
+    "ownership": {
+      "plugin": {
+        "during": [
+          "ask_fishball",
+          "message_fishball",
+          "list_user_messages"
+        ],
+        "afterPluginStop": [],
+        "otherSession": []
+      },
+      "agent": {
+        "during": [
+          "ask_fishball",
+          "message_fishball",
+          "list_user_messages"
+        ],
+        "afterPluginStop": [
+          "ask_fishball",
+          "message_fishball",
+          "list_user_messages"
+        ],
+        "otherSession": []
+      }
+    },
+    "altRestrict": {
+      "visibleWhileDenied": false,
+      "otherWhileDenied": true,
+      "visibleAfterLift": true
+    }
+  },
+  "Q2": {
+    "approval": {
+      "asked": true,
+      "statusBefore": "running",
+      "signalAbortedBefore": false,
+      "ack": {
+        "accepted": true
+      },
+      "statusAfter": "idle",
+      "signalAbortedAfter": true,
+      "signalReason": "user",
+      "decided": [
+        "cancelled"
+      ],
+      "toolResult": {
+        "callId": "call_s_ok",
+        "text": "Error: tool call aborted before dispatch",
+        "isError": true,
+        "error": "ABORTED_BEFORE_DISPATCH"
+      },
+      "turnEnds": [
+        "aborted"
+      ],
+      "leftoverQueued": 0
+    },
+    "question": {
+      "statusBefore": "running",
+      "signalAbortedBefore": false,
+      "projectionBefore": [],
+      "statusAfter": "idle",
+      "signalAbortedAfter": true,
+      "toolResult": {
+        "callId": "call_q_ask",
+        "text": "Error: ask_user_question was aborted before the user answered",
+        "isError": true,
+        "error": "ASK_ABORTED"
+      },
+      "turnEnds": [
+        "aborted"
+      ],
+      "projectionAfter": []
+    },
+    "keptInbox": {
+      "turnsStartedAfterStop": 0,
+      "turnEnds": [
+        "aborted"
+      ],
+      "inboxNextTurn": [
+        "queued by the user"
+      ],
+      "inboxNextStep": 0,
+      "lastUser": "Time sampled while preparing turn 1, step 1: 2026-11-01T21:47:22+13:00[Pacific/Auckland]\nBrowser time zone for this request: unavailable. Ask the user to clarify otherwise-unqualified dates and times.\nElapsed since the preceding model-visible message: unavailable.",
+      "lastText": ""
+    },
+    "idleStop": {
+      "ack": {
+        "accepted": true
+      },
+      "status": "idle",
+      "turnEnds": 4
+    }
+  },
+  "Q3": {
+    "followupAfterStop": {
+      "newTurn": true,
+      "turnEnds": [
+        "aborted",
+        "completed"
+      ],
+      "lastText": "new turn answer"
+    },
+    "redirect": {
+      "turnEnds": [
+        "aborted",
+        "completed"
+      ],
+      "newTurn": true,
+      "decided": [
+        "cancelled"
+      ],
+      "lastUser": "do this instead",
+      "lastText": "redirected answer"
+    },
+    "redirectWithQueued": {
+      "turnsStarted": 2,
+      "userMessagesInOrder": [
+        "<system-reminder>\nA skill is a reusable set of task-specific instructions. The following skills are available in this session:\n\n<available_skills>\n- `webtesting`: Generate ISTQB-aligned black-box test cases from a Jira ticket, then run them as a tracked test cycle. Trigger whenever the user pastes a Jira or Atlassian ticket URL (such as a tourwriter.atlassian.net link, a /browse/KEY-123 link, or a board link containing selectedIssue=KEY-123), gives an issue key, or asks to design, write, or run test cases for a ticket, story, bug, or acceptance criteria. The skill reads the ticket, derives cases using five techniques only - Equivalence Partitioning, Bo...\n</available_skills>\n\nIf the user names a skill, or the task clearly matches a skill's description, call the `skill` tool with the exact skill name before taking task actions. Load all applicable skills, then follow their full instructions. This catalog contains summaries only; do not infer or follow a skill's instructions until it has been loaded.\nA user may also invoke a skill directly; its <skill_content> block then appears in this conversation. Follow it, and do not call the `skill` tool again for that skill.\n</system-reminder>",
+        "more work",
+        "queued by the user",
+        "redirect instruction"
+      ],
+      "inboxNextTurn": [],
+      "turnEnds": [
+        "aborted",
+        "aborted",
+        "completed"
+      ]
+    }
+  }
+}
