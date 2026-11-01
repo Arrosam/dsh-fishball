@@ -209,7 +209,7 @@ export class IntakeLedger {
       queued: count(INTAKE_STATUS.pending) + count(INTAKE_STATUS.accepted),
       failed: count(INTAKE_STATUS.failed),
       wakeupsThisHour: this.#recentWakes().length,
-      items: rows.slice(0, INTAKE.snapshotRows).map(({ intakeId, kind, sourceIdentity, status, createdAt, errorCode }) => ({ intakeId, kind, sourceIdentity, status, createdAt, errorCode: errorCode ?? null })),
+      items: rows.slice(0, this.#readLimits().intakeRowsShown).map(({ intakeId, kind, sourceIdentity, status, createdAt, errorCode }) => ({ intakeId, kind, sourceIdentity, status, createdAt, errorCode: errorCode ?? null })),
     }
   }
 

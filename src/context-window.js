@@ -7,7 +7,7 @@
  * - Effective window: min(your value, the model's window), the model's window coming from
  *   ctx.llm.resolveModelInfo for the route Fishball uses. It is re-evaluated when you save,
  *   after every turn (the model picker may have changed the route) and on
- *   llm/adapters-updated.
+ *   llm/adapters-updated, and when a limit that prices it changes (src/config.js).
  * - Enforcement reuses DSH's compaction: the derived policy (src/context-policy.js) becomes
  *   the config of the compaction row in Fishball's private tree (compactionRows); a change
  *   schedules the catalog's idle-phase apply, and the loader then reloads only that row.
@@ -29,7 +29,8 @@
 import { CONTEXT_WINDOW_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import { AGENT_IDLE, API_CODE, CONTEXT, CONTEXT_PROJECTION, EVENT, LLM_FINISH, OPTIONAL_SERVICE, REQUEST_RETRY } from './constants.js'
 import { LifecycleStateError, diagnosticOf } from './errors.js'
-import { evaluateWindow } from './context-policy.js'
+import { PRICING_LIMITS, evaluateWindow } from './context-policy.js'
+import { DEFAULT_LIMITS } from './config.js'
 import { tokenCount } from './store.js'
 
 /** The synthetic overflow's text (never shown to the user: DSH's overflow recovery consumes it). */
@@ -48,7 +49,10 @@ function withRowConfig(rows, rowId, config) {
 }
 
 /** What applies with no setting: no cap, no ceiling. */
-const DEFAULT_STATE = Object.freeze(evaluateWindow({}, {}, 0))
+const DEFAULT_STATE = Object.freeze(evaluateWindow({}, {}, 0, DEFAULT_LIMITS))
+
+/** The pricing limits' values, compared to tell a change of them from other config changes. */
+const pricingKey = (limits) => JSON.stringify(PRICING_LIMITS.map((field) => limits[field]))
 
 /** The compaction config as compared with the one last handed to the tree. */
 const configKey = (config) => JSON.stringify(config)
@@ -63,8 +67,11 @@ export class ContextWindow {
   #onChange
   #onPolicyChange
   #isCompactionRunning
+  #readLimits
+  /** pricingKey of the limits last seen, so only a change of them re-evaluates. */
+  #pricing
   #agentOf = () => undefined
-  #state = evaluateWindow({}, {}, 0)
+  #state = DEFAULT_STATE
   /** The assistant session #state was evaluated for (its setting is that session's). */
   #stateSession = null
   /**
@@ -89,15 +96,25 @@ export class ContextWindow {
    * @param options.onPolicyChange - called when the compaction config differs from the one
    *   last mounted (the catalog schedules its idle-phase apply).
    * @param options.isCompactionRunning - () => whether Fishball's compaction plugin runs.
+   * @param options.readLimits - () => current limits (read at each evaluation and save).
    */
-  constructor(ctx, store, logger, { onChange, onPolicyChange, isCompactionRunning }) {
+  constructor(ctx, store, logger, { onChange, onPolicyChange, isCompactionRunning, readLimits }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
     this.#onChange = onChange
     this.#onPolicyChange = onPolicyChange
     this.#isCompactionRunning = isCompactionRunning
+    this.#readLimits = readLimits
+    this.#pricing = pricingKey(readLimits())
     ctx.on(EVENT.adaptersUpdated, () => { void this.evaluate() })
+    // DSH broadcasts every plugin's volatile change; only a change of the pricing limits matters here.
+    ctx.on(EVENT.volatileUpdate, () => {
+      const key = pricingKey(this.#readLimits())
+      if (key === this.#pricing) return
+      this.#pricing = key
+      void this.evaluate()
+    })
     ctx.on(EVENT.llmStream, (options, next) => this.#ceiling(options, next))
   }
 
@@ -121,7 +138,7 @@ export class ContextWindow {
   evaluate() {
     const run = this.#evaluations.then(async () => {
       const sessionId = this.#store.assistant().sessionId
-      this.#state = evaluateWindow(this.setting(), await this.#modelInfo(), this.#envelopeTokens())
+      this.#state = evaluateWindow(this.setting(), await this.#modelInfo(), this.#envelopeTokens(), this.#readLimits())
       this.#stateSession = sessionId
       this.reconcile()
       this.#onChange()
@@ -140,7 +157,7 @@ export class ContextWindow {
     const sessionId = this.#store.assistant().sessionId
     if (sessionId === null) throw new LifecycleStateError(API_CODE.unavailable)
     const setting = { contextWindowTokens: contextWindowTokens ?? undefined, maxOutputTokens: maxOutputTokens ?? undefined }
-    const candidate = evaluateWindow(setting, await this.#modelInfo(), this.#envelopeTokens())
+    const candidate = evaluateWindow(setting, await this.#modelInfo(), this.#envelopeTokens(), this.#readLimits())
     if (candidate.error !== null) throw new LifecycleStateError(candidate.error)
     const table = this.#store.settings
     if (setting.contextWindowTokens === undefined && setting.maxOutputTokens === undefined) await table.delete(CONTEXT.settingsKey)

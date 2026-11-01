@@ -28,7 +28,7 @@
  * package.json, lockfile or cordis.patch.yml.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL_GRANTED, CHANGED_BY, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, PLUGIN_MANAGER, SESSION_INFO } from './constants.js'
+import { APPROVAL_GRANTED, CHANGED_BY, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, SESSION_INFO } from './constants.js'
 import { cutToBytes } from './text.js'
 import { SettingsError } from './plugin-settings.js'
 import { CatalogError, fishballInstalledKey } from './plugin-catalog.js'
@@ -79,11 +79,11 @@ const TEXT = Object.freeze({
 const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }] })
 const ok = (fields = {}) => ({ ok: true, ...fields })
 
-/** A value in the settings prompt: JSON, cut to promptValueBytes (DESIGN §10d). */
-const promptValue = (value) => cutToBytes(value === undefined ? TEXT.unsetValue : JSON.stringify(value), PLUGIN_MANAGER.promptValueBytes, SESSION_INFO.ellipsis)
+/** A value in the settings prompt: JSON, cut to maxBytes (the settingsPromptValueBytes limit, DESIGN §10d). */
+const promptValue = (value, maxBytes) => cutToBytes(value === undefined ? TEXT.unsetValue : JSON.stringify(value), maxBytes, SESSION_INFO.ellipsis)
 
 /** The prompt's lines, one per changed field: `- path: old → new` (a secret never shows its values). */
-const changeLines = (changes) => changes.map((change) => `- ${change.path.join('.')}: ${change.secret ? TEXT.secretValue : `${promptValue(change.old)} → ${promptValue(change.new)}`}`)
+const changeLines = (changes, maxBytes) => changes.map((change) => `- ${change.path.join('.')}: ${change.secret ? TEXT.secretValue : `${promptValue(change.old, maxBytes)} → ${promptValue(change.new, maxBytes)}`}`)
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
 
 
@@ -96,8 +96,9 @@ const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
  * @param deps.approval - approval service; deps.packages - FishballPackages.
  * @param deps.settings - PluginSettings (src/plugin-settings.js).
  * @param deps.logger - plugin logger.
+ * @param deps.readLimits - () => current limits.
  */
-export function registerPluginTools({ register, catalog, composition, tools, scope, approval, packages, settings, logger }) {
+export function registerPluginTools({ register, catalog, composition, tools, scope, approval, packages, settings, logger, readLimits }) {
   /** Ask the user through DSH's normal prompt; only Allow once grants. */
   const ask = async (exec, toolName, reason) => {
     const outcome = await approval.request({ agent: exec.agent, toolName, callId: exec.callId, reason, signal: exec.signal })
@@ -282,7 +283,7 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
         // Every refusal (shared, unknown row, no settings, secret, invalid) comes before the prompt.
         const preview = await settings.plan(plugin, row, { values }, { secrets: false })
         if (preview.changes.length === 0) return refused(PLUGIN_ERROR.noChange)
-        if (!(await ask(exec, PLUGIN_TOOL.setSettings, TEXT.settingsPrompt(plugin, row, changeLines(preview.changes), reason)))) {
+        if (!(await ask(exec, PLUGIN_TOOL.setSettings, TEXT.settingsPrompt(plugin, row, changeLines(preview.changes, readLimits().settingsPromptValueBytes), reason)))) {
           await catalog.audit(plugin, PLUGIN_ACTION.settings, CHANGED_BY.fishball, PLUGIN_ERROR.rejected)
           return refused(PLUGIN_ERROR.rejected)
         }

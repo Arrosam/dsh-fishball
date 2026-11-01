@@ -21,7 +21,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, MS, PREFERENCES, STATE_HIDDEN_TOOLS, STATE_KEYS, STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, LIMITS_R11, MS, PREFERENCES, STATE_HIDDEN_TOOLS, STATE_KEYS, STATUS } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -50,7 +50,8 @@ describe('R-HTTP', () => {
     assert.equal(s.workspaceId, null)
     assert.equal(typeof s.cwd, 'string')
     assert.equal(s.error, null)
-    assert.deepEqual(Object.keys(s.limits).sort(), Object.keys(LIMITS).sort())
+    // rev11-limits: the 12 original limit fields plus the 16 moved from constants (DESIGN §16, §3 `Config`).
+    assert.deepEqual(Object.keys(s.limits).sort(), Object.keys({ ...LIMITS, ...LIMITS_R11 }).sort())
     for (const v of Object.values(s.limits)) assert.ok(Number.isInteger(v))
     assert.deepEqual(Object.keys(s.catalog ?? {}).sort(), CATALOG_KEYS, 'catalog is not null while live')
     // Brand icon feature: preferences = {brandStyle}, 'fishball' by default.
