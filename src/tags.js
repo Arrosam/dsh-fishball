@@ -1,7 +1,7 @@
 /**
  * Tag records (DESIGN §9 `tags`, §7a.3 "Tags", spike S37): one per answer Fishball gave on a
  * permission request, shown in the asking turn's tail ("Asked Fishball" plus the answer, or
- * "Sent to you").
+ * "Sent to you"), and one per call a standing grant covered ("Allowed by Fishball's grant: …").
  *
  * A turn-tail entry knows its turn's start and end seq but not its call ids, so each record
  * carries the seq of the asking call's `tool/call` event; the browser shows the records whose
@@ -31,11 +31,12 @@ export class TagRecords {
 
   /**
    * Record one answer. A failed write is logged, never thrown: a missing tag must not undo the answer.
-   * @param tag - { sessionId (the session the user sees), callId?, seq, answer, kind: TAG_KIND }.
+   * @param tag - { sessionId (the session the user sees), callId?, seq, answer, kind: TAG_KIND,
+   *   grant? }: `grant` ({ kind, toolName, prefix? }) is what a covered call's tag names (rev11d).
    */
-  async add({ sessionId, callId, seq, answer, kind }) {
+  async add({ sessionId, callId, seq, answer, kind, grant }) {
     try {
-      await this.#log.append({ sessionId, ...(callId === undefined ? {} : { callId }), seq, answer, kind, at: new Date().toISOString() }, [kind])
+      await this.#log.append({ sessionId, ...(callId === undefined ? {} : { callId }), seq, answer, kind, ...(grant === undefined ? {} : { grant }), at: new Date().toISOString() }, [kind])
       this.#onChange()
     } catch (error) {
       this.#logger.warn('tag record failed (%s)', diagnosticOf(error))
@@ -44,6 +45,6 @@ export class TagRecords {
 
   /** The kept records for the browser, newest first. */
   snapshot() {
-    return this.#log.recent(this.#readLimits().auditEntriesKept).map(({ key, sessionId, callId, seq, answer, kind }) => ({ key, sessionId, callId: callId ?? null, seq, answer, kind }))
+    return this.#log.recent(this.#readLimits().auditEntriesKept).map(({ key, sessionId, callId, seq, answer, kind, grant }) => ({ key, sessionId, callId: callId ?? null, seq, answer, kind, grant: grant ?? null }))
   }
 }
