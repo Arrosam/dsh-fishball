@@ -12,6 +12,7 @@ Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-
 - No test reads the implementation (`index.js`, `src/**`, `client.js`).
 - **P3 additions.** The profile also has four fixture bundles installed as dependencies but not enabled in `dsh.profile.bundles`: `fbtest-only`, `fbtest-only-b` and `fbtest-only-c`, whose patches only insert their own row, and `fbtest-edits`, whose patch also edits the `fbtest-tools` row. Each registers one tool (`only_echo`, `only_b_echo`, `only_c_echo`, `edits_echo`) and records `apply` and `dispose`, so a test can tell whether its code runs. Every fixture tool description has two lines.
 - **Scripted approver.** The worker adds a prepended host-level `approval/request` answerer (the S12 position, ahead of the browser forwarder). It records each question (session, toolName, reason) and answers with an outcome the test sets: `allowed-once`, `rejected`, `unavailable` or `cancelled`. The default is `rejected`, so a prompt nobody expected cannot pass a case or hang a turn.
+- **Host probe (start_session titles).** The worker's `startProbe` op wraps the host's own methods for the sessions created while it is armed (never Fishball's): the session-title service's `rename`, the new agent's `steer` and the new session's `flush`. It records the calls in order and can make `rename` throw the real `SessionTitleInvalidError` or a plain `Error`, make the steer throw, or make the first flush after the steer reject or answer `false`. `FBTEST_NO_SESSION_TITLE=1` boots DSH without its `session-title` row, so there is no `sessionTitle` service. The worker also records DSH's logger warnings and errors (`loggedProblems`). The fake model now records each tool's description next to its name and parameters.
 - **Making fixture tools visible (P3).** The fixture tools are not on Fishball's checked list, so they are unchecked and hidden. P2 cases that need them visible (CMP-03..09, PTC-01/02, FW-03/05) first call `set_plugin_enabled({plugin:'fbtest-tools', on:true})` from a scripted Fishball turn, with the approver answering Allow once. They then wait for the change to apply ("settle", A20).
 - **add_plugin** installs the local directory `support/fixtures/fbtest-added` by absolute path. DSH's plugin manager runs pnpm in the throwaway profile; a local directory needs no network.
 
@@ -348,6 +349,37 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | CAP-04 | BVA (auditEntriesKept 1 < cap 5, with 4 delivered this hour) | the 5th is delivered, the 6th refused |
 | CAP-05 | BVA (21 sends) | the state lists 20, newest first |
 | CAP-06 | BVA (auditEntriesKept 2) | at most 2 entries, including the newest |
+
+Every `start_session` call in these tests passes a `title` now (`TITLE.plain`): OUT-05..07, CAP-02/03 and the start_session calls in the watch (NTF-02/06/08, T-06), own-plugin (OFW-03) and approval (APR-16) cases.
+
+### [messaging-start-title.test.mjs](messaging-start-title.test.mjs): start_session names the session (R1-R7)
+
+Three hosts: A has DSH's session-title service, B checks the order of the checks with `sessionsPerHour` 1, C boots without the service. A runs with `sessionsPerHour` 0.
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| SST-01 | EP (schema) | R1 | `folder`, `title`, `message` required strings; `notify_when_finished` optional boolean; the description matches /title/ |
+| SST-01b | EP (schema) | R7 | message_session keeps `session_id`, `message` (required) and `notify_when_finished`; no title |
+| SST-02 | ST created → renamed → steered → flushed | R3, R4 | rename once, with the live session of the new id and the title as given, before the one steer; the steer's source is `{kind:'agent-message', form:'relay', senderSessionId: Fishball}`; a flush after it; ok with `sessionId`, `folder`, `title`; the new session got the text verbatim once; outbox `start`, `delivered`, only the documented keys; DSH reports the title |
+| SST-03 ×4 | EP + BVA (length) | R3 | rename gets the title exactly as given; the answer's `title` is what the snapshot returned (plain; whitespace collapsed and trimmed; non-ASCII; 300 characters cut at DSH's cap); DSH reports the same |
+| SST-03b | ST | R3 | the title is the same after the new session's first turn |
+| SST-03c ×3 | BVA | R2, R3 | one visible character, padded with spaces, padded with no-break and ideographic spaces: all accepted, title `x` |
+| SST-03d ×3 | EP (visible text + invisible characters) | R2 (update), R3 | accepted; DSH strips the zero-width space, bidi marks, word joiner, control characters and escape sequences (`ab`, `Release plan`, `Report ready`) |
+| SST-04 ×2 (+ control) | EP | R5 | rename throws the real `SessionTitleInvalidError` / a plain `Error`: ok, `titleError` `title-invalid` / `title-failed`, no `title` key, session and folder in the answer, rename once and before the steer, message delivered and recorded; a warning is logged for `title-failed`; a normal start logs none |
+| SST-05 ×4 | DT (rename ok / invalid × flag) | R6 | the watch (`createdBy` assistant) or none, next to `title` or `titleError`; one notice after the first turn; delivered |
+| SST-05b | ST (the first turn fails at once) | R6 | one notice, reason error |
+| SST-06, 06b | EP (the first flush after the steer rejects / answers false) | R6 | ok, `unconfirmed: true`, `title` present, `folder`; steered once; outbox `unconfirmed` |
+| SST-07 ×3 | DT (steer throws × rename ok / invalid / fails) | R6 (update) | `{ok:false, code:'delivery-failed', sessionId}` plus `title` or `titleError`, never `folder`; renamed once, before the steer; the session exists; outbox `failed` with `errorCode` |
+| SST-08 | EP (live and cold target) | R7 | message_session never calls rename; titles unchanged. The failed-delivery refusal of message_session stays `{ok:false, code:'delivery-failed'}` (OUT-04's `deepEqual`) |
+| ORD-01 ×3 | DT (message) | R2 | empty (empty, whitespace) and too-large win over a bad title and a missing folder |
+| ORD-02 ×17 | EP (title) × DT | R2 (update) | `no-title` for `''`, spaces, line breaks and tabs, Unicode spaces, zero-width space, LRM, bidi overrides, word joiner + BOM, control characters, a CSI and an OSC escape sequence, whitespace around invisible characters (each checked to normalize to empty with DSH's `normalizeSessionTitle`); no title / number / null / array / object: `no-title` or a tool error (A51). A missing folder in every row. Nothing created or recorded |
+| ORD-03 ×2 | DT (good title × folder) | R2 | `no-folder`, `not-absolute` |
+| ORD-04 | ST (cap 1) | R2 | after every refusal above a valid start still succeeds: none was counted |
+| ORD-05 ×5 | DT (cap spent × other checks) | R2 | `hourly-cap` before the folder; `no-title`, `empty`, `too-large` before the cap |
+| UNA-01 | EP (no service) | R5 | ok, `titleError` `title-unavailable`, no `title`; delivered, recorded; no title set |
+| UNA-02 | DT (no service × flag) | R6 | the watch next to `titleError`; one notice |
+| UNA-03 ×2 | DT (no service × empty / invisible title) | R2 | `no-title`: the title is checked without the service |
+| UNA-04 | EP (no service, steer throws) | R6 (update) | `delivery-failed`, `sessionId`, `titleError` `title-unavailable`, no `folder` |
 
 ### [messaging-durable.test.mjs](messaging-durable.test.mjs): M9-M11
 
@@ -829,8 +861,13 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 - **A51. start_session without `folder`.** M7 says "missing or empty folder → no-folder". The tool schema marks `folder` required, so DSH rejects the call before the tool runs ("invalid arguments: missing required property folder", a tool error). OUT-07 accepts either; an empty string gives `no-folder`.
 - **A52. A folder that is neither a workspace id nor an absolute path.** Observed `not-absolute`. Whether an unknown workspace id should be `no-folder` instead is not specified; OUT-07 accepts both.
 - **A53. Extra arguments to message_fishball.** A call with `senderSessionId`/`sessionId`/`session_id` next to `message` is accepted and attributed to the caller (MSG-05). Whether such calls should be refused is not specified.
-- **A54. Not driven black-box: `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that. OUT-08 only allows the status.
-- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04); start_session's is not.
+- **A54. `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that, so OUT-08 only allows the status. start_session's is now driven with the host probe (SST-06/06b), which fails the first flush after the steer.
+- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04). start_session's is driven by the host probe, which makes the steer into the new agent throw (SST-07, UNA-04); a session that cannot be created at all is still not driven.
+- **A144. What "unconfirmed" is.** The flush is DSH's `ctx.sessions.flush(session)`, which answers a boolean and rejects on a listener failure. SST-06 makes it reject, SST-06b makes it answer `false`; both are expected to give `unconfirmed: true`. Only the first flush after the steer fails, because failing every later one would also break the new session's own turn.
+- **A145. Missing and non-string titles.** The schema marks `title` as a required string, so DSH rejects a call without it (or with a number, null, array or object) before the tool runs, as for a missing folder (A51). ORD-02 accepts `no-title` or a tool error for those rows; an empty or whitespace-only or invisible-only string must give `no-title`.
+- **A146. Invisible titles (R2 update).** "Empty after DSH's `normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER)`" is tested with the real function as a precondition of each ORD-02 row, and every expected kept title (SST-03d) is written out by hand. `title-invalid` can no longer come from DSH's real service through start_session, so SST-04 gets it from a stub that throws the real `SessionTitleInvalidError` class.
+- **A148. Rev11 start_session calls.** MGL-02 (start) and MGL-05 changed with the title fix: a started session is titled from the start, so its entry is no longer `null`, and the user's first message does not replace the title. UPM-00's start_session is made to the previous version (PRE_REV11A), which has no title argument, and passes none.
+- **A147. A started session's first message text.** The relay text of a start_session is the message verbatim (observed; no header), unlike message_fishball's relays. SST-02 asserts equality.
 - **A56. The wake guard for stranded items.** DSH's turn-retirement gap cannot be triggered on purpose. WAK-04 covers parked items read by the next turn (consumed, never discarded), and DUR-02 covers pending items delivered once Fishball is live again.
 - **A57. GUI (M5).** Only the served client bundle is checked: it contains "Send to Fishball". The row menu, the header action, its visibility rules (live only, never in Fishball's own session) and the dialog are not exercised in a browser. Whether the bundle names the route path literally is a diagnostic only.
 - **A58. Wake-ups per process.** DESIGN §5b counts wake-ups per process, so a restart resets the count. This is not asserted. WAK-03 sets the cap to the current count + 1 at runtime instead of starting from a known zero, because the setup turn may or may not count the unchecked-tools notice.
@@ -1442,7 +1479,7 @@ Support added: `MANAGED_*`, `RELEASE_TOOL`, `UNKNOWN_TOOL_TEXT`, `MANAGED_LABELS
 | MGD-04 | ST yours –Hand over→ managed | items 2, 5; §10e | 200 `ok`; entry exactly `{sessionId, since, by:'hand-over'}`, since at the change; exactly one note (intake `fishball/managed/<id>`, kind `user`, consumed = Fishball woke) whose text names the folder and the user; next request has `message_fishball`; next permission request reaches Fishball |
 | MGD-05 | ST yours –Send to Fishball→ managed | item 2 | 200; entry by `send`; the forward arrives; no management note; tool; request to Fishball |
 | MGD-06 | ST yours –message_session→ managed | item 2, §5d | ok; entry by `message`; the request that reads the message already has the tool; no note; request to Fishball |
-| MGD-07 | ST none –start_session→ managed | item 2 | ok; entry by `start`; every request of the new session has the tool; no note; its request reaches Fishball |
+| MGD-07 | ST none –start_session→ managed | item 2 | ok with `title`; entry by `start`; every request of the new session has the tool; no note; its request reaches Fishball. With the title fix the order is create → rename → managed → first message: the probe's rename time ≤ the entry's `since` ≤ the first steer's time |
 | MGD-08 | ST managed –Take back→ yours | items 4, 5 | 200; entry gone; one note (kind `user`) naming folder and user; next request lacks the tool and mentions no Fishball; request to the stock prompt, zero Fishball steps |
 | MGD-09 | ST managed –release_session→ yours | items 4, 5 | `{ok:true}`; entry gone; one note (kind `system`) naming the folder; tool gone; stock prompt |
 | MGD-10 ×2 | DT (message_fishball × yours / managed) | §5b, S34 | yours: tool error UNKNOWN_TOOL, no relay, no intake item; managed: `{ok:true, note:'Delivered to Fishball.'}`, one relay from it, intake item `session/<id>` |
@@ -1537,9 +1574,9 @@ Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_
 | ASK-01 | EP (allow) | items 7-8, §7a.2 | `{ok:true, code:'allowed', request_id}`; one notice saying the session asked first (header names `ask_fishball`) with tool, arguments, why, `latest_user_message`, empty `quoted_user_messages`; audit kind `asked`, answer `allow`, no quotes |
 | ASK-02 | EP (reject + reason) | item 8, done-when | `{ok:false, code:'rejected', reason, request_id}`; audit `reject` |
 | ASK-03 ×7 | DT (answer_approval refusals) | §7a.3, done-when "as in P7" | allow+high → `allow-needs-low-risk`; allow `''` / `'   '` → `reason-required`; reject `''` → `reason-required`; ask with no / `''` question → `question-required`; unknown id → `expired`; each leaves the request pending and the agent waiting |
-| ASK-04 | DT (escalate, empty reason) | §7a.3 "None", §7a.6 ticket, Q-r11-audit-user | `{ok:true, requestId, decision:'escalate'}`; agent gets `to-user` + request_id; the identical call made next in the same turn goes to the stock prompt, no new notice; your Allow once → `decisions` row `allow-once`, `by:'user'`, target = request id; audit answers `escalate` then `to-user` (outcome allowed-once) |
+| ASK-04 | DT (escalate, empty reason) | §7a.3 "None", §7a.6, Q-r11-audit-user | **Changed by rev11c** (see "Older tests changed by rev11c"): `{ok:true, requestId, decision:'escalate'}`; a card, the agent keeps waiting, no stock prompt; your Allow once → `allowed`, the identical call runs on the pass, `decisions` row `allow-once` by user, audit `escalate` then `pass` (outcome allowed-once) |
 | ASK-05 | DT (allow on truncated arguments, `argumentExcerptBytes` 16) | §7a.3 | `arguments-incomplete`, still pending; reject then works |
-| ASK-06 | BVA (`approvalAnswerSeconds` 1) | item 11, done-when | `to-user` after ≥ 1 s (< 10 s); the identical call to the stock prompt; your Reject → `decisions` row `reject`; audit `timeout` then `to-user` |
+| ASK-06 | BVA (`approvalAnswerSeconds` 1) | item 11, done-when | **Changed by rev11c**: a card after about 1 s, the agent keeps waiting; your Reject with a note → `rejected` with that note, `decisions` row `reject`; audit `timeout` |
 | ASK-07 | ST (3 question rounds, then allow) | Q-r11-rounds, done-when | each round `question`, same request_id, Fishball's question; 4 notices of the same request, each with the thread so far in order (`from` fishball/agent alternating); the final allow covers the call (own output, no prompt, no further notice); audit `allow` then `pass` |
 | ASK-08 ×3 | EP (request_id unknown / settled / another session's) | contract `expired` | `{ok:false, code:'expired'}`, no request_id, nothing sent |
 | ASK-09 | EP (Permission requests off) | item 10 | at once; `unavailable` (or DSH's UNKNOWN_TOOL, A-r11b-3); nothing sent; the call then to the stock prompt |
@@ -1593,7 +1630,7 @@ The size is calibrated per run: two requests with reasons of 100 and 600 bytes g
 ### Not automated (rev11b)
 
 - The live-model scenarios of the done-when (Fishball rejects a dangerous call beyond your request; sends a dangerous call within it, or a harmless one beyond it, to you): prompt rules, not code. APR-24 checks the rule's line is in the prompt.
-- "An `ask_fishball` request that is already your card answers unavailable, its card leaves": cards are rev11c.
+- "An `ask_fishball` request that is already your card answers unavailable, its card leaves": automated by rev11c (LVE-03, LVE-04).
 
 ### Older tests changed by rev11b
 
@@ -1628,10 +1665,10 @@ Support added: `MANAGED_ENTRY_KEYS` gains `title`; `MANAGED_LIST_LABELS` (consta
 | id | technique | requirement | expected |
 |---|---|---|---|
 | MGL-01 | EP (titled session, Hand over) | decision 1 | entry has exactly `{by, sessionId, since, title}`; title is DSH's title, a non-empty string, not the id |
-| MGL-02 ×3 | EP (way in: send / message / start) | decision 1 | send, message: title is DSH's title, by as named; start (only Fishball's message): title `null`, key present |
+| MGL-02 ×3 | EP (way in: send / message / start) | decision 1 | send, message: title is DSH's title, by as named; start: the title Fishball gave it (DSH reports the same) |
 | MGL-03 | BVA (no title yet: `''` in DSH) | decision 1 | title `null`, not `''`, not the id |
 | MGL-04 | ST (null –rename A→ A –rename B→ B) | decision 1 "follows a later retitle" | each title reaches the snapshot and an events frame without a restart; since and by unchanged |
-| MGL-05 | ST (started, null –the user's first message→ titled) | decision 1 | the snapshot title becomes DSH's derived title |
+| MGL-05 | ST (started with a title –the user's first message→ same) | decision 1, title fix | the title Fishball gave stays in DSH and in the snapshot: DSH pins an explicit title, so the user's message does not replace it (before the fix: the entry was `null` until the user wrote) |
 | MGL-06 | EP (quotes, markup, CJK, emoji) | decision 1 | title listed verbatim |
 | MGL-07 | ST (managed –Take back from the list→ yours) | decision 3 | `POST /api/fishball/managed {sessionId, managed:false}` → 200 ok; the entry leaves the snapshot and an events frame; a later rename does not list it again |
 | MGL-08 | EP (rename a session that is yours) | decision 1 | no entry appears |
@@ -1646,3 +1683,373 @@ Support added: `MANAGED_ENTRY_KEYS` gains `title`; `MANAGED_LIST_LABELS` (consta
 - **A-r11a-10. Title after a restart.** "Kept after restart" is read as: the snapshot shows the same title before the session is resumed (as DSH's sidebar does for sessions that are not open).
 - **A-r11a-11. Does Fishball's message retitle?** Not stated; MGL-02 compares with DSH's own title service, whatever it says.
 - **A-r11a-12. Labels.** The heading and by-tag wording come from the coordinator, not the requirements text; the "since" line's wording is not checked.
+
+
+## Revision 11 rev11c cases (your pile for `ask_fishball` requests; DESIGN §14 row rev11c, §7a.2 "to-user", §7a.3 "Tags", §7a.5, §7a.6, §9 "Session cards", "Tag records", §10e, §16 Q-r11-cap-own, Q-r11-release-pile, Q-r11-tag-*; requirements items 14-16, defaults "Card cap", "The user's Reject takes an optional note"; S37)
+
+The builder's contract is the DESIGN text alone (no code was read). Black-box surfaces: the snapshot (`pile`, and the tag records wherever the Host publishes them), `POST /api/fishball/requests/answer` (the one route both the pile's buttons and the buttons on the running `ask_fishball` row call, S37), tool results, the audit and `decisions` tables, and the `tags` table of `storages/fishball.json`. A request becomes a card when Fishball escalates it (the fake model escalates from a plan) or when `approvalAnswerSeconds` passes. Cards for **direct calls** are rev11e: in rev11c a direct call sent to you shows the stock prompt only (PIL-07; rev11e flips it).
+
+Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waiting`, shared helpers); rev11c constants (`PILE_API`, `PILE_CODE`, `CLICK`, `CARD_KIND`, `CARD_KEYS`, `LIMITS_R11C`, `TAGS_TABLE`, `TAG_KIND`, `TAG_KEYS`, `TOO_MANY_WAITING`, `STATE_KEYS_OPTIONAL`; `STATE_KEYS` gains `pile`; `ASK_CODE.toUser` and `AUDIT_ANSWER.toUser` removed); helpers `pileNow`, `cardOf`, `untilCard`, `untilNoCard`, `answerCard`, `cardArguments`, `tagsOf`, `snapshotTags` (expect.mjs).
+
+### [rev11c-pile.test.mjs](rev11c-pile.test.mjs): the pile (one host)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| PIL-01 | EP (nothing waiting) | item 14, §10e snapshot | `state.pile` is `[]`; the first SSE frame carries `pile: []` |
+| PIL-02 | EP (3 managed sessions escalate) | item 14, done-when "three cards", §10e order | three cards, newest first, one per session; every card has `arguments`, `callId`, `kind: 'asked'`, `requestId`, `sessionId`, `since`, `toolName` (= the tool asked about), `why`; `callId` is the `ask_fishball` call's id (S37: the row buttons match on it); the three agents still run |
+| PIL-03 | EP (answer the middle one) | item 15, done-when | only that card leaves; the other two stay with their agents waiting; the answered agent gets `rejected` |
+| PIL-04 | EP (quote + one question round + escalate) | item 14 | the card shows the quoted message (id and full text), the thread `[question, reply]` in order, Fishball's reason as `note`; `callId` is the reply call's (the call that is waiting now) |
+| PIL-05 | BVA (`argumentExcerptBytes` 16 / default, 200-byte arguments) | §9 "arguments (excerpt)" | cut: text of at most 16 bytes + an ellipsis, a prefix of the real arguments; default: whole |
+| PIL-06 | EP (markup in arguments, reason, note) | done-when "nothing renders as markup" | the snapshot holds the exact text; the client draws it as plain text (drawing is a hand check) |
+| PIL-07 | EP (direct call, Fishball escalates) | §7a.6 "Built in rev11e" | **changed in rev11e:** a card of kind `direct` and the (held) stock prompt both show; your click in the session clears the card (was: the stock prompt answers; no card) |
+| PIL-08 | ST (SSE) | §10e "fed by the state stream" | a frame holds the card; after the answer a later frame does not |
+| PIL-09 ×4 | BVA (`pileMaxHeightVh` 45 / 1 / 0 / 1.5) | §16 new limits, "Rules" | default 45 in `state.limits`; 1 accepted live; 0 and 1.5 refused, value stays |
+
+### [rev11c-answer.test.mjs](rev11c-answer.test.mjs): Allow once / Reject on a card (one host)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| ANS-01 | EP (Allow once) | items 8, 14, defaults | agent `allowed` + `request_id`; its identical call runs on a pass (own output), no stock prompt, no further notice; card gone; `decisions` row `allow-once` by `user`; audit `escalate` (final outcome allowed-once) … `pass` |
+| ANS-02 | EP (Reject + note) | defaults "optional note" | agent `rejected`, `reason` = the note exactly; card gone; `decisions` `reject` by user; audit `escalate`, final outcome rejected |
+| ANS-03 | EP (Reject, no note) | defaults | agent `rejected`, `ok:false`, `request_id` |
+| ANS-04 | EP (note with markup, newlines, tab) | S33 Reading | reason unchanged |
+| ANS-05 | ST (second click; unknown id; settled id) | §10e 409 `expired` | 409 `{code:'expired'}`; the first answer stands |
+| ANS-06 ×12 | DT (10 bad bodies; foreign origin; Fishball's late answer) | §10e "same boundary checks", §7a.3 "a request in your pile is yours" | bad bodies 400 `bad-body`; foreign origin not 200; `answer_approval` on a card answers `expired`; card and waiting agent unchanged |
+| ANS-08 | BVA (`approvalAnswerSeconds` 1, no answer) | item 11, §7a.5 | no card before the answer time, a card after; the agent keeps waiting (no `to-user`, no stock prompt); Allow once → `allowed`; audit `timeout`, final outcome allowed-once |
+| ANS-09 | ST (after your click) | §7a.14 "kept for cards" | no new Fishball model request; a later Fishball turn holds a note naming the request |
+| ANS-10 | ST (question round, escalate, Allow once) | item 8 | `allowed`, same `request_id` |
+
+### [rev11c-leave.test.mjs](rev11c-leave.test.mjs): when a card leaves, and the cap (one host; restart last)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| LVE-01 | ST (a session's turn stopped, the Stop button's path) | item 16 | that card leaves, the other session's stays; a click on the gone card is 409 `expired` |
+| LVE-02 | ST (Take back while a card) | defaults "Leaving management", §7a.6 | `no-longer-managed` + `request_id`; card leaves; audit `released` |
+| LVE-03 | ST (Permission requests off while a card) | Q-r11-release-pile | `unavailable`; card leaves; the agent's identical call goes to the stock prompt |
+| LVE-04 | ST (Fishball stopped while a card) | Q-r11-release-pile | as LVE-03; Fishball live again |
+| LVE-05 ×3 | BVA (`maxPendingApprovals` 2: card + waiting = full; third; after an answer) | "Card cap", §7a.6 Reading | the third request `over-capacity` at once and its identical call to the stock prompt; after one card is answered a new request is accepted |
+| LVE-06 | BVA (cap 1 with one card; Fishball's own request) | Q-r11-cap-own | Fishball's tool returns `too-many-waiting` at once; DSH is not asked |
+| LVE-07 | ST (restart with two cards) | item 16 | pile empty after the restart; old ids 409 `expired`; the sessions stay managed |
+
+### [rev11c-tags.test.mjs](rev11c-tags.test.mjs): tag records (one host; restart and bound last)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| TAG-01 | EP (allow, `ask_fishball`) | §7a.3 Tags, §9 | one row in table `tags`: `sessionId`, `callId` (the ask call), integer `seq`, `answer` naming allow, `kind: 'approval'`, `at` |
+| TAG-02 | EP (reject) | §7a.3 | `answer` names reject |
+| TAG-03 | ST (ask, reply, allow) | §7a.3 "every decision" | one tag per decision on its own call; later call has the greater `seq` |
+| TAG-04 | EP (escalate) | §7a.3 "Sent to you"; your click | a `sent-to-you` tag; your own click adds none |
+| TAG-05 ×2 | EP (direct call allowed / rejected) | Q-r11-tag-approvals | an approval tag on the direct call's id |
+| TAG-06 | EP (snapshot) | §9 "published in the snapshot" | the snapshot (any key) publishes each stored record |
+| TAG-07 | BVA (two answers, one session) | §9 `seq` | later `seq` is greater |
+| TAG-08 | EP (turn stopped, no answer) | §7a.3 | no tag |
+| TAG-10 | ST (restart) | Q-r11-tag-store | the same rows remain and are still published |
+| TAG-11 | BVA (`auditEntriesKept` 2, three answers) | Q-r11-tag-bound | two rows; the oldest dropped first |
+
+### Not automated (rev11c)
+
+- **The look of the pile and the row buttons** (item 14 layout, "Waiting for you (n)", scrolling at `pileMaxHeightVh`, the composer staying in view, light and dark; plain-text drawing of markup; Allow once / Reject on the running `ask_fishball` row in the session's own chat; answering there clears the pile and the reverse; the "Asked Fishball" and "Sent to you" tag texts in the turn tail, visible in a folded turn and in an old turn after a restart): browser rendering, checked by hand (`test/hand-checks/rev11c.md`). The route is exercised by the tests above.
+- A notice that cannot be delivered sending the request to the pile (§7a.6 Reading): no way to make delivery fail from outside.
+- The `ask_fishball` row's buttons "while the request is a card, not while Fishball decides" (hand check).
+- Fishball's own cards (rev11f): only the cap rule (LVE-06) is a rev11c item.
+
+### Older tests changed by rev11c
+
+| file | change | why |
+|---|---|---|
+| rev11b-ask ASK-04 | escalate no longer answers `to-user` with a stock-prompt ticket: the request is a card, the agent keeps waiting; your Allow once (route) → `allowed`, the identical call runs on the pass; audit `escalate`, `pass` | DESIGN §7a.2 "`to-user` (rev11b only) … rev11c replaces it with waiting on a card", §7a.6 |
+| rev11b-ask ASK-06 | the 1 s timeout no longer answers `to-user`: a card, the agent keeps waiting; your Reject with a note → `rejected` with the note; audit `timeout` only | same, item 11 "the agent keeps waiting" |
+| constants `ASK_CODE.toUser`, `AUDIT_ANSWER.toUser` | removed | the answer no longer exists |
+| STATE_KEYS (http HTP-01/HTP-?, plugins-http, messaging-send) | gains `pile` (20 keys); a `tags` key, if the Host publishes the records under that name, is dropped before comparing (`STATE_KEYS_OPTIONAL`) | DESIGN §10e "Snapshot", §9 "published in the snapshot" |
+| config CFG-01, CFG-08, http HTP-01 limits | the default table has 31 fields: `LIMITS_R11C` (`pileMaxHeightVh` 45) added | §16 "Revision 11's new limits" |
+| ASK-09, ASK-10, ASK-13, DIR-05, DIR-06 | unchanged on purpose: `unavailable`, `over-capacity` and direct calls still use the stock prompt (a to-you ticket / the pass-through) until rev11e | §7a.5, §7a.6 "Cap", "Built in rev11e" |
+
+### Ambiguities (rev11c)
+
+- **A-r11c-1. Where the tag records are published.** §9 says "published in the snapshot" without a key. The tests find them by shape anywhere in the snapshot (`snapshotTags`) and tolerate a `tags` key in the exact-key checks. Also: `answer` is checked by a regular expression on its JSON (allow / reject / ask|question), since the design gives its wording only for the client.
+- **A-r11c-2. Which `callId` a card carries after a question round.** Each `ask_fishball` reply is a new tool call; the card is taken to carry the id of the call that is waiting now (the running row with the buttons), PIL-04.
+- **A-r11c-3. Card field names.** From §9 "Session cards": `requestId, kind, sessionId, toolName, arguments, quotes, why, thread, note, since` plus `callId` (S37). `arguments` may be a JSON string or an object; `quotes` entries are expected to hold the message id and full text; `thread` entries have `text` as in the notice; `note` is Fishball's escalate reason.
+- **A-r11c-4. Reject without a note.** The agent's `reason` is not asserted (it may be a default text).
+- **A-r11c-5. Fishball's own cap rule before rev11f.** LVE-06 asks for `too-many-waiting` from a Fishball tool that asks for approval, with a card from another session filling the cap; rev11f owns Fishball's cards but the rev11c row lists the rule.
+- **A-r11c-6. The note after your click** (ANS-09) is read as "Fishball is told, without waking it" (§7a.14 Reading); its wording is not asserted, only that it names the request id.
+- **A-r11c-7. Timeout is not "Sent to you".** TAG tests do not require a tag when a request times out.
+
+## Revision 11 rev11d cases (standing grants; DESIGN §14 row rev11d, §7a.3 "grant", §7a.5, §7a.8, §9 "Standing grants", "Tag records", "Audit", "Fishball's other decisions", §10e "Active grants", "Host API", §16 Q-r11-prefix-tools, Q-r11-grant-bounds, Q-r11-grants-off, Q-r11-tag-scope, Q-r11-audit-user; requirements items 17-19, defaults "Restarts", "Prefix grants", "Audit"; written from the requirements alone, no code read)
+
+Black-box surfaces: the snapshot's `grants`, `POST /api/fishball/grants/revoke` (`{grantId}`, 409 `unknown`/`ended`), Fishball's tools (`answer_approval` with `decision: 'grant'` and `grant: {kind, prefix?, expires_at}`, `list_grants`, `revoke_grant({grant_id, reason})`), the `grants`, `decisions`, `tags` tables of `storages/fishball.json`, the approvals audit files, tool results, Fishball's model-request count (`requests`) and the scripted stock prompt. "Covered" = the call runs (allowed-once), Fishball takes no model step, no notice reaches it, and no stock prompt is shown.
+
+Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in their body, `direct`/`create`/`covered`/`uncovered`, grant readers); `FBTEST_ASKING_TOOLS` in `fixture-tools.mjs` (the fixture tools bash, pwsh, terminal_open, terminal_send, run_code ask DSH for approval under their own name and call id, so a grant on those tool names can be exercised); constants `GRANT_*`, `PREFIX_TOOLS`, `EXACT_ONLY_TOOLS`, `ASKING_SHELL_ENV`; `STATE_KEYS` gains `grants` (21 keys, §10e "Snapshot").
+
+### [rev11d-grants.test.mjs](rev11d-grants.test.mjs): creating grants and what they cover (one host)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| GRT-01 | EP (valid prefix grant) | item 17-18, §7a.3, §9 | the creating call runs; snapshot lists it (session, tool, prefix, end time); stored row active, uses 0; `decisions` row grant by fishball; audit `grant`; a tag for the creating call |
+| GRT-02 | ST (five covered runs) | done-when 6, Q-r11-tag-scope | all run, Fishball takes zero steps, `uses` 5 and `lastUsedAt`, five `grant` tags (one per call), five `grant-used` audit rows |
+| GRT-03 | EP | item 18 (accepted risk) | `npm test && git push` is covered |
+| GRT-04 ×8 | BVA/EP (command against prefix `npm test`) | item 18 (raw text) | longer, `npm testing`, exactly the prefix: covered; `npm tes`, `npm run test`, `NPM test`, `npm  test`, `echo npm test`: to Fishball |
+| GRT-05, 06 | EP | §7a.8 "same session, tool" | the same command in pwsh, or in another session: not covered |
+| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or an extra argument: to Fishball |
+| GRT-08 ×3 | EP (pwsh, terminal_send; a trailing `*`) | Q-r11-prefix-tools; manager 2026-11-02 | prefix grant accepted and covers a following command; a trailing `*` is dropped |
+| GRT-09 ×5 | EP (run_code, fbtest_ask, terminal_open prefix refused; exact on run_code and terminal_open accepted) | Q-r11-prefix-tools, requirements "Prefix grants" | prefix refused, `ok:false`, request still pending (a reject works), no grant row; an exact grant on run_code is accepted and covers |
+| GRT-10 ×10 | DT (refused answers) | §7a.8 "an end time is required and must be in the future", `allow`'s rules | no end time; past (an hour, one second); not a time; no grant object; unknown kind; prefix kind with no or an empty prefix; a prefix that is not the start of the asking command; risk high; empty reason: `ok:false` with a code, no grant row, no `decisions` row, request still pending |
+| GRT-11 | BVA (end time a year out; three active) | Q-r11-grant-bounds | accepted; three active grants of one session at once |
+| GRT-12 | EP (via `ask_fishball`) | §7a.3 Reading | grant through an `ask_fishball` answer: allowed; later direct call covered; `ask_fishball` for another covered command answers `allowed` with no Fishball step |
+
+### [rev11d-end.test.mjs](rev11d-end.test.mjs): how grants end, pause and survive (one host, a session per case)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| END-01 | ST (expiry) | item 19 | covered before the end time; after it the next run goes to Fishball; row expired/ended by `expiry`; not in the active list |
+| END-02 | ST (your Revoke) | item 19, Q-r11-audit-user | route 200; next run to Fishball; `decisions` revoke by user; row revoked by user; a second revoke and an unknown id answer 409 |
+| END-03 | ST (`revoke_grant`) | item 19 | `list_grants` lists the active grant; revoke ok; row ended by fishball; `decisions` revoke by fishball; not active in `list_grants`; next run to Fishball; a second revoke and an unknown id refused, no extra row |
+| END-04 | ST (Take back) | item 19, item 4 | its grants end (take-back), another session's stay; handing over again does not revive |
+| END-05 | ST (`release_session`) | item 19 | its grants end (release) |
+| END-06, 07 | ST (Permission requests off / Fishball not live, then back) | Q-r11-grants-off, §7a.5 | the covered call shows the stock prompt, Fishball is not asked, no use counted, no tag; the grant stays active with an unmoved end time and is marked paused; when back, the same grant covers again |
+| END-08 | ST (restart) | defaults "Restarts" | an unexpired grant survives with uses and end time and still covers; managed status stays; a grant whose end time passes is not honoured |
+
+### [rev11d-regress.test.mjs](rev11d-regress.test.mjs): rev11b regression (the manager's decision of 2026-11-02, DESIGN §7a.3 table)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| REG-01 | DT (escalate, no `risk`, no `reason`) | §7a.3 "None: any request can go to you" | accepted (`ok:true`, `decision:'escalate'`; the tool's own schema must not require them); a card; the agent keeps waiting; no stock prompt; audit `escalate`; your Allow once → `allowed` |
+| REG-03 | DT (ask with only a question) | manager 2026-11-02 | accepted, no risk or reason needed; the agent gets `question` |
+| REG-02 | DT (escalate, risk high, empty reason) | same | same |
+
+### Not automated (rev11d)
+
+- The grants list in the pinned area with Revoke and the "paused" wording, and the tag text "Allowed by Fishball's grant: <prefix or exact call>" in the turn tail: checked by hand (client rendering).
+- A year-out end time in the client's list; the exact wording of Fishball's prompt for grants (prompt-only judgement, item 17).
+
+### Ambiguities (rev11d)
+
+- **A-r11d-1. The end time's format.** `expires_at` is given as an ISO 8601 text (`new Date().toISOString()`); a number is not tried. Snapshot and stored fields are read as `expiresAt` (or `expires_at`), as a number or a date text.
+- **A-r11d-2. Id and field names.** The grant id is read from `grant_id`/`grantId`/`grant.id` in the answer, else from the stored row's key (§9: keyed by grant id); the snapshot entry's id from `grantId`/`id`. The snapshot lists active grants (an entry with no `status` counts as active). The tool name is `toolName` (or `tool`). "Marked paused" is `paused: true` or the word "paused" anywhere in the entry. `list_grants` is read as `{grants:[…]}`.
+- **A-r11d-3. Terminal tools' command argument.** The fixtures for `terminal_open` and `terminal_send` carry the command text in `command`; the design says "read from their schema in rev11d", so a different real argument name would need the fixture schema changed.
+- **A-r11d-4. Refusal codes.** Only `ok:false` with a string `code` is asserted for refused grants, not the code name. Whether a prefix must be a prefix of the asking call's command (§9: "comes from the asking call") is not tested.
+- **A-r11d-5. Revoke reasons.** `revoke_grant` with an empty reason is not tested.
+- **A-r11d-6. Expiry rows.** Expiry is checked on the grants row (`expired`/`ended`, `endedBy: 'expiry'`), not on a `decisions` row; the design says expiry is audited without naming the table.
+
+- **A-r11d-7. Manager's readings (2026-11-02), built in:** `terminal_open` takes exact grants only; a prefix is the start of the asking command; a trailing `*` is dropped; expiry writes no `decisions` row (END-01 checks the grants row only).
+
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
+
+
+## Revision 11 rev11e cases (prompts already showing, `answer_prompt`, cards for direct calls)
+
+Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a.1, §7a.5, §7a.6, §7a.9, §9, §10e, §14 row rev11e, §16 and spike S33, before the build existed. No implementation was read. The harness change: the scripted stock prompt can be **held** (`setApprover({outcome:'hold'})`, `releaseApproval` = your click), which stands in for a prompt showing in a browser. The worker now (a) reports `closed: true` in the `approvals` records once a prompt's signal aborts (the plugin answered it, S33) and (b) drops a closed prompt from the held list. Helpers: [support/rev11e.mjs](support/rev11e.mjs).
+
+### [rev11e-frozen.test.mjs](rev11e-frozen.test.mjs): `list_frozen_sessions` (item 20, §7a.9)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| FRZ-01 | EP (nothing showing) | §7a.9 | `ok`, no entry |
+| FRZ-02 | EP (a prompt in a session that is yours) | item 20, done-when 1 | listed with the session, tool `fbtest_ask`, the exact arguments, a prompt id; when the prompt appeared Fishball took no step (model-request count, intake items, notices and audit rows unchanged over 1 s); no card; the session is still yours |
+| FRZ-03 | EP (quotes, markup, unicode, several fields) | "exact arguments" | listed arguments deep-equal the call's |
+| FRZ-04 | EP (two sessions) | §7a.9 | two entries, distinct ids, own session and arguments; your click removes only the clicked one |
+| FRZ-05, 06 | ST (your Allow once / Reject) | done-when "after your own click the entry leaves the list" | the call gets your outcome; entry gone; Fishball told nothing; a late `answer_prompt` is refused; session stays yours |
+| FRZ-07 | ST (turn stopped) | §7a.9 "asker's own abort" | entry gone; late `answer_prompt` refused; no decisions row |
+
+### [rev11e-answer.test.mjs](rev11e-answer.test.mjs): `answer_prompt` and the fifth way in (items 2, 20; §7a.9, §9, §16)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| APR-01 | EP (allow) | done-when | ok; prompt closed (signal aborted, nothing held); the call ran with `allowed-once`; entry gone |
+| APR-02 | EP (reject + reason) | done-when | ok; prompt closed; the agent's result carries the reason and not "the user rejected"; entry gone |
+| APR-03, 04 | ST (yours –answer→ managed) | item 2, done-when | snapshot entry `{sessionId, since, by:'prompt-answer', title}`; the session's final request of the turn and its next turn list the three tools; Fishball's result mentions the session is managed; no `fishball/managed` note |
+| APR-05 ×6 | DT (refused answers) | §7a.9 "reject needs a reason", "`allow` follows `allow`'s code rules"; §7a.3 | reject with no / blank reason, allow with no reason, allow with risk high, a decision other than allow/reject, an unknown prompt id: each refused; prompt still listed and not closed; session still yours; no tag, no decisions row |
+| APR-06 | ST (second answer) | "only pending ids, once" | refused (already answered / expired); first outcome stands; one tag, one decisions row |
+| APR-07 | ST (your click first) | S33 "first answer wins" | Fishball's answer refused; session not managed; no tag; no decisions row |
+| APR-08 | EP (tags) | Q-r11-tag-scope, §9 | tag record `{sessionId, callId = the frozen call, kind:'prompt', seq (integer), answer naming the decision, at}`; published in the snapshot; two answers in one session: later `seq` is greater |
+| APR-10 | EP (audit) | §7a.13, §9 | one `decisions` row `answer-prompt` by `fishball`, `sessionId`, `target` = prompt id, `outcome` naming the decision; approvals audit rows of kind `prompt` with allow and reject |
+| APR-12 | EP | Q-r11-managed-tag-prompt | the served client bundle contains "Prompt answered by Fishball" |
+| APR-11 | ST (restart) | defaults "Restarts" | managed by `prompt-answer` survives; tag and decisions rows unchanged; no prompt listed |
+
+### [rev11e-direct.test.mjs](rev11e-direct.test.mjs): cards for direct calls kept in step with the stock prompt (item 15, §7a.6)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| DCD-01 | EP (escalate) | item 15, done-when | a card of kind `direct` with the documented keys, the call's id, the exact arguments, AND the stock prompt showing; the agent waits; no further Fishball step or notice |
+| DCD-02 | ST (Allow once on the card) | item 15 | route 200; prompt closes; card leaves; the call runs; `decisions` allow-once by user; audit `escalate` |
+| DCD-03 | ST (Reject + note on the card) | defaults "Reject takes an optional note" | prompt closes; card leaves; the agent's result carries the note and not `allowed-once` |
+| DCD-04, 05 | ST (your click in the session) | item 15 "answering in either place clears both" | card leaves; the call gets your outcome; a later click on the card is 409 `expired`; one `decisions` row by user; no new notice |
+| DCD-06 | BVA (`approvalAnswerSeconds` 1) | item 11 | card and prompt appear after ≥ 1 s; the card's Reject closes both; audit `timeout` |
+| DCD-07 | ST (turn stopped) | item 16 | card leaves; prompt closes; a later card click is 409 |
+| DCD-08 | BVA (`maxPendingApprovals` 2: ask card + direct card, then a third) | defaults "Card cap" | the third shows the stock prompt only: no card, no notice; your click answers it |
+| DCD-09 | ST (Permission requests off while both show) | §7a.5 "keeps the prompt" | the prompt stays; your click answers the call; no card remains afterwards |
+| DCD-10 | EP (second answer) | §7a.6 "first answer wins" | after the card answered, a second card click is 409 and nothing is left to click; one decisions row |
+| DCD-11 | BVA (`maxQueuedInputs` 1, queue full; `maxPendingApprovals` 1) | §11 Reading on undeliverable notices; manager 2026-11-02 | a direct call whose notice cannot be delivered gets a card and the stock prompt like a timeout, no notice, no tag; a second one past the cap gets the stock prompt only |
+
+### Older cases changed by rev11e
+
+| file | change | why |
+|---|---|---|
+| rev11c-pile PIL-07 | flipped: a direct call sent to you now shows a card of kind `direct` and the (held) stock prompt; your click in the session clears the card | §7a.6 "Built in rev11e", rev11e "done when" |
+| rev11b-direct DIR-05, DIR-06 | assertions unchanged (the stock prompt answers; decisions row by user; audit `escalate` / `timeout`); the card now also exists and leaves with the answer, which rev11e-direct checks | same |
+| ASK-09, ASK-10, ASK-13, rev11c LVE-05 third request | unchanged on purpose: `unavailable` / `over-capacity` retries go straight to the stock prompt through a to-you ticket (no Fishball involvement), and past the cap the stock prompt shows alone | §7a.5, §7a.6 "Cap", "To-you ticket" |
+| worker.mjs approver | held prompts report `closed` and leave the held list when their signal aborts; `approvals` records gain a `closed` flag | harness only; no expected value of an older case changes |
+
+### Not automated (rev11e)
+
+- The tag text "Answered by Fishball: <decision>" in the turn tail, the "Prompt answered by Fishball" label on the managed list's row, and the buttons on the session's own prompt: client rendering, by hand (APR-12 only checks the bundle carries the label).
+- Closing a prompt in a real browser (S33 did this); here the signal abort is the observable.
+
+### Ambiguities (rev11e)
+
+- **A-r11e-1. Answer shapes.** The design names `prompt_id`, `decision`, `reason` (and, by "follows `allow`'s code rules", `risk`) for `answer_prompt`, and "session, tool, exact arguments" for the list, without key names. The tests read entries from any list in the answer, with the id from `prompt_id`/`promptId`/`id`, the tool from `tool`/`tool_name`/`toolName`, the arguments from `arguments`/`args` (object or JSON text), and find the session by its id appearing in the entry. A refusal is `ok:false` or an error result.
+- **A-r11e-2. Whether a managed session's own escalated direct call (card + stock prompt) is also listed by `list_frozen_sessions`.** §7a.9 says the registry holds each request the broker passed on, so it should be, but it also says answering it would be ambiguous with the card; not tested.
+- **A-r11e-3. A session that is already managed and whose prompt Fishball answers**: whether `by` changes. Not tested.
+- **A-r11e-4. Take back / release while a direct card and its prompt show.** The prompt must stay (the session is the user's again); whether the card leaves is not stated. Not tested. DCD-09 (Permission requests off) asserts only that the prompt stays and the settled call leaves no card.
+- **A-r11e-5. The tag record's `callId`** is taken to be the frozen call's id (the call whose prompt was answered); `answer` is matched by a regular expression on the decision word.
+- **A-r11e-7. (manager 2026-11-02)** `answer_prompt` allow adds no hint (APR-01 asserts the result is exactly `outcome=allowed-once`); a request with no call id cannot carry the reject reason or the note, a known limit, not tested.
+- **A-r11e-6. "No note" for a Fishball-initiated way in** follows the §16 Reading "Fishball's own actions need no extra note beyond the tool result" (APR-03 asserts no `fishball/managed` item).
+
+## Revision 11 rev11f cases (Fishball's own requests; DESIGN §14 row rev11f, §7a.11, §7a.6 "Cap", §7 N3/N4, §9 `own_requests`, §10e, §16 Q-r11-own, Q-r11-own-scope, Q-r11-own-card-detail, Q-r11-cap-own; requirements items 21-24; S35; written from the requirements alone, no code read)
+
+Black-box surfaces: Fishball's tool results (`add_plugin`, `remove_plugin`, `set_plugin_enabled`, `set_plugin_settings`, `withdraw_request`, a visible plugin tool that asks in its body), the snapshot's `pile`, `POST /api/fishball/requests/answer`, Fishball's model requests and user messages (the "run it again" notice), the scripted stock prompt after the broker, the `own_requests` table of `storages/fishball.json`, the settings stores and the profile folder. "Retry" = Fishball's woken turn makes the identical call: the fake model is scripted for it through a marker (`queueMarker`, marker = the request id, queued just before the click), because a pass lasts only as long as the turn Fishball was woken for.
+
+Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with scripted retries / withdraw, `ownRows`, `detailEntries`); constants `OWN_REQUEST`, `WITHDRAW_TOOL`, `OWN_STATUS`, `OWN_MORE`, `OWN_WITHDRAW_HINT`, `OWN_ASKING_TOOL` (demo_echo asks in its body through `FBTEST_ASKING_TOOLS`); `fishballTool` in `expect.mjs` now works with cards (below).
+
+### [rev11f-request.test.mjs](rev11f-request.test.mjs): add_plugin and remove_plugin (one host, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| OWN-01 | EP (mode asks) | item 21; §14 "returns at once with a card" | `ok:false`, code `waiting-for-approval`, waiting text, within seconds; a card of Fishball's session with tool, exact arguments and its reason; the stock prompt not asked; nothing installed; `own_requests` row `waiting` |
+| OWN-02 | ST (card waiting) | item 21 "keeps handling whatever else comes in" | another message gets its model step; the one card is still there |
+| OWN-03 | ST (waiting → approved) | item 22 | route 200; card leaves; a notice naming the request and saying to run it again wakes Fishball (a model step) |
+| OWN-04 | ST (approved → used) | item 22 "one-time pass covers the identical retry" | the retry installs; no second card; no stock prompt; row `used` |
+| OWN-07 | ST (waiting → rejected) | item 22; defaults "Rejecting Fishball's own card tells Fishball without waking it" | no model step for 1 s; row `rejected`; Fishball's next turn carries a text naming the request; the identical call asks again (no pass) |
+| OWN-08 ×4 | DT (withdraw: waiting / again / unknown / a session's card) | item 23 | waiting: ok, card gone, row `withdrawn`, a click is 409 `expired`; a second withdraw, an unknown id and a managed session's card id are refused; the session card stays |
+| OWN-09 | ST (pass ends with the woken turn) | defaults "Pass lifetime" | Allow with a woken turn that does not retry; a call in a later turn files a new card |
+| OWN-10 | EP (policy never) | §7a.11 "Never-asking modes" (a fact since S35); §14 (Reading) | refused (`ok:false`, not waiting), no card, no stock prompt, no `own_requests` row |
+| OWN-11 | ST (restart before the click) | item 24; §14 "Allow after it still works" | the card is in the pile after the start with the same tool and arguments; Allow works, the woken turn's retry installs; no second card |
+| OWN-12 | BVA (`rationaleChars` 5 / default) | §9 `own_requests.reason` | Fishball's reason on the card is cut to 5 characters; whole at the default |
+| OWN-13 | BVA (`argumentExcerptBytes` 16 / default) | §9 `own_requests.arguments` | arguments on the card cut to 16 bytes + an ellipsis, a prefix of the real ones; whole at the default |
+| OWN-14 | EP (remove_plugin) | item 21 | a card, no stock prompt; the package stays until Allow; the retry removes it |
+
+### [rev11f-scope.test.mjs](rev11f-scope.test.mjs): every kind of Fishball request (settings fixtures; demo_echo asks in its body)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| SCP-01 | EP (unchecked tools) | §7 N4; Q-r11-own-scope | a card with a detail list naming the plugin's tools; no stock prompt; Allow + retry turns the plugin on |
+| SCP-02 | EP (a plugin tool that asks in Fishball's session) | Q-r11-own-scope; S35 | returns at once with the waiting text; a card for the tool with its exact arguments; no stock prompt |
+| SCP-03 | DT (retry after Allow: changed value / other key order / second use) | §7a.11 "The pass key" (S35 table) | changed `command` → new card; same arguments, other key order → runs (`outcome=allowed-once`); the same call again → new card |
+| SCP-04 | EP (turning on one of Fishball's own plugins) | Q-r11-own-scope; §10d | a card, no stock prompt, the feature stays off; Allow + retry turns it on |
+| SCP-05 | EP (set_plugin_settings) | Q-r11-own-scope | at once; the card's detail lists `path: old → new`; stored values unchanged; no audit row; no secret; no stock prompt |
+| SCP-07 | ST (Reject) | item 22 | Fishball not woken; nothing saved |
+| SCP-06 | ST (Allow + retry) | item 22 | the retry saves (`ok:true`, `changed`); no second card; the stored values changed; audited |
+
+### [rev11f-detail.test.mjs](rev11f-detail.test.mjs): the bound on the detail list (Q-r11-own-card-detail)
+
+| id | technique | expected |
+|---|---|---|
+| DET-01 | EP (default limit) | every unchecked tool of the plugin once, with the first description line and never the second; no "and N more" |
+| DET-02 ×2 | BVA (limit L, L+1; L = the list's bytes) | the whole list |
+| DET-03 | BVA (limit L−1) | whole entries that are a prefix of the full list (≥ 1, < n), then "and K more", K = the entries left out; the shown entries fit the limit |
+| DET-04 | EP (a limit between) | the same shape |
+| DET-05 | BVA (settings, 4 changes: L, L−1; a 400-char value) | whole at L; cut shape at L−1; the value still cut to `settingsPromptValueBytes` |
+| DET-07 | BVA (first entry longer than the limit 20, more behind it) | first entry cut with "…" to fit, then "and n−1 more" (manager decision 2026-11-02) |
+| DET-06 | BVA (one over-long entry: E, E−1, 20) | whole at E; at E−1 and 20 one entry cut with "…" (a prefix, at most limit + the ellipsis); no "and N more" |
+
+### [rev11f-cap.test.mjs](rev11f-cap.test.mjs): own cards and `maxPendingApprovals` (Q-r11-cap-own)
+
+| id | technique | expected |
+|---|---|---|
+| CAP-01 | BVA (cap 2: 1st, 2nd, 3rd) | two cards; the third returns `too-many-waiting` at once with "or withdraw one"; no card, no row, no stock prompt |
+| CAP-02 | ST (full → withdraw one) | the next request is a card; then full again |
+| CAP-03 | ST (full → Reject a card) | a place is free |
+| CAP-04 | DT (one session card + one own card, cap 2) | together they fill the cap; the next own request is refused |
+| CAP-05 | BVA (default cap 8: the 8th, the 9th) | eight cards, the ninth refused |
+
+### Older cases changed by rev11f (changed on purpose; why)
+
+| file | change | why |
+|---|---|---|
+| `fishballTool` (support/expect.mjs) | still takes the scripted answers (`OUTCOME.allow` / `reject`, a list in order), but applies them to the cards: when the call returns waiting, Allow once is clicked and Fishball's woken turn makes the identical call (a new call id); a second card (the unchecked-tools prompt after the install prompt) takes the next answer; Reject is clicked and the waiting result is returned. The result gains `cards`; `approvals` (stock prompts) is now empty for Fishball's own tools | §7a.11: Fishball's own requests no longer reach the stock prompt. The ~12 older files that call Fishball's tools through this helper keep their intent without edits |
+| approvals-routing RTE-01 ×2 | flipped: the stock prompt is not asked for Fishball's session; the call returns `waiting-for-approval` and a card of Fishball's session is in the pile; still no request message, not recorded | §7a.11, N3 replaced |
+| rev11c-leave LVE-06 | adds: the `too-many-waiting` text carries "or withdraw one" | manager's decision 2026-11-02 (DESIGN §16) |
+| **Expected to need repair in stage 2, against the build** | plugins-review (REV-15 asserts a rejected add_plugin's result shape), manager-settings-tools (SPS-02 to SPS-12 hold the stock prompt open with `APPROVER_HOLDS`; the held request is now a card, and "prompt text" is the card's detail), manager-settings-route, messenger-author-approvals, plugins-review2, approvals-broker (where it holds a Fishball tool's prompt), own-plugins (OWN_ASK prompt text) | They read a stock prompt for Fishball's own request or the old rejected result shape; the repair is mechanical (the card replaces the prompt) but cannot be checked without the build |
+
+### Not automated (rev11f)
+
+- The card's look and its "Fishball" label in the browser (client rendering): by hand.
+- A plugin tool that asks through a prepended `tools/pre-execute` `ask` (S35 variant A) needs a listener plugin the harness does not have; the body-ask path is tested (SCP-02, SCP-03).
+- Withdrawing an `approved` card while the woken turn still runs (needs the woken turn held; the pass is gone either way after the turn ends, OWN-09).
+
+### Ambiguities (rev11f)
+
+- **A-r11f-1. The card's shape for Fishball's own requests.** §9 lists the session-card keys but not the label or the detail list. The tests find a Fishball card as a pile entry whose `sessionId` is Fishball's own session, with `toolName`, `arguments` and `requestId`, take the detail list from a `detail` key (an array, or text with one entry per line), and look for Fishball's reason anywhere in the card's JSON. How the card is "labelled Fishball" is not asserted (client look).
+- **A-r11f-2. The waiting result's fields.** `{ok:false, code:'waiting-for-approval', card}` for Fishball's own tools (§7a.11); for another plugin's tool the post-execute text only. The tests match the code or the text `/waiting for your approval/i`, and take the card from the pile, not from the result.
+- **A-r11f-3. The wording of the wake notice** ("approved, run it again") is matched by `/run it again/i` and by the request id; the scripted woken turn is triggered by the request id appearing in Fishball's messages.
+- **A-r11f-4. Does the closing "and N more" count inside the bound?** The tests measure only the entries before it and assert they fit; they never assert a count that depends on the answer. Likewise, whether the "…" counts inside the bound (A78) or after it (PIL-05): up to limit + 3 bytes is accepted.
+- **A-r11f-5. A first entry longer than the bound with more entries behind it** is not tested (cut with "…" and then "and N more", or something else); only a single over-long entry is.
+- **A-r11f-6. Withdrawing a card that is not Fishball's own, or already settled**: refused is all the tests require (`ok` not true); the code is not asserted. Reject's note reaching Fishball: only its next turn naming the request is asserted.
+- **A-r11f-7. Already-installed packages.** Whether add_plugin asks before or after it finds a package already installed is not stated, so the card-only cases use a package that is never installed (the fbtest-added-c fixture) and the one-time pass is shown with a stateless plugin tool (SCP-03), not with add_plugin.
+- **A-r11f-8. Policy never** (OWN-10) asserts the refusal shape only as `ok:false`, not waiting; DSH's own wording is not asserted.
+
+### Manager's decisions on the rev11f ambiguities (2026-11-02), applied
+
+A-r11f-1 confirmed (`sessionId` = Fishball's session, list under `detail`). A-r11f-4: "and N more" is not counted in the bound; the shown entries total at most the limit and the next whole entry would not fit; a cut entry's "…" counts inside the limit. A-r11f-5 is now DET-07. A-r11f-3: the notice must contain "run it again" and the request id.
+
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
+
+## Revision 11 rev11g cases (questions and plan reviews in managed sessions; DESIGN §14 row rev11g, §7a.10, §9 "Session cards"/"Open questions"/"Tag records"/`settings['questions']`, §10e "Question mode"/"Host API", §11 "Revision 11", §16 Q-r11-questions, Q-r11-question-card, Q-r11-timed-wait, Q-r11-timed-release, Q-r11-continued-cards, Q-r11-question-off, Q-r11-mode-place, Q-r11-question-tag; requirements items 25-27; S36, S37; written from the requirements alone, no code read)
+
+Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan` (11), `rev11g-validate` (30), `rev11g-tags` (8), `rev11g-restart` (6). Shared set-up: [support/rev11g.mjs](support/rev11g.mjs) on the rev11c host.
+
+### Harness added for rev11g (test code only)
+
+- **The session's own question card** is a stand-in registered by the fixture bundle (`FBTEST_QUESTIONS=1`, fixtures/fbtest-tools): a prepended `user-questions/request` listener that mounts before dsh-fishball, so Fishball's router (prepended later) runs first and its `next()` reaches it, as the approvals stand-in does. It keeps the card OPEN until `qAnswer` (your click), `qDiscuss` (Discuss: `ASK_CANCELLED`) or the request's signal aborts, which closes it (the gateway's `cancel` to a browser). It does NOT claim `attachWait`, so a timed question is held only if Fishball's router holds it. Worker ops: `qCards`, `qAnswer`, `qDiscuss`, `qContinued` (`userQuestions.answer`, what the browser's RPC calls), `qProjection`, `planCommand` (`/plan`, `/plan off`), `planQuestion`.
+- **Presets** `fbtest-ask` (legacy blocking `ask_user_question`, as the shipped presets) and `fbtest-ask-timed` (timed, default 120 s, per-call `timeout`). Plan reviews use the `standard` preset, because `/plan` and `exit_plan_mode` come with it.
+- **Fishball's model** answers a question notice from a plan (`planQuestion {needle, args}` → `answer_question({question_id, …args})`), the question id taken from the newest user message with the needle and a `qst_…` id.
+- `eventSummary` also gives each event's `seq` (when it has one) and a `tool/call`'s `callId` and `name`, so a tag's `seq` can be checked against its turn.
+- No older case is changed. (`support/constants.mjs` gains `PRESET.ask`/`askTimed` and the rev11g constants; the old `CARD_KIND.question` is used as is.)
+
+### What is checked, per "done when" item
+
+| Done-when item | Cases |
+|---|---|
+| `attachWait` proof first: a timed question's wait is held through `approvalAnswerSeconds` past the tool's shorter `timeout`, and still held once it is a pile card | HLD-01, HLD-02, HLD-03, HLD-04, HLD-05, HLD-06, HLD-07 (file first) |
+| 120 s limit measured against `approvalAnswerSeconds` | FLW-07 (1 s, 3 s), HLD-01..03, MOD-04..06 (no answer) |
+| In each mode a question behaves as item 25 says; User mode: Fishball's answer is refused and its note shows on the card | MOD-01..07 (decision table), FLW-12, PLN-10 |
+| A question answered in the session's own card clears its pile card, and the reverse | FLW-08, FLW-09, FLW-05, FLW-13, HLD-02, PLN-05..07, RST-05/06 |
+| Every answered question and plan review shows its tag in the turn tail (not on the question row) | QTG-01..08 (tag records, `seq` in the right turn, no tag text in the session's log or the result); the drawing itself is a hand check |
+| A session that is yours keeps its questions with no Fishball step | FLW-01, PLN-11 |
+| Fishball or Permission requests off: the question stays in its own card, Fishball takes no step | OFF-01..04 |
+| The router answers in the browser's exact shape (result matches a browser answer byte for byte); a malformed batch is refused and the question stays open | FLW-04, FLW-03, VAL-01 ×13, VAL-02..05 |
+| Legacy question's call id recovered from the log, so its tag lands in the right turn | QTG-01, QTG-03, QTG-04, FLW-10 (the card's `callId`) |
+| Plan review: Approve exits plan mode; Keep planning with feedback keeps it on and the agent sees the feedback; Discuss closes the pile card | PLN-02..08 |
+| A blocking question or plan review open at a restart ends with its card | RST-01 |
+| A timed question Fishball answers within its time returns in the same turn | HLD-01, HLD-05, QTG-05 |
+| A continued timed question open at a restart has its pile card again after the start | RST-02..06 |
+| A child agent's question never reaches Fishball | CHD-01 |
+| The session's own question card is open while Fishball decides, and the first answer wins | FLW-02, FLW-03, FLW-05, FLW-06, HLD-06 |
+| In a real browser: the session's own question card (legacy and timed) and plan-review panel close when Fishball's answer wins; the pile card closes when you answer in the session first | not automated: stage 2 hand check |
+
+### Readings the tests take (the design is silent or loose; a different builder reading is reported, not hidden)
+
+1. **Names the design leaves open.** The pile card's id is read as `questionId`, falling back to `requestId`/`id`; a question card has `kind: 'question'` (§9), its `callId` and `sessionId`, and shows the question text, choices (or the plan) and Fishball's note anywhere in its JSON. A plan-review card is also `kind: 'question'`. The snapshot key for the mode is `questionMode` (§10e). Refusals are `{ok:false}` or an error result; only User mode's code (`mode-user`) is named, so only it is compared. A question notice is a `fishball-notice` user message that carries the `qst_…` id.
+2. **User mode shows the pile card at once** ("always the pile", §7a.10), not after `approvalAnswerSeconds`. MOD-06, PLN-10.
+3. **`to_user: true`** makes a card at once with the note, in any mode (FLW-12, PLN-05).
+4. **A note** (`answer_question({question_id, note})` with no answer) is accepted in every mode and shows on the card (MOD-06).
+5. **Keep planning with no feedback** is `answer_question({question_id, approve: false})`; the agent is then told to revise and present again (PLN-04, dsh-plan-mode's wording).
+6. **After a restart, "at start" means the cards exist without anyone resuming the sessions** (RST-02, §7a.10 "At start the router rebuilds"). Resuming a session first would hide a router that only rebuilds on resume. If the builder rebuilds lazily, RST-02 fails and the question for the manager is whether that is intended.
+7. **`qContinued`** (your late answer in the session) is the call the browser's RPC makes; the router learns it from the `user-question-reply` message (S36).
+8. **A question that left Fishball** (Permission requests turned off while it waited, OFF-02) is no longer answerable through the route (409). The design says only that it goes back to the session's own card.
+9. **Not asserted, because the design leaves it open:** whether Fishball's answer is still accepted after a question moved to the pile (the design says "the question moves to your pile"); the Auto-mode rule (prompt-only); the multi-select "same label twice" batch (VAL-04 last row only checks that nothing crashes).
+
+### Not automated (hand checks in stage 2)
+
+- The turn-tail drawing of "Asked Fishball" plus the answer, and that nothing is drawn on the question row (QTG-07 checks only that the Host leaves the tag out of the tool result and the session's log).
+- The pile cards' look (question form, plan with Approve and Keep planning plus a feedback field) and the mode switch on Fishball's settings page.
+- The real browser: the session's own question card (legacy and timed) and plan-review panel closing when Fishball's answer wins; the pile card closing when you answer in the session first; `attachWait` against the real gateway/browser claim.
+
+### rev11g addendum: too-many-waiting as JSON (manager's decision, 2026-11-02)
+
+`rev11g-cap.test.mjs` CAP-01: past `maxPendingApprovals`, Fishball's own request answers parsed JSON `{ok: false, code: 'too-many-waiting', …}` with "or withdraw one" in the text. Total rev11g cases: 96. Readings 1-4 above (User mode/`to_user` card at once, cards rebuilt at start without resuming, 409 after a question goes back to its session, `questionId`) are confirmed by the manager.
+
+- **A-r11e-8. Audit of `answer_prompt` (settled, manager 2026-11-02).** Follows DESIGN §9: a `decisions` row `answer-prompt` AND an approvals audit row of kind `prompt`; APR-10 expects both.
+
+### rev11g after the build (stage 2)
+
+Older cases changed on purpose: `STATE_KEYS` gains `questionMode` (HTP-01, HTP-04/05, SND-01, PHT-01, PHT-04) and `OWN_PLUGINS.approvals.tools` gains `answer_question` (OWN-01): DESIGN §10e, §7a.10. Readings 1 and the rest above changed as follows: plan-review cards are `kind: 'plan-review'` (the helper accepts both); a tag record's `answer` is a word (`answer`, `approve`, `keep-planning`) and the published record carries Fishball's words (the user's confirmed reading); a rebuilt continued card is the user's and Fishball's answer on it is `expired` (RST-04); a `to_user` question gets a Sent-to-you tag (FLW-12); the route's `bad-answer` for a well-shaped body with invalid answers (FLW-14); the session's own card is untimed (HLD-01). Full report: [hand-checks/rev11g.md](hand-checks/rev11g.md).

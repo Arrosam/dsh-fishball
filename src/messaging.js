@@ -16,11 +16,14 @@
  *   flush, audit.
  * - Both make the target managed before the message is delivered (§5d, §5e), so its next model
  *   request already has Fishball's tools.
- * - start_session({folder, message}): create an ordinary session in an existing DSH workspace
- *   or folder (DSH's default preset and permission mode; never Fishball's composition), then
- *   send the first message the same way. Fishball cannot create folders: a missing folder is
- *   refused, because DSH's create would make it (spike S18). A folder removed between the
- *   check and the create would still be created by DSH; that window needs host support.
+ * - start_session({folder, title, message}): create an ordinary session in an existing DSH
+ *   workspace or folder (DSH's default preset and permission mode; never Fishball's
+ *   composition), name it with Fishball's title, then send the first message the same way.
+ *   DSH's automatic title reads only user messages, and a relay is not one, so Fishball names
+ *   the session itself; a title DSH cannot take is reported as titleError and the session
+ *   still starts. Fishball cannot create folders: a missing folder is refused, because DSH's
+ *   create would make it (spike S18). A folder removed between the check and the create would
+ *   still be created by DSH; that window needs host support.
  *
  * - stop_session({session_id, reason?}) and redirect_session({session_id, message}) (rev11h, §7a.12)
  *   act on managed sessions only. Stop is the Stop button's own path,
@@ -51,7 +54,8 @@ import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { AGENT_IDLE, CHANGED_BY, DECISION_ACTION, DECISION_IDLE, DECISION_OK, MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
+import { SessionTitleInvalidError, normalizeSessionTitle } from '@deepseek-ai/dsh-session-title'
+import { AGENT_IDLE, CHANGED_BY, DECISION_ACTION, DECISION_IDLE, DECISION_OK, MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO, OPTIONAL_SERVICE, TITLE_ERROR } from './constants.js'
 import { AuditLog, recordDecision } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, lastSeqOf, NO_EVENTS_SEQ, rootSessionOf } from './session-info.js'
@@ -82,8 +86,9 @@ export const TEXT = Object.freeze({
   sendDescription: 'Send a message to another DSH session, which then works on it with its own tools and permission mode. The session sees it as a message from Fishball, not from the user. Use it to hand work off or ask for a status; follow up later.',
   sessionArg: 'The id of the session to message.',
   messageArg: 'What the session should do or know, self-contained.',
-  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder and give it a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
+  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder, give it a title and a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
   folderArg: 'A DSH workspace id, or an absolute path of an existing folder.',
+  titleArg: 'A short title for the new session, as the sidebar shows it: a few words naming the work.',
   notifyInboundArg: 'true to have Fishball told when this session finishes its current work.',
   notifyOutboundArg: 'true to be told when that session finishes the work (sets up a watch).',
   unconfirmed: 'The session has the message, but saving it could not be confirmed. Do not send it again.',
@@ -301,8 +306,12 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     if (!flushed) throw new UnconfirmedDelivery()
   }
 
-  /** Deliver and record; returns the tool result. */
-  const deliverAndRecord = async (entry, sessionId, message, success, send = steer) => {
+  /**
+   * Deliver and record; returns the tool result: ok with `success`, or refused with `failure`
+   * (start_session's names the session it created and its title outcome). `send` is how the
+   * message goes in (redirect_session stops the turn first).
+   */
+  const deliverAndRecord = async (entry, sessionId, message, success, failure = {}, send = steer) => {
     try {
       await deliver(sessionId, message, send)
     } catch (error) {
@@ -312,10 +321,28 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       }
       logger.warn('message to %s failed (%s)', sessionId, diagnosticOf(error))
       await record({ ...entry, status: OUTBOX_STATUS.failed, errorCode: OUTBOUND_ERROR.deliveryFailed })
-      return refused(OUTBOUND_ERROR.deliveryFailed, entry.kind === OUTBOX_KIND.start ? { sessionId } : {})
+      return refused(OUTBOUND_ERROR.deliveryFailed, failure)
     }
     await record({ ...entry, status: OUTBOX_STATUS.delivered })
     return ok(success)
+  }
+
+  /**
+   * Name a session Fishball just started (DESIGN §5d). DSH's automatic title reads only user
+   * messages and the first message is a relay, so without this the session has no title.
+   * DSH's rename pins the title, as if the user had named it.
+   * @returns { title } as DSH took it (normalized), or { titleError }; the session still starts.
+   */
+  const nameSession = (sessionId, title) => {
+    const titles = ctx.get(OPTIONAL_SERVICE.sessionTitle)
+    if (titles === undefined) return { titleError: TITLE_ERROR.unavailable }
+    try {
+      return { title: titles.rename(ctx.sessions.get(sessionId), title).title }
+    } catch (error) {
+      if (error instanceof SessionTitleInvalidError) return { titleError: TITLE_ERROR.invalid }
+      logger.warn('naming session %s failed (%s)', sessionId, diagnosticOf(error))
+      return { titleError: TITLE_ERROR.failed }
+    }
   }
 
   /**
@@ -352,13 +379,18 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     description: TEXT.startDescription,
     parameters: {
       folder: { type: 'string', required: true, description: TEXT.folderArg },
+      title: { type: 'string', required: true, description: TEXT.titleArg },
       message: { type: 'string', required: true, description: TEXT.messageArg },
       notify_when_finished: { type: 'boolean', description: TEXT.notifyOutboundArg },
     },
     output: JSON_OUTPUT,
-    async execute({ folder, message, notify_when_finished: notify }) {
+    async execute({ folder, title, message, notify_when_finished: notify }) {
       const bad = badMessage(message)
       if (bad !== undefined) return refused(bad)
+      // Refused before anything is created, by DSH's own test (it strips control, zero-width and
+      // bidi characters too), so rename never meets a title it would refuse. The length is not
+      // checked: DSH cuts the title to its maxTitleBytes, and the result shows what it took.
+      if (typeof title !== 'string' || normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER).length === 0) return refused(OUTBOUND_ERROR.noTitle)
       if (overCap(OUTBOX_KIND.start, readLimits().sessionsPerHour)) return refused(OUTBOUND_ERROR.hourlyCap)
       const target = await placeOf(ctx, folder)
       if (target.error !== undefined) return refused(target.error)
@@ -371,10 +403,12 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
         logger.warn('session start failed (%s)', diagnosticOf(error))
         return refused(OUTBOUND_ERROR.deliveryFailed)
       }
+      // Named before the first turn starts and before the watch watermark is read.
+      const named = nameSession(sessionId, title)
       await manage(sessionId, MANAGED_BY.start)
       // A new session: every turn end in it counts (its log before the message has none).
       const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
-      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder }), sessionId, notify, since)
+      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...named }, { sessionId, ...named }), sessionId, notify, since)
     },
   }))
 
@@ -415,7 +449,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (info === undefined) return refused(OUTBOUND_ERROR.unknownSession)
       if (info.archived) return refused(OUTBOUND_ERROR.archived)
       const entry = { kind: OUTBOX_KIND.redirect, targetSessionId: sessionId, messageDigest: digestOf(message) }
-      const result = await deliverAndRecord(entry, sessionId, message, { sessionId, title: info.title }, stopAndFollowup)
+      const result = await deliverAndRecord(entry, sessionId, message, { sessionId, title: info.title }, {}, stopAndFollowup)
       if (result.ok) await decide(DECISION_ACTION.redirect, sessionId)
       return result
     },
@@ -435,7 +469,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
   }
 }
 
-/** The last seq of a session just created, before its first message (its header events only). */
+/** The last seq of a session just created, before its first message (its header and title events only). */
 async function watermarkOfNew(ctx, sessionId) {
   return (await lastSeqOf(ctx, sessionId)) ?? NO_EVENTS_SEQ
 }

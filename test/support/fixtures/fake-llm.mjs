@@ -15,7 +15,7 @@ export const model = (globalThis.__fbtestModel ??= {
   aux: [],
   queues: new Map(),
   queue(sessionId, ...responses) { const q = this.queues.get(sessionId) ?? []; q.push(...responses); this.queues.set(sessionId, q) },
-  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byPlan(options) ?? this.byMarker(options) ?? [{ text: 'ok' }] },
+  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byPlan(options) ?? this.byQuestionPlan(options) ?? this.byMarker(options) ?? [{ text: 'ok' }] },
   /**
    * P7: a permission request wakes Fishball before a test could queue an answer, so Fishball's model
    * answers from the request text: a plan {sessionId, needle, args, callId} answers the newest
@@ -23,6 +23,22 @@ export const model = (globalThis.__fbtestModel ??= {
    * and request_id taken from that message.
    */
   plans: [],
+  /**
+   * rev11g: a question plan {sessionId, needle, args, callId} answers the newest user message that contains needle
+   * and a question id (qst_...) once, with answer_question({question_id, ...args}).
+   */
+  questionPlans: [],
+  byQuestionPlan(options) {
+    const users = (options.messages ?? []).filter((m) => m.role === 'user').map((m) => textOf(m.content))
+    for (const plan of this.questionPlans) {
+      if (plan.used || plan.sessionId !== options.sessionId) continue
+      const found = users.filter((t) => t.includes(plan.needle)).map((t) => /qst_[\w-]+/.exec(t)).filter(Boolean).at(-1)
+      if (!found) continue
+      plan.used = { questionId: found[0], at: Date.now() }
+      return [{ tool: 'answer_question', id: plan.callId ?? 'call_qplan_' + Math.random().toString(36).slice(2, 8), args: { question_id: found[0], ...plan.args } }]
+    }
+    return undefined
+  },
   byPlan(options) {
     const users = (options.messages ?? []).filter((m) => m.role === 'user').map((m) => textOf(m.content))
     for (const plan of this.plans) {
@@ -63,7 +79,8 @@ function digest(options) {
     sessionId: options.sessionId ?? null,
     at: Date.now(),
     system,
-    tools: (options.tools ?? []).map((t) => ({ name: t.name, parameters: t.parameters })),
+    // description: lets a test check what the model is told about a tool (start_session mentions the title).
+    tools: (options.tools ?? []).map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })),
     messageCount: (options.messages ?? []).length,
     // P4: the reply cap and route each request carried.
     model: options.model ?? null,

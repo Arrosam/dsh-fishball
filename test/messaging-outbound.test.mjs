@@ -25,7 +25,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { INBOUND_TOOL, LIMITS, OUTBOUND_TOOLS, OUTBOX_KEYS, OUTBOX_OPTIONAL, P5_CODE, PRESET, RELAY, SENTINEL_PRESET, STATE_LIST_MAX } from './support/constants.mjs'
+import { INBOUND_TOOL, LIMITS, OUTBOUND_TOOLS, OUTBOX_KEYS, OUTBOX_OPTIONAL, P5_CODE, PRESET, RELAY, SENTINEL_PRESET, STATE_LIST_MAX, TITLE } from './support/constants.mjs'
 import { HOOK, T, fishballCall, jsonOf, outboxNow, settledIdle, toolNames, turn } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -46,7 +46,8 @@ describe('P5 message_session and start_session', () => {
   let target
   const setLimit = async (patch) => { const r = await host.call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)) }
   const send = (session_id, message) => fishballCall(host, fb, 'message_session', { session_id, message })
-  const start = (args) => fishballCall(host, fb, 'start_session', args)
+  // Every start_session needs a title (the title cases themselves are in messaging-start-title.test.mjs).
+  const start = (args) => fishballCall(host, fb, 'start_session', { title: TITLE.plain, ...args })
 
   before(async () => {
     home = newHome('msg-out')
@@ -277,9 +278,9 @@ describe('P5 hourly caps and outbox bounds', () => {
     await setLimit({ sessionsPerHour: 1 })
     const folder = path.join(home, 'work', 'cap-start')
     fs.mkdirSync(folder, { recursive: true })
-    assert.equal((await fishballCall(host, fb, 'start_session', { folder, message: tok('cap2a') })).json?.ok, true)
+    assert.equal((await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: tok('cap2a') })).json?.ok, true)
     const sessions = (await host.call('allSessions')).length
-    assert.deepEqual((await fishballCall(host, fb, 'start_session', { folder, message: tok('cap2b') })).json, { ok: false, code: P5_CODE.hourlyCap })
+    assert.deepEqual((await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: tok('cap2b') })).json, { ok: false, code: P5_CODE.hourlyCap })
     assert.equal((await host.call('allSessions')).length, sessions)
   })
 
@@ -287,7 +288,7 @@ describe('P5 hourly caps and outbox bounds', () => {
     await setLimit({ messagesPerHour: 0, sessionsPerHour: 0 })
     assert.equal((await send(tok('cap3a'))).json?.ok, true)
     assert.equal((await send(tok('cap3b'))).json?.ok, true)
-    assert.equal((await fishballCall(host, fb, 'start_session', { folder: path.join(home, 'work', 'cap-start'), message: tok('cap3c') })).json?.ok, true)
+    assert.equal((await fishballCall(host, fb, 'start_session', { folder: path.join(home, 'work', 'cap-start'), title: TITLE.plain, message: tok('cap3c') })).json?.ok, true)
   })
 
   it('CAP-04 the hourly cap keeps counting when auditEntriesKept is lower than the cap', T, async () => {
