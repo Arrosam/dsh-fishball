@@ -14,6 +14,7 @@
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
  * - src/managed.js         which sessions Fishball manages, their tools, Hand over / Take back, release_session
+ * - src/session-titles.js  current titles of the managed sessions (the settings page's list)
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
  * - src/unread.js          unread replies from Fishball (the sidebar mark's count)
  * - src/preferences.js    your display choices (the sidebar brand icon)
@@ -40,6 +41,7 @@ import { ContextWindow } from './src/context-window.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
 import { MESSAGING_TOOL, registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { MANAGED_TOOL, ManagedError, ManagedRegistry } from './src/managed.js'
+import { SessionTitles } from './src/session-titles.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { WATCH_TOOL, Watches, WatchError } from './src/watches.js'
 import { Unread } from './src/unread.js'
@@ -265,13 +267,17 @@ export async function apply(ctx, config) {
    * ask_fishball and list_user_messages while Permission requests runs (rev11b, §5e Reading).
    */
   const managedTools = () => [...(messagesOn() ? [inbound.tool] : []), ...(approvalsOn() ? deskTools : [])]
+  // The settings page lists managed sessions by title (§10e): titles followed while they are managed.
+  const sessionTitles = new SessionTitles(ctx, { onChange: () => publish() })
+  const followManaged = () => sessionTitles.follow(managedRegistry.snapshot().map((entry) => entry.sessionId))
   managedRegistry = new ManagedRegistry(ctx, store, logger, {
-    ledger, readLimits: limits, assistantId, onChange: () => publish(), isEnabled: messagesOn, managedTools,
+    ledger, readLimits: limits, assistantId, onChange: () => { followManaged(); publish() }, isEnabled: messagesOn, managedTools,
     // Waiting requests of a session taken back or released go to you (§5e); the broker exists below.
     onLeave: (sessionId) => broker.releaseSession(sessionId),
   })
   managedRegistry.registerTools((definition) => composition.registerOwnTool(definition))
-  managedView = () => managedRegistry.snapshot()
+  followManaged()
+  managedView = () => managedRegistry.snapshot().map((entry) => ({ ...entry, title: sessionTitles.get(entry.sessionId) }))
   managedToolNames = () => managedTools().map((tool) => tool.name)
   /** Sessions related to Fishball (read_session, DESIGN §5c): watched, messaged it, messaged or started by it, or forwarded by you. */
   const related = (sessionId) => watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)) || outbound.contacted(sessionId)
