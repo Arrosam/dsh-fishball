@@ -52,6 +52,10 @@ import { bootLive, newHome, until } from './support/host.mjs'
 const { normalizeSessionTitle } = await import(pathToFileURL(path.join(RUNTIME, '@deepseek-ai', 'dsh-session-title', 'lib', 'index.js')).href)
 const emptyTitle = (title) => normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER) === ''
 
+// DSH's client-module registry warns once, at a time of its own, about how the test fixtures are laid out
+// (seen on revision 11). It has nothing to do with titles, so the log checks below leave it out.
+const UNRELATED_LOGGERS = ['client-module-registry']
+
 const TOOL = 'start_session'
 const TOOL_ERROR = 'tool-error'
 
@@ -108,6 +112,11 @@ function useHost(label, { env, limits } = {}) {
   w.outboxFor = async (sessionId) => (await outboxNow(w.host)).find((e) => e.targetSessionId === sessionId)
   return w
 }
+
+/** How many warnings and errors the host has logged so far. */
+const loggedCount = async (w) => (await w.host.call('loggedProblems')).length
+/** The warnings and errors logged after the first `since`, without the unrelated ones. */
+const problemsSince = async (w, since) => (await w.host.call('loggedProblems', { since })).filter((p) => !UNRELATED_LOGGERS.includes(p.name))
 
 const eventsOf = (events, sessionId, type) => events.filter((e) => e.sessionId === sessionId && (!type || e.type === type))
 /** The probe's event types for one session, in the order they happened. */
@@ -301,23 +310,23 @@ describe('start_session names the session (DSH session-title service present)', 
 
   describe('SST-04 naming problems never stop the session', () => {
     it('SST-04 control: a start that names the session logs no warning', T, async () => {
-      const logBefore = (await w.host.call('loggedProblems')).length
+      const logBefore = await loggedCount(w)
       const { json } = await w.start({ folder: w.folder('sst04-control') })
       assert.equal(json?.ok, true, JSON.stringify(json))
-      assert.deepEqual(await w.host.call('loggedProblems', { since: logBefore }), [])
+      assert.deepEqual(await problemsSince(w, logBefore), [])
     })
 
     // 'invalid' makes rename throw the real SessionTitleInvalidError, 'fail' a plain Error.
     for (const [mode, code] of [['invalid', TITLE.invalid], ['fail', TITLE.failed]]) {
       it('rename throws (' + mode + ') → ' + code, T, async () => {
-        const logBefore = (await w.host.call('loggedProblems')).length
+        const logBefore = await loggedCount(w)
         const answer = await w.start({ folder: w.folder('sst04-' + mode) }, { rename: mode })
         assertTitleError(answer, code)
         const { json, events } = answer
         assertRenamedBeforeSteer(events, json.sessionId)
         await assertDelivered(w, answer)
         if (mode === 'fail') {
-          const problems = await w.host.call('loggedProblems', { since: logBefore })
+          const problems = await problemsSince(w, logBefore)
           assert.ok(problems.some((p) => p.type === 'warn'), 'a warning is logged: ' + JSON.stringify(problems))
         }
       })

@@ -224,7 +224,7 @@ function startProbe({ rename = null, steer = false, flush = null }) {
   if (titles) {
     const original = titles.rename
     titles.rename = function (session, title) {
-      const event = { type: 'rename', sessionId: session?.id ?? null, title, liveSession: session === ctx.sessions.get(session?.id) }
+      const event = { type: 'rename', at: Date.now(), sessionId: session?.id ?? null, title, liveSession: session === ctx.sessions.get(session?.id) }
       probe.events.push(event)
       if (rename === 'invalid') throw new SessionTitleInvalidError('fbtest: the title has no visible characters')
       if (rename === 'fail') throw new Error('fbtest: rename failed')
@@ -239,7 +239,7 @@ function startProbe({ rename = null, steer = false, flush = null }) {
     const original = agent.steer
     agent.steer = function (message, ...rest) {
       if (probe.active) {
-        probe.events.push({ type: 'steer', sessionId: agent.id, source: JSON.parse(JSON.stringify(message?.source ?? null)) })
+        probe.events.push({ type: 'steer', at: Date.now(), sessionId: agent.id, source: JSON.parse(JSON.stringify(message?.source ?? null)) })
         steered.add(agent.id)
         if (steer) throw new Error('fbtest: steer failed')
       }
@@ -250,7 +250,7 @@ function startProbe({ rename = null, steer = false, flush = null }) {
   const originalFlush = sessions.flush
   sessions.flush = async function (session, ...rest) {
     if (probe.active && created.has(session?.id)) {
-      probe.events.push({ type: 'flush', sessionId: session.id })
+      probe.events.push({ type: 'flush', at: Date.now(), sessionId: session.id })
       // Only the first flush after the first steer fails: the unconfirmed case is a message that was delivered but not
       // committed. Failing every later flush would also break the new session's own turn (its per-request barrier).
       if (flush && steered.has(session.id) && !flushFailed.has(session.id)) {
