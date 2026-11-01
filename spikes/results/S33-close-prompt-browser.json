@@ -1,0 +1,222 @@
+{
+  "id": "S33-close-prompt-browser",
+  "date": "2026-11-01",
+  "runtime": "0.2.1-rc.2",
+  "browser": "Claude desktop built-in browser pane",
+  "server": "spikes/s33-close-prompt.mjs with S33_SERVE=1 (DSH Web on 3133, control on 3134)",
+  "pass": true,
+  "cases": [
+    {
+      "key": "s33_1",
+      "mode": "mutate",
+      "sessionId": null,
+      "toolName": "ask_me",
+      "callId": "call_browser-allow",
+      "args": {
+        "text": "{\"what\":\"browser-allow\"}",
+        "status": "complete",
+        "calledTool": "ask_me"
+      },
+      "settledBy": "plugin",
+      "outcome": "allowed-once",
+      "downstream": {
+        "rejected": "s33: answered by the plugin"
+      },
+      "events": [
+        "plugin-abort"
+      ],
+      "note": "mutate; prompt shown in browser; server answered allowed-once; prompt closed, tool ran, turn completed (screenshots before/after)"
+    },
+    {
+      "key": "s33_2",
+      "mode": "redispatch",
+      "sessionId": null,
+      "toolName": "ask_me",
+      "callId": "call_browser-reject",
+      "args": {
+        "text": "{\"what\":\"browser-reject\"}",
+        "status": "complete",
+        "calledTool": "ask_me"
+      },
+      "settledBy": "plugin",
+      "outcome": "rejected",
+      "downstream": {
+        "rejected": "s33: answered by the plugin"
+      },
+      "events": [
+        "plugin-abort"
+      ],
+      "note": "redispatch; prompt shown; server answered rejected; prompt closed, agent got the rejection"
+    },
+    {
+      "key": "s33_3",
+      "mode": "mutate",
+      "sessionId": null,
+      "toolName": "ask_me",
+      "callId": "call_user-click",
+      "args": {
+        "text": "{\"what\":\"user-click\"}",
+        "status": "complete",
+        "calledTool": "ask_me"
+      },
+      "settledBy": "downstream",
+      "outcome": "rejected",
+      "downstream": {
+        "resolved": "rejected"
+      },
+      "events": [],
+      "note": "mutate; user clicked Reject in the browser; fixture learned \"rejected\"; a server allowed-once 1.5 s later was refused"
+    },
+    {
+      "key": "s33_4",
+      "mode": "mutate",
+      "sessionId": null,
+      "toolName": "ask_me",
+      "callId": "call_race-1",
+      "args": {
+        "text": "{\"what\":\"race-1\"}",
+        "status": "complete",
+        "calledTool": "ask_me"
+      },
+      "settledBy": "plugin",
+      "outcome": "rejected",
+      "downstream": {
+        "rejected": "s33: answered by the plugin"
+      },
+      "events": [
+        "plugin-abort"
+      ],
+      "note": "mutate; same-tick race: page fired the server Reject (fetch) then clicked Allow once; server answer won; click ignored; one outcome"
+    },
+    {
+      "key": "s33_5",
+      "mode": "redispatch",
+      "sessionId": null,
+      "toolName": "ask_me",
+      "callId": "call_race-2",
+      "args": {
+        "text": "{\"what\":\"race-2\"}",
+        "status": "complete",
+        "calledTool": "ask_me"
+      },
+      "settledBy": "plugin",
+      "outcome": "rejected",
+      "downstream": {
+        "rejected": "s33: answered by the plugin"
+      },
+      "events": [
+        "plugin-abort"
+      ],
+      "note": "redispatch; same-tick race reversed: click Allow once, then fetch the server Reject; server answer still reached the Host first; one outcome"
+    },
+    {
+      "key": "s33_6",
+      "mode": "redispatch",
+      "sessionId": null,
+      "toolName": "ask_me",
+      "callId": "call_user-allow",
+      "args": {
+        "text": "{\"what\":\"user-allow\"}",
+        "status": "complete",
+        "calledTool": "ask_me"
+      },
+      "settledBy": "downstream",
+      "outcome": "allowed-once",
+      "downstream": {
+        "resolved": "allowed-once"
+      },
+      "events": [],
+      "note": "redispatch; user clicked Allow once; fixture learned \"allowed-once\"; tool ran"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "session-d3a626cc-4b0a-4dbc-b014-567ff4454b6f",
+      "status": "idle",
+      "decided": [
+        "allowed-once"
+      ],
+      "toolResults": [
+        "RAN browser-allow"
+      ]
+    },
+    {
+      "id": "session-d4fb9311-2689-44d7-a20d-8888c9f459fe",
+      "status": "idle",
+      "decided": [
+        "rejected"
+      ],
+      "toolResults": [
+        "not run: rejected"
+      ]
+    },
+    {
+      "id": "session-33fa9a22-b802-48a3-af64-2417805f5312",
+      "status": "idle",
+      "decided": [
+        "rejected"
+      ],
+      "toolResults": [
+        "not run: rejected"
+      ]
+    },
+    {
+      "id": "session-ac45ffd4-c159-47a0-8a9e-9c83fc72c252",
+      "status": "idle",
+      "decided": [
+        "rejected"
+      ],
+      "toolResults": [
+        "not run: rejected"
+      ]
+    },
+    {
+      "id": "session-00521458-e38d-47ec-b5f4-da91cc015cdd",
+      "status": "idle",
+      "decided": [
+        "rejected"
+      ],
+      "toolResults": [
+        "not run: rejected"
+      ]
+    },
+    {
+      "id": "session-e526dbc9-a4c5-49bb-91f6-c5020006e7c2",
+      "status": "idle",
+      "decided": [
+        "allowed-once"
+      ],
+      "toolResults": [
+        "RAN user-allow"
+      ]
+    }
+  ],
+  "gatewayPendingAfter": 0,
+  "unhandledRejections": [],
+  "browserConsoleErrors": [
+    "GET /api/fishball/events 404: Fishball's browser half loads because the repo is linked as a profile dependency (for src/ imports); its server row is not selected. Unrelated to S33."
+  ],
+  "browserAnswerRequests": [
+    {
+      "request": "POST /api/$events/result",
+      "status": 200,
+      "case": "s33_3 user Reject"
+    },
+    {
+      "request": "POST /api/$events/result",
+      "status": "net::ERR_ABORTED",
+      "case": "s33_4 race (server answer first)"
+    },
+    {
+      "request": "POST /api/$events/result",
+      "status": "net::ERR_ABORTED",
+      "case": "s33_5 race (click first in the page)"
+    },
+    {
+      "request": "POST /api/$events/result",
+      "status": 200,
+      "case": "s33_6 user Allow once"
+    }
+  ],
+  "raceReading": "In both race orders the server answer reached the Host first; the gateway sent its cancel frame, the browser aborted its own pending result POST, and DSH recorded one outcome. When a browser result does arrive after the cancel, receiveRemoteEventResult finds no pending event and ignores it (dsh-api-gateway)."
+}
