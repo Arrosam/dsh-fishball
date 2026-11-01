@@ -172,7 +172,8 @@ const TEXT = Object.freeze({
 const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }] })
 const ok = (fields = {}) => ({ ok: true, ...fields })
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
-const sha256 = (text) => createHash('sha256').update(text).digest('hex')
+/** The audit's digest of a text (the question router's too, rev11g). */
+export const sha256 = (text) => createHash('sha256').update(text).digest('hex')
 const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
 
 /** The parsed arguments of one call as the model sent them (JSON text or a value), or undefined. */

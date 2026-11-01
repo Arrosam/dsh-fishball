@@ -47,13 +47,13 @@
  * Questions and their cards live in memory, apart from the permission-request pile: the cap
  * maxPendingApprovals counts permission requests, as its description says (Reading).
  */
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, ARGUMENTS_STATUS, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
-import { argumentsText, latestUserText, tellWithoutWake } from './approvals.js'
+import { argumentsText, latestUserText, sha256, tellWithoutWake } from './approvals.js'
 import { describeSession, rootSessionOf } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
@@ -106,13 +106,15 @@ const TEXT = Object.freeze({
   inPile: 'went to the user\'s pile; the user answered it',
   closed: 'was closed in its session (stopped or dismissed); it needs no answer',
   timedOut: 'got no answer in time and went to the user\'s pile',
-  undelivered: 'could not be sent to you and went to the user\'s pile',
   /** answer_question's refusals, so Fishball knows what to do next. */
   needsSomething: 'Give answers (a question), approve or feedback (a plan review), to_user, or note.',
   bothWays: 'Answer it, or send it to the user (to_user), not both.',
   modeUser: 'Mode User: only the user answers this question. Your note, if any, is on its card.',
   expired: 'That question is not open for you: it was answered, it closed, or it is the user\'s card in the pile.',
   noteAdded: 'Your note is on the question\'s card.',
+  /** The rejection messages the gateway forwards to the session's card (DSH's error shape). */
+  answeredElsewhere: 'answered by Fishball or in its pile',
+  aborted: 'aborted before the question was answered',
 })
 
 /** Plain reasons a batch is refused (checkAnswer). */
@@ -128,13 +130,12 @@ const REASON = Object.freeze({
   feedback: 'feedback must be non-empty text',
 })
 
-const sha256 = (text) => createHash('sha256').update(text).digest('hex')
 const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 
 /** DSH's error shape (restored by userQuestions.ask), for the rejection the gateway forwards when another answer won. */
 const questionError = (message, code) => Object.assign(new Error(message), { name: QUESTION.errorName, code })
-const answeredElsewhere = () => questionError('answered by Fishball or in its pile', QUESTION.aborted)
+const answeredElsewhere = () => questionError(TEXT.answeredElsewhere, QUESTION.aborted)
 
 /** A plan review is one question carrying the plan-review intent (S36 Q3). */
 export const isPlanReview = (questions) => questions.length === 1 && questions[0].intent?.kind === QUESTION.planIntent
@@ -213,7 +214,7 @@ function isPendingResult(content) {
 
 /** The first text block of a logged message, parsed as JSON, or undefined. */
 function parsedText(content) {
-  const text = Array.isArray(content) ? content.find((block) => block?.type === 'text')?.text : undefined
+  const text = Array.isArray(content) ? content.find((block) => block?.type === SESSION_INFO.textBlock)?.text : undefined
   if (typeof text !== 'string') return undefined
   try { return JSON.parse(text) } catch { return undefined }
 }
@@ -312,6 +313,8 @@ export class QuestionRouter {
   #entries = new Map()
   /** sessionId|callId -> the words of Fishball's answer, read once from the log (memory only, §9). */
   #words = new Map()
+  /** sessionId|callId -> the log length when its answer was not found (read again once it grows). */
+  #misses = new Map()
   /** Continued questions get their cards once per start (rebuild). */
   #rebuilt = false
 
@@ -517,22 +520,44 @@ export class QuestionRouter {
     }
   }
 
-  /** The words of Fishball's answer for one tag (the snapshot's), read from the session log once; undefined when not known. */
-  wordsOfTag(tag) {
-    if (tag.kind !== TAG_KIND.question || tag.callId === undefined || tag.callId === null) return undefined
-    const key = wordsKey(tag.sessionId, tag.callId)
+  /**
+   * The words of Fishball's answers for the kept tags (the snapshot's), read from each session log
+   * once. The cache keeps only the given tags' words, so it never outgrows the tag list
+   * (auditEntriesKept); a call whose answer is not in its log yet is read again only once the log grew.
+   * @param tags - the tag records kept now. @returns Map tag key -> words (absent when not known).
+   */
+  wordsOfTags(tags) {
+    const found = new Map()
+    const kept = new Set()
+    for (const tag of tags) {
+      if (tag.kind !== TAG_KIND.question || tag.callId === undefined || tag.callId === null) continue
+      const key = wordsKey(tag.sessionId, tag.callId)
+      kept.add(key)
+      const words = this.#wordsOf(key, tag)
+      if (words !== undefined) found.set(tag.key, words)
+    }
+    for (const key of [...this.#words.keys()]) if (!kept.has(key)) this.#words.delete(key)
+    for (const key of [...this.#misses.keys()]) if (!kept.has(key)) this.#misses.delete(key)
+    return found
+  }
+
+  #wordsOf(key, tag) {
     if (this.#words.has(key)) return this.#words.get(key)
     const session = this.#ctx.sessions.get(tag.sessionId)
     if (session === undefined) return undefined
-    for (const event of session.snapshotEvents()) {
+    const events = session.snapshotEvents()
+    if (this.#misses.get(key) === events.length) return undefined
+    for (const event of events) {
       const fromResult = event.type === QUESTION.toolResultEvent && event.data?.message?.toolCallId === tag.callId
       const fromReply = event.type === APPROVAL.userEvent && event.data?.source?.kind === QUESTION.replySource && event.data.source.callId === tag.callId
       const answers = fromResult ? parsedText(event.data.message.content)?.answers : fromReply ? parsedText(event.data.content)?.answers : undefined
       if (!Array.isArray(answers)) continue
       const words = answerWords(answers, this.#readLimits().rationaleChars)
       this.#words.set(key, words)
+      this.#misses.delete(key)
       return words
     }
+    this.#misses.set(key, events.length)
     return undefined
   }
 
@@ -587,7 +612,7 @@ export class QuestionRouter {
     if (await this.#hold(entry, agent)) req.wait = { ...req.wait, timed: false }
     const downstream = Promise.resolve().then(next)
     downstream.then((value) => entry.settle({ by: BY.session, value }), (error) => entry.settle({ error }))
-    const onAbort = () => entry.settle({ error: original.reason ?? questionError('aborted', QUESTION.aborted) })
+    const onAbort = () => entry.settle({ error: original.reason ?? questionError(TEXT.aborted, QUESTION.aborted) })
     original?.addEventListener('abort', onAbort, { once: true })
     if (original?.aborted) onAbort()
     void this.#open(entry)
@@ -658,16 +683,16 @@ export class QuestionRouter {
    * before the notice, so a slow delivery never lengthens the window (as for permission requests).
    */
   async #open(entry) {
-    const limits = this.#readLimits()
-    const mode = this.mode()
-    if (mode === QUESTION_MODE.user) this.#toPile(entry, APPROVAL_ANSWER.toUser)
-    else {
-      entry.timer = setTimeout(() => {
-        if (this.#toPile(entry, APPROVAL_ANSWER.timeout)) this.#tell(entry, TEXT.timedOut)
-      }, Math.min(limits.approvalAnswerSeconds * MS_PER_SECOND, APPROVAL.maxTimerMs))
-      entry.timer.unref?.()
-    }
     try {
+      const limits = this.#readLimits()
+      const mode = this.mode()
+      if (mode === QUESTION_MODE.user) this.#toPile(entry, APPROVAL_ANSWER.toUser)
+      else {
+        entry.timer = setTimeout(() => {
+          if (this.#toPile(entry, APPROVAL_ANSWER.timeout)) this.#tell(entry, TEXT.timedOut)
+        }, Math.min(limits.approvalAnswerSeconds * MS_PER_SECOND, APPROVAL.maxTimerMs))
+        entry.timer.unref?.()
+      }
       const info = (await describeSession(this.#ctx, entry.sessionId, limits.forwardExcerptBytes)) ?? { id: entry.sessionId, title: '', cwd: null }
       if (this.#entries.get(entry.id) !== entry) return
       const text = TEXT.notice(entry, info, latestUserText(entry.session, limits.requestUserMessageBytes), mode, limits.approvalAnswerSeconds, argumentsText(JSON.stringify(entry.questions), limits.argumentExcerptBytes))
@@ -676,13 +701,13 @@ export class QuestionRouter {
         sourceIdentity: QUESTION.sourceIdentity,
         dedupeKey: entry.id,
         message: createUserMessage({
-          content: [{ type: 'text', text }],
+          content: [{ type: SESSION_INFO.textBlock, text }],
           source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(entry)), author: sessionAuthor(INTAKE_KIND.approval, info) },
         }),
       })
       entry.seen = true
     } catch (error) {
-      // Not delivered (queue full): your card, as for a permission request.
+      // Not delivered (queue full), or the mode or limits could not be read: your card, so it never hangs unseen.
       this.#logger.warn('question %s not delivered (%s)', entry.id, diagnosticOf(error))
       this.#toPile(entry, APPROVAL_ANSWER.toUser)
     }
@@ -735,8 +760,10 @@ export class QuestionRouter {
       if (entry.callId !== undefined && entry.kind === QUESTION_KIND.question) this.#words.set(wordsKey(entry.sessionId, entry.callId), answerWords(answered.batch.answers, this.#readLimits().rationaleChars))
       await this.#tags.addForCall({ session: entry.session, sessionId: entry.sessionId, callId: entry.callId, answer: answered.tagAnswer, kind: entry.kind === QUESTION_KIND.planReview ? TAG_KIND.planReview : TAG_KIND.question })
     }
-    if (answered !== undefined) await this.#decide(entry, byFishball ? CHANGED_BY.fishball : CHANGED_BY.user)
-    await this.#record(entry, byFishball ? APPROVAL_ANSWER.answer : entry.routed ?? (end === QUESTION_END.back ? APPROVAL_ANSWER.released : APPROVAL_ANSWER.withdrawn), end)
+    // Your answer, on the card or in the session's own card, is a decisions row by you, as Fishball's is by Fishball.
+    const byYou = answered?.by === BY.pile || end === QUESTION_END.session
+    if (byFishball || byYou) await this.#decide(entry, byFishball ? CHANGED_BY.fishball : CHANGED_BY.user)
+    await this.#record(entry, this.#auditAnswer(entry, end, byFishball, byYou), end)
     if (!entry.seen) return
     if (end === QUESTION_END.session) this.#tell(entry, TEXT.inSession)
     else if (end === QUESTION_END.pile) this.#tell(entry, TEXT.inPile)
@@ -754,6 +781,18 @@ export class QuestionRouter {
 
   #tell(entry, what) {
     tellWithoutWake(this.#agentOf(), TEXT.outcome(entry.id, what), this.#logger)
+  }
+
+  /**
+   * What the audit row's `answer` says Fishball did: answered; else how it reached you (escalate,
+   * timeout, to-user); you answering in the session before that is to-user too (you answered
+   * without Fishball's answer); back to the session is released; otherwise withdrawn (it closed).
+   */
+  #auditAnswer(entry, end, byFishball, byYou) {
+    if (byFishball) return APPROVAL_ANSWER.answer
+    if (entry.routed !== undefined) return entry.routed
+    if (byYou) return APPROVAL_ANSWER.toUser
+    return end === QUESTION_END.back ? APPROVAL_ANSWER.released : APPROVAL_ANSWER.withdrawn
   }
 
   /** The question's approvals audit row (kind question): a digest of its questions, never their text (§9). */

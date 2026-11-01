@@ -738,6 +738,7 @@ window.__ModuleLoader__.load({
       'questionModeHint.auto': 'Fishball answers only when your own words cover it; otherwise the question comes to your pile.',
       'questionModeHint.fishball': 'Fishball answers on its own judgement and sends you only what it cannot decide.',
       'questionModeHint.user': 'Every question comes to your pile; Fishball may add a note.',
+      questionModeFailed: 'The mode was not changed. Fishball may not be running; try again.',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: 'The arguments are cut.',
@@ -1142,6 +1143,7 @@ window.__ModuleLoader__.load({
       'questionModeHint.auto': '只有在你自己的话涵盖时 Fishball 才回答；否则问题会进入你的待处理区。',
       'questionModeHint.fishball': 'Fishball 按自己的判断回答，只把它无法决定的交给你。',
       'questionModeHint.user': '每个问题都进入你的待处理区；Fishball 可以附上备注。',
+      questionModeFailed: '模式未更改。Fishball 可能未在运行，请重试。',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: '参数已截断。',
@@ -2211,7 +2213,11 @@ window.__ModuleLoader__.load({
         setBusy(false)
       }
       const choiceOf = (id) => choices[id] ?? { selected: [], custom: '' }
-      const update = (id, change) => setChoices({ ...choices, [id]: { ...choiceOf(id), ...change } })
+      // Functional, so two changes before a re-render (a toggle and typing) both count.
+      const update = (id, change) => setChoices((current) => {
+        const choice = current[id] ?? { selected: [], custom: '' }
+        return { ...current, [id]: { ...choice, ...change(choice) } }
+      })
       const answers = () => card.questions.map((question) => {
         const { selected, custom } = choiceOf(question.id)
         const text = custom.trim()
@@ -2238,13 +2244,13 @@ window.__ModuleLoader__.load({
             card.questions.map((question) => {
               const choice = choiceOf(question.id)
               const multi = question.multiSelect === true
-              const toggle = (label, on) => update(question.id, { selected: multi ? (on ? [...choice.selected, label] : choice.selected.filter((entry) => entry !== label)) : (on ? [label] : []) })
+              const toggle = (label, on) => update(question.id, (current) => ({ selected: multi ? (on ? [...current.selected, label] : current.selected.filter((entry) => entry !== label)) : (on ? [label] : []) }))
               return h('fieldset', { key: question.id, className: CLS.field, 'data-fishball-question': question.id },
                 h('legend', null, question.header ? `${question.header}${TURN_TAGS.separator}${question.question}` : question.question),
                 (question.options ?? []).map((option) => h('label', { key: option.label, className: CLS.row },
                   h('input', { type: multi ? 'checkbox' : 'radio', name: card.requestId + '-' + question.id, checked: choice.selected.includes(option.label), disabled: busy, onChange: (event) => toggle(option.label, event.target.checked) }),
                   ' ', option.label, option.description ? h('span', { className: CLS.muted }, ` ${option.description}`) : null)),
-                h(Input, { 'aria-label': t('questionOther'), placeholder: t('questionOther'), value: choice.custom, onChange: (event) => update(question.id, { custom: event.target.value }) }))
+                h(Input, { 'aria-label': t('questionOther'), placeholder: t('questionOther'), value: choice.custom, onChange: (event) => { const custom = event.target.value; update(question.id, () => ({ custom })) } }))
             }),
             h('div', { className: CLS.actions }, button('send', 'primary', () => void submit({ answers: answers() }), 'questionSubmit'))),
         problem ? h('div', { role: 'alert' }, problem) : null)
@@ -2256,11 +2262,13 @@ window.__ModuleLoader__.load({
      */
     function QuestionMode({ state, t }) {
       const [busy, setBusy] = React.useState(false)
+      const [failed, setFailed] = React.useState(false)
       const mode = state.questionMode
       if (typeof mode !== 'string') return null
       const choose = async (next) => {
         setBusy(true)
-        await send(API.questionMode, { mode: next })
+        const { ok } = await send(API.questionMode, { mode: next })
+        setFailed(!ok)
         setBusy(false)
       }
       return h('div', { 'data-fishball-question-mode': mode },
@@ -2270,7 +2278,8 @@ window.__ModuleLoader__.load({
           key: option, type: 'button', size: 'sm', variant: option === mode ? 'primary' : 'secondary', role: 'radio', 'aria-checked': option === mode, disabled: busy,
           onClick: () => { if (option !== mode) void choose(option) },
         }, t('questionMode.' + option)))),
-        h('p', { className: CLS.muted }, t('questionModeHint.' + mode)))
+        h('p', { className: CLS.muted }, t('questionModeHint.' + mode)),
+        failed ? h('div', { role: 'alert' }, t('questionModeFailed')) : null)
     }
 
     /** What a grant covers, in words: "npm test*", or "exact bash call" (never the arguments, which the Host does not keep). */
