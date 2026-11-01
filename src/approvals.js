@@ -19,12 +19,17 @@
  *   root) -> next(): Fishball is not told and takes no step;
  * - a to-you ticket for the exact call -> next(), with your answer audited (§7a.6);
  * - a one-time pass for the exact call -> 'allowed-once' with no Fishball step (§7a.3);
+ * - a standing grant that covers the call -> 'allowed-once' with no Fishball step, one tag in the
+ *   asking turn (§7a.8, src/grants.js); grants pause while Fishball or Permission requests is off,
+ *   because the rule above already sent the call to your prompt;
  * - maxPendingApprovals open (waiting for Fishball, or cards in your pile; §7a.6 Reading) -> next();
  * - otherwise Fishball decides. Arguments are read from the asking session's log by callId (S11).
  *
  * Fishball's answers (§7a.3 table; a refused answer leaves the request pending):
  * - allow (low risk, a reason, complete arguments): a direct call runs ('allowed-once', its result
  *   carries the hint, src/result-wording.js); an asked request mints a pass for that exact call;
+ * - grant (allow's rules plus a valid grant with an end time in the future): a standing grant for
+ *   the asking session, and the call itself runs as on allow;
  * - reject (a reason): the agent gets the reason;
  * - ask (a question): the request stays open as a thread in the asking turn; the agent replies with
  *   ask_fishball({request_id, reply}), as often as needed (no round cap, Q-r11-rounds). On a direct
@@ -48,7 +53,7 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, PASS_KIND, REQUEST_KIND, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, PASS_KIND, REQUEST_KIND, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
 import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
@@ -57,6 +62,7 @@ import { authorOf, sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
+import { checkGrant } from './grants.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -77,6 +83,7 @@ const ROUND = Object.freeze({ tooLarge: 'too-large', undelivered: 'undelivered' 
 /** Each decision's stored answer. */
 const DECISION_ANSWER = Object.freeze({
   [APPROVAL_DECISION.allow]: APPROVAL_ANSWER.allow,
+  [APPROVAL_DECISION.grant]: APPROVAL_ANSWER.grant,
   [APPROVAL_DECISION.reject]: APPROVAL_ANSWER.reject,
   [APPROVAL_DECISION.ask]: APPROVAL_ANSWER.ask,
   [APPROVAL_DECISION.escalate]: APPROVAL_ANSWER.escalate,
@@ -87,12 +94,13 @@ const CLICK_ACTION = Object.freeze({ [APPROVAL_OUTCOME.allowedOnce]: DECISION_AC
 const STATE = Object.freeze({ waiting: 'waiting', question: 'question' })
 
 const TEXT = Object.freeze({
-  answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; tell the user in one or two sentences why.',
+  answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "grant" approves it as "allow" does and also creates a standing grant, so that session\'s later calls it covers run without asking you: only when the user\'s allowance covers every call the grant covers; it needs `grant` with an end time. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; tell the user in one or two sentences why.',
   requestIdArg: 'The request id, e.g. apr_7f3c….',
-  decisionArg: '"allow" (low risk, within the user\'s allowance), "reject" (beyond the user\'s request and dangerous), "ask" (a question to the session) or "escalate" (to the user).',
+  decisionArg: '"allow" (low risk, within the user\'s allowance), "grant" (as allow, plus a standing grant), "reject" (beyond the user\'s request and dangerous), "ask" (a question to the session) or "escalate" (to the user).',
   riskArg: '"low" or "high": your judgement of the exact call\'s real effect. Optional with "escalate".',
   reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session). Optional with "escalate".',
   questionArg: 'With "ask": the question for the session.',
+  grantArg: 'With "grant": {kind, prefix?, expires_at}. kind "exact" covers this exact call (same tool and arguments) each time it repeats in that session; kind "prefix" covers that session\'s shell commands (bash, pwsh, terminal_open, terminal_send) whose command text starts with `prefix`, taken from this call\'s command, e.g. "npm test" (a trailing * is optional). Matching is on the raw text, so "npm test" also covers "npm test && git push". expires_at: an ISO time in the future; every grant must end.',
   /** The request Fishball sees (DESIGN §7a.2 framing). */
   request: (request, info, userText, provenance, seconds) => [
     `[permission request ${request.id}] Fishball: ${request.kind === REQUEST_KIND.asked ? 'a session you manage asks first, before making a call (ask_fishball).' : 'a session you manage made a call that needs permission without asking first (a direct call).'}${request.thread.length > 0 ? ' The session replied to your question: the thread so far is in the block.' : ''}`,
@@ -208,6 +216,7 @@ export class ApprovalBroker {
   #wording
   #pile
   #tags
+  #grants
   #audit
   #decisions
   /** apr id -> request (DESIGN §9 "Request threads"): waiting for Fishball, or owing a reply. */
@@ -227,8 +236,9 @@ export class ApprovalBroker {
    * @param deps.passes - CallPasses (passes and to-you tickets).
    * @param deps.wording - ResultWording (what a direct call's agent reads after Fishball answered).
    * @param deps.pile - Pile (your cards). @param deps.tags - TagRecords (one per Fishball answer).
+   * @param deps.grants - Grants (standing grants: created by Fishball's grant answers, covering calls).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -245,6 +255,7 @@ export class ApprovalBroker {
     this.#wording = wording
     this.#pile = pile
     this.#tags = tags
+    this.#grants = grants
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
     ctx.on(APPROVAL.waterfall, (req, next) => this.#route(req, next), { prepend: true })
@@ -272,9 +283,14 @@ export class ApprovalBroker {
         risk: { type: 'string', enum: Object.values(APPROVAL_RISK), description: TEXT.riskArg },
         reason: { type: 'string', description: TEXT.reasonArg },
         question: { type: 'string', description: TEXT.questionArg },
+        grant: {
+          type: 'object',
+          properties: { kind: { type: 'string', enum: Object.values(GRANT_KIND) }, prefix: { type: 'string' }, expires_at: { type: 'string' } },
+          description: TEXT.grantArg,
+        },
       },
       output: JSON_OUTPUT,
-      execute: async ({ request_id: id, decision, risk, reason, question }) => {
+      execute: async ({ request_id: id, decision, risk, reason, question, grant }) => {
         const request = this.#requests.get(id)
         if (request === undefined || !this.#waiting.has(id)) return refused(APPROVAL_ERROR.expired)
         const rationale = trimmed(reason)
@@ -285,16 +301,24 @@ export class ApprovalBroker {
           if (risk === undefined) return refused(APPROVAL_ERROR.riskRequired)
           if (reason === undefined) return refused(APPROVAL_ERROR.reasonRequired)
         }
-        if (decision === APPROVAL_DECISION.allow) {
+        const allows = decision === APPROVAL_DECISION.allow || decision === APPROVAL_DECISION.grant
+        if (allows) {
           if (risk !== APPROVAL_RISK.low) return refused(APPROVAL_ERROR.allowNeedsLowRisk)
           if (rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
           if (request.args.status !== ARGUMENTS_STATUS.complete) return refused(APPROVAL_ERROR.argumentsIncomplete)
         }
+        const granted = decision === APPROVAL_DECISION.grant ? checkGrant(grant, { toolName: request.toolName, args: request.args.value }, Date.now()) : undefined
+        if (granted?.error !== undefined) return refused(granted.error)
         if (decision === APPROVAL_DECISION.reject && rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
         if (decision === APPROVAL_DECISION.ask && asked.length === 0) return refused(APPROVAL_ERROR.questionRequired)
-        this.#settle(id, { answer: DECISION_ANSWER[decision], risk, rationale, question: asked })
-        await this.#tag(request, decision)
-        return ok({ requestId: id, decision })
+        // The grant's id is minted first, so the request's audit row names the grant it created.
+        const grantId = granted === undefined ? undefined : this.#grants.mintId()
+        this.#settle(id, { answer: DECISION_ANSWER[decision], risk, rationale, question: asked, grantId })
+        if (granted !== undefined) {
+          await this.#grants.create({ id: grantId, sessionId: request.sessionId, toolName: request.toolName, kind: granted.kind, prefix: granted.prefix, args: request.args.value, expiresAt: granted.expiresAt, requestId: id, rationale })
+        }
+        await this.#tag(request, decision, decision === APPROVAL_DECISION.escalate ? TAG_KIND.sentToYou : TAG_KIND.approval)
+        return ok({ requestId: id, decision, ...(grantId === undefined ? {} : { grantId, expiresAt: granted.expiresAt }) })
       },
     }))
   }
@@ -334,6 +358,9 @@ export class ApprovalBroker {
     const key = CallPasses.keyOf(sessionId, toolName, args)
     // Minted first: an answer given at once names its request too, and the ticket carries it, so
     // the call that then reaches your prompt is audited under the same id.
+    // A call a standing grant covers is allowed at once, without a Fishball step (§7a.3 Reading,
+    // item 17); the call itself then runs on the grant and leaves its tag. Grants pause while off.
+    if (this.#canAnswer() && this.#isManaged(sessionId) && this.#grants.cover(sessionId, toolName, args) !== undefined) return { code: ASK_RESULT.allowed, byGrant: true }
     const id = this.#mintId()
     const unanswerable = this.#unanswerable(sessionId)
     if (unanswerable !== undefined) {
@@ -408,6 +435,8 @@ export class ApprovalBroker {
         else { request.thread.pop(); request.state = STATE.question }
         return { code: ASK_ERROR.tooLarge }
       case APPROVAL_ANSWER.allow:
+      case APPROVAL_ANSWER.grant:
+        // A grant allows the asking call as allow does: by a pass, so that call leaves no grant tag.
         this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: true })
         return end(ASK_RESULT.allowed)
       case APPROVAL_ANSWER.reject:
@@ -626,6 +655,8 @@ export class ApprovalBroker {
       return APPROVAL_OUTCOME.allowedOnce
     }
     if (covered?.kind === PASS_KIND.toYou) return this.#toYou(call, covered, next, req.signal)
+    const grant = this.#grants.cover(sessionId, req.toolName, args.value)
+    if (grant !== undefined) return this.#onGrant(call, grant)
     if (this.#openCount() >= limits.maxPendingApprovals) return next()
     const request = { ...call, id: this.#mintId(), kind: REQUEST_KIND.direct, quotes: [], why: undefined, thread: [], state: STATE.waiting, round: 0 }
     this.#requests.set(request.id, request)
@@ -636,6 +667,7 @@ export class ApprovalBroker {
         this.#requests.delete(request.id)
         return next()
       case APPROVAL_ANSWER.allow:
+      case APPROVAL_ANSWER.grant:
         this.#wording.mark(req.callId, sessionId, req.toolName, { kind: WORDING.allow })
         await this.#finish(request, result, APPROVAL_OUTCOME.allowedOnce)
         return APPROVAL_OUTCOME.allowedOnce
@@ -653,6 +685,17 @@ export class ApprovalBroker {
       default:
         return this.#sendOn(request, result, next, req.signal)
     }
+  }
+
+  /**
+   * A call a standing grant covers: allowed with no Fishball step (item 17), audited as grant-used,
+   * counted on the grant, and tagged once in its turn (§7a.3 "Tags").
+   */
+  async #onGrant(call, { id, record }) {
+    await this.#record({ ...call, kind: REQUEST_KIND.direct, answer: APPROVAL_ANSWER.grantUsed, grantId: id, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
+    await this.#grants.use(id)
+    await this.#tag(call, APPROVAL_DECISION.grant, TAG_KIND.grant, { kind: record.kind, toolName: record.toolName, ...(record.prefix === undefined ? {} : { prefix: record.prefix }) })
+    return APPROVAL_OUTCOME.allowedOnce
   }
 
   /**
@@ -700,11 +743,11 @@ export class ApprovalBroker {
   }
 
   /** A request ended: forget it and audit it once. */
-  async #finish(request, { answer, risk, rationale }, finalOutcome) {
+  async #finish(request, { answer, risk, rationale, grantId }, finalOutcome) {
     // A turn end and a release can both reach an open thread; only the first audits it.
     if (this.#requests.get(request.id) !== request) return
     this.#requests.delete(request.id)
-    await this.#record({ ...request, answer, risk, rationale, finalOutcome })
+    await this.#record({ ...request, answer, risk, rationale, grantId, finalOutcome })
   }
 
   /**
@@ -752,12 +795,13 @@ export class ApprovalBroker {
   }
 
   /** Audit one request (never the arguments or quoted text: a digest and message ids). */
-  async #record({ id, sessionId, toolName, callId, args, at, answer, risk, rationale, finalOutcome, kind, quotes }) {
+  async #record({ id, sessionId, toolName, callId, args, at, answer, risk, rationale, finalOutcome, kind, quotes, grantId }) {
     try {
       await this.#audit.append({
         sessionId, toolName, ...(callId === undefined ? {} : { callId }),
         argumentsDigest: sha256(args.text), argumentsStatus: args.status, at, answer, kind,
         ...(quotes === undefined || quotes.length === 0 ? {} : { quotes: quotes.map((quote) => quote.id) }),
+        ...(grantId === undefined ? {} : { grantId }),
         ...(risk === undefined ? {} : { risk }), ...(rationale ? { rationale: rationale.slice(0, this.#readLimits().rationaleChars) } : {}),
         finalOutcome, decidedAt: new Date().toISOString(),
       }, id === undefined ? [] : [id])
@@ -784,21 +828,22 @@ export class ApprovalBroker {
   }
 
   /**
-   * One tag record for Fishball's answer, placed in the asking turn by the seq of the asking call:
-   * the ask_fishball call of this round, or the direct call (§7a.3 "Tags", S37). A call the log
-   * does not show as a `tool/call` (a run_code inner call, a subagent's call) takes the session's
-   * latest seq: the asking turn is still running while Fishball answers, so it lies inside it.
+   * One tag record, placed in the asking turn by the seq of the asking call: the ask_fishball call
+   * of this round, or the direct call (§7a.3 "Tags", S37). A call the log does not show as a
+   * `tool/call` (a run_code inner call, a subagent's call) takes the session's latest seq: the
+   * asking turn is still running while Fishball answers or a grant covers it, so it lies inside it.
+   * @param target - a request, or a call a grant covered: { session, sessionId, askCallId?, callId }.
+   * @param answer - an APPROVAL_DECISION; @param kind - a TAG_KIND; @param grant - what a grant tag names.
    */
-  async #tag(request, decision) {
-    const callId = request.askCallId ?? request.callId
-    const events = request.session.snapshotEvents()
+  async #tag(target, answer, kind, grant) {
+    const callId = target.askCallId ?? target.callId
+    const events = target.session.snapshotEvents()
     let seq = events.at(-1)?.seq
     for (let i = events.length - 1; i >= 0; i--) {
       if (events[i].type === APPROVAL.toolCallEvent && events[i].data?.callId === callId) { seq = events[i].seq; break }
     }
     if (seq === undefined) return
-    const kind = decision === APPROVAL_DECISION.escalate ? TAG_KIND.sentToYou : TAG_KIND.approval
-    await this.#tags.add({ sessionId: request.sessionId, callId, seq, answer: decision, kind })
+    await this.#tags.add({ sessionId: target.sessionId, callId, seq, answer, kind, grant })
   }
 
   /** A short note to Fishball without waking it (DESIGN §7a: it learns from your choices). */

@@ -17,6 +17,8 @@
  *                                DESIGN §10e); 409 unknown-session, is-fishball, feature-off
  * POST requests/answer        -> { requestId: string, decision: 'allow' | 'reject', note?: string } (your
  *                                answer on a card, DESIGN §10e); 409 expired, too-large
+ * POST grants/revoke          -> { grantId: string } (your Revoke on a standing grant, DESIGN §10e);
+ *                                409 unknown, ended
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
@@ -62,6 +64,7 @@ const BODY = Object.freeze({
   requestAnswer: (body) => (isRecord(body) && isName(body.requestId) && CARD_DECISIONS.has(body.decision) && (body.note === undefined || typeof body.note === 'string')
     ? { requestId: body.requestId, decision: body.decision, ...(isText(body.note) ? { note: body.note.trim() } : {}) }
     : undefined),
+  grantRevoke: (body) => (isRecord(body) && isName(body.grantId) ? { grantId: body.grantId } : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
   installSpec: (body) => (isRecord(body) && isText(body.spec) ? body.spec.trim() : undefined),
   install: (body) => (isRecord(body) && isText(body.spec) && isName(body.requestId)
@@ -85,7 +88,7 @@ const BODY = Object.freeze({
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
  *   addWatch({ sessionId }), removeWatch({ watchId }), setManaged({ sessionId, managed }),
- *   answerRequest({ requestId, decision, note? }), markRead(), setBrandStyle(style), messengerScript(),
+ *   answerRequest({ requestId, decision, note? }), revokeGrant({ grantId }), markRead(), setBrandStyle(style), messengerScript(),
  *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
  *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId), refreshPlugins() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
@@ -183,6 +186,7 @@ export function registerRoutes(ctx, state) {
     { path: API.watches, methods: [HTTP_METHOD.post], fetch: command(BODY.watch, (input) => state.addWatch(input)) },
     { path: API.managed, methods: [HTTP_METHOD.post], fetch: command(BODY.managed, (input) => state.setManaged(input)) },
     { path: API.requestsAnswer, methods: [HTTP_METHOD.post], fetch: command(BODY.requestAnswer, (input) => state.answerRequest(input)) },
+    { path: API.grantsRevoke, methods: [HTTP_METHOD.post], fetch: command(BODY.grantRevoke, (input) => state.revokeGrant(input)) },
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },
