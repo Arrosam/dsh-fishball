@@ -8,7 +8,7 @@
  * listener (src/approvals.js, spike S35) and answers 'rejected', so nothing waits:
  * - Fishball's own tools say beforehand what the card shows (expect: Fishball's reason, the
  *   detail list, and, for add_plugin's second step, the call the card stands for), then read the
- *   filed card's id (takeFiled) and return the waiting result themselves;
+ *   filed result (takeFiled: the waiting result, or too-many-waiting) and return it themselves;
  * - another plugin's tool has its text replaced by the post-execute listener (src/result-wording.js).
  * Under a permission mode that never asks DSH answers 'rejected' before any listener runs, so no
  * card is filed (S35) and the tool is refused as before.
@@ -30,7 +30,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ERROR, ARGUMENTS_STATUS, CARD_DECISION, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OWN_REQUEST, OWN_STATUS, REQUEST_KIND, SOURCE } from './constants.js'
+import { APPROVAL, APPROVAL_ERROR, ARGUMENTS_STATUS, CARD_DECISION, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OWN_REQUEST, OWN_STATUS, REQUEST_KIND, SOURCE, TOO_MANY_WAITING } from './constants.js'
 import { AuditLog } from './audit.js'
 import { argumentsDigest } from './passes.js'
 import { authorOf } from './author.js'
@@ -46,6 +46,8 @@ const DETAIL_SEPARATOR = '\n'
 
 const TEXT = Object.freeze({
   /** What Fishball reads when its call became a card (own tools and other plugins' tools alike). */
+  /** Past maxPendingApprovals: nothing was filed or asked (Q-r11-cap-own). */
+  tooManyWaiting: `${TOO_MANY_WAITING}: too many permission requests are waiting for the user, so this call was not made and nothing was asked. Try it again once the user has answered some of them, or withdraw one of your own waiting requests with withdraw_request.`,
   waiting: (id) => `${OWN_REQUEST.waitingCode}: this call did not run. It waits for the user's approval as request ${id}, a card in the user's pile; carry on with other work meanwhile. You will be told when the user answers. If the user allows it, you are told to run it again, with the exact call to make; that identical call then runs once. If you no longer need it, withdraw it with withdraw_request({request_id: "${id}"}).`,
   /** The "approved, run it again" notice (item 22); it names the request and the exact call. */
   runAgain: (id, toolName, args) => `[approved ${id}] Fishball notice: the user allowed your request ${id}. It has not run yet: run it again now, as the identical call ${toolName} with exactly these arguments: ${args}\nThat one call then runs once without asking. The approval ends when this turn ends.`,
@@ -63,6 +65,12 @@ const TEXT = Object.freeze({
 export const waitingResult = (requestId) => refused(OWN_REQUEST.waitingCode, { request_id: requestId, note: TEXT.waiting(requestId) })
 /** The same text, for another plugin's tool in Fishball's session (post-execute, S35). */
 export const waitingText = (requestId) => TEXT.waiting(requestId)
+/**
+ * Past the cap: Fishball's own tool returns this, in the same JSON form as the waiting result
+ * (the manager's decision, 2026-11-02); another plugin's tool gets the text through post-execute.
+ */
+export const tooManyWaitingResult = () => refused(TOO_MANY_WAITING, { note: TEXT.tooManyWaiting })
+export const tooManyWaitingText = () => TEXT.tooManyWaiting
 
 /**
  * A detail list cut to maxBytes (the manager's decision, Q-r11-own-card-detail): bytes as shown,
@@ -108,7 +116,7 @@ export class OwnRequests {
   #decisions
   /** callId -> what Fishball's own tool says its card shows (set just before it asks). */
   #expected = new Map()
-  /** callId -> the own_ id filed for that call, until the tool body reads it. */
+  /** callId -> what Fishball's own tool returns (the waiting result, or too-many-waiting), until its body reads it. */
   #filed = new Map()
   /** Writes run one after another, so a pass is never used twice or answered while it is used. */
   #changes = Promise.resolve()
@@ -155,7 +163,11 @@ export class OwnRequests {
     return this.#expected.get(callId)
   }
 
-  /** The own_ id filed for this call (read once by the tool body), or undefined when none was filed. */
+  /**
+   * What Fishball's own tool returns for this call (read once by the tool body): the waiting
+   * result when a card was filed, too-many-waiting past the cap, or undefined (refused without
+   * either: a never-asking mode, S35).
+   */
   takeFiled(callId) {
     const id = this.#filed.get(callId)
     this.#filed.delete(callId)
@@ -172,10 +184,11 @@ export class OwnRequests {
   /**
    * File one card (the broker's listener, before it answers 'rejected').
    * @param request - { callId, toolName, args: { text, status, value }, reason, detail? }; callId is
-   *   Fishball's own tool's call, whose body reads the id back (takeFiled), else undefined.
+   *   Fishball's own tool's call, whose body reads its result back (takeFiled), else undefined.
    * @param isFull - () => whether maxPendingApprovals requests are open; checked in the write
    *   queue, so parallel calls in one step cannot all slip under the cap.
-   * @returns the own_ id, or undefined when the cap is reached (nothing filed).
+   * @returns the own_ id, or undefined when the cap is reached (nothing filed; the own tool then
+   *   reads too-many-waiting back).
    */
   async file({ callId, toolName, args, reason, detail }, isFull) {
     const limits = this.#readLimits()
@@ -192,8 +205,11 @@ export class OwnRequests {
       })
       return true
     })
-    if (!filed) return undefined
-    if (callId !== undefined) this.#filed.set(callId, id)
+    if (!filed) {
+      if (callId !== undefined) this.#filed.set(callId, tooManyWaitingResult())
+      return undefined
+    }
+    if (callId !== undefined) this.#filed.set(callId, waitingResult(id))
     this.#onChange()
     return id
   }
