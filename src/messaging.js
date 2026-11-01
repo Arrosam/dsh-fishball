@@ -17,7 +17,9 @@
  *   composition), name it with Fishball's title, then send the first message the same way.
  *   DSH's automatic title reads only user messages, and a relay is not one, so Fishball names
  *   the session itself; a title DSH cannot take is reported as titleError and the session
- *   still starts. Fishball cannot create folders: a missing folder is refused, because DSH's
+ *   still starts. DSH can create the session and then fail to add it to the workspace: that
+ *   session exists (under Ungrouped), so it still starts and is reported as workspaceError.
+ *   Fishball cannot create folders: a missing folder is refused, because DSH's
  *   create would make it (spike S18). A folder removed between the check and the create would
  *   still be created by DSH; that window needs host support.
  *
@@ -40,7 +42,7 @@ import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { SessionTitleInvalidError, normalizeSessionTitle } from '@deepseek-ai/dsh-session-title'
-import { WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO, OPTIONAL_SERVICE, TITLE_ERROR } from './constants.js'
+import { WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO, OPTIONAL_SERVICE, TITLE_ERROR, WORKSPACE_ERROR } from './constants.js'
 import { AuditLog } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, rootSessionOf } from './session-info.js'
@@ -256,7 +258,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
 
   /**
    * Deliver and record; returns the tool result: ok with `success`, or refused with `failure`
-   * (start_session's names the session it created and its title outcome).
+   * (start_session's names the session it created and its title and workspace outcomes).
    */
   const deliverAndRecord = async (entry, sessionId, message, success, failure = {}) => {
     try {
@@ -289,6 +291,27 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (error instanceof SessionTitleInvalidError) return { titleError: TITLE_ERROR.invalid }
       logger.warn('naming session %s failed (%s)', sessionId, diagnosticOf(error))
       return { titleError: TITLE_ERROR.failed }
+    }
+  }
+
+  /**
+   * Create the session through DSH (DESIGN §5d). DSH creates it first and then adds it to the
+   * workspace; when only that step fails, the session exists (under Ungrouped) and its id is in
+   * the error, so it carries on rather than being left without a title, first message or record.
+   * @returns { sessionId }, { sessionId, workspaceError }, or undefined when nothing was created.
+   */
+  const createSession = async (request) => {
+    try {
+      return { sessionId: (await ctx.sessionController.create(request)).sessionId }
+    } catch (error) {
+      // DSH tells its errors apart by code, never by class (dsh-typert-protocol RemoteError).
+      const sessionId = error?.code === WORKSPACE_ERROR.dshCode ? error.details?.sessionId : undefined
+      if (typeof sessionId !== 'string') {
+        logger.warn('session start failed (%s)', diagnosticOf(error))
+        return undefined
+      }
+      logger.warn('session %s was created but not added to its workspace (%s)', sessionId, diagnosticOf(error))
+      return { sessionId, workspaceError: WORKSPACE_ERROR.attachFailed }
     }
   }
 
@@ -341,19 +364,16 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       const target = await placeOf(ctx, folder)
       if (target.error !== undefined) return refused(target.error)
       const entry = { kind: OUTBOX_KIND.start, folder: target.folder, messageDigest: digestOf(message) }
-      let sessionId
-      try {
-        sessionId = (await ctx.sessionController.create(target.request)).sessionId
-      } catch (error) {
-        // Nothing was created: not counted, not recorded (like a refusal).
-        logger.warn('session start failed (%s)', diagnosticOf(error))
-        return refused(OUTBOUND_ERROR.deliveryFailed)
-      }
+      const created = await createSession(target.request)
+      // Nothing was created: not counted, not recorded (like a refusal).
+      if (created === undefined) return refused(OUTBOUND_ERROR.deliveryFailed)
+      const { sessionId, ...placed } = created
       // Named before the first turn starts and before the watch watermark is read.
       const named = nameSession(sessionId, title)
       // A new session: every turn end in it counts (its log before the message has none).
       const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
-      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...named }, { sessionId, ...named }), sessionId, notify, since)
+      const outcome = { ...placed, ...named }
+      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...outcome }, { sessionId, ...outcome }), sessionId, notify, since)
     },
   }))
 

@@ -521,7 +521,11 @@ export const SESSION_INFO = Object.freeze({
   ellipsis: '…',
   assistantEvent: 'assistant/message',
   userEvent: 'user/message',
-  roles: Object.freeze({ user: 'user', assistant: 'assistant' }),
+  /**
+   * Who wrote a message read_session returns (DESIGN §5c): the user typing, that session's
+   * agent, Fishball, another session, or context DSH or a plugin added.
+   */
+  roles: Object.freeze({ user: 'user', assistant: 'assistant', fishball: 'fishball', agent: 'agent', context: 'context' }),
   textBlock: 'text',
   /** Session header marking a subagent's session, and how far up its parents are followed. */
   subagentOrigin: 'subagent',
@@ -558,6 +562,17 @@ export const TITLE_ERROR = Object.freeze({
   invalid: 'title-invalid',
   /** Anything else DSH refused (logged). */
   failed: 'title-failed',
+})
+
+/**
+ * start_session's `workspaceError` (DESIGN §5d): DSH created the session but could not add it
+ * to the workspace. The session still starts and shows under Ungrouped, like one started in a
+ * folder that is not a workspace.
+ */
+export const WORKSPACE_ERROR = Object.freeze({
+  attachFailed: 'workspace-attach-failed',
+  /** DSH's RemoteError code for this case; its details carry the new session's id. */
+  dshCode: 'session/workspace-attach-failed',
 })
 
 /** Host API under DSH's authenticated /api channel. */
