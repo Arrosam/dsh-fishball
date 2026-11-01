@@ -1907,6 +1907,7 @@ Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with sc
 | DET-03 | BVA (limit L−1) | whole entries that are a prefix of the full list (≥ 1, < n), then "and K more", K = the entries left out; the shown entries fit the limit |
 | DET-04 | EP (a limit between) | the same shape |
 | DET-05 | BVA (settings, 4 changes: L, L−1; a 400-char value) | whole at L; cut shape at L−1; the value still cut to `settingsPromptValueBytes` |
+| DET-07 | BVA (first entry longer than the limit 20, more behind it) | first entry cut with "…" to fit, then "and n−1 more" (manager decision 2026-11-02) |
 | DET-06 | BVA (one over-long entry: E, E−1, 20) | whole at E; at E−1 and 20 one entry cut with "…" (a prefix, at most limit + the ellipsis); no "and N more" |
 
 ### [rev11f-cap.test.mjs](rev11f-cap.test.mjs): own cards and `maxPendingApprovals` (Q-r11-cap-own)
@@ -1944,3 +1945,7 @@ Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with sc
 - **A-r11f-6. Withdrawing a card that is not Fishball's own, or already settled**: refused is all the tests require (`ok` not true); the code is not asserted. Reject's note reaching Fishball: only its next turn naming the request is asserted.
 - **A-r11f-7. Already-installed packages.** Whether add_plugin asks before or after it finds a package already installed is not stated, so the card-only cases use a package that is never installed (the fbtest-added-c fixture) and the one-time pass is shown with a stateless plugin tool (SCP-03), not with add_plugin.
 - **A-r11f-8. Policy never** (OWN-10) asserts the refusal shape only as `ok:false`, not waiting; DSH's own wording is not asserted.
+
+### Manager's decisions on the rev11f ambiguities (2026-11-02), applied
+
+A-r11f-1 confirmed (`sessionId` = Fishball's session, list under `detail`). A-r11f-4: "and N more" is not counted in the bound; the shown entries total at most the limit and the next whole entry would not fit; a cut entry's "…" counts inside the limit. A-r11f-5 is now DET-07. A-r11f-3: the notice must contain "run it again" and the request id.
