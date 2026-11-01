@@ -1382,6 +1382,7 @@ Two hosts: one for everything but the restart, one restarted so the session is r
 | ROL-02 ×1 | ST | one entry per message, in recorded order, newest last, nothing else in the session |
 | ROL-03 | EP | role `user` for the three user rows and no other |
 | ROL-04 | EP (real turn) | a scripted answer is `{role:'assistant', text}`; the typed message is `user`; the context DSH adds to a first turn is `context` with its kind; the whole list equals the oracle |
+| ROL-07 | EP (a turn with a tool call) | the assistant message that only calls a tool (no text) and the tool result are not listed; the typed message and the final answer are |
 | ROL-05 | EP (error guessing) | a relay with no senderSessionId is never `user` or `fishball` |
 | ROL-06 ×5 | EP + error guessing | no source at all: `{role:'context', text}`, no `source`/`from` key; an empty source object, a null, a numeric and an empty kind: `context`, no `from` |
 | ROL-10 | ST (live session) | typed turn, message_session, a relay from another session, a notice: the list equals the oracle; Fishball's own message is `fishball`; only the typed message is `user` |
