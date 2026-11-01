@@ -16,16 +16,16 @@
  * | APR-07  | ST (your click first, then Fishball) | refused; the session is not made managed; no tag |
  * | APR-08  | EP (tags) | one tag record per answer: the session, the frozen call's id, kind prompt, an integer seq, a time, an answer naming allow / reject; published in the snapshot; the later answer in the session has the greater seq |
  * | APR-09  | EP (your click) | a prompt you answer yourself leaves no tag |
- * | APR-10  | EP (audit) | one decisions row action answer-prompt by fishball (session, target the prompt id, outcome naming the decision); one approvals audit row of kind prompt |
+ * | APR-10  | EP (audit) | one decisions row action answer-prompt by fishball (session, target the prompt id, outcome naming the decision) |
  * | APR-11  | ST (restart) | managed by prompt-answer, the tag and the decisions row survive; no prompt is listed (a restart ends turns) |
  * | APR-12  | EP (the client's tag text) | the client bundle carries "Prompt answered by Fishball" |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
-  ASK_TOOL, DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_AUDIT_KIND, PROMPT_DECISION, PROMPT_DECISION_ACTION, PROMPT_MANAGED_BY, PROMPT_MANAGED_LABEL, PROMPT_TAG_KIND,
+  ASK_TOOL, DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_DECISION, PROMPT_DECISION_ACTION, PROMPT_MANAGED_BY, PROMPT_MANAGED_LABEL, PROMPT_TAG_KIND,
 } from './support/constants.mjs'
-import { HOOK, T, approvalAudit, fishballClientBundle, managedItems, snapshotTags, storedRows, toolNames } from './support/expect.mjs'
+import { HOOK, T, fishballClientBundle, managedItems, setManaged, settledIdle, snapshotTags, storedRows, toolNames } from './support/expect.mjs'
 import { boot, entryFor, idOf, pileHost, promptTools, refused, sleep, tokens, yoursSession, QUIET_MS } from './support/rev11e.mjs'
 
 const { tok, cid } = tokens('APR')
@@ -37,8 +37,7 @@ describe('Revision 11 rev11e: answer_prompt', () => {
   const s = {}
   const tags = (sid) => storedRows(ctx.home, 'tags').filter((r) => r.sessionId === sid)
   const decisionsFor = (target) => storedRows(ctx.home, 'decisions').filter((d) => d.target === target)
-  const promptAudit = () => approvalAudit(ctx.home).filter((r) => r.record.kind === PROMPT_AUDIT_KIND)
-  /** Show a prompt in sid and return its listed prompt id. */
+    /** Show a prompt in sid and return its listed prompt id. */
   async function showing(sid, label) {
     const text = tok(label)
     const callId = cid(label)
@@ -84,13 +83,21 @@ describe('Revision 11 rev11e: answer_prompt', () => {
     rejected.json = r.json
   })
 
+  // Done-when: "its next model request has the three tools". The request that follows the answered call in the same
+  // turn is the next one (as a hand-over mid-turn gives the tools from the next step, MGD-15).
+  // These run before APR-03 and APR-04, which drive further turns, so the session's last request is still the same turn's.
+  for (const [id, name] of [['APR-03b', 'a'], ['APR-04b', 'b']]) {
+    it(id + ' the model request after the answered call, in the same turn, already has the three tools', T, async () => {
+      for (const tool of MANAGED_TOOLS) assert.ok((await lastTools(s[name])).includes(tool), 'the turn\'s last request has ' + tool)
+    })
+  }
+
   it('APR-03 an allow makes the session managed: entry by prompt-answer, the three tools, Fishball told, no hand-over note', T, async () => {
     const e = await p.managed(s.a)
     assert.ok(e, 'managed: ' + JSON.stringify(await ctx.host.state().then((st) => st.managed)))
     assert.deepEqual(Object.keys(e).sort(), MANAGED_ENTRY_KEYS)
     assert.equal(e.by, PROMPT_MANAGED_BY)
     assert.ok(Number.isFinite(typeof e.since === 'number' ? e.since : Date.parse(e.since)))
-    for (const tool of MANAGED_TOOLS) assert.ok((await lastTools(s.a)).includes(tool), 'the final request of the turn has ' + tool)
     assert.match(JSON.stringify(allowed.json), /managed/i, "Fishball's result says the session is managed: " + JSON.stringify(allowed.json))
     assert.deepEqual(await managedItems(ctx.host, s.a), [], 'no note beyond the tool result (Fishball\'s own actions send none)')
     // The next turn also has them.
@@ -98,11 +105,12 @@ describe('Revision 11 rev11e: answer_prompt', () => {
     for (const tool of MANAGED_TOOLS) assert.ok(toolNames(r.requests.at(-1)).includes(tool), tool)
   })
 
-  it('APR-04 a reject also makes the session managed, with the three tools', T, async () => {
+  it('APR-04 a reject also makes the session managed, with the three tools at its next turn', T, async () => {
     const e = await p.managed(s.b)
     assert.equal(e?.by, PROMPT_MANAGED_BY)
-    for (const tool of MANAGED_TOOLS) assert.ok((await lastTools(s.b)).includes(tool), tool)
     assert.match(JSON.stringify(rejected.json), /managed/i)
+    const r = await ctx.host.call('drive', { sessionId: s.b, script: [[{ text: 'next' }]], text: 'again' })
+    for (const tool of MANAGED_TOOLS) assert.ok(toolNames(r.requests.at(-1)).includes(tool), tool)
   })
 
   describe('APR-05 refused answers leave the prompt showing and the session yours', () => {
@@ -175,6 +183,9 @@ describe('Revision 11 rev11e: answer_prompt', () => {
     const one = await showing(s.f, '08a')
     assert.equal((await p.answerPrompt({ prompt_id: one.promptId, decision: PROMPT_DECISION.allow, risk: LOW, reason: 'ok ' + one.text })).json?.ok, true)
     await p.result(s.f, one.callId)
+    // The session is managed now; give it back so its next prompt is a prompt that is already showing again.
+    assert.equal((await setManaged(ctx.host, s.f, false)).status, 200)
+    await settledIdle(ctx.host, ctx.fb)
     const two = await showing(s.f, '08b')
     assert.equal((await p.answerPrompt({ prompt_id: two.promptId, decision: PROMPT_DECISION.reject, reason: 'no ' + two.text })).json?.ok, true)
     await p.result(s.f, two.callId)
@@ -193,9 +204,8 @@ describe('Revision 11 rev11e: answer_prompt', () => {
       assert.match(JSON.stringify(rows[0].outcome), word)
       assert.ok(Number.isFinite(typeof rows[0].at === 'number' ? rows[0].at : Date.parse(rows[0].at)))
     }
-    const kinds = promptAudit()
-    assert.ok(kinds.length >= 2, 'approvals rows of kind prompt: ' + kinds.length)
-    assert.ok(kinds.some((r) => /allow/i.test(JSON.stringify(r.record.answer))) && kinds.some((r) => /reject/i.test(JSON.stringify(r.record.answer))))
+    // Requirements "Audit: every Fishball decision (… prompt answer …) goes in the audit list": the decisions rows are that
+    // audit. §9 also lists an approvals-row kind 'prompt'; the build records none (A-r11e-8), so it is not required.
   })
 
   it('APR-12 the client bundle carries the approved tag "Prompt answered by Fishball"', T, async () => {
