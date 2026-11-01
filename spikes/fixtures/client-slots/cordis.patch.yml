@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-client-slots
+      name: 'fishball-spike-client-slots'
+      config: {}
