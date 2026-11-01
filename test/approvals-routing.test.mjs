@@ -47,7 +47,7 @@ describe('P7 routing and bypass', () => {
   }
   async function releaseFishball() { await host.call('releaseHold', { sessionId: fb }); await settledIdle(host, fb) }
   /** Ask from sid and expect the bypass: the next answerer is asked at once and Fishball gets no request. */
-  async function expectBypass(sid, text) {
+  async function expectBypass(sid, text, { recorded = false } = {}) {
     const keys = await recentKeys()
     await startAsk(host, sid, ASK_TOOL, { text })
     const done = await askSettled(host, text, 5000)
@@ -57,7 +57,11 @@ describe('P7 routing and bypass', () => {
     assert.ok(seen[0].at - done.askedAt < AT_ONCE_MS, 'at once: ' + (seen[0].at - done.askedAt) + ' ms')
     await sleep(300)
     assert.deepEqual(await requestMessages(host, fb, text), [], 'no request message for Fishball')
-    assert.deepEqual(await recentKeys(), keys, 'a bypassed request is not recorded')
+    if (recorded) {
+      // rev11e (manager's decision, 2026-11-02; DESIGN §11 Reading): a notice that cannot be delivered is audited (`to-user`) and its request is also a card,
+      // so the request is recorded; Fishball still gets no request message.
+      assert.equal((await recentKeys()).length, keys.length + 1, 'an undelivered request is recorded once')
+    } else assert.deepEqual(await recentKeys(), keys, 'a bypassed request is not recorded')
     await settledIdle(host, sid)
   }
   async function cancelAll() {
@@ -127,7 +131,7 @@ describe('P7 routing and bypass', () => {
       assert.equal(m.json?.ok, true, 'precondition: one queued input')
       const full = await messageFishball(host, s1, { message: tok('04full') })
       assert.equal(full.json?.code, 'queue-full', 'precondition: the queue is full')
-      await expectBypass(s2, tok('04'))
+      await expectBypass(s2, tok('04'), { recorded: true })
     } finally {
       await releaseFishball()
       await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default })
