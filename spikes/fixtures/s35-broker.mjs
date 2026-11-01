@@ -61,12 +61,15 @@ export function argumentsOf(session, callId, toolName) {
  * @param opts.fishballId - () => the Fishball stand-in's session id.
  * @param opts.decideManaged - (req, args) => ({decision:'allow'|'reject', reason}) Fishball's scripted answer.
  * @param opts.variantB - () => boolean: use the pre-execute deny path for Fishball instead of service + post-execute.
+ * @param opts.contextMessage - (text) => UserMessage, for the hint after an allowed run_code inner call.
  */
-export function mountS35Broker(c, { fishballId, decideManaged, variantB = () => false }) {
+export function mountS35Broker(c, { fishballId, decideManaged, variantB = () => false, contextMessage }) {
   const marks = new Map() // callId -> { kind: 'managed-allow'|'managed-reject'|'card', ... }
   const cards = new Map() // cardId -> { sessionId, tool, key, state }
   const passes = new Map() // key -> cardId (one-time)
   const seenRaw = [] // DSH's own result text, before the post-execute rewrite (evidence)
+  const asked = [] // call ids the approval requests carried (evidence for run_code inner calls)
+  const postSeen = [] // call ids post-execute saw for the S35 tools (evidence)
   let nextCard = 1
   const keyOf = (sessionId, tool, args) => `${sessionId}|${tool}|${digest(canonical(args ?? null))}`
 
@@ -89,6 +92,7 @@ export function mountS35Broker(c, { fishballId, decideManaged, variantB = () => 
     const agent = req.agent
     if (!agent) return next()
     const args = argumentsOf(agent.session, req.callId, req.toolName)
+    asked.push({ callId: req.callId, tool: req.toolName, args })
     if (agent.id === fishballId()) return fishballAsks(agent, req.toolName, req.callId, args)
     const answer = await decideManaged(req, args)
     if (answer.decision === 'allow') { marks.set(req.callId, { kind: 'managed-allow' }); return S35.outcome.allowed }
@@ -108,12 +112,17 @@ export function mountS35Broker(c, { fishballId, decideManaged, variantB = () => 
   }, { prepend: true })
 
   c.on('tools/post-execute', async (exec, result, next) => {
+    if (Object.values(S35.tools).includes(exec.name)) postSeen.push({ callId: exec.callId, tool: exec.name, parent: exec.parent?.callId ?? exec.parent?.name ?? (exec.parent ? 'yes' : undefined) })
     const mark = marks.get(exec.callId)
     if (!mark) return next()
     marks.delete(exec.callId)
     const raw = result.content.map((b) => b.text ?? '').join('')
     seenRaw.push({ callId: exec.callId, tool: exec.name, mark: mark.kind, isError: result.isError, raw })
     const text = (t) => [{ type: 'text', text: t }]
+    // A run_code inner call (exec.parent set) hands its program the VALUE, not the content, so an
+    // appended content block never reaches the agent; DSH forwards a nested result's additionalContexts
+    // to the outer run_code result instead (dsh-tools commit(): exec.deferContext).
+    if (mark.kind === 'managed-allow' && exec.parent !== undefined) return { kind: 'accept', additionalContexts: [contextMessage(S35.text.allowed + ' ' + S35.text.hint)] }
     if (mark.kind === 'managed-allow') return { kind: 'accept', content: [...result.content, ...text('\n\n' + S35.text.allowed + ' ' + S35.text.hint)] }
     if (mark.kind === 'managed-reject') return { kind: 'block', feedback: text(S35.text.rejected(mark.reason) + '\n' + S35.text.hint) }
     if (mark.kind === 'card') return { kind: 'block', feedback: text(S35.text.waiting(mark.card)) }
@@ -121,7 +130,7 @@ export function mountS35Broker(c, { fishballId, decideManaged, variantB = () => 
   })
 
   return {
-    marks, cards, passes, seenRaw,
+    marks, cards, passes, seenRaw, asked, postSeen,
     /** The card a call filed (for a tool body that words its own outcome). */
     cardFor: (callId) => (marks.get(callId)?.kind === 'card' ? marks.get(callId).card : undefined),
     /** The user's Allow on a card: a one-time pass for the identical call. */

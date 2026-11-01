@@ -1,7 +1,7 @@
 {
   "id": "S35-result-wording",
-  "started": "2026-11-01T08:09:32.008Z",
-  "finished": "2026-11-01T08:09:35.872Z",
+  "started": "2026-11-01T08:38:23.840Z",
+  "finished": "2026-11-01T08:38:29.430Z",
   "runtime": "0.2.1-rc.2",
   "node": "v22.22.2",
   "pass": true,
@@ -9,72 +9,77 @@
   "Q1": {
     "allowGated": {
       "callId": "call_m_allow",
-      "ms": 189,
+      "ms": 165,
       "status": "idle",
       "log": "gated ran with allow-me\n\nFishball approved this call once. Next time, call ask_fishball before a call that needs approval, and explain why it is needed.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "gated ran with allow-me\n\nFishball approved this call once. Next time, call ask_fishball before a call that needs approval, and explain why it is needed.",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_m_allow\"},\"toolCallId\":\"call_m_allow\",\"content\":[{\"type\":\"text\",\"text\":\"gated ran with allow-me\"},{\"type\":\"text\",\"text\":\"\\n\\nFishball approved this call once. Next time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":false,\"id\":\"43eb86ba-c516-4f29-8896-a597c12baec6\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_m_allow\"},\"toolCallId\":\"call_m_allow\",\"content\":[{\"type\":\"text\",\"text\":\"gated ran with allow-me\"},{\"type\":\"text\",\"text\":\"\\n\\nFishball approved this call once. Next time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":false,\"id\":\"884b2081-dee1-4c72-a4b3-7d0edc499e47\"}"
       }
     },
     "rejectGated": {
       "callId": "call_m_reject",
-      "ms": 125,
+      "ms": 106,
       "status": "idle",
       "log": "Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
         "isError": true,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_m_reject\"},\"toolCallId\":\"call_m_reject\",\"content\":[{\"type\":\"text\",\"text\":\"Fishball rejected this call: deleting files outside the workspace is high risk\\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":true,\"id\":\"80811e10-4cd4-4b4f-a2fb-a04e9f5de8df\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_m_reject\"},\"toolCallId\":\"call_m_reject\",\"content\":[{\"type\":\"text\",\"text\":\"Fishball rejected this call: deleting files outside the workspace is high risk\\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":true,\"id\":\"3145c70e-fe28-489f-9660-6c8cf4b4e51f\"}"
       }
     },
     "rejectBodyAsk": {
       "callId": "call_m_reject_body",
-      "ms": 126,
+      "ms": 125,
       "status": "idle",
       "log": "Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
         "isError": true,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_m_reject_body\"},\"toolCallId\":\"call_m_reject_body\",\"content\":[{\"type\":\"text\",\"text\":\"Fishball rejected this call: deleting files outside the workspace is high risk\\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":true,\"id\":\"7e70a11e-e238-4981-967b-b534f06a76f9\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_m_reject_body\"},\"toolCallId\":\"call_m_reject_body\",\"content\":[{\"type\":\"text\",\"text\":\"Fishball rejected this call: deleting files outside the workspace is high risk\\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":true,\"id\":\"2cec4d6c-6c1f-407d-bf12-052412416f85\"}"
       }
     }
   },
   "Q2": {
     "addPlugin": {
       "callId": "call_f_add_1",
-      "ms": 145,
+      "ms": 144,
       "status": "idle",
       "log": "Waiting for your approval (card card_1). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Waiting for your approval (card card_1). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_1\"},\"toolCallId\":\"call_f_add_1\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_1). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"a39f5d2c-bb57-4892-bf7a-45fce82f5bcc\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_1\"},\"toolCallId\":\"call_f_add_1\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_1). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"ab49ad05-2bb7-4ae2-bbe7-b00ebe868312\"}"
       },
       "cardsPending": [
         "card_1"
       ]
     },
     "keepsHandling": {
-      "ms": 64,
+      "ms": 43,
       "status": "idle",
       "cardStillPending": true
     },
     "gated": {
       "callId": "call_f_gated_1",
-      "ms": 103,
+      "ms": 104,
       "status": "idle",
       "log": "Waiting for your approval (card card_2). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Waiting for your approval (card card_2). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": true,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_1\"},\"toolCallId\":\"call_f_gated_1\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_2). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"2004574b-00bb-43d5-a255-7903d01899bb\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_1\"},\"toolCallId\":\"call_f_gated_1\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_2). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"298f4d0e-b39c-460a-8428-b1eabf657152\"}"
       },
       "approvalAudited": [
         "approval/asked"
@@ -82,27 +87,29 @@
     },
     "gatedVariantB": {
       "callId": "call_f_gated_b1",
-      "ms": 124,
+      "ms": 104,
       "status": "idle",
       "log": "Error: Waiting for your approval (card card_3). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Error: Waiting for your approval (card card_3). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": true,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_b1\"},\"toolCallId\":\"call_f_gated_b1\",\"content\":[{\"type\":\"text\",\"text\":\"Error: Waiting for your approval (card card_3). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"94c266c3-ce68-46c2-98ab-7037324cde8d\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_b1\"},\"toolCallId\":\"call_f_gated_b1\",\"content\":[{\"type\":\"text\",\"text\":\"Error: Waiting for your approval (card card_3). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"689ee033-09d2-4803-8a72-cc5cf4ecd89f\"}"
       },
       "approvalAudited": false
     },
     "bodyAsk": {
       "callId": "call_f_body_1",
-      "ms": 123,
+      "ms": 104,
       "status": "idle",
       "log": "Waiting for your approval (card card_4). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Waiting for your approval (card card_4). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": true,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_body_1\"},\"toolCallId\":\"call_f_body_1\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_4). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"e2d92fd0-3fdf-4291-9332-2cbd0067040a\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_body_1\"},\"toolCallId\":\"call_f_body_1\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_4). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"490abc64-f1e0-4ce8-8795-0a2052efb627\"}"
       }
     }
   },
@@ -110,38 +117,41 @@
     "wakeText": "[approval] The user allowed card card_1. Run s35_add_plugin again with the identical arguments.",
     "retryIdentical": {
       "callId": "call_f_add_retry",
-      "ms": 123,
+      "ms": 104,
       "status": "idle",
       "log": "installed pkg-a",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "installed pkg-a",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_retry\"},\"toolCallId\":\"call_f_add_retry\",\"content\":[{\"type\":\"text\",\"text\":\"installed pkg-a\"}],\"isError\":false,\"id\":\"5702aa80-f9c7-4f5b-bc08-1282bc216a6e\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_retry\"},\"toolCallId\":\"call_f_add_retry\",\"content\":[{\"type\":\"text\",\"text\":\"installed pkg-a\"}],\"isError\":false,\"id\":\"3c2883d5-3892-42a4-8c86-96247a7a1866\"}"
       }
     },
     "retryDifferent": {
       "callId": "call_f_add_other",
-      "ms": 124,
+      "ms": 123,
       "status": "idle",
       "log": "Waiting for your approval (card card_5). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Waiting for your approval (card card_5). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_other\"},\"toolCallId\":\"call_f_add_other\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_5). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"928d13c9-c2c0-417e-997b-726cae793789\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_other\"},\"toolCallId\":\"call_f_add_other\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_5). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"2f489523-cf0f-4e8b-851c-0a1af3863cfc\"}"
       }
     },
     "retryIdenticalAgain": {
       "callId": "call_f_add_again",
-      "ms": 105,
+      "ms": 103,
       "status": "idle",
       "log": "Waiting for your approval (card card_6). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Waiting for your approval (card card_6). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_again\"},\"toolCallId\":\"call_f_add_again\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_6). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"e96295ad-ab8f-4d15-9fe9-f366f44a2735\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_add_again\"},\"toolCallId\":\"call_f_add_again\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_6). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"466c32b9-7f82-4bed-b98a-fddd5a484611\"}"
       }
     },
     "gatedDifferent": {
@@ -150,34 +160,37 @@
       "status": "idle",
       "log": "Waiting for your approval (card card_7). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "Waiting for your approval (card card_7). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
         "isError": true,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_diff\"},\"toolCallId\":\"call_f_gated_diff\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_7). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"7f860867-ed75-42a8-b183-d9634722f948\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_diff\"},\"toolCallId\":\"call_f_gated_diff\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_7). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":true,\"id\":\"bb9acbca-89b2-405c-ba35-832a85f45120\"}"
       }
     },
     "gatedReordered": {
       "callId": "call_f_gated_retry",
-      "ms": 122,
+      "ms": 105,
       "status": "idle",
       "log": "gated ran with x",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "gated ran with x",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_retry\"},\"toolCallId\":\"call_f_gated_retry\",\"content\":[{\"type\":\"text\",\"text\":\"gated ran with x\"}],\"isError\":false,\"id\":\"d04ff0c7-7ab9-4eaf-8cae-3b3ce6e8c7d2\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_gated_retry\"},\"toolCallId\":\"call_f_gated_retry\",\"content\":[{\"type\":\"text\",\"text\":\"gated ran with x\"}],\"isError\":false,\"id\":\"c77c0fae-781d-488d-a552-b6abe3b8d0c7\"}"
       }
     },
     "bodyAskRetry": {
       "callId": "call_f_body_retry",
-      "ms": 104,
+      "ms": 123,
       "status": "idle",
       "log": "body-ask ran with z",
       "model": {
+        "contextsAfter": [],
         "role": "tool",
         "text": "body-ask ran with z",
         "isError": false,
-        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_body_retry\"},\"toolCallId\":\"call_f_body_retry\",\"content\":[{\"type\":\"text\",\"text\":\"body-ask ran with z\"}],\"isError\":false,\"id\":\"7f96aefc-9969-4ba0-86fd-53191b78eaec\"}"
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_f_body_retry\"},\"toolCallId\":\"call_f_body_retry\",\"content\":[{\"type\":\"text\",\"text\":\"body-ask ran with z\"}],\"isError\":false,\"id\":\"8de65730-f9ae-4ea8-9c64-d72ec955a866\"}"
       }
     },
     "cards": {
@@ -304,9 +317,242 @@
       "mark": "pass",
       "isError": false,
       "raw": "body-ask ran with z"
+    },
+    {
+      "callId": "call_p_allow:ptc:1",
+      "tool": "s35_other_gated",
+      "mark": "managed-allow",
+      "isError": false,
+      "raw": "gated ran with allow-me"
+    },
+    {
+      "callId": "call_p_reject:ptc:1",
+      "tool": "s35_other_gated",
+      "mark": "managed-reject",
+      "isError": true,
+      "raw": "Error: the user rejected tool \"s35_other_gated\""
+    },
+    {
+      "callId": "call_p_reject_body:ptc:1",
+      "tool": "s35_other_body_ask",
+      "mark": "managed-reject",
+      "isError": false,
+      "raw": "other plugin: approval rejected"
+    },
+    {
+      "callId": "call_pf_gated:ptc:1",
+      "tool": "s35_other_gated",
+      "mark": "card",
+      "isError": true,
+      "raw": "Error: the user rejected tool \"s35_other_gated\""
+    },
+    {
+      "callId": "call_pf_uncaught:ptc:1",
+      "tool": "s35_other_gated",
+      "mark": "card",
+      "isError": true,
+      "raw": "Error: the user rejected tool \"s35_other_gated\""
+    },
+    {
+      "callId": "call_pf_gated_diff:ptc:1",
+      "tool": "s35_other_gated",
+      "mark": "card",
+      "isError": true,
+      "raw": "Error: the user rejected tool \"s35_other_gated\""
+    },
+    {
+      "callId": "call_pf_gated_retry:ptc:1",
+      "tool": "s35_other_gated",
+      "mark": "pass",
+      "isError": false,
+      "raw": "gated ran with p"
     }
   ],
   "fishballEvents": 30,
+  "PTC": {
+    "allow": {
+      "callId": "call_p_allow",
+      "ms": 309,
+      "status": "idle",
+      "log": "gated ran with allow-me",
+      "model": {
+        "contextsAfter": [
+          {
+            "source": "fishball-notice",
+            "text": "Fishball approved this call once. Next time, call ask_fishball before a call that needs approval, and explain why it is needed."
+          }
+        ],
+        "role": "tool",
+        "text": "gated ran with allow-me",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_p_allow\"},\"toolCallId\":\"call_p_allow\",\"content\":[{\"type\":\"text\",\"text\":\"gated ran with allow-me\"}],\"isError\":false,\"id\":\"f7a308be-f2b4-4a9c-a304-2b8678baa70a\"}"
+      },
+      "askedCallIds": [
+        "call_p_allow:ptc:1"
+      ],
+      "postCallIds": [
+        "call_p_allow:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "reject": {
+      "callId": "call_p_reject",
+      "ms": 233,
+      "status": "idle",
+      "log": "THREW: Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "THREW: Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_p_reject\"},\"toolCallId\":\"call_p_reject\",\"content\":[{\"type\":\"text\",\"text\":\"THREW: Fishball rejected this call: deleting files outside the workspace is high risk\\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":false,\"id\":\"8f32fe38-6d67-4538-98f3-1b9ba5bfd458\"}"
+      },
+      "askedCallIds": [
+        "call_p_reject:ptc:1"
+      ],
+      "postCallIds": [
+        "call_p_reject:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "rejectBodyAsk": {
+      "callId": "call_p_reject_body",
+      "ms": 217,
+      "status": "idle",
+      "log": "THREW: Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "THREW: Fishball rejected this call: deleting files outside the workspace is high risk\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_p_reject_body\"},\"toolCallId\":\"call_p_reject_body\",\"content\":[{\"type\":\"text\",\"text\":\"THREW: Fishball rejected this call: deleting files outside the workspace is high risk\\nNext time, call ask_fishball before a call that needs approval, and explain why it is needed.\"}],\"isError\":false,\"id\":\"82295382-99d5-4d6b-932e-689396b13338\"}"
+      },
+      "askedCallIds": [
+        "call_p_reject_body:ptc:1"
+      ],
+      "postCallIds": [
+        "call_p_reject_body:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "waitingGated": {
+      "callId": "call_pf_gated",
+      "ms": 251,
+      "status": "idle",
+      "log": "THREW: Waiting for your approval (card card_8). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "THREW: Waiting for your approval (card card_8). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_pf_gated\"},\"toolCallId\":\"call_pf_gated\",\"content\":[{\"type\":\"text\",\"text\":\"THREW: Waiting for your approval (card card_8). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"ba2b89f4-9e7e-4969-bb0a-b4bff7e06ace\"}"
+      },
+      "askedCallIds": [
+        "call_pf_gated:ptc:1"
+      ],
+      "postCallIds": [
+        "call_pf_gated:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "waitingUncaught": {
+      "callId": "call_pf_uncaught",
+      "ms": 215,
+      "status": "idle",
+      "log": "Error: code run failed (exception): ToolCallError: Waiting for your approval (card card_9). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\n    at bindingFailure (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:902:22)\n    at Object.reject (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:968:15)\n    at file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:932:16\n    at JsonChannel.failed [as receive] (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1094:37)\n    at Socket.onData (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:264:10)\n    at Socket.emit (node:events:519:28)\n    at addChunk (node:internal/streams/readable:561:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)\n    at Readable.push (node:internal/streams/readable:392:5)\n    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)\nFile sandbox: danger-full-access.",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "Error: code run failed (exception): ToolCallError: Waiting for your approval (card card_9). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\n    at bindingFailure (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:902:22)\n    at Object.reject (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:968:15)\n    at file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:932:16\n    at JsonChannel.failed [as receive] (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1094:37)\n    at Socket.onData (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:264:10)\n    at Socket.emit (node:events:519:28)\n    at addChunk (node:internal/streams/readable:561:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)\n    at Readable.push (node:internal/streams/readable:392:5)\n    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)\nFile sandbox: danger-full-access.",
+        "isError": true,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_pf_uncaught\"},\"toolCallId\":\"call_pf_uncaught\",\"content\":[{\"type\":\"text\",\"text\":\"Error: code run failed (exception): ToolCallError: Waiting for your approval (card card_9). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\\n    at bindingFailure (file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:902:22)\\n    at Object.reject (file:///Users/samuel/Library/Application%20Support/DSH/data/versio"
+      },
+      "askedCallIds": [
+        "call_pf_uncaught:ptc:1"
+      ],
+      "postCallIds": [
+        "call_pf_uncaught:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "waitingAdd": {
+      "callId": "call_pf_add",
+      "ms": 212,
+      "status": "idle",
+      "log": "Waiting for your approval (card card_10). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "Waiting for your approval (card card_10). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_pf_add\"},\"toolCallId\":\"call_pf_add\",\"content\":[{\"type\":\"text\",\"text\":\"Waiting for your approval (card card_10). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"c569c901-1a79-4863-856c-103479956454\"}"
+      },
+      "askedCallIds": [
+        "call_pf_add:ptc:1"
+      ],
+      "postCallIds": [
+        "call_pf_add:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "retryDifferent": {
+      "callId": "call_pf_gated_diff",
+      "ms": 208,
+      "status": "idle",
+      "log": "THREW: Waiting for your approval (card card_11). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "THREW: Waiting for your approval (card card_11). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_pf_gated_diff\"},\"toolCallId\":\"call_pf_gated_diff\",\"content\":[{\"type\":\"text\",\"text\":\"THREW: Waiting for your approval (card card_11). The call did not run. You will be told when the user answers; if they allow it, make the identical call again.\"}],\"isError\":false,\"id\":\"4a81e895-523c-4cad-9240-63c84572845e\"}"
+      },
+      "askedCallIds": [
+        "call_pf_gated_diff:ptc:1"
+      ],
+      "postCallIds": [
+        "call_pf_gated_diff:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "retryIdentical": {
+      "callId": "call_pf_gated_retry",
+      "ms": 215,
+      "status": "idle",
+      "log": "gated ran with p",
+      "model": {
+        "contextsAfter": [],
+        "role": "tool",
+        "text": "gated ran with p",
+        "isError": false,
+        "raw": "{\"role\":\"tool\",\"source\":{\"kind\":\"tool\",\"callId\":\"call_pf_gated_retry\"},\"toolCallId\":\"call_pf_gated_retry\",\"content\":[{\"type\":\"text\",\"text\":\"gated ran with p\"}],\"isError\":false,\"id\":\"048b4b8a-d690-443b-b83a-ff2f9aeae0dc\"}"
+      },
+      "askedCallIds": [
+        "call_pf_gated_retry:ptc:1"
+      ],
+      "postCallIds": [
+        "call_pf_gated_retry:ptc:1"
+      ],
+      "sameId": true,
+      "innerId": true,
+      "argsFound": true
+    },
+    "marksLeft": []
+  },
   "verdict": {
     "Q1_allow_hint": true,
     "Q1_reject_reason_hint": true,
@@ -321,6 +567,16 @@
     "Q3_pass_one_time": true,
     "Q3_gated_different_not": true,
     "Q3_gated_key_order": true,
-    "Q3_body_ask_retry_runs": true
+    "Q3_body_ask_retry_runs": true,
+    "PTC_same_call_id": true,
+    "PTC_allow_hint": true,
+    "PTC_reject_reason": true,
+    "PTC_reject_body_ask": true,
+    "PTC_waiting_gated": true,
+    "PTC_waiting_uncaught": true,
+    "PTC_waiting_add": true,
+    "PTC_different_not": true,
+    "PTC_identical_runs": true,
+    "PTC_no_marks_left": true
   }
 }
