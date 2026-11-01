@@ -141,11 +141,12 @@ describe('Revision 11 rev11d: creating grants and what they cover', () => {
     assert.match(await run(args), /allowed-once/, 'second repeat')
     assert.match(await run({ pad: 'p', text }), /allowed-once/, 'key order does not matter')
     assert.equal(await g.fbSteps(), steps, 'no Fishball step for the covered repeats')
-    for (const changed of [{ text, pad: 'q' }, { text: text + '!', pad: 'p' }, { text }]) {
+    // Each changed call carries its own unique marker, so its notice is not confused with the creating request's.
+    for (const [changed, needle] of [[{ text, pad: 'p', extra: 'e' + tok('07e') }, 'e' + 'GRT07e'], [{ text: text + '!' + tok('07t'), pad: 'p' }, '!GRT07t'], [{ text, pad: 'q' + tok('07q') }, 'qGRT07q']]) {
       const id = cid('07c')
       await settledIdle(ctx.host, y)
       await ctx.host.call('driveStart', { sessionId: y, script: [[{ tool: ASK_TOOL, args: changed, id }], [{ text: 'done' }]] })
-      const req = await waitRequest(ctx.host, ctx.fb, changed.text)
+      const req = await waitRequest(ctx.host, ctx.fb, needle)
       assert.ok(req, 'a changed call reaches Fishball: ' + JSON.stringify(changed))
       await settledIdle(ctx.host, ctx.fb)
       await g.finishRejected(req.id, y, id)
@@ -208,9 +209,11 @@ describe('Revision 11 rev11d: creating grants and what they cover', () => {
         const requestId = await g.direct(x, 'bash', cmd, id)
         const args = valid()
         mutate(args)
-        const j = await g.answer(requestId, args)
-        assert.equal(j.ok, false, 'refused: ' + JSON.stringify(j))
-        assert.equal(typeof j.code, 'string', 'with a code: ' + JSON.stringify(j))
+        const { json: j, text } = await g.answerRaw(requestId, args)
+        // Refused either by the code (ok:false with a code) or by the tool's own schema ("invalid arguments", e.g. an enum): both leave the request pending.
+        const refused = j ? j.ok === false && typeof j.code === 'string' : /invalid arguments/.test(text)
+        if (!refused) await g.t.stop(x)
+        assert.ok(refused, 'refused: ' + text)
         assert.equal(grantRows().length, before, 'no grant row')
         assert.equal(decisions().filter((d) => d.action === GRANT_ACTION.grant).length, decisionsBefore)
         // Still pending: a valid answer is accepted.

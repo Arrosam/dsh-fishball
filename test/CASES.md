@@ -1752,7 +1752,7 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 | GRT-03 | EP | item 18 (accepted risk) | `npm test && git push` is covered |
 | GRT-04 ×8 | BVA/EP (command against prefix `npm test`) | item 18 (raw text) | longer, `npm testing`, exactly the prefix: covered; `npm tes`, `npm run test`, `NPM test`, `npm  test`, `echo npm test`: to Fishball |
 | GRT-05, 06 | EP | §7a.8 "same session, tool" | the same command in pwsh, or in another session: not covered |
-| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or a missing argument: to Fishball |
+| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or an extra argument: to Fishball |
 | GRT-08 ×3 | EP (pwsh, terminal_send; a trailing `*`) | Q-r11-prefix-tools; manager 2026-11-02 | prefix grant accepted and covers a following command; a trailing `*` is dropped |
 | GRT-09 ×5 | EP (run_code, fbtest_ask, terminal_open prefix refused; exact on run_code and terminal_open accepted) | Q-r11-prefix-tools, requirements "Prefix grants" | prefix refused, `ok:false`, request still pending (a reject works), no grant row; an exact grant on run_code is accepted and covers |
 | GRT-10 ×10 | DT (refused answers) | §7a.8 "an end time is required and must be in the future", `allow`'s rules | no end time; past (an hour, one second); not a time; no grant object; unknown kind; prefix kind with no or an empty prefix; a prefix that is not the start of the asking command; risk high; empty reason: `ok:false` with a code, no grant row, no `decisions` row, request still pending |
