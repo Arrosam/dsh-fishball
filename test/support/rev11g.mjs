@@ -122,7 +122,10 @@ export function qTools(ctx, names) {
     route: (body, opts) => ctx.host.post(QUESTION_API.answer, body, opts),
     /** Fishball's model-request count and intake item count: a question Fishball was not told about moves neither. */
     async fbWork() { return { steps: (await ctx.host.call('requests', { sessionId: ctx.fb })).length, items: ((await ctx.host.state())?.intake?.items ?? []).length } },
-    tagsOf: (callId) => storedRows(ctx.home, 'tags').filter((r) => r.callId === callId),
+    /** The tags that record Fishball's ANSWER to a question or plan review (kind question / plan-review). */
+    tagsOf: (callId) => storedRows(ctx.home, 'tags').filter((r) => r.callId === callId && ['question', 'plan-review'].includes(r.kind)),
+    /** Every tag of a call, whatever its kind (e.g. 'sent-to-you' when Fishball sends it to you). */
+    allTagsOf: (callId) => storedRows(ctx.home, 'tags').filter((r) => r.callId === callId),
     untilTag: (callId, timeoutMs = 8000) => until(() => q.tagsOf(callId)[0] ?? false, timeoutMs, 100),
     allEvents: async (sid) => (await ctx.host.call('inspect', { sessionId: sid, events: true })).events ?? [],
     /** Stop the turn of a session the way the Stop button does. */

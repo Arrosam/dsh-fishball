@@ -15,7 +15,7 @@
  * | RST-01  | ST (blocking question and plan review) | no pile card after the start; the old ids answer 409 expired; once resumed the interrupted call has a result saying it was interrupted; the sessions stay managed |
  * | RST-02  | ST (timed questions, managed) | each has a pile card again after the start: kind question, its session, its call id |
  * | RST-03  | EP (timed question in a session that is yours) | no card |
- * | RST-04  | ST (Fishball answers a rebuilt card) | answer_question is accepted; the session gets one user-question-reply message with that call id and the answers; the card leaves; a question tag |
+ * | RST-04  | ST (Fishball answers a rebuilt card) | refused `expired` (a rebuilt card is yours; Fishball is not asked again); you answer on the pile: the session gets one user-question-reply message with that call id; the card leaves |
  * | RST-05  | ST (you answer a rebuilt card on the pile) | the route answers 200; the session gets the reply; the card leaves |
  * | RST-06  | ST (you answer the continued question in the session first) | the card leaves without Fishball's help; Fishball's late answer is refused |
  */
@@ -103,15 +103,18 @@ describe('Revision 11 rev11g: a restart with questions open', () => {
     assert.equal((await q.pile()).some((c) => c.sessionId === S.c), false)
   })
 
-  it('RST-04 Fishball answers a rebuilt card: the session gets the reply with its call id; the card leaves; a question tag', LONG, async () => {
+  it('RST-04 a rebuilt card is yours: Fishball\'s answer on it is expired (manager-confirmed reading), the card stays', LONG, async () => {
     const r = await q.fbAnswer({ question_id: QID.b, answers: A.single })
-    assert.equal(r.json?.ok, true, r.result.text)
+    assert.equal(refused(r), true, r.result.text)
+    assert.equal(r.json?.code, 'expired')
+    assert.ok(await q.pileCard(S.b, 1000), 'the card stays')
+    assert.equal((await replies(S.b, ID.b)).length, 0)
+    // Fishball may still add a note, and you answer it on the pile.
+    const ans = await q.route({ questionId: QID.b, answers: A.single })
+    assert.equal(ans.status, 200, ans.text)
     assert.ok(await until(async () => (await replies(S.b, ID.b)).length > 0, 20000, 200), 'the session got the reply')
-    const [reply] = await replies(S.b, ID.b)
-    assert.ok(reply.text.includes('Blue'), reply.text)
     assert.equal((await replies(S.b, ID.b)).length, 1, 'once')
     assert.ok(await q.noPileCard(S.b))
-    assert.equal((await q.untilTag(ID.b, 15000))?.kind, 'question')
   })
 
   it('RST-05 you answer a rebuilt card on the pile: the route answers 200; the session gets the reply; the card leaves', LONG, async () => {
