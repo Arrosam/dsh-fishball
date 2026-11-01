@@ -271,7 +271,7 @@ export async function apply(ctx, config) {
   const isManaged = (sessionId) => managedRegistry.isManaged(sessionId)
   const messagesOn = () => catalog.isAppliedOn(FEATURE_KEY.messages)
   const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: messagesOn, isManaged, manage })
-  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor, manage, isManaged })
+  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor, manage, isManaged, isEnabled: messagesOn })
   const approvalsOn = () => catalog.isAppliedOn(FEATURE_KEY.approvals)
   /** ask_fishball and list_user_messages; created with the broker below. */
   let deskTools = []

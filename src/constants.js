@@ -373,6 +373,8 @@ export const MANAGED_ERROR = Object.freeze({
  */
 export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw', answerQuestion: 'answer-question', stop: 'stop', redirect: 'redirect' })
 export const DECISION_OK = 'ok'
+/** A stop_session that found no turn running (rev11h): a no-op, told apart from a real stop in the audit. */
+export const DECISION_IDLE = 'idle'
 
 /** Watches (DESIGN §5c, §9 watches). */
 export const WATCH_CONDITION = Object.freeze({ finished: 'finished', perTurn: 'per-turn' })
@@ -738,6 +740,8 @@ export const OUTBOUND_ERROR = Object.freeze({
   deliveryFailed: 'delivery-failed',
   /** stop_session / redirect_session on a session that is yours (rev11h, §7a.12). */
   notManaged: NOT_MANAGED,
+  /** stop_session / redirect_session in flight when Session messages went off (as release_session). */
+  featureOff: FEATURE_OFF,
 })
 
 /** Host API under DSH's authenticated /api channel. */

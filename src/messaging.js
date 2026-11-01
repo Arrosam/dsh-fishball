@@ -50,8 +50,8 @@ import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { AGENT_IDLE, CHANGED_BY, DECISION_ACTION, DECISION_OK, MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
-import { AuditLog } from './audit.js'
+import { AGENT_IDLE, CHANGED_BY, DECISION_ACTION, DECISION_IDLE, DECISION_OK, MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
+import { AuditLog, recordDecision } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, lastSeqOf, NO_EVENTS_SEQ, rootSessionOf } from './session-info.js'
 import { sessionAuthor } from './author.js'
@@ -218,9 +218,11 @@ class UnconfirmedDelivery extends Error {}
  * @param deps.watch - (sessionId, by, since?) => Promise<{ watch } | { watchError }>.
  * @param deps.manage - (sessionId, by) => Promise: make the target managed (MANAGED_BY).
  * @param deps.isManaged - (sessionId) => whether Fishball manages that session (stop and redirect).
+ * @param deps.isEnabled - () => whether Session messages runs (stop and redirect cannot be undone,
+ *   so a call in flight when it went off is refused, as release_session's is).
  * @returns { snapshot() } for the settings page.
  */
-export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch, manage, isManaged }) {
+export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch, manage, isManaged, isEnabled }) {
   const outbox = new AuditLog(() => store.outbox, () => readLimits().auditEntriesKept)
   const decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
   /**
@@ -247,8 +249,9 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     return undefined
   }
 
-  /** The refusal stop and redirect share, or undefined: Fishball's own session, or one that is yours. */
+  /** The refusal stop and redirect share, or undefined: Session messages off, Fishball's own session, or one that is yours. */
   const notManagedTarget = (sessionId) => {
+    if (!isEnabled()) return OUTBOUND_ERROR.featureOff
     if (sessionId === assistantId()) return OUTBOUND_ERROR.isFishball
     if (!isManaged(sessionId)) return OUTBOUND_ERROR.notManaged
     return undefined
@@ -256,7 +259,9 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
 
   /**
    * End the session's turn through the Stop button's own path (S34). A session with no live
-   * agent runs no turn, and an idle one is a no-op in DSH.
+   * agent runs no turn, and an idle one is a no-op in DSH. DSH reports a compaction in progress
+   * as idle, though its cancel aborts that work too, as the Stop button's does: such a stop
+   * reports false (the agent's phase is private, so there is nothing finer to read).
    * @returns whether a turn was running.
    */
   const stopTurn = async (sessionId) => {
@@ -267,15 +272,8 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     return running
   }
 
-  /** Fishball's stop or redirect in its decisions audit (§9); a failed write is logged, the action stands. */
-  const decide = async (action, sessionId, reason) => {
-    const rationale = typeof reason === 'string' ? reason.trim().slice(0, readLimits().rationaleChars) : ''
-    try {
-      await decisions.append({ action, sessionId, by: CHANGED_BY.fishball, ...(rationale ? { rationale } : {}), at: new Date().toISOString(), outcome: DECISION_OK }, [action])
-    } catch (error) {
-      logger.warn('decision audit failed (%s)', diagnosticOf(error))
-    }
-  }
+  /** Fishball's stop or redirect in its decisions audit (§9). */
+  const decide = (action, sessionId, { reason, outcome } = {}) => recordDecision(decisions, logger, { action, sessionId, by: CHANGED_BY.fishball, reason, outcome, rationaleChars: readLimits().rationaleChars })
 
   /** message_session's way in: the message lands at the session's next step. */
   const steer = (agent, input) => agent.steer(input)
@@ -389,7 +387,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       const refusal = notManagedTarget(sessionId)
       if (refusal !== undefined) return refused(refusal)
       const stopped = await stopTurn(sessionId)
-      await decide(DECISION_ACTION.stop, sessionId, reason)
+      await decide(DECISION_ACTION.stop, sessionId, { reason, outcome: stopped ? DECISION_OK : DECISION_IDLE })
       return ok({ sessionId, stopped })
     },
   }))
