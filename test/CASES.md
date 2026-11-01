@@ -1664,7 +1664,7 @@ Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waitin
 | PIL-04 | EP (quote + one question round + escalate) | item 14 | the card shows the quoted message (id and full text), the thread `[question, reply]` in order, Fishball's reason as `note`; `callId` is the reply call's (the call that is waiting now) |
 | PIL-05 | BVA (`argumentExcerptBytes` 16 / default, 200-byte arguments) | §9 "arguments (excerpt)" | cut: text of at most 16 bytes + an ellipsis, a prefix of the real arguments; default: whole |
 | PIL-06 | EP (markup in arguments, reason, note) | done-when "nothing renders as markup" | the snapshot holds the exact text; the client draws it as plain text (drawing is a hand check) |
-| PIL-07 | EP (direct call, Fishball escalates) | §7a.6 "Built in rev11e" | the stock prompt answers; no card (rev11e flips this) |
+| PIL-07 | EP (direct call, Fishball escalates) | §7a.6 "Built in rev11e" | **changed in rev11e:** a card of kind `direct` and the (held) stock prompt both show; your click in the session clears the card (was: the stock prompt answers; no card) |
 | PIL-08 | ST (SSE) | §10e "fed by the state stream" | a frame holds the card; after the answer a later frame does not |
 | PIL-09 ×4 | BVA (`pileMaxHeightVh` 45 / 1 / 0 / 1.5) | §16 new limits, "Rules" | default 45 in `state.limits`; 1 accepted live; 0 and 1.5 refused, value stays |
 
@@ -1794,3 +1794,71 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 - **A-r11d-6. Expiry rows.** Expiry is checked on the grants row (`expired`/`ended`, `endedBy: 'expiry'`), not on a `decisions` row; the design says expiry is audited without naming the table.
 
 - **A-r11d-7. Manager's readings (2026-11-02), built in:** `terminal_open` takes exact grants only; a prefix is the start of the asking command; a trailing `*` is dropped; expiry writes no `decisions` row (END-01 checks the grants row only).
+
+
+## Revision 11 rev11e cases (prompts already showing, `answer_prompt`, cards for direct calls)
+
+Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a.1, §7a.5, §7a.6, §7a.9, §9, §10e, §14 row rev11e, §16 and spike S33, before the build existed. No implementation was read. The harness change: the scripted stock prompt can be **held** (`setApprover({outcome:'hold'})`, `releaseApproval` = your click), which stands in for a prompt showing in a browser. The worker now (a) reports `closed: true` in the `approvals` records once a prompt's signal aborts (the plugin answered it, S33) and (b) drops a closed prompt from the held list. Helpers: [support/rev11e.mjs](support/rev11e.mjs).
+
+### [rev11e-frozen.test.mjs](rev11e-frozen.test.mjs): `list_frozen_sessions` (item 20, §7a.9)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| FRZ-01 | EP (nothing showing) | §7a.9 | `ok`, no entry |
+| FRZ-02 | EP (a prompt in a session that is yours) | item 20, done-when 1 | listed with the session, tool `fbtest_ask`, the exact arguments, a prompt id; when the prompt appeared Fishball took no step (model-request count, intake items, notices and audit rows unchanged over 1 s); no card; the session is still yours |
+| FRZ-03 | EP (quotes, markup, unicode, several fields) | "exact arguments" | listed arguments deep-equal the call's |
+| FRZ-04 | EP (two sessions) | §7a.9 | two entries, distinct ids, own session and arguments; your click removes only the clicked one |
+| FRZ-05, 06 | ST (your Allow once / Reject) | done-when "after your own click the entry leaves the list" | the call gets your outcome; entry gone; Fishball told nothing; a late `answer_prompt` is refused; session stays yours |
+| FRZ-07 | ST (turn stopped) | §7a.9 "asker's own abort" | entry gone; late `answer_prompt` refused; no decisions row |
+
+### [rev11e-answer.test.mjs](rev11e-answer.test.mjs): `answer_prompt` and the fifth way in (items 2, 20; §7a.9, §9, §16)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| APR-01 | EP (allow) | done-when | ok; prompt closed (signal aborted, nothing held); the call ran with `allowed-once`; entry gone |
+| APR-02 | EP (reject + reason) | done-when | ok; prompt closed; the agent's result carries the reason and not "the user rejected"; entry gone |
+| APR-03, 04 | ST (yours –answer→ managed) | item 2, done-when | snapshot entry `{sessionId, since, by:'prompt-answer', title}`; the session's final request of the turn and its next turn list the three tools; Fishball's result mentions the session is managed; no `fishball/managed` note |
+| APR-05 ×6 | DT (refused answers) | §7a.9 "reject needs a reason", "`allow` follows `allow`'s code rules"; §7a.3 | reject with no / blank reason, allow with no reason, allow with risk high, a decision other than allow/reject, an unknown prompt id: each refused; prompt still listed and not closed; session still yours; no tag, no decisions row |
+| APR-06 | ST (second answer) | "only pending ids, once" | refused (already answered / expired); first outcome stands; one tag, one decisions row |
+| APR-07 | ST (your click first) | S33 "first answer wins" | Fishball's answer refused; session not managed; no tag; no decisions row |
+| APR-08 | EP (tags) | Q-r11-tag-scope, §9 | tag record `{sessionId, callId = the frozen call, kind:'prompt', seq (integer), answer naming the decision, at}`; published in the snapshot; two answers in one session: later `seq` is greater |
+| APR-10 | EP (audit) | §7a.13, §9 | one `decisions` row `answer-prompt` by `fishball`, `sessionId`, `target` = prompt id, `outcome` naming the decision; approvals audit rows of kind `prompt` with allow and reject |
+| APR-12 | EP | Q-r11-managed-tag-prompt | the served client bundle contains "Prompt answered by Fishball" |
+| APR-11 | ST (restart) | defaults "Restarts" | managed by `prompt-answer` survives; tag and decisions rows unchanged; no prompt listed |
+
+### [rev11e-direct.test.mjs](rev11e-direct.test.mjs): cards for direct calls kept in step with the stock prompt (item 15, §7a.6)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| DCD-01 | EP (escalate) | item 15, done-when | a card of kind `direct` with the documented keys, the call's id, the exact arguments, AND the stock prompt showing; the agent waits; no further Fishball step or notice |
+| DCD-02 | ST (Allow once on the card) | item 15 | route 200; prompt closes; card leaves; the call runs; `decisions` allow-once by user; audit `escalate` |
+| DCD-03 | ST (Reject + note on the card) | defaults "Reject takes an optional note" | prompt closes; card leaves; the agent's result carries the note and not `allowed-once` |
+| DCD-04, 05 | ST (your click in the session) | item 15 "answering in either place clears both" | card leaves; the call gets your outcome; a later click on the card is 409 `expired`; one `decisions` row by user; no new notice |
+| DCD-06 | BVA (`approvalAnswerSeconds` 1) | item 11 | card and prompt appear after ≥ 1 s; the card's Reject closes both; audit `timeout` |
+| DCD-07 | ST (turn stopped) | item 16 | card leaves; prompt closes; a later card click is 409 |
+| DCD-08 | BVA (`maxPendingApprovals` 2: ask card + direct card, then a third) | defaults "Card cap" | the third shows the stock prompt only: no card, no notice; your click answers it |
+| DCD-09 | ST (Permission requests off while both show) | §7a.5 "keeps the prompt" | the prompt stays; your click answers the call; no card remains afterwards |
+| DCD-10 | EP (second answer) | §7a.6 "first answer wins" | after the card answered, a second card click is 409 and nothing is left to click; one decisions row |
+
+### Older cases changed by rev11e
+
+| file | change | why |
+|---|---|---|
+| rev11c-pile PIL-07 | flipped: a direct call sent to you now shows a card of kind `direct` and the (held) stock prompt; your click in the session clears the card | §7a.6 "Built in rev11e", rev11e "done when" |
+| rev11b-direct DIR-05, DIR-06 | assertions unchanged (the stock prompt answers; decisions row by user; audit `escalate` / `timeout`); the card now also exists and leaves with the answer, which rev11e-direct checks | same |
+| ASK-09, ASK-10, ASK-13, rev11c LVE-05 third request | unchanged on purpose: `unavailable` / `over-capacity` retries go straight to the stock prompt through a to-you ticket (no Fishball involvement), and past the cap the stock prompt shows alone | §7a.5, §7a.6 "Cap", "To-you ticket" |
+| worker.mjs approver | held prompts report `closed` and leave the held list when their signal aborts; `approvals` records gain a `closed` flag | harness only; no expected value of an older case changes |
+
+### Not automated (rev11e)
+
+- The tag text "Answered by Fishball: <decision>" in the turn tail, the "Prompt answered by Fishball" label on the managed list's row, and the buttons on the session's own prompt: client rendering, by hand (APR-12 only checks the bundle carries the label).
+- Closing a prompt in a real browser (S33 did this); here the signal abort is the observable.
+
+### Ambiguities (rev11e)
+
+- **A-r11e-1. Answer shapes.** The design names `prompt_id`, `decision`, `reason` (and, by "follows `allow`'s code rules", `risk`) for `answer_prompt`, and "session, tool, exact arguments" for the list, without key names. The tests read entries from any list in the answer, with the id from `prompt_id`/`promptId`/`id`, the tool from `tool`/`tool_name`/`toolName`, the arguments from `arguments`/`args` (object or JSON text), and find the session by its id appearing in the entry. A refusal is `ok:false` or an error result.
+- **A-r11e-2. Whether a managed session's own escalated direct call (card + stock prompt) is also listed by `list_frozen_sessions`.** §7a.9 says the registry holds each request the broker passed on, so it should be, but it also says answering it would be ambiguous with the card; not tested.
+- **A-r11e-3. A session that is already managed and whose prompt Fishball answers**: whether `by` changes. Not tested.
+- **A-r11e-4. Take back / release while a direct card and its prompt show.** The prompt must stay (the session is the user's again); whether the card leaves is not stated. Not tested. DCD-09 (Permission requests off) asserts only that the prompt stays and the settled call leaves no card.
+- **A-r11e-5. The tag record's `callId`** is taken to be the frozen call's id (the call whose prompt was answered); `answer` is matched by a regular expression on the decision word.
+- **A-r11e-6. "No note" for a Fishball-initiated way in** follows the §16 Reading "Fishball's own actions need no extra note beyond the tool result" (APR-03 asserts no `fishball/managed` item).

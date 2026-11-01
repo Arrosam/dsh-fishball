@@ -749,3 +749,17 @@ export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_send']
 export const EXACT_ONLY_TOOLS = ['run_code', 'fbtest_ask', 'terminal_open']
 /** The fixture tools that ask for approval in their body (fixture-tools.mjs). */
 export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('run_code', 'terminal_open').join(',') }
+
+// ---- Revision 11 rev11e (prompts already showing, the fifth way in, cards for direct calls; DESIGN §7a.1, §7a.6, §7a.9, §9, §10e, §16; S33) ----
+/** Fishball's two tools for prompts already showing (§7a.9), under Permission requests (§10d). */
+export const PROMPT_TOOLS = { list: 'list_frozen_sessions', answer: 'answer_prompt' }
+/** answer_prompt's decisions (§7a.9). */
+export const PROMPT_DECISION = { allow: 'allow', reject: 'reject' }
+/** The registry's `by` for a session that became managed through answer_prompt (§9). */
+export const PROMPT_MANAGED_BY = 'prompt-answer'
+/** The tag record kind (§9 "Tag records"), the audit row kind (§9 "Audit") and the decisions action (§9 "Fishball's other decisions"). */
+export const PROMPT_TAG_KIND = 'prompt'
+export const PROMPT_AUDIT_KIND = 'prompt'
+export const PROMPT_DECISION_ACTION = 'answer-prompt'
+/** The approved tag of a session that became managed through answer_prompt (Q-r11-managed-tag-prompt, client wording). */
+export const PROMPT_MANAGED_LABEL = 'Prompt answered by Fishball'

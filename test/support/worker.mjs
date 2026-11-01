@@ -138,10 +138,19 @@ const approver = { outcome: process.env.FBTEST_APPROVAL ?? OUTCOME.reject, queue
 function answerQuestion(req) {
   // A queued answer (one per question, in order) wins over the standing outcome.
   const answer = approver.queue.length > 0 ? approver.queue.shift() : approver.outcome
-  approver.seen.push({ sessionId: req.agent?.id ?? null, toolName: req.toolName, callId: req.callId ?? null, reason: req.reason ?? null, answered: answer, at: Date.now() })
+  const entry = { sessionId: req.agent?.id ?? null, toolName: req.toolName, callId: req.callId ?? null, reason: req.reason ?? null, answered: answer, at: Date.now() }
+  // rev11e: the prompt's close signal, kept off the wire; approvals() reports it as `closed` (a showing stock prompt is closed when its signal aborts, S33).
+  Object.defineProperty(entry, 'signal', { value: req.signal, enumerable: false })
+  approver.seen.push(entry)
   if (answer === APPROVER_THROWS) throw new Error('fbtest approver failed')
   // Hold the question open until the test calls releaseApproval (a person who has not clicked yet).
-  if (answer === APPROVER_HOLDS) return new Promise((resolve) => approver.held.push(resolve))
+  // rev11e: a held prompt that is closed (its signal aborts: a plugin answer or a stopped turn) leaves the held list, as a closed browser prompt does.
+  if (answer === APPROVER_HOLDS) {
+    return new Promise((resolve) => {
+      approver.held.push(resolve)
+      req.signal?.addEventListener('abort', () => { const i = approver.held.indexOf(resolve); if (i >= 0) approver.held.splice(i, 1) }, { once: true })
+    })
+  }
   return answer
 }
 /**
@@ -372,7 +381,7 @@ const ops = {
   releaseApproval({ outcome }) { const resolve = approver.held.shift(); resolve?.(outcome); return Boolean(resolve) },
   heldApprovals() { return approver.held.length },
   setApprover({ outcome, queue = [] }) { approver.outcome = outcome; approver.queue = [...queue]; return outcome },
-  approvals({ sessionId } = {}) { return approver.seen.filter((a) => !sessionId || a.sessionId === sessionId) },
+  approvals({ sessionId } = {}) { return approver.seen.filter((a) => !sessionId || a.sessionId === sessionId).map((a) => ({ ...a, closed: Boolean(a.signal?.aborted) })) },
   agentScoped() { return store.agentScoped ?? [] },
   bundleEvents({ bundle } = {}) { return store.bundleEvents.filter((e) => !bundle || e.bundle === bundle) },
 
