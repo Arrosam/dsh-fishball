@@ -1839,6 +1839,7 @@ Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a
 | DCD-08 | BVA (`maxPendingApprovals` 2: ask card + direct card, then a third) | defaults "Card cap" | the third shows the stock prompt only: no card, no notice; your click answers it |
 | DCD-09 | ST (Permission requests off while both show) | §7a.5 "keeps the prompt" | the prompt stays; your click answers the call; no card remains afterwards |
 | DCD-10 | EP (second answer) | §7a.6 "first answer wins" | after the card answered, a second card click is 409 and nothing is left to click; one decisions row |
+| DCD-11 | BVA (`maxQueuedInputs` 1, queue full; `maxPendingApprovals` 1) | §11 Reading on undeliverable notices; manager 2026-11-02 | a direct call whose notice cannot be delivered gets a card and the stock prompt like a timeout, no notice, no tag; a second one past the cap gets the stock prompt only |
 
 ### Older cases changed by rev11e
 
@@ -1861,4 +1862,5 @@ Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a
 - **A-r11e-3. A session that is already managed and whose prompt Fishball answers**: whether `by` changes. Not tested.
 - **A-r11e-4. Take back / release while a direct card and its prompt show.** The prompt must stay (the session is the user's again); whether the card leaves is not stated. Not tested. DCD-09 (Permission requests off) asserts only that the prompt stays and the settled call leaves no card.
 - **A-r11e-5. The tag record's `callId`** is taken to be the frozen call's id (the call whose prompt was answered); `answer` is matched by a regular expression on the decision word.
+- **A-r11e-7. (manager 2026-11-02)** `answer_prompt` allow adds no hint (APR-01 asserts the result is exactly `outcome=allowed-once`); a request with no call id cannot carry the reject reason or the note, a known limit, not tested.
 - **A-r11e-6. "No note" for a Fishball-initiated way in** follows the §16 Reading "Fishball's own actions need no extra note beyond the tool result" (APR-03 asserts no `fishball/managed` item).

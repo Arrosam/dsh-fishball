@@ -16,12 +16,13 @@
  * | DCD-07  | ST (turn stopped while both show) | card leaves, prompt closes; a later click on the card is 409 expired |
  * | DCD-08  | BVA (maxPendingApprovals 2: one ask_fishball card + one direct card, then a third direct call) | the third shows the stock prompt only: no card, no notice to Fishball; pile unchanged |
  * | DCD-09  | ST (Permission requests turned off while both show) | the stock prompt keeps showing and your click in the session answers the call |
+ * | DCD-11  | BVA (maxQueuedInputs 1, queue full; maxPendingApprovals 1) | the undeliverable direct call gets a card and the stock prompt, no notice, no tag; a second one past the cap gets the stock prompt only |
  * | DCD-10  | EP (one answer only) | after the card clears both, a second answer on either side changes nothing: one decisions row, the call ran once |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { API, AUDIT_ANSWER, CARD_KEYS, CARD_KIND, CLICK, DECISION, DECISION_ACTION, LIMITS, OWN_PLUGINS, OUTCOME, PILE_CODE, ASK_TOOL } from './support/constants.mjs'
-import { HOOK, T, answerCard, auditOf, cardArguments, cardOf, pileNow, requestMessages, settledIdle, storedRows, untilCard, untilNoCard, waitRequest } from './support/expect.mjs'
+import { HOOK, T, answerCard, auditOf, cardArguments, cardOf, holdFishball, messageFishball, pileNow, requestMessages, settledIdle, storedRows, untilCard, untilNoCard, waitRequest } from './support/expect.mjs'
 import { QUIET_MS, pileHost, promptTools, sleep, tokens, until } from './support/rev11e.mjs'
 
 const { tok, cid } = tokens('DCD')
@@ -215,5 +216,37 @@ describe('Revision 11 rev11e: a direct call sent to you shows a card and the sto
     await sleep(QUIET_MS)
     assert.equal(decisionsFor(c.requestId).length, 1)
     assert.equal(storedRows(ctx.home, 'decisions').filter((d) => d.target === c.requestId && d.action === DECISION_ACTION.reject).length, 0)
+  })
+  it("DCD-11 Fishball's queue is full (notice undeliverable): a card and the stock prompt like a timeout, no tag; past the cap the stock prompt only", T, async () => {
+    await t.setLimit({ maxQueuedInputs: 1, maxPendingApprovals: 1 })
+    await holdFishball(ctx.host, ctx.fb)
+    try {
+      const filled = await messageFishball(ctx.host, y, { message: tok('11fill') })
+      assert.equal(filled.json?.ok, true, 'precondition: one queued input')
+      const full = await messageFishball(ctx.host, y, { message: tok('11full') })
+      assert.equal(full.json?.code, 'queue-full', 'precondition: the queue is full')
+      const text = tok('11')
+      const callId = cid('11')
+      await p.show(x, text, callId)
+      const card = await until(async () => (await pileNow(ctx.host)).find((c) => c.sessionId === x && c.callId === callId) ?? false, 10000, 50)
+      assert.ok(card, 'a card for the undelivered call: ' + JSON.stringify(await pileNow(ctx.host)))
+      assert.equal(card.kind, CARD_KIND.direct)
+      assert.equal((await prompt(text)).closed, false, 'and the stock prompt')
+      assert.equal((await requestMessages(ctx.host, ctx.fb, text)).length, 0, 'no notice reached Fishball')
+      assert.deepEqual(storedRows(ctx.home, 'tags').filter((r) => r.callId === callId), [], 'no tag')
+      // Past the cap (1): the next undeliverable call shows the stock prompt only.
+      const text2 = tok('11b')
+      await p.show(z, text2, cid('11b'))
+      await sleep(QUIET_MS)
+      assert.equal((await pileNow(ctx.host)).length, 1, 'no second card')
+      assert.deepEqual(storedRows(ctx.home, 'tags').filter((r) => r.callId === cid('11b')), [])
+      assert.equal((await answerCard(ctx.host, card.requestId, CLICK.reject)).status, 200)
+      await p.click(OUTCOME.reject)
+      assert.ok((await p.result(x, callId)).text.startsWith('outcome=' + OUTCOME.reject))
+    } finally {
+      await ctx.host.call('releaseHold', { sessionId: ctx.fb })
+      for (const sid of [x, y, z]) await t.stop(sid).catch(() => {})
+      await t.setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default, maxPendingApprovals: LIMITS.maxPendingApprovals.default })
+    }
   })
 })
