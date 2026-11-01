@@ -929,6 +929,26 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | MCJ-06 | EP | `files` lists `packages/messenger/`; `npm pack --dry-run` lists `packages/messenger/package.json` and `packages/messenger/client.js` |
 | MCJ-07 | EP | client.js calls `window.__ModuleLoader__.load({ … id: 'dsh-fishball-messenger' … })` |
 
+### [messenger-table.test.mjs](messenger-table.test.mjs): wide markdown tables stay inside Fishball's reply bubble (follow-up fix to the Messenger look)
+
+**Requirements.** R1: in Fishball's session with the look on, a table in a reply stays inside the bubble (the wrapper's edges do not pass the bubble's content edges). R2: a table wider than the bubble scrolls sideways inside it, and DSH's hover rule (`overflow-x: scroll`) keeps working. R3: this holds for 4+ column tables (`md-table-wide`) and for fewer columns (`_tableFill_*`). R4: other sessions (no `data-fishball-messenger` marker) keep DSH's stock breakout. R5: rows that are not replies (for example `reasoning`) are not changed. R6: with the look off (the plugin disposed, its style element removed) DSH's stock behaviour returns.
+
+**How.** Node has no layout engine, so the cases run the module's browser file in a `vm` against a stub host ([support/messenger-style.mjs](support/messenger-style.mjs); the file is executed, its source is not read) and check the stylesheet it mounts: a small CSS parser, a selector-specificity calculator, and a decision table that asks which rules a DOM context (marker, row part, wrapper class) selects. The real layout was measured separately in headless Chrome with DSH 0.2.1-rc.3's CSS (before and after the fix, three chat-area widths, hover and scroll); that fixture is not part of the suite. `FBTEST_MESSENGER_CLIENT=<path>` runs the cases against another copy of the file (the file from before the fix fails MTB-01, 02, 03 #1, 05, 06 and 09). A mutation check wrapped the fixed file with eleven defects (unscoped rule, any row part, low specificity, `overflow-x: hidden`, a negative margin, a fixed width, a hashed class name, a fill wrapper widened, a dropped padding or max-width, a disposer that keeps the style); every one is caught.
+
+| id | technique | expected result |
+|---|---|---|
+| MTB-00 | EP (helpers) | `parseCss` keeps quoted `;` `{`, groups of selectors and at-rules whole; specificity: scoped reply selector `[0,5,0]`, DSH's `.hWmORq_body .md-table-wide` `[0,2,0]`, `:where()` counts nothing |
+| MTB-01 | EP (look on) | one style element; a table rule applies to a wide wrapper in a Fishball reply row |
+| MTB-02 | EP (R1) | that rule gives width `auto`/`100%`, max-width `100%`, margin-left and padding-left `0` |
+| MTB-03 ×7 | DT (marker × row part × wrapper class) | applies for marker + reply + wide; applies for none of: no marker, `reasoning` row, other row part, fill wrapper without marker or outside replies |
+| MTB-03 (R3) | EP | any rule that applies to a fill wrapper in a Fishball reply keeps it contained (the case does not require such a rule) |
+| MTB-04 | BVA (specificity against DSH's `[0,2,0]`) | each contained declaration is `!important` or has higher specificity than DSH's stock rule |
+| MTB-05 | EP (R2) | no table rule sets `overflow`, `overflow-x`, `overflow-y`, `display: none` or `visibility: hidden` |
+| MTB-06 | EP (R4, R5) | every table rule needs the conversation, the marker, the step kind and the reply part |
+| MTB-07 | EP (R3) | the stylesheet does not name DSH's generated classes `_tableScroll_*` and `_tableFill_*` (they change with DSH's build) |
+| MTB-08 | ST (on → dispose) | the style element is removed; nothing is left in `document.head` (R6) |
+| MTB-09 | ST (on, off, on, off, on) | one style element with the same text each time it is on, none while off (R6) |
+
 ### [messenger-author.test.mjs](messenger-author.test.mjs): R4 (one host with source fixtures and the raised title cap)
 
 | id | technique | expected result |

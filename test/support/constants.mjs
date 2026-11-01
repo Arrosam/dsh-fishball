@@ -580,3 +580,39 @@ export const FEATURE_OFF = 'feature-off'
 export const OWN_ASK = 'Fishball asks to turn on'
 /** The last commit before revision 10c (an install from before Fishball's own plugins). */
 export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }
+
+// ---- Messenger look: wide markdown tables inside Fishball's reply bubble ----
+/**
+ * Vocabulary from the requirement and from DSH 0.2.1-rc.3's own DOM and CSS (never from the implementation).
+ * DSH draws a table with 4 or more columns in a wrapper with the class `md-table-wide` and stretches it to the chat
+ * area's edges; fewer columns get `_tableFill_*`. The `_tableScroll_*` and `_tableFill_*` names are generated
+ * (hashed) by DSH's build.
+ */
+export const MESSENGER_TABLE = {
+  /** The mounted stylesheet's element id and the `mark` values the host hands the module (visual only). */
+  styleId: 'fishball-messenger-style',
+  /** Run the cases against another copy of the module (for example the file from before a fix) by naming its path here. */
+  fileEnv: 'FBTEST_MESSENGER_CLIENT',
+  mark: { eyeColor: '#1f2328', viewBox: '0 0 24 24', body: '' },
+  /** Atoms of a selector: the conversation, Fishball's header marker, and the reply row (DSH's own attributes). */
+  atoms: {
+    conversation: '[data-slot="main.conversation"]',
+    marker: '[data-fishball-messenger]',
+    stepKind: '[data-chat-flow-kind="assistant-step"]',
+    reply: '[data-chat-group-part="response"]',
+    wide: '.md-table-wide',
+  },
+  /** Wrapper classes DSH gives tables; the hashed ones may not appear in Fishball's rules (they change per DSH build). */
+  hashedClasses: ['_tableScroll_1ypvv_192', '_tableFill_1ypvv_239'],
+  /** A selector that is about a table: DSH's wrapper classes, or the table, section or cell elements. */
+  tableSelector: /md-table|_table(?:Scroll|Fill)|(?:^|[\s>+~])(?:table|thead|tbody|tr|th|td)(?![\w-])/,
+  /** DSH's strongest stock rule on the wide wrapper (`.hWmORq_body .md-table-wide`): two classes. */
+  dshWideSpecificity: [0, 2, 0],
+  /** Declaration values that keep the wrapper inside its container, as a plain (not wide) wrapper already is. */
+  contained: { width: ['auto', '100%'], maxWidth: ['100%'], marginLeft: ['0', '0px'], paddingLeft: ['0', '0px'] },
+  /** Properties that would clip or hide a wrapper for good, or defeat DSH's hover scrolling. */
+  clipping: ['overflow', 'overflow-x', 'overflow-y'],
+  hidden: { display: 'none', visibility: 'hidden' },
+  /** Contexts of the decision table: the group part of the row the table sits in. */
+  parts: { reply: 'response', reasoning: 'reasoning', other: 'toolcall' },
+}
