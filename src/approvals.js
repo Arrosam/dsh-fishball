@@ -458,6 +458,8 @@ export class ApprovalBroker {
     } finally {
       release()
     }
+    // Both audits (§9, the manager's decision 2026-11-02): the request's approvals row (kind prompt) and Fishball's decision.
+    await this.#record({ ...prompt, at: prompt.since, answer: DECISION_ANSWER[decision], kind: REQUEST_KIND.prompt, risk, rationale, finalOutcome: outcome })
     await this.#decide({ action: DECISION_ACTION.answerPrompt, sessionId: prompt.sessionId, target: id, rationale, outcome })
     return ok({ promptId: id, decision, sessionId: prompt.sessionId, managed: managed !== PROMPT_MANAGED.failed, note: TEXT.promptManaged[managed] })
   }
