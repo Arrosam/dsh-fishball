@@ -41,7 +41,7 @@ import { after, before, describe, it } from 'node:test'
 import {
   ANSWER_TOOL, APPROVALS_KEYS, AUTHOR_KIND, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APPROVER_THROWS, APR_CODE, APR_NOTE,
   ASK_REASON, ASK_TOOL, ELLIPSIS, FINAL_OUTCOMES, INBOUND_TOOL, LATEST_USER_MAX_BYTES, LIMITS, NOTICE, OUTCOME, PENDING_KEYS, PRESET, RECENT_ANSWERS,
-  RECENT_KEYS, RECENT_MAX, RUBRIC, STARTED_BY, STARTED_BY_OTHER, TURN_BY,
+  RECENT_KEYS, RECENT_MAX, RUBRIC, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY,
 } from './support/constants.mjs'
 import {
   HOOK, T, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
@@ -472,7 +472,7 @@ describe('P7 ApprovalBroker', () => {
       const text = tok('16c')
       await escalateFor(text)
       await host.call('queueMarker', { marker: text, except: fb, script: callScript(ASK_TOOL, { text }) })
-      assert.equal((await fishballHandOff('start_session', { folder, message: text }))?.ok, true)
+      assert.equal((await fishballHandOff('start_session', { folder, title: TITLE.plain, message: text }))?.ok, true)
       const req = await waitRequest(host, fb, text)
       assert.deepEqual(provenance(req.block.header), [STARTED_BY.fishball, TURN_BY.fishball])
       await askSettled(host, text)
