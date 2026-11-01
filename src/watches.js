@@ -36,17 +36,12 @@ import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { AGENT_IDLE, EVENT, INTAKE_KIND, SOURCE, WATCH, WATCH_BY, WATCH_CONDITION, WATCH_ERROR, WATCH_IGNORED_REASONS, WATCH_MODE, WATCH_STATUS } from './constants.js'
-import { describeSession, lastAnswerExcerpt, lastSeqOf, readSessionMessages } from './session-info.js'
+import { describeSession, isNotFound, lastAnswerExcerpt, lastSeqOf, readSessionMessages } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
 
 const IGNORED = new Set(WATCH_IGNORED_REASONS)
-/**
- * DSH's "session not found": the controller throws an ApiSessionNotFound (class name; its
- * error.name stays 'Error'), the query engine a SESSION_QUERY_SESSION_NOT_FOUND code.
- */
-const NOT_FOUND = Object.freeze({ errorName: 'ApiSessionNotFound', queryCode: 'SESSION_QUERY_SESSION_NOT_FOUND' })
 const OPEN = WATCH_STATUS.active
 
 export const WATCH_TOOL = Object.freeze({ watch: 'watch_session', list: 'list_watches', unwatch: 'unwatch_session', read: 'read_session' })
@@ -72,12 +67,6 @@ const TEXT = Object.freeze({
 const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }] })
 const ok = (fields = {}) => ({ ok: true, ...fields })
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
-
-/**
- * Whether a read failed because the session does not exist (DSH's not-found failures), as
- * opposed to a transient or migration failure.
- */
-const isNotFound = (error) => error?.constructor?.name === NOT_FOUND.errorName || error?.code === NOT_FOUND.queryCode
 
 /** A watch failed its checks, with a stable WATCH_ERROR code. */
 export class WatchError extends Error {

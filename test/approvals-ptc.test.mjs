@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { APPROVER_AFTER_ENV, ASK_TOOL, OUTCOME, PRESET, STATUS } from './support/constants.mjs'
-import { HOOK, T, askSettled, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
+import { HOOK, T, askSettled, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 
 describe('P7 run_code inner calls (PTC mode)', () => {
@@ -22,6 +22,8 @@ describe('P7 run_code inner calls (PTC mode)', () => {
     await settledIdle(host, fb)
     x = (await host.call('ordinary', { preset: PRESET.bare, folder: 'ptc-x' })).sessionId
     await turn(host, x, [[{ text: 'hello' }]], 'first words')
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1).
+    await makeManaged(host, fb, x)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 

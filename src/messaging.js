@@ -2,16 +2,20 @@
  * Messaging (DESIGN §5b, §5d).
  *
  * Inbound, through the intake ledger:
- * - message_fishball({message}) in every session but Fishball's own: a host-row tool, so every
- *   agent has it (Q-exposure). The sender is the calling agent, never an argument; a subagent
- *   is attributed to the session the user sees (its root), with the child named as detail.
- *   Fishball's agent cannot call it (hidden, and refused by its guard).
- * - "Send to Fishball" (POST /api/fishball/send): you forward a session with a note.
+ * - message_fishball({message}) in managed sessions only (revision 11, §5e): its definition is
+ *   handed to the ManagedRegistry (src/managed.js), which registers it in each managed agent's
+ *   own scope. The sender is the calling agent, never an argument; a subagent would be
+ *   attributed to the session the user sees (its root), but subagents no longer get the tool.
+ *   Fishball's agent cannot call it (never managed; hidden, and refused by its guard).
+ * - "Send to Fishball" (POST /api/fishball/send): you forward a session with a note; the
+ *   session becomes managed (§5e).
  *
  * Outbound, Fishball's own tools (scope P):
  * - message_session({session_id, message}): resolve the session's agent (live, or resumed with
  *   its own preset), steer the message with DSH's agent-message relay source naming Fishball,
  *   flush, audit.
+ * - Both make the target managed before the message is delivered (§5d, §5e), so its next model
+ *   request already has Fishball's tools.
  * - start_session({folder, message}): create an ordinary session in an existing DSH workspace
  *   or folder (DSH's default preset and permission mode; never Fishball's composition), then
  *   send the first message the same way. Fishball cannot create folders: a missing folder is
@@ -36,7 +40,7 @@ import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
+import { MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO } from './constants.js'
 import { AuditLog } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, lastSeqOf, NO_EVENTS_SEQ, rootSessionOf } from './session-info.js'
@@ -67,7 +71,7 @@ export const TEXT = Object.freeze({
   messageArg: 'What the session should do or know, self-contained.',
   startDescription: 'Start a new ordinary DSH session in an existing workspace or folder and give it a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
   folderArg: 'A DSH workspace id, or an absolute path of an existing folder.',
-  notifyInboundArg: 'true to have Fishball told when this session finishes its current work. From a subagent, that is the top-level session the user sees, not the subagent.',
+  notifyInboundArg: 'true to have Fishball told when this session finishes its current work.',
   notifyOutboundArg: 'true to be told when that session finishes the work (sets up a watch).',
   unconfirmed: 'The session has the message, but saving it could not be confirmed. Do not send it again.',
   /** A message from another session (untrusted data, DESIGN §7). */
@@ -111,10 +115,12 @@ const messageOf = (text, source) => createUserMessage({ content: [{ type: 'text'
  * @param deps.isLive - () => whether Fishball's agent is running now.
  * @param deps.watch - (sessionId, by) => Promise<{ watch } | { watchError }> (a watch result).
  * @param deps.isEnabled - () => whether Fishball's Session messages plugin runs (revision 10c).
- * @returns { forward(sessionId, note) } for the HTTP route, and sync() to call when isEnabled
- *   may have changed.
+ * @param deps.isManaged - (sessionId) => whether that session (the one the user sees) is managed.
+ * @param deps.manage - (sessionId, by) => Promise: make a session managed (MANAGED_BY).
+ * @returns { tool } (message_fishball's definition, for the managed registry) and
+ *   { forward(sessionId, note) } for the HTTP route.
  */
-export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, watch, isEnabled }) {
+export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, watch, isEnabled, isManaged, manage }) {
   const inboundTool = defineTool({
     name: MESSAGING_TOOL.inbound,
     description: TEXT.inboundDescription,
@@ -134,6 +140,8 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
       // A subagent speaks for the session the user sees (review M4).
       const sender = rootSessionOf(ctx, caller)
       if (sender === assistantId()) return refused(INTAKE_ERROR.fromFishball)
+      // Taken back or released while this call was in flight (the tool leaves at the next request).
+      if (!isManaged(sender)) return refused(INTAKE_ERROR.notManaged)
       const info = (await describeSession(ctx, sender, readLimits().forwardExcerptBytes)) ?? { id: sender, title: '', cwd: null }
       let result
       try {
@@ -155,23 +163,8 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
       return ok({ note: isLive() ? TEXT.inboundOk : TEXT.inboundQueued, ...watched })
     },
   })
-  // Registered only while Session messages runs: off takes the tool away from every other
-  // session (revision 10c, owner's choice). `active` ends with the row, so no late sync re-registers.
-  let dispose
-  let active = true
-  const sync = () => {
-    const on = active && isEnabled()
-    if (on === (dispose !== undefined)) return
-    if (on) dispose = ctx.tools.register(inboundTool)
-    else { dispose(); dispose = undefined }
-  }
-  ctx.effect(() => {
-    sync()
-    return () => { active = false; sync() }
-  }, 'fishball: message_fishball')
-
   return {
-    sync,
+    tool: inboundTool,
     /**
      * You forward a session with a note.
      * @throws IntakeError(featureOff | unknownSession | fromFishball | tooLarge | queueFull | empty).
@@ -182,13 +175,16 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
       if (byteLength(note) > readLimits().maxMessageBytes) throw new IntakeError(INTAKE_ERROR.tooLarge)
       const info = await describeSession(ctx, sessionId, readLimits().forwardExcerptBytes)
       if (info === undefined) throw new IntakeError(INTAKE_ERROR.unknownSession)
-      return ledger.publish({
+      const result = await ledger.publish({
         kind: INTAKE_KIND.user,
         sourceIdentity: SOURCE_ID.user + sessionId,
         // Each forward is its own input, even of the same session.
         dedupeKey: randomUUID(),
         message: messageOf(TEXT.forwarded(info, note), { ...SOURCE.notice, summary: boundContextSummary(TEXT.forwardSummary), author: sessionAuthor(INTAKE_KIND.user, info) }),
       })
+      // Only a forward Fishball received hands the session over (a refused one changes nothing).
+      await manage(sessionId, MANAGED_BY.send)
+      return result
     },
   }
 }
@@ -206,9 +202,10 @@ class UnconfirmedDelivery extends Error {}
  * @param deps.logger - plugin logger.
  * @param deps.onChange - called after the outbox changed.
  * @param deps.watch - (sessionId, by, since?) => Promise<{ watch } | { watchError }>.
+ * @param deps.manage - (sessionId, by) => Promise: make the target managed (MANAGED_BY).
  * @returns { snapshot() } for the settings page.
  */
-export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch }) {
+export function registerOutbound({ ctx, register, store, readLimits, assistantId, logger, onChange, watch, manage }) {
   const outbox = new AuditLog(() => store.outbox, () => readLimits().auditEntriesKept)
   /**
    * Calls this hour, counted in memory as well as from the outbox: the outbox is pruned to
@@ -288,6 +285,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (info === undefined) return refused(OUTBOUND_ERROR.unknownSession)
       if (info.archived) return refused(OUTBOUND_ERROR.archived)
       const entry = { kind: OUTBOX_KIND.message, targetSessionId: sessionId, messageDigest: digestOf(message) }
+      await manage(sessionId, MANAGED_BY.message)
       return withWatch(await deliverAndRecord(entry, sessionId, message, { sessionId, title: info.title }), sessionId, notify, info.lastSeq)
     },
   }))
@@ -316,6 +314,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
         logger.warn('session start failed (%s)', diagnosticOf(error))
         return refused(OUTBOUND_ERROR.deliveryFailed)
       }
+      await manage(sessionId, MANAGED_BY.start)
       // A new session: every turn end in it counts (its log before the message has none).
       const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
       return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder }), sessionId, notify, since)

@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { API, LIMITS, MS, PRESET, STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
-import { HOOK, deleteSession, fishballCall, intakeNow, messageFishball, noticesSettled, settledIdle, turn, untrustedBlock, watchById, watchNotices, watchesOn } from './support/expect.mjs'
+import { HOOK, makeManaged, deleteSession, fishballCall, intakeNow, messageFishball, noticesSettled, settledIdle, turn, untrustedBlock, watchById, watchNotices, watchesOn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
 let seq = 0
@@ -210,6 +210,7 @@ describe('P6 watches across restarts', () => {
   it('QFL-01 a notice due while the queue is full is not lost', LONG, async (t) => {
     const sid = await ordinary('q-01')
     const sender = await ordinary('q-01-sender')
+    await makeManaged(host, fb, sender) // rev11a: only a managed session has message_fishball
     await turn(host, sid, [[{ text: 'warm-up' }]])
     const w = await userWatch(sid)
     await settledIdle(host, fb)

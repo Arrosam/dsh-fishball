@@ -223,8 +223,8 @@ export const API = {
 // ---- P5 (messaging, intake, outbox) ----
 /** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
 /** P11 R2 adds 'look' (17). */
-/** Revision 10c adds 'features' (18). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'hiddenTools', 'intake', 'limits', 'look', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** Revision 10c adds 'features' (18). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
@@ -595,7 +595,8 @@ export const PRIVATE_ROW_PREFIX = 'fbo-'
  * features field that is true while the plugin runs (desired on AND applied).
  */
 export const OWN_PLUGINS = {
-  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball'] },
+  // Revision 11 rev11a: release_session joins Session messages (DESIGN §5e "Which Fishball plugin", §10d).
+  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session'] },
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval'] },
@@ -610,3 +611,25 @@ export const FEATURE_OFF = 'feature-off'
 export const OWN_ASK = 'Fishball asks to turn on'
 /** The last commit before revision 10c (an install from before Fishball's own plugins). */
 export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }
+
+// ---- Revision 11 rev11a (managed sessions; DESIGN §5b, §5e, §7a.1, §9, §10e) ----
+/** Hand over / Take back: POST {sessionId, managed: boolean} (§10e "Host API"). */
+export const MANAGED_API = '/api/fishball/managed'
+/** The snapshot's managed entries: exactly these keys (§10e "Snapshot: managed: [{sessionId, since, by}]"). */
+export const MANAGED_ENTRY_KEYS = ['by', 'sessionId', 'since']
+/** The ways in that rev11a builds, as the registry's `by` names them (§9; prompt-answer comes with rev11e). */
+export const MANAGED_BY = { start: 'start', message: 'message', handOver: 'hand-over', send: 'send' }
+/** The route's 409 codes (§10e). */
+export const MANAGED_CODE = { unknownSession: 'unknown-session', isFishball: 'is-fishball', featureOff: 'feature-off', unavailable: 'unavailable' }
+/** Source identity of the note a hand-over, take-back or release sends Fishball (§5e item 5). */
+export const MANAGED_IDENTITY = (sessionId) => 'fishball/managed/' + sessionId
+/** Fishball's tool that ends management (§5e item 4). */
+export const RELEASE_TOOL = 'release_session'
+/** DSH's own refusal of a tool the calling session cannot see (S34: `Error: unknown tool "<name>"`, UNKNOWN_TOOL). */
+export const UNKNOWN_TOOL_TEXT = /unknown tool|UNKNOWN_TOOL/i
+/** The client's labels beside Send to Fishball (§10, item 3; §10e). */
+export const MANAGED_LABELS = { handOver: 'Hand over to Fishball', takeBack: 'Take back from Fishball' }
+/** The commit before rev11a (an install from before managed sessions existed). */
+export const PRE_REV11A = { commit: 'a5aed26' }
+/** Item 3: nothing in a session that is yours mentions Fishball. Case-sensitive, because the test homes sit under the lowercase dsh-fishball checkout path. */
+export const FISHBALL_WORD = /Fishball/

@@ -19,7 +19,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { API, INTAKE_DIR, MS, NOTE_TEXT, PRESET, STATUS } from './support/constants.mjs'
-import { HOOK, T, fishballMessages, intakeNow, messageFishball, moveArtifacts, requestsWith, settledIdle, turn, untilSeen } from './support/expect.mjs'
+import { HOOK, T, fishballMessages, makeManaged, intakeNow, messageFishball, moveArtifacts, requestsWith, settledIdle, turn, untilSeen } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
 let seq = 0
@@ -49,6 +49,8 @@ describe('P5 wake-up cap', () => {
     fb = booted.state?.sessionId
     sender = (await host.call('ordinary', { preset: PRESET.bare, folder: 'wake-sender' })).sessionId
     await settledIdle(host, fb)
+    // rev11a: only a managed session has message_fishball (DESIGN §5e).
+    await makeManaged(host, fb, sender)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
@@ -154,6 +156,8 @@ describe('P5 durability across restarts', () => {
     fb = booted.state?.sessionId
     sender = (await host.call('ordinary', { preset: PRESET.bare, folder: 'dur-sender' })).sessionId
     await settledIdle(host, fb)
+    // rev11a: only a managed session has message_fishball (DESIGN §5e).
+    await makeManaged(host, fb, sender)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
@@ -236,6 +240,8 @@ describe('P5 items of an adopted-away session', () => {
     fb = booted.state?.sessionId
     sender = (await host.call('ordinary', { preset: PRESET.bare, folder: 'adopt-sender' })).sessionId
     await settledIdle(host, fb)
+    // rev11a: only a managed session has message_fishball (DESIGN §5e).
+    await makeManaged(host, fb, sender)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 

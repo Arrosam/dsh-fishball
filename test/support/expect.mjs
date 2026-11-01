@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, AUTHOR_KIND, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, AUTHOR_KIND, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -548,3 +548,27 @@ export function promptLine(reason, fieldPath) {
 
 /** Let `ms` pass (a negative check: something must NOT happen in that time). */
 export const quiet = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// ---- Revision 11 rev11a helpers (managed sessions) ----
+
+/** Hand over (managed true) or Take back (managed false) through the Host route, as the client's buttons do. */
+export const setManaged = (host, sessionId, managed) => host.post(MANAGED_API, { sessionId, managed })
+/** The snapshot's managed list. */
+export const managedNow = async (host) => (await host.state())?.managed
+/** The snapshot's managed entry for one session, or undefined. */
+export const managedEntry = async (host, sessionId) => ((await managedNow(host)) ?? []).find((e) => e.sessionId === sessionId)
+/** Intake items of the notes about one session's management (§5e item 5: source fishball/managed/<session>). */
+export const managedItems = async (host, sessionId) => ((await intakeNow(host))?.items ?? []).filter((i) => i.sourceIdentity === MANAGED_IDENTITY(sessionId))
+/**
+ * Make a session managed through Hand over and wait until Fishball has read the note, so the note's
+ * Fishball turn cannot overlap the caller's next step. Used by the pre-revision-11 cases that are about
+ * a session talking to Fishball: from rev11a only managed sessions have message_fishball and only their
+ * permission requests reach Fishball (CASES.md "Revision 11 rev11a cases", older tests changed).
+ */
+export async function makeManaged(host, fb, sessionId) {
+  const r = await setManaged(host, sessionId, true)
+  if (r.status !== 200) throw new Error('precondition: hand over ' + sessionId + ' answered ' + r.status + ' ' + r.text)
+  await until(async () => (await managedItems(host, sessionId)).some((i) => i.status === 'consumed'), 5000, 100)
+  await settledIdle(host, fb)
+  return r
+}
