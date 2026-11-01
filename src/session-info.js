@@ -134,13 +134,14 @@ export const textOfEvent = (event) => {
  * session (any other relay), or else context that DSH or a plugin added (notices, goal rounds,
  * schedules, file notes, instructions). A message without a source is context, never an
  * unproven 'user'. DSH's user/message carries all of these; only the source tells them apart.
- * @param fishballId - Fishball's session id (undefined matches no relay).
+ * @param fishballId - Fishball's session id (no id, such as null before Fishball has a session,
+ *   matches no relay).
  * @returns a SESSION_INFO.roles value other than assistant.
  */
 export function senderOf(source, fishballId) {
   if (APPROVAL.userSources.includes(source?.kind)) return SESSION_INFO.roles.user
   if (source?.kind !== SOURCE.relay.kind) return SESSION_INFO.roles.context
-  return fishballId !== undefined && source.senderSessionId === fishballId ? SESSION_INFO.roles.fishball : SESSION_INFO.roles.agent
+  return typeof fishballId === 'string' && source.senderSessionId === fishballId ? SESSION_INFO.roles.fishball : SESSION_INFO.roles.agent
 }
 
 /**
@@ -151,7 +152,7 @@ function messageOf(event, fishballId, text) {
   if (event.type === SESSION_INFO.assistantEvent) return { role: SESSION_INFO.roles.assistant, text }
   const source = event.data?.source
   const role = senderOf(source, fishballId)
-  if (role === SESSION_INFO.roles.agent) return { role, from: source.senderSessionId, text }
+  if (role === SESSION_INFO.roles.agent && typeof source.senderSessionId === 'string') return { role, from: source.senderSessionId, text }
   if (role === SESSION_INFO.roles.context && typeof source?.kind === 'string') return { role, source: source.kind, text }
   return { role, text }
 }

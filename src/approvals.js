@@ -217,7 +217,7 @@ function latestUserText(session, maxBytes) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
-    if (event.type !== APPROVAL.userEvent || !APPROVAL.userSources.includes(event.data?.source?.kind)) continue
+    if (event.type !== APPROVAL.userEvent || senderOf(event.data?.source) !== SESSION_INFO.roles.user) continue
     const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
     if (text.length > 0) return cutToBytes(text, maxBytes, ELLIPSIS)
   }

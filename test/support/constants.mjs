@@ -245,6 +245,11 @@ export const P5_CODE = {
  * titles passes (DSH keeps it as given: single line, short, no edge whitespace).
  */
 export const TITLE = { refused: 'no-title', unavailable: 'title-unavailable', invalid: 'title-invalid', failed: 'title-failed', plain: 'Fbtest started session' }
+/**
+ * start_session keeps a session DSH created but could not add to the workspace (DESIGN 5d, Q-start-half-made): the
+ * error code DSH's create throws, and the value of the `workspaceError` field the answer carries.
+ */
+export const HALF_MADE = { dshCode: 'session/workspace-attach-failed', workspaceError: 'workspace-attach-failed' }
 export const INTAKE_KEYS = ['failed', 'items', 'queued', 'wakeupsThisHour']
 export const INTAKE_ITEM_KEYS = ['createdAt', 'errorCode', 'intakeId', 'kind', 'sourceIdentity', 'status']
 export const INTAKE_KINDS = ['session', 'user', 'system']
@@ -294,6 +299,8 @@ export const WATCH_TOOLS = ['watch_session', 'list_watches', 'unwatch_session', 
 /** W5: read_session bounds. */
 export const READ_MAX = { messages: 12, bytes: 12288 }
 export const READ_ROLES = ['user', 'assistant']
+/** Q-read-roles: the five labels read_session gives a message, from the source DSH recorded with it. */
+export const READ_ROLE = { user: 'user', assistant: 'assistant', fishball: 'fishball', agent: 'agent', context: 'context' }
 
 /** P4 C1: keys of state.contextWindow, and its refusal codes (C3, C7). */
 export const CONTEXT_WINDOW_KEYS = ['compactionOff', 'contextWindowTokens', 'effectiveWindow', 'error', 'maxOutputTokens', 'modelWindow', 'outputCap', 'pressureTokens', 'threshold']
