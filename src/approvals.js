@@ -31,6 +31,7 @@ import { authorOf, sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
+import { sentBy, typedByUser } from './message-sources.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -107,12 +108,15 @@ export function argumentsOf(session, callId, toolName, maxBytes) {
   return none
 }
 
-/** The latest message you typed in a session (sources user / user-rpc), bounded. */
+/**
+ * The latest message you typed in a session (sources user / user-rpc), bounded. start_session's
+ * first message has a user source too, but names Fishball as sender: it is not your text.
+ */
 function latestUserText(session) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
-    if (event.type !== APPROVAL.userEvent || !APPROVAL.userSources.includes(event.data?.source?.kind)) continue
+    if (event.type !== APPROVAL.userEvent || !typedByUser(event.data?.source)) continue
     const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
     if (text.length > 0) return cutToBytes(text, APPROVAL.userMessageBytes, ELLIPSIS)
   }
@@ -305,15 +309,15 @@ export class ApprovalBroker {
   /**
    * Who started the asking session and its current turn (DESIGN §7a provenance), from positive
    * evidence in its log: the first user message of the session, and of the current turn. A
-   * relay from Fishball means Fishball; a user source means the user; else it is unknown (never
-   * an unproven 'the user', which would defeat rubric rule 5; P7 review M2).
+   * message Fishball sent (a relay, or start_session's first message) means Fishball; a user
+   * source with no sender means the user; else it is unknown (never an unproven 'the user',
+   * which would defeat rubric rule 5; P7 review M2).
    * @param session - the session the user sees (root of a subagent).
    */
   #provenance(session) {
     const fishball = this.#assistantId()
     const events = session.snapshotEvents()
-    const byFishball = (source) => source?.kind === SOURCE.relay.kind && source.senderSessionId === fishball
-    const describe = (source, fishballText) => source === undefined ? PROVENANCE.unknown : byFishball(source) ? fishballText : APPROVAL.userSources.includes(source.kind) ? PROVENANCE.user : PROVENANCE.other
+    const describe = (source, fishballText) => source === undefined ? PROVENANCE.unknown : sentBy(source, fishball) ? fishballText : typedByUser(source) ? PROVENANCE.user : PROVENANCE.other
     let turnStart = -1
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
     const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)?.data?.source

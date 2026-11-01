@@ -14,9 +14,11 @@
  *   flush, audit.
  * - start_session({folder, message}): create an ordinary session in an existing DSH workspace
  *   or folder (DSH's default preset and permission mode; never Fishball's composition), then
- *   send the first message the same way. Fishball cannot create folders: a missing folder is
- *   refused, because DSH's create would make it (spike S18). A folder removed between the
- *   check and the create would still be created by DSH; that window needs host support.
+ *   send the first message the same way, but with a user source naming Fishball as sender:
+ *   DSH's automatic title reads only user messages (SOURCE.start). Fishball cannot create
+ *   folders: a missing folder is refused, because DSH's create would make it (spike S18). A
+ *   folder removed between the check and the create would still be created by DSH; that window
+ *   needs host support.
  *
  * Caps (messagesPerHour, sessionsPerHour) count every call that reached another session:
  * delivered, unconfirmed (steered, flush failed) and failed after creating a session. The
@@ -55,6 +57,8 @@ export const SOURCE_ID = Object.freeze({ session: 'session/', user: 'user/forwar
 const OUTBOX_SHOWN = 20
 /** Statuses that count toward an hourly cap: the call reached the other session. */
 const COUNTED = new Set([OUTBOX_STATUS.delivered, OUTBOX_STATUS.unconfirmed, OUTBOX_STATUS.failed])
+/** The source of an outbound message, by outbox kind: start_session's first one is SOURCE.start. */
+const OUTBOUND_SOURCE = Object.freeze({ [OUTBOX_KIND.message]: SOURCE.relay, [OUTBOX_KIND.start]: SOURCE.start })
 
 
 /** Model-facing texts (stable; no secrets). */
@@ -67,7 +71,7 @@ export const TEXT = Object.freeze({
   sendDescription: 'Send a message to another DSH session, which then works on it with its own tools and permission mode. The session sees it as a message from Fishball, not from the user. Use it to hand work off or ask for a status; follow up later.',
   sessionArg: 'The id of the session to message.',
   messageArg: 'What the session should do or know, self-contained.',
-  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder and give it a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
+  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder and give it a first message, so it starts working at once. The session shows that message as a user message, and DSH titles the session from it. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
   folderArg: 'A DSH workspace id, or an absolute path of an existing folder.',
   notifyInboundArg: 'true to have Fishball told when this session finishes its current work. From a subagent, that is the top-level session the user sees, not the subagent.',
   notifyOutboundArg: 'true to be told when that session finishes the work (sets up a watch).',
@@ -240,10 +244,10 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
    * Steer the message into the session's agent with Fishball as the sender, then flush.
    * @throws UnconfirmedDelivery when the steer succeeded and only the flush failed.
    */
-  const deliver = async (sessionId, message) => {
+  const deliver = async (sessionId, message, source) => {
     const resolved = await ctx.sessionController.resolveAgent(sessionId)
     if (resolved.agent === undefined) throw new Error(resolved.error?.code ?? 'resolve failed')
-    resolved.agent.steer(messageOf(message, { ...SOURCE.relay, senderSessionId: assistantId() }))
+    resolved.agent.steer(messageOf(message, { ...source, senderSessionId: assistantId() }))
     let flushed = false
     try { flushed = await ctx.sessions.flush(resolved.agent.session) } catch { flushed = false }
     if (!flushed) throw new UnconfirmedDelivery()
@@ -252,7 +256,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
   /** Deliver and record; returns the tool result. */
   const deliverAndRecord = async (entry, sessionId, message, success) => {
     try {
-      await deliver(sessionId, message)
+      await deliver(sessionId, message, OUTBOUND_SOURCE[entry.kind])
     } catch (error) {
       if (error instanceof UnconfirmedDelivery) {
         await record({ ...entry, status: OUTBOX_STATUS.unconfirmed })
