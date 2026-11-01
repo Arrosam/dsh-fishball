@@ -149,6 +149,12 @@ window.__ModuleLoader__.load({
         `${REPLY_BUBBLE}{padding:6px 12px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2)}`,
         `${REPLY}::before{content:"";position:absolute;left:0;top:0;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;border-radius:50%;background:${markImage(mark, REPLY_LAYOUT.fishFill)} center/${REPLY_LAYOUT.fishShare} no-repeat,${ACCENT}}`,
         `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px;top:0;font-size:12px;line-height:${REPLY_LAYOUT.nameLinePx}px;font-weight:600;color:${ACCENT}}`,
+        // DSH stretches a table of four or more columns (its md-table-wide class) past the chat
+        // column to the edges of the chat area. Beside the avatar and inside the bubble that runs
+        // past the bubble's right edge, so here it keeps the bubble's width and scrolls sideways
+        // inside it, like DSH's narrower tables. Scoped to the reply row, not the bubble element,
+        // so it holds even if the bubble falls back to DSH's look.
+        `${REPLY} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
         // Work rows (tool calls, reasoning, process groups) read as quieter activity lines.
         `${SCOPE} [data-chat-group-part]:not([data-chat-group-part="response"]){opacity:.7}`,
         `${SCOPE} [data-slot="conversation.composer.bar"]>*{border-radius:24px}`,
