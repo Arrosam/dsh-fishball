@@ -14,6 +14,7 @@
  * so none survives one (item 16).
  */
 import { CARD_END } from './constants.js'
+import { latestFirst } from './text.js'
 
 export class Pile {
   /** requestId -> { card, settle } */
@@ -77,6 +78,6 @@ export class Pile {
 
   /** The cards, newest first (Reading, §10e "Order and count"). */
   cards() {
-    return [...this.#cards.values()].map((entry) => entry.card).sort((a, b) => (a.since < b.since ? 1 : a.since > b.since ? -1 : 0))
+    return [...this.#cards.values()].map((entry) => entry.card).sort((a, b) => latestFirst(a.since, b.since))
   }
 }

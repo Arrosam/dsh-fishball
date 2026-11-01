@@ -164,7 +164,9 @@ window.__ModuleLoader__.load({
     const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
     const CARD_ERRORS = new Set(['expired', 'too-large', 'unavailable'])
     /** Card kinds (src/constants.js REQUEST_KIND) and thread authors (THREAD_FROM) with their own words. */
-    const CARD_KINDS = new Set(['asked', 'direct'])
+    const CARD_KINDS = new Set(['asked', 'direct', 'own'])
+    /** Fishball's own request (rev11f, §7a.11): its card is labelled Fishball instead of a session. */
+    const OWN_CARD_KIND = 'own'
     const ARGUMENTS_COMPLETE = 'complete'
     /** The turn-tail tags (DESIGN §7a.3, §10e; src/constants.js TAG_KIND). */
     const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', iconSize: 12, separator: ' · ' })
@@ -698,6 +700,8 @@ window.__ModuleLoader__.load({
       pileTitle: 'Waiting for you ({count})',
       'cardKind.asked': 'Asked first',
       'cardKind.direct': 'Direct call',
+      'cardKind.own': 'Fishball',
+      cardOwnTitle: 'Fishball asks',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: 'The arguments are cut.',
@@ -1070,6 +1074,8 @@ window.__ModuleLoader__.load({
       pileTitle: '等你处理（{count}）',
       'cardKind.asked': '事先询问',
       'cardKind.direct': '直接调用',
+      'cardKind.own': 'Fishball',
+      cardOwnTitle: 'Fishball 请求',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: '参数已截断。',
@@ -2083,18 +2089,23 @@ window.__ModuleLoader__.load({
      * One card in your pile (DESIGN §10e): the session, the tool, the exact arguments, the agent's
      * reason and Fishball's note, with the quoted messages and the thread behind Details. Every
      * text comes from another session or from Fishball, so all of it is drawn as plain text.
-     * A session whose title is not known yet shows its id, as the managed list does.
+     * A session whose title is not known yet shows its id, as the managed list does. One of
+     * Fishball's own requests is labelled Fishball, with its list (the unchecked tools, or the
+     * changed settings) under the arguments, one entry per line.
      */
     function PileCard({ card, t }) {
       const [open, setOpen] = React.useState(false)
       const hasDetails = card.quotes.length > 0 || card.thread.length > 0
-      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId },
+      const own = card.kind === OWN_CARD_KIND
+      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
         h('div', { className: CLS.cardHead },
-          h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
+          own ? h('span', { className: CLS.title }, t('cardOwnTitle'))
+            : h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
           CARD_KINDS.has(card.kind) ? h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)) : null,
           h('span', { className: CLS.code }, card.toolName)),
         h('pre', { className: CLS.pre }, readableJson(card.arguments)),
         card.argumentsStatus === ARGUMENTS_COMPLETE ? null : h('span', { className: CLS.muted }, t('cardArgumentsCut')),
+        own && (card.detail ?? []).length > 0 ? h('ul', { className: CLS.thread, 'data-fishball-card-detail': card.detail.length }, card.detail.map((entry, index) => h('li', { key: index }, entry))) : null,
         card.why ? labelled(t('cardReason'), card.why) : null,
         card.note ? labelled(t('cardFishballNote'), card.note) : null,
         hasDetails ? h('button', { type: 'button', className: CLS.linkButton, 'aria-expanded': open, onClick: () => setOpen(!open) }, t(open ? 'cardHideDetails' : 'cardDetails')) : null,
