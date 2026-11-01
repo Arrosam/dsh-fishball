@@ -514,12 +514,12 @@ export const GRANT = Object.freeze({
   idPrefix: 'grt_',
   /**
    * Shell tools a command-prefix grant may name, each with the argument that holds its command
-   * text, read from the tools' schemas (Q-r11-prefix-tools; §7a.8 Reading). terminal_open has no
-   * command argument: its `type` (the backend it starts, usually "shell") is the text it runs.
-   * run_code and every other tool get exact-call grants only. A terminal_open prefix therefore
-   * covers every terminal of that backend, whatever its name or folder.
+   * text, read from the tools' schemas (Q-r11-prefix-tools; §7a.8 Reading). terminal_open's
+   * schema has no command text (only type, name, cwd), so it gets exact-call grants only, as
+   * run_code and every other tool do: matching its type would cover opening every terminal of
+   * that type (the manager's decision, 2026-11-02).
    */
-  commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text', terminal_open: 'type' }),
+  commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
   /** "npm test*" and "npm test" name the same prefix: one trailing wildcard is notation, not text. */
   wildcard: '*',
 })
