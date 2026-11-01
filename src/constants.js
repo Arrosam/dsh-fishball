@@ -363,8 +363,11 @@ export const MANAGED_ERROR = Object.freeze({
   notManaged: NOT_MANAGED,
   featureOff: FEATURE_OFF,
 })
-/** Fishball's decisions audit (§9 `decisions`); rev11a records release only. */
-export const DECISION_ACTION = Object.freeze({ release: 'release' })
+/**
+ * Fishball's decisions audit (§9 `decisions`): rev11a records release; rev11b adds your own
+ * Allow once / Reject clicks on a stock prompt for a request that went through Fishball.
+ */
+export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject' })
 export const DECISION_OK = 'ok'
 
 /** Watches (DESIGN §5c, §9 watches). */
@@ -426,13 +429,49 @@ export const APPROVAL = Object.freeze({
   ptcDispatchEvent: 'tool/ptc-dispatch-start',
   toolCallBlock: 'tool-call',
   turnStartEvent: 'turn/start',
+  /** A turn ended: the session's passes, to-you tickets, wording marks and open threads end (§7a.3, §9). */
+  turnEndEvent: 'turn/end',
   userEvent: 'user/message',
   userSources: Object.freeze(['user', 'user-rpc']),
 })
-/** Fishball's answer (answer_approval) and what else ended a request. */
-export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', escalate: 'escalate' })
-/** released: the session left management while the request waited (revision 11, §5e); it went to you. */
-export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released' })
+/** Fishball's answer (answer_approval, DESIGN §7a.3; grant arrives with rev11d). */
+export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate' })
+/**
+ * How a request ended, as audited (§9). released: the session left management while the
+ * request waited (§5e). to-user: a call that went to your prompt through a to-you ticket.
+ * pass: a call a one-time pass covered (no Fishball step). ask: the thread ended on Fishball's
+ * question (the turn ended before the session replied).
+ */
+export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass' })
+/** Whether the session asked first (ask_fishball) or made the call directly (§9 audit `kind`). */
+export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct' })
+/** What a pass-table entry lets through (§7a.3 passes, §7a.6 to-you tickets). */
+export const PASS_KIND = Object.freeze({ pass: 'pass', toYou: 'to-you' })
+/** Who wrote one entry of a request's thread (§9 request threads). */
+export const THREAD_FROM = Object.freeze({ agent: 'agent', fishball: 'fishball' })
+/**
+ * ask_fishball's answers (DESIGN §7a.2). to-user: Fishball escalated, did not answer in time,
+ * or could not be told; until rev11c (your pile) the call then goes to your prompt in the
+ * session, through a to-you ticket (§7a.6 "Before rev11c").
+ */
+export const ASK_RESULT = Object.freeze({
+  allowed: 'allowed',
+  rejected: 'rejected',
+  question: 'question',
+  unavailable: 'unavailable',
+  toUser: 'to-user',
+  overCapacity: 'over-capacity',
+  noLongerManaged: 'no-longer-managed',
+})
+/** ask_fishball refusals: nothing reached Fishball. */
+export const ASK_ERROR = Object.freeze({
+  notUserMessage: 'not-user-message',
+  tooLarge: 'too-large',
+  expired: 'expired',
+  invalid: 'invalid-request',
+  empty: 'empty',
+  cancelled: 'cancelled',
+})
 export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
@@ -443,6 +482,7 @@ export const APPROVAL_ERROR = Object.freeze({
   allowNeedsLowRisk: 'allow-needs-low-risk',
   reasonRequired: 'reason-required',
   argumentsIncomplete: 'arguments-incomplete',
+  questionRequired: 'question-required',
 })
 
 /** Unread replies from Fishball (src/unread.js): the one stored record's key. */
@@ -663,6 +703,8 @@ export const EVENT = Object.freeze({
   /** dsh-llm: every model call (the hard ceiling answers Fishball's own requests). */
   llmStream: 'llm/stream',
   agentStatus: 'agent/status',
+  /** dsh-tools: every tool result before it is committed (Fishball's wording, spike S35). */
+  postExecute: 'tools/post-execute',
   /** Every event appended to any session (watches), and the turn start it watches for. */
   sessionEvent: 'session/event',
   turnStart: 'turn/start',
@@ -670,6 +712,9 @@ export const EVENT = Object.freeze({
   inboxClaimed: 'agent/inbox/claimed',
   inboxDiscarded: 'agent/inbox/discarded',
 })
+
+/** dsh-tools post-execute decisions: keep the result (maybe replaced) or turn it into an error. */
+export const POST_DECISION = Object.freeze({ accept: 'accept', block: 'block' })
 
 /** Agent status after a turn ends (dsh-agent). */
 export const AGENT_IDLE = 'idle'
