@@ -504,6 +504,8 @@ export const SESSION_INFO = Object.freeze({
   ellipsis: '…',
   assistantEvent: 'assistant/message',
   userEvent: 'user/message',
+  /** DSH's title event (dsh-session-title folds the latest one). */
+  titleEvent: 'session/title',
   roles: Object.freeze({ user: 'user', assistant: 'assistant' }),
   textBlock: 'text',
   /** Session header marking a subagent's session, and how far up its parents are followed. */
