@@ -28,6 +28,19 @@ describe('Revision 11 rev11b regression: escalate needs no risk or reason', () =
   }, HOOK)
   after(async () => { await ctx.host?.stop() }, HOOK)
 
+  it('REG-03 ask with only its question (no risk, no reason) is accepted (the manager\'s decision of 2026-11-02)', T, async () => {
+    const text = tok('REG03')
+    const callId = cid('REG03')
+    const requestId = await t.waiting(x, text, callId)
+    const j = await t.answer(requestId, { decision: DECISION.ask, question: 'which one? ' + text })
+    if (j.ok !== true) await t.stop(x)
+    assert.equal(j.ok, true, JSON.stringify(j))
+    const got = await t.answered(x, callId)
+    assert.equal(got.code, ASK_CODE.question, JSON.stringify(got))
+    assert.match(JSON.stringify(got), /which one\?/)
+    await t.stop(x)
+  })
+
   for (const [id, label, args] of [
     ['REG-01', 'no risk and no reason', {}],
     ['REG-02', 'an empty reason', { risk: 'high', reason: '' }],
