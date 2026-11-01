@@ -3,7 +3,7 @@
  *
  * | id     | technique          | requirement                                        | expected |
  * |--------|--------------------|----------------------------------------------------|----------|
- * | CFG-01 | EP (defaults)      | 28 fields (12 + rev11-limits' 16) with their defaults | settings value and state.limits equal the default table; applies live |
+ * | CFG-01 | EP (defaults)      | 30 fields (12 + rev11-limits' 16 + rev11b's 2) with their defaults | settings value and state.limits equal the default table; applies live |
  * | CFG-02 | BVA (min valid)    | each field accepts its minimum (1, or 0 for hourly caps) | update ok; state.limits shows it; saved in the profile patch |
  * | CFG-03 | BVA (min - 1)      | 0 for ">= 1" fields, -1 for hourly caps is rejected | update throws; patch file and live value unchanged |
  * | CFG-04 | EP (negative)      | -1 rejected for ">= 1" fields                       | rejected; unchanged |
@@ -15,12 +15,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { LIMITS, LIMITS_R11, STATUS } from './support/constants.mjs'
+import { LIMITS, LIMITS_R11, LIMITS_R11B, STATUS } from './support/constants.mjs'
 import { HOOK, T, readPatch, savedRowConfig } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
 
-// rev11-limits: the default table is the 12 original fields plus the 16 moved from constants (DESIGN §16, §3 `Config`).
-const DEFAULTS = Object.fromEntries(Object.entries({ ...LIMITS, ...LIMITS_R11 }).map(([k, v]) => [k, v.default]))
+// rev11-limits: the default table is the 12 original fields plus the 16 moved from constants (DESIGN §16, §3 `Config`);
+// rev11b adds userMessagesListed and userMessageExcerptChars (§16 "Revision 11's new limits").
+const DEFAULTS = Object.fromEntries(Object.entries({ ...LIMITS, ...LIMITS_R11, ...LIMITS_R11B }).map(([k, v]) => [k, v.default]))
 
 /** Invalid values per field, labelled by partition. */
 function invalidValues(field) {
@@ -54,7 +55,7 @@ describe('R-CONFIG limits', () => {
     for (const [k, v] of Object.entries(patch)) assert.equal(saved[k], v, 'saved row config ' + k)
   }
 
-  it('CFG-01 defaults: all 28 limit fields with the documented defaults, editable live', T, async () => {
+  it('CFG-01 defaults: all 30 limit fields with the documented defaults, editable live', T, async () => {
     const d = await host.call('settingsDescribe')
     assert.ok(d, 'settings entry "fishball" exists')
     assert.equal(d.applies, 'live')

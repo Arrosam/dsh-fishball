@@ -431,8 +431,18 @@ export const RECENT_KEYS = ['answer', 'argumentsStatus', 'at', 'decidedAt', 'fin
 export const RECENT_ANSWERS = ['allow', 'escalate', 'timeout', 'withdrawn']
 export const FINAL_OUTCOMES = ['allowed-once', 'rejected', 'cancelled', 'unavailable']
 export const RECENT_MAX = 20
-/** P9: rubric phrases in Fishball's system prompt. */
-export const RUBRIC = ['**Permission requests.**', 'Approve only if the user has allowed you to', 'With no such allowance, escalate at once', 'Low risk:', 'High risk:', 'When unsure, it is high risk', 'answer_approval', 'You cannot reject']
+/**
+ * P9: rubric phrases in Fishball's system prompt (rules 1-5 stay word for word in revision 11, DESIGN §7a.7).
+ * Revision 11 removes "You cannot reject" (Q-r11-reject): it is in RUBRIC_REMOVED, never expected.
+ */
+export const RUBRIC = ['**Permission requests.**', 'Approve only if the user has allowed you to', 'With no such allowance, escalate at once', 'Low risk:', 'High risk:', 'When unsure, it is high risk', 'When you escalate, tell the user', 'If you started the requesting session or its current turn, approve only work the user asked for', 'answer_approval']
+export const RUBRIC_REMOVED = ['You cannot reject']
+/**
+ * Revision 11 (§7a.7, Q-r11-reject-rubric): one operational line lets Fishball reject only when the call goes
+ * beyond what the user asked that session AND is dangerous. Its wording is the implementer's, so the line is
+ * found by meaning: it mentions rejecting, going beyond the user's request, and danger.
+ */
+export const REJECT_RULE = { reject: /reject/i, beyond: /beyond|outside|more than|not ask/i, danger: /dangerous|danger/i }
 
 // ---- P8 (ctx.fishball sources) ----
 /**
@@ -599,7 +609,8 @@ export const OWN_PLUGINS = {
   messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session'] },
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval'] },
+  // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -633,3 +644,49 @@ export const MANAGED_LABELS = { handOver: 'Hand over to Fishball', takeBack: 'Ta
 export const PRE_REV11A = { commit: 'a5aed26' }
 /** Item 3: nothing in a session that is yours mentions Fishball. Case-sensitive, because the test homes sit under the lowercase dsh-fishball checkout path. */
 export const FISHBALL_WORD = /Fishball/
+
+// ---- Revision 11 rev11b (asking Fishball first, passes, direct calls; DESIGN §7a.1-§7a.6, §9, §16; S35) ----
+/** The two tools rev11b adds to each managed agent, beside message_fishball (§7a.2, §5e). */
+export const ASK_FISHBALL = 'ask_fishball'
+export const LIST_USER_MESSAGES = 'list_user_messages'
+export const MANAGED_TOOLS = [INBOUND_TOOL, ASK_FISHBALL, LIST_USER_MESSAGES]
+/**
+ * ask_fishball's result codes (§7a.2; contract given to the test writer). `toUser` is provisional: the
+ * manager may rename it, so the literal lives only here. `ok` is true only for `allowed`.
+ */
+export const ASK_CODE = {
+  allowed: 'allowed', rejected: 'rejected', question: 'question', unavailable: 'unavailable', toUser: 'to-user',
+  overCapacity: 'over-capacity', noLongerManaged: 'no-longer-managed',
+  notUserMessage: 'not-user-message', tooLarge: 'too-large', expired: 'expired',
+}
+/** Codes refused before anything is sent: no request id, no Fishball step (§7a.2). */
+export const ASK_REFUSALS = [ASK_CODE.notUserMessage, ASK_CODE.tooLarge, ASK_CODE.expired]
+/** answer_approval's four rev11b decisions (§7a.3; grant is rev11d) and its new refusal code. */
+export const DECISION = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate' }
+export const QUESTION_REQUIRED = 'question-required'
+/** S35 wording, appended to an allowed direct call's own output and following Fishball's reject reason (§7a.4). */
+export const HINT_NEXT = 'Next time, call ask_fishball before a call that needs approval, and explain why it is needed.'
+export const HINT_ALLOWED = 'Fishball approved this call once. ' + HINT_NEXT
+export const ALLOWED_TEXT = (output) => output + '\n\n' + HINT_ALLOWED
+export const REJECTED_TEXT = (reason) => 'Fishball rejected this call: ' + reason + '\n' + HINT_NEXT
+/** DSH's own wording that the rewrite replaces (S35). */
+export const DSH_REJECT_WORDS = 'the user rejected'
+/** The body of the asking fixture tool returns 'outcome=<DSH outcome>' (worker.mjs). */
+export const ASK_OUTPUT = (outcome) => 'outcome=' + outcome
+/** rev11b's new limits (§16 "Revision 11's new limits"): plugin config of the fishball row. */
+export const LIMITS_R11B = {
+  userMessagesListed: { default: 20, min: 1 },
+  userMessageExcerptChars: { default: 1000, min: 1 },
+}
+/** Audit (§9 "Revision 11 additions"): approvals rows' kind and answers, and the decisions rows your clicks add. */
+export const AUDIT_KIND = { asked: 'asked', direct: 'direct' }
+export const AUDIT_ANSWER = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', toUser: 'to-user', pass: 'pass', released: 'released', withdrawn: 'withdrawn' }
+export const DECISION_ACTION = { allowOnce: 'allow-once', reject: 'reject' }
+export const DECISIONS_TABLE = 'decisions'
+/** A message source the web prompt records: kind 'user' with an rpc id (DSH's "user-rpc" source, dsh-api-session-controller). */
+export const USER_RPC_SOURCE = { kind: 'user', rpcId: 'rpc-fbtest', clientTimeZone: 'UTC' }
+/**
+ * A scripted tool argument with exactly this value becomes the newest apr_<hex> id seen in the session's
+ * conversation (fixtures/fake-llm.mjs), so a script can continue a request minted during the turn.
+ */
+export const REQUEST_PLACEHOLDER = '$fbtest:last-request-id'

@@ -68,7 +68,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
-| HTP-01 | EP | GET state shape | 200 application/json; exactly the keys status, sessionId, workspaceId, cwd, error, limits (integers: the 12 original fields plus rev11-limits' 16), hiddenTools |
+| HTP-01 | EP | GET state shape | 200 application/json; exactly the keys status, sessionId, workspaceId, cwd, error, limits (integers: the 12 original fields plus rev11-limits' 16 plus rev11b's 2), hiddenTools |
 | HTP-02 | EP | hiddenTools | exactly the 18 names (with `spawn_teammate`), sorted; also checked against the literal list |
 | HTP-03 | EP (no cookie) | behind browser auth | not 200 |
 | HTP-04/05 | EP + ST | SSE | 200 text/event-stream; first frame within 3 s equals GET state; a limit change produces a frame with the new value |
@@ -81,14 +81,14 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
-| CFG-01 | EP | defaults | the settings entry `fishball` applies live; its value and `state.limits` equal the default table (rev11-limits: the 12 original fields plus the 16 moved ones) |
+| CFG-01 | EP | defaults | the settings entry `fishball` applies live; its value and `state.limits` equal the default table (rev11-limits: the 12 original fields plus the 16 moved ones; rev11b: plus `userMessagesListed` 20 and `userMessageExcerptChars` 1000, 30 in all) |
 | CFG-02 ×12 | BVA (minimum valid) | 1, or 0 for the three hourly caps | update ok; `state.limits` shows the value; the profile `cordis.patch.yml` row config holds it |
 | CFG-03 ×12 | BVA (minimum − 1) | 0 for "≥ 1" fields, −1 for hourly caps | update throws; patch file byte-identical; live limits and settings value unchanged |
 | CFG-04 ×9 | EP (negative) | −1 for "≥ 1" fields | rejected; nothing changes |
 | CFG-05 ×12 | EP (non-integer) | 1.5, or 0.5 for hourly caps | rejected; nothing changes |
 | CFG-06 ×12 | EP (string) | "5" or "x" | rejected; nothing changes |
 | CFG-07 | BVA (large) | no upper bound | 1,000,000 accepted |
-| CFG-08 | EP | the defaults again (all 28 fields) | accepted together |
+| CFG-08 | EP | the defaults again (all 30 fields since rev11b) | accepted together |
 | CFG-09 | ST live –update→ live | no remount | same agent object; one agent/created and no agent/disposed for Fishball; status live |
 
 ### [composition.test.mjs](composition.test.mjs): R-COMPOSITION and R-ISOLATION
@@ -477,7 +477,7 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | APR-21 | EP | P8 | approvals has pending and recent; a waiting request is pending with exactly id, sessionId, toolName, at; after it, recent entries have exactly the 10 keys with the enums, newest first; neither the state nor any audit file holds the arguments |
 | APR-22 | BVA (21 requests) | P8 | 20 listed, newest first |
 | APR-23 | BVA (auditEntriesKept 2, 3 requests) | P8 | at most 2 audit files, the newest among them |
-| APR-24 | EP | P9 | the rubric phrases in Fishball's system prompt |
+| APR-24 | EP | P9; revision 11 §7a.7, Q-r11-reject-rubric | the rubric phrases (rules 1-5 word for word, now also rules 4 and 5) in Fishball's system prompt; "You cannot reject" absent; one line lets Fishball reject only when the call goes beyond what the user asked that session AND is dangerous (found by meaning: reject + beyond the request + dangerous) |
 | APR-25 | EP | P10 | the client bundle has "Permission requests" |
 
 ### [approvals-routing.test.mjs](approvals-routing.test.mjs): P7 bypass and P12 (one host, in order)
@@ -1245,11 +1245,11 @@ The rules:
 | id | technique | expected result |
 |---|---|---|
 | OWN-01 ×5 | EP (each Fishball-group entry) | kind builtin, dsh fishball, status builtin, on, applied, [disable], changedBy null, its title, exactly its tools |
-| OWN-02 | EP | own tools visible; message_fishball other-sessions |
+| OWN-02 | EP | own tools visible; message_fishball (and since rev11b ask_fishball, list_user_messages) other-sessions |
 | OWN-03 | EP | no own tool in otherTools (state and list_plugins); each under exactly one plugin |
 | OWN-04 | EP | the 7 DSH built-ins dsh builtin; exactly the 5 group keys dsh fishball |
 | OWN-05 | EP | features all true in GET state and the first SSE frame |
-| OWN-06 | EP (Fishball / ordinary) | Fishball has its tools but not message_fishball; an ordinary session has only message_fishball |
+| OWN-06 | EP (Fishball / managed session) | Fishball has its tools but none of the three for other sessions; a managed session has only message_fishball, ask_fishball and list_user_messages (rev11b) |
 | OWN-10 ×4 | DT (user × own × off/on, idle) | no prompt; off applied at once, features false, tools plugin-off and absent; on: visible (never unchecked), features true |
 | OWN-11 ×3×3 | DT (Fishball × messages/watching/approvals × off / on+Reject / on+Allow once) | off: no prompt, the same turn keeps the tools, the next request lacks them. Reject: one prompt with "Fishball asks to turn on" and the title shown on the tab (A135), `rejected`, stays off. Allow once: on, tools back, no unchecked |
 | OWN-12 | DT (on × unavailable) | `rejected`, stays off |
@@ -1507,3 +1507,111 @@ rev11a deliberately changes two older behaviours: every other session's permissi
 - **A-r11a-7. Session messages off and permission requests.** Routing depends on managed status, Fishball live and Permission requests (§7a.1), so DUR-02 expects a managed session's request still to reach Fishball while Session messages is off.
 - **A-r11a-8. "Nothing mentions Fishball"** is checked case-sensitively (`Fishball`), because the test homes sit under the lowercase `dsh-fishball` checkout path; the standard preset's quote of this repository's AGENTS.md is test environment, not product text.
 - **A-r11a-9. Agent re-creation by clear or compaction** is not exercised; resume (dispose + resume, and a restart) is.
+
+## Revision 11 rev11b cases (asking Fishball first; DESIGN §14 row rev11b, §7a.1-§7a.6 (§7a.6: "To-you ticket" and "Before rev11c" only), §5e, §9 "Revision 11 additions", §16 Q-r11-list, Q-r11-quote-bound, Q-r11-rounds, Q-r11-direct-ask, Q-r11-direct-reply, Q-r11-release, Q-r11-audit-user, limits `userMessagesListed`, `userMessageExcerptChars`, `maxMessageBytes`; requirements items 6-13; S35)
+
+Before rev11c "to the user" is the stock prompt in the asking session: the scripted answerer after the broker (`FBTEST_APPROVER_AFTER=1`). "Reaches Fishball" means a `[permission request apr_…]` notice in Fishball's session; Fishball's fake model answers through a plan (`planApproval`), or only says "ok" so the request waits. The asking fixture tool `fbtest_ask` asks DSH for approval in its body and returns `outcome=<DSH outcome>`, so "the call runs" is its own output and "the stock prompt" is the scripted answerer's record. The ask_fishball code for "to the user" is provisional (`ASK_CODE.toUser`, one constant).
+
+Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_TOOLS`, `ASK_CODE`, `ASK_REFUSALS`, `DECISION`, `QUESTION_REQUIRED`, S35 wording `HINT_NEXT` / `HINT_ALLOWED` / `ALLOWED_TEXT` / `REJECTED_TEXT`, `DSH_REJECT_WORDS`, `ASK_OUTPUT`, `LIMITS_R11B`, `AUDIT_KIND`, `AUDIT_ANSWER`, `DECISION_ACTION`, `DECISIONS_TABLE`, `USER_RPC_SOURCE`, `REQUEST_PLACEHOLDER`; `RUBRIC` gains rules 4 and 5, `RUBRIC_REMOVED`, `REJECT_RULE`); helpers `step`, `askStep`, `callStep`, `resultById`, `stockSeen`, `approvalAudit`, `auditOf`, `storedRows`, `roundsOf`, `managedSession`, `blockArguments` (expect.mjs); worker op `userMessageLog` (DSH message ids and source kinds of a session's user messages); the fake model replaces a scripted argument equal to `REQUEST_PLACEHOLDER` with the newest `apr_…` id in the conversation (so a script can answer a question minted during the turn) and records each request's last 8 messages (`last`: role, source kind, text), so a context message after a tool result can be seen.
+
+### [rev11b-list.test.mjs](rev11b-list.test.mjs): the three tools, list_user_messages, its config (one host)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| LUM-01 | EP (managed) | done-when "all three tools" | the next model request lists `message_fishball`, `ask_fishball`, `list_user_messages` |
+| LUM-02 ×2 | EP (yours: `ask_fishball` / `list_user_messages`) | done-when, §5e "Refusal is DSH's own" | not listed; calling it is DSH's UNKNOWN_TOOL error; no permission notice, zero Fishball steps |
+| LUM-03 | ST managed –Take back→ yours | §5e | none of the three at the next request |
+| LUM-04 | EP (Fishball's own session) | §5e | neither tool in Fishball's request |
+| LUM-05 | EP (sources: `user`, user-rpc form, relay from `message_session`, Fishball notice, runtime context, another session's) | item 6, §7a.2 | `{ok:true, messages:[{id, at, excerpt}]}` (exactly those keys): the user-typed messages of that session only, DSH message ids, ISO times, newest first, short texts whole |
+| LUM-06 ×2 | BVA (`userMessagesListed` 20: 20 / 21 messages) | done-when | all 20; 21 → the newest 20, the oldest left out |
+| LUM-07 | BVA (`userMessagesListed` 1) | §16, done-when "without a restart" | only the newest; state.limits 1; same Fishball agent, live |
+| LUM-08 ×2 | BVA (`userMessageExcerptChars` 1000: 1000 / 1001 characters of 2-byte text) | done-when | 1000 → whole; 1001 → at most 1000 characters, a prefix (a trailing ellipsis allowed) |
+| LUM-09 | BVA (`userMessageExcerptChars` 1) | §16 | every excerpt at most 1 character; applied without a restart |
+| LUM-10 | EP | done-when "config fields in the limits form" | form defaults 20 and 1000, settings value and state.limits |
+| LUM-11 ×4 | BVA (minimum 1) | §16 rules | 1 accepted (state.limits shows it); 0 refused, value unchanged |
+
+### [rev11b-ask.test.mjs](rev11b-ask.test.mjs): ask_fishball and Fishball's answers (one host, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| ASK-01 | EP (allow) | items 7-8, §7a.2 | `{ok:true, code:'allowed', request_id}`; one notice saying the session asked first (header names `ask_fishball`) with tool, arguments, why, `latest_user_message`, empty `quoted_user_messages`; audit kind `asked`, answer `allow`, no quotes |
+| ASK-02 | EP (reject + reason) | item 8, done-when | `{ok:false, code:'rejected', reason, request_id}`; audit `reject` |
+| ASK-03 ×7 | DT (answer_approval refusals) | §7a.3, done-when "as in P7" | allow+high → `allow-needs-low-risk`; allow `''` / `'   '` → `reason-required`; reject `''` → `reason-required`; ask with no / `''` question → `question-required`; unknown id → `expired`; each leaves the request pending and the agent waiting |
+| ASK-04 | DT (escalate, empty reason) | §7a.3 "None", §7a.6 ticket, Q-r11-audit-user | `{ok:true, requestId, decision:'escalate'}`; agent gets `to-user` + request_id; the identical call made next in the same turn goes to the stock prompt, no new notice; your Allow once → `decisions` row `allow-once`, `by:'user'`, target = request id; audit answers `escalate` then `to-user` (outcome allowed-once) |
+| ASK-05 | DT (allow on truncated arguments, `argumentExcerptBytes` 16) | §7a.3 | `arguments-incomplete`, still pending; reject then works |
+| ASK-06 | BVA (`approvalAnswerSeconds` 1) | item 11, done-when | `to-user` after ≥ 1 s (< 10 s); the identical call to the stock prompt; your Reject → `decisions` row `reject`; audit `timeout` then `to-user` |
+| ASK-07 | ST (3 question rounds, then allow) | Q-r11-rounds, done-when | each round `question`, same request_id, Fishball's question; 4 notices of the same request, each with the thread so far in order (`from` fishball/agent alternating); the final allow covers the call (own output, no prompt, no further notice); audit `allow` then `pass` |
+| ASK-08 ×3 | EP (request_id unknown / settled / another session's) | contract `expired` | `{ok:false, code:'expired'}`, no request_id, nothing sent |
+| ASK-09 | EP (Permission requests off) | item 10 | at once; `unavailable` (or DSH's UNKNOWN_TOOL, A-r11b-3); nothing sent; the call then to the stock prompt |
+| ASK-10 | ST (Permission requests off while an ask_fishball and a direct call wait) | §7a.5, done-when | `unavailable`; the direct call shows its stock prompt |
+| ASK-11 | ST (Fishball archived while waiting; asked while archived) | §7a.5 | `unavailable` both times, at once the second time, each with request_id; live again after recovery |
+| ASK-12 | ST (Take back while waiting) | §5e, done-when | `no-longer-managed` with request_id; audit `released` |
+| ASK-13 | BVA (`maxPendingApprovals` 1, 1 pending) | §7a.2, §7a.6 | `over-capacity` at once with request_id, nothing sent; the identical call to the stock prompt |
+
+### [rev11b-pass.test.mjs](rev11b-pass.test.mjs): one-time passes (one host, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| PAS-01 | EP (exact call after allow) | done-when | own output, not an error, no stock prompt, only the ask notice |
+| PAS-02 | ST (pass used → same call again) | §7a.3 "the pass is used" | the second identical call is a new request to Fishball |
+| PAS-03 | EP (one argument changed) | done-when | to Fishball; after it is rejected the original call in the same turn still runs on the unused pass |
+| PAS-04 | EP (same arguments, other key order) | S35 canonical JSON | covered, no further notice |
+| PAS-05 | ST (unused → turn ends) | done-when, defaults "Pass lifetime" | the identical call next turn goes to Fishball |
+| PAS-06 | EP (identical call from another managed session while the pass is live) | §7a.3 "same session" | goes to Fishball; the owner's call then runs on its pass |
+
+### [rev11b-direct.test.mjs](rev11b-direct.test.mjs): direct calls (one host, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| DIR-01 | EP (allow) | item 12, S35 | notice header says direct; `latest_user_message` = your last turn; result exactly output + `\n\nFishball approved this call once. …`, not an error; audit kind `direct`, `allow` |
+| DIR-02 | EP (reject) | done-when, S35 | error result exactly `Fishball rejected this call: <reason>\nNext time, call ask_fishball …`; no "the user rejected"; audit `reject` |
+| DIR-03 | ST (rejected → retried next turn) | item 13 | a new request to Fishball; allowed with the hint |
+| DIR-04 | ST (ask on a direct call → ask_fishball reply → allow) | Q-r11-direct-ask, Q-r11-direct-reply | error naming the request id, the question and `ask_fishball`; the reply continues the same request (2 rounds, thread [question, reply]); `allowed`, same id; the call made again runs on the pass |
+| DIR-05 | EP (escalate) | done-when, Q-r11-audit-user | the stock prompt answers the call; one notice only; `decisions` `allow-once` by user, target the request id; audit `escalate` |
+| DIR-06 | BVA (`approvalAnswerSeconds` 1) | item 11 Reading "direct calls too" | the stock prompt after ≥ 1 s; `decisions` `reject`; audit `timeout` |
+
+### [rev11b-quotes.test.mjs](rev11b-quotes.test.mjs): quotes and size (one host, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| QUO-01 | EP (a 1500-character message and a short one) | item 7, done-when | `quoted_user_messages` = the quoted ids with their full text, in order, inside the untrusted block; audit `quotes` = the ids, never the text |
+| QUO-02 ×6 | EP (relay / notice / runtime context / another session's / unknown id / valid + relay) | done-when | `not-user-message` at once, ok false, no request_id; nothing sent; no audit row |
+| QUO-03 | BVA (message exactly at `maxMessageBytes`, 6000) | Q-r11-quote-bound | reaches Fishball; the notice is exactly 6000 bytes |
+| QUO-04 | BVA (one byte over) | done-when | `too-large` at once, no request_id, no notice, no Fishball step |
+| QUO-05 | BVA (a reply round over the limit) | §7a.2 "each round must still fit" | the big reply `too-large`, nothing sent; a fitting reply continues the same request |
+
+The size is calibrated per run: two requests with reasons of 100 and 600 bytes give the notice's size; the test requires one byte of reason to add one byte of notice, then sizes the reason so the notice is exactly the limit. "The whole request message" is read as the notice text Fishball receives (A-r11b-4).
+
+### [rev11b-ptc.test.mjs](rev11b-ptc.test.mjs): calls inside run_code (PTC tool mode)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| PTC-01 | EP (inner call allowed) | §7a.4, S35 PTC | the plain value in the run_code result, no hint there; after it in the next request a message of source `fishball-notice` with the hint; the notice is in the session log |
+| PTC-02 | EP (inner call rejected) | S35 PTC | the program catches exactly the rejection text |
+| PTC-03 | EP (ask on an inner call) | §7a.4 | the caught error names the request id, the question and `ask_fishball` |
+
+### Not automated (rev11b)
+
+- The live-model scenarios of the done-when (Fishball rejects a dangerous call beyond your request; sends a dangerous call within it, or a harmless one beyond it, to you): prompt rules, not code. APR-24 checks the rule's line is in the prompt.
+- "An `ask_fishball` request that is already your card answers unavailable, its card leaves": cards are rev11c.
+
+### Older tests changed by rev11b
+
+| file | change | why |
+|---|---|---|
+| config CFG-01, CFG-08 | the default table has 30 fields: `LIMITS_R11B` (`userMessagesListed` 20, `userMessageExcerptChars` 1000) added | §16 "Revision 11's new limits" |
+| http HTP-01 | `state.limits` keys include the two new fields | §16 |
+| own-plugins OWN-01/02/03/06/10/11 (constants `OWN_PLUGINS.approvals.tools`) | Permission requests now holds `answer_approval`, `ask_fishball`, `list_user_messages`; the two new tools are, like `message_fishball`, status `other-sessions` and never in Fishball's own requests (`MANAGED_TOOLS` replaces the single `message_fishball` exception) | §5e "Which Fishball plugin", §7a.2 |
+| approvals-broker APR-24, constants `RUBRIC` | "You cannot reject" no longer expected (now `RUBRIC_REMOVED`, asserted absent); rules 4 and 5 phrases added; the new reject rule asserted by meaning | DESIGN §7a.7 last paragraph, Q-r11-reject, Q-r11-reject-rubric |
+
+### Ambiguities (rev11b)
+
+- **A-r11b-1. Pass and ticket lifetime within a turn.** A to-you ticket "ends as a pass does" (used, or the turn ends), so the cases make the identical call in the same turn as the `ask_fishball` that minted it.
+- **A-r11b-2. Notice wording for the kind.** The contract says the notice states whether the session asked first or made a direct call; the tests read it as the header naming `ask_fishball` (asked) or containing "direct" (direct call).
+- **A-r11b-3. Permission requests off and the tool.** The tools belong to Permission requests and exist only while it runs, yet `ask_fishball` "answers unavailable" when it is off. ASK-09 accepts either `unavailable` or DSH's UNKNOWN_TOOL for a call made while it is off; ASK-10 (a call already waiting) requires `unavailable`.
+- **A-r11b-4. "The whole request message".** Measured as the UTF-8 bytes of the notice text in Fishball's log (QUO-03 requires that notice to be exactly `maxMessageBytes`).
+- **A-r11b-5. `escalate` "needs nothing extra".** `answer_approval`'s schema still requires `risk` and `reason` for every decision (P7); ASK-04 reads "nothing extra" as no code rule, so an escalate with an empty reason is accepted.
+- **A-r11b-6. "One audit row per request".** The implementation also records the follow-up call under the same request id (`pass` for a call on a pass, `to-user` for a call the ticket sends to your prompt), which is how the contract's answers `pass` and `to-user` appear. ASK-04, ASK-06 and ASK-07 expect exactly the decision row followed by that row; no row per question round.
+- **A-r11b-7. request_id on answers given at once.** The contract says every answer except refusals carries `request_id`; ASK-11 (Fishball not live) and ASK-13 (`over-capacity`) require it.
+- **A-r11b-8. A call run on a pass gets no hint** (S35 "it ran under a pass: next()"), so PAS-01, ASK-07 and DIR-04 expect the tool's own output exactly.
+
