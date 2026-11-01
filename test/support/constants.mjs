@@ -611,7 +611,7 @@ export const OWN_PLUGINS = {
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages'] },
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -743,12 +743,13 @@ export const GRANT_ACTION = { grant: 'grant', revoke: 'revoke' }
 export const GRANT_AUDIT = { grant: 'grant', used: 'grant-used' }
 /** A tag record made for a call a grant covered (§9 "Tag records"). */
 export const GRANT_TAG_KIND = 'grant'
+/** run_code is a DSH built-in that only exists in PTC mode and cannot be a fixture here; demo_echo stands in for "every other tool" (exact-only). */
 /** Tools that accept prefix grants (shell commands only, §7a.8, Q-r11-prefix-tools), and tools that get exact grants only. */
 export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_send']
 /** terminal_open has no command text (the manager's decision, 2026-11-02): exact-call grants only. */
-export const EXACT_ONLY_TOOLS = ['run_code', 'fbtest_ask', 'terminal_open']
+export const EXACT_ONLY_TOOLS = ['demo_echo', 'fbtest_ask', 'terminal_open']
 /** The fixture tools that ask for approval in their body (fixture-tools.mjs). */
-export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('run_code', 'terminal_open').join(',') }
+export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('demo_echo', 'terminal_open').join(',') }
 
 // ---- Revision 11 rev11e (prompts already showing, the fifth way in, cards for direct calls; DESIGN §7a.1, §7a.6, §7a.9, §9, §10e, §16; S33) ----
 /** Fishball's two tools for prompts already showing (§7a.9), under Permission requests (§10d). */
