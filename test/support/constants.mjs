@@ -93,6 +93,9 @@ export const PRESET = {
   standard: 'standard',
   /** A test preset with no tools of its own, so the global fixture tools are what an ordinary session sees. */
   bare: 'fbtest-bare',
+  /** rev11g: sessions that can call ask_user_question (blocking, like the shipped presets) / the timed variant (default wait 120 s, per call `timeout`). */
+  ask: 'fbtest-ask',
+  askTimed: 'fbtest-ask-timed',
 }
 
 export const assistantDir = (home) => path.join(home, 'fishball', 'assistant')
@@ -789,3 +792,24 @@ export const CUT_MARK = '…'
 export const OWN_WITHDRAW_HINT = /or withdraw one/i
 /** The fixture plugin tool that asks DSH for approval in its body (fixture-tools.mjs, FBTEST_ASKING_TOOLS) and is visible to Fishball. */
 export const OWN_ASKING_TOOL = 'demo_echo'
+
+// ---- Revision 11 rev11g (questions and plan reviews in managed sessions; DESIGN §7a.10, §9, §10e, §11, §14, §16; requirements items 25-27; S36, S37) ----
+/** Fishball's tool (§7a.10): {question_id, answers?, approve?, feedback?, to_user?, note?}. */
+export const ANSWER_QUESTION = 'answer_question'
+/** Host routes (§10e "Host API"): answer a question card; set the mode. */
+export const QUESTION_API = { answer: '/api/fishball/questions/answer', mode: '/api/fishball/question-mode' }
+/** The three modes (item 25); `auto` is the default. */
+export const QUESTION_MODE = { auto: 'auto', fishball: 'fishball', user: 'user' }
+/** The code answer_question gives in User mode (§7a.10 "Code enforces only User mode"). */
+export const MODE_USER_CODE = 'mode-user'
+/** Table `settings`, key `questions`: {mode, changedAt} (§9). */
+export const QUESTION_SETTINGS = { table: 'settings', key: 'questions' }
+/** Tag kinds rev11g adds (§9 "Tag records"). */
+export const QUESTION_TAG_KIND = { question: 'question', planReview: 'plan-review' }
+/** DSH's own wording for a plan-review outcome (dsh-plan-mode), and the tool names. */
+export const PLAN = { exit: 'exit_plan_mode', approve: 'Approve', keep: 'Keep planning', approved: /Plan approved/, feedbackPrefix: 'The user chose to keep planning; their feedback: ', dismissed: /dismissed the plan review/ }
+/** The ask_user_question tool and the id of a plan review's single question. */
+export const ASK_USER_QUESTION = 'ask_user_question'
+export const PLAN_REVIEW_ID = 'plan-review'
+/** A timed question's pending result carries these (dsh-tool-ask-user). */
+export const PENDING = { key: 'pending' }
