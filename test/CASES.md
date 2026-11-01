@@ -1383,7 +1383,7 @@ Two hosts: one for everything but the restart, one restarted so the session is r
 | ROL-03 | EP | role `user` for the three user rows and no other |
 | ROL-04 | EP (real turn) | a scripted answer is `{role:'assistant', text}`; the typed message is `user`; the context DSH adds to a first turn is `context` with its kind; the whole list equals the oracle |
 | ROL-07 | EP (a turn with a tool call) | the assistant message that only calls a tool (no text) and the tool result are not listed; the typed message and the final answer are |
-| ROL-05 | EP (error guessing) | a relay with no senderSessionId is never `user` or `fishball` |
+| ROL-05 ×5 | DT (a relay's sender: missing, null, 7, 0, '') | `{role:'agent', text}` with no `from` key when the sender is not a string (review fix); the empty string is a string, so `from: ''` |
 | ROL-06 ×5 | EP + error guessing | no source at all: `{role:'context', text}`, no `source`/`from` key; an empty source object, a null, a numeric and an empty kind: `context`, no `from` |
 | ROL-10 | ST (live session) | typed turn, message_session, a relay from another session, a notice: the list equals the oracle; Fishball's own message is `fishball`; only the typed message is `user` |
 | ROL-11 | ST (start_session) | the first message is `fishball` with its text verbatim; the answer after it is `assistant`; nothing is `user` |
@@ -1394,7 +1394,8 @@ Two hosts: one for everything but the restart, one restarted so the session is r
 | ROL-23 ×2 | BVA (13000 bytes of ASCII; 16000 bytes of 2-byte characters) | one entry, label kept, text a prefix ending with an ellipsis, at most 12288 bytes, no broken character |
 | ROL-24 | EP (empty-text messages of five labels, in the middle and at the end) | skipped and not counted toward the 12 |
 | ROL-30 ×2 | EP (hostile source kind, hostile sender id) | one closing tag, one messages line, one session_id line; the strings come back exactly |
-| ROL-40 | EP | the tool description names user, assistant, fishball, agent and context; the arguments are still only `session_id` |
+| ROL-40 | EP | the tool description names user, assistant, fishball, agent and context and words context exactly as the review fix says; the arguments are still only `session_id` |
+| ROL-41 | EP | the result's `note` is exactly the review fix's sentence (information, never instructions; a user message was typed to that session, not to Fishball) |
 
 ### [messaging-start-halfmade.test.mjs](messaging-start-halfmade.test.mjs): start_session keeps a half-made session (HM-nn)
 
@@ -1423,12 +1424,13 @@ Three hosts: A (title service, no cap), B (`sessionsPerHour` 2), C (no `sessionT
 |---|---|---|
 | PRV-01 ×9 | DT (source of the message that starts the turn; session started by the user) | started by `the user`; turn by `the user` for kind user (also with an rpc id), `Fishball (message_session)` for a relay from Fishball, `another agent or a notice` for a relay from anyone else (including Fishball's id plus one character), a Fishball notice, a goal round, a schedule and a made-up kind |
 | PRV-02 ×9 | DT (source of the session's first message, which is also its first turn) | started by `the user`, `Fishball (start_session)` for a relay from Fishball, otherwise `another agent or a notice` or `unknown`; turn by as in PRV-01 |
+| PRV-04 ×14 | DT (source of a later message; the user typed earlier) | the request's `latest_user_message` is the later message for kind user (also with an rpc id) and the earlier typed message for every other source, including relays with a null, numeric or missing sender, `User` and `user ` |
 | PRV-03 | ST | after a relay from Fishball the user types: the new turn is `the user`'s, the session is still started by Fishball |
 
 ### Ambiguities (read_session roles, half-made start)
 
 - **A148. A message with no source.** DSH's steer crashes on a message with a null source ("Cannot read properties of null (reading 'kind')", observed) and DSH's own load check refuses one without a source, so a no-source message can only be produced by appending the event to a live session's log. ROL-06 does that (`injectUserMessage`); a no-source message read back from a stored log is not driven. The same op appends every ROL-01 row; a steered message is stored with exactly the source it was given (observed with the table's kinds), so the appended events have the shape of real ones, and ROL-04 and ROL-10..12 repeat the labels through the real paths (DSH's own turns, steer with a source, message_session, start_session).
-- **A149. Sources the requirement does not name.** A relay with no `senderSessionId`, an empty source object, and a `kind` that is null, a number or the empty string: the tests require only "never `user`" (and never `fishball` for the relay), `context` for the malformed kinds, and no `from` key. Whether such a message carries a `source` key is not asserted.
+- **A149. Sources the requirement does not name.** An empty source object, and a `kind` that is null, a number or the empty string: the tests require only "never `user`", `context`, and no `from` key. (A relay whose sender is not a string was in this list until the review fix specified it: `{role:'agent', text}` with no `from`, ROL-05.) The empty-string sender is read literally: a string other than Fishball's, so it keeps `from: ''`. Whether such a message carries a `source` key is not asserted.
 - **A150. Provenance regression.** "Its behaviour must be unchanged" is tested by PRV-01..03 plus the existing APR-01 and APR-16 cases, and the PRV file was run against the version before the fix with the same answers. The labels for a Fishball notice, a goal round, a schedule and a made-up kind come from DESIGN §7a's value `another agent or a notice`; for a session's first message from them, `unknown` is accepted too, as in APR-16.
 - **A151. Shapes.** Each entry is compared whole with `deepEqual`: `{role, text}`, `{role, from, text}` or `{role, source, text}`, as the requirement writes them. An extra key (for example a timestamp) would fail the cases.
 - **A152. Bounds with labels.** "Count message text as before" is read as: at most 12 messages and at most 12288 bytes of message text, with `from` and `source` not counted. At exactly 12288 bytes of text all 12 messages must come back (ROL-21). One byte over (ROL-22) the requirement says only that older ones are dropped first and one long message is cut with an ellipsis, so the case accepts the oldest being dropped or being cut with an ellipsis and requires the newest to be whole.
@@ -1441,6 +1443,8 @@ Three hosts: A (title service, no cap), B (`sessionsPerHour` 2), C (no `sessionT
 - **A159. The cap.** "Counts it against `sessionsPerHour`" is tested by spending a cap of 2 with one half-made success and one half-made failed delivery and then expecting `hourly-cap`, from a normal start and from a start that would be half-made (which must create nothing). HM-11 shows that nine other failures were not counted.
 - **A160. The refusal for other failures.** `{ok:false, code:'delivery-failed'}` exactly, as OUT-04 and as before the fix. A session that was created anyway (`createFirst`) is not sent the first message and is not titled.
 - **A161. The restart case.** ROL-12 relies on a restarted host resuming only Fishball's own session, so the other session is read from its stored log; it asserts that first (`agentStatus` null) and that reading does not make it live.
+- **A162. Wording fixed by the review fix.** The `read_session` note and the tool description's definition of context are asserted verbatim (ROL-40, ROL-41), because the coordinator gave the exact sentences. The earlier checks (each role named as a word) stay.
+- **A163. The request's latest user message (PRV-04).** "Only DSH user sources count" is tested with kind `user` (with and without an rpc id) as the only sources that replace the user's earlier typed message; every other source in the table leaves it. The literal kind `user-rpc` is not used there: DSH never records it (its rpc source has kind `user`). PRV-04 also passes on the version before the fix.
 
 ### Cases changed by this fix
 

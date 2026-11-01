@@ -15,6 +15,7 @@
  * |---------|-----------|----------|
  * | PRV-01 ×9 | DT (source of the message that starts the turn; the session was started by the user) | started by 'the user'; turn by: the user for kind user (also with an rpc id), Fishball (message_session) for a relay from Fishball, otherwise 'another agent or a notice' |
  * | PRV-02 ×9 | DT (source of the session's first message, which is also its first turn) | started by: the user, Fishball (start_session) for a relay from Fishball, otherwise 'another agent or a notice' or 'unknown'; turn by as in PRV-01 |
+ * | PRV-04 ×14 | DT (source of a later message; the user typed 'first words' earlier) | the request's latest_user_message is the later message for kind user (also with an rpc id) and 'first words' for every other source, including relays with a null, numeric or missing sender |
  * | PRV-03  | EP (the user typed after a relay from Fishball) | the turn the user started is 'the user' again; the session was still started by Fishball |
  */
 import assert from 'node:assert/strict'
@@ -58,13 +59,14 @@ describe('Permission-request provenance by source kind', () => {
   async function ask(sid, source, label) {
     const text = tok('prv')
     await planEscalate(text)
-    await startAsk(host, sid, ASK_TOOL, { text }, label + ' ' + text, source)
+    const turnText = label + ' ' + text
+    await startAsk(host, sid, ASK_TOOL, { text }, turnText, source)
     const req = await waitRequest(host, fb, text)
     assert.ok(req, 'a permission request reached Fishball')
     const [started, turnBy] = provenance(req.block.header)
     await askSettled(host, text)
     await settledIdle(host, sid)
-    return { started, turnBy, req }
+    return { started, turnBy, req, turnText }
   }
   const blank = async (folder) => (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
   const startedByUser = async (folder) => { const sid = await blank(folder); await turn(host, sid, [[{ text: 'hello' }]], 'first words'); return sid }
@@ -92,6 +94,25 @@ describe('Permission-request provenance by source kind', () => {
         assert.equal(got.turnBy, turnBy)
       })
     })
+  })
+
+  describe('PRV-04 the request\'s latest user message is the last message DSH recorded as typed by the user', () => {
+    // The user typed 'first words' first. A later message counts only when its source is a DSH user source (kind user).
+    const more = [
+      ['a relay with a null sender', () => ({ kind: 'agent-message', form: 'relay', senderSessionId: null })],
+      ['a relay with a numeric sender', () => ({ kind: 'agent-message', form: 'relay', senderSessionId: 7 })],
+      ['a relay with no sender', () => ({ kind: 'agent-message', form: 'relay' })],
+      ["'User' (upper case)", () => ({ kind: 'User' })],
+      ["'user ' (trailing space)", () => ({ kind: 'user ' })],
+    ]
+    for (const [label, source] of [...sources.map(([l, src]) => [l, src]), ...more]) {
+      it(label, T, async () => {
+        const sid = await startedByUser('prv-04-' + label.replace(/\W+/g, '-'))
+        const src = source(fb)
+        const got = await ask(sid, src, 'latest words')
+        assert.equal(got.req.block.fields.latest_user_message, src.kind === 'user' ? got.turnText : 'first words')
+      })
+    }
   })
 
   it('PRV-03 after a relay from Fishball the user types: the new turn is the user\'s, the session is still Fishball\'s', T, async () => {
