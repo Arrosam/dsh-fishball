@@ -4,6 +4,8 @@
  *
  * A card is filed by the broker (src/approvals.js) when Fishball escalates an ask_fishball
  * request, does not answer in time, or cannot be told; the asking agent keeps waiting on it.
+ * A direct call Fishball escalates or does not answer in time is a card too, beside the stock
+ * prompt in its session (rev11e, §7a.6): the first answer in either place wins.
  * Each card settles exactly once, in one place (settle), so your answer in the pile, your answer
  * on the session's row, the call's cancellation and a release can race safely: the first wins
  * and every later one is refused (answering in either place clears both, item 15).
@@ -55,6 +57,11 @@ export class Pile {
   /** End every card that matches with `result`. */
   settleWhere(matches, result) {
     for (const { card } of [...this.#cards.values()]) if (matches(card)) this.settle(card.requestId, result)
+  }
+
+  /** Whether this request's card is still in the pile. */
+  has(requestId) {
+    return this.#cards.has(requestId)
   }
 
   /** Cards in the pile (the maxPendingApprovals count includes them, §7a.6). */

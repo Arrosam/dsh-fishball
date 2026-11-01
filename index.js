@@ -327,6 +327,8 @@ export async function apply(ctx, config) {
     pile,
     tags,
     grants,
+    // answer_prompt makes the prompt's session managed (the fifth way in, rev11e §7a.9).
+    manage,
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   deskTools = requestDeskTools({ ctx, broker, readLimits: limits })
