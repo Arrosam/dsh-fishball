@@ -176,7 +176,7 @@ describe('rev11-limits: context-window fields', () => {
     const cw = await accepted(N)
     assert.equal(cw.outputCap, capFor(N, f))
     assert.equal(cw.outputCap, 30000)
-    assert.equal(cw.threshold, thresholdFor(N, 20000, f))
+    assert.equal(cw.threshold, thresholdFor(N, 30000, f))
     assert.equal(cw.threshold, 22500)
     const r = await turn(host, fb, [[{ text: 'ok' }]], 'share-2 probe')
     const cap = r.requests.at(-1)?.maxTokens
