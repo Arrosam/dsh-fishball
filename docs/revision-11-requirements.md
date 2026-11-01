@@ -25,7 +25,7 @@ Today the `ApprovalBroker` in `src/approvals.js` (DESIGN §7a, decision Q-approv
 30. **Managed-session marks** (added 2026-11-02; numbered after item 29). The user's request: "Add a new feature: whenever a session is managed by Fishball. above the input field with a "Managed by Fishball" message and a Fishball icon(or deepseek icon is using deepseek avatar) And a stop management button to cut its connection with fishball. And also show a fishball icon on its status light." The user's answers:
     - **Banner.** Above a managed session's input field: Fishball's icon (or DeepSeek's, when Fishball uses the DeepSeek icon), "Managed by Fishball", and a **Take back from Fishball** button. The button is the same action, with the same refusal dialog and wording, as the session menu, header and managed-sessions list.
     - **Status light.** Fishball's icon shows in the status light's place while the session is idle. While it runs, waits or has just finished, DSH's own light shows instead.
-    - **Off.** While Session messages is off or Fishball isn't live, the whole banner is hidden.
+    - **Off.** While Session messages is off or Fishball isn't live, the whole banner and the sidebar icon are hidden.
 
 ### B. Asking Fishball (managed sessions)
 
