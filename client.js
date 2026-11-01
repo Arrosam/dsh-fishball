@@ -164,7 +164,11 @@ window.__ModuleLoader__.load({
      * composer it describes (the builder's choice, per the Reading). Sizes are in px.
      */
     const MANAGED_BANNER = Object.freeze({ id: 'fishball-managed', order: 30, iconPx: 16, gapPx: 8, marginBottomPx: 8, paddingYPx: 4, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
-    /** The managed mark in a sidebar row's leading cell, sized to sit inside DSH's 16px cell. */
+    /**
+     * The managed mark in a sidebar row's leading cell. cellPx copies DSH's leading cell (the
+     * seat's contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the
+     * title"); the cell is not sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
+     */
     const MANAGED_ROW = Object.freeze({ id: 'fishball-managed', iconPx: 14, cellPx: 16 })
     /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
     const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
@@ -404,7 +408,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', linkButton: 'fb-link-button', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedRow: 'fb-managed-row' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', linkButton: 'fb-link-button', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -467,6 +471,7 @@ window.__ModuleLoader__.load({
       handOver: 'Hand over to Fishball',
       takeBack: 'Take back from Fishball',
       manageTitle: 'Managed by Fishball',
+      // The banner's words. Same text as manageTitle (the refusal dialog's title) today, but a separate meaning.
       managedBanner: 'Managed by Fishball',
       manageFailed: 'That did not work.',
       'manageError.unknown-session': 'This session could not be read.',
@@ -1265,6 +1270,7 @@ window.__ModuleLoader__.load({
       `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
       // The managed-session banner and sidebar mark (item 30), in DSH's theme tokens for light and dark.
       `.${CLS.managedBanner}{display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;margin:0 0 ${MANAGED_BANNER.marginBottomPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${MANAGED_BANNER.fontPx}px;line-height:1.5}`,
+      `.${CLS.managedText}{flex:1;min-width:0}`,
       `.${CLS.managedRow}{display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
       // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
@@ -2040,12 +2046,17 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** The Hand over / Take back button, shared by the session header and the managed banner so they cannot drift. */
+    const manageButton = (t, state, sessionId) => {
+      const choice = manageChoice(state, sessionId)
+      return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
+    }
+
     function makeManageHeaderAction(t) {
       return function FishballManageHeaderAction({ sessionId }) {
         const state = useFishball()
         if (!canManage(state, sessionId)) return null
-        const choice = manageChoice(state, sessionId)
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
+        return manageButton(t, state, sessionId)
       }
     }
 
@@ -2066,11 +2077,10 @@ window.__ModuleLoader__.load({
         const state = useFishball()
         if (!showsManagedMarks(state, sessionId)) return null
         const Icon = brandIconOf(state)
-        const choice = manageChoice(state, sessionId)
         return h('div', { className: CLS.managedBanner, 'data-fishball-managed-banner': sessionId },
           h(Icon, { size: MANAGED_BANNER.iconPx, unread: false }),
-          h('span', { className: CLS.grow }, t('managedBanner')),
-          h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label)))
+          h('span', { className: CLS.managedText }, t('managedBanner')),
+          manageButton(t, state, sessionId))
       }
     }
 
@@ -2084,7 +2094,7 @@ window.__ModuleLoader__.load({
         const state = useFishball()
         if (!showsManagedMarks(state, sessionId)) return null
         const Icon = brandIconOf(state)
-        return h('span', { className: CLS.managedRow, role: 'img', 'aria-label': t('managedBanner'), title: t('managedBanner'), 'data-fishball-managed-row': sessionId },
+        return h('span', { className: CLS.managedRow, role: 'img', 'aria-label': t('managedBanner'), 'data-fishball-managed-row': sessionId },
           h(Icon, { size: MANAGED_ROW.iconPx, unread: false }))
       }
     }
