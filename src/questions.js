@@ -20,11 +20,15 @@
  * - The mode (§7a.10): Auto and Fishball are prompt rules; code enforces only User mode, where the
  *   question is your card at once and Fishball can add a note but not answer (`mode-user`).
  * - The time limit: approvalAnswerSeconds, then the question is your card (silence never answers).
- *   A timed question's foreground wait is held with userQuestions.attachWait for as long as the
- *   question is open (Q-r11-timed-wait, Q-r11-timed-release), so the tool's own shorter timeout
- *   does not end it and the session waits in the same turn until Fishball or you answer. While it
- *   is held, a browser countdown that ends (ASK_TIMED_OUT from the session's card) does not end
- *   the question: it stays open for Fishball and your pile.
+ *   A timed question's foreground wait is held for as long as the question is open
+ *   (Q-r11-timed-wait, Q-r11-timed-release; spike S36-attachWait, the manager's decision
+ *   2026-11-02): the router takes a userQuestions.attachWait claim (which stops DSH's own timer)
+ *   BEFORE next(), and passes the request on with `wait.timed: false`, so the session's own card
+ *   shows as a blocking card with no countdown and no claim of its own (a timed card's countdown
+ *   would end the wait at the tool's timeout). The session then waits in the same turn until
+ *   Fishball or you answer, also after the question moved to your pile. Releasing the claim
+ *   (Fishball or Permission requests off, Take back) lets DSH's timer end the wait at once if its
+ *   deadline passed: the question becomes `continued`. Stop needs nothing: DSH closes the wait.
  * - Continued (timed) questions are answered with userQuestions.answer(liveRootAgent, callId,
  *   batch); your own late answer in the session is learnt from its `user-question-reply` message.
  * - Off, Take back, release: an open question goes back to its session's own card (next() alone),
@@ -569,19 +573,13 @@ export class QuestionRouter {
       first.resolve(result)
       return true
     }
+    // Held first, so DSH's timer is off before any card sees the request (S36-attachWait).
+    if (await this.#hold(entry, agent)) req.wait = { ...req.wait, timed: false }
     const downstream = Promise.resolve().then(next)
-    downstream.then((value) => entry.settle({ by: BY.session, value }), (error) => {
-      // While the wait is held, the session card's countdown ending leaves the question open (Q-r11-timed-release).
-      if (!settled && entry.holding && error?.code === QUESTION.timedOut && original?.aborted !== true) {
-        entry.sessionTimedOut = error
-        return
-      }
-      entry.settle({ error })
-    })
+    downstream.then((value) => entry.settle({ by: BY.session, value }), (error) => entry.settle({ error }))
     const onAbort = () => entry.settle({ error: original.reason ?? questionError('aborted', QUESTION.aborted) })
     original?.addEventListener('abort', onAbort, { once: true })
     if (original?.aborted) onAbort()
-    this.#hold(entry, agent)
     void this.#open(entry)
     const result = await first.promise
     original?.removeEventListener('abort', onAbort)
@@ -592,9 +590,8 @@ export class QuestionRouter {
       return result.batch
     }
     if (result.back) {
+      // The claim is released here: past its deadline DSH's timer ends the wait at once (continued).
       await this.#ended(entry, QUESTION_END.back)
-      // A countdown that ended while held goes on as DSH would have had it: continued.
-      if (entry.sessionTimedOut !== undefined) throw entry.sessionTimedOut
       return downstream
     }
     if (result.error === undefined) {
@@ -602,7 +599,7 @@ export class QuestionRouter {
       return result.value
     }
     if (entry.timed && result.error?.code === QUESTION.timedOut && entry.callId !== undefined) {
-      // Not held (no service, or the claim failed): DSH keeps it as continued, still answerable.
+      // Not held (no service, no call id, or no wait to claim): DSH keeps it as continued, still answerable.
       entry.state = STATE.continued
       entry.releaseHold?.()
       const card = this.#cardOf(entry)
@@ -615,26 +612,34 @@ export class QuestionRouter {
   }
 
   /**
-   * Hold a timed question's foreground wait while the question is open (Q-r11-timed-wait): a claim
-   * stops DSH's own unattended timer, so the tool's timeout does not end the wait. Released when
-   * the question ends or goes back. A failed claim is logged; the question is then not held.
+   * Hold a timed question's foreground wait while the question is open (S36-attachWait): one
+   * attachWait claim, taken before next() (its first frame means it holds). Released when the
+   * question ends or goes back; the wait closing releases it too.
+   * @returns whether the wait is held (then the session's card must be passed on untimed).
    */
-  #hold(entry, agent) {
+  async #hold(entry, agent) {
     const service = this.#ctx.get(OPTIONAL_SERVICE.userQuestions)
-    if (!entry.timed || entry.callId === undefined || service === undefined) return
+    if (!entry.timed || entry.callId === undefined || service === undefined) return false
     const claim = new AbortController()
-    entry.releaseHold = () => claim.abort()
-    entry.holding = true
-    void (async () => {
-      try {
-        // One frame (the remaining time); the claim lasts until the stream ends.
-        for await (const _frame of service.attachWait(agent, entry.callId, claim.signal)) { /* held */ }
-      } catch (error) {
-        this.#logger.warn('timed question %s could not be held (%s)', entry.id, diagnosticOf(error))
-      } finally {
-        entry.holding = false
+    try {
+      const frames = service.attachWait(agent, entry.callId, claim.signal)[Symbol.asyncIterator]()
+      const opening = await frames.next()
+      // No frame: the wait already ended (nothing to hold).
+      if (opening.done === true) return false
+      // The question went back (Fishball off) while the claim was taken: let go at once.
+      if (this.#entries.get(entry.id) !== entry) {
+        claim.abort()
+        return false
       }
-    })()
+      entry.releaseHold = () => claim.abort()
+      // The second step settles when the claim ends; nothing waits on it.
+      frames.next().catch(() => {})
+      return true
+    } catch (error) {
+      claim.abort()
+      this.#logger.warn('timed question %s could not be held (%s)', entry.id, diagnosticOf(error))
+      return false
+    }
   }
 
   /**
