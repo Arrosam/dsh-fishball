@@ -9,7 +9,7 @@
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
 const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions' })
@@ -111,6 +111,8 @@ const decisionRecord = z.object({
   sessionId: z.string().min(1),
   by: z.enum(Object.values(CHANGED_BY)),
   rationale: z.string().optional(),
+  /** The request a click answered (rev11b). */
+  target: z.string().min(1).optional(),
   at: z.string(),
   outcome: z.string().min(1),
 })
@@ -174,6 +176,9 @@ const approvalRecord = z.object({
   /** When it was routed to Fishball (the audit key's time). */
   at: z.string(),
   answer: z.enum(Object.values(APPROVAL_ANSWER)),
+  /** Revision 11: asked first or a direct call, and the quoted message ids (never their text). */
+  kind: z.enum(Object.values(REQUEST_KIND)).optional(),
+  quotes: z.array(z.string()).optional(),
   risk: z.enum(Object.values(APPROVAL_RISK)).optional(),
   rationale: z.string().optional(),
   finalOutcome: z.enum(Object.values(APPROVAL_OUTCOME)),
