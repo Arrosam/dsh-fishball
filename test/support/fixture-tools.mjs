@@ -6,6 +6,8 @@
  */
 import { BSK_PARAMETERS, FIXTURE_DESCRIPTION } from './constants.mjs'
 
+const ASKING_TOOLS = (process.env.FBTEST_ASKING_TOOLS ?? '').split(',').filter(Boolean)
+
 export const store = (globalThis.__fbtestFixtures ??= {})
 store.calls ??= []
 store.lifecycle ??= []
@@ -33,6 +35,13 @@ export function fixtureTool(name, parameters = name === 'bsk_inspect' ? BSK_PARA
     output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
     async execute(args, exec) {
       store.calls.push({ name, args, sessionId: exec?.agent?.id ?? null, at: Date.now() })
+      // rev11d: FBTEST_ASKING_TOOLS names fixture tools that ask DSH for approval in their body (as the sandbox
+      // escalation does), under their own name and call id, so a grant on bash/pwsh/terminal_* can be exercised.
+      if (ASKING_TOOLS.includes(name)) {
+        const text = String(args.command ?? args.text ?? '')
+        const outcome = await store.fixtureCtx.get('approval').request({ agent: exec.agent, toolName: name, callId: exec.callId, reason: 'fbtest asks for ' + text, signal: exec.signal })
+        return 'outcome=' + outcome
+      }
       return 'fixture:' + name + ':' + JSON.stringify(args)
     },
   }
