@@ -449,10 +449,11 @@ export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant',
  */
 export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass', grantUsed: 'grant-used' })
 /**
- * Whether the session asked first (ask_fishball) or made the call directly (§9 audit `kind`), or
- * the request is Fishball's own (rev11f, §7a.11): its card in your pile has this kind too.
+ * Whether the session asked first (ask_fishball), made the call directly, or Fishball answered its
+ * showing prompt (answer_prompt, rev11e) (§9 audit `kind`); or the request is Fishball's own
+ * (rev11f, §7a.11): its card in your pile has this kind too.
  */
-export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct', own: 'own' })
+export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct', prompt: 'prompt', own: 'own' })
 /** What a pass-table entry lets through (§7a.3 passes, §7a.6 to-you tickets). */
 export const PASS_KIND = Object.freeze({ pass: 'pass', toYou: 'to-you' })
 /** Who wrote one entry of a request's thread (§9 request threads). */
