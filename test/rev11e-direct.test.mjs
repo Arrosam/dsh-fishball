@@ -179,7 +179,8 @@ describe('Revision 11 rev11e: a direct call sent to you shows a card and the sto
       const second = await sentToYou(y, tok('08b'), cid('08b'))
       assert.equal((await pileNow(ctx.host)).length, 2)
       const text = tok('08c')
-      await p.show(z, text, cid('08c'))
+      const thirdId = cid('08c')
+      await p.show(z, text, thirdId)
       await sleep(QUIET_MS)
       assert.equal((await requestMessages(ctx.host, ctx.fb, text)).length, 0, 'it never reached Fishball')
       assert.equal((await pileNow(ctx.host)).length, 2, 'no third card')
@@ -187,7 +188,7 @@ describe('Revision 11 rev11e: a direct call sent to you shows a card and the sto
       // Your click in the session answers it as any prompt.
       assert.equal((await answerCard(ctx.host, second.requestId, CLICK.reject)).status, 200)
       await p.click(OUTCOME.allow)
-      assert.ok((await p.result(z, cid('08c'))).text !== undefined)
+      assert.ok((await p.result(z, thirdId)).text.startsWith('outcome=' + OUTCOME.allow))
     } finally {
       for (const f of live) await f().catch(() => {})
       for (const sid of [x, y, z]) await t.stop(sid).catch(() => {})
@@ -236,10 +237,11 @@ describe('Revision 11 rev11e: a direct call sent to you shows a card and the sto
       assert.deepEqual(storedRows(ctx.home, 'tags').filter((r) => r.callId === callId), [], 'no tag')
       // Past the cap (1): the next undeliverable call shows the stock prompt only.
       const text2 = tok('11b')
-      await p.show(z, text2, cid('11b'))
+      const secondId = cid('11b')
+      await p.show(z, text2, secondId)
       await sleep(QUIET_MS)
       assert.equal((await pileNow(ctx.host)).length, 1, 'no second card')
-      assert.deepEqual(storedRows(ctx.home, 'tags').filter((r) => r.callId === cid('11b')), [])
+      assert.deepEqual(storedRows(ctx.home, 'tags').filter((r) => r.callId === secondId), [])
       assert.equal((await answerCard(ctx.host, card.requestId, CLICK.reject)).status, 200)
       await p.click(OUTCOME.reject)
       assert.ok((await p.result(x, callId)).text.startsWith('outcome=' + OUTCOME.reject))
