@@ -617,7 +617,7 @@ export const OWN_PLUGINS = {
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt'] },
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -770,3 +770,22 @@ export const PROMPT_AUDIT_KIND = 'prompt'
 export const PROMPT_DECISION_ACTION = 'answer-prompt'
 /** The approved tag of a session that became managed through answer_prompt (Q-r11-managed-tag-prompt, client wording). */
 export const PROMPT_MANAGED_LABEL = 'Prompt answered by Fishball'
+
+// ---- Revision 11 rev11f (Fishball's own requests; DESIGN §7a.11, §9 `own_requests`, §14, §16 Q-r11-own*; requirements items 21-24; S35) ----
+/**
+ * What Fishball's own tool returns while its request is a card (code `waiting-for-approval`, §7a.11) and the
+ * notice that wakes it after Allow ("approved, run it again", item 22). The texts are matched, not compared whole:
+ * the design gives their meaning, the client/plugin the exact wording (S35's wording is a proposal).
+ */
+export const OWN_REQUEST = { code: 'waiting-for-approval', waiting: /waiting[- ]for[- ](your )?approval|waits for the user's approval/i, again: /run it again/i, table: 'own_requests' }
+/** Fishball's tool that removes its own card (item 23, §7a.11); its argument is `request_id`. */
+export const WITHDRAW_TOOL = 'withdraw_request'
+/** `own_requests` statuses (§9). */
+export const OWN_STATUS = { waiting: 'waiting', approved: 'approved', rejected: 'rejected', withdrawn: 'withdrawn', used: 'used', expired: 'expired' }
+/** The suffix a cut detail list ends with, and the mark of a cut single entry (Q-r11-own-card-detail). */
+export const OWN_MORE = /and (\d+) more$/
+export const CUT_MARK = '…'
+/** The `too-many-waiting` text gains "or withdraw one" (the manager's decision for the user, 2026-11-02, DESIGN §16). */
+export const OWN_WITHDRAW_HINT = /or withdraw one/i
+/** The fixture plugin tool that asks DSH for approval in its body (fixture-tools.mjs, FBTEST_ASKING_TOOLS) and is visible to Fishball. */
+export const OWN_ASKING_TOOL = 'demo_echo'
