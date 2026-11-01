@@ -495,6 +495,8 @@ export const APPROVAL_OUTCOME = Object.freeze({ allowedOnce: 'allowed-once', rej
 export const APPROVAL_ERROR = Object.freeze({
   expired: 'expired',
   allowNeedsLowRisk: 'allow-needs-low-risk',
+  /** Every decision but escalate names its risk (§7a.3). */
+  riskRequired: 'risk-required',
   reasonRequired: 'reason-required',
   argumentsIncomplete: 'arguments-incomplete',
   questionRequired: 'question-required',

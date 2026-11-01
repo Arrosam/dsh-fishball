@@ -90,8 +90,8 @@ const TEXT = Object.freeze({
   answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; tell the user in one or two sentences why.',
   requestIdArg: 'The request id, e.g. apr_7f3c….',
   decisionArg: '"allow" (low risk, within the user\'s allowance), "reject" (beyond the user\'s request and dangerous), "ask" (a question to the session) or "escalate" (to the user).',
-  riskArg: '"low" or "high": your judgement of the exact call\'s real effect.',
-  reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session).',
+  riskArg: '"low" or "high": your judgement of the exact call\'s real effect. Optional with "escalate".',
+  reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session). Optional with "escalate".',
   questionArg: 'With "ask": the question for the session.',
   /** The request Fishball sees (DESIGN §7a.2 framing). */
   request: (request, info, userText, provenance, seconds) => [
@@ -268,8 +268,9 @@ export class ApprovalBroker {
       parameters: {
         request_id: { type: 'string', required: true, description: TEXT.requestIdArg },
         decision: { type: 'string', required: true, enum: Object.values(APPROVAL_DECISION), description: TEXT.decisionArg },
-        risk: { type: 'string', required: true, enum: Object.values(APPROVAL_RISK), description: TEXT.riskArg },
-        reason: { type: 'string', required: true, description: TEXT.reasonArg },
+        // Not required by the schema: escalate needs neither (§7a.3); the code rules below ask for them otherwise.
+        risk: { type: 'string', enum: Object.values(APPROVAL_RISK), description: TEXT.riskArg },
+        reason: { type: 'string', description: TEXT.reasonArg },
         question: { type: 'string', description: TEXT.questionArg },
       },
       output: JSON_OUTPUT,
@@ -278,7 +279,12 @@ export class ApprovalBroker {
         if (request === undefined || !this.#waiting.has(id)) return refused(APPROVAL_ERROR.expired)
         const rationale = trimmed(reason)
         const asked = trimmed(question)
-        // Code rules (DESIGN §7a.3 table).
+        // Code rules (DESIGN §7a.3 table). Any request can go to the user, so escalate needs no
+        // risk or reason; every other decision needs both, as the schema required before.
+        if (decision !== APPROVAL_DECISION.escalate) {
+          if (risk === undefined) return refused(APPROVAL_ERROR.riskRequired)
+          if (reason === undefined) return refused(APPROVAL_ERROR.reasonRequired)
+        }
         if (decision === APPROVAL_DECISION.allow) {
           if (risk !== APPROVAL_RISK.low) return refused(APPROVAL_ERROR.allowNeedsLowRisk)
           if (rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
