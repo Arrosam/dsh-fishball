@@ -15,6 +15,9 @@ import { canonical } from './digest.js'
 
 const KEY_SEPARATOR = '|'
 
+/** sha256 of a call's canonical JSON arguments: passes and exact grants match calls by it (§7a.3, §7a.8). */
+export const argumentsDigest = (args) => createHash('sha256').update(canonical(args)).digest('hex')
+
 export class CallPasses {
   /** key -> { kind: PASS_KIND, sessionId, requestId?, seenByFishball } */
   #entries = new Map()
@@ -26,7 +29,7 @@ export class CallPasses {
    */
   static keyOf(sessionId, toolName, args) {
     if (args === undefined) return undefined
-    return [sessionId, toolName, createHash('sha256').update(canonical(args)).digest('hex')].join(KEY_SEPARATOR)
+    return [sessionId, toolName, argumentsDigest(args)].join(KEY_SEPARATOR)
   }
 
   /**
