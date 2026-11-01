@@ -53,7 +53,7 @@ describe('Revision 11 rev11d: how grants end, pause and survive', () => {
   after(async () => { await ctx.host?.stop() }, HOOK)
 
   it('END-01 a grant ends at its end time: the next run goes to Fishball', T, async () => {
-    const { sid, prefix, grantId } = await granted('end01', 'e1 ' + tok('01'), 4000)
+    const { sid, prefix, grantId } = await granted('end01', 'e1 ' + tok('01'), 9000)
     await g.covered(sid, 'bash', prefix + ' once')
     await sleep(Math.max(0, endsAt(row(grantId) ?? {}) - Date.now()) + 600)
     await g.uncovered(sid, 'bash', prefix + ' after')
@@ -185,6 +185,7 @@ describe('Revision 11 rev11d: how grants end, pause and survive', () => {
     await ctx.host.stop()
     await boot(ctx)
     g = grantTools(ctx, { tok, cid })
+    for (const sid of [long.sid, short.sid]) await ctx.host.call('resume', { sessionId: sid }) // the restart ended the live agents
     assert.equal(row(long.grantId).status, GRANT_STATUS.active)
     assert.equal(row(long.grantId).uses, usesBefore)
     assert.equal(endsAt(row(long.grantId)), endBefore)

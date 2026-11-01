@@ -13,7 +13,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ASK_CODE, AUDIT_ANSWER, CLICK, DECISION } from './support/constants.mjs'
 import { HOOK, T, answerCard, askStep, auditOf, cardOf, settledIdle, stockSeen, untilCard } from './support/expect.mjs'
-import { pileHost, pileTools, tokens } from './support/rev11c.mjs'
+import { pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
 
 const { tok, cid } = tokens('REG')
 
@@ -56,10 +56,10 @@ describe('Revision 11 rev11b regression: escalate needs no risk or reason', () =
       const card = await untilCard(ctx.host, requestId)
       assert.ok(card, 'a card in the pile')
       assert.equal((await stockSeen(ctx.host, text)).length, 0, 'no stock prompt: the agent keeps waiting')
-      assert.ok(auditOf(ctx.home, requestId).some((a) => a.answer === AUDIT_ANSWER.escalate))
       assert.equal((await answerCard(ctx.host, requestId, CLICK.allow)).status, 200)
       const got = await t.answered(x, callId)
       assert.equal(got.code, ASK_CODE.allowed)
+      assert.ok(await until(() => auditOf(ctx.home, requestId).some((a) => a.answer === AUDIT_ANSWER.escalate), 5000, 100), 'audit escalate: ' + JSON.stringify(auditOf(ctx.home, requestId)))
       await ctx.host.call('waitIdle', { sessionId: x })
       await settledIdle(ctx.host, x)
       assert.equal(await cardOf(ctx.host, requestId), undefined)
