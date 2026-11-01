@@ -2053,3 +2053,48 @@ Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan`
 ### rev11g after the build (stage 2)
 
 Older cases changed on purpose: `STATE_KEYS` gains `questionMode` (HTP-01, HTP-04/05, SND-01, PHT-01, PHT-04) and `OWN_PLUGINS.approvals.tools` gains `answer_question` (OWN-01): DESIGN §10e, §7a.10. Readings 1 and the rest above changed as follows: plan-review cards are `kind: 'plan-review'` (the helper accepts both); a tag record's `answer` is a word (`answer`, `approve`, `keep-planning`) and the published record carries Fishball's words (the user's confirmed reading); a rebuilt continued card is the user's and Fishball's answer on it is `expired` (RST-04); a `to_user` question gets a Sent-to-you tag (FLW-12); the route's `bad-answer` for a well-shaped body with invalid answers (FLW-14); the session's own card is untimed (HLD-01). Full report: [hand-checks/rev11g.md](hand-checks/rev11g.md).
+
+## Revision 11 rev11i cases (managed-session marks; DESIGN §14 row rev11i, §10e "Managed-session marks", §16 sixth round; requirements item 30; S37; written from the requirements alone, no code read)
+
+### Automated: [managed-marks.test.mjs](managed-marks.test.mjs)
+
+The banner and icon are drawn in the browser, so these check what a client reads: the snapshot's `managed` list, `features.messages`, `status`, `preferences.brandStyle`, the route of the banner's button, and the served bundle. Technique: EP, ST, DT.
+
+| id | technique | expected result |
+|---|---|---|
+| MKS-01a..d | EP (way in: Hand over, Send to Fishball, message_session, start_session) | the session is in `managed` with its way's tag. (The fifth way, `answer_prompt`, is asserted in rev11e-answer: `by` is `prompt-answer`.) |
+| MKS-02 | EP (yours, Fishball's own) | neither is listed; the list is exactly the four managed ones |
+| MKS-03 | ST (managed –Take back, banner route→ yours) | 200; the id leaves the snapshot and an events frame; the others stay |
+| MKS-04 | ST (managed –release_session→ yours) | the id leaves the snapshot and an events frame |
+| MKS-05 | DT (Fishball's own / unknown / bad body) | 409 `is-fishball` / 409 `unknown-session` / 400 `bad-body`; list unchanged (the banner's refusal dialog comes from these) |
+| MKS-06 | ST (Session messages on –off→ on) | off: `features.messages` false and the entries kept unchanged; on: true and the same entries |
+| MKS-07 | EP | `status` live while entries exist |
+| MKS-08 | EP | `preferences` has only `brandStyle`, one of fishball / deepseek, default fishball |
+| MKS-09 | EP | the served client bundle has "Managed by Fishball" and "Take back from Fishball" (weak: the first string may already exist elsewhere on base; the browser checks decide) |
+| MKS-10 | ST (restart) | the same entries after a restart |
+
+Not automatable here: Fishball not live (no way to stop the assistant without ending the host), brandStyle change (a plugin setting set through the browser page), everything drawn.
+
+### Browser checks (real DSH, fake model, built-in browser pane; one row per "done when" item, plus the partitions)
+
+Setup: sessions A (Hand over), B (Send to Fishball), C (message_session), D (start_session), E (answer_prompt on a frozen prompt), M (yours), plus Fishball's own chat F. Screenshot each row. Themes: light and dark. Languages: English and 简体中文 (banner wording proposed: 由 Fishball 管理).
+
+| id | done-when item | technique | steps | expected |
+|---|---|---|---|---|
+| BRW-01 | banner after each way in | EP (5 ways in) | open each of A–E | banner above the composer: mark, "Managed by Fishball", "Take back from Fishball"; appears in the open chat without a reload when the way in happens while it is open (at least for A and C) |
+| BRW-02 | banner never in yours / Fishball's chat | EP | open M and F | no banner in either; F shows its pile (when cards exist), never the banner |
+| BRW-03 | banner leaves after Take back | ST (managed → yours) | click the banner's button in A | banner gone with no reload; A's header menu offers Hand over again; Fishball got one note |
+| BRW-04 | banner leaves after release_session | ST | Fishball releases C | banner gone with no reload |
+| BRW-05 | button refusal shows the dialog | DT (refusal) | make the route refuse (for example stop the Host-side feature or take back in another tab first, so 409 `unknown`/`feature-off` follows), click | the same refusal dialog and wording as the session menu; banner state stays consistent |
+| BRW-06 | mark follows Sidebar icon | EP (fish vs orca) | change the "Sidebar icon" setting on Fishball's page while A is open | banner mark switches between Fishball's fish and DSH's orca at once, no reload; same for the sidebar mark |
+| BRW-07 | hidden while Session messages off | DT (messages off × managed) | turn Session messages off | banner and sidebar mark of A–E disappear; sessions stay managed (settings list still lists them); turning it on brings them back |
+| BRW-08 | hidden while Fishball isn't live | DT (not live) | put Fishball into recovery/archived (archive its session) | banner and sidebar mark hidden; back when it is live again |
+| BRW-09 | sidebar mark while idle | EP (idle) | idle managed session A | Fishball's mark (or orca per setting) in the status-light place of A's row; unmanaged M keeps DSH's normal row |
+| BRW-10 | sidebar shows DSH's light when not idle | ST (idle → running → waiting → just finished → idle) | run a turn in A; hold a prompt (waiting); let it end | running: DSH's light (no mark); waiting: DSH's light; just finished: DSH's light; idle again: the mark returns |
+| BRW-11 | no mark on yours or Fishball's own row | EP | look at M's row and F's row | no Fishball mark on either (F keeps whatever DSH shows) |
+| BRW-12 | themes | EP (light, dark) | repeat BRW-01, BRW-09 in both | readable, token colours, no clipped text |
+| BRW-13 | languages | EP (en, zh) | switch language, repeat BRW-01 | banner text and button follow the language |
+| BRW-14 | order among docks | EP | A with a Todo or Queue dock showing | the banner sits among the docks without hiding the composer; record the order (builder's choice) |
+| BRW-15 | pile never with banner | EP | cards in the pile, open A and F | the pile shows in F only; A shows only the banner |
+| BRW-16 | Take back from three places agree | ST | Take back from the banner, then Hand over again from menu, then Take back from the settings list | all places update; one note each time |
+| BRW-17 | restart | ST | restart the Host, reload | banner and marks present for managed sessions again |
