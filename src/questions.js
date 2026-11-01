@@ -454,7 +454,11 @@ export class QuestionRouter {
     try {
       accepted = service.answer(resolved.agent, entry.callId, built.batch)
     } catch (error) {
-      if (error?.code !== QUESTION.replyQueued) this.#logger.warn('continued question %s not answered (%s)', entry.id, diagnosticOf(error))
+      // Only a queued reply means someone answered first; any other failure leaves the question open (review M1).
+      if (error?.code !== QUESTION.replyQueued) {
+        this.#logger.warn('continued question %s not answered (%s)', entry.id, diagnosticOf(error))
+        return QUESTION_ERROR.notLive
+      }
       accepted = false
     }
     // No longer continued, or a reply already queued: someone answered first (S36).
@@ -496,8 +500,13 @@ export class QuestionRouter {
     for (const sessionId of this.#managedIds()) {
       try {
         const live = this.#ctx.sessions.get(sessionId)
-        const events = live !== undefined ? live.snapshotEvents() : (await this.#ctx.sessionController.inspect(sessionId)).events
-        for (const { callId, questions } of continuedInLog(events)) {
+        // A live session may be waiting on a question in the foreground right now: DSH's projection
+        // says which are continued (review M2). Only a session not loaded is read from its log.
+        const events = live !== undefined ? [] : (await this.#ctx.sessionController.inspect(sessionId)).events
+        const found = live !== undefined
+          ? (this.#ctx.sessionProjections.stateOf(live, QUESTION.projection)?.questions.active ?? []).filter((row) => row.state === QUESTION.continuedState)
+          : continuedInLog(events)
+        for (const { callId, questions } of found) {
           if ([...this.#entries.values()].some((entry) => entry.sessionId === sessionId && entry.callId === callId)) continue
           const entry = this.#mint({ sessionId, session: live ?? { snapshotEvents: () => events }, callId, questions, timed: true, state: STATE.continued })
           this.#toPile(entry, APPROVAL_ANSWER.toUser)
@@ -570,6 +579,7 @@ export class QuestionRouter {
     entry.settle = (result) => {
       if (settled) return false
       settled = true
+      entry.settled = true
       first.resolve(result)
       return true
     }
@@ -626,8 +636,9 @@ export class QuestionRouter {
       const opening = await frames.next()
       // No frame: the wait already ended (nothing to hold).
       if (opening.done === true) return false
-      // The question went back (Fishball off) while the claim was taken: let go at once.
-      if (this.#entries.get(entry.id) !== entry) {
+      // The question went back (Fishball off) or was stopped while the claim was taken: let go at once,
+      // and the request goes on timed as DSH made it (review L3).
+      if (entry.settled === true) {
         claim.abort()
         return false
       }
