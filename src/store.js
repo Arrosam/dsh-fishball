@@ -4,15 +4,15 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed and decisions tables keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions and tags tables keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -113,8 +113,20 @@ const decisionRecord = z.object({
   rationale: z.string().optional(),
   /** The request a click answered (rev11b). */
   target: z.string().min(1).optional(),
+  /** Your Reject on a card: whether you wrote a note to the agent; the note itself is never stored (§9, rev11c). */
+  withNote: z.boolean().optional(),
   at: z.string(),
   outcome: z.string().min(1),
+})
+
+/** One answer Fishball gave, placed in the asking turn's tail by the seq of its call (DESIGN §9 `tags`, S37). */
+const tagRecord = z.object({
+  sessionId: z.string().min(1),
+  callId: z.string().min(1).optional(),
+  seq: z.number().int().nonnegative(),
+  answer: z.enum(Object.values(APPROVAL_DECISION)),
+  kind: z.enum(Object.values(TAG_KIND)),
+  at: z.string(),
 })
 
 /** You allowed a tool nobody had checked, for exactly these parameters (DESIGN §7). */
@@ -220,6 +232,7 @@ export const fishballDomain = defineDomain({
     [TABLE.pluginSettings]: domainTable(pluginSettingsRecord),
     [TABLE.managed]: domainTable(managedRecord),
     [TABLE.decisions]: domainTable(decisionRecord),
+    [TABLE.tags]: domainTable(tagRecord),
   },
 })
 
@@ -264,6 +277,7 @@ export class Store {
   get pluginSettings() { return this.#domain.table(TABLE.pluginSettings) }
   get managed() { return this.#domain.table(TABLE.managed) }
   get decisions() { return this.#domain.table(TABLE.decisions) }
+  get tags() { return this.#domain.table(TABLE.tags) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

@@ -12,7 +12,9 @@
  *   Quotes are verified by code: each id must be a message you typed in that session, and code
  *   adds its full text from the log, so a quote cannot be faked; any other id refuses the call
  *   with not-user-message and nothing is sent. The agent waits until the final answer (item 8);
- *   the broker (src/approvals.js) holds the request, its thread, the pass or the to-you ticket.
+ *   the broker (src/approvals.js) holds the request, its thread, the pass or the to-you ticket,
+ *   and its card in your pile once Fishball sends it to you (rev11c). The call's own id is passed
+ *   on: the running row shows your buttons by it, and the turn's tags are placed by it.
  *   ask_fishball({request_id, reply}) answers Fishball's question in the same thread.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -27,7 +29,6 @@ const NOTE = Object.freeze({
   [ASK_RESULT.rejected]: 'Fishball rejected this call. Do not make it.',
   [ASK_RESULT.question]: 'Fishball asks a question before deciding. Answer with ask_fishball({request_id, reply}); the same request then goes back to Fishball.',
   [ASK_RESULT.unavailable]: 'Fishball cannot answer now. Make the call yourself; the user is asked in this session.',
-  [ASK_RESULT.toUser]: 'Fishball sent this request to the user. Make the call yourself; the user is asked in this session.',
   [ASK_RESULT.overCapacity]: 'Too many requests are waiting for Fishball. Make the call yourself; the user is asked in this session.',
   [ASK_RESULT.noLongerManaged]: 'This session is no longer managed by Fishball. Make the call yourself; the user is asked in this session.',
   [ASK_ERROR.notUserMessage]: 'A quoted id is not a message the user typed in this session. Use ids from list_user_messages. Nothing was sent.',
@@ -36,6 +37,11 @@ const NOTE = Object.freeze({
   [ASK_ERROR.invalid]: 'Give tool (a tool name) and arguments (an object of the exact arguments), or request_id with reply.',
   [ASK_ERROR.empty]: 'The reply is empty.',
   [ASK_ERROR.cancelled]: 'The call was cancelled.',
+})
+/** The same, when the user answered the request's card (Fishball had sent it to them, §7a.6). */
+const USER_NOTE = Object.freeze({
+  [ASK_RESULT.allowed]: 'The user allowed this call once. Make the call now with exactly these arguments.',
+  [ASK_RESULT.rejected]: 'The user rejected this call. Do not make it.',
 })
 
 const TEXT = Object.freeze({
@@ -63,14 +69,14 @@ function userMessages(session) {
 const firstChars = (text, chars) => [...text].slice(0, chars).join('')
 
 /** One answer to the agent: the code, the fields that go with it, and what to do next. */
-function answer({ code, requestId, reason, question }) {
+function answer({ code, requestId, reason, question, byUser }) {
   return {
     ok: code === ASK_RESULT.allowed,
     code,
     ...(requestId === undefined ? {} : { request_id: requestId }),
     ...(reason === undefined ? {} : { reason }),
     ...(question === undefined ? {} : { question }),
-    note: NOTE[code],
+    note: (byUser ? USER_NOTE[code] : undefined) ?? NOTE[code],
   }
 }
 
@@ -115,7 +121,7 @@ export function requestDeskTools({ ctx, broker, readLimits }) {
       const { sessionId, session } = callerOf(exec)
       if (requestId !== undefined) {
         if (typeof reply !== 'string' || reply.trim().length === 0) return answer({ code: ASK_ERROR.empty })
-        return answer(await broker.reply({ sessionId, requestId, reply: reply.trim(), signal: exec.signal }))
+        return answer(await broker.reply({ sessionId, requestId, reply: reply.trim(), callId: exec.callId, signal: exec.signal }))
       }
       const ids = quote ?? []
       if (typeof tool !== 'string' || tool.trim().length === 0 || !isObject(args) || !Array.isArray(ids) || (why !== undefined && typeof why !== 'string')) return answer({ code: ASK_ERROR.invalid })
@@ -125,7 +131,7 @@ export function requestDeskTools({ ctx, broker, readLimits }) {
         if (!typed.has(id)) return answer({ code: ASK_ERROR.notUserMessage })
         quotes.push({ id, text: typed.get(id) })
       }
-      return answer(await broker.askFirst({ agent: exec.agent, sessionId, toolName: tool, args, quotes, why: (why ?? '').trim(), signal: exec.signal }))
+      return answer(await broker.askFirst({ agent: exec.agent, sessionId, toolName: tool, args, quotes, why: (why ?? '').trim(), callId: exec.callId, signal: exec.signal }))
     },
   })
   return [ask, list]
