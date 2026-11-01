@@ -353,13 +353,13 @@ Both tools hand work to other sessions. The work then happens there, under that 
 - **What the other agent sees.** A message with the existing `agent-message` relay source naming Fishball's session as the sender [V], not a user message. The target keeps its own preset, tools and permission mode.
 - **Checks.** The target must exist, must not be archived, and must not be Fishball itself.
 
-`start_session({folder, message, notify_when_finished?})` starts a new session:
+`start_session({folder, title, message, notify_when_finished?})` starts a new session:
 - **Creation.** `sessionController.create({workspaceId | cwd})` with no preset named, so the session runs DSH's configured default preset and starts in DSH's default permission mode for new sessions [V API; behaviour → S18]. It is never created with Fishball's composition.
 - **Folder.** An existing DSH workspace, or an existing folder on disk. Fishball cannot create folders, since that would be a file write.
   - DSH's `create` makes the folder when it is missing [V `agent.js:565-571`], so the tool checks that the folder exists first and refuses otherwise (S18).
   - A folder that is not a workspace is not registered: the session appears under Ungrouped, as DSH shows any session without a workspace (S18).
 - **First message.** Delivered the same way as `message_session`, with the relay source naming Fishball as the sender, so the new session starts working at once.
-- **Title.** DSH titles it as usual. Fishball settings list the session in the outbox.
+- **Title.** Fishball names it (Q-start-title, §16). DSH's automatic title reads only user-source messages, and the first message is a relay, so DSH would leave the session untitled. The required `title` is set with DSH's `sessionTitle.rename` right after creation, before the first message; DSH normalizes and bounds it, and pins it as an explicit title. If DSH's titles are off (no `sessionTitle` service) or DSH refuses the title, the result says `titleError` (`title-unavailable`, `title-invalid`, `title-failed`) and the session still starts, as with a refused watch. An empty title is refused before anything is created (`no-title`). Fishball settings list the session in the outbox.
 
 **As built (P5).** Both tools refuse an empty or oversized message and calls over the hourly cap; `message_session` also refuses an unknown or archived session and Fishball's own. The caps count every recorded call in the last hour (delivered, unconfirmed or failed delivery; a `start_session` whose session could not be created at all is neither recorded nor counted), in memory as well as from the outbox, so a low `auditEntriesKept` cannot disable them. A message that was steered but whose flush could not be confirmed answers `ok` with `unconfirmed: true` and "do not send it again", so the target never gets it twice. `start_session` takes a workspace id whose folder still exists, or an absolute path of an existing folder (`not-absolute`, `no-folder`); a folder that is a registered workspace starts the session in that workspace. A folder removed between that check and DSH's create would be created by DSH; closing that window needs host support. The outbox stores a digest of each message, never its text. The ping-pong between Fishball and a session it started is bounded by `messagesPerHour` and `wakeupsPerHour`. `notify_when_finished: true` sets up a watch on the target after a successful delivery (P6); a refused watch is reported as `watchError` without undoing the message.
 
@@ -1268,6 +1268,12 @@ Each phase ends with:
 | Q-own-plugins-open | **Open, implementer's assumptions:** a turn end while Session watching is off is passed over, not delivered later; the settings page keeps Remove for watches while it is off; a tool whose plugin cannot be told is listed under "Tools from an unknown plugin"; the Messenger look keeps free switching by Fishball | §10d; confirm or change |
 | Q-install-10a | (2026-10-31) Install for Fishball reuses DSH's install process by inheritance and DSH's components; still installs only into Fishball's folder; your click in the dialog approves it; entries in DSH's Add plugin menu and the Fishball tab; Fishball's controls take a light magenta | §10d "Install for Fishball", S31 |
 | Q-manager-secrets | **Open, implementer's assumption:** Fishball never sees or sets secret fields; only you set them | §10d "Secrets" and `set_plugin_settings`; confirm or change |
+
+**Answered on 2026-11-02 (bug fix):**
+
+| ID | Your answer | Effect on the plan |
+|---|---|---|
+| Q-start-title | Sessions Fishball started had no title: DSH's automatic title reads only user messages, and the first message is a relay. You first chose to send the first message as yours; review then found that DSH treats a user-source message as your own typing (it allows goals with no round limit, your-only `/skills` and session-link recall on it), so you chose instead: keep the relay, and Fishball names the session | `start_session` takes a required `title`, set with DSH's `sessionTitle.rename` (§5d) |
 
 **Open for revision 10:** Q-manager-stale, Q-manager-form and Q-manager-secrets above (implementer's assumptions; revision 10 was approved 2026-10-31).
 
