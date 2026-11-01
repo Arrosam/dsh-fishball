@@ -13,6 +13,8 @@
  * POST send                   -> { sessionId: string, note: string } ("Send to Fishball", DESIGN §5b)
  * POST watches                -> { sessionId: string } ("Tell Fishball when finished", DESIGN §5c)
  * POST watches/remove         -> { watchId: string }
+ * POST managed                -> { sessionId: string, managed: boolean } (Hand over / Take back,
+ *                                DESIGN §10e); 409 unknown-session, is-fishball, feature-off
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
@@ -52,6 +54,7 @@ const BODY = Object.freeze({
   unwatch: (body) => (isRecord(body) && isName(body.watchId) ? { watchId: body.watchId } : undefined),
   brand: (body) => (isRecord(body) && BRAND_STYLES.has(body.style) ? body.style : undefined),
   read: (body) => (isRecord(body) ? {} : undefined),
+  managed: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.managed === 'boolean' ? { sessionId: body.sessionId, managed: body.managed } : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
   installSpec: (body) => (isRecord(body) && isText(body.spec) ? body.spec.trim() : undefined),
   install: (body) => (isRecord(body) && isText(body.spec) && isName(body.requestId)
@@ -74,7 +77,7 @@ const BODY = Object.freeze({
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
- *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript(),
+ *   addWatch({ sessionId }), removeWatch({ watchId }), setManaged({ sessionId, managed }), markRead(), setBrandStyle(style), messengerScript(),
  *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
  *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId), refreshPlugins() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
@@ -170,6 +173,7 @@ export function registerRoutes(ctx, state) {
     { path: API.contextWindow, methods: [HTTP_METHOD.post], fetch: command(BODY.contextWindow, (setting) => state.setContextWindow(setting)) },
     { path: API.send, methods: [HTTP_METHOD.post], fetch: command(BODY.send, (input) => state.send(input)) },
     { path: API.watches, methods: [HTTP_METHOD.post], fetch: command(BODY.watch, (input) => state.addWatch(input)) },
+    { path: API.managed, methods: [HTTP_METHOD.post], fetch: command(BODY.managed, (input) => state.setManaged(input)) },
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },

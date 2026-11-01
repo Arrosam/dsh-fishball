@@ -1425,3 +1425,85 @@ Changed existing cases (now computed from each field's `min`; other fields' inpu
 - **A-L3. Whether `state.limits` lists the new fields (resolved).** §16 makes each moved limit "a config field like those above", and §3 makes `Config` the one object every component reads limits from. So the default table is now 28 fields: the 12 original ones and the 16 moved ones. CFG-01 and CFG-08 (`config.test.mjs`) and HTP-01's `state.limits` key check (`http.test.mjs`) expect all 28 in the settings value and in `state.limits`, built from `LIMITS` plus `LIMITS_R11`.
 - **A-L4. A stored window that the new `minWindowTokens` makes too small.** Not stated. L21 clears the window before raising the minimum.
 - **A-L5. When a context-window field change shows in `state.contextWindow`.** Not stated whether a field change alone recomputes the shown cap and threshold of a stored window. The tests save the window again after each change (that save is the "next use").
+
+## Revision 11 rev11a cases (managed sessions; DESIGN §14 row rev11a, §5b, §5e, §7a.1, §9, §10d, §10e; §16 Q-r11-managed, Q-r11-upgrade, Q-r11-plugins-off, Q-r11-subagent-tools, Q-r11-nongoals, Q-r11-defaults; S34, S37)
+
+The user's amendment applies: in rev11a the per-agent registration holds `message_fishball` only (`ask_fishball` and `list_user_messages` come in rev11b and are not tested here), and the ways in built and tested are `start_session`, `message_session`, Hand over (`POST /api/fishball/managed {sessionId, managed:true}`) and Send to Fishball (`answer_prompt` is rev11e). "A permission request reaches Fishball" means a `[permission request apr_…]` notice in Fishball's session naming the session; "reaches its stock prompt" means the scripted answerer after the broker (`FBTEST_APPROVER_AFTER=1`) is asked within 1 s.
+
+Support added: `MANAGED_*`, `RELEASE_TOOL`, `UNKNOWN_TOOL_TEXT`, `MANAGED_LABELS`, `PRE_REV11A`, `FISHBALL_WORD` (constants.mjs); `setManaged`, `managedNow`, `managedEntry`, `managedItems`, `makeManaged` (expect.mjs); worker ops `createKept` / `disposeKept` (a session whose agent handle the worker keeps, so it can be disposed and resumed). `STATE_KEYS` gains `managed`; `OWN_PLUGINS.messages.tools` gains `release_session` (§5e "Which Fishball plugin").
+
+### [managed-ways.test.mjs](managed-ways.test.mjs): yours vs managed, the ways in and out (one host, approver after the broker, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| MGD-01 | EP (first start, new install) | Q-r11-upgrade | snapshot `managed` is `[]` |
+| MGD-02 ×2 | EP (yours: bare / standard preset) | item 3 | no request has `message_fishball` or a tool named \*fishball\*; no "Fishball" in system text, tool schemas or messages (the standard preset's quote of this checkout's own AGENTS.md is left out: test environment) |
+| MGD-03 | EP (yours; Fishball live; Permission requests on) | item 3, §7a.1 | stock prompt at once; no permission notice; zero Fishball model steps; no new intake item |
+| MGD-04 | ST yours –Hand over→ managed | items 2, 5; §10e | 200 `ok`; entry exactly `{sessionId, since, by:'hand-over'}`, since at the change; exactly one note (intake `fishball/managed/<id>`, kind `user`, consumed = Fishball woke) whose text names the folder and the user; next request has `message_fishball`; next permission request reaches Fishball |
+| MGD-05 | ST yours –Send to Fishball→ managed | item 2 | 200; entry by `send`; the forward arrives; no management note; tool; request to Fishball |
+| MGD-06 | ST yours –message_session→ managed | item 2, §5d | ok; entry by `message`; the request that reads the message already has the tool; no note; request to Fishball |
+| MGD-07 | ST none –start_session→ managed | item 2 | ok; entry by `start`; every request of the new session has the tool; no note; its request reaches Fishball |
+| MGD-08 | ST managed –Take back→ yours | items 4, 5 | 200; entry gone; one note (kind `user`) naming folder and user; next request lacks the tool and mentions no Fishball; request to the stock prompt, zero Fishball steps |
+| MGD-09 | ST managed –release_session→ yours | items 4, 5 | `{ok:true}`; entry gone; one note (kind `system`) naming the folder; tool gone; stock prompt |
+| MGD-10 ×2 | DT (message_fishball × yours / managed) | §5b, S34 | yours: tool error UNKNOWN_TOOL, no relay, no intake item; managed: `{ok:true, note:'Delivered to Fishball.'}`, one relay from it, intake item `session/<id>` |
+| MGD-11 ×5 | DT (route × Fishball's own / unknown) | §10e, done-when | hand over / take back Fishball → 409 `is-fishball`; `message_session(Fishball)` → `is-fishball`; Fishball never listed, never has the tool; unknown id with managed true and false → 409 `unknown-session`, list unchanged |
+| MGD-12 ×8 | EP (bad body) | §10e "boundary checks" | invalid JSON, array, `{}`, no managed, no sessionId, managed `'true'`, sessionId `1`, sessionId `''` → 400 `bad-body`; nothing changes |
+| MGD-13 ×2 | EP (watch route; watch_session then read_session) | §5e Reading | none makes the session managed; no tool; requests still to the stock prompt |
+| MGD-14 | EP (subagent of a managed session) | Q-r11-subagent-tools | parent's requests have the tool; the child's have none |
+| MGD-15 ×2 | ST (Hand over / Take back while step 1 is held) | S34 mid-turn | step 1 as before; step 2 of the same turn has / lacks the tool |
+| MGD-16 | EP | §10e, S37 | the client bundle carries "Hand over to Fishball" and "Take back from Fishball" |
+| MGD-17 | diagnostic | (silent) | hand over twice; take back or release a session that is yours: answers recorded only; the session stays yours |
+
+### [managed-durable.test.mjs](managed-durable.test.mjs): agent re-creation, plugin switches, restart (one home, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| DUR-01 | ST managed –agent disposed→ resume | §5e "New agents", S34 | a new agent is created (`agent/created`); its next request has the tool; entry unchanged |
+| DUR-02 | DT (Session messages off × managed / yours × route) | §5b, §5e, Q-r11-plugins-off | `features.messages` false; entry kept unchanged; managed session's tool gone; Hand over and Take back → 409 `feature-off`, nothing changes; the managed session's request still reaches Fishball |
+| DUR-03 | ST off → on | §5e | the still-managed session has the tool again; Hand over works again |
+| DUR-04 | DT (Permission requests off × managed) | §7a.1 | stock prompt at once, zero Fishball steps; still managed, keeps the tool; back on → Fishball again |
+| DUR-05 | EP (Fishball archived) | §10e "409 unavailable before Fishball is ready" | POST managed → 409 `unavailable`; entries unchanged after recovery |
+| DUR-06 | ST (restart) | done-when "survives a restart", §9 | same entries (since and by); resumed managed sessions have the tool and their requests reach Fishball; a taken-back session and one that is yours do not |
+| DUR-07 | ST (Fishball's bundle off → on) | §5e "Ownership" | while off the managed session's tool is gone; back on it is still managed and has the tool again |
+
+### [managed-upgrade.test.mjs](managed-upgrade.test.mjs): existing install (old version a5aed26)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| UPM-00 | precondition | — | the old version has outbox entries for a messaged and a started session and no `managed` field |
+| UPM-01 | ST (first start of rev11a) | Q-r11-upgrade | `managed` is `[]` |
+| UPM-02 | EP | Q-r11-upgrade | the messaged, started and old `message_fishball` caller sessions have no tool and no entry |
+| UPM-03 | EP | item 3 | an outbox session's request reaches its stock prompt at once, zero Fishball steps |
+| UPM-04 | ST | item 2 | Hand over works after the upgrade (by `hand-over`, tool at the next request) |
+
+### Older tests changed by rev11a
+
+rev11a deliberately changes two older behaviours: every other session's permission request went to Fishball (now managed sessions only), and `message_fishball` was a global tool in every session, subagents included (now per managed agent, never subagents). Cases about a session talking to Fishball now hand the session over first (`makeManaged`, the Hand over route, waiting until Fishball has read the note); no coverage was deleted.
+
+| file | change | why |
+|---|---|---|
+| support/constants.mjs | `STATE_KEYS` + `managed`; Session messages tools + `release_session` | §10e snapshot; §5e plugin |
+| messaging-inbound | `bare` and `std` handed over in setup; MSG-01 reads "managed session"; MSG-06 now: a subagent of a managed session has no `message_fishball`, nothing reaches Fishball | §5e, Q-r11-subagent-tools |
+| messaging-durable | each sender handed over | only managed sessions have the tool |
+| watches-fire | TOL-06 "messaged Fishball", NTF-04, NTF-06 (message_fishball), QFL sender handed over; NTF-05 now: the subagent has no tool, no watch on root or child | §5e "notify_when_finished from a subagent no longer exists" |
+| watches-durable | QFL-01 sender handed over | as above |
+| approvals-broker | `fresh()` sessions, APR-16e and APR-17's sessions handed over | §7a.1 managed only |
+| approvals-routing, approvals-ptc, own-plugins-approvals, messenger-author-approvals | asking sessions handed over | §7a.1 |
+| limits-live | L53 senders and the permission-request session handed over | as above |
+| messenger-author | senders handed over (`relayed`, AUT-10); AUT-02 now: the subagent of a managed session has no tool, so nothing is authored | Q-r11-subagent-tools |
+| unread | UNR-07's sender handed over before the reset (the note's reply is cleared by it) | §5e |
+| own-plugins | `bare` handed over; OWN-06 reads "managed session"; OWN-20/21 check the managed session's next request instead of the global tool list | §5e: no global registration |
+| own-plugins-features | `bare` and ofw-03c handed over; OFM-01/02/05 read the managed session's request; OFM-06's precondition is `features.messages` false (the held session cannot be sampled) | as above |
+| own-plugins-upgrade | UPO-03: `message_fishball` is not global; it is still listed under Session messages as `other-sessions` | §5e, §10d |
+
+### Ambiguities (rev11a)
+
+- **A-r11a-1. Send to Fishball and a management note.** Item 5 and §5e's Reading list only hand-over, take-back and release. MGD-05 asserts no `fishball/managed/<id>` note for Send (the forward itself tells Fishball).
+- **A-r11a-2. "Who did it".** Checked by the note's words (`user` for your clicks) and the intake kind (`user` for Hand over / Take back, `system` for release; the coordinator confirmed these kinds).
+- **A-r11a-3. Route while Fishball is not live.** §10e says 409 `unavailable` "before Fishball is ready"; DUR-05 reads an archived Fishball as not ready (as the watches route does, §5c).
+- **A-r11a-4. Snapshot keys.** rev11a adds only `managed` to the snapshot; `pile`, `grants`, `questionMode` belong to later phases.
+- **A-r11a-5. Unspecified transitions** (hand over a managed session, take back or release a session that is yours, release refusal codes) are diagnostics only (MGD-17).
+- **A-r11a-6. Turning a plugin back on.** Not stated directly; DUR-03 and DUR-07 derive from "a managed session has `message_fishball`" that a still-managed session gets the tool back.
+- **A-r11a-7. Session messages off and permission requests.** Routing depends on managed status, Fishball live and Permission requests (§7a.1), so DUR-02 expects a managed session's request still to reach Fishball while Session messages is off.
+- **A-r11a-8. "Nothing mentions Fishball"** is checked case-sensitively (`Fishball`), because the test homes sit under the lowercase `dsh-fishball` checkout path; the standard preset's quote of this repository's AGENTS.md is test environment, not product text.
+- **A-r11a-9. Agent re-creation by clear or compaction** is not exercised; resume (dispose + resume, and a restart) is.

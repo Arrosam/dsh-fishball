@@ -196,6 +196,8 @@ const serviceDisposers = new Map()
 const scopedDisposers = new Map()
 /** P8: sources registered through sourceRegister, by key. */
 const sources = new Map()
+/** Revision 11 rev11a: agent handles of sessions made with createKept, by session id. */
+const keptHandles = new Map()
 const errorInfo = (e) => ({ name: e?.name ?? null, ctor: e?.constructor?.name ?? null, code: e?.code ?? null, message: String(e?.message ?? e).slice(0, 400) })
 
 function liveAgent(sessionId) {
@@ -619,6 +621,28 @@ const ops = {
   settingsSchema({ ns = ROW_ID } = {}) {
     const d = ctx.settings.describe().find((x) => x.ns === ns)
     return d ? JSON.parse(JSON.stringify(d.schema ?? null)) : null
+  },
+
+  // ---- Revision 11 rev11a operations (managed sessions) ----
+  /**
+   * An ordinary session created through ctx.agents.create whose handle the worker keeps, so a test can
+   * dispose its live agent and have DSH create a new one on resume (S34 "re-created agent").
+   */
+  async createKept({ folder = 'kept', preset = PRESET.bare }) {
+    const cwd = path.join(home, 'work', folder)
+    fs.mkdirSync(cwd, { recursive: true })
+    const sessionId = 'session-fbtest-kept-' + folder + '-' + Date.now()
+    const handle = await ctx.agents.create({ sessionId, meta: { cwd, agentPreset: preset }, agentOptions: { provider: FAKE.provider, model: FAKE.model } })
+    await ctx.sessions.flush(handle.agent.session)
+    keptHandles.set(sessionId, handle)
+    return { sessionId, cwd }
+  },
+  /** Dispose a kept session's agent (the session stays stored); resume makes a new agent. */
+  async disposeKept({ sessionId }) {
+    const handle = keptHandles.get(sessionId)
+    keptHandles.delete(sessionId)
+    if (handle) { await ctx.sessions.flush(handle.agent.session); await handle.dispose() }
+    return { disposed: Boolean(handle), live: Boolean(ctx.agents.get(sessionId)) }
   },
 
   async shutdown() {

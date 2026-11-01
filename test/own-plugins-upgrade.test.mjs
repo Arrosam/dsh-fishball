@@ -8,7 +8,7 @@
  * | UPO-00 | precondition | the old version has no builtin:session-messages entry and no features field |
  * | UPO-01 ×4 | DT (existing install × no stored choice) | each new own plugin: on, applied, dsh fishball, status builtin, [disable], changedBy null |
  * | UPO-02 | DT (existing install × stored choice for the Messenger look) | the Messenger look stays off (changedBy user) and now reports dsh fishball |
- * | UPO-03 | EP | features all true; message_fishball registered for other sessions; otherTools has none of Fishball's own tools |
+ * | UPO-03 | EP | features all true; message_fishball listed under Session messages with status other-sessions and (rev11a) not a global tool; otherTools has none of Fishball's own tools |
  * | UPO-04 | ST (user off → restart) | Session watching stays off: changedBy user, features.watching false, POST watches 409 feature-off |
  * | UPO-05 | ST (user on → restart) | on again after the restart; features.watching true |
  */
@@ -90,7 +90,9 @@ describe('Revision 10c on an existing install (upgrade from the version before i
   it('UPO-03 every feature runs; message_fishball is registered; no own tool in otherTools', T, async () => {
     const s = await host.state()
     assert.deepEqual(s.features, { approvals: true, messages: true, plugins: true, watching: true })
-    assert.ok((await host.call('globalToolNames')).includes(INBOUND_TOOL))
+    // rev11a: message_fishball is registered per managed agent only (DESIGN §5e), never globally.
+    assert.equal((await host.call('globalToolNames')).includes(INBOUND_TOOL), false)
+    assert.equal(s.catalog.plugins.find((p) => p.plugin === OWN_PLUGINS.messages.key)?.tools.find((t) => t.name === INBOUND_TOOL)?.status, 'other-sessions')
     for (const n of ALL_OWN_TOOLS) assert.equal(s.catalog.otherTools.some((t) => t.name === n), false, n + ' in otherTools')
   })
 

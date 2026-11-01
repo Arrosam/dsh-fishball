@@ -184,6 +184,8 @@ export const TOOL_STATUS = Object.freeze({
  * Tell Fishball when finished, notify_when_finished.
  */
 export const FEATURE_OFF = 'feature-off'
+/** A session no longer managed by Fishball (revision 11): message_fishball in flight, release_session. */
+export const NOT_MANAGED = 'not-managed'
 
 /** Stable plugin diagnostics (catalog `lastError`, tool results); never message text. */
 export const PLUGIN_ERROR = Object.freeze({
@@ -341,7 +343,29 @@ export const INTAKE_ERROR = Object.freeze({
   unknownSession: 'unknown-session',
   deliveryFailed: 'delivery-failed',
   featureOff: FEATURE_OFF,
+  /** message_fishball from a session no longer managed (taken back while the call was in flight; DESIGN §5b). */
+  notManaged: NOT_MANAGED,
 })
+
+/** Managed sessions (revision 11, DESIGN §5e, §9 managed registry). */
+export const MANAGED = Object.freeze({
+  /** Source identity prefix of the notes to Fishball about a change (DESIGN §5e "Notes to Fishball"). */
+  sourcePrefix: 'fishball/managed/',
+})
+/** How a session became managed (§9 `by`); 'prompt-answer' arrives with answer_prompt (rev11e). */
+export const MANAGED_BY = Object.freeze({ start: 'start', message: 'message', promptAnswer: 'prompt-answer', handOver: 'hand-over', send: 'send' })
+/** What changed, and who did it, in a note to Fishball. */
+export const MANAGED_CHANGE = Object.freeze({ handOver: 'hand-over', takeBack: 'take-back', release: 'release' })
+/** Stable codes Hand over / Take back and release_session answer with (DESIGN §10e Host API). */
+export const MANAGED_ERROR = Object.freeze({
+  unknownSession: 'unknown-session',
+  isFishball: 'is-fishball',
+  notManaged: NOT_MANAGED,
+  featureOff: FEATURE_OFF,
+})
+/** Fishball's decisions audit (§9 `decisions`); rev11a records release only. */
+export const DECISION_ACTION = Object.freeze({ release: 'release' })
+export const DECISION_OK = 'ok'
 
 /** Watches (DESIGN §5c, §9 watches). */
 export const WATCH_CONDITION = Object.freeze({ finished: 'finished', perTurn: 'per-turn' })
@@ -407,7 +431,8 @@ export const APPROVAL = Object.freeze({
 })
 /** Fishball's answer (answer_approval) and what else ended a request. */
 export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', escalate: 'escalate' })
-export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn' })
+/** released: the session left management while the request waited (revision 11, §5e); it went to you. */
+export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released' })
 export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
@@ -543,6 +568,8 @@ export const API = Object.freeze({
   install: '/api/fishball/install',
   /** POST { requestId }: cancel that install. */
   installCancel: '/api/fishball/install/cancel',
+  /** POST { sessionId, managed }: Hand over to Fishball (true) / Take back from Fishball (false), DESIGN §10e. */
+  managed: '/api/fishball/managed',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -621,6 +648,8 @@ export const EVENT = Object.freeze({
   sessionStop: 'workspace/session-stop',
   volatileUpdate: 'loader/volatile-update',
   agentDisposed: 'agent/disposed',
+  /** Any agent was created (resume, clear and compaction re-create one; spike S34). */
+  agentCreated: 'agent/created',
   /** Cordis: a service was provided or removed (a row waiting for one may now run). */
   service: 'internal/service',
   /** dsh-plugin-manager: a bundle was installed, removed, enabled or disabled. */

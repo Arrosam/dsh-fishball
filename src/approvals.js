@@ -1,11 +1,12 @@
 /**
- * ApprovalBroker: other sessions' permission requests go to Fishball first (DESIGN §7a,
- * Q-approval-routing: always).
+ * ApprovalBroker: managed sessions' permission requests go to Fishball first (DESIGN §7a.1;
+ * revision 11 replaces Q-approval-routing "always" with managed sessions only).
  *
  * One host-level approval/request listener, prepended so it runs before DSH's browser
  * forwarder (spike S12). For each request:
- * - Fishball itself asking, Fishball not live, its Permission requests plugin off (revision 10c),
- *   or maxPendingApprovals pending -> next(): the
+ * - Fishball itself asking, a session that is yours (not managed, judged by the session the user
+ *   sees, so a subagent's request follows its root), Fishball not live, its Permission requests
+ *   plugin off (revision 10c), or maxPendingApprovals pending -> next(): the
  *   stock prompt, unchanged DSH behaviour. Fishball never answers its own requests (N3).
  * - Otherwise: mint apr_<id>, read the call's arguments from the asking session's log by callId
  *   (spike S11: native tool-call blocks, run_code inner calls), and deliver one Fishball notice
@@ -131,6 +132,7 @@ export class ApprovalBroker {
   #agentOf
   #onChange
   #isEnabled
+  #isManaged
   #audit
   /** apr id -> { resolve(answer), ask, at, args } of a request waiting for Fishball. */
   #pending = new Map()
@@ -143,8 +145,9 @@ export class ApprovalBroker {
    * @param deps.agentOf - () => Fishball's agent (for notes without a wake).
    * @param deps.isEnabled - () => whether Fishball's Permission requests plugin runs (revision 10c);
    *   when it stops, the caller releases waiting requests (releaseAll).
+   * @param deps.isManaged - (sessionId) => whether Fishball manages that session (revision 11).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -156,6 +159,7 @@ export class ApprovalBroker {
     this.#agentOf = agentOf
     this.#onChange = onChange
     this.#isEnabled = isEnabled
+    this.#isManaged = isManaged
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     ctx.on(APPROVAL.waterfall, (req, next) => this.#route(req, next), { prepend: true })
   }
@@ -202,12 +206,28 @@ export class ApprovalBroker {
    * goes to you at once, as a timeout would (P7 review M1).
    */
   releaseAll() {
-    if (this.#pending.size === 0) return
+    this.#release(() => true, APPROVAL_ANSWER.timeout)
+  }
+
+  /**
+   * A session left management (Take back, release_session): its requests waiting for Fishball
+   * go to you in that session at once (DESIGN §5e "Ending management"). Fishball is not told
+   * about them: the note about the change already reached it.
+   */
+  releaseSession(sessionId) {
+    this.#release((pending) => pending.ask.sessionId === sessionId, APPROVAL_ANSWER.released)
+  }
+
+  /** Settle every waiting request that matches with `answer` (each then goes to next()). */
+  #release(matches, answer) {
+    let changed = false
     for (const [id, pending] of [...this.#pending]) {
+      if (!matches(pending)) continue
       this.#pending.delete(id)
-      pending.resolve({ answer: APPROVAL_ANSWER.timeout })
+      pending.resolve({ answer })
+      changed = true
     }
-    this.#onChange()
+    if (changed) this.#onChange()
   }
 
   /** The approval/request waterfall listener. */
@@ -216,10 +236,12 @@ export class ApprovalBroker {
     const assistantId = this.#assistantId()
     // Code rules first: each can only send the request on to you.
     if (asker === undefined || asker.id === assistantId || !this.#isLive() || !this.#isEnabled()) return next()
-    const limits = this.#readLimits()
-    if (this.#pending.size >= limits.maxPendingApprovals) return next()
     // A subagent asks for the session the user sees; its own session is named as detail (M2).
     const sessionId = rootSessionOf(this.#ctx, asker.id)
+    // A session that is yours keeps its own prompt; Fishball is not told and takes no step (§7a.1).
+    if (!this.#isManaged(sessionId)) return next()
+    const limits = this.#readLimits()
+    if (this.#pending.size >= limits.maxPendingApprovals) return next()
     const root = this.#ctx.sessions.get(sessionId) ?? asker.session
     const id = APPROVAL.idPrefix + randomUUID().replace(/-/g, '')
     const args = argumentsOf(asker.session, req.callId, req.toolName, limits.argumentExcerptBytes)

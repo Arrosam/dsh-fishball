@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -74,6 +74,10 @@ window.__ModuleLoader__.load({
     const SEND_HEADER_ID = 'fishball-send'
     /** Just before Fishball's own settings action. */
     const SEND_HEADER_ORDER = 4
+    /** Hand over to Fishball / Take back from Fishball, beside Send to Fishball (DESIGN §10e, S37), and refusals with text (src/constants.js MANAGED_ERROR). */
+    const MANAGE_MENU = Object.freeze({ id: 'fishball-manage', order: 422 })
+    const MANAGE_HEADER = Object.freeze({ id: 'fishball-manage', order: 4.5 })
+    const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
     /** The two context-window settings (src/constants.js API.contextWindow body). */
     const CONTEXT_FIELDS = Object.freeze(['contextWindowTokens', 'maxOutputTokens'])
     /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
@@ -409,6 +413,14 @@ window.__ModuleLoader__.load({
       'sendError.unknown-session': 'This session could not be read.',
       'sendError.unavailable': 'Fishball is not running.',
       sendFailed: 'That did not work.',
+      handOver: 'Hand over to Fishball',
+      takeBack: 'Take back from Fishball',
+      manageTitle: 'Managed by Fishball',
+      manageFailed: 'That did not work.',
+      'manageError.unknown-session': 'This session could not be read.',
+      'manageError.is-fishball': 'This is Fishball\'s own session.',
+      'manageError.feature-off': 'Fishball\'s Session messages plugin is off.',
+      'manageError.unavailable': 'Fishball is not running.',
       watchSession: 'Tell Fishball when finished',
       watching: 'Fishball is watching',
       watchFailed: 'Fishball could not watch this session.',
@@ -464,6 +476,7 @@ window.__ModuleLoader__.load({
       'approvalAnswer.escalate': 'Sent to you',
       'approvalAnswer.timeout': 'No answer in time; sent to you',
       'approvalAnswer.withdrawn': 'Withdrawn',
+      'approvalAnswer.released': 'Session no longer managed; sent to you',
       'approvalOutcome.allowed-once': 'allowed once',
       'approvalOutcome.rejected': 'rejected',
       'approvalOutcome.cancelled': 'cancelled',
@@ -700,6 +713,14 @@ window.__ModuleLoader__.load({
       'sendError.unknown-session': '无法读取此会话。',
       'sendError.unavailable': 'Fishball 未在运行。',
       sendFailed: '操作未成功。',
+      handOver: '交给 Fishball 管理',
+      takeBack: '从 Fishball 收回',
+      manageTitle: '由 Fishball 管理',
+      manageFailed: '操作未成功。',
+      'manageError.unknown-session': '无法读取此会话。',
+      'manageError.is-fishball': '这是 Fishball 自己的会话。',
+      'manageError.feature-off': 'Fishball 的会话消息插件已关闭。',
+      'manageError.unavailable': 'Fishball 未在运行。',
       watchSession: '完成时通知 Fishball',
       watching: 'Fishball 正在关注',
       watchFailed: 'Fishball 无法关注此会话。',
@@ -755,6 +776,7 @@ window.__ModuleLoader__.load({
       'approvalAnswer.escalate': '已转交给你',
       'approvalAnswer.timeout': '超时未答复，已转交给你',
       'approvalAnswer.withdrawn': '已撤回',
+      'approvalAnswer.released': '会话已不再由 Fishball 管理，已转交给你',
       'approvalOutcome.allowed-once': '允许一次',
       'approvalOutcome.rejected': '已拒绝',
       'approvalOutcome.cancelled': '已取消',
@@ -1555,7 +1577,8 @@ window.__ModuleLoader__.load({
     const useSendRequest = () => React.useSyncExternalStore(sendRequest.subscribe, sendRequest.get)
 
     /** Whether a session can be sent: Fishball runs, and it is not Fishball's own session. */
-    const canSend = (state, sessionId) => state.status === STATUS.live && Boolean(sessionId) && sessionId !== state.sessionId
+    const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
+    const canSend = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId)
     /** Your Send to Fishball and Tell Fishball when finished belong to their Fishball plugins, and hide while it is off (revision 10c). */
     const canMessage = (state, sessionId) => canSend(state, sessionId) && featureOn(state, FEATURE.messages)
     const canWatch = (state, sessionId) => canSend(state, sessionId) && featureOn(state, FEATURE.watching)
@@ -1652,23 +1675,25 @@ window.__ModuleLoader__.load({
     const isWatched = (state, sessionId) => (state.watches?.watches ?? []).some((watch) => watch.targetSessionId === sessionId && watch.status === WATCH_ACTIVE && watch.createdBy?.kind === WATCH_BY_USER)
 
     /**
-     * Watch requests and their refusal, in one store outside the menu: a menu entry unmounts when
-     * the menu closes, so the refusal is shown by the overlay (makeWatchNotice), not by the entry.
+     * A request from a menu entry or header action and its refusal, in one store outside the menu:
+     * a menu entry unmounts when the menu closes, so the refusal is shown by the overlay
+     * (makeRequestNotice), not by the entry.
+     * @param path - the Host route. @param errors - refusal codes with their own text under `errorPrefix`.
+     * @param failedKey - the text of any other failure.
      */
-    const watchNotice = (() => {
-      let current = null
-      const listeners = new Set()
-      const set = (next) => { current = next; for (const listener of listeners) listener() }
+    function requestNotice(path, errors, errorPrefix, failedKey) {
+      const store = valueStore(null)
       return {
-        async watch(sessionId) {
-          const { ok, code } = await send(API.watches, { sessionId })
-          set(ok ? null : WATCH_ERRORS.has(code) ? 'watchError.' + code : 'watchFailed')
+        get: store.get,
+        subscribe: store.subscribe,
+        async request(body) {
+          const { ok, code } = await send(path, body)
+          store.set(ok ? null : errors.has(code) ? errorPrefix + code : failedKey)
         },
-        dismiss: () => set(null),
-        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
-        get: () => current,
+        dismiss: () => store.set(null),
       }
-    })()
+    }
+    const watchNotice = requestNotice(API.watches, WATCH_ERRORS, 'watchError.', 'watchFailed')
 
     function makeWatchMenuItem(t) {
       return function FishballWatchMenuItem({ sessionId, useMenuOpenState }) {
@@ -1677,7 +1702,7 @@ window.__ModuleLoader__.load({
         if (!canWatch(state, sessionId)) return null
         // Already watched: the entry says so; choosing it again returns the same watch.
         const watched = isWatched(state, sessionId)
-        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void watchNotice.watch(sessionId) } }, watched ? t('watching') : t('watchSession'))
+        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void watchNotice.request({ sessionId }) } }, watched ? t('watching') : t('watchSession'))
       }
     }
 
@@ -1686,22 +1711,55 @@ window.__ModuleLoader__.load({
         const state = useFishball()
         if (!canWatch(state, sessionId)) return null
         const watched = isWatched(state, sessionId)
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: watched, onClick: () => void watchNotice.watch(sessionId) }, watched ? t('watching') : t('watchSession'))
+        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: watched, onClick: () => void watchNotice.request({ sessionId }) }, watched ? t('watching') : t('watchSession'))
       }
     }
 
-    /** The refusal of the last watch request, as a dialog in the shell overlay. */
-    function makeWatchNotice(t) {
-      return function FishballWatchNotice() {
-        const problem = React.useSyncExternalStore(watchNotice.subscribe, watchNotice.get)
+    /** The refusal of a notice's last request, as a dialog in the shell overlay. */
+    function makeRequestNotice(t, notice, titleKey) {
+      return function FishballRequestNotice() {
+        const problem = React.useSyncExternalStore(notice.subscribe, notice.get)
         if (problem === null) return null
         return h(Modal, {
           open: true,
-          onClose: watchNotice.dismiss,
+          onClose: notice.dismiss,
           closeLabel: t('close'),
-          title: t('watchSession'),
-          footer: h(Button, { type: 'button', variant: 'primary', onClick: watchNotice.dismiss }, t('close')),
+          title: t(titleKey),
+          footer: h(Button, { type: 'button', variant: 'primary', onClick: notice.dismiss }, t('close')),
         }, h('div', { role: 'alert' }, t(problem)))
+      }
+    }
+
+    /** Hand over / Take back (DESIGN §5e, §10e) and its refusal. */
+    const manageNotice = requestNotice(API.managed, MANAGE_ERRORS, 'manageError.', 'manageFailed')
+    const isManagedSession = (state, sessionId) => (state.managed ?? []).some((entry) => entry.sessionId === sessionId)
+    /**
+     * Offered where Send to Fishball is (Fishball live, never its own session) once the Host lists
+     * managed sessions; hidden while Session messages is off (Q-r11-plugins-off; managed sessions stay managed).
+     */
+    const canManage = (state, sessionId) => Array.isArray(state.managed) && canMessage(state, sessionId)
+    /** The entry's text and action: Hand over on a session that is yours, Take back on a managed one. */
+    const manageChoice = (state, sessionId) => {
+      const managed = isManagedSession(state, sessionId)
+      return { label: managed ? 'takeBack' : 'handOver', run: () => manageNotice.request({ sessionId, managed: !managed }) }
+    }
+
+    function makeManageMenuItem(t) {
+      return function FishballManageMenuItem({ sessionId, useMenuOpenState }) {
+        const state = useFishball()
+        const [, setMenuOpen] = useMenuOpenState()
+        if (!canManage(state, sessionId)) return null
+        const choice = manageChoice(state, sessionId)
+        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void choice.run() } }, t(choice.label))
+      }
+    }
+
+    function makeManageHeaderAction(t) {
+      return function FishballManageHeaderAction({ sessionId }) {
+        const state = useFishball()
+        if (!canManage(state, sessionId)) return null
+        const choice = manageChoice(state, sessionId)
+        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
       }
     }
 
@@ -2467,14 +2525,17 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.headerActions, id: READ_HEADER.id, order: READ_HEADER.order, locale: NS }, FishballReadReporter)
         yield ctx.slots.register({ name: SLOT.headerActions, id: SEND_HEADER_ID, order: SEND_HEADER_ORDER, locale: NS }, makeSendHeaderAction(t))
         yield ctx.slots.register({ name: SLOT.headerActions, id: WATCH_HEADER.id, order: WATCH_HEADER.order, locale: NS }, makeWatchHeaderAction(t))
+        yield ctx.slots.register({ name: SLOT.headerActions, id: MANAGE_HEADER.id, order: MANAGE_HEADER.order, locale: NS }, makeManageHeaderAction(t))
       }), 'fishball: header actions')
       ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, function* () {
         yield ctx.slots.register({ name: SLOT.sessionMenu, id: SEND_MENU.id, order: SEND_MENU.order, locale: NS }, makeSendMenuItem(t))
         yield ctx.slots.register({ name: SLOT.sessionMenu, id: WATCH_MENU.id, order: WATCH_MENU.order, locale: NS }, makeWatchMenuItem(t))
+        yield ctx.slots.register({ name: SLOT.sessionMenu, id: MANAGE_MENU.id, order: MANAGE_MENU.order, locale: NS }, makeManageMenuItem(t))
       }), 'fishball: session menu')
       ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
         yield ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))
-        yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeWatchNotice(t))
+        yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeRequestNotice(t, watchNotice, 'watchSession'))
+        yield ctx.slots.register({ name: SLOT.overlay, id: MANAGE_MENU.id, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
         yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
       }), 'fishball: dialogs')
       // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.
