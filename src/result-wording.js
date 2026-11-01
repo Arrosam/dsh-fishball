@@ -11,7 +11,10 @@
  *   12 says the result recommends ask_fishball). Inside run_code (`exec.parent` set) the program
  *   receives the call's value, not its text, so the hint goes in `additionalContexts` instead: a
  *   Fishball notice the agent sees after the run_code result (S35 PTC).
- * - rejected: `block` with Fishball's reason and the hint;
+ * - rejected: `block` with Fishball's reason and the hint (also Fishball's answer_prompt reject,
+ *   §7a.9: that session is managed from then on, so the hint applies);
+ * - your Reject with a note on a direct call's card: `block` with your note, the only way the note
+ *   reaches the agent (§7a.4 Reading, S33: DSH's outcome carries no text);
  * - Fishball's question on a direct call: `block` naming the request id, so the agent continues
  *   the same thread with ask_fishball (your answer, Q-r11-direct-reply);
  * - Fishball's own request past maxPendingApprovals: `block` with the too-many-waiting text, so
@@ -28,13 +31,14 @@ import { authorOf } from './author.js'
 import { rootSessionOf } from './session-info.js'
 
 /** What Fishball answered for one marked call. */
-export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING })
+export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING })
 
 /** Agent-visible texts (S35's proposal, kept as the plugin's constants). */
 const TEXT = Object.freeze({
   hint: 'Next time, call ask_fishball before a call that needs approval, and explain why it is needed.',
   allowed: 'Fishball approved this call once.',
   rejected: (reason) => `Fishball rejected this call: ${reason}`,
+  userRejected: (note) => `The user rejected this call: ${note}`,
   question: (requestId, question) => `Fishball did not run this call yet; it asks a question first (request ${requestId}): ${question}\nAnswer with ask_fishball({request_id: "${requestId}", reply: "…"}); that continues the same request. If Fishball then allows it, make this identical call again.`,
   summary: 'Fishball approved a call once',
   tooManyWaiting: `${TOO_MANY_WAITING}: too many permission requests are waiting for the user, so this call was not made and nothing was asked. Try it again once the user has answered some of them.`,
@@ -84,6 +88,7 @@ export class ResultWording {
       return { kind: POST_DECISION.accept, content: [...result.content, textBlock(SEPARATOR + notice)] }
     }
     if (mark.kind === WORDING.tooManyWaiting) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.tooManyWaiting)] }
+    if (mark.kind === WORDING.userReject) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.userRejected(mark.note))] }
     if (mark.kind === WORDING.reject) return { kind: POST_DECISION.block, feedback: [textBlock(`${TEXT.rejected(mark.reason)}\n${TEXT.hint}`)] }
     return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.question(mark.requestId, mark.question))] }
   }

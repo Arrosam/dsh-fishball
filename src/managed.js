@@ -8,7 +8,7 @@
  *   next start.
  * - Ways in: start_session, message_session and Send to Fishball call manage() (no note: the
  *   tool's result or your own click already says so); Hand over (your click) calls handOver().
- *   answer_prompt joins in rev11e.
+ *   Fishball's answer_prompt calls manage() too (rev11e, the fifth way in; its result says so).
  * - Ways out: Take back (your click) and Fishball's release_session. Hand over, Take back and
  *   release each wake Fishball with one note through the intake ledger (§5e "Notes to Fishball").
  *
@@ -148,10 +148,11 @@ export class ManagedRegistry {
 
   /**
    * Make a session managed as a side effect of Fishball's start_session / message_session or
-   * your Send to Fishball (no note; DESIGN §5e). Already managed: unchanged.
+   * your Send to Fishball, or of answer_prompt (no note; DESIGN §5e). Already managed: unchanged.
+   * @returns whether the session became managed now.
    */
-  async manage(sessionId, by) {
-    await this.#add(rootSessionOf(this.#ctx, sessionId), by)
+  manage(sessionId, by) {
+    return this.#add(rootSessionOf(this.#ctx, sessionId), by)
   }
 
   /**
