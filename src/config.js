@@ -49,6 +49,9 @@ export const LIMITS = Object.freeze([
   ['minWindowTokens', 4096, MIN.count, 'The smallest context window you can set, in tokens.'],
   // DSH's plugin manager has no such setting; its other package bounds are read from DSH (src/fishball-plugin-manager.js).
   ['pluginManagerStartMs', 30000, MIN.count, 'How long Fishball\'s plugin manager may take to start before a package operation gives up, in milliseconds.'],
+  // Revision 11 (rev11b): list_user_messages (your answer, Q-r11-list).
+  ['userMessagesListed', 20, MIN.count, 'Messages list_user_messages returns to a managed session, newest first.'],
+  ['userMessageExcerptChars', 1000, MIN.count, 'Characters of each excerpt list_user_messages returns.'],
   ['defaultReplyCapTokens', 32000, MIN.count, 'The most the automatic reply-length cap can be with a smaller context window; your own reply cap still wins.'],
 ].map(([field, defaultValue, min, description]) => Object.freeze({ field, defaultValue, min, description })))
 
