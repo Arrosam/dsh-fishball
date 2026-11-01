@@ -1993,4 +1993,63 @@ A-r11f-1 confirmed (`sessionId` = Fishball's session, list under `detail`). A-r1
 
 - **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
 
+## Revision 11 rev11g cases (questions and plan reviews in managed sessions; DESIGN §14 row rev11g, §7a.10, §9 "Session cards"/"Open questions"/"Tag records"/`settings['questions']`, §10e "Question mode"/"Host API", §11 "Revision 11", §16 Q-r11-questions, Q-r11-question-card, Q-r11-timed-wait, Q-r11-timed-release, Q-r11-continued-cards, Q-r11-question-off, Q-r11-mode-place, Q-r11-question-tag; requirements items 25-27; S36, S37; written from the requirements alone, no code read)
+
+Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan` (11), `rev11g-validate` (30), `rev11g-tags` (8), `rev11g-restart` (6). Shared set-up: [support/rev11g.mjs](support/rev11g.mjs) on the rev11c host.
+
+### Harness added for rev11g (test code only)
+
+- **The session's own question card** is a stand-in registered by the fixture bundle (`FBTEST_QUESTIONS=1`, fixtures/fbtest-tools): a prepended `user-questions/request` listener that mounts before dsh-fishball, so Fishball's router (prepended later) runs first and its `next()` reaches it, as the approvals stand-in does. It keeps the card OPEN until `qAnswer` (your click), `qDiscuss` (Discuss: `ASK_CANCELLED`) or the request's signal aborts, which closes it (the gateway's `cancel` to a browser). It does NOT claim `attachWait`, so a timed question is held only if Fishball's router holds it. Worker ops: `qCards`, `qAnswer`, `qDiscuss`, `qContinued` (`userQuestions.answer`, what the browser's RPC calls), `qProjection`, `planCommand` (`/plan`, `/plan off`), `planQuestion`.
+- **Presets** `fbtest-ask` (legacy blocking `ask_user_question`, as the shipped presets) and `fbtest-ask-timed` (timed, default 120 s, per-call `timeout`). Plan reviews use the `standard` preset, because `/plan` and `exit_plan_mode` come with it.
+- **Fishball's model** answers a question notice from a plan (`planQuestion {needle, args}` → `answer_question({question_id, …args})`), the question id taken from the newest user message with the needle and a `qst_…` id.
+- `eventSummary` also gives each event's `seq` (when it has one) and a `tool/call`'s `callId` and `name`, so a tag's `seq` can be checked against its turn.
+- No older case is changed. (`support/constants.mjs` gains `PRESET.ask`/`askTimed` and the rev11g constants; the old `CARD_KIND.question` is used as is.)
+
+### What is checked, per "done when" item
+
+| Done-when item | Cases |
+|---|---|
+| `attachWait` proof first: a timed question's wait is held through `approvalAnswerSeconds` past the tool's shorter `timeout`, and still held once it is a pile card | HLD-01, HLD-02, HLD-03, HLD-04, HLD-05, HLD-06, HLD-07 (file first) |
+| 120 s limit measured against `approvalAnswerSeconds` | FLW-07 (1 s, 3 s), HLD-01..03, MOD-04..06 (no answer) |
+| In each mode a question behaves as item 25 says; User mode: Fishball's answer is refused and its note shows on the card | MOD-01..07 (decision table), FLW-12, PLN-10 |
+| A question answered in the session's own card clears its pile card, and the reverse | FLW-08, FLW-09, FLW-05, FLW-13, HLD-02, PLN-05..07, RST-05/06 |
+| Every answered question and plan review shows its tag in the turn tail (not on the question row) | QTG-01..08 (tag records, `seq` in the right turn, no tag text in the session's log or the result); the drawing itself is a hand check |
+| A session that is yours keeps its questions with no Fishball step | FLW-01, PLN-11 |
+| Fishball or Permission requests off: the question stays in its own card, Fishball takes no step | OFF-01..04 |
+| The router answers in the browser's exact shape (result matches a browser answer byte for byte); a malformed batch is refused and the question stays open | FLW-04, FLW-03, VAL-01 ×13, VAL-02..05 |
+| Legacy question's call id recovered from the log, so its tag lands in the right turn | QTG-01, QTG-03, QTG-04, FLW-10 (the card's `callId`) |
+| Plan review: Approve exits plan mode; Keep planning with feedback keeps it on and the agent sees the feedback; Discuss closes the pile card | PLN-02..08 |
+| A blocking question or plan review open at a restart ends with its card | RST-01 |
+| A timed question Fishball answers within its time returns in the same turn | HLD-01, HLD-05, QTG-05 |
+| A continued timed question open at a restart has its pile card again after the start | RST-02..06 |
+| A child agent's question never reaches Fishball | CHD-01 |
+| The session's own question card is open while Fishball decides, and the first answer wins | FLW-02, FLW-03, FLW-05, FLW-06, HLD-06 |
+| In a real browser: the session's own question card (legacy and timed) and plan-review panel close when Fishball's answer wins; the pile card closes when you answer in the session first | not automated: stage 2 hand check |
+
+### Readings the tests take (the design is silent or loose; a different builder reading is reported, not hidden)
+
+1. **Names the design leaves open.** The pile card's id is read as `questionId`, falling back to `requestId`/`id`; a question card has `kind: 'question'` (§9), its `callId` and `sessionId`, and shows the question text, choices (or the plan) and Fishball's note anywhere in its JSON. A plan-review card is also `kind: 'question'`. The snapshot key for the mode is `questionMode` (§10e). Refusals are `{ok:false}` or an error result; only User mode's code (`mode-user`) is named, so only it is compared. A question notice is a `fishball-notice` user message that carries the `qst_…` id.
+2. **User mode shows the pile card at once** ("always the pile", §7a.10), not after `approvalAnswerSeconds`. MOD-06, PLN-10.
+3. **`to_user: true`** makes a card at once with the note, in any mode (FLW-12, PLN-05).
+4. **A note** (`answer_question({question_id, note})` with no answer) is accepted in every mode and shows on the card (MOD-06).
+5. **Keep planning with no feedback** is `answer_question({question_id, approve: false})`; the agent is then told to revise and present again (PLN-04, dsh-plan-mode's wording).
+6. **After a restart, "at start" means the cards exist without anyone resuming the sessions** (RST-02, §7a.10 "At start the router rebuilds"). Resuming a session first would hide a router that only rebuilds on resume. If the builder rebuilds lazily, RST-02 fails and the question for the manager is whether that is intended.
+7. **`qContinued`** (your late answer in the session) is the call the browser's RPC makes; the router learns it from the `user-question-reply` message (S36).
+8. **A question that left Fishball** (Permission requests turned off while it waited, OFF-02) is no longer answerable through the route (409). The design says only that it goes back to the session's own card.
+9. **Not asserted, because the design leaves it open:** whether Fishball's answer is still accepted after a question moved to the pile (the design says "the question moves to your pile"); the Auto-mode rule (prompt-only); the multi-select "same label twice" batch (VAL-04 last row only checks that nothing crashes).
+
+### Not automated (hand checks in stage 2)
+
+- The turn-tail drawing of "Asked Fishball" plus the answer, and that nothing is drawn on the question row (QTG-07 checks only that the Host leaves the tag out of the tool result and the session's log).
+- The pile cards' look (question form, plan with Approve and Keep planning plus a feedback field) and the mode switch on Fishball's settings page.
+- The real browser: the session's own question card (legacy and timed) and plan-review panel closing when Fishball's answer wins; the pile card closing when you answer in the session first; `attachWait` against the real gateway/browser claim.
+
+### rev11g addendum: too-many-waiting as JSON (manager's decision, 2026-11-02)
+
+`rev11g-cap.test.mjs` CAP-01: past `maxPendingApprovals`, Fishball's own request answers parsed JSON `{ok: false, code: 'too-many-waiting', …}` with "or withdraw one" in the text. Total rev11g cases: 96. Readings 1-4 above (User mode/`to_user` card at once, cards rebuilt at start without resuming, 409 after a question goes back to its session, `questionId`) are confirmed by the manager.
+
 - **A-r11e-8. Audit of `answer_prompt` (settled, manager 2026-11-02).** Follows DESIGN §9: a `decisions` row `answer-prompt` AND an approvals audit row of kind `prompt`; APR-10 expects both.
+
+### rev11g after the build (stage 2)
+
+Older cases changed on purpose: `STATE_KEYS` gains `questionMode` (HTP-01, HTP-04/05, SND-01, PHT-01, PHT-04) and `OWN_PLUGINS.approvals.tools` gains `answer_question` (OWN-01): DESIGN §10e, §7a.10. Readings 1 and the rest above changed as follows: plan-review cards are `kind: 'plan-review'` (the helper accepts both); a tag record's `answer` is a word (`answer`, `approve`, `keep-planning`) and the published record carries Fishball's words (the user's confirmed reading); a rebuilt continued card is the user's and Fishball's answer on it is `expired` (RST-04); a `to_user` question gets a Sent-to-you tag (FLW-12); the route's `bad-answer` for a well-shaped body with invalid answers (FLW-14); the session's own card is untimed (HLD-01). Full report: [hand-checks/rev11g.md](hand-checks/rev11g.md).
