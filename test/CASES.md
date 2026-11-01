@@ -1862,3 +1862,85 @@ Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a
 - **A-r11e-4. Take back / release while a direct card and its prompt show.** The prompt must stay (the session is the user's again); whether the card leaves is not stated. Not tested. DCD-09 (Permission requests off) asserts only that the prompt stays and the settled call leaves no card.
 - **A-r11e-5. The tag record's `callId`** is taken to be the frozen call's id (the call whose prompt was answered); `answer` is matched by a regular expression on the decision word.
 - **A-r11e-6. "No note" for a Fishball-initiated way in** follows the §16 Reading "Fishball's own actions need no extra note beyond the tool result" (APR-03 asserts no `fishball/managed` item).
+
+## Revision 11 rev11f cases (Fishball's own requests; DESIGN §14 row rev11f, §7a.11, §7a.6 "Cap", §7 N3/N4, §9 `own_requests`, §10e, §16 Q-r11-own, Q-r11-own-scope, Q-r11-own-card-detail, Q-r11-cap-own; requirements items 21-24; S35; written from the requirements alone, no code read)
+
+Black-box surfaces: Fishball's tool results (`add_plugin`, `remove_plugin`, `set_plugin_enabled`, `set_plugin_settings`, `withdraw_request`, a visible plugin tool that asks in its body), the snapshot's `pile`, `POST /api/fishball/requests/answer`, Fishball's model requests and user messages (the "run it again" notice), the scripted stock prompt after the broker, the `own_requests` table of `storages/fishball.json`, the settings stores and the profile folder. "Retry" = Fishball's woken turn makes the identical call: the fake model is scripted for it through a marker (`queueMarker`, marker = the request id, queued just before the click), because a pass lasts only as long as the turn Fishball was woken for.
+
+Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with scripted retries / withdraw, `ownRows`, `detailEntries`); constants `OWN_REQUEST`, `WITHDRAW_TOOL`, `OWN_STATUS`, `OWN_MORE`, `OWN_WITHDRAW_HINT`, `OWN_ASKING_TOOL` (demo_echo asks in its body through `FBTEST_ASKING_TOOLS`); `fishballTool` in `expect.mjs` now works with cards (below).
+
+### [rev11f-request.test.mjs](rev11f-request.test.mjs): add_plugin and remove_plugin (one host, in order)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| OWN-01 | EP (mode asks) | item 21; §14 "returns at once with a card" | `ok:false`, code `waiting-for-approval`, waiting text, within seconds; a card of Fishball's session with tool, exact arguments and its reason; the stock prompt not asked; nothing installed; `own_requests` row `waiting` |
+| OWN-02 | ST (card waiting) | item 21 "keeps handling whatever else comes in" | another message gets its model step; the one card is still there |
+| OWN-03 | ST (waiting → approved) | item 22 | route 200; card leaves; a notice naming the request and saying to run it again wakes Fishball (a model step) |
+| OWN-04 | ST (approved → used) | item 22 "one-time pass covers the identical retry" | the retry installs; no second card; no stock prompt; row `used` |
+| OWN-07 | ST (waiting → rejected) | item 22; defaults "Rejecting Fishball's own card tells Fishball without waking it" | no model step for 1 s; row `rejected`; Fishball's next turn carries a text naming the request; the identical call asks again (no pass) |
+| OWN-08 ×4 | DT (withdraw: waiting / again / unknown / a session's card) | item 23 | waiting: ok, card gone, row `withdrawn`, a click is 409 `expired`; a second withdraw, an unknown id and a managed session's card id are refused; the session card stays |
+| OWN-09 | ST (pass ends with the woken turn) | defaults "Pass lifetime" | Allow with a woken turn that does not retry; a call in a later turn files a new card |
+| OWN-10 | EP (policy never) | §7a.11 "Never-asking modes" (a fact since S35); §14 (Reading) | refused (`ok:false`, not waiting), no card, no stock prompt, no `own_requests` row |
+| OWN-11 | ST (restart before the click) | item 24; §14 "Allow after it still works" | the card is in the pile after the start with the same tool and arguments; Allow works, the woken turn's retry installs; no second card |
+| OWN-12 | BVA (`rationaleChars` 5 / default) | §9 `own_requests.reason` | Fishball's reason on the card is cut to 5 characters; whole at the default |
+| OWN-13 | BVA (`argumentExcerptBytes` 16 / default) | §9 `own_requests.arguments` | arguments on the card cut to 16 bytes + an ellipsis, a prefix of the real ones; whole at the default |
+| OWN-14 | EP (remove_plugin) | item 21 | a card, no stock prompt; the package stays until Allow; the retry removes it |
+
+### [rev11f-scope.test.mjs](rev11f-scope.test.mjs): every kind of Fishball request (settings fixtures; demo_echo asks in its body)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| SCP-01 | EP (unchecked tools) | §7 N4; Q-r11-own-scope | a card with a detail list naming the plugin's tools; no stock prompt; Allow + retry turns the plugin on |
+| SCP-02 | EP (a plugin tool that asks in Fishball's session) | Q-r11-own-scope; S35 | returns at once with the waiting text; a card for the tool with its exact arguments; no stock prompt |
+| SCP-03 | DT (retry after Allow: changed value / other key order / second use) | §7a.11 "The pass key" (S35 table) | changed `command` → new card; same arguments, other key order → runs (`outcome=allowed-once`); the same call again → new card |
+| SCP-04 | EP (turning on one of Fishball's own plugins) | Q-r11-own-scope; §10d | a card, no stock prompt, the feature stays off; Allow + retry turns it on |
+| SCP-05 | EP (set_plugin_settings) | Q-r11-own-scope | at once; the card's detail lists `path: old → new`; stored values unchanged; no audit row; no secret; no stock prompt |
+| SCP-07 | ST (Reject) | item 22 | Fishball not woken; nothing saved |
+| SCP-06 | ST (Allow + retry) | item 22 | the retry saves (`ok:true`, `changed`); no second card; the stored values changed; audited |
+
+### [rev11f-detail.test.mjs](rev11f-detail.test.mjs): the bound on the detail list (Q-r11-own-card-detail)
+
+| id | technique | expected |
+|---|---|---|
+| DET-01 | EP (default limit) | every unchecked tool of the plugin once, with the first description line and never the second; no "and N more" |
+| DET-02 ×2 | BVA (limit L, L+1; L = the list's bytes) | the whole list |
+| DET-03 | BVA (limit L−1) | whole entries that are a prefix of the full list (≥ 1, < n), then "and K more", K = the entries left out; the shown entries fit the limit |
+| DET-04 | EP (a limit between) | the same shape |
+| DET-05 | BVA (settings, 4 changes: L, L−1; a 400-char value) | whole at L; cut shape at L−1; the value still cut to `settingsPromptValueBytes` |
+| DET-06 | BVA (one over-long entry: E, E−1, 20) | whole at E; at E−1 and 20 one entry cut with "…" (a prefix, at most limit + the ellipsis); no "and N more" |
+
+### [rev11f-cap.test.mjs](rev11f-cap.test.mjs): own cards and `maxPendingApprovals` (Q-r11-cap-own)
+
+| id | technique | expected |
+|---|---|---|
+| CAP-01 | BVA (cap 2: 1st, 2nd, 3rd) | two cards; the third returns `too-many-waiting` at once with "or withdraw one"; no card, no row, no stock prompt |
+| CAP-02 | ST (full → withdraw one) | the next request is a card; then full again |
+| CAP-03 | ST (full → Reject a card) | a place is free |
+| CAP-04 | DT (one session card + one own card, cap 2) | together they fill the cap; the next own request is refused |
+| CAP-05 | BVA (default cap 8: the 8th, the 9th) | eight cards, the ninth refused |
+
+### Older cases changed by rev11f (changed on purpose; why)
+
+| file | change | why |
+|---|---|---|
+| `fishballTool` (support/expect.mjs) | still takes the scripted answers (`OUTCOME.allow` / `reject`, a list in order), but applies them to the cards: when the call returns waiting, Allow once is clicked and Fishball's woken turn makes the identical call (a new call id); a second card (the unchecked-tools prompt after the install prompt) takes the next answer; Reject is clicked and the waiting result is returned. The result gains `cards`; `approvals` (stock prompts) is now empty for Fishball's own tools | §7a.11: Fishball's own requests no longer reach the stock prompt. The ~12 older files that call Fishball's tools through this helper keep their intent without edits |
+| approvals-routing RTE-01 ×2 | flipped: the stock prompt is not asked for Fishball's session; the call returns `waiting-for-approval` and a card of Fishball's session is in the pile; still no request message, not recorded | §7a.11, N3 replaced |
+| rev11c-leave LVE-06 | adds: the `too-many-waiting` text carries "or withdraw one" | manager's decision 2026-11-02 (DESIGN §16) |
+| **Expected to need repair in stage 2, against the build** | plugins-review (REV-15 asserts a rejected add_plugin's result shape), manager-settings-tools (SPS-02 to SPS-12 hold the stock prompt open with `APPROVER_HOLDS`; the held request is now a card, and "prompt text" is the card's detail), manager-settings-route, messenger-author-approvals, plugins-review2, approvals-broker (where it holds a Fishball tool's prompt), own-plugins (OWN_ASK prompt text) | They read a stock prompt for Fishball's own request or the old rejected result shape; the repair is mechanical (the card replaces the prompt) but cannot be checked without the build |
+
+### Not automated (rev11f)
+
+- The card's look and its "Fishball" label in the browser (client rendering): by hand.
+- A plugin tool that asks through a prepended `tools/pre-execute` `ask` (S35 variant A) needs a listener plugin the harness does not have; the body-ask path is tested (SCP-02, SCP-03).
+- Withdrawing an `approved` card while the woken turn still runs (needs the woken turn held; the pass is gone either way after the turn ends, OWN-09).
+
+### Ambiguities (rev11f)
+
+- **A-r11f-1. The card's shape for Fishball's own requests.** §9 lists the session-card keys but not the label or the detail list. The tests find a Fishball card as a pile entry whose `sessionId` is Fishball's own session, with `toolName`, `arguments` and `requestId`, take the detail list from a `detail` key (an array, or text with one entry per line), and look for Fishball's reason anywhere in the card's JSON. How the card is "labelled Fishball" is not asserted (client look).
+- **A-r11f-2. The waiting result's fields.** `{ok:false, code:'waiting-for-approval', card}` for Fishball's own tools (§7a.11); for another plugin's tool the post-execute text only. The tests match the code or the text `/waiting for your approval/i`, and take the card from the pile, not from the result.
+- **A-r11f-3. The wording of the wake notice** ("approved, run it again") is matched by `/run it again/i` and by the request id; the scripted woken turn is triggered by the request id appearing in Fishball's messages.
+- **A-r11f-4. Does the closing "and N more" count inside the bound?** The tests measure only the entries before it and assert they fit; they never assert a count that depends on the answer. Likewise, whether the "…" counts inside the bound (A78) or after it (PIL-05): up to limit + 3 bytes is accepted.
+- **A-r11f-5. A first entry longer than the bound with more entries behind it** is not tested (cut with "…" and then "and N more", or something else); only a single over-long entry is.
+- **A-r11f-6. Withdrawing a card that is not Fishball's own, or already settled**: refused is all the tests require (`ok` not true); the code is not asserted. Reject's note reaching Fishball: only its next turn naming the request is asserted.
+- **A-r11f-7. Already-installed packages.** Whether add_plugin asks before or after it finds a package already installed is not stated, so the card-only cases use a package that is never installed (the fbtest-added-c fixture) and the one-time pass is shown with a stateless plugin tool (SCP-03), not with add_plugin.
+- **A-r11f-8. Policy never** (OWN-10) asserts the refusal shape only as `ok:false`, not waiting; DSH's own wording is not asserted.
