@@ -470,7 +470,15 @@ window.__ModuleLoader__.load({
       sourceOff: 'Off',
       'intakeKind.plugin': 'Plugin event',
       approvals: 'Permission requests',
-      approvalsHint: 'Other sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you in that session.',
+      managedSessions: 'Managed sessions',
+      managedSessionsHint: 'Sessions Fishball looks after: they can message it, and their permission requests go to it first. Every other session is yours.',
+      managedSince: 'since {at}',
+      'managedBy.hand-over': 'Handed over by you',
+      'managedBy.send': 'Sent by you',
+      'managedBy.message': 'Messaged by Fishball',
+      'managedBy.start': 'Started by Fishball',
+      'managedBy.prompt-answer': 'Prompt answered by Fishball',
+      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you in that session.',
       approvalsWaiting: 'Waiting for Fishball',
       'approvalAnswer.allow': 'Approved by Fishball',
       'approvalAnswer.escalate': 'Sent to you',
@@ -776,7 +784,15 @@ window.__ModuleLoader__.load({
       sourceOff: '已关闭',
       'intakeKind.plugin': '插件事件',
       approvals: '权限请求',
-      approvalsHint: '其他会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你在该会话中决定。',
+      managedSessions: '由 Fishball 管理的会话',
+      managedSessionsHint: 'Fishball 负责的会话：它们可以给 Fishball 发消息，权限请求会先交给 Fishball。其他会话都由你自己处理。',
+      managedSince: '自 {at}',
+      'managedBy.hand-over': '由你交给它',
+      'managedBy.send': '由你发送给它',
+      'managedBy.message': 'Fishball 发过消息',
+      'managedBy.start': 'Fishball 启动',
+      'managedBy.prompt-answer': 'Fishball 答复过提示',
+      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你在该会话中决定。',
       approvalsWaiting: '等待 Fishball 处理',
       'approvalAnswer.allow': 'Fishball 已批准',
       'approvalAnswer.escalate': '已转交给你',
@@ -1825,6 +1841,7 @@ window.__ModuleLoader__.load({
         return h('div', { className: CLS.section, 'data-fishball-approvals': true },
           h('h3', null, t('approvals')),
           h('p', { className: CLS.muted }, t('approvalsHint')),
+          h(ManagedSessions, { state, t }),
           view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
             h(Tag, { tone: 'info' }, t('approvalsWaiting')), ' ', h('span', { className: CLS.code }, p.toolName), ' ', h('span', { className: CLS.muted }, p.sessionId)))) : null,
           view.recent.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.recent.map((entry) => h('li', { key: entry.key },
@@ -1834,6 +1851,24 @@ window.__ModuleLoader__.load({
             h('span', { className: CLS.muted }, t('approvalOutcome.' + entry.finalOutcome)), ' ',
             entry.rationale ? h('span', null, entry.rationale) : null))))
       }
+    }
+
+    /**
+     * The managed sessions (DESIGN §10e "Settings page"; the user's answers 2026-11-01): newest
+     * first, each with its title, how it became managed and since when, and Take back under the
+     * same rule as the menu entry (canManage). The list shows even when Take back cannot.
+     * A session whose title is not known yet shows its id instead.
+     */
+    function ManagedSessions({ state, t }) {
+      const entries = [...(state.managed ?? [])].sort((a, b) => (a.since < b.since ? 1 : a.since > b.since ? -1 : 0))
+      return h(React.Fragment, null,
+        h('h4', null, t('managedSessions')),
+        h('p', { className: CLS.muted }, t('managedSessionsHint')),
+        entries.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries, 'data-fishball-managed': true }, entries.map((entry) => h('li', { key: entry.sessionId },
+          entry.title ? h('span', null, entry.title) : h('span', { className: CLS.code }, entry.sessionId), ' ',
+          h(Tag, { tone: 'neutral' }, t('managedBy.' + entry.by)), ' ',
+          h('span', { className: CLS.muted }, t('managedSince', { at: new Date(entry.since).toLocaleString() })), ' ',
+          canManage(state, entry.sessionId) ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void manageNotice.request({ sessionId: entry.sessionId, managed: false }) }, t('takeBack')) : null))))
     }
 
     /**
