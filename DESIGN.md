@@ -543,7 +543,7 @@ It still cannot install a plugin without your click, and it has no tool that wri
 
 ## 7a. Exception: answering managed sessions' permission requests and questions
 
-Revision 11 rewrites this section ([requirements](docs/revision-11-requirements.md) items 6-29). What it replaces: decision Q-approval-routing "always" (now: managed sessions only), "the assistant cannot reject" (now it can, with a reason), "one-time grants only" (Fishball can also create standing grants), N3's blocking prompt for Fishball's own requests (now non-blocking cards), and "`ask_user_question` always stays with you" (managed sessions' questions now go to Fishball). The rubric is unchanged. Mechanisms that wait on a spike are marked **pending S3x** (§13); lines marked **Reading** are the implementer's reading of a silent requirement, listed for confirmation in §16 "Revision 11".
+Revision 11 rewrites this section ([requirements](docs/revision-11-requirements.md) items 6-29). What it replaces: decision Q-approval-routing "always" (now: managed sessions only), "the assistant cannot reject" (now it can, with a reason), "one-time grants only" (Fishball can also create standing grants), N3's blocking prompt for Fishball's own requests (now non-blocking cards), and "`ask_user_question` always stays with you" (managed sessions' questions now go to Fishball). The rubric is unchanged. Mechanisms that wait on a spike are marked **pending S3x** (§13); S33, S35 and S37 have run and their amendments are folded in (§13d); lines marked **Reading** are the implementer's reading of a silent requirement, listed for confirmation in §16 "Revision 11".
 
 ### 7a.1 What reaches Fishball, and what does not
 
@@ -563,22 +563,27 @@ Revision 11 rewrites this section ([requirements](docs/revision-11-requirements.
 session X: tool call needs approval → ctx.approval.request()      audit approval/asked in X's log
   └─ waterfall 'approval/request'
        1. ApprovalBroker (fishball row, prepended)
-          ├─ X is Fishball itself                → its own card in the pile; the call returns at once
-          │                                        (§7a.11; for requests DSH raises, pending S35)
+          ├─ X is Fishball itself                → a pass for the identical call → 'allowed-once';
+          │                                        otherwise its own card, then 'rejected' at once;
+          │                                        the waiting text set by the body or post-execute (§7a.11, S35)
           ├─ X is yours, Fishball not live, Permission requests off, or a to-you ticket matches
-          │     → next(), remembered as "showing" (§7a.9)          (unchanged DSH behaviour)
+          │     → pass-through: re-dispatch a marked copy (S33), remembered as "showing" (§7a.9)
           ├─ a pass or a grant covers the exact call → 'allowed-once' (no Fishball step;
           │     grants while Fishball is off: Q-r11-grants-off)
           └─ otherwise (a direct call in a managed session, §7a.4):
                mint apr_<id>; read X's arguments by callId (S11); notice to Fishball; start the timer
-               ├─ allow / grant → 'allowed-once'                 hint added to X's result (pending S35)
-               ├─ reject        → 'rejected', reason to X's agent  (pending S35)
-               ├─ to the user or timeout → your pile and X's stock prompt (§7a.6; the card from rev11e, S33)
-               ├─ over the cap (maxPendingApprovals) → X's stock prompt only
+               ├─ allow / grant → 'allowed-once'                 hint appended to X's result (S35)
+               ├─ reject        → 'rejected'; post-execute shows Fishball's reason (S35)
+               ├─ to the user or timeout → pass-through: X's stock prompt AND a card in your pile;
+               │                           the first answer wins, the other closes (§7a.6, S33)
+               ├─ over the cap (maxPendingApprovals) → pass-through, X's stock prompt only
                └─ X's call cancelled → 'cancelled'; Fishball told
-       2. dsh-api-remotes → browser prompt in X
+       2. dsh-api-remotes → browser prompt in X   (reached by the marked copy; withdrawn by its signal)
   ← outcome → audit approval/decided in X's log
+  └─ tools/post-execute (one host-level listener, keyed by call id): Fishball's wording (§7a.4, S35)
 ```
+
+**Pass-through (S33).** Cordis's `next()` takes no arguments, so the broker cannot hand on a request with a signal of its own. Wherever P7 called `next()` to reach your stock prompt (yours, off, cap, to-you ticket, escalate, timeout), the broker instead re-dispatches the `approval/request` waterfall on the same scope target with a marked copy of the request whose signal combines the asker's with one the broker owns; its own listener passes a marked copy straight on. Aborting that signal makes DSH's gateway remove the pending event and close the prompt in every browser it was sent to, and also settles a request held with no browser open. The broker races its own answer against the downstream outcome: the first answer wins, a late one is refused ("already answered"), and when you click first the broker learns your outcome. The listener is registered as a `function`, not an arrow, so the scope target is at hand. **Reading:** re-dispatch, not mutating `req.signal` (S33 proved both; mutating writes to a request DSH documents as borrowed read-only).
 
 ### 7a.2 Asking Fishball first: `ask_fishball`, `list_user_messages` and quotes
 
@@ -590,7 +595,7 @@ Both tools exist only in managed sessions (§5e, pending S34). They belong to Fi
 - `tool` and `arguments` are the call it intends to make; `quote` is a list of message ids from `list_user_messages`; `why` is its reason.
 - **Quotes are verified by code.** Each id must be a message you typed in that session (the same source rule as above). Code adds each quoted message's full text from the session's log; an id that is not one fails the call with `not-user-message` and nothing is sent. So a quote cannot be faked: the agent names ids, code supplies the words. **Open (Q-r11-quote-bound):** a byte bound on quoted text.
 - **Framing.** The quotes sit inside the request's untrusted block (§7), with the session's facts, the tool, the arguments and the agent's reason. A quote only shows what you asked that session to do; it never counts as an allowance (item 9). The rubric's rule 1 already says so; the request header repeats it.
-- **The agent waits.** `ask_fishball` does not return until there is a final answer, as a session waits on a normal DSH prompt (item 8). The running tool row is where your buttons appear once it is your card (§10e, pending S37).
+- **The agent waits.** `ask_fishball` does not return until there is a final answer, as a session waits on a normal DSH prompt (item 8). The running tool row is where your buttons appear once it is your card (§10e, S37: Fishball draws that whole row).
 - **Results** (stable codes; the texts tell the agent what to do next):
   - `allowed` (Fishball's allow or grant, or your Allow once): "make the call now with exactly these arguments"; a pass covers it (§7a.3).
   - `rejected` with `reason` (Fishball's reason, or your optional note): "do not make this call".
@@ -637,8 +642,14 @@ Fishball answers with `answer_approval({request_id, decision, risk, reason, ques
 ### 7a.4 Direct calls, retries and the hint
 
 **Direct calls (item 12).** A call in a managed session that no pass or grant covers, made without `ask_fishball`, still goes to Fishball as in P7. The notice carries your last turn in that session (today's `latest_user_message`) and any reason the request already has.
-- **Hint.** After a direct call, the agent's tool result recommends `ask_fishball` next time, so it can explain why a call should be approved. DSH writes the result text itself, so how the hint gets there is **pending S35** (a `tools/post-execute`-style rewrite, or a note steered at the next step).
-- **Reject.** The agent must see Fishball's reason, while DSH words any non-allow outcome as "the user rejected tool X" (**pending S35**; the same mechanism as the hint).
+- **Wording (S35).** DSH's approval outcome carries no text (`allowed-once`, `rejected`, `cancelled`, `unavailable`; anything else becomes `unavailable`), and DSH words a rejection itself (`the user rejected tool "X"`). So the broker records `callId → {allow | reject, reason}` when Fishball answers, and **one host-level `tools/post-execute` listener**, the only place Fishball sets wording, rewrites that call's result once and forgets the mark. Denied calls pass through post-execute too, and the model and the session log get the same text.
+  - **Allowed:** `accept` with the hint appended to the tool's own output ("Fishball approved this call once. Next time, call ask_fishball before a call that needs approval, and explain why it is needed."). **Reading:** in the output, not in `additionalContexts`, because item 12 says the result recommends `ask_fishball`.
+  - **Rejected:** `block` with Fishball's reason and the hint; "the user rejected" no longer appears.
+  - **Your Reject note** on a card reaches the agent only through this rewrite (**Reading**, S33: the outcome cannot carry it).
+  - The texts are constants of the plugin; S35's are a proposal.
+  - **Marks** are bounded and swept at the end of the asking turn, because a call cancelled after its approval may never reach post-execute.
+  - **Calls inside `run_code`** (request call id `<parent>:ptc:<n>`, S11): whether post-execute sees the same call id is **pending** (asked of the S35 session). If it does not, those calls keep DSH's own text.
+  - Tool-owned finalizers (terminal, jobs) run after post-execute and only cut text to a size limit, so the rewrite survives, possibly shortened.
 
 **Retries (item 13).** A call Fishball rejected that the agent makes again goes back to Fishball like any other call. Code keeps no rejection memory; a pass is never minted by a reject.
 
@@ -652,12 +663,12 @@ Fishball answers with `answer_approval({request_id, decision, risk, reason, ques
 
 A request Fishball sends to you, one that timed out, and one waiting when Fishball stops (Q-r11-release) become a **card** in your pile above Fishball's composer (item 14, §10e). The card shows the session, tool, exact arguments, quoted messages, the agent's reason, the thread and Fishball's note, with **Allow once** / **Reject** (optional note to the agent) and a details toggle.
 - **Both places (item 15).** The same buttons appear in the session's own chat, and answering in either clears both:
-  - an `ask_fishball` request: on its running tool row (**pending S37**);
-  - a direct call: DSH's stock prompt in the session, which the broker shows by calling `next()` while the card waits; your answer on the card must close that prompt, and your click there must clear the card (**pending S33**; built in rev11e, §14). If S33 fails, a direct call sent to you shows only the stock prompt, as before revision 11; until rev11e it does so too.
+  - an `ask_fishball` request: on its running tool row (S37);
+  - a direct call: "escalate" means DSH's stock prompt in the session **and** a card in your pile, either one answering (S33). The broker passes the request through (§7a.1); your answer on the card aborts the copy's signal, which closes the prompt; your click in the session settles the race and clears the card. Built in rev11e (§14); until then a direct call sent to you shows the stock prompt only.
 - **Leaving (item 16).** A card leaves when it is answered, or when that session's turn ends or is stopped. Session cards live in memory: a restart ends turns, so none survives one.
 - **Cap (requirements default).** Cards are capped by `maxPendingApprovals`. Past the cap, the request shows the normal prompt in its own session. **Reading:** the cap counts every open request, waiting for Fishball or in the pile, as today's field counts requests Fishball decides. **Open (Q-r11-cap-own):** whether Fishball's own cards count, and what happens to one of them past the cap (Fishball must never freeze).
 - **To-you ticket.** When `ask_fishball` tells the agent to make the call itself (`unavailable`, `over-capacity`, `no-longer-managed`), the broker keeps a one-time ticket for exactly that call, so its request goes straight to your stock prompt instead of back to Fishball. It ends as a pass does.
-- **Before rev11c** (no pile yet): "to the user" means the stock prompt in the session, through a to-you ticket for `ask_fishball` and `next()` for a direct call (§14).
+- **Before rev11c** (no pile yet): "to the user" means the stock prompt in the session, through a to-you ticket for `ask_fishball` and the pass-through for a direct call (§14).
 
 ### 7a.7 How it recognizes your allowance, and the rubric
 
@@ -706,10 +717,10 @@ Fishball may create a grant when your allowance in its chat covers it; that judg
 ### 7a.9 Prompts already showing
 
 Fishball is not told about prompts it was not sent (item 20): requests from your sessions, and those that reached a stock prompt.
-- **Remembered, not sent.** The broker keeps, in memory, each request it handed to `next()` while that prompt shows: session, tool, exact arguments (by `callId`), since when. Nothing reaches Fishball.
+- **Remembered, not sent.** The broker's pass-through registry (§7a.1, S33) keeps, in memory, each request it passed on while that prompt shows: session (the root), tool, call id, exact arguments (by `callId`), since when, and the entry's `answer(outcome)`. It costs one map entry and wakes nobody; nothing reaches Fishball. An entry leaves on any settle: your click, the plugin's answer, the asker's own abort (a stopped turn).
 - **`list_frozen_sessions()`** lists them. The persona says when to look: when you ask, or when another session's message gives Fishball a reason to.
 - **`answer_prompt({prompt_id, decision: 'allow'|'reject', reason})`** answers one. The prompt closes, the session continues, and the session becomes managed (§5e); the result tells Fishball so. `allow` follows `allow`'s code rules; `reject` needs a reason. Both are audited.
-- **How (pending S33).** The waterfall has already called `next()`; the broker must settle the request itself and close the stock prompt in the browser, and learn your answer when you click first, so the entry leaves the list.
+- **How (S33).** `answer_prompt` and the pile's buttons call the entry's `answer(outcome)` with `allowed-once` or `rejected` only; it aborts the copy's signal, which closes the prompt, and returns whether it won. A late answer gets "already answered". No other DSH API is needed, and it works with no browser open.
 
 ### 7a.10 Questions and plan reviews in managed sessions
 
@@ -722,7 +733,9 @@ Fishball is not told about prompts it was not sent (item 20): requests from your
 - **Fishball's tool.** `answer_question({question_id, answers?, to_user?, note?})`; a notice through the ledger (`fishball/question`, never wake-capped, **Reading**) carries the question, its choices or plan, and your latest message in that session, in an untrusted block.
 - **Time limit (requirements default).** 120 s, then the question moves to your pile. **Reading:** the same field, `approvalAnswerSeconds`.
 - **Cards.** Question cards share the pile; you can also answer in the session's own question card, which stays answerable there (S36), and either answer clears both.
-- **Tag (item 27).** Every question Fishball answers (Auto or Fishball mode) shows "Asked Fishball" and Fishball's answer on that question's row in the session's chat (**pending S37**).
+- **Tag (item 27, S37).** Every question Fishball answers (Auto or Fishball mode) shows "Asked Fishball" and Fishball's answer in the session's chat. The Host publishes a tag record `{sessionId, callId, seq, answer, kind}` per answer (`seq`: the `tool/call` event's log position; `kind`: question or plan review).
+  - **Plan reviews:** in the turn's tail under its plan card, because DSH's `exit_plan_mode` row cannot be wrapped (§10e).
+  - **Questions:** **open (Q-r11-question-tag)**, a question for you: (a) on the question row, next to what it answers but hidden in a settled turn until you expand the turn and its group; or (b) in the turn's tail like plan reviews, always visible but after the reply.
 - **Fishball off.** **Open (Q-r11-question-off, requirements' own open item):** proposed, mirroring item 10: the question stays in the session's own chat.
 
 ### 7a.11 Fishball's own requests (replaces N3's blocking prompt)
@@ -730,12 +743,14 @@ Fishball is not told about prompts it was not sent (item 20): requests from your
 Fishball never freezes on a permission prompt (item 21).
 - **Which requests.** Item 21 names `add_plugin`, `remove_plugin` and the prompt for unchecked tools. Today the same `ask` helper in `src/plugin-tools.js` also asks before `set_plugin_settings` and before turning on one of Fishball's own plugins that is off (revision 10c), and a third-party plugin tool in Fishball's session can ask through DSH. **Reading:** "never freezes" covers all of them; **open (Q-r11-own-scope)** to confirm.
 - **The card.** The request becomes a card labelled Fishball in your pile, and the call returns "waiting for your approval" (code `waiting-for-approval`, with the request id) at once. Fishball keeps handling whatever else comes in.
-  - For Fishball's own tools the tool body returns that result itself; no DSH prompt is raised.
-  - For a request DSH raises in Fishball's session (a plugin tool's `ask`), the broker settles it and the agent must see "waiting for your approval" instead of DSH's "the user rejected tool X" (**pending S35**).
-  - **Reading:** under a permission mode that never asks, Fishball's own requests are still refused before any card, as today.
-- **Allow** (item 22) wakes Fishball with "approved, run it again" (a ledger notice, never wake-capped, **Reading**) and mints a retry pass. The identical retry (same tool and arguments, `reason` included, **Reading**) runs without a card.
+  - **How (S35; replaces N3's path).** Fishball's own requests no longer reach your stock prompt. The broker's code rule "Fishball's own requests → `next()`" becomes "→ the pass of an identical call you allowed, or a card": it files the card, records `callId → card`, and answers `rejected` at once, so nothing waits. Code still never approves without your Allow.
+  - **Fishball's own tools** keep calling `approval.request` in the body (so the request is audited in Fishball's log and Auto review cannot skip it), then ask the broker `cardFor(callId)`: with a card they return `{ok: false, code: 'waiting-for-approval', card}` and the waiting text; without one, rejected as today. The body runs its effect only on `allowed-once`.
+  - **Other plugins' tools in Fishball's session** (a pre-execute `ask`, or a body that asks): the post-execute listener (§7a.4) replaces DSH's text with the waiting text. **Reading:** this path only (S35's variant A, service then post-execute); a prepended pre-execute deny (variant B) would add DSH's `Error: ` prefix, record no `approval/*` events and miss body asks.
+  - **Reading:** the waiting result keeps the `isError` each path gives it (`false` from Fishball's own bodies, `true` from post-execute `block`).
+  - **Never-asking modes.** Under policy `never` DSH answers `rejected` before any listener runs, so no card is filed (S35). This is now a fact, no longer a reading.
+- **Allow** (item 22) wakes Fishball with "approved, run it again" (a ledger notice, never wake-capped, **Reading**) and mints a retry pass. The identical retry (same tool and arguments, `reason` included, since the pass key covers every argument) runs without a card.
   - **Retry-pass lifetime (requirements default):** ends when used, when withdrawn, or at the end of the turn it was woken for. It is stored with the card, so a restart between your click and the retry keeps it (item 24).
-  - A DSH-raised request's identical retry is approved by the broker from the same pass (**pending S35**).
+  - **The pass key (S35)** is `sessionId | toolName | sha256(canonical JSON of the arguments)`, keys sorted: the same arguments in another key order match; any changed value, and a pass already used, give a new card. The arguments come from the log by `callId` (S11), for Fishball's own tools and for a DSH-raised request alike. The same key serves session passes and to-you tickets (§7a.3).
 - **Reject.** Fishball is told without being woken (requirements default).
 - **Withdraw (item 23).** `withdraw_request({request_id})` removes Fishball's own card when it no longer needs it.
 - **Restarts (item 24).** Fishball's cards survive a DSH restart (§9).
@@ -769,7 +784,7 @@ Fishball never freezes on a permission prompt (item 21).
 ### 7a.14 As built before revision 11 (P7), and what still holds
 
 - **Still holds:** the prepended host-level listener; arguments read by `callId` (S11), with "truncated" or "unavailable" alone making a call high risk; `call_was_to_tool`; provenance from positive evidence (a kept `start_session` outbox entry, or the first user message of the session and of its current turn; otherwise "unknown"); subagent attribution to the root; the timer and abort listener started before the notice is delivered; the guarded next answerer (a failure audited as `unavailable`, a cancellation as `cancelled`); an answer time above about 24 days clamped; the audit stores a digest of the arguments, never the arguments. Fishball mentions each approval in one line in its chat. After a request it sent you is decided, Fishball gets a short note without being woken, so it learns from your choices (P7; **Reading**: kept for cards in your pile). For Fishball's own tools the request is made inside the tool body, not by a `tools/pre-execute` `ask`, because a listener such as Auto review could allow the call first (S17); rev11f keeps the check in the body and only replaces the DSH prompt with a card.
-- **Replaced:** routing for every session (now managed only); "escalate → stock prompt" (now your pile, from rev11c); "you cannot reject"; the blocking prompt for Fishball's own requests; "a separate Waiting for your approval status is not built" (your pile now shows Fishball's own cards).
+- **Replaced:** routing for every session (now managed only); every `next()` to your stock prompt (now the pass-through, S33); "escalate → stock prompt" (now the stock prompt and a card in your pile); "you cannot reject"; the blocking prompt for Fishball's own requests; "a separate Waiting for your approval status is not built" (your pile now shows Fishball's own cards).
 
 **Cost and limits.** Each request Fishball answers costs one Fishball step; your sessions cost none, and calls a pass or grant covers cost none. Open requests are bounded by `maxPendingApprovals` (§16); the answer time and the argument excerpt stay plugin config. Session requests, cards, passes and threads exist only inside a running turn of the asking session [V], so a DSH quit ends them; managed status, grants, Fishball's own cards and the question mode survive (§9, §11).
 
@@ -856,8 +871,10 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
 | Fishball's own cards | `fishball.own_requests[requestId]` | `{toolName, argumentsDigest, summary (the prompt text, bounded), status: 'waiting'\|'approved'\|'rejected'\|'withdrawn'\|'used'\|'expired', createdAt, decidedAt?, note?, wokenTurn?}`. `approved` is the retry pass; `wokenTurn` records the turn the "run it again" notice started, so the pass ends with it | Survives restart (item 24); settled ones kept to `auditEntriesKept` |
 | Session cards (your pile) | Memory (RequestDesk) | `{requestId, kind: 'asked'\|'direct'\|'question', sessionId, toolName, arguments (excerpt), quotes, why, thread, note, since}` | Until answered, or the asking turn ends or is stopped; a restart ends turns, so none survives (item 16) |
 | Request threads | Memory, with the waiting `ask_fishball` | `[{from: 'agent'\|'fishball', text, at}]` | As the request |
-| Passes and to-you tickets | Memory | `{sessionId, toolName, argumentsDigest, turnId, kind: 'pass'\|'to-you'}` | Used, or the session's turn ends (requirements default) |
-| Prompts already showing | Memory (ApprovalBroker) | `{promptId, sessionId, toolName, callId, argumentsDigest, since}` | While the stock prompt shows (pending S33) |
+| Passes and to-you tickets | Memory | Key `sessionId \| toolName \| sha256(canonical JSON of the arguments)` (S35); value `{turnId, kind: 'pass'\|'to-you'}` | Used, or the session's turn ends (requirements default) |
+| Wording marks | Memory (post-execute listener) | `callId → {allow\|reject, reason, note?}` or `callId → card` | Used once by post-execute; bounded and swept at the end of the asking turn (S35) |
+| Tag records | Host state (snapshot) | `{sessionId, callId, seq, answer, kind: 'question'\|'plan-review'}` (S37) | **Open (Q-r11-tag-store):** whether they survive a restart, which a tag still showing in an old turn would need |
+| Prompts already showing (the pass-through registry) | Memory (ApprovalBroker) | `{promptId, sessionId, toolName, callId, args, since, answer(outcome)}` | Until any settle: your click, the plugin's answer, or the asker's abort (S33) |
 | Audit | `fishball_intake.approvals[key]` (extended) | `answer` gains `grant`, `reject`, `ask`, `to-user`, `pass`, `grant-used` (**Reading**: one row per request, as today); new fields `kind: 'asked'\|'direct'\|'question'\|'prompt'\|'own'`, `quotes` (message ids, never text), `grantId?` | Newest `auditEntriesKept`, as today |
 | Fishball's other decisions | `fishball.decisions[key]` (new) | `{action: 'grant'\|'revoke'\|'release'\|'answer-prompt'\|'answer-question'\|'stop'\|'redirect', sessionId, target? (grant, prompt or question id), by: 'fishball'\|'user', rationale? (≤ 500 characters), at, outcome}` | Newest `auditEntriesKept` |
 
@@ -1089,7 +1106,17 @@ No custom session event types are added: persistence refuses logs containing unk
 
 ## 10e. Revision 11 UI: your pile, grants, hand-over and questions
 
-Drawing points in DSH's browser are **pending S37** unless a line says otherwise; the Host state and routes are not.
+Drawing points in DSH's browser were checked by S37 (§13d), in light and dark on rc.2 and rc.3:
+
+| What | Extension point |
+|---|---|
+| Your pile | `conversation.input.dock` (full-width entries above the composer, as DSH's Todo and Queue docks), rendered only for Fishball's session, fed by the state stream; height capped and scrolling so the composer stays in view |
+| Allow once / Reject on the running `ask_fishball` row | `tool.call.toolview`, key `ask_fishball`. DSH has no view for that tool, so the keyed entry is the whole row: Fishball draws its title, arguments and state with DSH primitives (`Button`, `Tag`, `DisclosureRow`). Buttons while `phase === 'start'` and the snapshot holds a card for that `callId`; arguments from `block.argsRaw` (start) or `block.call.argsRaw` (result). DSH's Auto-review denial still shows DSH's generic row |
+| "Asked Fishball" on question rows | `tool.call.toolview`, key `ask_user_question`, priority −1, rendering DSH's own row (the next occupant, via `ctx.slots.entries`) unchanged with the tag below it, as the messenger does (S25). Moves to the turn tail if you choose (b) in Q-r11-question-tag |
+| "Asked Fishball" on plan reviews | `conversation.chat.turnTail`: shows the tag records whose `seq` lies between the turn's `start.seq` and `end.seq` |
+| Hand over / Take back | `sidebar.workspaces.session.menu.item` and `conversation.session.header.actions`, beside Send to Fishball |
+
+The Host state and routes below need no spike.
 
 - **Your pile (items 14-16).** A stack pinned above Fishball's composer, titled "Waiting for you (n)", shown only while it holds a card. No system notification or sound: the stack and its count are the only signal (requirements non-goal).
   - **Card.** The session (title, plain text), the tool, the exact arguments, the quoted messages, the agent's reason, the thread, Fishball's note; **Allow once** / **Reject** (Reject opens an optional note to the agent) and a details toggle. Cards for Fishball's own requests are labelled Fishball and show its reason; question cards show the question form and its choices, or the plan, with the answer controls DSH's question card has (pending S36).
@@ -1098,9 +1125,9 @@ Drawing points in DSH's browser are **pending S37** unless a line says otherwise
 - **Active grants beside the pile (item 19).** Each with its session, tool, exact call or prefix, end time and **Revoke**. **Open (Q-r11-grants-place):** "beside the pile" read as a second disclosure in the same pinned area; confirm.
 - **In the session's own chat (item 15).**
   - **Allow once / Reject on the running `ask_fishball` row** while its request is a card in your pile (**Reading**: the buttons appear when it becomes yours, not while Fishball decides).
-  - A direct call sent to you shows DSH's stock prompt there, kept in step with the card (pending S33).
-  - **"Asked Fishball"** on every question row Fishball answered, with its answer (item 27).
-- **Hand over / Take back (items 2, 4).** In the session-row menu and the session header, next to Send to Fishball: **Hand over to Fishball** on a session that is yours, **Take back from Fishball** on a managed one; Fishball's own session shows neither. The same slots carry Send to Fishball today (§10 item 3), so placement is known; S37 checks the state switch.
+  - A direct call sent to you shows DSH's stock prompt there, kept in step with the card (S33).
+  - **"Asked Fishball"** with Fishball's answer on every question and plan review it answered (item 27; placement in the table above).
+- **Hand over / Take back (items 2, 4).** In the session-row menu and the session header, next to Send to Fishball: **Hand over to Fishball** on a session that is yours, **Take back from Fishball** on a managed one; Fishball's own session shows neither. The same slots carry Send to Fishball today (§10 item 3), so placement is known; S37 showed both switching live.
 - **Question mode (item 25).** Auto / Fishball / User, on Fishball's settings page in the Permission requests section (**Open (Q-r11-mode-place):** the requirements say "Fishball's settings menu"; the settings page is the menu Fishball has today).
 - **Settings page.** The Permission requests section shows managed sessions (with Take back), the pile's count, active grants, and the recent audit with the new answers.
 - **Host API.** Same authentication, same-origin fence and boundary checks as §10; 409 `unavailable` before Fishball is ready.
@@ -1147,6 +1174,10 @@ Drawing points in DSH's browser are **pending S37** unless a line says otherwise
   - **Your sessions stay private from Fishball.** Their requests and questions never reach Fishball's context. Only `list_frozen_sessions` shows the prompts that are showing, when Fishball looks.
   - **Exact matching.** Passes and exact grants match by digest of canonical JSON arguments; a pass is for one session and one call, a grant for one session.
   - **Accepted risks (requirements).** Raw-prefix grants match chained commands (`npm test*` covers `npm test && git push`). Fishball can create grants that cover many calls, on prompt-only judgement. In Fishball mode, Fishball answers questions and approves plans on its own judgement. Limits on the damage: §7a.13.
+  - **Host internals the spikes rely on (§13d).**
+    - S33: DSH's gateway honouring `request.signal` on forwarded waterfalls (documented in its code, not a published plugin contract). If DSH changes it, a pile answer still reaches the agent, but the session shows a stale prompt whose click is ignored. In re-dispatch mode a listener prepended before the broker sees each request twice (none does today: `dsh-acp` and `dsh-api-remotes` register without `prepend`). Two browser tabs on one session were not tested; DSH's code sends the close to every tab.
+    - S35: the `tools/post-execute` contract (the same in rc.2 and rc.3); DSH's own rejection wording is never relied on. Matching is by exact canonical arguments, so a call with the same meaning but different text gets a new card, the safe direction.
+    - S37: DSH's slot keys and the priority of its question row (as for the messenger); the turn's `start.seq` / `end.seq` shape; `ask_fishball`'s row is Fishball's own, so inspect, file links and failure styling are Fishball's to draw. Not checked: the pile's order beside DSH's Queue and Todo docks, and the pile with the Messenger look on. The live check in each phase catches a DSH change.
   - **Arguments on cards.** A card shows another session's exact arguments in your browser, as the stock prompt shows them in that session; a secret on a command line shows there too. Only digests are stored.
 
 ## 12. Alternatives rejected
@@ -1155,7 +1186,7 @@ Drawing points in DSH's browser are **pending S37** unless a line says otherwise
 |---|---|
 | A dedicated DSH profile or process for the assistant (the previous `fishball` profile) | Ruled out by your Q1 answer: it is an ordinary plugin and lives in the profile that installs it. A separate process also could not see, message or approve your working sessions |
 | An allowance switch, settings file or fixed allow-list for approvals | Ruled out by you: the allowance comes from your messages, and the rubric is a judgement in the prompt |
-| Letting the assistant answer in its own chat while the stock prompt is also shown | DSH cannot withdraw a browser prompt once `next()` has been called, so the two would race and leave a stale prompt. Each request is answered in exactly one place. **Revision 11 revisits this:** your pile and the session both show buttons, and answering one clears both, if S33 shows the plugin can close a showing prompt |
+| Letting the assistant answer in its own chat while the stock prompt is also shown | DSH cannot withdraw a browser prompt once `next()` has been called, so the two would race and leave a stale prompt. Each request is answered in exactly one place. **Superseded in revision 11 (S33):** the broker withdraws a prompt it passed on through a signal it owns, so your pile and the session both show buttons and the first answer wins (§7a.1) |
 | Letting the assistant reject requests | A rejection is a decision on your behalf. It can only approve within your allowance, or hand the request to you. **Reversed in revision 11:** Fishball may reject, with a reason that goes back to the agent (§7a.3) |
 | A new button next to the brand, instead of replacing it | You asked for the brand itself to become the Fishball entry (Q3) |
 | A routing switch that shows permission requests to Fishball only after an allowance (revision 2) | You chose to send every request to Fishball, accepting one Fishball step per request. **Revision 11:** still no switch, but only managed sessions' requests reach Fishball (§7a.1) |
@@ -1275,6 +1306,16 @@ Every spike ran in-process against the installed rc.2 runtime, on a throwaway `D
 | S31 | **Pass** | `spikes/s31-inherit-manager.mjs` (`S31-inherit-manager.json`), HMR on: the subclass (overriding `publishAndReload`, hidden from the gateway) inspected and installed the manager-demo fixture into Fishball's folder as a `file:` copy, with `installing` and `applying` states and six output lines in the folder; a second install answered `already-installed`, a package without a bundle `not-bundle`, and was removed again. DSH's profile files and Loader entries were byte-identical and `ctx.pluginManager` stayed DSH's (cordis returns a new proxy per read, so it is compared by what it is). Not tested: a name DSH ships (S23); Fishball keeps its own-copy bundle check for it |
 | S30 | **Pass; amended** | `spikes/s30-settings-remount.mjs`, `spikes/fixtures/settings-plugin` (`S30-settings-remount.json`): in a private tree updated as Fishball does, an ordinary field change re-ran only that row's `apply` with the new value, and the other row kept its fibre; a `.volatile()` change reached the plugin without a restart; an invalid value was not reported by `auditRows` and the row kept its old values. §10d makes the Host's check before saving a requirement and applies values through the catalog's `adjustRows` step |
 
+## 13d. Spike results (revision 11, 2026-11-01)
+
+Run on DSH 0.2.1-rc.2 and rc.3 (the files involved are the same in both), headless with the fake model and in the desktop app's browser pane. Reports and evidence are on branch `rebuild/managed-sessions` under `spikes/results/`. S34 and S36 are still running.
+
+| Spike | Result | Evidence and amendment |
+|---|---|---|
+| S33 | **Pass, amended** | `spikes/s33-close-prompt.mjs`, `spikes/fixtures/prompt-closer.mjs`, `spikes/fixtures/user-standin.mjs`; `S33.md`, `S33-close-prompt.json` (rc.2), `S33-close-prompt-rc3.json`, `S33-close-prompt-browser.json`. The plugin answered a showing stock prompt with Allow once (the tool ran) and Reject (the agent got the rejection); the prompt closed in the browser. When the user clicked first, the plugin learned the outcome and its later answer was refused; same-tick clicks gave one outcome everywhere; a stopped turn settled `cancelled`; a request held with no browser open was settled too. **Amendment:** Cordis's `next()` takes no arguments, so the broker re-dispatches the waterfall with a marked copy whose signal it owns (or, equally proven, replaces `req.signal`; re-dispatch chosen, **Reading**). "DSH cannot withdraw a browser prompt" is struck; "escalate" is the stock prompt plus a pile card, first answer wins; the pass-through registry feeds `list_frozen_sessions` and `answer_prompt` (§7a.1, §7a.6, §7a.9, §9, §12) |
+| S35 | **Pass, amended** (14 of 14 checks on rc.2 and rc.3) | `spikes/s35-result-wording.mjs`, `spikes/fixtures/s35-broker.mjs`; `S35.md`, `S35-result-wording.json`, `S35-result-wording-rc3.json`. A direct call's result carried the hint after an allow and Fishball's full reason after a reject; Fishball's own requests (own tool bodies, other plugins' pre-execute `ask` and body asks) returned the waiting text in about 100-145 ms and Fishball handled another message meanwhile; an identical retry ran on the pass, a changed or reused one got a new card, a reordered one matched. **Amendment:** an approval outcome carries no text, so one host-level `tools/post-execute` listener keyed by call id sets the wording; N3 becomes card, then `rejected` at once, then the waiting text (from the tool body, or post-execute); the pass key is `sessionId \| toolName \| sha256(canonical arguments)` (§7a.4, §7a.11, §9). Not checked: the call-id match for calls inside `run_code` (pending, asked of the S35 session) |
+| S37 | **Pass, amended** | `spikes/s37-client-slots-server.mjs`, `spikes/fixtures/client-slots/`; `S37.md`, `S37-client-slots.json`, screenshots in `spikes/results/S37/`. Light and dark, rc.2 and rc.3: Allow once on the running `ask_fishball` row returned the tool and cleared its card (4 → 3), and Stop removed the card; the question tag rendered under DSH's question row; the pile showed four cards with details and updated live; Hand over and Take back switched in both places, and Fishball's own session showed neither. **Amendment:** DSH's `exit_plan_mode` row cannot be wrapped (shadowing `conversation.chat.node` key `tool-call` rendered nothing; a keyed view would replace DSH's row in every session), so the plan-review tag goes in `conversation.chat.turnTail`, and tag records carry `{sessionId, callId, seq, answer, kind}`. Where the question tag goes is now a question for you (Q-r11-question-tag). Extension points in §10e. Notes for S36: an untimed `ask_user_question` reaches `user-questions/request` without a call id; a plan review names its call in the intent (`{kind: 'plan-review', approve, callId}`); plan mode is mounted per agent preset |
+
 ## 14. Delivery phases (after approval)
 
 Each phase ends with:
@@ -1317,9 +1358,10 @@ Each phase ends with:
 | rev11g | Questions and plan reviews (items 25-27): the `userQuestions` waterfall for managed sessions, `answer_question`, the three modes, the 120 s limit, question cards, the "Asked Fishball" tag, the mode setting | S36, S37 | In each mode a question behaves as item 25 says; in User mode Fishball's answer is refused and its note shows on the card. A question with no answer in 120 s moves to the pile. A question answered in the session's own card clears its pile card, and the reverse. Every question Fishball answered shows "Asked Fishball" and its answer. A plan review follows the same mode. A session that is yours keeps its questions with no Fishball step |
 | rev11h | Stop and redirect (items 28-29): `stop_session`, `redirect_session` | S34 (stop) | `stop_session` ends a running managed session's turn; its waiting requests and questions are cancelled and their cards leave; the session stays managed and idle until the next message. `redirect_session` stops the turn and the instruction starts a new turn shown as from Fishball. Both refuse a session that is yours and Fishball's own; both are audited |
 
-**Why this cut, and the refinement.** The proposed cut is kept, with one change: the cards for direct calls move from rev11c to rev11e. Keeping a direct call's card in step with DSH's stock prompt needs the same mechanism as answering prompts already showing (S33), while `ask_fishball` cards need only Fishball's own row buttons (S37). So rev11c no longer waits on S33, and if S33 fails only rev11e changes (direct calls sent to you then show the stock prompt alone, as before revision 11). Other notes from the code:
+**Why this cut, and the refinement.** The proposed cut is kept, with one change: the cards for direct calls move from rev11c to rev11e. Keeping a direct call's card in step with DSH's stock prompt uses the same broker pass-through and registry as answering prompts already showing (S33 passed), so both are built once, in rev11e, while `ask_fishball` cards need only Fishball's own row (S37). rev11c then touches the browser and RequestDesk, not the broker's waterfall. Other notes from the code and the spikes:
 - rev11a must land first: today `ApprovalBroker.#route` sends every session's request to Fishball, and `message_fishball` is registered once for every agent (`registerInbound`), so every later phase builds on the per-session check.
-- rev11f is small for Fishball's own tools: every one of their prompts goes through one helper (`ask` in `src/plugin-tools.js`). Only requests DSH raises in Fishball's session need S35.
+- rev11f is small for Fishball's own tools: every one of their prompts goes through one helper (`ask` in `src/plugin-tools.js`), which then asks `cardFor(callId)`. Requests other plugins raise in Fishball's session use the post-execute listener rev11b builds (S35).
+- rev11b builds the post-execute listener, and its tests cover the call-id match for `run_code` inner calls once the S35 follow-up reports.
 - Every new tool must be mapped to one of Fishball's own plugins (`OWN_TOOL_PLUGIN` in `index.js`, revision 10c), or it stays hidden.
 
 **Acceptance (revision 11, checked by hand in a real DSH; requirements "Done when").** A session you start shows no Fishball tools and Fishball takes zero steps for it; messaging it adds the tools and a "connected" note; `ask_fishball` with a quote shows Fishball your full message, and allow, reject and question work; three waiting sessions give three cards, answered in either place; a direct call reaches Fishball with your last turn and the agent sees the hint; an `npm test*` grant wakes Fishball zero times in five runs and Revoke ends it; Fishball's `add_plugin` card, Allow and restart; a question in each mode with tags; stop and redirect; Take back removes tools and grants, and Fishball is told.
@@ -1487,11 +1529,16 @@ Each phase ends with:
 | Q-r11-defaults | Approved with the spec: pass lifetime (used or turn end; Fishball's retry pass: used, withdrawn, or the end of the turn it was woken for); your Reject takes an optional note to the agent; cards capped by `maxPendingApprovals`, past it the normal prompt; grants and managed status survive restarts; prefix grants for shell commands only; Fishball's rejects need a reason; leaving management answers a waiting `ask_fishball` "no longer managed"; 120 s for questions too; every Fishball decision audited | §7a, §9, §11 |
 | Q-r11-risks | Accepted: raw-prefix grants match chained commands; Fishball can create grants that cover many calls on prompt-only judgement; in Fishball mode it answers questions and approves plans on its own judgement | §7a.13, §11 |
 | Q-r11-nongoals | No notifications or sounds for the pile; no special rules for subagents; no telling Fishball about your sessions' prompts; no grants beyond exact call and command prefix; sessions never contact Fishball first | §5e, §7a, §12 |
-| Q-r11-spikes | S33-S36 from the requirements; S37 split from S36 by the manager session (2026-11-01) | §13 |
+| Q-r11-spikes | S33-S36 from the requirements; S37 split from S36 by the manager session (2026-11-01). S33, S35 and S37 passed with amendments (2026-11-01); S34 and S36 still running | §13, §13d |
 
 **Open for revision 11, from the requirements** (ask before the phase that needs it):
 - **Q-r11-tag-approvals** (rev11b/rev11c): should permission requests Fishball answers also get a tag in the session's chat? The gap shows most on direct calls, where nothing in the session shows that Fishball approved them.
 - **Q-r11-question-off** (rev11g): where a managed session's question goes when Fishball is unavailable. Proposed, mirroring item 10: it stays in the session's own chat.
+
+**Open for revision 11, from the spikes** (§13d):
+- **Q-r11-question-tag** (rev11g), for you: where the "Asked Fishball" tag on questions goes: (a) on the question row, next to what it answers, but hidden in a settled turn until you expand the turn and its group; or (b) in the turn's tail like plan reviews, always visible, after the reply.
+- **Q-r11-tag-store** (rev11g): whether tag records survive a restart.
+- **Pending (S35 follow-up):** whether post-execute sees the same call id as the approval request for calls inside `run_code`; until it reports, those calls keep DSH's own text.
 
 **Open for revision 11, found while folding the requirements in** (the requirements are silent; the phase is in brackets):
 - **Q-r11-upgrade** (rev11a): which sessions are managed at the first start of revision 11: none (proposed), or those in the outbox.
@@ -1512,7 +1559,7 @@ Each phase ends with:
 - **Q-r11-stop-cap** (rev11h): whether `stop_session` needs a cap.
 - **Q-r11-audit-user** (rev11b on): whether your own clicks get `decisions` rows.
 
-**Implementer's readings for revision 11, to confirm** (marked **Reading** where they appear): watches and `read_session` do not make a session managed; Fishball's own actions need no extra note beyond the tool result; hand-over notes are wake-capped except those your clicks cause; a subagent is managed with its root; tools map to Session messages and Permission requests as listed in §10d; a call from a session taken back mid-call is refused `not-managed`; an `ask_fishball` for a call a grant covers answers at once; a request in your pile is yours, and Fishball's late answer is `expired`; the 120 s rule moves direct calls to the pile too; the card cap counts every open request; grants only as an answer to a request, with `allow`'s code rules; the question answer time is `approvalAnswerSeconds`; Fishball's own requests are still refused under a never-asking mode; the retry must match `reason` too; "run it again" and question notices are never wake-capped; `redirect_session` counts toward `messagesPerHour`; the row buttons appear once a request is your card; the pile shows newest first; a notice that cannot be delivered sends the request to your pile; one audit row per request.
+**Implementer's readings for revision 11, to confirm** (marked **Reading** where they appear): watches and `read_session` do not make a session managed; Fishball's own actions need no extra note beyond the tool result; hand-over notes are wake-capped except those your clicks cause; a subagent is managed with its root; tools map to Session messages and Permission requests as listed in §10d; a call from a session taken back mid-call is refused `not-managed`; an `ask_fishball` for a call a grant covers answers at once; a request in your pile is yours, and Fishball's late answer is `expired`; the 120 s rule moves direct calls to the pile too; the card cap counts every open request; grants only as an answer to a request, with `allow`'s code rules; the question answer time is `approvalAnswerSeconds`; "run it again" and question notices are never wake-capped; `redirect_session` counts toward `messagesPerHour`; the row buttons appear once a request is your card; the pile shows newest first; a notice that cannot be delivered sends the request to your pile; one audit row per request. From the spikes (technical choices, the manager session's): S33 re-dispatch mode, not mutate; S35 variant A only (service, then post-execute rewrite); the hint appended to the tool output; the waiting result keeps the `isError` each path gives it; your optional Reject note reaches the agent only through the post-execute rewrite.
 
 **Open for revision 10:** Q-manager-stale, Q-manager-form and Q-manager-secrets above (implementer's assumptions; revision 10 was approved 2026-10-31).
 
