@@ -12,6 +12,7 @@ Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-
 - No test reads the implementation (`index.js`, `src/**`, `client.js`).
 - **P3 additions.** The profile also has four fixture bundles installed as dependencies but not enabled in `dsh.profile.bundles`: `fbtest-only`, `fbtest-only-b` and `fbtest-only-c`, whose patches only insert their own row, and `fbtest-edits`, whose patch also edits the `fbtest-tools` row. Each registers one tool (`only_echo`, `only_b_echo`, `only_c_echo`, `edits_echo`) and records `apply` and `dispose`, so a test can tell whether its code runs. Every fixture tool description has two lines.
 - **Scripted approver.** The worker adds a prepended host-level `approval/request` answerer (the S12 position, ahead of the browser forwarder). It records each question (session, toolName, reason) and answers with an outcome the test sets: `allowed-once`, `rejected`, `unavailable` or `cancelled`. The default is `rejected`, so a prompt nobody expected cannot pass a case or hang a turn.
+- **Host probe (start_session titles).** The worker's `startProbe` op wraps the host's own methods for the sessions created while it is armed (never Fishball's): the session-title service's `rename`, the new agent's `steer` and the new session's `flush`. It records the calls in order and can make `rename` throw the real `SessionTitleInvalidError` or a plain `Error`, make the steer throw, or make the first flush after the steer reject or answer `false`. `FBTEST_NO_SESSION_TITLE=1` boots DSH without its `session-title` row, so there is no `sessionTitle` service. The worker also records DSH's logger warnings and errors (`loggedProblems`). The fake model now records each tool's description next to its name and parameters.
 - **Making fixture tools visible (P3).** The fixture tools are not on Fishball's checked list, so they are unchecked and hidden. P2 cases that need them visible (CMP-03..09, PTC-01/02, FW-03/05) first call `set_plugin_enabled({plugin:'fbtest-tools', on:true})` from a scripted Fishball turn, with the approver answering Allow once. They then wait for the change to apply ("settle", A20).
 - **add_plugin** installs the local directory `support/fixtures/fbtest-added` by absolute path. DSH's plugin manager runs pnpm in the throwaway profile; a local directory needs no network.
 
@@ -348,6 +349,37 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | CAP-04 | BVA (auditEntriesKept 1 < cap 5, with 4 delivered this hour) | the 5th is delivered, the 6th refused |
 | CAP-05 | BVA (21 sends) | the state lists 20, newest first |
 | CAP-06 | BVA (auditEntriesKept 2) | at most 2 entries, including the newest |
+
+Every `start_session` call in these tests passes a `title` now (`TITLE.plain`): OUT-05..07, CAP-02/03 and the start_session calls in the watch (NTF-02/06/08, T-06), own-plugin (OFW-03) and approval (APR-16) cases.
+
+### [messaging-start-title.test.mjs](messaging-start-title.test.mjs): start_session names the session (R1-R7)
+
+Three hosts: A has DSH's session-title service, B checks the order of the checks with `sessionsPerHour` 1, C boots without the service. A runs with `sessionsPerHour` 0.
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| SST-01 | EP (schema) | R1 | `folder`, `title`, `message` required strings; `notify_when_finished` optional boolean; the description matches /title/ |
+| SST-01b | EP (schema) | R7 | message_session keeps `session_id`, `message` (required) and `notify_when_finished`; no title |
+| SST-02 | ST created → renamed → steered → flushed | R3, R4 | rename once, with the live session of the new id and the title as given, before the one steer; the steer's source is `{kind:'agent-message', form:'relay', senderSessionId: Fishball}`; a flush after it; ok with `sessionId`, `folder`, `title`; the new session got the text verbatim once; outbox `start`, `delivered`, only the documented keys; DSH reports the title |
+| SST-03 ×4 | EP + BVA (length) | R3 | rename gets the title exactly as given; the answer's `title` is what the snapshot returned (plain; whitespace collapsed and trimmed; non-ASCII; 300 characters cut at DSH's cap); DSH reports the same |
+| SST-03b | ST | R3 | the title is the same after the new session's first turn |
+| SST-03c ×3 | BVA | R2, R3 | one visible character, padded with spaces, padded with no-break and ideographic spaces: all accepted, title `x` |
+| SST-03d ×3 | EP (visible text + invisible characters) | R2 (update), R3 | accepted; DSH strips the zero-width space, bidi marks, word joiner, control characters and escape sequences (`ab`, `Release plan`, `Report ready`) |
+| SST-04 ×2 (+ control) | EP | R5 | rename throws the real `SessionTitleInvalidError` / a plain `Error`: ok, `titleError` `title-invalid` / `title-failed`, no `title` key, session and folder in the answer, rename once and before the steer, message delivered and recorded; a warning is logged for `title-failed`; a normal start logs none |
+| SST-05 ×4 | DT (rename ok / invalid × flag) | R6 | the watch (`createdBy` assistant) or none, next to `title` or `titleError`; one notice after the first turn; delivered |
+| SST-05b | ST (the first turn fails at once) | R6 | one notice, reason error |
+| SST-06, 06b | EP (the first flush after the steer rejects / answers false) | R6 | ok, `unconfirmed: true`, `title` present, `folder`; steered once; outbox `unconfirmed` |
+| SST-07 ×3 | DT (steer throws × rename ok / invalid / fails) | R6 (update) | `{ok:false, code:'delivery-failed', sessionId}` plus `title` or `titleError`, never `folder`; renamed once, before the steer; the session exists; outbox `failed` with `errorCode` |
+| SST-08 | EP (live and cold target) | R7 | message_session never calls rename; titles unchanged. The failed-delivery refusal of message_session stays `{ok:false, code:'delivery-failed'}` (OUT-04's `deepEqual`) |
+| ORD-01 ×3 | DT (message) | R2 | empty (empty, whitespace) and too-large win over a bad title and a missing folder |
+| ORD-02 ×17 | EP (title) × DT | R2 (update) | `no-title` for `''`, spaces, line breaks and tabs, Unicode spaces, zero-width space, LRM, bidi overrides, word joiner + BOM, control characters, a CSI and an OSC escape sequence, whitespace around invisible characters (each checked to normalize to empty with DSH's `normalizeSessionTitle`); no title / number / null / array / object: `no-title` or a tool error (A51). A missing folder in every row. Nothing created or recorded |
+| ORD-03 ×2 | DT (good title × folder) | R2 | `no-folder`, `not-absolute` |
+| ORD-04 | ST (cap 1) | R2 | after every refusal above a valid start still succeeds: none was counted |
+| ORD-05 ×5 | DT (cap spent × other checks) | R2 | `hourly-cap` before the folder; `no-title`, `empty`, `too-large` before the cap |
+| UNA-01 | EP (no service) | R5 | ok, `titleError` `title-unavailable`, no `title`; delivered, recorded; no title set |
+| UNA-02 | DT (no service × flag) | R6 | the watch next to `titleError`; one notice |
+| UNA-03 ×2 | DT (no service × empty / invisible title) | R2 | `no-title`: the title is checked without the service |
+| UNA-04 | EP (no service, steer throws) | R6 (update) | `delivery-failed`, `sessionId`, `titleError` `title-unavailable`, no `folder` |
 
 ### [messaging-durable.test.mjs](messaging-durable.test.mjs): M9-M11
 
@@ -829,8 +861,13 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 - **A51. start_session without `folder`.** M7 says "missing or empty folder → no-folder". The tool schema marks `folder` required, so DSH rejects the call before the tool runs ("invalid arguments: missing required property folder", a tool error). OUT-07 accepts either; an empty string gives `no-folder`.
 - **A52. A folder that is neither a workspace id nor an absolute path.** Observed `not-absolute`. Whether an unknown workspace id should be `no-folder` instead is not specified; OUT-07 accepts both.
 - **A53. Extra arguments to message_fishball.** A call with `senderSessionId`/`sessionId`/`session_id` next to `message` is accepted and attributed to the caller (MSG-05). Whether such calls should be refused is not specified.
-- **A54. Not driven black-box: `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that. OUT-08 only allows the status.
-- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04); start_session's is not.
+- **A54. `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that, so OUT-08 only allows the status. start_session's is now driven with the host probe (SST-06/06b), which fails the first flush after the steer.
+- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04). start_session's is driven by the host probe, which makes the steer into the new agent throw (SST-07, UNA-04); a session that cannot be created at all is still not driven.
+- **A144. What "unconfirmed" is.** The flush is DSH's `ctx.sessions.flush(session)`, which answers a boolean and rejects on a listener failure. SST-06 makes it reject, SST-06b makes it answer `false`; both are expected to give `unconfirmed: true`. Only the first flush after the steer fails, because failing every later one would also break the new session's own turn.
+- **A145. Missing and non-string titles.** The schema marks `title` as a required string, so DSH rejects a call without it (or with a number, null, array or object) before the tool runs, as for a missing folder (A51). ORD-02 accepts `no-title` or a tool error for those rows; an empty or whitespace-only or invisible-only string must give `no-title`.
+- **A146. Invisible titles (R2 update).** "Empty after DSH's `normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER)`" is tested with the real function as a precondition of each ORD-02 row, and every expected kept title (SST-03d) is written out by hand. `title-invalid` can no longer come from DSH's real service through start_session, so SST-04 gets it from a stub that throws the real `SessionTitleInvalidError` class.
+- **A148. Rev11 start_session calls.** MGL-02 (start) and MGL-05 changed with the title fix: a started session is titled from the start, so its entry is no longer `null`, and the user's first message does not replace the title. UPM-00's start_session is made to the previous version (PRE_REV11A), which has no title argument, and passes none.
+- **A147. A started session's first message text.** The relay text of a start_session is the message verbatim (observed; no header), unlike message_fishball's relays. SST-02 asserts equality.
 - **A56. The wake guard for stranded items.** DSH's turn-retirement gap cannot be triggered on purpose. WAK-04 covers parked items read by the next turn (consumed, never discarded), and DUR-02 covers pending items delivered once Fishball is live again.
 - **A57. GUI (M5).** Only the served client bundle is checked: it contains "Send to Fishball". The row menu, the header action, its visibility rules (live only, never in Fishball's own session) and the dialog are not exercised in a browser. Whether the bundle names the route path literally is a diagnostic only.
 - **A58. Wake-ups per process.** DESIGN §5b counts wake-ups per process, so a restart resets the count. This is not asserted. WAK-03 sets the cap to the current count + 1 at runtime instead of starting from a known zero, because the setup turn may or may not count the unchecked-tools notice.
@@ -1442,7 +1479,7 @@ Support added: `MANAGED_*`, `RELEASE_TOOL`, `UNKNOWN_TOOL_TEXT`, `MANAGED_LABELS
 | MGD-04 | ST yours –Hand over→ managed | items 2, 5; §10e | 200 `ok`; entry exactly `{sessionId, since, by:'hand-over'}`, since at the change; exactly one note (intake `fishball/managed/<id>`, kind `user`, consumed = Fishball woke) whose text names the folder and the user; next request has `message_fishball`; next permission request reaches Fishball |
 | MGD-05 | ST yours –Send to Fishball→ managed | item 2 | 200; entry by `send`; the forward arrives; no management note; tool; request to Fishball |
 | MGD-06 | ST yours –message_session→ managed | item 2, §5d | ok; entry by `message`; the request that reads the message already has the tool; no note; request to Fishball |
-| MGD-07 | ST none –start_session→ managed | item 2 | ok; entry by `start`; every request of the new session has the tool; no note; its request reaches Fishball |
+| MGD-07 | ST none –start_session→ managed | item 2 | ok with `title`; entry by `start`; every request of the new session has the tool; no note; its request reaches Fishball. With the title fix the order is create → rename → managed → first message: the probe's rename time ≤ the entry's `since` ≤ the first steer's time |
 | MGD-08 | ST managed –Take back→ yours | items 4, 5 | 200; entry gone; one note (kind `user`) naming folder and user; next request lacks the tool and mentions no Fishball; request to the stock prompt, zero Fishball steps |
 | MGD-09 | ST managed –release_session→ yours | items 4, 5 | `{ok:true}`; entry gone; one note (kind `system`) naming the folder; tool gone; stock prompt |
 | MGD-10 ×2 | DT (message_fishball × yours / managed) | §5b, S34 | yours: tool error UNKNOWN_TOOL, no relay, no intake item; managed: `{ok:true, note:'Delivered to Fishball.'}`, one relay from it, intake item `session/<id>` |
@@ -1628,10 +1665,10 @@ Support added: `MANAGED_ENTRY_KEYS` gains `title`; `MANAGED_LIST_LABELS` (consta
 | id | technique | requirement | expected |
 |---|---|---|---|
 | MGL-01 | EP (titled session, Hand over) | decision 1 | entry has exactly `{by, sessionId, since, title}`; title is DSH's title, a non-empty string, not the id |
-| MGL-02 ×3 | EP (way in: send / message / start) | decision 1 | send, message: title is DSH's title, by as named; start (only Fishball's message): title `null`, key present |
+| MGL-02 ×3 | EP (way in: send / message / start) | decision 1 | send, message: title is DSH's title, by as named; start: the title Fishball gave it (DSH reports the same) |
 | MGL-03 | BVA (no title yet: `''` in DSH) | decision 1 | title `null`, not `''`, not the id |
 | MGL-04 | ST (null –rename A→ A –rename B→ B) | decision 1 "follows a later retitle" | each title reaches the snapshot and an events frame without a restart; since and by unchanged |
-| MGL-05 | ST (started, null –the user's first message→ titled) | decision 1 | the snapshot title becomes DSH's derived title |
+| MGL-05 | ST (started with a title –the user's first message→ same) | decision 1, title fix | the title Fishball gave stays in DSH and in the snapshot: DSH pins an explicit title, so the user's message does not replace it (before the fix: the entry was `null` until the user wrote) |
 | MGL-06 | EP (quotes, markup, CJK, emoji) | decision 1 | title listed verbatim |
 | MGL-07 | ST (managed –Take back from the list→ yours) | decision 3 | `POST /api/fishball/managed {sessionId, managed:false}` → 200 ok; the entry leaves the snapshot and an events frame; a later rename does not list it again |
 | MGL-08 | EP (rename a session that is yours) | decision 1 | no entry appears |
@@ -1752,7 +1789,7 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 | GRT-03 | EP | item 18 (accepted risk) | `npm test && git push` is covered |
 | GRT-04 ×8 | BVA/EP (command against prefix `npm test`) | item 18 (raw text) | longer, `npm testing`, exactly the prefix: covered; `npm tes`, `npm run test`, `NPM test`, `npm  test`, `echo npm test`: to Fishball |
 | GRT-05, 06 | EP | §7a.8 "same session, tool" | the same command in pwsh, or in another session: not covered |
-| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or a missing argument: to Fishball |
+| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or an extra argument: to Fishball |
 | GRT-08 ×3 | EP (pwsh, terminal_send; a trailing `*`) | Q-r11-prefix-tools; manager 2026-11-02 | prefix grant accepted and covers a following command; a trailing `*` is dropped |
 | GRT-09 ×5 | EP (run_code, fbtest_ask, terminal_open prefix refused; exact on run_code and terminal_open accepted) | Q-r11-prefix-tools, requirements "Prefix grants" | prefix refused, `ok:false`, request still pending (a reject works), no grant row; an exact grant on run_code is accepted and covers |
 | GRT-10 ×10 | DT (refused answers) | §7a.8 "an end time is required and must be in the future", `allow`'s rules | no end time; past (an hour, one second); not a time; no grant object; unknown kind; prefix kind with no or an empty prefix; a prefix that is not the start of the asking command; risk high; empty reason: `ok:false` with a code, no grant row, no `decisions` row, request still pending |
@@ -1949,3 +1986,5 @@ Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with sc
 ### Manager's decisions on the rev11f ambiguities (2026-11-02), applied
 
 A-r11f-1 confirmed (`sessionId` = Fishball's session, list under `detail`). A-r11f-4: "and N more" is not counted in the bound; the shown entries total at most the limit and the next whole entry would not fit; a cut entry's "…" counts inside the limit. A-r11f-5 is now DET-07. A-r11f-3: the notice must contain "run it again" and the request id.
+
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.

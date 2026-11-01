@@ -158,6 +158,7 @@ describe('Revision 11 rev11c: tag records', () => {
   })
 
   it('TAG-11 auditEntriesKept 2 with three answers: two rows, the oldest dropped first', { timeout: 120000 }, async () => {
+    await ctx.host.call('resume', { sessionId: x }) // the restart above ended the live agents
     await t.setLimit({ auditEntriesKept: 2 })
     try {
       const ids = [cid('11a'), cid('11b'), cid('11c')]

@@ -63,7 +63,8 @@ function digest(options) {
     sessionId: options.sessionId ?? null,
     at: Date.now(),
     system,
-    tools: (options.tools ?? []).map((t) => ({ name: t.name, parameters: t.parameters })),
+    // description: lets a test check what the model is told about a tool (start_session mentions the title).
+    tools: (options.tools ?? []).map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })),
     messageCount: (options.messages ?? []).length,
     // P4: the reply cap and route each request carried.
     model: options.model ?? null,
