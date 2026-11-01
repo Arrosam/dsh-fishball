@@ -208,6 +208,12 @@ export const P5_CODE = {
   unavailable: 'unavailable', badBody: 'bad-body', isFishball: 'is-fishball', archived: 'archived', hourlyCap: 'hourly-cap',
   deliveryFailed: 'delivery-failed', noFolder: 'no-folder', notAbsolute: 'not-absolute',
 }
+/**
+ * start_session names the session it starts (R1-R7): the refusal code for a missing title, the `titleError`
+ * values of an ok result whose naming failed, and a plain title every start_session case that is not about
+ * titles passes (DSH keeps it as given: single line, short, no edge whitespace).
+ */
+export const TITLE = { refused: 'no-title', unavailable: 'title-unavailable', invalid: 'title-invalid', failed: 'title-failed', plain: 'Fbtest started session' }
 export const INTAKE_KEYS = ['failed', 'items', 'queued', 'wakeupsThisHour']
 export const INTAKE_ITEM_KEYS = ['createdAt', 'errorCode', 'intakeId', 'kind', 'sourceIdentity', 'status']
 export const INTAKE_KINDS = ['session', 'user', 'system']
