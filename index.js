@@ -21,6 +21,8 @@
  * - src/approvals.js       managed sessions' permission requests go to Fishball first
  * - src/request-desk.js    ask_fishball and list_user_messages (managed sessions only)
  * - src/passes.js          one-time passes and to-you tickets
+ * - src/pile.js            your pile: requests Fishball sent you, answered there or on the session's row
+ * - src/tags.js            tag records: each answer Fishball gave, for the asking turn's tail
  * - src/result-wording.js  what an agent reads after Fishball answered its direct call
  * - src/sources.js         ctx.fishball: plugins publish events to Fishball (DESIGN §8)
  * - src/lifecycle.js       create / resume / recovery / archive of the one session
@@ -49,6 +51,8 @@ import { Preferences } from './src/preferences.js'
 import { APPROVAL_TOOL, ApprovalBroker } from './src/approvals.js'
 import { DESK_TOOL, requestDeskTools } from './src/request-desk.js'
 import { CallPasses } from './src/passes.js'
+import { Pile } from './src/pile.js'
+import { TagRecords } from './src/tags.js'
 import { ResultWording } from './src/result-wording.js'
 import { SourceRegistry } from './src/sources.js'
 import { PLUGIN_TOOL, registerPluginTools } from './src/plugin-tools.js'
@@ -101,17 +105,20 @@ export async function apply(ctx, config) {
   let featuresView = () => null
   /** Managed sessions (revision 11, §10e); null until the registry exists. */
   let managedView = () => null
+  /** Your pile and the tag records (rev11c, §10e); null until the broker exists. */
+  let pileView = () => null
+  let tagsView = () => null
   /** Fishball's tools that only managed sessions have, listed under their plugin ("For other sessions"). */
   let managedToolNames = () => []
   /** Make each feature follow its plugin's applied state; wired once the features exist. */
   let syncFeatures = () => {}
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView() })
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), tags: tagsView() })
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, setManaged: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, setManaged: unavailable, answerRequest: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -133,6 +140,7 @@ export async function apply(ctx, config) {
     markRead: () => commands.markRead(),
     setBrandStyle: (style) => commands.setBrandStyle(style),
     setManaged: (input) => commands.setManaged(input),
+    answerRequest: (input) => commands.answerRequest(input),
     // Read per request: served whether the look is on or off, the browser decides (DESIGN §10c).
     messengerScript: () => readFile(path.join(import.meta.dirname, MESSENGER.clientFile)),
   })
@@ -290,6 +298,9 @@ export async function apply(ctx, config) {
   const preferences = new Preferences(store, { onChange: () => publish() })
   preferencesView = () => preferences.snapshot()
   commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
+  // Requests Fishball sends you, and the tags of its answers (rev11c, §7a.6, §9).
+  const pile = new Pile(() => publish())
+  const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
@@ -299,12 +310,22 @@ export async function apply(ctx, config) {
     passes: new CallPasses(),
     // The one post-execute listener that sets Fishball's wording (spike S35).
     wording: new ResultWording(ctx),
+    pile,
+    tags,
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   deskTools = requestDeskTools({ ctx, broker, readLimits: limits })
   // Managed agents already live get the two tools now that they exist.
   managedRegistry.sync()
   approvalsView = () => broker.snapshot()
+  // Cards come only from managed sessions, whose titles are followed (session-titles.js); text, never markup (§10e).
+  pileView = () => pile.cards().map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) }))
+  tagsView = () => tags.snapshot()
+  // Your Allow once / Reject on a card (§10e): 409 expired once the card left; a note over maxMessageBytes is refused.
+  commands.answerRequest = async ({ requestId, decision, note }) => {
+    if (note !== undefined && byteLength(note) > limits().maxMessageBytes) throw new LifecycleStateError(API_CODE.tooLarge)
+    if (!broker.answerCard({ requestId, decision, note })) throw new LifecycleStateError(API_CODE.expired)
+  }
   // Off takes the feature away at the apply: message_fishball leaves managed sessions (they stay
   // managed, Q-r11-plugins-off), and requests waiting for Fishball go to you at once (revision 10c).
   syncFeatures = () => {
