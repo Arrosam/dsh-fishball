@@ -869,6 +869,7 @@ export class ApprovalBroker {
    * - The pass of an identical call you allowed (same tool, same canonical arguments) -> 'allowed-once'.
    * - With maxPendingApprovals requests open -> 'rejected' at once with the too-many-waiting text
    *   (Q-r11-cap-own).
+   * - Arguments that cannot be read (no pass could match a retry) -> 'rejected' with its own text.
    * - Otherwise a card labelled Fishball in your pile, and 'rejected' at once. Fishball's own tool
    *   reads the card's id and returns the waiting result itself; another plugin's tool gets the
    *   waiting text through post-execute (variant A).
@@ -892,17 +893,23 @@ export class ApprovalBroker {
       await this.#record({ ...call, id: passed, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.pass, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
       return APPROVAL_OUTCOME.allowedOnce
     }
-    if (this.#openCount() >= limits.maxPendingApprovals) {
-      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
+    // Arguments that could not be read give no pass key: Allow could never let a retry through,
+    // so no card is filed, and the call is refused with its own text (Reading).
+    if (args.value === undefined) {
+      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.unreadable })
       return APPROVAL_OUTCOME.rejected
     }
     let id
     try {
       // Only Fishball's own tool reads the filed id back (cardFor); another plugin's tool gets the text by its mark.
-      id = await this.#own.file({ callId: expected === undefined ? undefined : req.callId, toolName, args, reason: expected?.reason ?? req.reason ?? '', detail: expected?.detail })
+      id = await this.#own.file({ callId: expected === undefined ? undefined : req.callId, toolName, args, reason: expected?.reason ?? req.reason ?? '', detail: expected?.detail }, () => this.#openCount() >= limits.maxPendingApprovals)
     } catch (error) {
       // No card could be stored: refused without one, never a prompt that freezes Fishball.
       this.#logger.warn('own request could not be filed (%s)', diagnosticOf(error))
+      return APPROVAL_OUTCOME.rejected
+    }
+    if (id === undefined) {
+      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
       return APPROVAL_OUTCOME.rejected
     }
     if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.waiting, requestId: id })

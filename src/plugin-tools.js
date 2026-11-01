@@ -121,6 +121,10 @@ export function registerPluginTools({ register, catalog, composition, tools, sco
     let outcome
     try {
       outcome = await approval.request({ agent: exec.agent, toolName, callId: exec.callId, reason: prompt, signal: exec.signal })
+    } catch (error) {
+      // An aborted call never reads its card's id: drop it (the card itself stays yours to answer).
+      own.takeFiled(exec.callId)
+      throw error
     } finally {
       own.forget(exec.callId)
     }

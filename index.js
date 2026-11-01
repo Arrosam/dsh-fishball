@@ -63,7 +63,7 @@ import { PLUGIN_TOOL, registerPluginTools } from './src/plugin-tools.js'
 import { PluginDefaults } from './src/plugin-defaults.js'
 import { PluginSettings, SettingsError } from './src/plugin-settings.js'
 import { FishballPackages, PackageError } from './src/fishball-packages.js'
-import { byteLength } from './src/text.js'
+import { byteLength, latestFirst } from './src/text.js'
 import { mountFishballPluginManager } from './src/fishball-plugin-manager.js'
 import { AssistantLifecycle, InactiveLifecycle } from './src/lifecycle.js'
 import { registerRoutes } from './src/http.js'
@@ -347,7 +347,7 @@ export async function apply(ctx, config) {
   approvalsView = () => broker.snapshot()
   // Session cards come only from managed sessions, whose titles are followed (session-titles.js);
   // Fishball's own cards are labelled Fishball. Text, never markup (§10e). Newest first (Reading).
-  pileView = () => [...pile.cards().map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => (a.since < b.since ? 1 : a.since > b.since ? -1 : 0))
+  pileView = () => [...pile.cards().map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => latestFirst(a.since, b.since))
   tagsView = () => tags.snapshot()
   // Grants belong to managed sessions, whose titles are followed (session-titles.js).
   grantsView = () => grants.snapshot().map((grant) => ({ ...grant, title: sessionTitles.get(grant.sessionId) }))
