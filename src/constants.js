@@ -552,7 +552,7 @@ export const OUTBOUND_ERROR = Object.freeze({
  * session still starts, like a refused watch).
  */
 export const TITLE_ERROR = Object.freeze({
-  /** DSH's session titles are off (no sessionTitle service). */
+  /** No sessionTitle service (dsh-base's session-title row is off). */
   unavailable: 'title-unavailable',
   /** DSH found no visible characters in the title. */
   invalid: 'title-invalid',
@@ -668,7 +668,7 @@ export const OPTIONAL_SERVICE = Object.freeze({
   profileContext: 'profileContext',
   /** DSH's runtime package resolution: where the profiles directory is (Fishball's package folder). */
   pluginPackages: 'pluginPackages',
-  /** DSH's session titles (absent while its titles bundle is off): start_session names the new session (DESIGN §5d). */
+  /** DSH's session titles (dsh-base's session-title row; absent only if a profile turns that row off): start_session names the new session (DESIGN §5d). */
   sessionTitle: 'sessionTitle',
 })
 
