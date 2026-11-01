@@ -52,7 +52,7 @@ export function grantTools(ctx, names) {
     answer: (requestId, args) => t.answer(requestId, args),
     /** Fishball rejects the request so the agent's turn can finish; returns the agent's result for the call id. */
     async finishRejected(requestId, sid, id) {
-      const j = await g.answer(requestId, { decision: DECISION.reject, reason: 'fbtest: done with ' + requestId })
+      const j = await g.answer(requestId, { decision: DECISION.reject, risk: 'high', reason: 'fbtest: done with ' + requestId })
       assert.equal(j.ok, true, JSON.stringify(j))
       await ctx.host.call('waitIdle', { sessionId: sid })
       await settledIdle(ctx.host, sid)
