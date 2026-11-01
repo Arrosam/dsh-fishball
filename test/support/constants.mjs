@@ -615,8 +615,11 @@ export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }
 // ---- Revision 11 rev11a (managed sessions; DESIGN §5b, §5e, §7a.1, §9, §10e) ----
 /** Hand over / Take back: POST {sessionId, managed: boolean} (§10e "Host API"). */
 export const MANAGED_API = '/api/fishball/managed'
-/** The snapshot's managed entries: exactly these keys (§10e "Snapshot: managed: [{sessionId, since, by}]"). */
-export const MANAGED_ENTRY_KEYS = ['by', 'sessionId', 'since']
+/**
+ * The snapshot's managed entries: exactly these keys (§10e "Snapshot"). The rev11a follow-up adds `title`
+ * (the session's current DSH title, null while unknown): managed: [{sessionId, title, since, by}].
+ */
+export const MANAGED_ENTRY_KEYS = ['by', 'sessionId', 'since', 'title']
 /** The ways in that rev11a builds, as the registry's `by` names them (§9; prompt-answer comes with rev11e). */
 export const MANAGED_BY = { start: 'start', message: 'message', handOver: 'hand-over', send: 'send' }
 /** The route's 409 codes (§10e). */
@@ -629,6 +632,16 @@ export const RELEASE_TOOL = 'release_session'
 export const UNKNOWN_TOOL_TEXT = /unknown tool|UNKNOWN_TOOL/i
 /** The client's labels beside Send to Fishball (§10, item 3; §10e). */
 export const MANAGED_LABELS = { handOver: 'Hand over to Fishball', takeBack: 'Take back from Fishball' }
+/**
+ * rev11a follow-up (§10e "Settings page"): the Permission requests section's managed-sessions list. The heading
+ * and the by-tags are the wording the coordinator stated; Take back reuses MANAGED_LABELS.takeBack and an empty
+ * list shows the page's usual empty line.
+ */
+export const MANAGED_LIST_LABELS = {
+  heading: 'Managed sessions',
+  empty: 'Nothing yet',
+  by: { 'hand-over': 'Handed over by you', send: 'Sent by you', message: 'Messaged by Fishball', start: 'Started by Fishball' },
+}
 /** The commit before rev11a (an install from before managed sessions existed). */
 export const PRE_REV11A = { commit: 'a5aed26' }
 /** Item 3: nothing in a session that is yours mentions Fishball. Case-sensitive, because the test homes sit under the lowercase dsh-fishball checkout path. */

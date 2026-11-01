@@ -1507,3 +1507,35 @@ rev11a deliberately changes two older behaviours: every other session's permissi
 - **A-r11a-7. Session messages off and permission requests.** Routing depends on managed status, Fishball live and Permission requests (§7a.1), so DUR-02 expects a managed session's request still to reach Fishball while Session messages is off.
 - **A-r11a-8. "Nothing mentions Fishball"** is checked case-sensitively (`Fishball`), because the test homes sit under the lowercase `dsh-fishball` checkout path; the standard preset's quote of this repository's AGENTS.md is test environment, not product text.
 - **A-r11a-9. Agent re-creation by clear or compaction** is not exercised; resume (dispose + resume, and a restart) is.
+
+## rev11a follow-up: managed sessions list (DESIGN §10e "Settings page", "Snapshot")
+
+The user's decisions: the Permission requests section lists the managed sessions, each with its **title** (not its id), a tag for `by` and the time since it is managed, newest first; Take back shows only while Session messages is on and Fishball is live, but the list always shows; an empty list shows the page's usual "Nothing yet". The snapshot entry becomes `{sessionId, title, since, by}`: `title` is the session's current DSH title (it follows a later retitle, published without a restart) and `null` while unknown. The browser's order and the unknown-title fallback are not testable here (the fallback is still undecided); the browser half is checked through the served client bundle only. The heading "Managed sessions" and the by-tags are the wording the coordinator stated.
+
+Titles: DSH derives a title from the user's messages; a session whose only turn came from Fishball or a relay has none (`''` in DSH's title service). A retitle is DSH's own rename (worker op `renameSession`); `sessionTitle` is the reference.
+
+Support added: `MANAGED_ENTRY_KEYS` gains `title`; `MANAGED_LIST_LABELS` (constants.mjs). The `title` key also changes MGD-04 (exact keys) and DUR-06 (entries equal across a restart, now including the title).
+
+### [managed-list.test.mjs](managed-list.test.mjs): the list (one home, in order; restart last)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| MGL-01 | EP (titled session, Hand over) | decision 1 | entry has exactly `{by, sessionId, since, title}`; title is DSH's title, a non-empty string, not the id |
+| MGL-02 ×3 | EP (way in: send / message / start) | decision 1 | send, message: title is DSH's title, by as named; start (only Fishball's message): title `null`, key present |
+| MGL-03 | BVA (no title yet: `''` in DSH) | decision 1 | title `null`, not `''`, not the id |
+| MGL-04 | ST (null –rename A→ A –rename B→ B) | decision 1 "follows a later retitle" | each title reaches the snapshot and an events frame without a restart; since and by unchanged |
+| MGL-05 | ST (started, null –the user's first message→ titled) | decision 1 | the snapshot title becomes DSH's derived title |
+| MGL-06 | EP (quotes, markup, CJK, emoji) | decision 1 | title listed verbatim |
+| MGL-07 | ST (managed –Take back from the list→ yours) | decision 3 | `POST /api/fishball/managed {sessionId, managed:false}` → 200 ok; the entry leaves the snapshot and an events frame; a later rename does not list it again |
+| MGL-08 | EP (rename a session that is yours) | decision 1 | no entry appears |
+| MGL-09 | EP (several renames) | decision 1 | each session listed once |
+| MGL-10 ×2 | DT (Session messages off / Fishball archived) | decision 3 "the list always shows" | the snapshot still has the same entries with titles (`features.messages` false / status not live) |
+| MGL-11 | EP (served bundle) | decisions 1, 3, 4 | carries "Managed sessions", "Handed over by you", "Sent by you", "Messaged by Fishball", "Started by Fishball", "Take back from Fishball", "Nothing yet"; the literal route path is a diagnostic |
+| MGL-12 | ST (restart) | decision 1 | entries equal after the restart, before any resume: titled ones keep their title, an untitled one stays `null`, since and by unchanged |
+| MGL-13 | diagnostic | decision 2 | the host array order is recorded (the browser sorts newest first; the host order is unspecified) |
+
+### Ambiguities (rev11a follow-up)
+
+- **A-r11a-10. Title after a restart.** "Kept after restart" is read as: the snapshot shows the same title before the session is resumed (as DSH's sidebar does for sessions that are not open).
+- **A-r11a-11. Does Fishball's message retitle?** Not stated; MGL-02 compares with DSH's own title service, whatever it says.
+- **A-r11a-12. Labels.** The heading and by-tag wording come from the coordinator, not the requirements text; the "since" line's wording is not checked.
