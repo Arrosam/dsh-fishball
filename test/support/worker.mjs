@@ -269,6 +269,7 @@ function startProbe({ rename = null, steer = false, flush = null }) {
 const attachCalls = []
 const attachUndo = new Map()
 const createUndo = []
+const createdByWrapper = []
 
 const tags = new WeakMap()
 let tagCounter = 0
@@ -720,17 +721,29 @@ const ops = {
   attachCalls() { return attachCalls },
   /**
    * start_session, other failures: replace sessionController.create with one that throws an error with this code and
-   * details without creating anything (details may be omitted). `create` null restores DSH's own.
+   * details (details may be left out). With createFirst it really creates the session through DSH's own create first
+   * and merges that session's id into the details ({sessionId, ...details}), as DSH's attach failure does; the ids it
+   * created are listed by createdByWrapper. A call with no code restores DSH's own create.
    */
-  failCreate({ code, details, message = 'fbtest: create failed' } = {}) {
+  failCreate({ code, details, message = 'fbtest: create failed', createFirst = false } = {}) {
     const controller = ctx.sessionController
     createUndo.splice(0).forEach((undo) => undo())
     if (code === undefined) return true
     const own = Object.getOwnPropertyDescriptor(controller, 'create')
-    controller.create = async () => { throw Object.assign(new Error(message), { code, ...(details === undefined ? {} : { details }) }) }
+    const original = controller.create
+    controller.create = async function (request, ...rest) {
+      let sessionId
+      if (createFirst) {
+        sessionId = (await original.call(this, request, ...rest)).sessionId
+        createdByWrapper.push(sessionId)
+      }
+      const merged = createFirst ? { sessionId, ...details } : details
+      throw Object.assign(new Error(message), { code, ...(merged === undefined ? {} : { details: merged }) })
+    }
     createUndo.push(() => { if (own) Object.defineProperty(controller, 'create', own); else delete controller.create })
     return true
   },
+  createdByWrapper() { return createdByWrapper },
 
   // ---- Revision 10a operations (Install for Fishball) ----
   /** DSH's install progress events seen on the host bus, optionally for one request id. */
