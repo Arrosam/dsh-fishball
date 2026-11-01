@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ADDED_BUNDLE, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FIXTURE_BUNDLE, LIMITS, OUTCOME, PRESET, STATUS } from './support/constants.mjs'
-import { HOOK, T, approvalsNow, askSettled, fishballCall, messageFishball, requestMessages, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
+import { HOOK, T, approvalsNow, askSettled, fishballCall, messageFishball, requestMessages, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
 let seq = 0
@@ -34,6 +34,8 @@ describe('P7 routing and bypass', () => {
   async function session(folder) {
     const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1).
+    await makeManaged(host, fb, sid)
     sessions.push(sid)
     return sid
   }

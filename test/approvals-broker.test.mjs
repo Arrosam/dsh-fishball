@@ -44,7 +44,7 @@ import {
   RECENT_KEYS, RECENT_MAX, RUBRIC, STARTED_BY, STARTED_BY_OTHER, TURN_BY,
 } from './support/constants.mjs'
 import {
-  HOOK, T, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
+  HOOK, T, makeManaged, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
   requestMessages, resultOfCall, sessionAuthor, settledIdle, startAsk, toolNames, turn, waitRequest,
 } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
@@ -66,6 +66,8 @@ describe('P7 ApprovalBroker', () => {
   const fresh = async (folder) => {
     const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1); these cases are about those.
+    await makeManaged(host, fb, sid)
     return sid
   }
   /** One Fishball turn answering a request directly; returns the parsed answer. */
@@ -489,6 +491,7 @@ describe('P7 ApprovalBroker', () => {
     })
     it('first user message from another agent: never "the user"', T, async () => {
       const sid = (await host.call('ordinary', { preset: PRESET.bare, folder: 'apr-16e' })).sessionId
+      await makeManaged(host, fb, sid)
       const text = tok('16e')
       await escalateFor(text)
       await startAsk(host, sid, ASK_TOOL, { text }, 'agent words ' + text, { kind: 'agent-message', form: 'relay', senderSessionId: x })
@@ -505,6 +508,7 @@ describe('P7 ApprovalBroker', () => {
     await host.call('askInNewAgents', { on: true })
     try {
       const std = (await host.call('ordinary', { preset: PRESET.standard, folder: 'apr-17' })).sessionId
+      await makeManaged(host, fb, std)
       const marker = tok('17sub')
       const text = tok('17')
       await host.call('queueMarker', { marker, except: std, script: [...callScript(ASK_TOOL, { text })] })

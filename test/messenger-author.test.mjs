@@ -8,7 +8,7 @@
  * | id     | technique | expected |
  * |--------|-----------|----------|
  * | AUT-01 | EP (message_fishball from S) | source = {agent-message, relay, senderSessionId: S, author: {kind:'session', name: S's title, seed: S}}; text and block unchanged; a markup-like title is the name verbatim |
- * | AUT-02 | EP (a subagent of S calls it) | author {kind:'session', name: S's title, seed: S} (the root session, not the child) |
+ * | AUT-02 | EP (a subagent of the managed session S calls it) | rev11a (Q-r11-subagent-tools): the child has no message_fishball; nothing reaches Fishball, so no author |
  * | AUT-03 | EP (POST send for S) | source = {fishball-notice, notice, 'The user forwarded a session', author: {kind:'user', name: S's title, seed: S}} |
  * | AUT-05 | EP (a watched session S finished) | source = {fishball-notice, notice, 'A watched session finished (completed)', author: {kind:'watch', name: S's title, seed: S}} |
  * | AUT-06 | EP (plugin source, identity I, title X) | source = {fishball-notice, notice, 'Plugin event: "X"', author: {kind:'plugin', name: X, seed: I}} |
@@ -27,7 +27,7 @@ import {
   PRESET, RELAY, RELAY_HEADER, SETUP_SOURCE, SOURCE_BUNDLES, SOURCE_IDENTITY, SOURCE_SUMMARY, SOURCES_ENV, STATUS, TITLE_ENV, WATCH_API, WATCH_STATUS, WATCH_SUMMARY,
 } from './support/constants.mjs'
 import {
-  HOOK, T, callScript, fishballMessages, messageFishball, noticesSettled, pluginNotices, publish, register, settle, settledIdle, turn, untilSeen, untrustedBlock, watchesOn,
+  HOOK, T, callScript, fishballMessages, makeManaged, managedEntry, toolNames, messageFishball, noticesSettled, pluginNotices, publish, register, settle, settledIdle, turn, untilSeen, untrustedBlock, watchesOn,
 } from './support/expect.mjs'
 import { bootHost, newHome, until } from './support/host.mjs'
 
@@ -67,6 +67,8 @@ describe('P11 authors of intake messages', () => {
   /** sid calls message_fishball with a fresh token; returns Fishball's one message for it. */
   const relayed = async (sid, label) => {
     const text = tok(label)
+    // rev11a: only a managed session has message_fishball (DESIGN §5e).
+    if (!(await managedEntry(host, sid))) await makeManaged(host, fb, sid)
     const { json } = await messageFishball(host, sid, { message: text })
     assert.equal(json?.ok, true, JSON.stringify(json))
     assert.ok(await untilSeen(host, fb, text), 'Fishball read it')
@@ -100,9 +102,10 @@ describe('P11 authors of intake messages', () => {
     assert.equal(block.fields.message, m.sent)
   })
 
-  it('AUT-02 a subagent\'s message_fishball names its root session as the author', T, async () => {
+  it('AUT-02 a subagent of a managed session has no message_fishball, so it authors nothing (rev11a)', T, async () => {
     const title = 'Parent ' + tok('t')
     const std = await named('aut-02', title, PRESET.standard)
+    await makeManaged(host, fb, std)
     const marker = tok('aut02sub')
     const text = tok('aut02')
     await host.call('queueMarker', { marker, except: std, script: [[{ tool: INBOUND_TOOL, args: { message: text } }], [{ text: 'sub done' }]] })
@@ -111,11 +114,9 @@ describe('P11 authors of intake messages', () => {
     assert.ok(await until(async () => (await host.call('markerState', { marker })).left === 0, 15000, 100), 'precondition: the subagent ran its script')
     const child = (await host.call('markerState', { marker })).sessions[0]
     assert.notEqual(child, std)
-    assert.ok(await untilSeen(host, fb, text))
-    const got = await fishballMessages(host, fb, text)
-    assert.equal(got.length, 1)
-    assert.deepEqual(got[0].source.author, { kind: AUTHOR_KIND.session, name: title, seed: std })
-    assert.equal(got[0].source.senderSessionId, std)
+    for (const req of await host.call('requests', { sessionId: child })) assert.equal(toolNames(req).includes(INBOUND_TOOL), false, 'the child lists ' + INBOUND_TOOL)
+    await settledIdle(host, fb)
+    assert.equal((await fishballMessages(host, fb, text)).length, 0, 'nothing reached Fishball')
   })
 
   it('AUT-03 Send to Fishball: author kind user with the forwarded session\'s title', T, async () => {
@@ -221,6 +222,7 @@ describe('P11 authors of intake messages', () => {
     const other = (await host.call('ordinary', { preset: PRESET.bare, folder: 'aut-10-other' })).sessionId
     const s = (await host.call('ordinary', { preset: PRESET.bare, folder: 'aut-10' })).sessionId
     const text = tok('aut10')
+    await makeManaged(host, fb, s) // rev11a: only a managed session has message_fishball
     // Its only turn starts from a relay, so DSH never derives a title (titles come from the user's messages).
     await host.call('driveStart', { sessionId: s, text: 'relay words', script: callScript(INBOUND_TOOL, { message: text }), source: { ...RELAY, senderSessionId: other } })
     assert.ok(await host.call('waitIdle', { sessionId: s }))
