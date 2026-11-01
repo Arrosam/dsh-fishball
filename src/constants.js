@@ -365,9 +365,10 @@ export const MANAGED_ERROR = Object.freeze({
 })
 /**
  * Fishball's decisions audit (§9 `decisions`): rev11a records release; rev11b adds your own
- * Allow once / Reject clicks on a stock prompt for a request that went through Fishball.
+ * Allow once / Reject clicks on a stock prompt for a request that went through Fishball; rev11d
+ * adds Fishball's grants and the revokes, yours and Fishball's.
  */
-export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject' })
+export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke' })
 export const DECISION_OK = 'ok'
 
 /** Watches (DESIGN §5c, §9 watches). */
@@ -436,15 +437,16 @@ export const APPROVAL = Object.freeze({
   userEvent: 'user/message',
   userSources: Object.freeze(['user', 'user-rpc']),
 })
-/** Fishball's answer (answer_approval, DESIGN §7a.3; grant arrives with rev11d). */
-export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate' })
+/** Fishball's answer (answer_approval, DESIGN §7a.3). */
+export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' })
 /**
  * How a request ended, as audited (§9). released: the session left management while the
  * request waited (§5e). to-user: a call that went to your prompt through a to-you ticket.
  * pass: a call a one-time pass covered (no Fishball step). ask: the thread ended on Fishball's
- * question (the turn ended before the session replied).
+ * question (the turn ended before the session replied). grant: Fishball answered with a standing
+ * grant (the call itself runs as on allow). grant-used: a call a standing grant covered (no Fishball step).
  */
-export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass' })
+export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass', grantUsed: 'grant-used' })
 /** Whether the session asked first (ask_fishball) or made the call directly (§9 audit `kind`). */
 export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct' })
 /** What a pass-table entry lets through (§7a.3 passes, §7a.6 to-you tickets). */
@@ -485,9 +487,10 @@ export const CARD_END = Object.freeze({ user: 'user', off: 'off', released: 'rel
 export const TOO_MANY_WAITING = 'too-many-waiting'
 /**
  * Tag records (DESIGN §9 `tags`, S37): one per answer Fishball gave, shown in the asking turn's
- * tail. approval: an answer_approval allow, reject or question; sent-to-you: an escalate.
+ * tail. approval: an answer_approval allow, grant, reject or question; sent-to-you: an escalate;
+ * grant: a call a standing grant covered, one per call (rev11d, §7a.8).
  */
-export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you' })
+export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you', grant: 'grant' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
 /** DSH approval outcomes (dsh-user-approval). */
@@ -495,9 +498,49 @@ export const APPROVAL_OUTCOME = Object.freeze({ allowedOnce: 'allowed-once', rej
 export const APPROVAL_ERROR = Object.freeze({
   expired: 'expired',
   allowNeedsLowRisk: 'allow-needs-low-risk',
+  /** Every decision but escalate names its risk (§7a.3). */
+  riskRequired: 'risk-required',
   reasonRequired: 'reason-required',
   argumentsIncomplete: 'arguments-incomplete',
   questionRequired: 'question-required',
+})
+
+/**
+ * Standing grants (DESIGN §7a.8, §9 `grants`, rev11d). No limit on a grant's lifetime or on how
+ * many are active (Q-r11-grant-bounds): every grant only needs an end time in the future.
+ */
+export const GRANT = Object.freeze({
+  /** Grant id prefix Fishball sees (grt_<id>). */
+  idPrefix: 'grt_',
+  /**
+   * Shell tools a command-prefix grant may name, each with the argument that holds its command
+   * text, read from the tools' schemas (Q-r11-prefix-tools; §7a.8 Reading). terminal_open's
+   * schema has no command text (only type, name, cwd), so it gets exact-call grants only, as
+   * run_code and every other tool do: matching its type would cover opening every terminal of
+   * that type (the manager's decision, 2026-11-02).
+   */
+  commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
+  /** "npm test*" and "npm test" name the same prefix: one trailing wildcard is notation, not text. */
+  wildcard: '*',
+})
+export const GRANT_KIND = Object.freeze({ exact: 'exact', prefix: 'prefix' })
+/** A grant's state (§9): active until its end time, a revoke, or its session leaving management. */
+export const GRANT_STATUS = Object.freeze({ active: 'active', expired: 'expired', revoked: 'revoked', ended: 'ended' })
+/** What ended a grant (§9 `endedBy`); a grant whose session DSH no longer finds ends with none. */
+export const GRANT_END = Object.freeze({ user: 'user', fishball: 'fishball', expiry: 'expiry', takeBack: 'take-back', release: 'release' })
+/** answer_approval's grant refusals and revoke_grant's (a refused grant leaves the request pending). */
+export const GRANT_ERROR = Object.freeze({
+  invalid: 'grant-invalid',
+  prefixNotShell: 'prefix-not-shell-tool',
+  prefixEmpty: 'prefix-empty',
+  prefixNotInCall: 'prefix-not-in-call',
+  expiresRequired: 'expires-at-required',
+  expiresInvalid: 'expires-at-invalid',
+  expiresPast: 'expires-at-past',
+  /** revoke_grant without a reason. */
+  reasonRequired: 'reason-required',
+  unknown: 'unknown',
+  ended: 'ended',
 })
 
 /** Unread replies from Fishball (src/unread.js): the one stored record's key. */
@@ -643,6 +686,7 @@ export const API = Object.freeze({
   managed: '/api/fishball/managed',
   /** POST { requestId, decision: 'allow' | 'reject', note? }: your answer on a card (DESIGN §10e). */
   requestsAnswer: '/api/fishball/requests/answer',
+  grantsRevoke: '/api/fishball/grants/revoke',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -666,6 +710,8 @@ export const API_CODE = Object.freeze({
   expired: 'expired',
   /** Your note on Reject is over maxMessageBytes. */
   tooLarge: 'too-large',
+  /** Your Revoke on a grant that already ended (expired, revoked, or its session left management). */
+  ended: 'ended',
   failed: 'failed',
 })
 export const RESPONSE_HEADERS = Object.freeze({

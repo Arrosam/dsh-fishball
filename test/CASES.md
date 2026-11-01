@@ -1773,3 +1773,62 @@ Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waitin
 - **A-r11c-5. Fishball's own cap rule before rev11f.** LVE-06 asks for `too-many-waiting` from a Fishball tool that asks for approval, with a card from another session filling the cap; rev11f owns Fishball's cards but the rev11c row lists the rule.
 - **A-r11c-6. The note after your click** (ANS-09) is read as "Fishball is told, without waking it" (§7a.14 Reading); its wording is not asserted, only that it names the request id.
 - **A-r11c-7. Timeout is not "Sent to you".** TAG tests do not require a tag when a request times out.
+
+## Revision 11 rev11d cases (standing grants; DESIGN §14 row rev11d, §7a.3 "grant", §7a.5, §7a.8, §9 "Standing grants", "Tag records", "Audit", "Fishball's other decisions", §10e "Active grants", "Host API", §16 Q-r11-prefix-tools, Q-r11-grant-bounds, Q-r11-grants-off, Q-r11-tag-scope, Q-r11-audit-user; requirements items 17-19, defaults "Restarts", "Prefix grants", "Audit"; written from the requirements alone, no code read)
+
+Black-box surfaces: the snapshot's `grants`, `POST /api/fishball/grants/revoke` (`{grantId}`, 409 `unknown`/`ended`), Fishball's tools (`answer_approval` with `decision: 'grant'` and `grant: {kind, prefix?, expires_at}`, `list_grants`, `revoke_grant({grant_id, reason})`), the `grants`, `decisions`, `tags` tables of `storages/fishball.json`, the approvals audit files, tool results, Fishball's model-request count (`requests`) and the scripted stock prompt. "Covered" = the call runs (allowed-once), Fishball takes no model step, no notice reaches it, and no stock prompt is shown.
+
+Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in their body, `direct`/`create`/`covered`/`uncovered`, grant readers); `FBTEST_ASKING_TOOLS` in `fixture-tools.mjs` (the fixture tools bash, pwsh, terminal_open, terminal_send, run_code ask DSH for approval under their own name and call id, so a grant on those tool names can be exercised); constants `GRANT_*`, `PREFIX_TOOLS`, `EXACT_ONLY_TOOLS`, `ASKING_SHELL_ENV`; `STATE_KEYS` gains `grants` (21 keys, §10e "Snapshot").
+
+### [rev11d-grants.test.mjs](rev11d-grants.test.mjs): creating grants and what they cover (one host)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| GRT-01 | EP (valid prefix grant) | item 17-18, §7a.3, §9 | the creating call runs; snapshot lists it (session, tool, prefix, end time); stored row active, uses 0; `decisions` row grant by fishball; audit `grant`; a tag for the creating call |
+| GRT-02 | ST (five covered runs) | done-when 6, Q-r11-tag-scope | all run, Fishball takes zero steps, `uses` 5 and `lastUsedAt`, five `grant` tags (one per call), five `grant-used` audit rows |
+| GRT-03 | EP | item 18 (accepted risk) | `npm test && git push` is covered |
+| GRT-04 ×8 | BVA/EP (command against prefix `npm test`) | item 18 (raw text) | longer, `npm testing`, exactly the prefix: covered; `npm tes`, `npm run test`, `NPM test`, `npm  test`, `echo npm test`: to Fishball |
+| GRT-05, 06 | EP | §7a.8 "same session, tool" | the same command in pwsh, or in another session: not covered |
+| GRT-07 | DT (exact grant) | item 18 | repeats covered, also with another key order; a changed argument, a changed text, or an extra argument: to Fishball |
+| GRT-08 ×3 | EP (pwsh, terminal_send; a trailing `*`) | Q-r11-prefix-tools; manager 2026-11-02 | prefix grant accepted and covers a following command; a trailing `*` is dropped |
+| GRT-09 ×5 | EP (run_code, fbtest_ask, terminal_open prefix refused; exact on run_code and terminal_open accepted) | Q-r11-prefix-tools, requirements "Prefix grants" | prefix refused, `ok:false`, request still pending (a reject works), no grant row; an exact grant on run_code is accepted and covers |
+| GRT-10 ×10 | DT (refused answers) | §7a.8 "an end time is required and must be in the future", `allow`'s rules | no end time; past (an hour, one second); not a time; no grant object; unknown kind; prefix kind with no or an empty prefix; a prefix that is not the start of the asking command; risk high; empty reason: `ok:false` with a code, no grant row, no `decisions` row, request still pending |
+| GRT-11 | BVA (end time a year out; three active) | Q-r11-grant-bounds | accepted; three active grants of one session at once |
+| GRT-12 | EP (via `ask_fishball`) | §7a.3 Reading | grant through an `ask_fishball` answer: allowed; later direct call covered; `ask_fishball` for another covered command answers `allowed` with no Fishball step |
+
+### [rev11d-end.test.mjs](rev11d-end.test.mjs): how grants end, pause and survive (one host, a session per case)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| END-01 | ST (expiry) | item 19 | covered before the end time; after it the next run goes to Fishball; row expired/ended by `expiry`; not in the active list |
+| END-02 | ST (your Revoke) | item 19, Q-r11-audit-user | route 200; next run to Fishball; `decisions` revoke by user; row revoked by user; a second revoke and an unknown id answer 409 |
+| END-03 | ST (`revoke_grant`) | item 19 | `list_grants` lists the active grant; revoke ok; row ended by fishball; `decisions` revoke by fishball; not active in `list_grants`; next run to Fishball; a second revoke and an unknown id refused, no extra row |
+| END-04 | ST (Take back) | item 19, item 4 | its grants end (take-back), another session's stay; handing over again does not revive |
+| END-05 | ST (`release_session`) | item 19 | its grants end (release) |
+| END-06, 07 | ST (Permission requests off / Fishball not live, then back) | Q-r11-grants-off, §7a.5 | the covered call shows the stock prompt, Fishball is not asked, no use counted, no tag; the grant stays active with an unmoved end time and is marked paused; when back, the same grant covers again |
+| END-08 | ST (restart) | defaults "Restarts" | an unexpired grant survives with uses and end time and still covers; managed status stays; a grant whose end time passes is not honoured |
+
+### [rev11d-regress.test.mjs](rev11d-regress.test.mjs): rev11b regression (the manager's decision of 2026-11-02, DESIGN §7a.3 table)
+
+| id | technique | requirement | expected |
+|---|---|---|---|
+| REG-01 | DT (escalate, no `risk`, no `reason`) | §7a.3 "None: any request can go to you" | accepted (`ok:true`, `decision:'escalate'`; the tool's own schema must not require them); a card; the agent keeps waiting; no stock prompt; audit `escalate`; your Allow once → `allowed` |
+| REG-03 | DT (ask with only a question) | manager 2026-11-02 | accepted, no risk or reason needed; the agent gets `question` |
+| REG-02 | DT (escalate, risk high, empty reason) | same | same |
+
+### Not automated (rev11d)
+
+- The grants list in the pinned area with Revoke and the "paused" wording, and the tag text "Allowed by Fishball's grant: <prefix or exact call>" in the turn tail: checked by hand (client rendering).
+- A year-out end time in the client's list; the exact wording of Fishball's prompt for grants (prompt-only judgement, item 17).
+
+### Ambiguities (rev11d)
+
+- **A-r11d-1. The end time's format.** `expires_at` is given as an ISO 8601 text (`new Date().toISOString()`); a number is not tried. Snapshot and stored fields are read as `expiresAt` (or `expires_at`), as a number or a date text.
+- **A-r11d-2. Id and field names.** The grant id is read from `grant_id`/`grantId`/`grant.id` in the answer, else from the stored row's key (§9: keyed by grant id); the snapshot entry's id from `grantId`/`id`. The snapshot lists active grants (an entry with no `status` counts as active). The tool name is `toolName` (or `tool`). "Marked paused" is `paused: true` or the word "paused" anywhere in the entry. `list_grants` is read as `{grants:[…]}`.
+- **A-r11d-3. Terminal tools' command argument.** The fixtures for `terminal_open` and `terminal_send` carry the command text in `command`; the design says "read from their schema in rev11d", so a different real argument name would need the fixture schema changed.
+- **A-r11d-4. Refusal codes.** Only `ok:false` with a string `code` is asserted for refused grants, not the code name. Whether a prefix must be a prefix of the asking call's command (§9: "comes from the asking call") is not tested.
+- **A-r11d-5. Revoke reasons.** `revoke_grant` with an empty reason is not tested.
+- **A-r11d-6. Expiry rows.** Expiry is checked on the grants row (`expired`/`ended`, `endedBy: 'expiry'`), not on a `decisions` row; the design says expiry is audited without naming the table.
+
+- **A-r11d-7. Manager's readings (2026-11-02), built in:** `terminal_open` takes exact grants only; a prefix is the start of the asking command; a trailing `*` is dropped; expiry writes no `decisions` row (END-01 checks the grants row only).
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
