@@ -5,7 +5,8 @@
  * always shows (Take back only while Session messages is on and Fishball is live, a browser concern); Take back
  * posts the existing route. The browser's order (newest first) and the unknown-title fallback cannot be checked
  * here; the browser half is checked only through the served client bundle.
- * Titles: DSH derives a title from the user's messages; a session whose only turn came from Fishball has none.
+ * Titles: DSH derives a title from the user's messages; a session whose only turn came from Fishball's message_session has none.
+ * start_session names the session itself (its required title, set through DSH's rename), so a started session is titled from the start.
  * DSH's own rename (worker op renameSession) is a retitle; DSH's title service (sessionTitle) is the reference.
  * One home; the cases run in order and the restart comes last.
  * Expected values come from the requirements (CASES.md "rev11a follow-up: managed sessions list").
@@ -13,10 +14,10 @@
  * | id      | technique | expected |
  * |---------|-----------|----------|
  * | MGL-01  | EP (titled session, Hand over) | entry has exactly {by, sessionId, since, title}; title is DSH's title (a non-empty string), not the id |
- * | MGL-02 ×3 | EP (way in × titled session: send / message / start) | send and message: title is DSH's title; start (only Fishball's message): title is null |
+ * | MGL-02 ×3 | EP (way in × titled session: send / message / start) | send and message: title is DSH's title; start: the title Fishball gave it |
  * | MGL-03  | BVA (no title yet: '' in DSH) | title is null, not '' and not the id |
  * | MGL-04  | ST (null –rename A→ A –rename B→ B) | each title reaches the snapshot and an events frame without a restart; since and by unchanged |
- * | MGL-05  | ST (started, null –the user's first message→ DSH's derived title) | the snapshot title becomes DSH's title |
+ * | MGL-05  | ST (started with a title –the user's first message→ same) | the title Fishball gave stays: DSH pins an explicit title, so the user's message does not replace it |
  * | MGL-06  | EP (title with quotes, markup, CJK, emoji) | the title verbatim |
  * | MGL-07  | ST (managed –Take back (list path)→ yours) | same route: 200 ok; the entry leaves the snapshot and an events frame; a later rename does not bring it back |
  * | MGL-08  | EP (rename a session that is yours) | no entry appears |
@@ -30,7 +31,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, MANAGED_API, MANAGED_BY, MANAGED_ENTRY_KEYS, MANAGED_LABELS, MANAGED_LIST_LABELS, OWN_PLUGINS, PRESET, RELAY, STATUS } from './support/constants.mjs'
+import { API, MANAGED_API, MANAGED_BY, MANAGED_ENTRY_KEYS, MANAGED_LABELS, MANAGED_LIST_LABELS, OWN_PLUGINS, PRESET, RELAY, STATUS, TITLE } from './support/constants.mjs'
 import { HOOK, T, fishballCall, fishballClientBundle, managedEntry, managedNow, pluginIn, setManaged, settledIdle, turn, untilCatalog } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -134,21 +135,19 @@ describe('Revision 11 rev11a follow-up: the managed sessions list', () => {
       const e = await entryTitled(s.msg, await dshTitle(s.msg))
       assert.equal(e.by, MANAGED_BY.message)
     })
-    it('start_session: by start, title null (DSH has not titled it)', T, async () => {
+    it('start_session: by start, the title Fishball gave it', T, async () => {
       const folder = path.join(home, 'work', 'mgl02-start')
       fs.mkdirSync(folder, { recursive: true })
       const marker = tok('02s')
       await host.call('queueMarker', { marker, except: fb, script: [[{ text: 'started' }]] })
-      const { json } = await fishballCall(host, fb, 'start_session', { folder, message: marker + ' build it' })
+      const { json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: marker + ' build it' })
       assert.equal(json?.ok, true, JSON.stringify(json))
       s.start = json.sessionId
       assert.ok(await until(async () => (await host.call('markerState', { marker })).left === 0, 10000, 100), 'the new session ran a turn')
       await settledIdle(host, s.start)
-      assert.equal(await dshTitle(s.start), '', 'precondition: no title (its only message came from Fishball)')
-      const e = await managedEntry(host, s.start)
-      assert.equal(e?.by, MANAGED_BY.start)
-      assert.ok(Object.hasOwn(e, 'title'), 'the key is present')
-      assert.equal(e.title, null)
+      assert.equal(await dshTitle(s.start), TITLE.plain, "precondition: DSH reports the title Fishball gave (its only message came from Fishball)")
+      const e = await entryTitled(s.start, TITLE.plain)
+      assert.equal(e.by, MANAGED_BY.start)
     })
   })
 
@@ -173,11 +172,14 @@ describe('Revision 11 rev11a follow-up: the managed sessions list', () => {
     }
   })
 
-  it('MGL-05 a started session gets DSH\'s title once the user writes to it', T, async () => {
-    assert.equal((await managedEntry(host, s.start))?.title, null, 'precondition: untitled (MGL-02 start)')
+  it('MGL-05 a started session keeps the title Fishball gave it when the user writes to it', T, async () => {
+    assert.equal((await managedEntry(host, s.start))?.title, TITLE.plain, 'precondition: titled by start_session (MGL-02 start)')
     await turn(host, s.start, [[{ text: 'ok' }]], 'Please write the release notes for version two')
-    assert.ok(await until(async () => (await dshTitle(s.start)) !== '', PUBLISH_MS, 100), 'precondition: DSH titled it')
-    await entryTitled(s.start, await dshTitle(s.start))
+    await settledIdle(host, s.start)
+    // DSH pins an explicit title: the user's first message does not schedule an automatic one. Give it time to (wrongly) change.
+    await sleep(QUIET_MS)
+    assert.equal(await dshTitle(s.start), TITLE.plain)
+    await entryTitled(s.start, TITLE.plain)
   })
 
   it('MGL-06 a title with quotes, markup, CJK and emoji is listed verbatim', T, async () => {

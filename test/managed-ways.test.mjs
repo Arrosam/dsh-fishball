@@ -15,7 +15,7 @@
  * | MGD-04  | ST (yours –Hand over→ managed) | 200 ok; entry {sessionId, since, by:'hand-over'}; exactly one note (fishball/managed/<id>) naming the folder and the user, read by Fishball; next request has message_fishball; next permission request reaches Fishball, not the stock prompt |
  * | MGD-05  | ST (yours –Send to Fishball→ managed) | 200; entry by 'send'; no managed note (only hand-over, take-back, release send one); next request has message_fishball; next permission request reaches Fishball |
  * | MGD-06  | ST (yours –message_session→ managed) | ok; entry by 'message'; no managed note; the turn that reads the message already has message_fishball; next permission request reaches Fishball |
- * | MGD-07  | ST (none –start_session→ managed) | ok; entry by 'start'; no managed note; every request of the new session has message_fishball; its permission request reaches Fishball |
+ * | MGD-07  | ST (none –start_session→ managed) | ok; entry by 'start'; no managed note; every request of the new session has message_fishball; its permission request reaches Fishball; the order is create → rename (the title) → managed (`since`) → first message steered |
  * | MGD-08  | ST (managed –Take back→ yours) | 200; entry gone; one note naming the folder and the user; next request has no message_fishball and no "Fishball"; permission request to the stock prompt, zero Fishball steps |
  * | MGD-09  | ST (managed –release_session→ yours) | ok; entry gone; one note naming the folder; next request has no message_fishball; permission request to the stock prompt, zero Fishball steps |
  * | MGD-10  | DT (message_fishball × yours / managed) | yours: tool error UNKNOWN_TOOL, no body runs (no relay, no intake item); managed: {ok:true, note:'Delivered to Fishball.'}, one relay attributed to it, intake item session/<id> |
@@ -32,7 +32,7 @@ import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
   API, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FISHBALL_WORD, FORWARD_HEADER, IDENTITY, INBOUND_TOOL, MANAGED_API, MANAGED_BY, MANAGED_CODE, MANAGED_ENTRY_KEYS,
-  MANAGED_LABELS, NOTE_TEXT, NOTICE, OUTCOME, P5_CODE, PRESET, RELAY, RELEASE_TOOL, STATUS, UNKNOWN_TOOL_TEXT, WATCH_API,
+  MANAGED_LABELS, NOTE_TEXT, NOTICE, OUTCOME, P5_CODE, PRESET, RELAY, RELEASE_TOOL, STATUS, TITLE, UNKNOWN_TOOL_TEXT, WATCH_API,
 } from './support/constants.mjs'
 import {
   HOOK, T, askSettled, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, managedEntry, managedItems, managedNow, messageFishball,
@@ -244,10 +244,24 @@ describe('Revision 11 rev11a: yours or managed, and the ways in and out', () => 
     const marker = tok('07')
     await host.call('queueMarker', { marker, except: fb, script: [[{ text: 'started' }]] })
     const t0 = Date.now()
-    const { json } = await fishballCall(host, fb, 'start_session', { folder, message: marker + ' build it' })
+    // The probe stamps the title's rename and the first steer, so the managed entry's `since` can be placed between them.
+    await host.call('startProbe', {})
+    let json
+    let events
+    try {
+      ;({ json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: marker + ' build it' }))
+      events = await host.call('probeEvents')
+    } finally { await host.call('stopProbe') }
     assert.equal(json?.ok, true, JSON.stringify(json))
+    assert.equal(json.title, TITLE.plain)
     const sid = json.sessionId
     await expectEntry(sid, MANAGED_BY.start, t0)
+    // Rev11: the title is set first, the session is made managed next, and only then is the first message delivered.
+    const rename = events.find((e) => e.type === 'rename' && e.sessionId === sid)
+    const steer = events.find((e) => e.type === 'steer' && e.sessionId === sid)
+    const since = sinceMs((await managedEntry(host, sid)).since)
+    assert.ok(rename && steer, 'the probe saw the rename and the steer: ' + JSON.stringify(events))
+    assert.ok(rename.at <= since && since <= steer.at, 'create → rename → managed → first message: rename ' + rename.at + ', since ' + since + ', steer ' + steer.at)
     assert.ok(await until(async () => (await host.call('markerState', { marker })).left === 0, 10000, 100), 'the new session ran a turn')
     await settledIdle(host, sid)
     const cwd = (await host.call('header', { sessionId: sid })).cwd
