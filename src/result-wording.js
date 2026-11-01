@@ -22,6 +22,7 @@
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { EVENT, INTAKE_KIND, POST_DECISION, SOURCE } from './constants.js'
 import { authorOf } from './author.js'
+import { rootSessionOf } from './session-info.js'
 
 /** What Fishball answered for one marked call. */
 export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', question: 'question' })
@@ -37,33 +38,42 @@ const TEXT = Object.freeze({
 const SEPARATOR = '\n\n'
 const textBlock = (text) => ({ type: 'text', text })
 
+/** Joins session and call id: providers may reuse call ids across sessions (review 2). */
+const KEY_SEPARATOR = '|'
+const keyOf = (sessionId, callId) => sessionId + KEY_SEPARATOR + callId
+
 export class ResultWording {
-  /** callId -> { sessionId, kind: WORDING, reason?, requestId?, question? } */
+  #ctx
+  /** sessionId|callId -> { sessionId, toolName, kind: WORDING, reason?, requestId?, question? } */
   #marks = new Map()
 
   /** @param ctx - fishball row context (host level, so it sees every agent's calls). */
   constructor(ctx) {
+    this.#ctx = ctx
     ctx.on(EVENT.postExecute, (exec, result, next) => this.#rewrite(exec, result, next))
   }
 
   /**
-   * Remember Fishball's answer for one call id (a call with no id cannot be reworded).
+   * Remember Fishball's answer for one call (a call with no id cannot be reworded).
    * @param sessionId - the session the user sees, whose turn end sweeps the mark.
+   * @param toolName - the call's tool: only a result of that tool is rewritten.
    */
-  mark(callId, sessionId, mark) {
+  mark(callId, sessionId, toolName, mark) {
     if (callId === undefined) return
-    this.#marks.set(callId, { sessionId, ...mark })
+    this.#marks.set(keyOf(sessionId, callId), { sessionId, toolName, ...mark })
   }
 
   /** Forget the marks of one session (its turn ended). */
   dropSession(sessionId) {
-    for (const [callId, mark] of [...this.#marks]) if (mark.sessionId === sessionId) this.#marks.delete(callId)
+    for (const [key, mark] of [...this.#marks]) if (mark.sessionId === sessionId) this.#marks.delete(key)
   }
 
   #rewrite(exec, result, next) {
-    const mark = this.#marks.get(exec.callId)
-    if (mark === undefined) return next()
-    this.#marks.delete(exec.callId)
+    if (exec.agent === undefined) return next()
+    const key = keyOf(rootSessionOf(this.#ctx, exec.agent.id), exec.callId)
+    const mark = this.#marks.get(key)
+    if (mark === undefined || mark.toolName !== exec.name) return next()
+    this.#marks.delete(key)
     if (mark.kind === WORDING.allow) {
       const notice = `${TEXT.allowed} ${TEXT.hint}`
       if (exec.parent !== undefined) return { kind: POST_DECISION.accept, additionalContexts: [noticeMessage(notice)] }
