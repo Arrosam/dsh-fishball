@@ -366,7 +366,11 @@ export async function apply(ctx, config) {
   // Fishball's own cards are labelled Fishball. Text, never markup (§10e). Newest first (Reading).
   pileView = () => [...[...pile.cards(), ...questions.cards()].map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => latestFirst(a.since, b.since))
   // A question tag's words come from the session log, never from our tables (§9).
-  tagsView = () => tags.snapshot().map((tag) => ({ ...tag, answerText: questions.wordsOfTag(tag) ?? null }))
+  tagsView = () => {
+    const kept = tags.snapshot()
+    const words = questions.wordsOfTags(kept)
+    return kept.map((tag) => ({ ...tag, answerText: words.get(tag.key) ?? null }))
+  }
   // Grants belong to managed sessions, whose titles are followed (session-titles.js).
   grantsView = () => grants.snapshot().map((grant) => ({ ...grant, title: sessionTitles.get(grant.sessionId) }))
   // Your Revoke beside the pile (§10e): 409 unknown, or ended once it expired, was revoked or its session left.
