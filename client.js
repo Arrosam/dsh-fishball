@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -164,11 +164,19 @@ window.__ModuleLoader__.load({
     const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
     const CARD_ERRORS = new Set(['expired', 'too-large', 'unavailable'])
     /** Card kinds (src/constants.js REQUEST_KIND) and thread authors (THREAD_FROM) with their own words. */
-    const CARD_KINDS = new Set(['asked', 'direct'])
+    const CARD_KINDS = new Set(['asked', 'direct', 'own'])
+    /** Fishball's own request (rev11f, §7a.11): its card is labelled Fishball instead of a session. */
+    const OWN_CARD_KIND = 'own'
     const ARGUMENTS_COMPLETE = 'complete'
     /** The turn-tail tags (DESIGN §7a.3, §10e; src/constants.js TAG_KIND). */
-    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', iconSize: 12, separator: ' · ' })
-    const TAG_ANSWERS = new Set(['allow', 'reject', 'ask'])
+    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', iconSize: 12, separator: ' · ' })
+    const TAG_ANSWERS = new Set(['allow', 'grant', 'reject', 'ask'])
+    /**
+     * Standing grants (rev11d; src/constants.js GRANT_KIND, GRANT.wildcard): a prefix grant is shown
+     * as its prefix with the wildcard, an exact one by its tool. Revoke refusals with their own text.
+     */
+    const GRANT_VIEW = Object.freeze({ prefix: 'prefix', wildcard: '*' })
+    const GRANT_ERRORS = new Set(['unknown', 'ended', 'unavailable'])
     const JSON_INDENT = 2
     /**
      * The plugin manager (DESIGN §10d): the Fishball tab, laid out like DSH's Installed tab and
@@ -502,7 +510,7 @@ window.__ModuleLoader__.load({
       'managedBy.message': 'Messaged by Fishball',
       'managedBy.start': 'Started by Fishball',
       'managedBy.prompt-answer': 'Prompt answered by Fishball',
-      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you: a request the session asked first waits in your pile above Fishball\'s chat, a direct call in that session.',
+      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you: a request the session asked first waits in your pile above Fishball\'s chat, and a direct call waits both there and in that session.',
       approvalsWaiting: 'Waiting for Fishball',
       'approvalAnswer.allow': 'Approved by Fishball',
       'approvalAnswer.escalate': 'Sent to you',
@@ -514,6 +522,9 @@ window.__ModuleLoader__.load({
       'approvalAnswer.to-user': 'Sent to you without Fishball\'s answer',
       approvalsPile: 'Waiting for you in the pile: {count}',
       'approvalAnswer.pass': 'Ran on Fishball\'s one-time approval',
+      'approvalAnswer.grant': 'Approved by Fishball with a standing grant',
+      'approvalAnswer.grant-used': 'Ran on Fishball\'s standing grant',
+      approvalsGrants: 'Active standing grants: {count}',
       'approvalOutcome.allowed-once': 'allowed once',
       'approvalOutcome.rejected': 'rejected',
       'approvalOutcome.cancelled': 'cancelled',
@@ -689,6 +700,8 @@ window.__ModuleLoader__.load({
       pileTitle: 'Waiting for you ({count})',
       'cardKind.asked': 'Asked first',
       'cardKind.direct': 'Direct call',
+      'cardKind.own': 'Fishball',
+      cardOwnTitle: 'Fishball asks',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: 'The arguments are cut.',
@@ -727,6 +740,18 @@ window.__ModuleLoader__.load({
       'tagAnswer.reject': 'rejected',
       'tagAnswer.ask': 'asked a question',
       tagSentToYou: 'Sent to you',
+      'tagAnswer.grant': 'granted (standing grant)',
+      tagGrant: 'Allowed by Fishball\'s grant: {what}',
+      tagPrompt: 'Answered by Fishball: {decision}',
+      grantExact: 'exact {tool} call',
+      grantsTitle: 'Standing grants ({count})',
+      grantEnds: 'ends {at}',
+      grantUses: 'used {count} times',
+      grantPaused: 'Paused while Fishball or Permission requests is off',
+      revoke: 'Revoke',
+      'grantError.unknown': 'This grant does not exist.',
+      'grantError.ended': 'This grant has already ended.',
+      'grantError.unavailable': 'Fishball is not running.',
       reset: 'Reset to default',
       overridden: 'Custom',
       save: 'Save',
@@ -859,7 +884,7 @@ window.__ModuleLoader__.load({
       'managedBy.message': 'Fishball 发过消息',
       'managedBy.start': 'Fishball 启动',
       'managedBy.prompt-answer': 'Fishball 答复过提示',
-      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你：会话事先询问的请求在 Fishball 对话上方的待处理区等你，直接调用则在该会话中等你。',
+      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你：会话事先询问的请求在 Fishball 对话上方的待处理区等你，直接调用则同时在待处理区和该会话中等你。',
       approvalsWaiting: '等待 Fishball 处理',
       'approvalAnswer.allow': 'Fishball 已批准',
       'approvalAnswer.escalate': '已转交给你',
@@ -871,6 +896,9 @@ window.__ModuleLoader__.load({
       'approvalAnswer.to-user': '未经 Fishball 回答，直接转交给你',
       approvalsPile: '在待处理区等你处理：{count}',
       'approvalAnswer.pass': '按 Fishball 的一次性批准运行',
+      'approvalAnswer.grant': 'Fishball 已批准并授予长期许可',
+      'approvalAnswer.grant-used': '按 Fishball 的长期许可运行',
+      approvalsGrants: '生效中的长期许可：{count}',
       'approvalOutcome.allowed-once': '允许一次',
       'approvalOutcome.rejected': '已拒绝',
       'approvalOutcome.cancelled': '已取消',
@@ -1046,6 +1074,8 @@ window.__ModuleLoader__.load({
       pileTitle: '等你处理（{count}）',
       'cardKind.asked': '事先询问',
       'cardKind.direct': '直接调用',
+      'cardKind.own': 'Fishball',
+      cardOwnTitle: 'Fishball 请求',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: '参数已截断。',
@@ -1084,6 +1114,18 @@ window.__ModuleLoader__.load({
       'tagAnswer.reject': '已拒绝',
       'tagAnswer.ask': '提了一个问题',
       tagSentToYou: '已转交给你',
+      'tagAnswer.grant': '已授予长期许可',
+      tagGrant: '由 Fishball 的长期许可允许：{what}',
+      tagPrompt: 'Fishball 已答复：{decision}',
+      grantExact: '完全相同的 {tool} 调用',
+      grantsTitle: '长期许可（{count}）',
+      grantEnds: '{at} 到期',
+      grantUses: '已使用 {count} 次',
+      grantPaused: 'Fishball 或“权限请求”关闭期间暂停',
+      revoke: '撤销',
+      'grantError.unknown': '这个许可不存在。',
+      'grantError.ended': '这个许可已经结束。',
+      'grantError.unavailable': 'Fishball 未在运行。',
       reset: '恢复默认',
       overridden: '已自定义',
       save: '保存',
@@ -1969,6 +2011,7 @@ window.__ModuleLoader__.load({
           h('p', { className: CLS.muted }, t('approvalsHint')),
           h(ManagedSessions, { state, t }),
           (state.pile ?? []).length > 0 ? h('p', { 'data-fishball-pile-count': state.pile.length }, t('approvalsPile', { count: state.pile.length })) : null,
+          (state.grants ?? []).length > 0 ? h('p', { 'data-fishball-grants-count': state.grants.length }, t('approvalsGrants', { count: state.grants.length })) : null,
           view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
             h(Tag, { tone: 'info' }, t('approvalsWaiting')), ' ', h('span', { className: CLS.code }, p.toolName), ' ', h('span', { className: CLS.muted }, p.sessionId)))) : null,
           view.recent.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.recent.map((entry) => h('li', { key: entry.key },
@@ -2046,18 +2089,23 @@ window.__ModuleLoader__.load({
      * One card in your pile (DESIGN §10e): the session, the tool, the exact arguments, the agent's
      * reason and Fishball's note, with the quoted messages and the thread behind Details. Every
      * text comes from another session or from Fishball, so all of it is drawn as plain text.
-     * A session whose title is not known yet shows its id, as the managed list does.
+     * A session whose title is not known yet shows its id, as the managed list does. One of
+     * Fishball's own requests is labelled Fishball, with its list (the unchecked tools, or the
+     * changed settings) under the arguments, one entry per line.
      */
     function PileCard({ card, t }) {
       const [open, setOpen] = React.useState(false)
       const hasDetails = card.quotes.length > 0 || card.thread.length > 0
-      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId },
+      const own = card.kind === OWN_CARD_KIND
+      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
         h('div', { className: CLS.cardHead },
-          h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
+          own ? h('span', { className: CLS.title }, t('cardOwnTitle'))
+            : h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
           CARD_KINDS.has(card.kind) ? h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)) : null,
           h('span', { className: CLS.code }, card.toolName)),
         h('pre', { className: CLS.pre }, readableJson(card.arguments)),
         card.argumentsStatus === ARGUMENTS_COMPLETE ? null : h('span', { className: CLS.muted }, t('cardArgumentsCut')),
+        own && (card.detail ?? []).length > 0 ? h('ul', { className: CLS.thread, 'data-fishball-card-detail': card.detail.length }, card.detail.map((entry, index) => h('li', { key: index }, entry))) : null,
         card.why ? labelled(t('cardReason'), card.why) : null,
         card.note ? labelled(t('cardFishballNote'), card.note) : null,
         hasDetails ? h('button', { type: 'button', className: CLS.linkButton, 'aria-expanded': open, onClick: () => setOpen(!open) }, t(open ? 'cardHideDetails' : 'cardDetails')) : null,
@@ -2067,20 +2115,61 @@ window.__ModuleLoader__.load({
         h(CardAnswer, { requestId: card.requestId, t }))
     }
 
+    /** What a grant covers, in words: "npm test*", or "exact bash call" (never the arguments, which the Host does not keep). */
+    const grantWhat = (t, grant) => (grant.kind === GRANT_VIEW.prefix ? grant.prefix + GRANT_VIEW.wildcard : t('grantExact', { tool: grant.toolName }))
+
+    /** POST your Revoke. @returns null when accepted, else the key of the refusal's text. */
+    async function revokeGrant(grantId) {
+      const { ok, code } = await send(API.grantsRevoke, { grantId })
+      if (ok) return null
+      return GRANT_ERRORS.has(code) ? 'grantError.' + code : 'cardFailed'
+    }
+
+    /**
+     * One active grant beside the pile (DESIGN §10e, item 19): its session, tool, prefix or exact
+     * call, end time, uses and Revoke; a paused grant says so. The prefix is Fishball's text and the
+     * title another session's, so both are drawn as plain text.
+     */
+    function GrantRow({ grant, t }) {
+      const [busy, setBusy] = React.useState(false)
+      const [problem, setProblem] = React.useState(null)
+      const revoke = async () => {
+        setBusy(true)
+        setProblem(await revokeGrant(grant.grantId))
+        setBusy(false)
+      }
+      return h('li', { className: CLS.card, 'data-fishball-grant': grant.grantId },
+        h('div', { className: CLS.cardHead },
+          h('span', { className: grant.title ? CLS.title : `${CLS.title} ${CLS.code}` }, grant.title || grant.sessionId),
+          h('span', { className: CLS.code }, grant.toolName),
+          grant.paused ? h(Tag, { tone: 'neutral' }, t('grantPaused')) : null),
+        h('div', { className: CLS.code }, grantWhat(t, grant)),
+        h('div', { className: CLS.muted }, `${t('grantEnds', { at: new Date(grant.expiresAt).toLocaleString() })}${TURN_TAGS.separator}${t('grantUses', { count: grant.uses })}`),
+        h('div', { className: CLS.actions }, h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: busy, onClick: () => void revoke() }, t('revoke'))),
+        problem ? h('div', { role: 'alert' }, t(problem)) : null)
+    }
+
     /**
      * Your pile above Fishball's composer (DESIGN §10e, items 14-16): "Waiting for you (n)", shown
-     * only in Fishball's own session and only while it holds a card. Its height is the limit
-     * pileMaxHeightVh; past it the pile scrolls, so the composer stays in view.
+     * only in Fishball's own session and only while it holds a card. The active grants are a second
+     * section in the same pinned area (Q-r11-grants-place), shown while there are any. Its height is
+     * the limit pileMaxHeightVh; past it the area scrolls, so the composer stays in view.
      */
     function makePile(t) {
       return function FishballPile({ sessionId }) {
         const state = useFishball()
         const cards = state.pile ?? []
-        if (!sessionId || sessionId !== state.sessionId || cards.length === 0) return null
+        const grants = state.grants ?? []
+        if (!sessionId || sessionId !== state.sessionId || (cards.length === 0 && grants.length === 0)) return null
         const title = t('pileTitle', { count: cards.length })
-        return h('section', { className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'aria-label': title, 'data-fishball-pile': cards.length },
-          h('div', { className: CLS.pileHead }, title),
-          h('ul', { className: CLS.entries }, cards.map((card) => h(PileCard, { key: card.requestId, card, t }))))
+        const grantsTitle = t('grantsTitle', { count: grants.length })
+        return h('section', { className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': cards.length, 'data-fishball-grants': grants.length },
+          cards.length > 0 ? h('section', { 'aria-label': title },
+            h('div', { className: CLS.pileHead }, title),
+            h('ul', { className: CLS.entries }, cards.map((card) => h(PileCard, { key: card.requestId, card, t })))) : null,
+          grants.length > 0 ? h('section', { 'aria-label': grantsTitle },
+            h('div', { className: CLS.pileHead }, grantsTitle),
+            h('ul', { className: CLS.entries }, grants.map((grant) => h(GrantRow, { key: grant.grantId, grant, t })))) : null)
       }
     }
 
@@ -2132,9 +2221,15 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** A tag's words: "Sent to you", or "Asked Fishball" with the answer (DESIGN §7a.3; client wording constants). */
+    /**
+     * A tag's words: "Sent to you", "Allowed by Fishball's grant: …" for a call a grant covered,
+     * "Answered by Fishball: …" for a prompt Fishball answered (answer_prompt, rev11e), or "Asked
+     * Fishball" with the answer (DESIGN §7a.3; client wording constants).
+     */
     const tagText = (t, tag) => {
       if (tag.kind === TURN_TAGS.sentToYou) return t('tagSentToYou')
+      if (tag.kind === TURN_TAGS.prompt && TAG_ANSWERS.has(tag.answer)) return t('tagPrompt', { decision: t('tagAnswer.' + tag.answer) })
+      if (tag.kind === TURN_TAGS.grant && tag.grant) return t('tagGrant', { what: grantWhat(t, tag.grant) })
       return TAG_ANSWERS.has(tag.answer) ? `${t('tagAskedFishball')}${TURN_TAGS.separator}${t('tagAnswer.' + tag.answer)}` : t('tagAskedFishball')
     }
 

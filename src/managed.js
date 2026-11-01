@@ -8,7 +8,7 @@
  *   next start.
  * - Ways in: start_session, message_session and Send to Fishball call manage() (no note: the
  *   tool's result or your own click already says so); Hand over (your click) calls handOver().
- *   answer_prompt joins in rev11e.
+ *   Fishball's answer_prompt calls manage() too (rev11e, the fifth way in; its result says so).
  * - Ways out: Take back (your click) and Fishball's release_session. Hand over, Take back and
  *   release each wake Fishball with one note through the intake ledger (§5e "Notes to Fishball").
  *
@@ -107,8 +107,9 @@ export class ManagedRegistry {
    * @param deps.assistantId - () => Fishball's session id. @param deps.onChange - after a change.
    * @param deps.isEnabled - () => whether Session messages runs (Hand over / Take back, release_session).
    * @param deps.managedTools - () => the tool definitions a managed agent has now.
-   * @param deps.onLeave - (sessionId) => called when a session stops being managed (its waiting
-   *   requests then go to you, §5e).
+   * @param deps.onLeave - (sessionId, change) => called when a session stops being managed (its waiting
+   *   requests then go to you, and its grants end, §5e): change is MANAGED_CHANGE.takeBack or
+   *   .release, or undefined for a session DSH no longer finds.
    */
   constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange, isEnabled, managedTools, onLeave }) {
     this.#ctx = ctx
@@ -147,10 +148,11 @@ export class ManagedRegistry {
 
   /**
    * Make a session managed as a side effect of Fishball's start_session / message_session or
-   * your Send to Fishball (no note; DESIGN §5e). Already managed: unchanged.
+   * your Send to Fishball, or of answer_prompt (no note; DESIGN §5e). Already managed: unchanged.
+   * @returns whether the session became managed now.
    */
-  async manage(sessionId, by) {
-    await this.#add(rootSessionOf(this.#ctx, sessionId), by)
+  manage(sessionId, by) {
+    return this.#add(rootSessionOf(this.#ctx, sessionId), by)
   }
 
   /**
@@ -173,7 +175,7 @@ export class ManagedRegistry {
     const root = await this.#checkClick(sessionId)
     const info = await this.#describe(root)
     if (info === undefined && !this.isManaged(root)) throw new ManagedError(MANAGED_ERROR.unknownSession)
-    if (await this.#drop(root)) await this.#note(MANAGED_CHANGE.takeBack, info ?? { id: root, title: '', cwd: null })
+    if (await this.#drop(root, MANAGED_CHANGE.takeBack)) await this.#note(MANAGED_CHANGE.takeBack, info ?? { id: root, title: '', cwd: null })
   }
 
   /** Fishball's release_session (scope P; Session messages). */
@@ -190,7 +192,7 @@ export class ManagedRegistry {
         // A call already in flight when Session messages went off (the tool leaves at the apply).
         if (!this.#isEnabled()) return refused(MANAGED_ERROR.featureOff)
         if (sessionId === this.#assistantId()) return refused(MANAGED_ERROR.isFishball)
-        if (!(await this.#drop(sessionId))) return refused(MANAGED_ERROR.notManaged)
+        if (!(await this.#drop(sessionId, MANAGED_CHANGE.release))) return refused(MANAGED_ERROR.notManaged)
         await this.#audit(sessionId, reason)
         const info = (await this.#describe(sessionId)) ?? { id: sessionId, title: '', cwd: null }
         await this.#note(MANAGED_CHANGE.release, info)
@@ -242,13 +244,16 @@ export class ManagedRegistry {
     })
   }
 
-  /** Forget a managed session and take the tools from its live agent; @returns whether it changed. */
-  #drop(sessionId) {
+  /**
+   * Forget a managed session and take the tools from its live agent; @returns whether it changed.
+   * @param change - why (MANAGED_CHANGE.takeBack or .release); undefined when DSH no longer finds it.
+   */
+  #drop(sessionId, change) {
     return this.#serial(async () => {
       if (!this.isManaged(sessionId)) return false
       await this.#store.managed.delete(sessionId)
       this.#syncSession(sessionId)
-      this.#onLeave(sessionId)
+      this.#onLeave(sessionId, change)
       this.#onChange()
       return true
     })
