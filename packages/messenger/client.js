@@ -76,6 +76,12 @@ window.__ModuleLoader__.load({
       interSession: 'hsl(142 70% 42%)',
     })
     const tint = (colour, share) => `color-mix(in srgb,${colour} ${share},transparent)`
+    /**
+     * A circle. DSH's theme gives every element a superellipse corner shape where the browser
+     * supports corner-shape, which turns border-radius:50% into a rounded square; DSH's own
+     * circles set corner-shape:round, and so do Fishball's round avatars (DESIGN §10c).
+     */
+    const CIRCLE = 'border-radius:50%;corner-shape:round'
 
     const en = {
       notice: 'Fishball notice',
@@ -118,11 +124,13 @@ window.__ModuleLoader__.load({
       const REPLY = `${SCOPE} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]`
       // DSH's reply view, inside the row's slot wrapper (display: contents): it becomes the bubble.
       const REPLY_BUBBLE = `${REPLY}>[data-slot="conversation.chat.node"]>*`
+      // Where the reply bubble starts: after the avatar and its gap, as in .incoming.
+      const BUBBLE_LEFT = `${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px`
       return [
         `:root{--fishball-messenger-accent:${mark.eyeColor}}`,
         `.${CLS.incoming}{display:flex;gap:8px;align-items:flex-start;margin:6px 20% 6px 0}`,
         `.${CLS.avatar},.${CLS.spacer}{flex:none;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px}`,
-        `.${CLS.avatar}{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(${SENDER_COLOUR.variable});color:#fff;font-size:11px;font-weight:700;overflow:hidden}`,
+        `.${CLS.avatar}{display:flex;align-items:center;justify-content:center;${CIRCLE};background:var(${SENDER_COLOUR.variable});color:#fff;font-size:11px;font-weight:700;overflow:hidden}`,
         `.${CLS.body}{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}`,
         `.${CLS.name}{font-size:12px;font-weight:600;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}`,
         `.${CLS.marker}{margin-left:6px;font-weight:400}`,
@@ -145,18 +153,23 @@ window.__ModuleLoader__.load({
         // Fishball's replies take the shape of an incoming message (owner's request): a round
         // avatar outside the bubble at the top left, the name above, and the bubble with its tip
         // beside the avatar. Offsets match .incoming: avatar, its gap, and the name line.
-        `${REPLY}{position:relative;margin:6px 20% 6px 0;padding:${REPLY_LAYOUT.nameLinePx}px 0 0 ${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px}`,
+        `${REPLY}{position:relative;margin:6px 20% 6px 0;padding:${REPLY_LAYOUT.nameLinePx}px 0 0 ${BUBBLE_LEFT}}`,
         `${REPLY_BUBBLE}{padding:6px 12px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2)}`,
-        `${REPLY}::before{content:"";position:absolute;left:0;top:0;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;border-radius:50%;background:${markImage(mark, REPLY_LAYOUT.fishFill)} center/${REPLY_LAYOUT.fishShare} no-repeat,${ACCENT}}`,
-        `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:${AVATAR.sizePx + REPLY_LAYOUT.gapPx}px;top:0;font-size:12px;line-height:${REPLY_LAYOUT.nameLinePx}px;font-weight:600;color:${ACCENT}}`,
+        `${REPLY}::before{content:"";position:absolute;left:0;top:0;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;${CIRCLE};background:${markImage(mark, REPLY_LAYOUT.fishFill)} center/${REPLY_LAYOUT.fishShare} no-repeat,${ACCENT}}`,
+        `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:${BUBBLE_LEFT};top:0;font-size:12px;line-height:${REPLY_LAYOUT.nameLinePx}px;font-weight:600;color:${ACCENT}}`,
+        // DSH's footer under a reply (Fishball's copy button and the time) is a chat row of its
+        // own, so it would start under the avatar; it starts at the bubble's left edge instead.
+        `${SCOPE} [data-chat-flow-kind="turn-tail"]{padding-left:${BUBBLE_LEFT}}`,
         // DSH stretches a table of four or more columns (its md-table-wide class) past the chat
-        // column to the edges of the chat area. The reply row is narrower (avatar on the left, a
-        // margin on the right), so that stretch ran past the bubble's right edge. Here the table
-        // keeps the row's width and, when wider, scrolls sideways on hover or focus as DSH's wide
-        // tables do; DSH resets its compact markdown's tables the same way. Scoped to the reply
-        // row, whose margin and padding cause the narrowing, so it holds even if the bubble
-        // element falls back to DSH's look.
+        // column to the edges of the chat area, at its full width. The reply row is narrower
+        // (avatar on the left, a margin on the right), so that stretch ran past the bubble's right
+        // edge. Here the table stays in the row and fits its width, as DSH's narrower tables do:
+        // its cells wrap (DSH's markdown breaks long words). Only a table too wide even then
+        // scrolls sideways, on hover or focus as DSH's wide tables do. DSH resets its compact
+        // markdown's tables the same way. Scoped to the reply row, whose margin and padding cause
+        // the narrowing, so it holds even if the bubble element falls back to DSH's look.
         `${REPLY} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
+        `${REPLY} .md-table-wide>table{width:auto}`,
         // Work rows (tool calls, reasoning, process groups) read as quieter activity lines.
         `${SCOPE} [data-chat-group-part]:not([data-chat-group-part="response"]){opacity:.7}`,
         `${SCOPE} [data-slot="conversation.composer.bar"]>*{border-radius:24px}`,
