@@ -34,7 +34,8 @@ export const qHost = (label, env = {}) => pileHost(label, { env: { FBTEST_QUESTI
 
 /** The id a pile card is answered by (§10e: `questionId`; tolerant of the card also carrying it as requestId/id). */
 export const cardId = (card) => card?.questionId ?? card?.requestId ?? card?.id
-export const isQuestionCard = (c) => c?.kind === CARD_KIND.question
+/** A question or plan-review card (the builder's cards carry kind 'question' or 'plan-review'; the design's §9 names only 'question'). */
+export const isQuestionCard = (c) => c?.kind === CARD_KIND.question || c?.kind === 'plan-review'
 /** A card whose JSON mentions this token. */
 export const cardMentions = (card, token) => JSON.stringify(card ?? {}).includes(token)
 
@@ -92,7 +93,7 @@ export function qTools(ctx, names) {
     async questionId(text, timeoutMs = 10000) {
       return until(async () => {
         const events = (await ctx.host.call('inspect', { sessionId: ctx.fb, events: true })).events ?? []
-        return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(text)).map((e) => /qst_[\w-]+/.exec(e.text)?.[1]).filter(Boolean).at(-1) ?? false
+        return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(text)).map((e) => /qst_[\w-]+/.exec(e.text)?.[0]).filter(Boolean).at(-1) ?? false
       }, timeoutMs, 100)
     },
     /** Fishball's notices (user messages of source fishball-notice) containing text. */

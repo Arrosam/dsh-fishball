@@ -258,7 +258,9 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
     for (const body of [{}, { questionId: qid }, { questionId: 7, answers: A.single }, { questionId: qid, answers: 'no' }, { answers: A.single }]) {
       const r = await q.route(body)
       assert.equal(r.status, 400, JSON.stringify(body) + ' -> ' + r.text)
-      assert.equal(r.json?.code, 'bad-body')
+      // A body of the wrong shape is bad-body; a well-shaped body whose answers are no valid batch is bad-answer (the route validates "as answer_question is", DESIGN §10e).
+      assert.ok(['bad-body', 'bad-answer'].includes(r.json?.code), JSON.stringify(body) + ' -> ' + r.text)
+      if (typeof body.questionId !== 'string' || body.answers === undefined) assert.equal(r.json?.code, 'bad-body', JSON.stringify(body))
     }
     const foreign = await q.route({ questionId: qid, answers: A.single }, { headers: { origin: 'http://evil.example' } })
     assert.notEqual(foreign.status, 200, 'a foreign origin is refused')
