@@ -1,28 +1,38 @@
 # rev11d hand checks (test session)
 
-Branch `claude/test-rev11d-9f993c` = rev11d tests (`6c8b955`) + `claude/rev11d-3e302c` (`06e65e4`) + `rebuild/managed-sessions` (`19b068a`), merged cleanly, merge head `ab29e98`. Not pushed.
+Branch `claude/test-rev11d-9f993c` = rev11d tests + `claude/rev11d-3e302c` (`d60c290`) + `rebuild/managed-sessions` (`8b5f60d`). Not pushed.
 
-## Result: FAIL, one code bug that stops Fishball from loading
-
-**Code bug (blocks everything).** With the rev11d build, the `fishball` plugin does not start in DSH (0.2.1-rc.2). Boot output:
-
-```
-dsh: warning: 1 entry did not activate
-fishball (dsh-fishball): JsonSchemaError: unsupported JSON schema: parameters.grant.additionalProperties must be explicitly true or false
-    at defineTool (…/dsh-tools/lib/index.js:848)
-    at ApprovalBroker.registerTools (src/approvals.js:276)
-    at Object.apply (index.js:331)
-```
-
-Cause: the `answer_approval` tool's `grant` parameter (`src/approvals.js:286-290`) is an `object` with `properties` but no `additionalProperties`; DSH's tool compiler requires it to be explicitly `true` or `false` for a nested object. To reproduce: boot any host from this branch (`/opt/homebrew/bin/node --test test/rev11d-regress.test.mjs`), or read the output of `bootHost(newHome('x'))`. `GET /api/fishball/state` answers 404 because the plugin is not mounted.
-
-Effect: Fishball never goes live, so every test that boots a host fails (the first full-suite run showed CMP-08, CMP-09, ISO-01, ISO-02 and more failing before I stopped it), and no hand check can run.
+## Result: PASS (no code bug found; the first run of stage 2 found one, fixed by the builder: the `grant` schema lacked `additionalProperties`, so Fishball did not load)
 
 ## Suite
-Started `/opt/homebrew/bin/node test/run.mjs` and stopped it after the first failures because of the bug above: **no counts**. Not re-run.
+First full run, `/opt/homebrew/bin/node test/run.mjs` on the merged branch: **tests 1558, suites 186, pass 1540, fail 17, skipped 1** (the known OFM-06 skip). It ran while my hand-check server was also up, so the machine was loaded. All 17 failures were sorted, with no code bug:
+- **3 timing flakes under load** (limits-live L56, L57, L58): the file passes alone (with the OWN file: 57 of 57).
+- **1 test bug, OWN-01** (`builtin:permission-requests` lists its tools): the plugin now also owns `list_grants` and `revoke_grant` (DESIGN §7a.8, "Fishball's `list_grants` / `revoke_grant` (plugin Permission requests)"); the constant is updated, the file passes.
+- **13 failures in my own new rev11d cases**, all test bugs, fixed (each commit message says why):
+  - GRT-07: the notice needle of a changed exact call matched the creating request; each variant now carries its own marker.
+  - GRT-08 `terminal_send`: its command text is in `text` (the builder's reading, confirmed by the manager), so the fixture call and the grant now use `text`.
+  - GRT-09 / GRT-10: a schema-level refusal ("grant.kind must be one of …") is a refusal too, so a refusal is either `ok:false` with a code or an "invalid arguments" error, and the request stays pending; a refused `create` now ends its turn; reject answers carry `risk` (every decision except escalate and ask needs it).
+  - `run_code` is a PTC-mode DSH built-in that no fixture can stand in for ("unknown tool"); `demo_echo` stands in for "every other tool" in the exact-only cases (CASES.md A-r11d-8).
+  - END-01: a 4 s end time ran out during the set-up; now 9 s. END-08: sessions are resumed after the restart. REG-01/02: the `escalate` audit row appears when the request ends, so it is read after the agent finishes.
+- Final: `rev11d-grants` 35 of 35, `rev11d-end` 8 of 8, `rev11d-regress` 3 of 3 pass. The rest of the suite was not re-run as one whole after the test fixes (the touched files were re-run in full).
 
 ## Done-when items (rev11d row)
-All **NOT RUN**: blocked by the load failure above. They are the items for: five `npm test*` runs waking Fishball zero times and the revoke; `npm test && git push` covered; refusals (prefix on a non-shell tool, no / past end time); each way a grant ends; restart; pause and resume; audit and `decisions` rows; one tag per covered call; prefix tools accepted or refused; a year-long grant and many grants.
+Driven in a real DSH worker (this checkout's plugin, fake model, scripted stock prompt after the broker, the shell fixtures asking in their body) kept up by `test/hand-checks/rev11d-serve.mjs`, with the built-in browser pane on its web page.
+1. **PASS** An `npm test*` grant (`answer_approval` grant, prefix `npm test*`, +1 h) answered ok with a `grt_…` id. Six following runs (`npm test`, `npm test -- --watch=false`, `npm testing x`, `--a`, `--b`, `npm test && git push --dry-run`) all returned `outcome=allowed-once`, with **0** new Fishball model steps and no notice. Snapshot: `uses` 6, `lastUsedAt` set, `prefix` stored as `npm test` (the star dropped).
+2. **PASS** `npm test && git push --dry-run` is covered (in the run above).
+3. **PASS** Refusals, each leaves the request pending (a later answer still works): prefix on `demo_echo` → `prefix-not-shell-tool`; prefix on `terminal_open` refused; no end time, a past time and `"tomorrow"` refused; prefix `git` on a `make d` call → `prefix-not-in-call` (suite GRT-09/10 covers all; here by hand for the first three plus the not-in-call prefix at the tool level). `terminal_send`, `pwsh` prefix and exact grants on `terminal_open` and `demo_echo` accepted; a prefix grant ending in a year accepted and listed.
+4. **PASS** Endings: expiry (a 25 s grant left the list on its own and the next run reached Fishball); your Revoke click in the list (row left, stored `revoked` by `user`, `decisions` row `revoke` by `user`, next run to Fishball); Fishball's `revoke_grant`, Take back and `release_session` and a second revoke / unknown id: suite END-02 to END-05.
+5. **PASS** Survives a restart: after rebooting the worker the same grants are listed with the same end time and `uses`, both sessions still managed, and a call ran on the grant with 0 Fishball steps. A grant past its end time during a restart is not honoured (END-08).
+6. **PASS** Pause: with Permission requests turned off the list marks each grant `paused: true`, the covered call showed the session's stock prompt (once), no Fishball step, no new use; turned back on, `paused: false`, the end time unchanged, and the same grant covered the next call. Fishball not live: END-07.
+7. **PASS** Audit and `decisions`: `decisions` rows `grant` by `fishball` (with the grant id), `revoke` by `user`; the approvals audit holds `grant` for the creating request and `grant-used` per covered call (GRT-02 counts five).
+8. **PASS** One tag per covered call: the stored `tags` rows have kind `grant` with `{kind, toolName, prefix}`; in the browser the session's turn tail shows "Allowed by Fishball's grant: npm test*" for covered calls and "Asked Fishball · granted (standing grant)" on the grant answer.
+9. **PASS** The grants list in Fishball's chat above the composer: "Standing grants (1)", session title, tool, `npm test*` (or "exact fbtest_ask call"), "ends 02/11/2026, 03:59:37 · used 1 times", and Revoke; clicking Revoke removed it at once.
+10. **PASS** rev11b escalate and ask fix: escalate with no `risk` and no `reason`, and `ask` with only its question, are accepted (REG-01, REG-02, REG-03).
 
-## Next
-Fix the schema (set `additionalProperties: false` on `grant`, and check any other nested object in the new tool schemas), then send stage 2 again. The hand-check server script was `test/hand-checks/rev11c-serve.mjs` with `FBTEST_ASKING_TOOLS` added to the host env; I removed my copy, so it needs recreating.
+## Not run by hand
+- `run_code` itself (a PTC-mode built-in): the refusal of a prefix grant and acceptance of an exact grant are covered with `demo_echo` standing in.
+- Light theme (dark only); the settings page's "Active standing grants: n" line and audit labels; 30+ grants in the scrolling list (the suite checks three active at once).
+
+## Notes for the manager
+- `list_grants`' `{grants:[…]}` shape and a few field names were read tolerantly (CASES.md A-r11d-1, 2).
+- The audit rows a `reject` by Fishball when the request had timed out showed up as `decisions` `reject` by `user` in my server: that is the scripted stock prompt answering, not a rev11d issue.
