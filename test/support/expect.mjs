@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -625,3 +625,34 @@ export async function managedSession(host, fb, folder, preset = PRESET.bare) {
 }
 /** A request block's arguments as an object (P7 gives the call's JSON as a string field). */
 export const blockArguments = (block) => { const a = block?.fields?.arguments; return typeof a === 'string' ? JSON.parse(a) : a }
+
+// ---- Revision 11 rev11c helpers (your pile, DESIGN §7a.6, §10e) ----
+
+/** The snapshot's pile (the cards, newest first). */
+export const pileNow = async (host) => (await host.state())?.pile
+/** The card of one request in the snapshot, or undefined. */
+export const cardOf = async (host, requestId) => ((await pileNow(host)) ?? []).find((c) => c.requestId === requestId)
+/** Wait until the pile holds a card for this request; returns it or false. */
+export const untilCard = (host, requestId, timeoutMs = 10000) => until(async () => (await cardOf(host, requestId)) ?? false, timeoutMs, 50)
+/** Wait until the pile holds no card for this request. */
+export const untilNoCard = (host, requestId, timeoutMs = 10000) => until(async () => !(await cardOf(host, requestId)), timeoutMs, 50)
+/** Allow once / Reject on a card through the Host route, as the client's buttons do. */
+export const answerCard = (host, requestId, decision, note) => host.post(PILE_API.answer, { requestId, decision, ...(note === undefined ? {} : { note }) })
+/** A card's arguments as an object (the design says "arguments (excerpt)": a JSON string or an object). */
+export const cardArguments = (card) => (typeof card?.arguments === 'string' ? JSON.parse(card.arguments) : card?.arguments)
+/** Every row of the tags table of one session, in key order. */
+export const tagsOf = (home, sessionId) => storedRows(home, 'tags').filter((t) => t.sessionId === sessionId)
+/**
+ * The tag records the snapshot publishes (§9 "Tag records": the Host publishes {sessionId, callId, seq, answer, kind}
+ * per answer; the design does not name the snapshot key, so the whole snapshot is searched for such objects).
+ */
+export function snapshotTags(state) {
+  const found = []
+  const walk = (x, depth = 0) => {
+    if (!x || typeof x !== 'object' || depth > 6) return
+    if (!Array.isArray(x) && typeof x.sessionId === 'string' && typeof x.callId === 'string' && typeof x.seq === 'number' && typeof x.kind === 'string' && 'answer' in x) found.push(x)
+    for (const v of Object.values(x)) walk(v, depth + 1)
+  }
+  walk(state)
+  return found
+}

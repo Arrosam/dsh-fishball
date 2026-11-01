@@ -428,6 +428,8 @@ export const APPROVAL = Object.freeze({
   assistantEvent: 'assistant/message',
   ptcDispatchEvent: 'tool/ptc-dispatch-start',
   toolCallBlock: 'tool-call',
+  /** The log event of one model tool call; its seq places a tag in its turn (S37). */
+  toolCallEvent: 'tool/call',
   turnStartEvent: 'turn/start',
   /** A turn ended: the session's passes, to-you tickets, wording marks and open threads end (§7a.3, §9). */
   turnEndEvent: 'turn/end',
@@ -450,16 +452,15 @@ export const PASS_KIND = Object.freeze({ pass: 'pass', toYou: 'to-you' })
 /** Who wrote one entry of a request's thread (§9 request threads). */
 export const THREAD_FROM = Object.freeze({ agent: 'agent', fishball: 'fishball' })
 /**
- * ask_fishball's answers (DESIGN §7a.2). to-user: Fishball escalated, did not answer in time,
- * or could not be told; until rev11c (your pile) the call then goes to your prompt in the
- * session, through a to-you ticket (§7a.6 "Before rev11c").
+ * ask_fishball's answers (DESIGN §7a.2). When Fishball escalates, does not answer in time or
+ * cannot be told, the request becomes your card and the agent keeps waiting for your answer
+ * (rev11c, §7a.6), so there is no answer code for it.
  */
 export const ASK_RESULT = Object.freeze({
   allowed: 'allowed',
   rejected: 'rejected',
   question: 'question',
   unavailable: 'unavailable',
-  toUser: 'to-user',
   overCapacity: 'over-capacity',
   noLongerManaged: 'no-longer-managed',
 })
@@ -473,6 +474,20 @@ export const ASK_ERROR = Object.freeze({
   cancelled: 'cancelled',
 })
 export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
+/** Your answer on a card in the pile or on the running ask_fishball row (§7a.6, §10e). */
+export const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
+/** How a card left the pile: your answer, Fishball going off, the session leaving management, or its call cancelled. */
+export const CARD_END = Object.freeze({ user: 'user', off: 'off', released: 'released', cancelled: 'cancelled' })
+/**
+ * Fishball's own request past maxPendingApprovals returns at once with this code, so it never
+ * freezes (your answer Q-r11-cap-own, §7a.6).
+ */
+export const TOO_MANY_WAITING = 'too-many-waiting'
+/**
+ * Tag records (DESIGN §9 `tags`, S37): one per answer Fishball gave, shown in the asking turn's
+ * tail. approval: an answer_approval allow, reject or question; sent-to-you: an escalate.
+ */
+export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
 /** DSH approval outcomes (dsh-user-approval). */
@@ -612,6 +627,8 @@ export const API = Object.freeze({
   installCancel: '/api/fishball/install/cancel',
   /** POST { sessionId, managed }: Hand over to Fishball (true) / Take back from Fishball (false), DESIGN §10e. */
   managed: '/api/fishball/managed',
+  /** POST { requestId, decision: 'allow' | 'reject', note? }: your answer on a card (DESIGN §10e). */
+  requestsAnswer: '/api/fishball/requests/answer',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -631,6 +648,10 @@ export const API_CODE = Object.freeze({
   noSettings: 'no-settings',
   /** Settings: the new config fails the row's schema (400, with `path`). */
   invalid: 'invalid',
+  /** A card that already left the pile (answered, its turn ended, or Fishball went off). */
+  expired: 'expired',
+  /** Your note on Reject is over maxMessageBytes. */
+  tooLarge: 'too-large',
   failed: 'failed',
 })
 export const RESPONSE_HEADERS = Object.freeze({
