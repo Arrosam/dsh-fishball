@@ -68,7 +68,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
-| HTP-01 | EP | GET state shape | 200 application/json; exactly the keys status, sessionId, workspaceId, cwd, error, limits (12 integers), hiddenTools |
+| HTP-01 | EP | GET state shape | 200 application/json; exactly the keys status, sessionId, workspaceId, cwd, error, limits (integers: the 12 original fields plus rev11-limits' 16), hiddenTools |
 | HTP-02 | EP | hiddenTools | exactly the 18 names (with `spawn_teammate`), sorted; also checked against the literal list |
 | HTP-03 | EP (no cookie) | behind browser auth | not 200 |
 | HTP-04/05 | EP + ST | SSE | 200 text/event-stream; first frame within 3 s equals GET state; a limit change produces a frame with the new value |
@@ -81,14 +81,14 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
-| CFG-01 | EP | defaults | the settings entry `fishball` applies live; its value and `state.limits` equal the default table |
+| CFG-01 | EP | defaults | the settings entry `fishball` applies live; its value and `state.limits` equal the default table (rev11-limits: the 12 original fields plus the 16 moved ones) |
 | CFG-02 ×12 | BVA (minimum valid) | 1, or 0 for the three hourly caps | update ok; `state.limits` shows the value; the profile `cordis.patch.yml` row config holds it |
 | CFG-03 ×12 | BVA (minimum − 1) | 0 for "≥ 1" fields, −1 for hourly caps | update throws; patch file byte-identical; live limits and settings value unchanged |
 | CFG-04 ×9 | EP (negative) | −1 for "≥ 1" fields | rejected; nothing changes |
 | CFG-05 ×12 | EP (non-integer) | 1.5, or 0.5 for hourly caps | rejected; nothing changes |
 | CFG-06 ×12 | EP (string) | "5" or "x" | rejected; nothing changes |
 | CFG-07 | BVA (large) | no upper bound | 1,000,000 accepted |
-| CFG-08 | EP | the defaults again | accepted together |
+| CFG-08 | EP | the defaults again (all 28 fields) | accepted together |
 | CFG-09 | ST live –update→ live | no remount | same agent object; one agent/created and no agent/disposed for Fishball; status live |
 
 ### [composition.test.mjs](composition.test.mjs): R-COMPOSITION and R-ISOLATION
@@ -1330,3 +1330,84 @@ The rules:
 - **`DSH_STATE`** gains `fishball`, and **`expectedDsh`** returns it for the Fishball group. This affects MCAT-01/02.
 - **`CODE.askFirst`** (`ask-first`) is new (review M1).
 - **MCAT-04** expects `expectedDsh(p)` for built-ins instead of `builtin` for all of them.
+
+## Revision 11 rev11-limits cases (DESIGN §14 row rev11-limits; §16 "Plugin config: the safety limits", "Hard-coded limits moved to config", "Values that stay constants", decision rows "Limits: …")
+
+Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_R11` in [support/constants.mjs](support/constants.mjs); every minimum is 1 (§16 "Rules"). The worker gained one read-only operation, `settingsSchema`, which returns the row's form exactly as DSH's settings service describes it to its settings page (`describe().schema`).
+
+### [limits-config.test.mjs](limits-config.test.mjs): the fields in the fishball row config (one host)
+
+| id | technique | input | expected |
+|---|---|---|---|
+| L1 | EP (form) | DSH settings `describe()` schema of `fishball` | a field for each of the 16 names and the 12 existing ones; rebuilt with Schemastery, `{}` resolves to each default |
+| L2 | EP (value, nothing saved) | settings value | each new field at its default; the 12 existing at theirs |
+| L3 | EP (existing install) | save one old field (`maxQueuedInputs`) | the saved row config holds none of the 16 names; the value still shows every default |
+| L4 ×16 | BVA (min) | each field = 1 | accepted; value 1; saved in the profile patch |
+| L5 ×64 | BVA (min−1) + EP (negative, fraction, string) | 0, −1, 1.5, "5" | refused; patch file and value unchanged |
+| L6 | BVA (large) | all 16 at ten times the default | accepted |
+| L7 | ST (changed → defaults) | all 16 defaults in one update | accepted |
+| L8 | EP (form minimum) | rebuilt form with 0, 1.5, 1 | 0 and 1.5 fail validation, 1 passes |
+| L9 | DT (tool × Fishball's own row) | `set_plugin_settings` on `dsh-fishball`/`fishball`, approver would allow | `ok:false`, no prompt, value unchanged |
+| L10 | EP | parameters of every tool in Fishball's request | none names a limit field |
+| L11 | ST (live → updates → live) | after all of the above | same agent, not disposed, created once, status live |
+
+### [limits-context.test.mjs](limits-context.test.mjs): context-window fields (one host, fake window 128000)
+
+| id | technique | input | expected |
+|---|---|---|---|
+| L20 | EP (defaults) | N 40000 | outputCap 5000, threshold 30000 |
+| L21 | BVA + ST | minWindowTokens 50000; N 49999, 40000, 50000 | 49999 and 40000 refused `window-too-small`, nothing stored; 50000 accepted |
+| L22 | EP (the §14 example) | minWindowTokens 8192; N 6000 | `window-too-small` |
+| L23 | ST (back) | minWindowTokens 4096; N 40000 | accepted, cap 5000 |
+| L24 | EP | defaultReplyCapTokens 2000; N 40000 | outputCap 2000; next Fishball request maxTokens ≤ 2000 |
+| L25 | DT (your cap wins) | defaultReplyCapTokens 2000; N 40000, O 10000 | outputCap 10000 |
+| L26 | EP (the §14 example) | model window 400000; N 200000 at default, then defaultReplyCapTokens 16000 | outputCap 25000, then 16000 |
+| L27 | EP | replyCapShare 4; N 40000 | outputCap 10000, threshold 25000 |
+| L28 | EP | headroomShare 4; N 40000 | outputCap 5000, threshold 25000 |
+| L29 | ST (all back) | defaults; N 40000 | 5000 / 30000 again |
+| L30 | ST (no restart) | after all | same agent, created once, not disposed, live |
+
+### [limits-live.test.mjs](limits-live.test.mjs): shown and excerpt fields (one host, approver after the broker)
+
+| id | technique | input | expected |
+|---|---|---|---|
+| L50 | ST | readSessionMessages 12 → 3 → 1 → 12 on a 16-message session | 12, 3 (newest answer kept), 1, 12 |
+| L51 | ST | readSessionBytes 12288 → 2000 → 12288, about 9 KB of answers | > 2000 text bytes, ≤ 2000, the default excerpt again |
+| L52 | ST | watchesShown 50 → 2 → 50 with 1 active and 5 closed watches | state and `list_watches`: all, then ≤ 2 including the active one, then all |
+| L53 | ST | intakeRowsShown 20 → 2 → 20 | ≥ 3 rows, exactly 2, the earlier count |
+| L54 | ST | outboxShown 20 → 2 → 20 | ≥ 3 entries, exactly 2, the earlier count |
+| L55 | ST | forwardExcerptBytes 100 then 3072, a 500-byte answer forwarded | ≤ 100 bytes and a prefix, then whole |
+| L56 | ST | requestUserMessageBytes 100 then 2048, a 300-byte user message | `latest_user_message` ≤ 100 bytes and a prefix, then whole |
+| L57 | ST | rationaleChars 10 then 500, a 60-character reason | audit rationale ≤ 10 characters and a prefix, then whole |
+| L58 | ST (the §14 example) | approvalsShown 5 → 1 → 20 with ≥ 6 entries | 5, 1, all |
+| L59 | ST (no restart) | after all | same agent, created once, not disposed, live |
+
+### [limits-manager.test.mjs](limits-manager.test.mjs): plugin-manager fields (one host, settings fixtures)
+
+| id | technique | input | expected |
+|---|---|---|---|
+| L60 | ST | pluginHistoryShown 10 → 3 → 1 → 10 after 4 changes | history 4, newest 3, newest 1, 4 (newest first) |
+| L61 | ST | settingsPromptValueBytes 200 → 50 → 200, a 152-byte JSON value | whole, ≤ 50 bytes and a prefix, whole |
+| L62 | ST (no restart) | after all | same agent, not disposed, live |
+
+### [limits-source.test.mjs](limits-source.test.mjs): file checks (no host)
+
+| id | technique | input | expected |
+|---|---|---|---|
+| L40 ×20 | EP (one per old name) | `index.js`, `client.js`, `packages/*/client.js`, `src/**/*.js` as text | no `OBJ.field`, `OBJ?.field` or `OBJ['field']` for each "Today in code" name and the four `FISHBALL_PACKAGES` package bounds (bare `OUTBOX_SHOWN`). Checked to fail against the pre-phase commit (every name found there) |
+| L41 ×19 | EP (one per staying name) | same files | each constant §16 keeps (`maxTimerMs`, `HOUR_MS`, `idPattern`, `dshDefaults`, `minCapTokens`, the three `ctx.fishball` sizes, `nameBytes`, `maxSubagentDepth`, `resumeAttempts`, `resumeRetryMs`, `maxAttempts`, `modelInfoTimeoutMs`, `SEQ_DIGITS`, `DIGEST_HEX_CHARS`, `WORDS_PER_TOKEN`, `ROUNDING_GUARD`, `FIBER_ACTIVE`) is still named. Values are not read |
+| L42 ×3 | EP | `docs/plugin-author-guide.md` | a line names the dedupe key with 256 bytes, the description with 1,024 (or 1024) bytes, and the title with 200 bytes |
+
+### Not automated (rev11-limits)
+
+- **Package operations follow DSH's plugin-manager values** (`outputBytes`, `idleTimeoutMs`, `lockWaitMs`, `inspectTimeoutMs`), and DSH's defaults apply when its manager cannot be read. DSH's plugin-manager row has no live (volatile) settings form, so the settings service cannot change it in a running host. Showing the effect would need slow pnpm installs that are made to time out or overflow on purpose. L40 checks that the four Fishball constants are gone. The behaviour needs a review or a manual check.
+- **`pluginManagerStartMs` taking effect.** It is covered as a config field (L1-L8). Making the inherited plugin manager start slowly is not reachable from the support code.
+- **"Shown in the limits form on Fishball's settings page"** in the client. L1 checks the form DSH's settings service gives the page (`describe().schema`). Rendering is left to the visual pass.
+
+### Ambiguities (rev11-limits)
+
+- **A-L1. Minimums.** §16 says only that every value is a whole number of at least 1. The tests use min 1 for all 16 fields, including `minWindowTokens`, `replyCapShare` and `pluginManagerStartMs`.
+- **A-L2. `watchesShown` with active watches.** "Older closed watches are not shown" can mean either that the cap counts all watches and the active ones are kept, or that only closed ones are capped. L52 asserts at most 2 shown with the active one among them, which holds under the first reading only. Under the second, 2 would be the closed count alone.
+- **A-L3. Whether `state.limits` lists the new fields (resolved).** §16 makes each moved limit "a config field like those above", and §3 makes `Config` the one object every component reads limits from. So the default table is now 28 fields: the 12 original ones and the 16 moved ones. CFG-01 and CFG-08 (`config.test.mjs`) and HTP-01's `state.limits` key check (`http.test.mjs`) expect all 28 in the settings value and in `state.limits`, built from `LIMITS` plus `LIMITS_R11`.
+- **A-L4. A stored window that the new `minWindowTokens` makes too small.** Not stated. L21 clears the window before raising the minimum.
+- **A-L5. When a context-window field change shows in `state.contextWindow`.** Not stated whether a field change alone recomputes the shown cap and threshold of a stored window. The tests save the window again after each change (that save is the "next use").
