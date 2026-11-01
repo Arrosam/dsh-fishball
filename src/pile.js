@@ -29,19 +29,25 @@ export class Pile {
    * File one card.
    * @param card - { requestId, kind, sessionId, callId?, toolName, arguments, argumentsStatus,
    *   quotes, why, thread, note?, since }; plain data, published to the browser as it is.
+   * @param onAnswer - optional, called synchronously with { decision, note? } when you answer it
+   *   (a direct call's card races its stock prompt in the same tick, src/approvals.js).
    * @returns a promise of how it left: { end: CARD_END.user, decision, note? } for your answer,
    *   or the { end } given to settle() by a release or a cancellation.
    */
-  file(card) {
+  file(card, onAnswer) {
     // The executor runs synchronously, so the card is in the pile when file() returns.
-    const ended = new Promise((settle) => { this.#cards.set(card.requestId, { card, settle }) })
+    const ended = new Promise((settle) => { this.#cards.set(card.requestId, { card, settle, onAnswer }) })
     this.#onChange()
     return ended
   }
 
   /** Your answer on one card. @returns whether the card was still in the pile. */
   answer(requestId, decision, note) {
-    return this.settle(requestId, { end: CARD_END.user, decision, ...(note === undefined ? {} : { note }) })
+    const onAnswer = this.#cards.get(requestId)?.onAnswer
+    const answer = { decision, ...(note === undefined ? {} : { note }) }
+    if (!this.settle(requestId, { end: CARD_END.user, ...answer })) return false
+    onAnswer?.(answer)
+    return true
   }
 
   /** End one card once. @returns whether it was still in the pile. */
